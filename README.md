@@ -1,7 +1,6 @@
-share
-====
+share-coin
+==========
 
-<b>share-coin</b>
 <h4>Part of the Share Library Suite.</b>
 
 <h2>Quick Instructions</h2>
@@ -26,7 +25,7 @@ Building the share-coin programs:
   cd share
   mkdir build
   cd build
-  ../configure
+  ../configure --disable-shfsyncd
   make
   cd ../../build
   ../configure --with-libshare=share/build/src/share-lib/libshare.a

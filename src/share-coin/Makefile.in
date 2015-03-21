@@ -168,15 +168,18 @@ am__objects_2 = builder.$(OBJEXT) c.$(OBJEXT) dbformat.$(OBJEXT) \
 am_shcoin_OBJECTS = shcoind_tool.$(OBJEXT) $(am__objects_1) \
 	$(am__objects_2)
 shcoin_OBJECTS = $(am_shcoin_OBJECTS)
+am__DEPENDENCIES_1 =
 shcoin_DEPENDENCIES =  \
-	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a
+	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
+	$(am__DEPENDENCIES_1)
 am_shcoind_OBJECTS = shcoind.$(OBJEXT) $(am__objects_1) \
 	$(am__objects_2) stratum_message.$(OBJEXT) \
 	stratum_protocol.$(OBJEXT) stratum_user.$(OBJEXT) \
 	stratum_task.$(OBJEXT) shcoind_daemon.$(OBJEXT)
 shcoind_OBJECTS = $(am_shcoind_OBJECTS)
 shcoind_DEPENDENCIES =  \
-	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a
+	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
+	$(am__DEPENDENCIES_1)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/build-aux/depcomp
 am__depfiles_maybe = depfiles
@@ -770,6 +773,7 @@ LIBOBJS = @LIBOBJS@
 LIBPTH = @LIBPTH@
 LIBPTH_PREFIX = @LIBPTH_PREFIX@
 LIBS = @LIBS@
+LIBSHARE = @LIBSHARE@
 LIBTHREAD = @LIBTHREAD@
 LIBTOOL = @LIBTOOL@
 LIBUNISTRING_UNITYPES_H = @LIBUNISTRING_UNITYPES_H@
@@ -1188,11 +1192,9 @@ shcoind_SOURCES = shcoind.c $(common_INCLUDES) $(common_SOURCES) \
 	shcoind_daemon.c \
 	shcoind_daemon.h
 
-shcoind_LDADD = $(top_builddir)/src/share-ssl-lib/libshare_ssl.a
-#$(top_builddir)/src/share-lib/libshare.a
+shcoind_LDADD = $(top_builddir)/src/share-ssl-lib/libshare_ssl.a $(LIBSHARE)
 shcoin_SOURCES = shcoind_tool.cpp $(common_INCLUDES) $(common_SOURCES)
-shcoin_LDADD = $(top_builddir)/src/share-ssl-lib/libshare_ssl.a
-#$(top_builddir)/src/share-lib/libshare.a
+shcoin_LDADD = $(top_builddir)/src/share-ssl-lib/libshare_ssl.a $(LIBSHARE)
 @HAVE_INITD_DIR_TRUE@EXTRA_DIST = $(top_builddir)/scripts/initd/shcoind
 all: all-am
 

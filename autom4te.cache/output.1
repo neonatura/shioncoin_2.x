@@ -1560,6 +1560,7 @@ ALLOCA
 LTALLOCA
 GL_COND_LIBTOOL_FALSE
 GL_COND_LIBTOOL_TRUE
+LIBSHARE
 am__fastdepGCJ_FALSE
 am__fastdepGCJ_TRUE
 GCJDEPMODE
@@ -1725,6 +1726,7 @@ with_gnu_ld
 enable_libtool_lock
 enable_largefile
 enable_threads
+with_libshare
 enable_rpath
 with_libpth_prefix
 enable_acl
@@ -2400,6 +2402,7 @@ Optional Packages:
   --with-pic              try to use only PIC/non-PIC objects @<:@default=use
                           both@:>@
   --with-gnu-ld           assume the C compiler uses GNU ld @<:@default=no@:>@
+  --with-libshare         specify a path to the libshare.a library
   --with-gnu-ld           assume the C compiler uses GNU ld [default=no]
   --with-libpth-prefix[=DIR]  search for libpth in DIR/include and DIR/lib
   --without-libpth-prefix     don't search for libpth in includedir and libdir
@@ -23301,6 +23304,16 @@ _ACEOF
 fi
 
 
+@%:@ Check whether --with-libshare was given.
+if test "${with_libshare+set}" = set; then
+  withval=$with_libshare; 
+else
+  with_libshare=yes
+fi
+
+LIBSHARE=
+if test "x$with_libshare" = "xyes"; then
+  
 { $as_echo "$as_me:$LINENO: checking for get_libshare_version in -lshare" >&5
 $as_echo_n "checking for get_libshare_version in -lshare... " >&6; }
 if test "${ac_cv_lib_share_get_libshare_version+set}" = set; then
@@ -23374,6 +23387,10 @@ _ACEOF
   LIBS="-lshare $LIBS"
 
 fi
+
+fi
+
+LIBSHARE=$with_libshare
 
 
 # Checks for typedefs, structures, and compiler characteristics.
