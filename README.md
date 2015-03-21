@@ -69,58 +69,113 @@ shcoin - Client Utility Program
 ===============================
 
 Run "shcoin help" to list command-line arguments:
+
+<small>
 addmultisigaddress <nrequired> <'["key","key"]'> [account]
+
 backupwallet <destination>
+
 createrawtransaction [{"txid":txid,"vout":n},...] {address:amount,...}
+
 decoderawtransaction <hex string>
+
 dumpprivkey <usdeaddress>
+
 encryptwallet <passphrase>
+
 getaccount <usdeaddress>
+
 getaccountaddress <account>
+
 getaddressesbyaccount <account>
+
 getbalance [account] [minconf=1]
+
 getblock <hash>
+
 getblockcount
+
 getblockhash <index>
+
 getblocktemplate [params]
+
 getconnectioncount
+
 getdifficulty
+
 getgenerate
+
 gethashespersec
+
 getinfo
+
 getmininginfo
+
 getnetworkhashps [blocks]
+
 getnewaddress [account]
+
 getpeerinfo
+
 getrawmempool
+
 getrawtransaction <txid> [verbose=0]
+
 getreceivedbyaccount <account> [minconf=1]
+
 getreceivedbyaddress <usdeaddress> [minconf=1]
+
 gettransaction <txid>
+
 getwork [data]
+
 getworkex [data, coinbase]
+
 help [command]
+
 importprivkey <usdeprivkey> [label]
+
 keypoolrefill
+
 listaccounts [minconf=1]
+
 listreceivedbyaccount [minconf=1] [includeempty=false]
+
 listreceivedbyaddress [minconf=1] [includeempty=false]
+
 listsinceblock [blockhash] [target-confirmations]
+
 listtransactions [account] [count=10] [from=0]
+
 listunspent [minconf=1] [maxconf=999999]
+
 move <fromaccount> <toaccount> <amount> [minconf=1] [comment]
+
 sendfrom <fromaccount> <tousdeaddress> <amount> [minconf=1] [comment] [comment-to]
+
 sendmany <fromaccount> {address:amount,...} [minconf=1] [comment]
+
 sendrawtransaction <hex string>
+
 sendtoaddress <usdeaddress> <amount> [comment] [comment-to]
+
 setaccount <usdeaddress> <account>
+
 setgenerate <generate> [genproclimit]
+
 setmininput <amount>
+
 settxfee <amount>
+
 signmessage <usdeaddress> <message>
+
 signrawtransaction <hex string> [{"txid":txid,"vout":n,"scriptPubKey":hex},...] [<privatekey1>,...] [sighashtype="ALL"]
+
 stop
+
 validateaddress <usdeaddress>
+
 verifymessage <usdeaddress> <signature> <message>
+</small>
 
 The shcoind and shcoin program will write data to the /var/lib/share/usde/ directory. The "usde.conf" configuration file present in this directory is written in order to supply the automatically generated RPC user/pass. 
