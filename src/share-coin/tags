@@ -1,0 +1,1021 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.8	//
+AcceptBlock	server/main.cpp	/^bool CBlock::AcceptBlock()$/;"	f	class:CBlock
+AcceptToMemoryPool	server/main.cpp	/^bool CMerkleTx::AcceptToMemoryPool()$/;"	f	class:CMerkleTx
+AcceptToMemoryPool	server/main.cpp	/^bool CMerkleTx::AcceptToMemoryPool(CTxDB& txdb, bool fCheckInputs)$/;"	f	class:CMerkleTx
+AcceptToMemoryPool	server/main.cpp	/^bool CTransaction::AcceptToMemoryPool(CTxDB& txdb, bool fCheckInputs, bool* pfMissingInputs)$/;"	f	class:CTransaction
+AcceptWalletTransaction	server/main.cpp	/^bool CWalletTx::AcceptWalletTransaction()$/;"	f	class:CWalletTx
+AcceptWalletTransaction	server/main.cpp	/^bool CWalletTx::AcceptWalletTransaction(CTxDB& txdb, bool fCheckInputs)$/;"	f	class:CWalletTx
+AcceptedConnection	server/bitcoinrpc.cpp	/^class AcceptedConnection$/;"	c	file:
+AcceptedConnectionImpl	server/bitcoinrpc.cpp	/^    AcceptedConnectionImpl($/;"	f	class:AcceptedConnectionImpl
+AcceptedConnectionImpl	server/bitcoinrpc.cpp	/^class AcceptedConnectionImpl : public AcceptedConnection$/;"	c	file:
+AccountFromValue	server/bitcoinrpc.cpp	/^string AccountFromValue(const Value& value)$/;"	f
+AcentryToJSON	server/bitcoinrpc.cpp	/^void AcentryToJSON(const CAccountingEntry& acentry, const string& strAccount, Array& ret)$/;"	f
+AddCScript	server/keystore.cpp	/^bool CBasicKeyStore::AddCScript(const CScript& redeemScript)$/;"	f	class:CBasicKeyStore
+AddCScript	server/wallet.cpp	/^bool CWallet::AddCScript(const CScript& redeemScript)$/;"	f	class:CWallet
+AddCryptedKey	server/keystore.cpp	/^bool CCryptoKeyStore::AddCryptedKey(const CPubKey &vchPubKey, const std::vector<unsigned char> &vchCryptedSecret)$/;"	f	class:CCryptoKeyStore
+AddCryptedKey	server/wallet.cpp	/^bool CWallet::AddCryptedKey(const CPubKey &vchPubKey, const vector<unsigned char> &vchCryptedSecret)$/;"	f	class:CWallet
+AddKey	server/keystore.cpp	/^bool CBasicKeyStore::AddKey(const CKey& key)$/;"	f	class:CBasicKeyStore
+AddKey	server/keystore.cpp	/^bool CCryptoKeyStore::AddKey(const CKey& key)$/;"	f	class:CCryptoKeyStore
+AddKey	server/wallet.cpp	/^bool CWallet::AddKey(const CKey& key)$/;"	f	class:CWallet
+AddLocal	server/net.cpp	/^bool AddLocal(const CNetAddr &addr, int nScore)$/;"	f
+AddLocal	server/net.cpp	/^bool AddLocal(const CService& addr, int nScore)$/;"	f
+AddLocal	server_iface.cpp	/^bool AddLocal(const CNetAddr &addr, int nScore)$/;"	f
+AddLocal	server_iface.cpp	/^bool AddLocal(const CService& addr, int nScore)$/;"	f
+AddOneShot	server/net.cpp	/^void AddOneShot(string strDest)$/;"	f
+AddOneShot	server_iface.cpp	/^void AddOneShot(string strDest)$/;"	f
+AddOrphanTx	server/main.cpp	/^bool AddOrphanTx(const CDataStream& vMsg)$/;"	f
+AddReserveKey	server/wallet.cpp	/^int64 CWallet::AddReserveKey(const CKeyPool& keypool)$/;"	f	class:CWallet
+AddSupportingTransactions	server/wallet.cpp	/^void CWalletTx::AddSupportingTransactions(CTxDB& txdb)$/;"	f	class:CWalletTx
+AddTimeData	server/util.cpp	/^void AddTimeData(const CNetAddr& ip, int64 nTime)$/;"	f
+AddToBlockIndex	server/main.cpp	/^bool CBlock::AddToBlockIndex(unsigned int nFile, unsigned int nBlockPos)$/;"	f	class:CBlock
+AddToWallet	server/wallet.cpp	/^bool CWallet::AddToWallet(const CWalletTx& wtxIn)$/;"	f	class:CWallet
+AddToWalletIfInvolvingMe	server/wallet.cpp	/^bool CWallet::AddToWalletIfInvolvingMe(const CTransaction& tx, const CBlock* pblock, bool fUpdate, bool fFindBlock)$/;"	f	class:CWallet
+AddTxIndex	server/db.cpp	/^bool CTxDB::AddTxIndex(const CTransaction& tx, const CDiskTxPos& pos, int nHeight)$/;"	f	class:CTxDB
+Add_	server/addrman.cpp	/^bool CAddrMan::Add_(const CAddress &addr, const CNetAddr& source, int64 nTimePenalty)$/;"	f	class:CAddrMan
+AddressCurrentlyConnected	server/net.cpp	/^void AddressCurrentlyConnected(const CService& addr)$/;"	f
+AddressCurrentlyConnected	server_iface.cpp	/^void AddressCurrentlyConnected(const CService& addr)$/;"	f
+AdvertizeLocal	server/net.cpp	/^void static AdvertizeLocal()$/;"	f	file:
+AdvertizeLocal	server_iface.cpp	/^void static AdvertizeLocal()$/;"	f	file:
+AlreadyHave	server/main.cpp	/^bool static AlreadyHave(CTxDB& txdb, const CInv& inv)$/;"	f	file:
+AmountFromValue	server/bitcoinrpc.cpp	/^int64 AmountFromValue(const Value& value)$/;"	f
+AppendBlockFile	server/main.cpp	/^FILE* AppendBlockFile(unsigned int& nFileRet)$/;"	f
+ApproximateBestSubset	server/wallet.cpp	/^static void ApproximateBestSubset(vector<pair<int64, pair<const CWalletTx*,unsigned int> > >vValue, int64 nTotalLower, int64 nTargetValue,$/;"	f	file:
+AreInputsStandard	server/main.cpp	/^bool CTransaction::AreInputsStandard(const MapPrevTx& mapInputs) const$/;"	f	class:CTransaction
+Attempt_	server/addrman.cpp	/^void CAddrMan::Attempt_(const CService &addr, int64 nTime)$/;"	f	class:CAddrMan
+AvailableCoins	server/wallet.cpp	/^void CWallet::AvailableCoins(vector<COutput>& vCoins, bool fOnlyConfirmed) const$/;"	f	class:CWallet
+BUILD_DATE	server/version.cpp	65;"	d	file:
+BUILD_DATE	server/version.cpp	67;"	d	file:
+BUILD_DESC	server/version.cpp	57;"	d	file:
+BUILD_DESC	server/version.cpp	59;"	d	file:
+BUILD_DESC_FROM_COMMIT	server/version.cpp	49;"	d	file:
+BUILD_DESC_FROM_UNKNOWN	server/version.cpp	52;"	d	file:
+BackupWallet	server/walletdb.cpp	/^bool BackupWallet(const CWallet& wallet, const string& strDest)$/;"	f
+Bind	server/init.cpp	/^bool static Bind(const CService &addr, bool fError = true) {$/;"	f	file:
+Bind	server_iface.cpp	/^bool static Bind(const CService &addr, bool fError = true) {$/;"	f	file:
+BindListenPort	server/net.cpp	/^bool BindListenPort(const CService &addrBind, string& strError)$/;"	f
+BindListenPort	server_iface.cpp	/^bool BindListenPort(const CService &addrBind, string& strError)$/;"	f
+BindServer	server_iface.cpp	/^void BindServer(void)$/;"	f
+CAddrDB	server/db.cpp	/^CAddrDB::CAddrDB()$/;"	f	class:CAddrDB
+CAddress	server/protocol.cpp	/^CAddress::CAddress() : CService()$/;"	f	class:CAddress
+CAddress	server/protocol.cpp	/^CAddress::CAddress(CService ipIn, uint64 nServicesIn) : CService(ipIn)$/;"	f	class:CAddress
+CCorruptAddress	server/wallet.cpp	/^class CCorruptAddress$/;"	c	file:
+CDB	server/db.cpp	/^CDB::CDB(const char *pszFile, const char* pszMode) :$/;"	f	class:CDB
+CDBEnv	server/db.cpp	/^CDBEnv::CDBEnv() : dbenv(0)$/;"	f	class:CDBEnv
+CInit	server/util.cpp	/^    CInit()$/;"	f	class:CInit
+CInit	server/util.cpp	/^class CInit$/;"	c	file:
+CInv	server/protocol.cpp	/^CInv::CInv()$/;"	f	class:CInv
+CInv	server/protocol.cpp	/^CInv::CInv(const std::string& strType, const uint256& hashIn)$/;"	f	class:CInv
+CInv	server/protocol.cpp	/^CInv::CInv(int typeIn, const uint256& hashIn)$/;"	f	class:CInv
+CKey	server/key.cpp	/^CKey::CKey()$/;"	f	class:CKey
+CKey	server/key.cpp	/^CKey::CKey(const CKey& b)$/;"	f	class:CKey
+CKeyStoreIsMineVisitor	server/script.cpp	/^    CKeyStoreIsMineVisitor(const CKeyStore *keystoreIn) : keystore(keystoreIn) { }$/;"	f	class:CKeyStoreIsMineVisitor
+CKeyStoreIsMineVisitor	server/script.cpp	/^class CKeyStoreIsMineVisitor : public boost::static_visitor<bool>$/;"	c	file:
+CLIENT_VERSION_SUFFIX	server/version.cpp	18;"	d	file:
+CLevelDB	server/leveldb.cpp	/^CLevelDB::CLevelDB(const boost::filesystem::path &path, size_t nCacheSize, bool fMemory, bool fWipe) {$/;"	f	class:CLevelDB
+CLockLocation	server/sync.cpp	/^    CLockLocation(const char* pszName, const char* pszFile, int nLine)$/;"	f	struct:CLockLocation
+CLockLocation	server/sync.cpp	/^struct CLockLocation$/;"	s	file:
+CMessageHeader	server/protocol.cpp	/^CMessageHeader::CMessageHeader()$/;"	f	class:CMessageHeader
+CMessageHeader	server/protocol.cpp	/^CMessageHeader::CMessageHeader(const char* pszCommand, unsigned int nMessageSizeIn)$/;"	f	class:CMessageHeader
+CNetAddr	server/netbase.cpp	/^CNetAddr::CNetAddr()$/;"	f	class:CNetAddr
+CNetAddr	server/netbase.cpp	/^CNetAddr::CNetAddr(const char *pszIp, bool fAllowLookup)$/;"	f	class:CNetAddr
+CNetAddr	server/netbase.cpp	/^CNetAddr::CNetAddr(const std::string &strIp, bool fAllowLookup)$/;"	f	class:CNetAddr
+CNetAddr	server/netbase.cpp	/^CNetAddr::CNetAddr(const struct in6_addr& ipv6Addr)$/;"	f	class:CNetAddr
+CNetAddr	server/netbase.cpp	/^CNetAddr::CNetAddr(const struct in_addr& ipv4Addr)$/;"	f	class:CNetAddr
+CNetCleanup	server/net.cpp	/^    CNetCleanup()$/;"	f	class:CNetCleanup
+CNetCleanup	server/net.cpp	/^class CNetCleanup$/;"	c	file:
+CNetCleanup	server_iface.cpp	/^    CNetCleanup()$/;"	f	class:CNetCleanup
+CNetCleanup	server_iface.cpp	/^class CNetCleanup$/;"	c	file:
+COINBASE_FLAGS	server/main.cpp	/^CScript COINBASE_FLAGS;$/;"	v
+COrphan	server/main.cpp	/^    COrphan(CTransaction* ptxIn)$/;"	f	class:COrphan
+COrphan	server/main.cpp	/^class COrphan$/;"	c	file:
+CRPCTable	server/bitcoinrpc.cpp	/^CRPCTable::CRPCTable()$/;"	f	class:CRPCTable
+CScriptVisitor	server/script.cpp	/^    CScriptVisitor(CScript *scriptin) { script = scriptin; }$/;"	f	class:CScriptVisitor
+CScriptVisitor	server/script.cpp	/^class CScriptVisitor : public boost::static_visitor<bool>$/;"	c	file:
+CService	server/netbase.cpp	/^CService::CService()$/;"	f	class:CService
+CService	server/netbase.cpp	/^CService::CService(const CNetAddr& cip, unsigned short portIn) : CNetAddr(cip), port(portIn)$/;"	f	class:CService
+CService	server/netbase.cpp	/^CService::CService(const char *pszIpPort, bool fAllowLookup)$/;"	f	class:CService
+CService	server/netbase.cpp	/^CService::CService(const char *pszIpPort, int portDefault, bool fAllowLookup)$/;"	f	class:CService
+CService	server/netbase.cpp	/^CService::CService(const std::string &strIpPort, bool fAllowLookup)$/;"	f	class:CService
+CService	server/netbase.cpp	/^CService::CService(const std::string &strIpPort, int portDefault, bool fAllowLookup)$/;"	f	class:CService
+CService	server/netbase.cpp	/^CService::CService(const struct in6_addr& ipv6Addr, unsigned short portIn) : CNetAddr(ipv6Addr), port(portIn)$/;"	f	class:CService
+CService	server/netbase.cpp	/^CService::CService(const struct in_addr& ipv4Addr, unsigned short portIn) : CNetAddr(ipv4Addr), port(portIn)$/;"	f	class:CService
+CService	server/netbase.cpp	/^CService::CService(const struct sockaddr_in& addr) : CNetAddr(addr.sin_addr), port(ntohs(addr.sin_port))$/;"	f	class:CService
+CService	server/netbase.cpp	/^CService::CService(const struct sockaddr_in6 &addr) : CNetAddr(addr.sin6_addr), port(ntohs(addr.sin6_port))$/;"	f	class:CService
+CSignatureCache	server/script.cpp	/^class CSignatureCache$/;"	c	file:
+CTxDump	server/rpcdump.cpp	/^    CTxDump(CWalletTx* ptx = NULL, int nOut = -1)$/;"	f	class:CTxDump
+CTxDump	server/rpcdump.cpp	/^class CTxDump$/;"	c	file:
+CallRPC	server/bitcoinrpc.cpp	/^Object CallRPC(const string& strMethod, const Array& params)$/;"	f
+CastToBigNum	server/script.cpp	/^CBigNum CastToBigNum(const valtype& vch)$/;"	f
+CastToBool	server/script.cpp	/^bool CastToBool(const valtype& vch)$/;"	f
+ChangeWalletPassphrase	server/wallet.cpp	/^bool CWallet::ChangeWalletPassphrase(const SecureString& strOldWalletPassphrase, const SecureString& strNewWalletPassphrase)$/;"	f	class:CWallet
+CheckBlock	server/checkpoints.cpp	/^    bool CheckBlock(int nHeight, const uint256& hash)$/;"	f	namespace:Checkpoints
+CheckBlock	server/main.cpp	/^bool CBlock::CheckBlock() const$/;"	f	class:CBlock
+CheckDiskSpace	server/main.cpp	/^bool CheckDiskSpace(uint64 nAdditionalBytes)$/;"	f
+CheckProofOfWork	server/main.cpp	/^bool CheckProofOfWork(uint256 hash, unsigned int nBits)$/;"	f
+CheckSig	server/script.cpp	/^bool CheckSig(vector<unsigned char> vchSig, vector<unsigned char> vchPubKey, CScript scriptCode,$/;"	f
+CheckTransaction	server/main.cpp	/^bool CTransaction::CheckTransaction() const$/;"	f	class:CTransaction
+CheckWork	server/main.cpp	/^bool CheckWork(CBlock* pblock, CWallet& wallet, CReserveKey& reservekey)$/;"	f
+Check_	server/addrman.cpp	/^int CAddrMan::Check_()$/;"	f	class:CAddrMan
+CheckpointLSN	server/db.cpp	/^void CDBEnv::CheckpointLSN(std::string strFile)$/;"	f	class:CDBEnv
+Checkpoints	server/checkpoints.cpp	/^namespace Checkpoints$/;"	n	file:
+Cleanup	server/net.cpp	/^void CNode::Cleanup()$/;"	f	class:CNode
+Cleanup	server_iface.cpp	/^void CNode::Cleanup()$/;"	f	class:CNode
+ClearBanned	server/net.cpp	/^void CNode::ClearBanned()$/;"	f	class:CNode
+ClearBanned	server_iface.cpp	/^void CNode::ClearBanned()$/;"	f	class:CNode
+ClientAllowed	server/bitcoinrpc.cpp	/^bool ClientAllowed(const boost::asio::ip::address& address)$/;"	f
+ClientConnectInputs	server/main.cpp	/^bool CTransaction::ClientConnectInputs()$/;"	f	class:CTransaction
+Close	server/db.cpp	/^void CDB::Close()$/;"	f	class:CDB
+Close	server/db.cpp	/^void CDBEnv::Close()$/;"	f	class:CDBEnv
+CloseDb	server/db.cpp	/^void CDBEnv::CloseDb(const string& strFile)$/;"	f	class:CDBEnv
+CloseSocketDisconnect	server/net.cpp	/^void CNode::CloseSocketDisconnect()$/;"	f	class:CNode
+CloseSocketDisconnect	server_iface.cpp	/^void CNode::CloseSocketDisconnect()$/;"	f	class:CNode
+CombineMultisig	server/script.cpp	/^static CScript CombineMultisig(CScript scriptPubKey, const CTransaction& txTo, unsigned int nIn,$/;"	f	file:
+CombineSignatures	server/script.cpp	/^CScript CombineSignatures(CScript scriptPubKey, const CTransaction& txTo, unsigned int nIn,$/;"	f
+CombineSignatures	server/script.cpp	/^static CScript CombineSignatures(CScript scriptPubKey, const CTransaction& txTo, unsigned int nIn,$/;"	f	file:
+CommandLineRPC	server/bitcoinrpc.cpp	/^int CommandLineRPC(int argc, char *argv[])$/;"	f
+CommitTransaction	server/wallet.cpp	/^bool CWallet::CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey)$/;"	f	class:CWallet
+CompareValueOnly	server/wallet.cpp	/^struct CompareValueOnly$/;"	s	file:
+ComputeMinWork	server/main.cpp	/^unsigned int ComputeMinWork(unsigned int nBase, int64 nTime)$/;"	f
+ConnectBlock	server/main.cpp	/^bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)$/;"	f	class:CBlock
+ConnectInputs	server/main.cpp	/^bool CTransaction::ConnectInputs(MapPrevTx inputs,$/;"	f	class:CTransaction
+ConnectNode	server/net.cpp	/^CNode* ConnectNode(CAddress addrConnect, const char *pszDest, int64 nTimeout)$/;"	f
+ConnectNode	server_iface.cpp	/^CNode* ConnectNode(CAddress addrConnect, const char *pszDest, int64 nTimeout)$/;"	f
+ConnectSocket	server/netbase.cpp	/^bool ConnectSocket(const CService &addrDest, SOCKET& hSocketRet, int nTimeout)$/;"	f
+ConnectSocketByName	server/netbase.cpp	/^bool ConnectSocketByName(CService &addr, SOCKET& hSocketRet, const char *pszDest, int portDefault, int nTimeout)$/;"	f
+ConnectSocketDirectly	server/netbase.cpp	/^bool static ConnectSocketDirectly(const CService &addrConnect, SOCKET& hSocketRet, int nTimeout)$/;"	f	file:
+Connected_	server/addrman.cpp	/^void CAddrMan::Connected_(const CService &addr, int64 nTime)$/;"	f	class:CAddrMan
+ContainsTx	server/db.cpp	/^bool CTxDB::ContainsTx(uint256 hash)$/;"	f	class:CTxDB
+ConvertTo	server/bitcoinrpc.cpp	/^void ConvertTo(Value& value)$/;"	f
+CopyNodeStats	server/rpcnet.cpp	/^static void CopyNodeStats(std::vector<CNodeStats>& vstats)$/;"	f	file:
+Create	server/addrman.cpp	/^CAddrInfo* CAddrMan::Create(const CAddress &addr, const CNetAddr &addrSource, int *pnId)$/;"	f	class:CAddrMan
+CreateNewBlock	server/main.cpp	/^CBlock* CreateNewBlock(CReserveKey& reservekey)$/;"	f
+CreatePidFile	server/util.cpp	/^void CreatePidFile(const boost::filesystem::path &path, pid_t pid)$/;"	f
+CreateTransaction	server/wallet.cpp	/^bool CWallet::CreateTransaction(CScript scriptPubKey, int64 nValue, CWalletTx& wtxNew, CReserveKey& reservekey, int64& nFeeRet)$/;"	f	class:CWallet
+CreateTransaction	server/wallet.cpp	/^bool CWallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend, CWalletTx& wtxNew, CReserveKey& reservekey, int64& nFeeRet)$/;"	f	class:CWallet
+DecodeAddress	server/irc.cpp	/^bool DecodeAddress(string str, CService& addr)$/;"	f
+DecodeBase32	server/util.cpp	/^string DecodeBase32(const string& str)$/;"	f
+DecodeBase32	server/util.cpp	/^vector<unsigned char> DecodeBase32(const char* p, bool* pfInvalid)$/;"	f
+DecodeBase64	server/util.cpp	/^string DecodeBase64(const string& str)$/;"	f
+DecodeBase64	server/util.cpp	/^vector<unsigned char> DecodeBase64(const char* p, bool* pfInvalid)$/;"	f
+Decrypt	server/crypter.cpp	/^bool CCrypter::Decrypt(const std::vector<unsigned char>& vchCiphertext, CKeyingMaterial& vchPlaintext)$/;"	f	class:CCrypter
+DecryptSecret	server/crypter.cpp	/^bool DecryptSecret(const CKeyingMaterial& vMasterKey, const std::vector<unsigned char>& vchCiphertext, const uint256& nIV, CSecret& vchPlaintext)$/;"	f
+DelAddressBookName	server/wallet.cpp	/^bool CWallet::DelAddressBookName(const CTxDestination& address)$/;"	f	class:CWallet
+DescribeAddressVisitor	server/bitcoinrpc.cpp	/^class DescribeAddressVisitor : public boost::static_visitor<Object>$/;"	c	file:
+DescribeAddressVisitor	wallet_iface.cpp	/^class DescribeAddressVisitor : public boost::static_visitor<Object>$/;"	c	file:
+DisconnectBlock	server/main.cpp	/^bool CBlock::DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex)$/;"	f	class:CBlock
+DisconnectInputs	server/main.cpp	/^bool CTransaction::DisconnectInputs(CTxDB& txdb)$/;"	f	class:CTransaction
+Discover	server/net.cpp	/^void static Discover()$/;"	f	file:
+Discover	server_iface.cpp	/^void static Discover()$/;"	f	file:
+DumpAddresses	server/net.cpp	/^void DumpAddresses()$/;"	f
+DumpAddresses	server_iface.cpp	/^void DumpAddresses()$/;"	f
+ECDSA_SIG_recover_key_GFp	server/key.cpp	/^int ECDSA_SIG_recover_key_GFp(EC_KEY *eckey, ECDSA_SIG *ecsig, const unsigned char *msg, int msglen, int recid, int check)$/;"	f
+EC_KEY_regenerate_key	server/key.cpp	/^int EC_KEY_regenerate_key(EC_KEY *eckey, BIGNUM *priv_key)$/;"	f
+EncodeAddress	server/irc.cpp	/^string EncodeAddress(const CService& addr)$/;"	f
+EncodeBase32	server/util.cpp	/^string EncodeBase32(const string& str)$/;"	f
+EncodeBase32	server/util.cpp	/^string EncodeBase32(const unsigned char* pch, size_t len)$/;"	f
+EncodeBase64	server/util.cpp	/^string EncodeBase64(const string& str)$/;"	f
+EncodeBase64	server/util.cpp	/^string EncodeBase64(const unsigned char* pch, size_t len)$/;"	f
+Encrypt	server/crypter.cpp	/^bool CCrypter::Encrypt(const CKeyingMaterial& vchPlaintext, std::vector<unsigned char> &vchCiphertext)$/;"	f	class:CCrypter
+EncryptKeys	server/keystore.cpp	/^bool CCryptoKeyStore::EncryptKeys(CKeyingMaterial& vMasterKeyIn)$/;"	f	class:CCryptoKeyStore
+EncryptSecret	server/crypter.cpp	/^bool EncryptSecret(CKeyingMaterial& vMasterKey, const CSecret &vchPlaintext, const uint256& nIV, std::vector<unsigned char> &vchCiphertext)$/;"	f
+EncryptWallet	server/wallet.cpp	/^bool CWallet::EncryptWallet(const SecureString& strWalletPassphrase)$/;"	f	class:CWallet
+EnsureWalletIsUnlocked	server/bitcoinrpc.cpp	/^EnsureWalletIsUnlocked()$/;"	f
+EnterCritical	server/sync.cpp	/^void EnterCritical(const char* pszName, const char* pszFile, int nLine, void* cs, bool fTry)$/;"	f
+EnvShutdown	server/db.cpp	/^void CDBEnv::EnvShutdown()$/;"	f	class:CDBEnv
+EraseFromWallet	server/wallet.cpp	/^bool CWallet::EraseFromWallet(uint256 hash)$/;"	f	class:CWallet
+EraseFromWallets	server/main.cpp	/^void static EraseFromWallets(uint256 hash)$/;"	f	file:
+EraseName	server/walletdb.cpp	/^bool CWalletDB::EraseName(const string& strAddress)$/;"	f	class:CWalletDB
+EraseOrphanTx	server/main.cpp	/^void static EraseOrphanTx(uint256 hash)$/;"	f	file:
+EraseTxIndex	server/db.cpp	/^bool CTxDB::EraseTxIndex(const CTransaction& tx)$/;"	f	class:CTxDB
+ErrorReply	server/bitcoinrpc.cpp	/^void ErrorReply(std::ostream& stream, const Object& objError, const Value& id)$/;"	f
+EvalScript	server/script.cpp	/^bool EvalScript(vector<vector<unsigned char> >& stack, const CScript& script, const CTransaction& txTo, unsigned int nIn, int nHashType)$/;"	f
+ExitTimeout	server/init.cpp	/^void ExitTimeout(void* parg)$/;"	f
+ExtractDestination	server/script.cpp	/^bool ExtractDestination(const CScript& scriptPubKey, CTxDestination& addressRet)$/;"	f
+ExtractDestinations	server/script.cpp	/^bool ExtractDestinations(const CScript& scriptPubKey, txnouttype& typeRet, vector<CTxDestination>& addressRet, int& nRequiredRet)$/;"	f
+FetchInputs	server/main.cpp	/^bool CTransaction::FetchInputs(CTxDB& txdb, const map<uint256, CTxIndex>& mapTestPool,$/;"	f	class:CTransaction
+FileCommit	server/util.cpp	/^void FileCommit(FILE *fileout)$/;"	f
+Find	server/addrman.cpp	/^CAddrInfo* CAddrMan::Find(const CNetAddr& addr, int *pnId)$/;"	f	class:CAddrMan
+FindNode	server/net.cpp	/^CNode* FindNode(const CNetAddr& ip)$/;"	f
+FindNode	server/net.cpp	/^CNode* FindNode(const CService& addr)$/;"	f
+FindNode	server/net.cpp	/^CNode* FindNode(std::string addrName)$/;"	f
+FindNode	server_iface.cpp	/^CNode* FindNode(const CNetAddr& ip)$/;"	f
+FindNode	server_iface.cpp	/^CNode* FindNode(const CService& addr)$/;"	f
+FindNode	server_iface.cpp	/^CNode* FindNode(std::string addrName)$/;"	f
+Flush	server/db.cpp	/^void CDBEnv::Flush(bool fShutdown)$/;"	f	class:CDBEnv
+FormatException	server/util.cpp	/^static std::string FormatException(std::exception* pex, const char* pszThread)$/;"	f	file:
+FormatFullVersion	server/util.cpp	/^string FormatFullVersion()$/;"	f
+FormatHashBlocks	server/main.cpp	/^int FormatHashBlocks(void* pbuffer, unsigned int len)$/;"	f
+FormatHashBuffers	server/main.cpp	/^void FormatHashBuffers(CBlock* pblock, char* pmidstate, char* pdata, char* phash1)$/;"	f
+FormatMoney	server/util.cpp	/^string FormatMoney(int64 n, bool fPlus)$/;"	f
+FormatSubVersion	server/util.cpp	/^std::string FormatSubVersion(const std::string& name, int nClientVersion, const std::vector<std::string>& comments)$/;"	f
+FormatVersion	server/util.cpp	/^string FormatVersion(int nVersion)$/;"	f
+GIT_ARCHIVE	server/version.cpp	41;"	d	file:
+GIT_COMMIT_DATE	server/version.cpp	44;"	d	file:
+GIT_COMMIT_ID	server/version.cpp	43;"	d	file:
+GNULIB_NAMESPACE	server/bitcoinrpc.cpp	24;"	d	file:
+GNULIB_NAMESPACE	server/bitcoinrpc.cpp	41;"	d	file:
+GNULIB_NAMESPACE	server/bitcoinrpc.cpp	9;"	d	file:
+GenerateNewKey	server/wallet.cpp	/^CPubKey CWallet::GenerateNewKey()$/;"	f	class:CWallet
+Get	server/script.cpp	/^    Get(uint256 hash, const std::vector<unsigned char>& vchSig, const std::vector<unsigned char>& pubKey)$/;"	f	class:CSignatureCache
+GetAccountAddress	server/bitcoinrpc.cpp	/^CBitcoinAddress GetAccountAddress(string strAccount, bool bForceNew=false)$/;"	f
+GetAccountAddresses	server/bitcoinrpc.cpp	/^void GetAccountAddresses(string strAccount, set<CTxDestination>& setAddress)$/;"	f
+GetAccountAmounts	server/wallet.cpp	/^void CWalletTx::GetAccountAmounts(const string& strAccount, int64& nGenerated, int64& nReceived,$/;"	f	class:CWalletTx
+GetAccountBalance	server/bitcoinrpc.cpp	/^int64 GetAccountBalance(CWalletDB& walletdb, const string& strAccount, int nMinDepth)$/;"	f
+GetAccountBalance	server/bitcoinrpc.cpp	/^int64 GetAccountBalance(const string& strAccount, int nMinDepth)$/;"	f
+GetAccountCreditDebit	server/walletdb.cpp	/^int64 CWalletDB::GetAccountCreditDebit(const string& strAccount)$/;"	f	class:CWalletDB
+GetAddr_	server/addrman.cpp	/^void CAddrMan::GetAddr_(std::vector<CAddress> &vAddr)$/;"	f	class:CAddrMan
+GetAddressByAccount	wallet_iface.cpp	/^CBitcoinAddress GetAddressByAccount(const char *accountName)$/;"	f
+GetAdjustedTime	server/util.cpp	/^int64 GetAdjustedTime()$/;"	f
+GetAllReserveKeys	server/wallet.cpp	/^void CWallet::GetAllReserveKeys(set<CKeyID>& setAddress)$/;"	f	class:CWallet
+GetAmounts	server/wallet.cpp	/^void CWalletTx::GetAmounts(int64& nGeneratedImmature, int64& nGeneratedMature, list<pair<CTxDestination, int64> >& listReceived,$/;"	f	class:CWalletTx
+GetArg	server/util.cpp	/^int64 GetArg(const std::string& strArg, int64 nDefault)$/;"	f
+GetArg	server/util.cpp	/^std::string GetArg(const std::string& strArg, const std::string& strDefault)$/;"	f
+GetBalance	server/wallet.cpp	/^int64 CWallet::GetBalance() const$/;"	f	class:CWallet
+GetBlockValue	server/main.cpp	/^int64 static GetBlockValue(int nHeight, int64 nFees)$/;"	f	file:
+GetBlocksToMaturity	server/main.cpp	/^int CMerkleTx::GetBlocksToMaturity() const$/;"	f	class:CMerkleTx
+GetBoolArg	server/util.cpp	/^bool GetBoolArg(const std::string& strArg, bool fDefault)$/;"	f
+GetByte	server/netbase.cpp	/^int CNetAddr::GetByte(int n) const$/;"	f	class:CNetAddr
+GetCScript	server/keystore.cpp	/^bool CBasicKeyStore::GetCScript(const CScriptID &hash, CScript& redeemScriptOut) const$/;"	f	class:CBasicKeyStore
+GetChance	server/addrman.cpp	/^double CAddrInfo::GetChance(int64 nNow) const$/;"	f	class:CAddrInfo
+GetCommand	server/protocol.cpp	/^const char* CInv::GetCommand() const$/;"	f	class:CInv
+GetCommand	server/protocol.cpp	/^std::string CMessageHeader::GetCommand() const$/;"	f	class:CMessageHeader
+GetConfigFile	server/util.cpp	/^boost::filesystem::path GetConfigFile()$/;"	f
+GetDataDir	server/util.cpp	/^const boost::filesystem::path &GetDataDir(bool fNetSpecific)$/;"	f
+GetDebit	server/wallet.cpp	/^int64 CWallet::GetDebit(const CTxIn &txin) const$/;"	f	class:CWallet
+GetDefaultDataDir	server/util.cpp	/^boost::filesystem::path GetDefaultDataDir()$/;"	f
+GetDepthInMainChain	server/main.cpp	/^int CMerkleTx::GetDepthInMainChain(CBlockIndex* &pindexRet) const$/;"	f	class:CMerkleTx
+GetDepthInMainChain	server/main.cpp	/^int CTxIndex::GetDepthInMainChain() const$/;"	f	class:CTxIndex
+GetDifficulty	server/bitcoinrpc.cpp	/^double GetDifficulty(const CBlockIndex* blockindex = NULL)$/;"	f
+GetExtNetwork	server/netbase.cpp	/^int static GetExtNetwork(const CNetAddr *addr)$/;"	f	file:
+GetFilesize	server/util.cpp	/^int GetFilesize(FILE* file)$/;"	f
+GetGroup	server/netbase.cpp	/^std::vector<unsigned char> CNetAddr::GetGroup() const$/;"	f	class:CNetAddr
+GetHash	server/netbase.cpp	/^uint64 CNetAddr::GetHash() const$/;"	f	class:CNetAddr
+GetIPFromIRC	server/irc.cpp	/^bool GetIPFromIRC(SOCKET hSocket, string strMyName, CNetAddr& ipRet)$/;"	f
+GetImmatureBalance	server/wallet.cpp	/^int64 CWallet::GetImmatureBalance() const$/;"	f	class:CWallet
+GetIn6Addr	server/netbase.cpp	/^bool CNetAddr::GetIn6Addr(struct in6_addr* pipv6Addr) const$/;"	f	class:CNetAddr
+GetInAddr	server/netbase.cpp	/^bool CNetAddr::GetInAddr(struct in_addr* pipv4Addr) const$/;"	f	class:CNetAddr
+GetKey	server/keystore.cpp	/^bool CCryptoKeyStore::GetKey(const CKeyID &address, CKey& keyOut) const$/;"	f	class:CCryptoKeyStore
+GetKey	server/netbase.cpp	/^std::vector<unsigned char> CService::GetKey() const$/;"	f	class:CService
+GetKeyFromPool	server/wallet.cpp	/^bool CWallet::GetKeyFromPool(CPubKey& result, bool fAllowReuse)$/;"	f	class:CWallet
+GetLastCheckpoint	server/checkpoints.cpp	/^    CBlockIndex* GetLastCheckpoint(const std::map<uint256, CBlockIndex*>& mapBlockIndex)$/;"	f	namespace:Checkpoints
+GetLegacySigOpCount	server/main.cpp	/^CTransaction::GetLegacySigOpCount() const$/;"	f	class:CTransaction
+GetListenPort	server/net.cpp	/^unsigned short GetListenPort()$/;"	f
+GetListenPort	server_iface.cpp	/^unsigned short GetListenPort()$/;"	f
+GetLocal	server/net.cpp	/^bool GetLocal(CService& addr, const CNetAddr *paddrPeer)$/;"	f
+GetLocal	server_iface.cpp	/^bool GetLocal(CService& addr, const CNetAddr *paddrPeer)$/;"	f
+GetLocalAddress	server/net.cpp	/^CAddress GetLocalAddress(const CNetAddr *paddrPeer)$/;"	f
+GetLocalAddress	server_iface.cpp	/^CAddress GetLocalAddress(const CNetAddr *paddrPeer)$/;"	f
+GetMyExternalIP	server/net.cpp	/^bool GetMyExternalIP(CNetAddr& ipRet)$/;"	f
+GetMyExternalIP	server_iface.cpp	/^bool GetMyExternalIP(CNetAddr& ipRet)$/;"	f
+GetMyExternalIP2	server/net.cpp	/^bool GetMyExternalIP2(const CService& addrConnect, const char* pszGet, const char* pszKeyword, CNetAddr& ipRet)$/;"	f
+GetMyExternalIP2	server_iface.cpp	/^bool GetMyExternalIP2(const CService& addrConnect, const char* pszGet, const char* pszKeyword, CNetAddr& ipRet)$/;"	f
+GetNameProxy	server/netbase.cpp	/^bool GetNameProxy() {$/;"	f
+GetNetwork	server/netbase.cpp	/^enum Network CNetAddr::GetNetwork() const$/;"	f	class:CNetAddr
+GetNetworkHashPS	server/bitcoinrpc.cpp	/^Value GetNetworkHashPS(int lookup) {$/;"	f
+GetNewAddress	wallet_iface.cpp	/^CBitcoinAddress GetNewAddress(string strAccount)$/;"	f
+GetNewBucket	server/addrman.cpp	/^int CAddrInfo::GetNewBucket(const std::vector<unsigned char> &nKey, const CNetAddr& src) const$/;"	f	class:CAddrInfo
+GetNextWorkRequired	server/main.cpp	/^unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlock *pblock)$/;"	f	file:
+GetNumBlocksOfPeers	server/main.cpp	/^int GetNumBlocksOfPeers()$/;"	f
+GetOldestKeyPoolTime	server/wallet.cpp	/^int64 CWallet::GetOldestKeyPoolTime()$/;"	f	class:CWallet
+GetOpName	server/script.cpp	/^const char* GetOpName(opcodetype opcode)$/;"	f
+GetOptions	server/leveldb.cpp	/^static leveldb::Options GetOptions(size_t nCacheSize) {$/;"	f	file:
+GetOrphanRoot	server/main.cpp	/^uint256 static GetOrphanRoot(const CBlock* pblock)$/;"	f	file:
+GetOutputFor	server/main.cpp	/^const CTxOut& CTransaction::GetOutputFor(const CTxIn& input, const MapPrevTx& inputs) const$/;"	f	class:CTransaction
+GetP2SHSigOpCount	server/main.cpp	/^unsigned int CTransaction::GetP2SHSigOpCount(const MapPrevTx& inputs) const$/;"	f	class:CTransaction
+GetPidFile	server/util.cpp	/^boost::filesystem::path GetPidFile()$/;"	f
+GetPort	server/netbase.cpp	/^unsigned short CService::GetPort() const$/;"	f	class:CService
+GetPrivKey	server/key.cpp	/^CPrivKey CKey::GetPrivKey() const$/;"	f	class:CKey
+GetProxy	server/netbase.cpp	/^bool GetProxy(enum Network net, CService &addrProxy) {$/;"	f
+GetPubKey	server/key.cpp	/^CPubKey CKey::GetPubKey() const$/;"	f	class:CKey
+GetPubKey	server/keystore.cpp	/^bool CCryptoKeyStore::GetPubKey(const CKeyID &address, CPubKey& vchPubKeyOut) const$/;"	f	class:CCryptoKeyStore
+GetPubKey	server/keystore.cpp	/^bool CKeyStore::GetPubKey(const CKeyID &address, CPubKey &vchPubKeyOut) const$/;"	f	class:CKeyStore
+GetRand	server/util.cpp	/^uint64 GetRand(uint64 nMax)$/;"	f
+GetRandHash	server/util.cpp	/^uint256 GetRandHash()$/;"	f
+GetRandInt	server/util.cpp	/^int GetRandInt(int nMax)$/;"	f
+GetReachabilityFrom	server/netbase.cpp	/^int CNetAddr::GetReachabilityFrom(const CNetAddr *paddrPartner) const$/;"	f	class:CNetAddr
+GetRequestCount	server/wallet.cpp	/^int CWalletTx::GetRequestCount() const$/;"	f	class:CWalletTx
+GetReservedKey	server/wallet.cpp	/^CPubKey CReserveKey::GetReservedKey()$/;"	f	class:CReserveKey
+GetSecret	server/key.cpp	/^CSecret CKey::GetSecret(bool &fCompressed) const$/;"	f	class:CKey
+GetSigOpCount	server/script.cpp	/^unsigned int CScript::GetSigOpCount(bool fAccurate) const$/;"	f	class:CScript
+GetSigOpCount	server/script.cpp	/^unsigned int CScript::GetSigOpCount(const CScript& scriptSig) const$/;"	f	class:CScript
+GetSockAddr	server/netbase.cpp	/^bool CService::GetSockAddr(struct sockaddr* paddr, socklen_t *addrlen) const$/;"	f	class:CService
+GetSpecialFolderPath	server/util.cpp	/^boost::filesystem::path GetSpecialFolderPath(int nFolder, bool fCreate)$/;"	f
+GetTime	server/util.cpp	/^int64 GetTime()$/;"	f
+GetTotalBlocksEstimate	server/checkpoints.cpp	/^    int GetTotalBlocksEstimate()$/;"	f	namespace:Checkpoints
+GetTransaction	server/main.cpp	/^bool GetTransaction(const uint256 &hash, CTransaction &tx, uint256 &hashBlock)$/;"	f
+GetTransaction	server/main.cpp	/^bool static GetTransaction(const uint256& hashTx, CWalletTx& wtx)$/;"	f	file:
+GetTransaction	server/wallet.cpp	/^bool CWallet::GetTransaction(const uint256 &hashTx, CWalletTx& wtx)$/;"	f	class:CWallet
+GetTriedBucket	server/addrman.cpp	/^int CAddrInfo::GetTriedBucket(const std::vector<unsigned char> &nKey) const$/;"	f	class:CAddrInfo
+GetTxTime	server/wallet.cpp	/^int64 CWalletTx::GetTxTime() const$/;"	f	class:CWalletTx
+GetTxnOutputType	server/script.cpp	/^const char* GetTxnOutputType(txnouttype t)$/;"	f
+GetUnconfirmedBalance	server/wallet.cpp	/^int64 CWallet::GetUnconfirmedBalance() const$/;"	f	class:CWallet
+GetValueIn	server/main.cpp	/^int64 CTransaction::GetValueIn(const MapPrevTx& inputs) const$/;"	f	class:CTransaction
+GetWalletFile	server/wallet.cpp	/^bool GetWalletFile(CWallet* pwallet, string &strWalletFileOut)$/;"	f
+GetWarnings	server/main.cpp	/^string GetWarnings(string strFor)$/;"	f
+Good_	server/addrman.cpp	/^void CAddrMan::Good_(const CService &addr, int64 nTime)$/;"	f	class:CAddrMan
+HTTPAuthorized	server/bitcoinrpc.cpp	/^bool HTTPAuthorized(map<string, string>& mapHeaders)$/;"	f
+HTTPPost	server/bitcoinrpc.cpp	/^string HTTPPost(const string& strMsg, const map<string,string>& mapRequestHeaders)$/;"	f
+HTTPReply	server/bitcoinrpc.cpp	/^static string HTTPReply(int nStatus, const string& strMsg, bool keepalive)$/;"	f	file:
+HandleError	server/leveldb.cpp	/^void HandleError(const leveldb::Status &status) throw(leveldb_error) {$/;"	f
+HandleSIGHUP	server/init.cpp	/^void HandleSIGHUP(int)$/;"	f
+HandleSIGTERM	server/init.cpp	/^void HandleSIGTERM(int)$/;"	f
+HaveCScript	server/keystore.cpp	/^bool CBasicKeyStore::HaveCScript(const CScriptID& hash) const$/;"	f	class:CBasicKeyStore
+HaveKeys	server/script.cpp	/^unsigned int HaveKeys(const vector<valtype>& pubkeys, const CKeyStore& keystore)$/;"	f
+HelpMessage	server/init.cpp	/^std::string HelpMessage()$/;"	f
+HelpRequiringPassphrase	server/bitcoinrpc.cpp	/^HelpRequiringPassphrase()$/;"	f
+HexBits	server/bitcoinrpc.cpp	/^HexBits(unsigned int nBits)$/;"	f
+IncrementExtraNonce	server/main.cpp	/^void IncrementExtraNonce(CBlock* pblock, CBlockIndex* pindexPrev, unsigned int& nExtraNonce)$/;"	f
+Init	server/netbase.cpp	/^void CNetAddr::Init()$/;"	f	class:CNetAddr
+Init	server/netbase.cpp	/^void CService::Init()$/;"	f	class:CService
+Init	server/protocol.cpp	/^void CAddress::Init()$/;"	f	class:CAddress
+InitError	server/init.cpp	/^bool static InitError(const std::string &str)$/;"	f	file:
+InitWarning	server/init.cpp	/^bool static InitWarning(const std::string &str)$/;"	f	file:
+InsertBlockIndex	server/db.cpp	/^CBlockIndex static * InsertBlockIndex(uint256 hash)$/;"	f	file:
+InterpretNegativeSetting	server/util.cpp	/^static void InterpretNegativeSetting(string name, map<string, string>& mapSettingsRet)$/;"	f	file:
+InvalidChainFound	server/main.cpp	/^void static InvalidChainFound(CBlockIndex* pindexNew)$/;"	f	file:
+Inventory	server/main.cpp	/^void static Inventory(const uint256& hash)$/;"	f	file:
+IsBanned	server/net.cpp	/^bool CNode::IsBanned(CNetAddr ip)$/;"	f	class:CNode
+IsBanned	server_iface.cpp	/^bool CNode::IsBanned(CNetAddr ip)$/;"	f	class:CNode
+IsChainFile	server/db.cpp	/^static bool IsChainFile(std::string strFile)$/;"	f	file:
+IsChange	server/wallet.cpp	/^bool CWallet::IsChange(const CTxOut& txout) const$/;"	f	class:CWallet
+IsCompressed	server/key.cpp	/^bool CKey::IsCompressed() const$/;"	f	class:CKey
+IsFromMe	server/main.cpp	/^bool static IsFromMe(CTransaction& tx)$/;"	f	file:
+IsHex	server/util.cpp	/^bool IsHex(const string& str)$/;"	f
+IsI2P	server/netbase.cpp	/^bool CNetAddr::IsI2P() const$/;"	f	class:CNetAddr
+IsIPv4	server/netbase.cpp	/^bool CNetAddr::IsIPv4() const$/;"	f	class:CNetAddr
+IsIPv6	server/netbase.cpp	/^bool CNetAddr::IsIPv6() const$/;"	f	class:CNetAddr
+IsInitialBlockDownload	server/main.cpp	/^bool IsInitialBlockDownload()$/;"	f
+IsKnownType	server/protocol.cpp	/^bool CInv::IsKnownType() const$/;"	f	class:CInv
+IsLimited	server/net.cpp	/^bool IsLimited(const CNetAddr &addr)$/;"	f
+IsLimited	server/net.cpp	/^bool IsLimited(enum Network net)$/;"	f
+IsLimited	server_iface.cpp	/^bool IsLimited(const CNetAddr &addr)$/;"	f
+IsLimited	server_iface.cpp	/^bool IsLimited(enum Network net)$/;"	f
+IsLocal	server/net.cpp	/^bool IsLocal(const CService& addr)$/;"	f
+IsLocal	server/netbase.cpp	/^bool CNetAddr::IsLocal() const$/;"	f	class:CNetAddr
+IsLocal	server_iface.cpp	/^bool IsLocal(const CService& addr)$/;"	f
+IsMine	server/script.cpp	/^bool IsMine(const CKeyStore &keystore, const CScript& scriptPubKey)$/;"	f
+IsMine	server/script.cpp	/^bool IsMine(const CKeyStore &keystore, const CTxDestination &dest)$/;"	f
+IsMine	server/wallet.cpp	/^bool CWallet::IsMine(const CTxIn &txin) const$/;"	f	class:CWallet
+IsMulticast	server/netbase.cpp	/^bool CNetAddr::IsMulticast() const$/;"	f	class:CNetAddr
+IsNull	server/key.cpp	/^bool CKey::IsNull() const$/;"	f	class:CKey
+IsPayToScriptHash	server/script.cpp	/^bool CScript::IsPayToScriptHash() const$/;"	f	class:CScript
+IsProxy	server/netbase.cpp	/^bool IsProxy(const CNetAddr &addr) {$/;"	f
+IsRFC1918	server/netbase.cpp	/^bool CNetAddr::IsRFC1918() const$/;"	f	class:CNetAddr
+IsRFC3849	server/netbase.cpp	/^bool CNetAddr::IsRFC3849() const$/;"	f	class:CNetAddr
+IsRFC3927	server/netbase.cpp	/^bool CNetAddr::IsRFC3927() const$/;"	f	class:CNetAddr
+IsRFC3964	server/netbase.cpp	/^bool CNetAddr::IsRFC3964() const$/;"	f	class:CNetAddr
+IsRFC4193	server/netbase.cpp	/^bool CNetAddr::IsRFC4193() const$/;"	f	class:CNetAddr
+IsRFC4380	server/netbase.cpp	/^bool CNetAddr::IsRFC4380() const$/;"	f	class:CNetAddr
+IsRFC4843	server/netbase.cpp	/^bool CNetAddr::IsRFC4843() const$/;"	f	class:CNetAddr
+IsRFC4862	server/netbase.cpp	/^bool CNetAddr::IsRFC4862() const$/;"	f	class:CNetAddr
+IsRFC6052	server/netbase.cpp	/^bool CNetAddr::IsRFC6052() const$/;"	f	class:CNetAddr
+IsRFC6145	server/netbase.cpp	/^bool CNetAddr::IsRFC6145() const$/;"	f	class:CNetAddr
+IsReachable	server/net.cpp	/^bool IsReachable(const CNetAddr& addr)$/;"	f
+IsReachable	server_iface.cpp	/^bool IsReachable(const CNetAddr& addr)$/;"	f
+IsRoutable	server/netbase.cpp	/^bool CNetAddr::IsRoutable() const$/;"	f	class:CNetAddr
+IsStandard	server/main.cpp	/^bool CTransaction::IsStandard() const$/;"	f	class:CTransaction
+IsStandard	server/script.cpp	/^bool IsStandard(const CScript& scriptPubKey)$/;"	f
+IsTerrible	server/addrman.cpp	/^bool CAddrInfo::IsTerrible(int64 nNow) const$/;"	f	class:CAddrInfo
+IsTor	server/netbase.cpp	/^bool CNetAddr::IsTor() const$/;"	f	class:CNetAddr
+IsValid	server/key.cpp	/^bool CKey::IsValid()$/;"	f	class:CKey
+IsValid	server/netbase.cpp	/^bool CNetAddr::IsValid() const$/;"	f	class:CNetAddr
+IsValid	server/protocol.cpp	/^bool CMessageHeader::IsValid() const$/;"	f	class:CMessageHeader
+JSONRPCError	server/bitcoinrpc.cpp	/^Object JSONRPCError(int code, const string& message)$/;"	f
+JSONRPCExecBatch	server/bitcoinrpc.cpp	/^static string JSONRPCExecBatch(const Array& vReq)$/;"	f	file:
+JSONRPCExecOne	server/bitcoinrpc.cpp	/^static Object JSONRPCExecOne(const Value& req)$/;"	f	file:
+JSONRPCReply	server/bitcoinrpc.cpp	/^string JSONRPCReply(const Value& result, const Value& error, const Value& id)$/;"	f
+JSONRPCReplyObj	server/bitcoinrpc.cpp	/^Object JSONRPCReplyObj(const Value& result, const Value& error, const Value& id)$/;"	f
+JSONRPCRequest	server/bitcoinrpc.cpp	/^string JSONRPCRequest(const string& strMethod, const Array& params, const Value& id)$/;"	f
+JSONRequest	server/bitcoinrpc.cpp	/^    JSONRequest() { id = Value::null; }$/;"	f	class:JSONRequest
+JSONRequest	server/bitcoinrpc.cpp	/^class JSONRequest$/;"	c	file:
+KeepKey	server/wallet.cpp	/^void CReserveKey::KeepKey()$/;"	f	class:CReserveKey
+KeepKey	server/wallet.cpp	/^void CWallet::KeepKey(int64 nIndex)$/;"	f	class:CWallet
+KimotoGravityWell	server/main.cpp	/^unsigned int static KimotoGravityWell(const CBlockIndex* pindexLast, const CBlock *pblock, uint64 TargetBlocksSpacingSeconds, uint64 PastBlocksMin, uint64 PastBlocksMax) {$/;"	f	file:
+LeaveCritical	server/sync.cpp	/^void LeaveCritical()$/;"	f
+LimitOrphanTxSize	server/main.cpp	/^unsigned int LimitOrphanTxSize(unsigned int nMaxOrphans)$/;"	f
+ListAccountCreditDebit	server/walletdb.cpp	/^void CWalletDB::ListAccountCreditDebit(const string& strAccount, list<CAccountingEntry>& entries)$/;"	f	class:CWalletDB
+ListReceived	server/bitcoinrpc.cpp	/^Value ListReceived(const Array& params, bool fByAccounts)$/;"	f
+ListTransactions	server/bitcoinrpc.cpp	/^void ListTransactions(const CWalletTx& wtx, const string& strAccount, int nMinDepth, bool fLong, Array& ret)$/;"	f
+LoadBlockIndex	server/db.cpp	/^bool CTxDB::LoadBlockIndex()$/;"	f	class:CTxDB
+LoadBlockIndex	server/main.cpp	/^bool LoadBlockIndex(bool fAllowNew)$/;"	f
+LoadBlockIndexGuts	server/db.cpp	/^bool CTxDB::LoadBlockIndexGuts()$/;"	f	class:CTxDB
+LoadExternalBlockFile	server/main.cpp	/^bool LoadExternalBlockFile(FILE* fileIn)$/;"	f
+LoadWallet	server/wallet.cpp	/^int CWallet::LoadWallet(bool& fFirstRunRet)$/;"	f	class:CWallet
+LoadWallet	server/walletdb.cpp	/^int CWalletDB::LoadWallet(CWallet* pwallet)$/;"	f	class:CWalletDB
+LocalServiceInfo	server/net.cpp	/^struct LocalServiceInfo {$/;"	s	file:
+LocalServiceInfo	server_iface.cpp	/^struct LocalServiceInfo {$/;"	s	file:
+Lock	server/keystore.cpp	/^bool CCryptoKeyStore::Lock()$/;"	f	class:CCryptoKeyStore
+LockStack	server/sync.cpp	/^typedef std::vector< std::pair<void*, CLockLocation> > LockStack;$/;"	t	file:
+LogException	server/util.cpp	/^void LogException(std::exception* pex, const char* pszThread)$/;"	f
+Lookup	server/netbase.cpp	/^bool Lookup(const char *pszName, CService& addr, int portDefault, bool fAllowLookup)$/;"	f
+Lookup	server/netbase.cpp	/^bool Lookup(const char *pszName, std::vector<CService>& vAddr, int portDefault, bool fAllowLookup, unsigned int nMaxSolutions)$/;"	f
+LookupHost	server/netbase.cpp	/^bool LookupHost(const char *pszName, std::vector<CNetAddr>& vIP, unsigned int nMaxSolutions, bool fAllowLookup)$/;"	f
+LookupHostNumeric	server/netbase.cpp	/^bool LookupHostNumeric(const char *pszName, std::vector<CNetAddr>& vIP, unsigned int nMaxSolutions)$/;"	f
+LookupIntern	server/netbase.cpp	/^bool static LookupIntern(const char *pszName, std::vector<CNetAddr>& vIP, unsigned int nMaxSolutions, bool fAllowLookup)$/;"	f	file:
+LookupNumeric	server/netbase.cpp	/^bool LookupNumeric(const char *pszName, CService& addr, int portDefault)$/;"	f
+MAX_OUTBOUND_CONNECTIONS	server/net.cpp	/^static const int MAX_OUTBOUND_CONNECTIONS = 16;$/;"	v	file:
+MAX_OUTBOUND_CONNECTIONS	server_iface.cpp	/^static const int MAX_OUTBOUND_CONNECTIONS = 16;$/;"	v	file:
+MakeNewKey	server/key.cpp	/^void CKey::MakeNewKey(bool fCompressed)$/;"	f	class:CKey
+MakeSameSize	server/script.cpp	/^void MakeSameSize(valtype& vch1, valtype& vch2)$/;"	f
+MakeTried	server/addrman.cpp	/^void CAddrMan::MakeTried(CAddrInfo& info, int nId, int nOrigin)$/;"	f	class:CAddrMan
+MapCheckpoints	server/checkpoints.cpp	/^    typedef std::map<int, uint256> MapCheckpoints;$/;"	t	namespace:Checkpoints	file:
+MapPort	server/net.cpp	/^void MapPort()$/;"	f
+MarkDirty	server/wallet.cpp	/^void CWallet::MarkDirty()$/;"	f	class:CWallet
+Misbehaving	server/net.cpp	/^bool CNode::Misbehaving(int howmuch)$/;"	f	class:CNode
+Misbehaving	server_iface.cpp	/^bool CNode::Misbehaving(int howmuch)$/;"	f	class:CNode
+NET_TEREDO	server/netbase.cpp	/^static const int NET_TEREDO  = NET_MAX + 1;$/;"	v	file:
+NET_UNKNOWN	server/netbase.cpp	/^static const int NET_UNKNOWN = NET_MAX + 0;$/;"	v	file:
+NOMINMAX	server/util.cpp	61;"	d	file:
+NewKeyPool	server/wallet.cpp	/^bool CWallet::NewKeyPool()$/;"	f	class:CWallet
+Open	server/db.cpp	/^bool CDBEnv::Open(boost::filesystem::path pathEnv_)$/;"	f	class:CDBEnv
+OpenBlockFile	server/main.cpp	/^FILE* OpenBlockFile(unsigned int nFile, unsigned int nBlockPos, const char* pszMode)$/;"	f
+OpenNetworkConnection	server/net.cpp	/^bool OpenNetworkConnection(const CAddress& addrConnect, CSemaphoreGrant *grantOutbound, const char *strDest, bool fOneShot)$/;"	f
+OpenNetworkConnection	server_iface.cpp	/^bool OpenNetworkConnection(const CAddress& addrConnect, CSemaphoreGrant *grantOutbound, const char *strDest, bool fOneShot)$/;"	f
+OutputDebugStringF	server/util.cpp	/^inline int OutputDebugStringF(const char* pszFormat, ...)$/;"	f
+ParseHex	server/util.cpp	/^vector<unsigned char> ParseHex(const char* psz)$/;"	f
+ParseHex	server/util.cpp	/^vector<unsigned char> ParseHex(const string& str)$/;"	f
+ParseMoney	server/util.cpp	/^bool ParseMoney(const char* pszIn, int64& nRet)$/;"	f
+ParseMoney	server/util.cpp	/^bool ParseMoney(const string& str, int64& nRet)$/;"	f
+ParseNetwork	server/netbase.cpp	/^enum Network ParseNetwork(std::string net) {$/;"	f
+ParseParameters	server/util.cpp	/^void ParseParameters(int argc, const char* const argv[])$/;"	f
+ParseString	server/util.cpp	/^void ParseString(const string& str, char c, vector<string>& v)$/;"	f
+PrintBlockTree	server/main.cpp	/^void PrintBlockTree()$/;"	f
+PrintException	server/util.cpp	/^void PrintException(std::exception* pex, const char* pszThread)$/;"	f
+PrintExceptionContinue	server/util.cpp	/^void PrintExceptionContinue(std::exception* pex, const char* pszThread)$/;"	f
+PrintLockContention	server/sync.cpp	/^void PrintLockContention(const char* pszName, const char* pszFile, int nLine)$/;"	f
+PrintWallet	server/wallet.cpp	/^void CWallet::PrintWallet(const CBlock& block)$/;"	f	class:CWallet
+PrintWallets	server/main.cpp	/^void static PrintWallets(const CBlock& block)$/;"	f	file:
+ProcessAlert	server/main.cpp	/^bool CAlert::ProcessAlert()$/;"	f	class:CAlert
+ProcessBlock	server/main.cpp	/^bool ProcessBlock(CNode* pfrom, CBlock* pblock)$/;"	f
+ProcessMessage	server/main.cpp	/^bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)$/;"	f	file:
+ProcessMessages	server/main.cpp	/^bool ProcessMessages(CNode* pfrom)$/;"	f
+ProcessOneShot	server/net.cpp	/^void static ProcessOneShot()$/;"	f	file:
+ProcessOneShot	server_iface.cpp	/^void static ProcessOneShot()$/;"	f	file:
+PushAll	server/script.cpp	/^static CScript PushAll(const vector<valtype>& values)$/;"	f	file:
+PushGetBlocks	server/net.cpp	/^void CNode::PushGetBlocks(CBlockIndex* pindexBegin, uint256 hashEnd)$/;"	f	class:CNode
+PushGetBlocks	server_iface.cpp	/^void CNode::PushGetBlocks(CBlockIndex* pindexBegin, uint256 hashEnd)$/;"	f	class:CNode
+PushVersion	server/net.cpp	/^void CNode::PushVersion()$/;"	f	class:CNode
+PushVersion	server_iface.cpp	/^void CNode::PushVersion()$/;"	f	class:CNode
+QuickCheckWork	block_iface.cpp	/^bool QuickCheckWork(CBlock* pblock)$/;"	f
+RPCAcceptHandler	server/bitcoinrpc.cpp	/^static void RPCAcceptHandler(boost::shared_ptr< basic_socket_acceptor<Protocol, SocketAcceptorService> > acceptor,$/;"	f	file:
+RPCConvertValues	server/bitcoinrpc.cpp	/^Array RPCConvertValues(const std::string &strMethod, const std::vector<std::string> &strParams)$/;"	f
+RPCListen	server/bitcoinrpc.cpp	/^static void RPCListen(boost::shared_ptr< basic_socket_acceptor<Protocol, SocketAcceptorService> > acceptor,$/;"	f	file:
+RPCTypeCheck	server/bitcoinrpc.cpp	/^void RPCTypeCheck(const Array& params,$/;"	f
+RPCTypeCheck	server/bitcoinrpc.cpp	/^void RPCTypeCheck(const Object& o,$/;"	f
+RandAddSeed	server/util.cpp	/^void RandAddSeed()$/;"	f
+RandAddSeedPerfmon	server/util.cpp	/^void RandAddSeedPerfmon()$/;"	f
+ReacceptWalletTransactions	server/wallet.cpp	/^void CWallet::ReacceptWalletTransactions()$/;"	f	class:CWallet
+Read	server/db.cpp	/^bool CAddrDB::Read(CAddrMan& addr)$/;"	f	class:CAddrDB
+ReadAccount	server/walletdb.cpp	/^bool CWalletDB::ReadAccount(const string& strAccount, CAccount& account)$/;"	f	class:CWalletDB
+ReadBestInvalidWork	server/db.cpp	/^bool CTxDB::ReadBestInvalidWork(CBigNum& bnBestInvalidWork)$/;"	f	class:CTxDB
+ReadDiskTx	server/db.cpp	/^bool CTxDB::ReadDiskTx(COutPoint outpoint, CTransaction& tx)$/;"	f	class:CTxDB
+ReadDiskTx	server/db.cpp	/^bool CTxDB::ReadDiskTx(COutPoint outpoint, CTransaction& tx, CTxIndex& txindex)$/;"	f	class:CTxDB
+ReadDiskTx	server/db.cpp	/^bool CTxDB::ReadDiskTx(uint256 hash, CTransaction& tx)$/;"	f	class:CTxDB
+ReadDiskTx	server/db.cpp	/^bool CTxDB::ReadDiskTx(uint256 hash, CTransaction& tx, CTxIndex& txindex)$/;"	f	class:CTxDB
+ReadFromDisk	server/main.cpp	/^bool CBlock::ReadFromDisk(const CBlockIndex* pindex, bool fReadTransactions)$/;"	f	class:CBlock
+ReadFromDisk	server/main.cpp	/^bool CTransaction::ReadFromDisk(COutPoint prevout)$/;"	f	class:CTransaction
+ReadFromDisk	server/main.cpp	/^bool CTransaction::ReadFromDisk(CTxDB& txdb, COutPoint prevout)$/;"	f	class:CTransaction
+ReadFromDisk	server/main.cpp	/^bool CTransaction::ReadFromDisk(CTxDB& txdb, COutPoint prevout, CTxIndex& txindexRet)$/;"	f	class:CTransaction
+ReadHTTP	server/bitcoinrpc.cpp	/^int ReadHTTP(std::basic_istream<char>& stream, map<string, string>& mapHeadersRet, string& strMessageRet)$/;"	f
+ReadHTTPHeader	server/bitcoinrpc.cpp	/^int ReadHTTPHeader(std::basic_istream<char>& stream, map<string, string>& mapHeadersRet)$/;"	f
+ReadHTTPStatus	server/bitcoinrpc.cpp	/^int ReadHTTPStatus(std::basic_istream<char>& stream, int &proto)$/;"	f
+ReadHashBestChain	server/db.cpp	/^bool CTxDB::ReadHashBestChain(uint256& hashBestChain)$/;"	f	class:CTxDB
+ReadTxIndex	server/db.cpp	/^bool CTxDB::ReadTxIndex(uint256 hash, CTxIndex& txindex)$/;"	f	class:CTxDB
+RecvCodeLine	server/irc.cpp	/^bool RecvCodeLine(SOCKET hSocket, const char* psz1, string& strRet)$/;"	f
+RecvLine	server/net.cpp	/^bool RecvLine(SOCKET hSocket, string& strLine)$/;"	f
+RecvLine	server_iface.cpp	/^bool RecvLine(SOCKET hSocket, string& strLine)$/;"	f
+RecvLineIRC	server/irc.cpp	/^bool RecvLineIRC(SOCKET hSocket, string& strLine)$/;"	f
+RecvUntil	server/irc.cpp	/^int RecvUntil(SOCKET hSocket, const char* psz1, const char* psz2=NULL, const char* psz3=NULL, const char* psz4=NULL)$/;"	f
+RegisterWallet	server/main.cpp	/^void RegisterWallet(CWallet* pwalletIn)$/;"	f
+RelayWalletTransaction	server/wallet.cpp	/^void CWalletTx::RelayWalletTransaction()$/;"	f	class:CWalletTx
+RelayWalletTransaction	server/wallet.cpp	/^void CWalletTx::RelayWalletTransaction(CTxDB& txdb)$/;"	f	class:CWalletTx
+RenameOver	server/util.cpp	/^bool RenameOver(boost::filesystem::path src, boost::filesystem::path dest)$/;"	f
+RenameThread	server/util.cpp	/^void RenameThread(const char* name)$/;"	f
+Reorganize	server/main.cpp	/^bool static Reorganize(CTxDB& txdb, CBlockIndex* pindexNew)$/;"	f	file:
+ResendWalletTransactions	server/main.cpp	/^void static ResendWalletTransactions()$/;"	f	file:
+ResendWalletTransactions	server/wallet.cpp	/^void CWallet::ResendWalletTransactions()$/;"	f	class:CWallet
+ReserveKeyFromKeyPool	server/wallet.cpp	/^void CWallet::ReserveKeyFromKeyPool(int64& nIndex, CKeyPool& keypool)$/;"	f	class:CWallet
+Reset	server/key.cpp	/^void CKey::Reset()$/;"	f	class:CKey
+ReturnKey	server/wallet.cpp	/^void CReserveKey::ReturnKey()$/;"	f	class:CReserveKey
+ReturnKey	server/wallet.cpp	/^void CWallet::ReturnKey(int64 nIndex)$/;"	f	class:CWallet
+Rewrite	server/db.cpp	/^bool CDB::Rewrite(const string& strFile, const char* pszSkip)$/;"	f	class:CDB
+SHA256Transform	server/main.cpp	/^void SHA256Transform(void* pstate, void* pinput, const void* pinit)$/;"	f
+SSLIOStreamDevice	server/bitcoinrpc.cpp	/^    SSLIOStreamDevice(asio::ssl::stream<typename Protocol::socket> &streamIn, bool fUseSSLIn) : stream(streamIn)$/;"	f	class:SSLIOStreamDevice
+SSLIOStreamDevice	server/bitcoinrpc.cpp	/^class SSLIOStreamDevice : public iostreams::device<iostreams::bidirectional> {$/;"	c	file:
+STRINGIFY	server/version.cpp	47;"	d	file:
+ScanForWalletTransaction	server/wallet.cpp	/^int CWallet::ScanForWalletTransaction(const uint256& hashTx)$/;"	f	class:CWallet
+ScanForWalletTransactions	server/wallet.cpp	/^int CWallet::ScanForWalletTransactions(CBlockIndex* pindexStart, bool fUpdate)$/;"	f	class:CWallet
+ScanHash_CryptoPP	server/main.cpp	/^unsigned int static ScanHash_CryptoPP(char* pmidstate, char* pdata, char* phash1, char* phash, unsigned int& nHashesDone)$/;"	f	file:
+ScriptPubKeyToJSON	server/rpcrawtransaction.cpp	/^ScriptPubKeyToJSON(const CScript& scriptPubKey, Object& out)$/;"	f
+ScriptSigArgsExpected	server/script.cpp	/^int ScriptSigArgsExpected(txnouttype t, const std::vector<std::vector<unsigned char> >& vSolutions)$/;"	f
+SeenLocal	server/net.cpp	/^bool SeenLocal(const CService& addr)$/;"	f
+SeenLocal	server_iface.cpp	/^bool SeenLocal(const CService& addr)$/;"	f
+SelectCoins	server/wallet.cpp	/^bool CWallet::SelectCoins(int64 nTargetValue, set<pair<const CWalletTx*,unsigned int> >& setCoinsRet, int64& nValueRet) const$/;"	f	class:CWallet
+SelectCoinsMinConf	server/wallet.cpp	/^bool CWallet::SelectCoinsMinConf(int64 nTargetValue, int nConfMine, int nConfTheirs, vector<COutput> vCoins,$/;"	f	class:CWallet
+SelectTried	server/addrman.cpp	/^int CAddrMan::SelectTried(int nKBucket)$/;"	f	class:CAddrMan
+Select_	server/addrman.cpp	/^CAddress CAddrMan::Select_(int nUnkBias)$/;"	f	class:CAddrMan
+Send	server/irc.cpp	/^static bool Send(SOCKET hSocket, const char* pszSend)$/;"	f	file:
+SendMessages	server/main.cpp	/^bool SendMessages(CNode* pto, bool fSendTrickle)$/;"	f
+SendMoney	server/wallet.cpp	/^string CWallet::SendMoney(CScript scriptPubKey, int64 nValue, CWalletTx& wtxNew, bool fAskFee)$/;"	f	class:CWallet
+SendMoneyToDestination	server/wallet.cpp	/^string CWallet::SendMoneyToDestination(const CTxDestination& address, int64 nValue, CWalletTx& wtxNew, bool fAskFee)$/;"	f	class:CWallet
+Set	server/script.cpp	/^    Set(uint256 hash, const std::vector<unsigned char>& vchSig, const std::vector<unsigned char>& pubKey)$/;"	f	class:CSignatureCache
+SetAddressBookName	server/wallet.cpp	/^bool CWallet::SetAddressBookName(const CTxDestination& address, const string& strName)$/;"	f	class:CWallet
+SetBestChain	server/main.cpp	/^bool CBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)$/;"	f	class:CBlock
+SetBestChain	server/main.cpp	/^void static SetBestChain(const CBlockLocator& loc)$/;"	f	file:
+SetBestChain	server/wallet.cpp	/^void CWallet::SetBestChain(const CBlockLocator& loc)$/;"	f	class:CWallet
+SetBestChainInner	server/main.cpp	/^bool CBlock::SetBestChainInner(CTxDB& txdb, CBlockIndex *pindexNew)$/;"	f	class:CBlock
+SetCompactSignature	server/key.cpp	/^bool CKey::SetCompactSignature(uint256 hash, const std::vector<unsigned char>& vchSig)$/;"	f	class:CKey
+SetCompressedPubKey	server/key.cpp	/^void CKey::SetCompressedPubKey()$/;"	f	class:CKey
+SetCrypted	server/keystore.cpp	/^bool CCryptoKeyStore::SetCrypted()$/;"	f	class:CCryptoKeyStore
+SetDefaultKey	server/wallet.cpp	/^bool CWallet::SetDefaultKey(const CPubKey &vchPubKey)$/;"	f	class:CWallet
+SetDestination	server/script.cpp	/^void CScript::SetDestination(const CTxDestination& dest)$/;"	f	class:CScript
+SetExtraNonce	server/main.cpp	/^void SetExtraNonce(CBlock* pblock, const char *xn_hex)$/;"	f
+SetIP	server/netbase.cpp	/^void CNetAddr::SetIP(const CNetAddr& ipIn)$/;"	f	class:CNetAddr
+SetKey	server/crypter.cpp	/^bool CCrypter::SetKey(const CKeyingMaterial& chNewKey, const std::vector<unsigned char>& chNewIV)$/;"	f	class:CCrypter
+SetKeyFromPassphrase	server/crypter.cpp	/^bool CCrypter::SetKeyFromPassphrase(const SecureString& strKeyData, const std::vector<unsigned char>& chSalt, const unsigned int nRounds, const unsigned int nDerivationMethod)$/;"	f	class:CCrypter
+SetLimited	server/net.cpp	/^void SetLimited(enum Network net, bool fLimited)$/;"	f
+SetLimited	server_iface.cpp	/^void SetLimited(enum Network net, bool fLimited)$/;"	f
+SetMaxVersion	server/wallet.cpp	/^bool CWallet::SetMaxVersion(int nVersion)$/;"	f	class:CWallet
+SetMerkleBranch	server/main.cpp	/^int CMerkleTx::SetMerkleBranch(const CBlock* pblock)$/;"	f	class:CMerkleTx
+SetMinVersion	server/wallet.cpp	/^bool CWallet::SetMinVersion(enum WalletFeature nVersion, CWalletDB* pwalletdbIn, bool fExplicit)$/;"	f	class:CWallet
+SetMockTime	server/util.cpp	/^void SetMockTime(int64 nMockTimeIn)$/;"	f
+SetMultisig	server/script.cpp	/^void CScript::SetMultisig(int nRequired, const std::vector<CKey>& keys)$/;"	f	class:CScript
+SetNameProxy	server/netbase.cpp	/^bool SetNameProxy(CService addrProxy, int nSocksVersion) {$/;"	f
+SetPort	server/netbase.cpp	/^void CService::SetPort(unsigned short portIn)$/;"	f	class:CService
+SetPrivKey	server/key.cpp	/^bool CKey::SetPrivKey(const CPrivKey& vchPrivKey)$/;"	f	class:CKey
+SetProxy	server/netbase.cpp	/^bool SetProxy(enum Network net, CService addrProxy, int nSocksVersion) {$/;"	f
+SetPubKey	server/key.cpp	/^bool CKey::SetPubKey(const CPubKey& vchPubKey)$/;"	f	class:CKey
+SetReachable	server/net.cpp	/^void SetReachable(enum Network net, bool fFlag)$/;"	f
+SetReachable	server_iface.cpp	/^void SetReachable(enum Network net, bool fFlag)$/;"	f
+SetSecret	server/key.cpp	/^bool CKey::SetSecret(const CSecret& vchSecret, bool fCompressed)$/;"	f	class:CKey
+SetSockAddr	server/netbase.cpp	/^bool CService::SetSockAddr(const struct sockaddr *paddr)$/;"	f	class:CService
+SetSpecial	server/netbase.cpp	/^bool CNetAddr::SetSpecial(const std::string &strName)$/;"	f	class:CNetAddr
+ShrinkDebugFile	server/util.cpp	/^void ShrinkDebugFile()$/;"	f
+ShrinkNew	server/addrman.cpp	/^int CAddrMan::ShrinkNew(int nUBucket)$/;"	f	class:CAddrMan
+Shutdown	server/init.cpp	/^void Shutdown(void* parg)$/;"	f
+Shutdown2	server/init.cpp	/^void Shutdown2(void)$/;"	f
+Sign	server/key.cpp	/^bool CKey::Sign(uint256 hash, std::vector<unsigned char>& vchSig)$/;"	f	class:CKey
+Sign1	server/script.cpp	/^bool Sign1(const CKeyID& address, const CKeyStore& keystore, uint256 hash, int nHashType, CScript& scriptSigRet)$/;"	f
+SignCompact	server/key.cpp	/^bool CKey::SignCompact(uint256 hash, std::vector<unsigned char>& vchSig)$/;"	f	class:CKey
+SignN	server/script.cpp	/^bool SignN(const vector<valtype>& multisigdata, const CKeyStore& keystore, uint256 hash, int nHashType, CScript& scriptSigRet)$/;"	f
+SignSignature	server/script.cpp	/^bool SignSignature(const CKeyStore &keystore, const CScript& fromPubKey, CTransaction& txTo, unsigned int nIn, int nHashType)$/;"	f
+SignSignature	server/script.cpp	/^bool SignSignature(const CKeyStore &keystore, const CTransaction& txFrom, CTransaction& txTo, unsigned int nIn, int nHashType)$/;"	f
+SignatureHash	server/script.cpp	/^uint256 SignatureHash(CScript scriptCode, const CTransaction& txTo, unsigned int nIn, int nHashType)$/;"	f
+Socks4	server/netbase.cpp	/^bool static Socks4(const CService &addrDest, SOCKET& hSocket)$/;"	f	file:
+Socks5	server/netbase.cpp	/^bool static Socks5(string strDest, int port, SOCKET& hSocket)$/;"	f	file:
+SoftSetArg	server/util.cpp	/^bool SoftSetArg(const std::string& strArg, const std::string& strValue)$/;"	f
+SoftSetBoolArg	server/util.cpp	/^bool SoftSetBoolArg(const std::string& strArg, bool fValue)$/;"	f
+Solver	server/script.cpp	/^bool Solver(const CKeyStore& keystore, const CScript& scriptPubKey, uint256 hash, int nHashType,$/;"	f
+Solver	server/script.cpp	/^bool Solver(const CScript& scriptPubKey, txnouttype& typeRet, vector<vector<unsigned char> >& vSolutionsRet)$/;"	f
+SplitHostPort	server/netbase.cpp	/^void SplitHostPort(std::string in, int &portOut, std::string &hostOut) {$/;"	f
+StartCoinServer	server_iface.cpp	/^void StartCoinServer(void)$/;"	f
+StartNode	server/net.cpp	/^void StartNode(void* parg)$/;"	f
+StartNode2	server/net.cpp	/^void StartNode2(void)$/;"	f
+StartShutdown	server/init.cpp	/^void StartShutdown()$/;"	f
+StopNode	server/net.cpp	/^bool StopNode()$/;"	f
+StopNode	server_iface.cpp	/^bool StopNode()$/;"	f
+SwapRandom	server/addrman.cpp	/^void CAddrMan::SwapRandom(unsigned int nRndPos1, unsigned int nRndPos2)$/;"	f	class:CAddrMan
+SyncWithWallets	server/main.cpp	/^void SyncWithWallets(const CTransaction& tx, const CBlock* pblock, bool fUpdate)$/;"	f
+ThreadCleanWalletPassphrase	server/bitcoinrpc.cpp	/^void ThreadCleanWalletPassphrase(void* parg)$/;"	f
+ThreadDNSAddressSeed	server/net.cpp	/^void ThreadDNSAddressSeed(void* parg)$/;"	f
+ThreadDNSAddressSeed2	server/net.cpp	/^void ThreadDNSAddressSeed2(void* parg)$/;"	f
+ThreadDumpAddress	server/net.cpp	/^void ThreadDumpAddress(void* parg)$/;"	f
+ThreadDumpAddress	server_iface.cpp	/^void ThreadDumpAddress(void* parg)$/;"	f
+ThreadDumpAddress2	server/net.cpp	/^void ThreadDumpAddress2(void* parg)$/;"	f
+ThreadDumpAddress2	server_iface.cpp	/^void ThreadDumpAddress2(void* parg)$/;"	f
+ThreadFlushWalletDB	server/walletdb.cpp	/^void ThreadFlushWalletDB(void* parg)$/;"	f
+ThreadGetMyExternalIP	server/net.cpp	/^void ThreadGetMyExternalIP(void* parg)$/;"	f
+ThreadGetMyExternalIP	server_iface.cpp	/^void ThreadGetMyExternalIP(void* parg)$/;"	f
+ThreadIRCSeed	server/irc.cpp	/^void ThreadIRCSeed(void* parg)$/;"	f
+ThreadIRCSeed2	server/irc.cpp	/^void ThreadIRCSeed2(void* parg)$/;"	f
+ThreadMapPort	server/net.cpp	/^void ThreadMapPort(void* parg)$/;"	f
+ThreadMapPort2	server/net.cpp	/^void ThreadMapPort2(void* parg)$/;"	f
+ThreadMessageHandler	server/net.cpp	/^void ThreadMessageHandler(void* parg)$/;"	f
+ThreadMessageHandler	server_iface.cpp	/^void ThreadMessageHandler(void* parg)$/;"	f
+ThreadMessageHandler2	server/net.cpp	/^void ThreadMessageHandler2(void* parg)$/;"	f
+ThreadMessageHandler2	server_iface.cpp	/^void ThreadMessageHandler2(void* parg)$/;"	f
+ThreadOpenAddedConnections	server/net.cpp	/^void ThreadOpenAddedConnections(void* parg)$/;"	f
+ThreadOpenAddedConnections2	server/net.cpp	/^void ThreadOpenAddedConnections2(void* parg)$/;"	f
+ThreadOpenConnections	server/net.cpp	/^void ThreadOpenConnections(void* parg)$/;"	f
+ThreadOpenConnections	server_iface.cpp	/^void ThreadOpenConnections(void* parg)$/;"	f
+ThreadOpenConnections2	server/net.cpp	/^void ThreadOpenConnections2(void* parg)$/;"	f
+ThreadOpenConnections2	server_iface.cpp	/^void ThreadOpenConnections2(void* parg)$/;"	f
+ThreadRPCServer	server/bitcoinrpc.cpp	/^void ThreadRPCServer(void* parg)$/;"	f
+ThreadRPCServer2	server/bitcoinrpc.cpp	/^void ThreadRPCServer2(void* parg)$/;"	f
+ThreadRPCServer3	server/bitcoinrpc.cpp	/^void ThreadRPCServer3(void* parg)$/;"	f
+ThreadSocketHandler	server/net.cpp	/^void ThreadSocketHandler(void* parg)$/;"	f
+ThreadSocketHandler	server_iface.cpp	/^void ThreadSocketHandler(void* parg)$/;"	f
+ThreadSocketHandler2	server/net.cpp	/^void ThreadSocketHandler2(void* parg)$/;"	f
+ThreadSocketHandler2	server_iface.cpp	/^void ThreadSocketHandler2(void* parg)$/;"	f
+ThreadTopUpKeyPool	server/bitcoinrpc.cpp	/^void ThreadTopUpKeyPool(void* parg)$/;"	f
+ToString	server/netbase.cpp	/^std::string CNetAddr::ToString() const$/;"	f	class:CNetAddr
+ToString	server/netbase.cpp	/^std::string CService::ToString() const$/;"	f	class:CService
+ToString	server/protocol.cpp	/^std::string CInv::ToString() const$/;"	f	class:CInv
+ToString	server/sync.cpp	/^    std::string ToString() const$/;"	f	struct:CLockLocation
+ToStringIP	server/netbase.cpp	/^std::string CNetAddr::ToStringIP() const$/;"	f	class:CNetAddr
+ToStringIPPort	server/netbase.cpp	/^std::string CService::ToStringIPPort() const$/;"	f	class:CService
+ToStringPort	server/netbase.cpp	/^std::string CService::ToStringPort() const$/;"	f	class:CService
+TopUpKeyPool	server/wallet.cpp	/^bool CWallet::TopUpKeyPool()$/;"	f	class:CWallet
+TxToJSON	server/rpcrawtransaction.cpp	/^TxToJSON(const CTransaction& tx, const uint256 hashBlock, Object& entry)$/;"	f
+Unlock	server/keystore.cpp	/^bool CCryptoKeyStore::Unlock(const CKeyingMaterial& vMasterKeyIn)$/;"	f	class:CCryptoKeyStore
+Unlock	server/wallet.cpp	/^bool CWallet::Unlock(const SecureString& strWalletPassphrase)$/;"	f	class:CWallet
+UnregisterWallet	server/main.cpp	/^void UnregisterWallet(CWallet* pwalletIn)$/;"	f
+UpdateTime	server/main.cpp	/^void CBlock::UpdateTime(const CBlockIndex* pindexPrev)$/;"	f	class:CBlock
+UpdateTxIndex	server/db.cpp	/^bool CTxDB::UpdateTxIndex(uint256 hash, const CTxIndex& txindex)$/;"	f	class:CTxDB
+UpdatedTransaction	server/main.cpp	/^void static UpdatedTransaction(const uint256& hashTx)$/;"	f	file:
+UpdatedTransaction	server/wallet.cpp	/^void CWallet::UpdatedTransaction(const uint256 &hashTx)$/;"	f	class:CWallet
+ValueFromAmount	server/bitcoinrpc.cpp	/^Value ValueFromAmount(int64 amount)$/;"	f
+Verify	server/key.cpp	/^bool CKey::Verify(uint256 hash, const std::vector<unsigned char>& vchSig)$/;"	f	class:CKey
+VerifyCompact	server/key.cpp	/^bool CKey::VerifyCompact(uint256 hash, const std::vector<unsigned char>& vchSig)$/;"	f	class:CKey
+VerifyScript	server/script.cpp	/^bool VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey, const CTransaction& txTo, unsigned int nIn,$/;"	f
+VerifySignature	server/script.cpp	/^bool VerifySignature(const CTransaction& txFrom, const CTransaction& txTo, unsigned int nIn, bool fValidatePayToScriptHash, int nHashType)$/;"	f
+WIN32_LEAN_AND_MEAN	server/util.cpp	59;"	d	file:
+Wait	server/irc.cpp	/^bool Wait(int nSeconds)$/;"	f
+WalletTxToJSON	server/bitcoinrpc.cpp	/^void WalletTxToJSON(const CWalletTx& wtx, Object& entry)$/;"	f
+WalletUpdateSpent	server/wallet.cpp	/^void CWallet::WalletUpdateSpent(const CTransaction &tx)$/;"	f	class:CWallet
+WildcardMatch	server/util.cpp	/^bool WildcardMatch(const char* psz, const char* mask)$/;"	f
+WildcardMatch	server/util.cpp	/^bool WildcardMatch(const string& str, const string& mask)$/;"	f
+Write	server/db.cpp	/^bool CAddrDB::Write(const CAddrMan& addr)$/;"	f	class:CAddrDB
+WriteAccount	server/walletdb.cpp	/^bool CWalletDB::WriteAccount(const string& strAccount, const CAccount& account)$/;"	f	class:CWalletDB
+WriteAccountingEntry	server/walletdb.cpp	/^bool CWalletDB::WriteAccountingEntry(const CAccountingEntry& acentry)$/;"	f	class:CWalletDB
+WriteBatch	server/leveldb.cpp	/^bool CLevelDB::WriteBatch(CLevelDBBatch &batch, bool fSync) throw(leveldb_error) {$/;"	f	class:CLevelDB
+WriteBestInvalidWork	server/db.cpp	/^bool CTxDB::WriteBestInvalidWork(CBigNum bnBestInvalidWork)$/;"	f	class:CTxDB
+WriteBlockIndex	server/db.cpp	/^bool CTxDB::WriteBlockIndex(const CDiskBlockIndex& blockindex)$/;"	f	class:CTxDB
+WriteHashBestChain	server/db.cpp	/^bool CTxDB::WriteHashBestChain(uint256 hashBestChain)$/;"	f	class:CTxDB
+WriteName	server/walletdb.cpp	/^bool CWalletDB::WriteName(const string& strAddress, const string& strName)$/;"	f	class:CWalletDB
+WriteToDisk	server/wallet.cpp	/^bool CWalletTx::WriteToDisk()$/;"	f	class:CWalletTx
+WriteToShareNet	block_iface.cpp	/^bool WriteToShareNet(CBlock* pBlock, int nHeight)$/;"	f
+X	server/net.cpp	614;"	d	file:
+X	server/net.cpp	615;"	d	file:
+X	server/net.cpp	630;"	d	file:
+X	server_iface.cpp	633;"	d	file:
+X	server_iface.cpp	634;"	d	file:
+X	server_iface.cpp	649;"	d	file:
+_WIN32_IE	server/util.cpp	56;"	d	file:
+_WIN32_IE	server/util.cpp	58;"	d	file:
+_WIN32_WINNT	server/util.cpp	52;"	d	file:
+_WIN32_WINNT	server/util.cpp	54;"	d	file:
+_d	server/bitcoinrpc.cpp	/^    SSLIOStreamDevice<Protocol> _d;$/;"	m	class:AcceptedConnectionImpl	file:
+_stream	server/bitcoinrpc.cpp	/^    iostreams::stream< SSLIOStreamDevice<Protocol> > _stream;$/;"	m	class:AcceptedConnectionImpl	file:
+accept	server/main.cpp	/^bool CTxMemPool::accept(CTxDB& txdb, CTransaction &tx, bool fCheckInputs,$/;"	f	class:CTxMemPool
+addUnchecked	server/main.cpp	/^bool CTxMemPool::addUnchecked(const uint256& hash, CTransaction &tx)$/;"	f	class:CTxMemPool
+addmultisigaddress	server/bitcoinrpc.cpp	/^Value addmultisigaddress(const Array& params, bool fHelp)$/;"	f
+address	wallet_iface.cpp	/^string address;$/;"	v
+addressinfo_json	wallet_iface.cpp	/^string addressinfo_json;$/;"	v
+addresstransactioninfo_json	wallet_iface.cpp	/^string addresstransactioninfo_json;$/;"	v
+addrman	server/net.cpp	/^CAddrMan addrman;$/;"	v
+addrman	server_iface.cpp	/^CAddrMan addrman;$/;"	v
+altstacktop	server/script.cpp	77;"	d	file:
+backupwallet	server/bitcoinrpc.cpp	/^Value backupwallet(const Array& params, bool fHelp)$/;"	f
+bitdb	server/db.cpp	/^CDBEnv bitdb;$/;"	v
+blockToJSON	server/bitcoinrpc.cpp	/^Object blockToJSON(const CBlock& block, const CBlockIndex* blockindex)$/;"	f
+block_save_json	block_iface.cpp	/^string block_save_json;$/;"	v
+blockinfo_json	block_iface.cpp	/^string blockinfo_json;$/;"	v
+blocktemplate_json	block_iface.cpp	/^string blocktemplate_json; $/;"	v
+bnBestChainWork	server/main.cpp	/^CBigNum bnBestChainWork = 0;$/;"	v
+bnBestInvalidWork	server/main.cpp	/^CBigNum bnBestInvalidWork = 0;$/;"	v
+c_AcentryToJSON	block_iface.cpp	/^Object c_AcentryToJSON(const CAccountingEntry& acentry, const string& strAccount, Object entry)$/;"	f
+c_GetNetworkHashRate	block_iface.cpp	/^double c_GetNetworkHashRate(void)$/;"	f
+c_ListTransactions	block_iface.cpp	/^void c_ListTransactions(const CWalletTx& wtx, const string& strAccount, int nMinDepth, bool fLong, Array& ret)$/;"	f
+c_LoadWallet	wallet_iface.cpp	/^int c_LoadWallet(void)$/;"	f
+c_getaccountbalance	wallet_iface.cpp	/^double c_getaccountbalance(const char *accountName)$/;"	f
+c_getaddressbyaccount	wallet_iface.cpp	/^const char *c_getaddressbyaccount(const char *accountName)$/;"	f
+c_getaddressinfo	wallet_iface.cpp	/^const char *c_getaddressinfo(const char *addr_hash)$/;"	f
+c_getaddresstransactioninfo	wallet_iface.cpp	/^const char *c_getaddresstransactioninfo(const char *tx_account)$/;"	f
+c_getblockheight	block_iface.cpp	/^uint64_t c_getblockheight(void)$/;"	f
+c_getblockinfo	block_iface.cpp	/^const char *c_getblockinfo(const char *hash_addr)$/;"	f
+c_getblocktemplate	block_iface.cpp	/^const char *c_getblocktemplate(void)$/;"	f
+c_getblocktransactions	block_iface.cpp	/^const char *c_getblocktransactions(void)$/;"	f
+c_getlastblockinfo	block_iface.cpp	/^const char *c_getlastblockinfo(const char *hash)$/;"	f
+c_getmininginfo	block_iface.cpp	/^const char *c_getmininginfo(void)$/;"	f
+c_getminingtransactions	block_iface.cpp	/^const char *c_getminingtransactions(unsigned int workId)$/;"	f
+c_getnewaddress	wallet_iface.cpp	/^string c_getnewaddress(string strAccount)$/;"	f
+c_gettransactioninfo	block_iface.cpp	/^const char *c_gettransactioninfo(const char *tx_id)$/;"	f
+c_processblock	block_iface.cpp	/^int c_processblock(CBlock* pblock)$/;"	f
+c_setblockreward	wallet_iface.cpp	/^int c_setblockreward(const char *accountName, double dAmount)$/;"	f
+c_submitblock	block_iface.cpp	/^const char *c_submitblock(unsigned int workId, unsigned int nTime, unsigned int nNonce, char *xn_hex)$/;"	f
+c_wallet_account_transfer	wallet_iface.cpp	/^static int c_wallet_account_transfer(const char *sourceAccountName,$/;"	f	file:
+close	server/bitcoinrpc.cpp	/^    virtual void close()$/;"	f	class:AcceptedConnectionImpl
+connect	server/bitcoinrpc.cpp	/^    bool connect(const std::string& server, const std::string& port)$/;"	f	class:SSLIOStreamDevice
+copyStats	server/net.cpp	/^void CNode::copyStats(CNodeStats &stats)$/;"	f	class:CNode
+copyStats	server_iface.cpp	/^void CNode::copyStats(CNodeStats &stats)$/;"	f	class:CNode
+createrawtransaction	server/rpcrawtransaction.cpp	/^Value createrawtransaction(const Array& params, bool fHelp)$/;"	f
+cs_THREAD_RPCHANDLER	server/bitcoinrpc.cpp	/^static CCriticalSection cs_THREAD_RPCHANDLER;$/;"	v	file:
+cs_main	server/main.cpp	/^CCriticalSection cs_main;$/;"	v
+cs_mapAlerts	server/main.cpp	/^CCriticalSection cs_mapAlerts;$/;"	v
+cs_mapLocalHost	server/net.cpp	/^static CCriticalSection cs_mapLocalHost;$/;"	v	file:
+cs_mapLocalHost	server_iface.cpp	/^static CCriticalSection cs_mapLocalHost;$/;"	v	file:
+cs_mapRelay	server/net.cpp	/^CCriticalSection cs_mapRelay;$/;"	v
+cs_mapRelay	server_iface.cpp	/^CCriticalSection cs_mapRelay;$/;"	v
+cs_nWalletUnlockTime	server/bitcoinrpc.cpp	/^static CCriticalSection cs_nWalletUnlockTime;$/;"	v	file:
+cs_setBanned	server/net.cpp	/^CCriticalSection CNode::cs_setBanned;$/;"	m	class:CNode	file:
+cs_setBanned	server_iface.cpp	/^CCriticalSection CNode::cs_setBanned;$/;"	m	class:CNode	file:
+cs_setservAddNodeAddresses	server/net.cpp	/^CCriticalSection cs_setservAddNodeAddresses;$/;"	v
+cs_setservAddNodeAddresses	server_iface.cpp	/^CCriticalSection cs_setservAddNodeAddresses;$/;"	v
+cs_sigcache	server/script.cpp	/^    CCriticalSection cs_sigcache;$/;"	m	class:CSignatureCache	file:
+cs_vNodes	server/net.cpp	/^CCriticalSection cs_vNodes;$/;"	v
+cs_vNodes	server_iface.cpp	/^CCriticalSection cs_vNodes;$/;"	v
+cs_vOneShots	server/net.cpp	/^CCriticalSection cs_vOneShots;$/;"	v
+cs_vOneShots	server_iface.cpp	/^CCriticalSection cs_vOneShots;$/;"	v
+dHashesPerSec	server/main.cpp	/^double dHashesPerSec;$/;"	v
+dPriority	server/main.cpp	/^    double dPriority;$/;"	m	class:COrphan	file:
+dd_mutex	server/sync.cpp	/^static boost::mutex dd_mutex;$/;"	v	file:
+decoderawtransaction	server/rpcrawtransaction.cpp	/^Value decoderawtransaction(const Array& params, bool fHelp)$/;"	f
+dumpprivkey	server/rpcdump.cpp	/^Value dumpprivkey(const Array& params, bool fHelp)$/;"	f
+emptyobj	server/bitcoinrpc.cpp	/^const Object emptyobj;$/;"	v
+encryptwallet	server/bitcoinrpc.cpp	/^Value encryptwallet(const Array& params, bool fHelp)$/;"	f
+error	server/util.cpp	/^bool error(const char *format, ...)$/;"	f
+execute	server/bitcoinrpc.cpp	/^json_spirit::Value CRPCTable::execute(const std::string &strMethod, const json_spirit::Array &params) const$/;"	f	class:CRPCTable
+fClient	server/net.cpp	/^bool fClient = false;$/;"	v
+fClient	server_iface.cpp	/^bool fClient = false;$/;"	v
+fCommandLine	server/util.cpp	/^bool fCommandLine = false;$/;"	v
+fDaemon	server/util.cpp	/^bool fDaemon = false;$/;"	v
+fDebug	server/util.cpp	/^bool fDebug = false;$/;"	v
+fDebugNet	server/util.cpp	/^bool fDebugNet = false;$/;"	v
+fDiscover	server/net.cpp	/^bool fDiscover = true;$/;"	v
+fDiscover	server_iface.cpp	/^bool fDiscover = true;$/;"	v
+fLogTimestamps	server/util.cpp	/^bool fLogTimestamps = false;$/;"	v
+fNameLookup	server/netbase.cpp	/^bool fNameLookup = false;$/;"	v
+fNeedHandshake	server/bitcoinrpc.cpp	/^    bool fNeedHandshake;$/;"	m	class:SSLIOStreamDevice	file:
+fNoListen	server/util.cpp	/^bool fNoListen = false;$/;"	v
+fPrintToConsole	server/util.cpp	/^bool fPrintToConsole = false;$/;"	v
+fPrintToDebugger	server/util.cpp	/^bool fPrintToDebugger = false;$/;"	v
+fReopenDebugLog	server/util.cpp	/^bool fReopenDebugLog = false;$/;"	v
+fRequestShutdown	server/util.cpp	/^bool fRequestShutdown = false;$/;"	v
+fServer	server/util.cpp	/^bool fServer = false;$/;"	v
+fShutdown	server/util.cpp	/^bool fShutdown = false;$/;"	v
+fSpent	server/rpcdump.cpp	/^    bool fSpent;$/;"	m	class:CTxDump	file:
+fTestNet	server/util.cpp	/^bool fTestNet = false;$/;"	v
+fUseSSL	server/bitcoinrpc.cpp	/^    bool fUseSSL;$/;"	m	class:SSLIOStreamDevice	file:
+fUseUPnP	server/net.cpp	/^bool fUseUPnP = false;$/;"	v
+fUseUPnP	server_iface.cpp	/^bool fUseUPnP = false;$/;"	v
+fcntl	server/bitcoinrpc.cpp	11;"	d	file:
+fcntl	server/bitcoinrpc.cpp	23;"	d	file:
+fcntl	server/bitcoinrpc.cpp	40;"	d	file:
+fcntl	server/netbase.cpp	17;"	d	file:
+fcntl	server_iface.cpp	43;"	d	file:
+getAlertByHash	server/main.cpp	/^CAlert CAlert::getAlertByHash(const uint256 &hash)$/;"	f	class:CAlert
+getaccount	server/bitcoinrpc.cpp	/^Value getaccount(const Array& params, bool fHelp)$/;"	f
+getaccountaddress	server/bitcoinrpc.cpp	/^Value getaccountaddress(const Array& params, bool fHelp)$/;"	f
+getaccountbalance	wallet_iface.cpp	/^double getaccountbalance(const char *accountName)$/;"	f
+getaddressbyaccount	wallet_iface.cpp	/^const char *getaddressbyaccount(const char *accountName)$/;"	f
+getaddressesbyaccount	server/bitcoinrpc.cpp	/^Value getaddressesbyaccount(const Array& params, bool fHelp)$/;"	f
+getaddressinfo	wallet_iface.cpp	/^const char *getaddressinfo(const char *addr_hash)$/;"	f
+getaddresstransactioninfo	wallet_iface.cpp	/^const char *getaddresstransactioninfo(const char *hash)$/;"	f
+getbalance	server/bitcoinrpc.cpp	/^Value getbalance(const Array& params, bool fHelp)$/;"	f
+getblock	server/bitcoinrpc.cpp	/^Value getblock(const Array& params, bool fHelp)$/;"	f
+getblockcount	server/bitcoinrpc.cpp	/^Value getblockcount(const Array& params, bool fHelp)$/;"	f
+getblockhash	server/bitcoinrpc.cpp	/^Value getblockhash(const Array& params, bool fHelp)$/;"	f
+getblockheight	block_iface.cpp	/^uint64_t getblockheight(void)$/;"	f
+getblockinfo	block_iface.cpp	/^const char *getblockinfo(const char *hash)$/;"	f
+getblocktemplate	block_iface.cpp	/^const char *getblocktemplate(void)$/;"	f
+getblocktemplate	server/bitcoinrpc.cpp	/^Value getblocktemplate(const Array& params, bool fHelp)$/;"	f
+getblocktransactions	block_iface.cpp	/^const char *getblocktransactions(void)$/;"	f
+getconnectioncount	server/rpcnet.cpp	/^Value getconnectioncount(const Array& params, bool fHelp)$/;"	f
+getdifficulty	server/bitcoinrpc.cpp	/^Value getdifficulty(const Array& params, bool fHelp)$/;"	f
+getgenerate	server/bitcoinrpc.cpp	/^Value getgenerate(const Array& params, bool fHelp)$/;"	f
+gethashespersec	server/bitcoinrpc.cpp	/^Value gethashespersec(const Array& params, bool fHelp)$/;"	f
+getinfo	server/bitcoinrpc.cpp	/^Value getinfo(const Array& params, bool fHelp)$/;"	f
+getlastblockinfo	block_iface.cpp	/^const char *getlastblockinfo(const char *hash)$/;"	f
+getmininginfo	block_iface.cpp	/^const char *getmininginfo(void)$/;"	f
+getmininginfo	server/bitcoinrpc.cpp	/^Value getmininginfo(const Array& params, bool fHelp)$/;"	f
+getminingtransactioninfo	block_iface.cpp	/^const char *getminingtransactioninfo(unsigned int workId)$/;"	f
+getnetworkhashps	server/bitcoinrpc.cpp	/^Value getnetworkhashps(const Array& params, bool fHelp)$/;"	f
+getnewaddress	server/bitcoinrpc.cpp	/^Value getnewaddress(const Array& params, bool fHelp)$/;"	f
+getpeerinfo	server/rpcnet.cpp	/^Value getpeerinfo(const Array& params, bool fHelp)$/;"	f
+getrawmempool	server/bitcoinrpc.cpp	/^Value getrawmempool(const Array& params, bool fHelp)$/;"	f
+getrawtransaction	server/rpcrawtransaction.cpp	/^Value getrawtransaction(const Array& params, bool fHelp)$/;"	f
+getreceivedbyaccount	server/bitcoinrpc.cpp	/^Value getreceivedbyaccount(const Array& params, bool fHelp)$/;"	f
+getreceivedbyaddress	server/bitcoinrpc.cpp	/^Value getreceivedbyaddress(const Array& params, bool fHelp)$/;"	f
+gettransaction	server/bitcoinrpc.cpp	/^Value gettransaction(const Array& params, bool fHelp)$/;"	f
+gettransactioninfo	block_iface.cpp	/^const char *gettransactioninfo(const char *hash)$/;"	f
+getwork	server/bitcoinrpc.cpp	/^Value getwork(const Array& params, bool fHelp)$/;"	f
+getworkex	server/bitcoinrpc.cpp	/^Value getworkex(const Array& params, bool fHelp)$/;"	f
+handshake	server/bitcoinrpc.cpp	/^    void handshake(ssl::stream_base::handshake_type role)$/;"	f	class:SSLIOStreamDevice
+hashBestChain	server/main.cpp	/^uint256 hashBestChain = 0;$/;"	v
+help	server/bitcoinrpc.cpp	/^Value help(const Array& params, bool fHelp)$/;"	f
+help	server/bitcoinrpc.cpp	/^string CRPCTable::help(string strCommand) const$/;"	f	class:CRPCTable
+id	server/bitcoinrpc.cpp	/^    Value id;$/;"	m	class:JSONRequest	file:
+importprivkey	server/rpcdump.cpp	/^Value importprivkey(const Array& params, bool fHelp)$/;"	f
+instance_of_cinit	server/util.cpp	/^instance_of_cinit;$/;"	v	typeref:class:CInit
+instance_of_cnetcleanup	server/net.cpp	/^instance_of_cnetcleanup;$/;"	v	typeref:class:CNetCleanup
+instance_of_cnetcleanup	server_iface.cpp	/^instance_of_cnetcleanup;$/;"	v	typeref:class:CNetCleanup
+ip	server/irc.cpp	/^    struct in_addr ip;$/;"	m	struct:ircaddr	typeref:struct:ircaddr::in_addr	file:
+ircaddr	server/irc.cpp	/^struct ircaddr$/;"	s	file:
+join	server/util.cpp	/^string join(const vector<string>& vec, const char* delim)$/;"	f
+keypoolrefill	server/bitcoinrpc.cpp	/^Value keypoolrefill(const Array& params, bool fHelp)$/;"	f
+keystore	server/script.cpp	/^    const CKeyStore *keystore;$/;"	m	class:CKeyStoreIsMineVisitor	file:
+lastblockinfo_json	block_iface.cpp	/^string lastblockinfo_json;$/;"	v
+listaccounts	server/bitcoinrpc.cpp	/^Value listaccounts(const Array& params, bool fHelp)$/;"	f
+listreceivedbyaccount	server/bitcoinrpc.cpp	/^Value listreceivedbyaccount(const Array& params, bool fHelp)$/;"	f
+listreceivedbyaddress	server/bitcoinrpc.cpp	/^Value listreceivedbyaddress(const Array& params, bool fHelp)$/;"	f
+listsinceblock	server/bitcoinrpc.cpp	/^Value listsinceblock(const Array& params, bool fHelp)$/;"	f
+listtransactions	server/bitcoinrpc.cpp	/^Value listtransactions(const Array& params, bool fHelp)$/;"	f
+listunspent	server/rpcrawtransaction.cpp	/^Value listunspent(const Array& params, bool fHelp)$/;"	f
+load_wallet	wallet_iface.cpp	/^int load_wallet(void)$/;"	f
+locking_callback	server/util.cpp	/^void locking_callback(int mode, int i, const char* file, int line)$/;"	f
+lockorders	server/sync.cpp	/^static std::map<std::pair<void*, void*>, LockStack> lockorders;$/;"	v	file:
+lockstack	server/sync.cpp	/^static boost::thread_specific_ptr<LockStack> lockstack;$/;"	v	file:
+main	server/bitcoinrpc.cpp	/^int main(int argc, char *argv[])$/;"	f
+main	server/irc.cpp	/^int main(int argc, char *argv[])$/;"	f
+main	shcoind_tool.cpp	/^int main(int argc, char *argv[])$/;"	f
+mapAlerts	server/main.cpp	/^map<uint256, CAlert> mapAlerts;$/;"	v
+mapAlreadyAskedFor	server/net.cpp	/^map<CInv, int64> mapAlreadyAskedFor;$/;"	v
+mapAlreadyAskedFor	server_iface.cpp	/^map<CInv, int64> mapAlreadyAskedFor;$/;"	v
+mapBlockIndex	server/main.cpp	/^map<uint256, CBlockIndex*> mapBlockIndex;$/;"	v
+mapCheckpoints	server/checkpoints.cpp	/^    static MapCheckpoints mapCheckpoints =$/;"	m	namespace:Checkpoints	file:
+mapLocalHost	server/net.cpp	/^static map<CNetAddr, LocalServiceInfo> mapLocalHost;$/;"	v	file:
+mapLocalHost	server_iface.cpp	/^static map<CNetAddr, LocalServiceInfo> mapLocalHost;$/;"	v	file:
+mapMultiArgs	server/util.cpp	/^map<string, vector<string> > mapMultiArgs;$/;"	v
+mapOrphanBlocks	server/main.cpp	/^map<uint256, CBlock*> mapOrphanBlocks;$/;"	v
+mapOrphanBlocksByPrev	server/main.cpp	/^multimap<uint256, CBlock*> mapOrphanBlocksByPrev;$/;"	v
+mapOrphanTransactions	server/main.cpp	/^map<uint256, CDataStream*> mapOrphanTransactions;$/;"	v
+mapOrphanTransactionsByPrev	server/main.cpp	/^map<uint256, map<uint256, CDataStream*> > mapOrphanTransactionsByPrev;$/;"	v
+mapRelay	server/net.cpp	/^map<CInv, CDataStream> mapRelay;$/;"	v
+mapRelay	server_iface.cpp	/^map<CInv, CDataStream> mapRelay;$/;"	v
+mempool	server/main.cpp	/^CTxMemPool mempool;$/;"	v
+mininginfo_json	block_iface.cpp	/^string mininginfo_json; $/;"	v
+miningtransactioninfo_json	block_iface.cpp	/^string miningtransactioninfo_json;$/;"	v
+movecmd	server/bitcoinrpc.cpp	/^Value movecmd(const Array& params, bool fHelp)$/;"	f
+mutexName	server/sync.cpp	/^    std::string mutexName;$/;"	m	struct:CLockLocation	file:
+nAccountingEntryNumber	server/walletdb.cpp	/^static uint64 nAccountingEntryNumber = 0;$/;"	v	file:
+nAmount	server/bitcoinrpc.cpp	/^    int64 nAmount;$/;"	m	struct:tallyitem	file:
+nBestHeight	server/main.cpp	/^int nBestHeight = -1;$/;"	v
+nConf	server/bitcoinrpc.cpp	/^    int nConf;$/;"	m	struct:tallyitem	file:
+nConnectTimeout	server/netbase.cpp	/^int nConnectTimeout = 5000;$/;"	v
+nCurrentBlockFile	server/main.cpp	/^static unsigned int nCurrentBlockFile = 1;$/;"	v	file:
+nGotIRCAddresses	server/irc.cpp	/^int nGotIRCAddresses = 0;$/;"	v
+nHPSTimerStart	server/main.cpp	/^int64 nHPSTimerStart;$/;"	v
+nLastBlockSize	server/main.cpp	/^uint64 nLastBlockSize = 0;$/;"	v
+nLastBlockTx	server/main.cpp	/^uint64 nLastBlockTx = 0;$/;"	v
+nLocalHostNonce	server/net.cpp	/^uint64 nLocalHostNonce = 0;$/;"	v
+nLocalHostNonce	server_iface.cpp	/^uint64 nLocalHostNonce = 0;$/;"	v
+nLocalServices	server/net.cpp	/^uint64 nLocalServices = (fClient ? 0 : NODE_NETWORK);$/;"	v
+nLocalServices	server_iface.cpp	/^uint64 nLocalServices = (fClient ? 0 : NODE_NETWORK);$/;"	v
+nMaxNumSize	server/script.cpp	/^static const size_t nMaxNumSize = 4;$/;"	v	file:
+nMinimumInputValue	server/main.cpp	/^int64 nMinimumInputValue = CENT \/ 100;$/;"	v
+nMockTime	server/util.cpp	/^static int64 nMockTime = 0;  \/\/ For unit testing$/;"	v	file:
+nOut	server/rpcdump.cpp	/^    int nOut;$/;"	m	class:CTxDump	file:
+nPort	server/net.cpp	/^    int nPort;$/;"	m	struct:LocalServiceInfo	file:
+nPort	server_iface.cpp	/^    int nPort;$/;"	m	struct:LocalServiceInfo	file:
+nScore	server/net.cpp	/^    int nScore;$/;"	m	struct:LocalServiceInfo	file:
+nScore	server_iface.cpp	/^    int nScore;$/;"	m	struct:LocalServiceInfo	file:
+nTargetSpacing	server/main.cpp	/^static int64 nTargetSpacing = 60; \/\/ USDE: 60 seconds$/;"	v	file:
+nTargetTimespan	server/main.cpp	/^static int64 nTargetTimespan = 2 * 60 * 60; \/\/ USDE: 2 hours$/;"	v	file:
+nTimeBestReceived	server/main.cpp	/^int64 nTimeBestReceived = 0;$/;"	v
+nTimeOffset	server/util.cpp	/^static int64 nTimeOffset = 0;$/;"	v	file:
+nTransactionFee	server/main.cpp	/^int64 nTransactionFee = 0;$/;"	v
+nTransactionsUpdated	server/main.cpp	/^unsigned int nTransactionsUpdated = 0;$/;"	v
+nValue	server/rpcdump.cpp	/^    int64 nValue;$/;"	m	class:CTxDump	file:
+nWalletDBUpdated	server/db.cpp	/^unsigned int nWalletDBUpdated;$/;"	v
+nWalletUnlockTime	server/bitcoinrpc.cpp	/^static int64 nWalletUnlockTime;$/;"	v	file:
+nameproxyInfo	server/netbase.cpp	/^static proxyType nameproxyInfo;$/;"	v	file:
+noui_ThreadSafeAskFee	server/noui.cpp	/^static bool noui_ThreadSafeAskFee(int64 nFeeRequired, const std::string& strCaption)$/;"	f	file:
+noui_ThreadSafeMessageBox	server/noui.cpp	/^static int noui_ThreadSafeMessageBox(const std::string& message, const std::string& caption, int style)$/;"	f	file:
+noui_connect	server/noui.cpp	/^void noui_connect()$/;"	f
+operator !=	server/netbase.cpp	/^bool operator!=(const CNetAddr& a, const CNetAddr& b)$/;"	f
+operator !=	server/netbase.cpp	/^bool operator!=(const CService& a, const CService& b)$/;"	f
+operator ()	server/bitcoinrpc.cpp	/^    Object operator()(const CKeyID &keyID) const {$/;"	f	class:DescribeAddressVisitor
+operator ()	server/bitcoinrpc.cpp	/^    Object operator()(const CNoDestination &dest) const { return Object(); }$/;"	f	class:DescribeAddressVisitor
+operator ()	server/bitcoinrpc.cpp	/^    Object operator()(const CScriptID &scriptID) const {$/;"	f	class:DescribeAddressVisitor
+operator ()	server/script.cpp	/^    bool operator()(const CKeyID &keyID) const { return keystore->HaveKey(keyID); }$/;"	f	class:CKeyStoreIsMineVisitor
+operator ()	server/script.cpp	/^    bool operator()(const CKeyID &keyID) const {$/;"	f	class:CScriptVisitor
+operator ()	server/script.cpp	/^    bool operator()(const CNoDestination &dest) const { return false; }$/;"	f	class:CKeyStoreIsMineVisitor
+operator ()	server/script.cpp	/^    bool operator()(const CNoDestination &dest) const {$/;"	f	class:CScriptVisitor
+operator ()	server/script.cpp	/^    bool operator()(const CScriptID &scriptID) const { return keystore->HaveCScript(scriptID); }$/;"	f	class:CKeyStoreIsMineVisitor
+operator ()	server/script.cpp	/^    bool operator()(const CScriptID &scriptID) const {$/;"	f	class:CScriptVisitor
+operator ()	server/wallet.cpp	/^    bool operator()(const pair<int64, pair<const CWalletTx*, unsigned int> >& t1,$/;"	f	struct:CompareValueOnly
+operator ()	wallet_iface.cpp	/^    Object operator()(const CKeyID &keyID) const {$/;"	f	class:DescribeAddressVisitor
+operator ()	wallet_iface.cpp	/^    Object operator()(const CNoDestination &dest) const { return Object(); }$/;"	f	class:DescribeAddressVisitor
+operator ()	wallet_iface.cpp	/^    Object operator()(const CScriptID &scriptID) const {$/;"	f	class:DescribeAddressVisitor
+operator <	server/netbase.cpp	/^bool operator<(const CNetAddr& a, const CNetAddr& b)$/;"	f
+operator <	server/netbase.cpp	/^bool operator<(const CService& a, const CService& b)$/;"	f
+operator <	server/protocol.cpp	/^bool operator<(const CInv& a, const CInv& b)$/;"	f
+operator =	server/key.cpp	/^CKey& CKey::operator=(const CKey& b)$/;"	f	class:CKey
+operator ==	server/netbase.cpp	/^bool operator==(const CNetAddr& a, const CNetAddr& b)$/;"	f
+operator ==	server/netbase.cpp	/^bool operator==(const CService& a, const CService& b)$/;"	f
+operator []	server/bitcoinrpc.cpp	/^const CRPCCommand *CRPCTable::operator[](string name) const$/;"	f	class:CRPCTable
+pSHA256InitState	server/main.cpp	/^static const unsigned int pSHA256InitState[8] =$/;"	v	file:
+params	server/bitcoinrpc.cpp	/^    Array params;$/;"	m	class:JSONRequest	file:
+parse	server/bitcoinrpc.cpp	/^void JSONRequest::parse(const Value& valRequest)$/;"	f	class:JSONRequest
+pchGarliCat	server/netbase.cpp	/^static const unsigned char pchGarliCat[] = {0xFD,0x60,0xDB,0x4D,0xDD,0xB5};$/;"	v	file:
+pchIPv4	server/netbase.cpp	/^static const unsigned char pchIPv4[12] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff };$/;"	v	file:
+pchMessageStart	server/main.cpp	/^unsigned char pchMessageStart[4] = { 0xd9, 0xd9, 0xf9, 0xbd };$/;"	v
+pchOnionCat	server/netbase.cpp	/^static const unsigned char pchOnionCat[] = {0xFD,0x87,0xD8,0x7E,0xEB,0x43};$/;"	v	file:
+peer	server/bitcoinrpc.cpp	/^    typename Protocol::endpoint peer;$/;"	m	class:AcceptedConnectionImpl	file:
+peer_address_to_string	server/bitcoinrpc.cpp	/^    virtual std::string peer_address_to_string() const$/;"	f	class:AcceptedConnectionImpl
+phexdigit	server/util.cpp	/^static signed char phexdigit[256] =$/;"	v	file:
+pindex	server/rpcdump.cpp	/^    CBlockIndex *pindex;$/;"	m	class:CTxDump	file:
+pindexBest	server/main.cpp	/^CBlockIndex* pindexBest = NULL;$/;"	v
+pindexGenesisBlock	server/main.cpp	/^CBlockIndex* pindexGenesisBlock = NULL;$/;"	v
+pnSeed	server/net.cpp	/^unsigned int pnSeed[] = {};$/;"	v
+pnSeed	server_iface.cpp	/^unsigned int pnSeed[] = {};$/;"	v
+pnodeLocalHost	server/net.cpp	/^static CNode* pnodeLocalHost = NULL;$/;"	v	file:
+pnodeLocalHost	server_iface.cpp	/^static CNode* pnodeLocalHost = NULL;$/;"	v	file:
+pop_lock	server/sync.cpp	/^static void pop_lock()$/;"	f	file:
+popstack	server/script.cpp	/^static inline void popstack(vector<valtype>& stack)$/;"	f	file:
+port	server/irc.cpp	/^    short port;$/;"	m	struct:ircaddr	file:
+potential_deadlock_detected	server/sync.cpp	/^static void potential_deadlock_detected(const std::pair<void*, void*>& mismatch, const LockStack& s1, const LockStack& s2)$/;"	f	file:
+ppmutexOpenSSL	server/util.cpp	/^static CCriticalSection** ppmutexOpenSSL;$/;"	v	file:
+ppszTypeName	server/protocol.cpp	/^static const char* ppszTypeName[] =$/;"	v	file:
+print	server/main.cpp	/^    void print() const$/;"	f	class:COrphan
+print	server/netbase.cpp	/^void CNetAddr::print() const$/;"	f	class:CNetAddr
+print	server/netbase.cpp	/^void CService::print() const$/;"	f	class:CService
+print	server/protocol.cpp	/^void CInv::print() const$/;"	f	class:CInv
+printf	block_iface.cpp	37;"	d	file:
+printf	block_iface.cpp	52;"	d	file:
+printf	server/bitcoinrpc.cpp	22;"	d	file:
+printf	server/bitcoinrpc.cpp	39;"	d	file:
+printf	server/rpcdump.cpp	14;"	d	file:
+proxyInfo	server/netbase.cpp	/^static proxyType proxyInfo[NET_MAX];$/;"	v	file:
+proxyType	server/netbase.cpp	/^typedef std::pair<CService, int> proxyType;$/;"	t	file:
+ptx	server/main.cpp	/^    CTransaction* ptx;$/;"	m	class:COrphan	file:
+ptx	server/rpcdump.cpp	/^    CWalletTx* ptx;$/;"	m	class:CTxDump	file:
+push_lock	server/sync.cpp	/^static void push_lock(void* c, const CLockLocation& locklocation, bool fTry)$/;"	f	file:
+queryHashes	server/main.cpp	/^void CTxMemPool::queryHashes(std::vector<uint256>& vtxid)$/;"	f	class:CTxMemPool
+read	server/bitcoinrpc.cpp	/^    std::streamsize read(char* s, std::streamsize n)$/;"	f	class:SSLIOStreamDevice
+real_strprintf	server/util.cpp	/^string real_strprintf(const std::string &format, int dummy, ...)$/;"	f
+remove	server/main.cpp	/^bool CTxMemPool::remove(CTransaction &tx)$/;"	f	class:CTxMemPool
+rfc1123Time	server/bitcoinrpc.cpp	/^string rfc1123Time()$/;"	f
+runCommand	server/util.cpp	/^void runCommand(std::string strCommand)$/;"	f
+script	server/script.cpp	/^    CScript *script;$/;"	m	class:CScriptVisitor	file:
+semOutbound	server/net.cpp	/^static CSemaphore *semOutbound;$/;"	v	file:
+semOutbound	server_iface.cpp	/^static CSemaphore *semOutbound = NULL;$/;"	v	file:
+sendfrom	server/bitcoinrpc.cpp	/^Value sendfrom(const Array& params, bool fHelp)$/;"	f
+sendmany	server/bitcoinrpc.cpp	/^Value sendmany(const Array& params, bool fHelp)$/;"	f
+sendrawtransaction	server/rpcrawtransaction.cpp	/^Value sendrawtransaction(const Array& params, bool fHelp)$/;"	f
+sendtoaddress	server/bitcoinrpc.cpp	/^Value sendtoaddress(const Array& params, bool fHelp)$/;"	f
+server_shutdown	server/init.cpp	/^void server_shutdown(void)$/;"	f
+setBanned	server/net.cpp	/^std::map<CNetAddr, int64> CNode::setBanned;$/;"	m	class:CNode	file:
+setBanned	server_iface.cpp	/^std::map<CNetAddr, int64> CNode::setBanned;$/;"	m	class:CNode	file:
+setDependsOn	server/main.cpp	/^    set<uint256> setDependsOn;$/;"	m	class:COrphan	file:
+setValid	server/script.cpp	/^    std::set< sigdata_type> setValid;$/;"	m	class:CSignatureCache	file:
+setaccount	server/bitcoinrpc.cpp	/^Value setaccount(const Array& params, bool fHelp)$/;"	f
+setblockreward	wallet_iface.cpp	/^int setblockreward(const char *accountName, double amount)$/;"	f
+setgenerate	server/bitcoinrpc.cpp	/^Value setgenerate(const Array& params, bool fHelp)$/;"	f
+setmininput	server/bitcoinrpc.cpp	/^Value setmininput(const Array& params, bool fHelp)$/;"	f
+setpwalletRegistered	server/main.cpp	/^set<CWallet*> setpwalletRegistered;$/;"	v
+setservAddNodeAddresses	server/net.cpp	/^set<CNetAddr> setservAddNodeAddresses;$/;"	v
+setservAddNodeAddresses	server_iface.cpp	/^set<CNetAddr> setservAddNodeAddresses;$/;"	v
+settxfee	server/bitcoinrpc.cpp	/^Value settxfee(const Array& params, bool fHelp)$/;"	f
+sigdata_type	server/script.cpp	/^    typedef boost::tuple<uint256, std::vector<unsigned char>, std::vector<unsigned char> > sigdata_type;$/;"	t	class:CSignatureCache	file:
+signmessage	server/bitcoinrpc.cpp	/^Value signmessage(const Array& params, bool fHelp)$/;"	f
+signrawtransaction	server/rpcrawtransaction.cpp	/^Value signrawtransaction(const Array& params, bool fHelp)$/;"	f
+sourceFile	server/sync.cpp	/^    std::string sourceFile;$/;"	m	struct:CLockLocation	file:
+sourceLine	server/sync.cpp	/^    int sourceLine;$/;"	m	struct:CLockLocation	file:
+sslStream	server/bitcoinrpc.cpp	/^    asio::ssl::stream<typename Protocol::socket> sslStream;$/;"	m	class:AcceptedConnectionImpl	file:
+stacktop	server/script.cpp	76;"	d	file:
+start_node	server/net.cpp	/^void start_node(void)$/;"	f
+start_node	server_iface.cpp	/^void start_node(void)$/;"	f
+start_node_peer	server_iface.cpp	/^void start_node_peer(const char *host, int port)$/;"	f
+stop	server/bitcoinrpc.cpp	/^Value stop(const Array& params, bool fHelp)$/;"	f
+strDNSSeed	server/net.cpp	/^static const char *strDNSSeed[][2] = {$/;"	v	file:
+strMessageMagic	server/main.cpp	/^const string strMessageMagic = "usde Signed Message:\\n";$/;"	v
+strMethod	server/bitcoinrpc.cpp	/^    string strMethod;$/;"	m	class:JSONRequest	file:
+strMiscWarning	server/util.cpp	/^string strMiscWarning;$/;"	v
+strRPCUserColonPass	server/bitcoinrpc.cpp	/^static std::string strRPCUserColonPass;$/;"	v	file:
+stream	server/bitcoinrpc.cpp	/^    asio::ssl::stream<typename Protocol::socket>& stream;$/;"	m	class:SSLIOStreamDevice	file:
+stream	server/bitcoinrpc.cpp	/^    virtual std::iostream& stream()$/;"	f	class:AcceptedConnectionImpl
+submit_block_hash	block_iface.cpp	/^string submit_block_hash;$/;"	v
+submitblock	block_iface.cpp	/^const char *submitblock(unsigned int workId, unsigned int nTime, unsigned int nNonce, char *xn_hex)$/;"	f
+tableRPC	server/bitcoinrpc.cpp	/^const CRPCTable tableRPC;$/;"	v
+tallyitem	server/bitcoinrpc.cpp	/^    tallyitem()$/;"	f	struct:tallyitem
+tallyitem	server/bitcoinrpc.cpp	/^struct tallyitem$/;"	s	file:
+transactioninfo_json	block_iface.cpp	/^string transactioninfo_json;$/;"	v
+uiInterface	server/init.cpp	/^CClientUIInterface uiInterface;$/;"	v
+vNodes	server/net.cpp	/^vector<CNode*> vNodes;$/;"	v
+vNodes	server_iface.cpp	/^vector<CNode*> vNodes;$/;"	v
+vOneShots	server/net.cpp	/^static deque<string> vOneShots;$/;"	v	file:
+vOneShots	server_iface.cpp	/^static deque<string> vOneShots;$/;"	v	file:
+vRPCCommands	server/bitcoinrpc.cpp	/^static const CRPCCommand vRPCCommands[] =$/;"	v	file:
+vRelayExpiration	server/net.cpp	/^deque<pair<int64, CInv> > vRelayExpiration;$/;"	v
+vRelayExpiration	server_iface.cpp	/^deque<pair<int64, CInv> > vRelayExpiration;$/;"	v
+validateaddress	server/bitcoinrpc.cpp	/^Value validateaddress(const Array& params, bool fHelp)$/;"	f
+valtype	server/script.cpp	/^typedef vector<unsigned char> valtype;$/;"	t	file:
+verifymessage	server/bitcoinrpc.cpp	/^Value verifymessage(const Array& params, bool fHelp)$/;"	f
+vfLimited	server/net.cpp	/^static bool vfLimited[NET_MAX] = {};$/;"	v	file:
+vfLimited	server_iface.cpp	/^static bool vfLimited[NET_MAX] = {};$/;"	v	file:
+vfReachable	server/net.cpp	/^static bool vfReachable[NET_MAX] = {};$/;"	v	file:
+vfReachable	server_iface.cpp	/^static bool vfReachable[NET_MAX] = {};$/;"	v	file:
+vhListenSocket	server/net.cpp	/^static std::vector<SOCKET> vhListenSocket;$/;"	v	file:
+vhListenSocket	server_iface.cpp	/^static std::vector<SOCKET> vhListenSocket;$/;"	v	file:
+vnThreadsRunning	server/net.cpp	/^array<int, THREAD_MAX> vnThreadsRunning;$/;"	v
+vnThreadsRunning	server_iface.cpp	/^boost::array<int, THREAD_MAX> vnThreadsRunning;$/;"	v
+vstrprintf	server/util.cpp	/^string vstrprintf(const std::string &format, va_list ap)$/;"	f
+wallet_account_transfer	wallet_iface.cpp	/^int wallet_account_transfer(const char *sourceAccountName, const char *accountName, const char *comment, double amount)$/;"	f
+walletlock	server/bitcoinrpc.cpp	/^Value walletlock(const Array& params, bool fHelp)$/;"	f
+walletpassphrase	server/bitcoinrpc.cpp	/^Value walletpassphrase(const Array& params, bool fHelp)$/;"	f
+walletpassphrasechange	server/bitcoinrpc.cpp	/^Value walletpassphrasechange(const Array& params, bool fHelp)$/;"	f
+write	server/bitcoinrpc.cpp	/^    std::streamsize write(const char* s, std::streamsize n)$/;"	f	class:SSLIOStreamDevice
+~AcceptedConnection	server/bitcoinrpc.cpp	/^    virtual ~AcceptedConnection() {}$/;"	f	class:AcceptedConnection
+~CDBEnv	server/db.cpp	/^CDBEnv::~CDBEnv()$/;"	f	class:CDBEnv
+~CInit	server/util.cpp	/^    ~CInit()$/;"	f	class:CInit
+~CKey	server/key.cpp	/^CKey::~CKey()$/;"	f	class:CKey
+~CLevelDB	server/leveldb.cpp	/^CLevelDB::~CLevelDB() {$/;"	f	class:CLevelDB
+~CNetCleanup	server/net.cpp	/^    ~CNetCleanup()$/;"	f	class:CNetCleanup
+~CNetCleanup	server_iface.cpp	/^    ~CNetCleanup()$/;"	f	class:CNetCleanup
