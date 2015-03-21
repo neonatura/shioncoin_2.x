@@ -76,12 +76,12 @@
 # endif
 #endif
 
-#define OPENSSL_CPUID_OBJ
+//#define OPENSSL_CPUID_OBJ
 
 /* crypto/opensslconf.h.in */
 
 /* Generate 80386 code? */
-#undef I386_ONLY
+//#undef I386_ONLY
 
 #if !(defined(VMS) || defined(__VMS)) /* VMS uses logical names instead */
 #if defined(HEADER_CRYPTLIB_H) && !defined(OPENSSLDIR)

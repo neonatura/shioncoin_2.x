@@ -54,14 +54,14 @@ host_triplet = @host@
 @X86_64_TRUE@	$(SSL_DIR)/crypto/bn/x86_64-mont5.s $(SSL_DIR)/crypto/bn/x86_64-gf2m.s $(SSL_DIR)/crypto/bn/modexp512-x86_64.s
 
 @I386_TRUE@am__append_2 = \
+@I386_TRUE@	$(SSL_DIR)/crypto/mem_clr.c \
 @I386_TRUE@	$(SSL_DIR)/crypto/camellia/camellia.c \
 @I386_TRUE@	$(SSL_DIR)/crypto/aes/aes_x86core.c \
 @I386_TRUE@	$(SSL_DIR)/crypto/whrlpool/wp_block.c \
 @I386_TRUE@	$(SSL_DIR)/crypto/rc4/rc4_enc.c \
 @I386_TRUE@	$(SSL_DIR)/crypto/camellia/cmll_cbc.c \
 @I386_TRUE@	$(SSL_DIR)/crypto/rc4/rc4_skey.c \
-@I386_TRUE@	$(SSL_DIR)/crypto/aes/aes_cbc.c \
-@I386_TRUE@	$(SSL_DIR)/crypto/x86cpuid.s
+@I386_TRUE@	$(SSL_DIR)/crypto/aes/aes_cbc.c
 
 @X86_64_TRUE@am__append_3 = -DOPENSSL_IA32_SSE2 -DOPENSSL_BN_ASM_MONT -DOPENSSL_BN_ASM_MONT5 -DOPENSSL_BN_ASM_GF2m -DSHA1_ASM -DSHA256_ASM -DSHA512_ASM -DMD5_ASM -DAES_ASM -DVPAES_ASM -DBSAES_ASM -DWHIRLPOOL_ASM -DGHASH_ASM
 subdir = src/share-ssl-lib
@@ -698,37 +698,37 @@ am__libshare_ssl_a_SOURCES_DIST = $(SSL_DIR)/crypto/cryptlib.c \
 	$(SSL_DIR)/engines/ccgost/gost_params.c \
 	$(SSL_DIR)/engines/ccgost/gost_pmeth.c \
 	$(SSL_DIR)/engines/ccgost/gost_sign.c \
-	$(SSL_DIR)/crypto/x86_64cpuid.s \
+	$(SSL_DIR)/crypto/x86_64cpuid.s $(SSL_DIR)/crypto/mem_clr.c \
 	$(SSL_DIR)/crypto/camellia/camellia.c \
 	$(SSL_DIR)/crypto/aes/aes_x86core.c \
 	$(SSL_DIR)/crypto/whrlpool/wp_block.c \
 	$(SSL_DIR)/crypto/rc4/rc4_enc.c \
 	$(SSL_DIR)/crypto/camellia/cmll_cbc.c \
 	$(SSL_DIR)/crypto/rc4/rc4_skey.c \
-	$(SSL_DIR)/crypto/aes/aes_cbc.c $(SSL_DIR)/crypto/x86cpuid.s \
-	$(SSL_DIR)/ssl/s2_meth.c $(SSL_DIR)/ssl/s2_srvr.c \
-	$(SSL_DIR)/ssl/s2_clnt.c $(SSL_DIR)/ssl/s2_lib.c \
-	$(SSL_DIR)/ssl/s2_enc.c $(SSL_DIR)/ssl/s2_pkt.c \
-	$(SSL_DIR)/ssl/s3_meth.c $(SSL_DIR)/ssl/s3_srvr.c \
-	$(SSL_DIR)/ssl/s3_clnt.c $(SSL_DIR)/ssl/s3_lib.c \
-	$(SSL_DIR)/ssl/s3_enc.c $(SSL_DIR)/ssl/s3_pkt.c \
-	$(SSL_DIR)/ssl/s3_both.c $(SSL_DIR)/ssl/s3_cbc.c \
-	$(SSL_DIR)/ssl/s23_meth.c $(SSL_DIR)/ssl/s23_srvr.c \
-	$(SSL_DIR)/ssl/s23_clnt.c $(SSL_DIR)/ssl/s23_lib.c \
-	$(SSL_DIR)/ssl/s23_pkt.c $(SSL_DIR)/ssl/t1_meth.c \
-	$(SSL_DIR)/ssl/t1_srvr.c $(SSL_DIR)/ssl/t1_clnt.c \
-	$(SSL_DIR)/ssl/t1_lib.c $(SSL_DIR)/ssl/t1_enc.c \
-	$(SSL_DIR)/ssl/d1_meth.c $(SSL_DIR)/ssl/d1_srvr.c \
-	$(SSL_DIR)/ssl/d1_clnt.c $(SSL_DIR)/ssl/d1_lib.c \
-	$(SSL_DIR)/ssl/d1_pkt.c $(SSL_DIR)/ssl/d1_both.c \
-	$(SSL_DIR)/ssl/d1_enc.c $(SSL_DIR)/ssl/d1_srtp.c \
-	$(SSL_DIR)/ssl/ssl_lib.c $(SSL_DIR)/ssl/ssl_err2.c \
-	$(SSL_DIR)/ssl/ssl_cert.c $(SSL_DIR)/ssl/ssl_sess.c \
-	$(SSL_DIR)/ssl/ssl_ciph.c $(SSL_DIR)/ssl/ssl_stat.c \
-	$(SSL_DIR)/ssl/ssl_rsa.c $(SSL_DIR)/ssl/ssl_asn1.c \
-	$(SSL_DIR)/ssl/ssl_txt.c $(SSL_DIR)/ssl/ssl_algs.c \
-	$(SSL_DIR)/ssl/bio_ssl.c $(SSL_DIR)/ssl/kssl.c \
-	$(SSL_DIR)/ssl/tls_srp.c $(SSL_DIR)/ssl/t1_reneg.c
+	$(SSL_DIR)/crypto/aes/aes_cbc.c $(SSL_DIR)/ssl/s2_meth.c \
+	$(SSL_DIR)/ssl/s2_srvr.c $(SSL_DIR)/ssl/s2_clnt.c \
+	$(SSL_DIR)/ssl/s2_lib.c $(SSL_DIR)/ssl/s2_enc.c \
+	$(SSL_DIR)/ssl/s2_pkt.c $(SSL_DIR)/ssl/s3_meth.c \
+	$(SSL_DIR)/ssl/s3_srvr.c $(SSL_DIR)/ssl/s3_clnt.c \
+	$(SSL_DIR)/ssl/s3_lib.c $(SSL_DIR)/ssl/s3_enc.c \
+	$(SSL_DIR)/ssl/s3_pkt.c $(SSL_DIR)/ssl/s3_both.c \
+	$(SSL_DIR)/ssl/s3_cbc.c $(SSL_DIR)/ssl/s23_meth.c \
+	$(SSL_DIR)/ssl/s23_srvr.c $(SSL_DIR)/ssl/s23_clnt.c \
+	$(SSL_DIR)/ssl/s23_lib.c $(SSL_DIR)/ssl/s23_pkt.c \
+	$(SSL_DIR)/ssl/t1_meth.c $(SSL_DIR)/ssl/t1_srvr.c \
+	$(SSL_DIR)/ssl/t1_clnt.c $(SSL_DIR)/ssl/t1_lib.c \
+	$(SSL_DIR)/ssl/t1_enc.c $(SSL_DIR)/ssl/d1_meth.c \
+	$(SSL_DIR)/ssl/d1_srvr.c $(SSL_DIR)/ssl/d1_clnt.c \
+	$(SSL_DIR)/ssl/d1_lib.c $(SSL_DIR)/ssl/d1_pkt.c \
+	$(SSL_DIR)/ssl/d1_both.c $(SSL_DIR)/ssl/d1_enc.c \
+	$(SSL_DIR)/ssl/d1_srtp.c $(SSL_DIR)/ssl/ssl_lib.c \
+	$(SSL_DIR)/ssl/ssl_err2.c $(SSL_DIR)/ssl/ssl_cert.c \
+	$(SSL_DIR)/ssl/ssl_sess.c $(SSL_DIR)/ssl/ssl_ciph.c \
+	$(SSL_DIR)/ssl/ssl_stat.c $(SSL_DIR)/ssl/ssl_rsa.c \
+	$(SSL_DIR)/ssl/ssl_asn1.c $(SSL_DIR)/ssl/ssl_txt.c \
+	$(SSL_DIR)/ssl/ssl_algs.c $(SSL_DIR)/ssl/bio_ssl.c \
+	$(SSL_DIR)/ssl/kssl.c $(SSL_DIR)/ssl/tls_srp.c \
+	$(SSL_DIR)/ssl/t1_reneg.c
 @X86_64_TRUE@am__objects_1 = x86_64cpuid.$(OBJEXT) \
 @X86_64_TRUE@	md5-x86_64.$(OBJEXT) sha1-x86_64.$(OBJEXT) \
 @X86_64_TRUE@	aesni-sha1-x86_64.$(OBJEXT) \
@@ -741,13 +741,14 @@ am__libshare_ssl_a_SOURCES_DIST = $(SSL_DIR)/crypto/cryptlib.c \
 @X86_64_TRUE@	ghash-x86_64.$(OBJEXT) x86_64-mont.$(OBJEXT) \
 @X86_64_TRUE@	x86_64-mont5.$(OBJEXT) x86_64-gf2m.$(OBJEXT) \
 @X86_64_TRUE@	modexp512-x86_64.$(OBJEXT)
-@I386_TRUE@am__objects_2 = libshare_ssl_a-camellia.$(OBJEXT) \
+@I386_TRUE@am__objects_2 = libshare_ssl_a-mem_clr.$(OBJEXT) \
+@I386_TRUE@	libshare_ssl_a-camellia.$(OBJEXT) \
 @I386_TRUE@	libshare_ssl_a-aes_x86core.$(OBJEXT) \
 @I386_TRUE@	libshare_ssl_a-wp_block.$(OBJEXT) \
 @I386_TRUE@	libshare_ssl_a-rc4_enc.$(OBJEXT) \
 @I386_TRUE@	libshare_ssl_a-cmll_cbc.$(OBJEXT) \
 @I386_TRUE@	libshare_ssl_a-rc4_skey.$(OBJEXT) \
-@I386_TRUE@	libshare_ssl_a-aes_cbc.$(OBJEXT) x86cpuid.$(OBJEXT)
+@I386_TRUE@	libshare_ssl_a-aes_cbc.$(OBJEXT)
 am__objects_3 = libshare_ssl_a-cryptlib.$(OBJEXT) \
 	libshare_ssl_a-bss_mem.$(OBJEXT) libshare_ssl_a-mem.$(OBJEXT) \
 	libshare_ssl_a-mem_dbg.$(OBJEXT) \
@@ -1466,7 +1467,9 @@ CCAS = @CCAS@
 CCASDEPMODE = @CCASDEPMODE@
 CCASFLAGS = @CCASFLAGS@
 CCDEPMODE = @CCDEPMODE@
+@I386_TRUE@CFLAGS = -DOPENSSL_NO_ASM -DI386_ONLY
 CFLAGS = @CFLAGS@
+@X86_64_TRUE@CFLAGS = -DOPENSSL_CPUID_OBJ
 CP = @CP@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
@@ -2912,6 +2915,10 @@ libcrypto_sources = $(SSL_DIR)/crypto/cryptlib.c \
 	$(SSL_DIR)/engines/ccgost/gost_pmeth.c \
 	$(SSL_DIR)/engines/ccgost/gost_sign.c $(am__append_1) \
 	$(am__append_2)
+
+#	$(SSL_DIR)/crypto/x86cpuid.s
+#$(SSL_DIR)/crypto/x86cpuid.s: $(SSL_DIR)/crypto/x86cpuid.pl
+#	$(PERL) $(SSL_DIR)/crypto/x86cpuid.pl linux -I. > $(SSL_DIR)/crypto/x86cupid.s
 libshare_ssl_a_SOURCES = \
 	$(libcrypto_sources) $(libssl_sources) 
 
@@ -3329,6 +3336,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libshare_ssl_a-mdc2_one.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libshare_ssl_a-mdc2dgst.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libshare_ssl_a-mem.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libshare_ssl_a-mem_clr.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libshare_ssl_a-mem_dbg.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libshare_ssl_a-n_pkey.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libshare_ssl_a-names.Po@am__quote@
@@ -12088,6 +12096,20 @@ libshare_ssl_a-gost_sign.obj: $(SSL_DIR)/engines/ccgost/gost_sign.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-gost_sign.obj `if test -f '$(SSL_DIR)/engines/ccgost/gost_sign.c'; then $(CYGPATH_W) '$(SSL_DIR)/engines/ccgost/gost_sign.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/engines/ccgost/gost_sign.c'; fi`
 
+libshare_ssl_a-mem_clr.o: $(SSL_DIR)/crypto/mem_clr.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-mem_clr.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-mem_clr.Tpo -c -o libshare_ssl_a-mem_clr.o `test -f '$(SSL_DIR)/crypto/mem_clr.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/mem_clr.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-mem_clr.Tpo $(DEPDIR)/libshare_ssl_a-mem_clr.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/mem_clr.c' object='libshare_ssl_a-mem_clr.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-mem_clr.o `test -f '$(SSL_DIR)/crypto/mem_clr.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/mem_clr.c
+
+libshare_ssl_a-mem_clr.obj: $(SSL_DIR)/crypto/mem_clr.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-mem_clr.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-mem_clr.Tpo -c -o libshare_ssl_a-mem_clr.obj `if test -f '$(SSL_DIR)/crypto/mem_clr.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/mem_clr.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/mem_clr.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-mem_clr.Tpo $(DEPDIR)/libshare_ssl_a-mem_clr.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/mem_clr.c' object='libshare_ssl_a-mem_clr.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-mem_clr.obj `if test -f '$(SSL_DIR)/crypto/mem_clr.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/mem_clr.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/mem_clr.c'; fi`
+
 libshare_ssl_a-camellia.o: $(SSL_DIR)/crypto/camellia/camellia.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-camellia.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-camellia.Tpo -c -o libshare_ssl_a-camellia.o `test -f '$(SSL_DIR)/crypto/camellia/camellia.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/camellia/camellia.c
 @am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-camellia.Tpo $(DEPDIR)/libshare_ssl_a-camellia.Po
@@ -12953,12 +12975,6 @@ x86_64cpuid.o: $(SSL_DIR)/crypto/x86_64cpuid.s
 x86_64cpuid.obj: $(SSL_DIR)/crypto/x86_64cpuid.s
 	$(CCAS) $(AM_CCASFLAGS) $(CCASFLAGS) -c -o x86_64cpuid.obj `if test -f '$(SSL_DIR)/crypto/x86_64cpuid.s'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/x86_64cpuid.s'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/x86_64cpuid.s'; fi`
 
-x86cpuid.o: $(SSL_DIR)/crypto/x86cpuid.s
-	$(CCAS) $(AM_CCASFLAGS) $(CCASFLAGS) -c -o x86cpuid.o `test -f '$(SSL_DIR)/crypto/x86cpuid.s' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/x86cpuid.s
-
-x86cpuid.obj: $(SSL_DIR)/crypto/x86cpuid.s
-	$(CCAS) $(AM_CCASFLAGS) $(CCASFLAGS) -c -o x86cpuid.obj `if test -f '$(SSL_DIR)/crypto/x86cpuid.s'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/x86cpuid.s'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/x86cpuid.s'; fi`
-
 mostlyclean-libtool:
 	-rm -f *.lo
 
@@ -13162,9 +13178,6 @@ uninstall-am:
 	mostlyclean-compile mostlyclean-generic mostlyclean-libtool \
 	pdf pdf-am ps ps-am tags uninstall uninstall-am
 
-
-@I386_TRUE@$(SSL_DIR)/crypto/x86cpuid.s: $(SSL_DIR)/crypto/x86cpuid.pl
-@I386_TRUE@	$(PERL) $(SSL_DIR)/crypto/x86cpuid.pl linux -I. > $(SSL_DIR)/crypto/x86cupid.s
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

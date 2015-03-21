@@ -108,6 +108,7 @@ shcoind_LDADD = $(top_builddir)/src/share-ssl-lib/libshare_ssl.a
 if STATIC_LIBSHARE
 shcoind_LDADD += $(LIBSHARE)/src/share-lib/libshare.a
 shcoind_CFLAGS = -I$(LIBSHARE)/include
+shcoind_CXXFLAGS = -I$(LIBSHARE)/include
 endif
 
 shcoin_SOURCES = shcoind_tool.cpp $(common_INCLUDES) $(common_SOURCES)
@@ -115,6 +116,7 @@ shcoin_LDADD = $(top_builddir)/src/share-ssl-lib/libshare_ssl.a
 if STATIC_LIBSHARE
 shcoin_LDADD += $(LIBSHARE)/src/share-lib/libshare.a
 shcoin_CFLAGS = -I$(LIBSHARE)/include
+shcoin_CXXFLAGS = -I$(LIBSHARE)/include
 endif
 
 if HAVE_INITD_DIR

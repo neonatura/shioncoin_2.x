@@ -31,6 +31,7 @@ libcrypto_sources += \
 	$(SSL_DIR)/crypto/modes/ghash-x86_64.s \
 	$(SSL_DIR)/crypto/bn/x86_64-mont.s \
 	$(SSL_DIR)/crypto/bn/x86_64-mont5.s $(SSL_DIR)/crypto/bn/x86_64-gf2m.s $(SSL_DIR)/crypto/bn/modexp512-x86_64.s
+CFLAGS = -DOPENSSL_CPUID_OBJ
 endif
 
 if I386
