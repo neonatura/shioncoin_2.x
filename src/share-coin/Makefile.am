@@ -104,10 +104,18 @@ shcoind_SOURCES = shcoind.c $(common_INCLUDES) $(common_SOURCES) \
 	stratum/stratum_task.c \
 	shcoind_daemon.c \
 	shcoind_daemon.h
-shcoind_LDADD = $(top_builddir)/src/share-ssl-lib/libshare_ssl.a $(LIBSHARE)
+shcoind_LDADD = $(top_builddir)/src/share-ssl-lib/libshare_ssl.a
+if STATIC_LIBSHARE
+shcoind_LDADD += $(LIBSHARE)/src/share-lib/libshare.a
+shcoind_CFLAGS = -I$(LIBSHARE)/include
+endif
 
 shcoin_SOURCES = shcoind_tool.cpp $(common_INCLUDES) $(common_SOURCES)
-shcoin_LDADD = $(top_builddir)/src/share-ssl-lib/libshare_ssl.a $(LIBSHARE)
+shcoin_LDADD = $(top_builddir)/src/share-ssl-lib/libshare_ssl.a
+if STATIC_LIBSHARE
+shcoin_LDADD += $(LIBSHARE)/src/share-lib/libshare.a
+shcoin_CFLAGS = -I$(LIBSHARE)/include
+endif
 
 if HAVE_INITD_DIR
 EXTRA_DIST = $(top_builddir)/scripts/initd/shcoind

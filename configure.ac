@@ -214,6 +214,7 @@ LIBSHARE=
 AS_IF([test "x$with_libshare" = "xyes"],
   AC_CHECK_LIB([share], [get_libshare_version]))
 AC_SUBST([LIBSHARE], $with_libshare)
+AM_CONDITIONAL([STATIC_LIBSHARE], test x"$with_libshare" != x"yes") 
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_HEADER_STDBOOL
@@ -281,6 +282,8 @@ AC_SUBST(INITD_DIR)
 
 AC_SUBST(OPENSSL_DIR, "openssl-1.0.1g")
 AC_CHECK_PROGS([CP], [cp])
+
+AC_CHECK_PROGS([PERL], [perl])
 
 AC_CHECK_PROGS([DOXYGEN], [doxygen])
 if test -z "$DOXYGEN";
