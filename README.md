@@ -5,13 +5,13 @@ share-coin
 
 <h2>Quick Instructions</h2>
 
+64-bit: Add '--libdir=/usr/local/lib64' as configure command-line option
+
 Building the share library:
 <i><small><pre>
   git clone https://github.com/neonatura/share
-  cd share-coin
-  mkdir build
-  cd build
-  ../configure
+  cd share
+  ./configure
   make
   make install
 </pre></small><i>
