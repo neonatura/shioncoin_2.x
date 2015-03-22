@@ -180,16 +180,11 @@ am__libshare_ssl_a_SOURCES_DIST = $(SSL_DIR)/crypto/cryptlib.c \
 	$(SSL_DIR)/crypto/md4/md4_one.c \
 	$(SSL_DIR)/crypto/md5/md5_dgst.c \
 	$(SSL_DIR)/crypto/md5/md5_one.c \
-	$(SSL_DIR)/crypto/md5/md5-x86_64.s \
 	$(SSL_DIR)/crypto/sha/sha_dgst.c \
 	$(SSL_DIR)/crypto/sha/sha1dgst.c \
-	$(SSL_DIR)/crypto/sha/sha1-x86_64.s \
 	$(SSL_DIR)/crypto/sha/sha_one.c \
 	$(SSL_DIR)/crypto/sha/sha1_one.c \
 	$(SSL_DIR)/crypto/sha/sha256.c $(SSL_DIR)/crypto/sha/sha512.c \
-	$(SSL_DIR)/crypto/aes/aesni-sha1-x86_64.s \
-	$(SSL_DIR)/crypto/sha/sha256-x86_64.s \
-	$(SSL_DIR)/crypto/sha/sha512-x86_64.s \
 	$(SSL_DIR)/crypto/mdc2/mdc2dgst.c \
 	$(SSL_DIR)/crypto/mdc2/mdc2_one.c \
 	$(SSL_DIR)/crypto/hmac/hmac.c \
@@ -198,7 +193,6 @@ am__libshare_ssl_a_SOURCES_DIST = $(SSL_DIR)/crypto/cryptlib.c \
 	$(SSL_DIR)/crypto/ripemd/rmd_dgst.c \
 	$(SSL_DIR)/crypto/ripemd/rmd_one.c \
 	$(SSL_DIR)/crypto/whrlpool/wp_dgst.c \
-	$(SSL_DIR)/crypto/whrlpool/wp-x86_64.s \
 	$(SSL_DIR)/crypto/des/set_key.c \
 	$(SSL_DIR)/crypto/des/ecb_enc.c \
 	$(SSL_DIR)/crypto/des/cbc_enc.c \
@@ -231,17 +225,11 @@ am__libshare_ssl_a_SOURCES_DIST = $(SSL_DIR)/crypto/cryptlib.c \
 	$(SSL_DIR)/crypto/aes/aes_ctr.c \
 	$(SSL_DIR)/crypto/aes/aes_ige.c \
 	$(SSL_DIR)/crypto/aes/aes_wrap.c \
-	$(SSL_DIR)/crypto/aes/aes-x86_64.s \
-	$(SSL_DIR)/crypto/aes/bsaes-x86_64.s \
-	$(SSL_DIR)/crypto/aes/vpaes-x86_64.s \
-	$(SSL_DIR)/crypto/aes/aesni-x86_64.s \
 	$(SSL_DIR)/crypto/rc2/rc2_ecb.c \
 	$(SSL_DIR)/crypto/rc2/rc2_skey.c \
 	$(SSL_DIR)/crypto/rc2/rc2_cbc.c \
 	$(SSL_DIR)/crypto/rc2/rc2cfb64.c \
 	$(SSL_DIR)/crypto/rc2/rc2ofb64.c \
-	$(SSL_DIR)/crypto/rc4/rc4-x86_64.s \
-	$(SSL_DIR)/crypto/rc4/rc4-md5-x86_64.s \
 	$(SSL_DIR)/crypto/rc4/rc4_utl.c $(SSL_DIR)/crypto/idea/i_cbc.c \
 	$(SSL_DIR)/crypto/idea/i_cfb64.c \
 	$(SSL_DIR)/crypto/idea/i_ofb64.c \
@@ -258,7 +246,6 @@ am__libshare_ssl_a_SOURCES_DIST = $(SSL_DIR)/crypto/cryptlib.c \
 	$(SSL_DIR)/crypto/camellia/cmll_cfb.c \
 	$(SSL_DIR)/crypto/camellia/cmll_ctr.c \
 	$(SSL_DIR)/crypto/camellia/cmll_utl.c \
-	$(SSL_DIR)/crypto/camellia/cmll-x86_64.s \
 	$(SSL_DIR)/crypto/camellia/cmll_misc.c \
 	$(SSL_DIR)/crypto/evp/e_seed.c $(SSL_DIR)/crypto/seed/seed.c \
 	$(SSL_DIR)/crypto/seed/seed_ofb.c \
@@ -272,22 +259,16 @@ am__libshare_ssl_a_SOURCES_DIST = $(SSL_DIR)/crypto/cryptlib.c \
 	$(SSL_DIR)/crypto/modes/ofb128.c \
 	$(SSL_DIR)/crypto/modes/gcm128.c \
 	$(SSL_DIR)/crypto/modes/ccm128.c \
-	$(SSL_DIR)/crypto/modes/xts128.c \
-	$(SSL_DIR)/crypto/modes/ghash-x86_64.s \
-	$(SSL_DIR)/crypto/bn/bn_asm.c $(SSL_DIR)/crypto/bn/bn_add.c \
-	$(SSL_DIR)/crypto/bn/bn_div.c $(SSL_DIR)/crypto/bn/bn_exp.c \
-	$(SSL_DIR)/crypto/bn/bn_lib.c $(SSL_DIR)/crypto/bn/bn_ctx.c \
-	$(SSL_DIR)/crypto/bn/bn_mul.c $(SSL_DIR)/crypto/bn/bn_mod.c \
-	$(SSL_DIR)/crypto/bn/bn_print.c $(SSL_DIR)/crypto/bn/bn_rand.c \
-	$(SSL_DIR)/crypto/bn/bn_shift.c $(SSL_DIR)/crypto/bn/bn_word.c \
-	$(SSL_DIR)/crypto/bn/bn_blind.c $(SSL_DIR)/crypto/bn/bn_kron.c \
-	$(SSL_DIR)/crypto/bn/bn_sqrt.c $(SSL_DIR)/crypto/bn/bn_gcd.c \
-	$(SSL_DIR)/crypto/bn/bn_prime.c $(SSL_DIR)/crypto/bn/bn_err.c \
-	$(SSL_DIR)/crypto/bn/bn_sqr.c \
-	$(SSL_DIR)/crypto/bn/x86_64-mont.s \
-	$(SSL_DIR)/crypto/bn/x86_64-mont5.s \
-	$(SSL_DIR)/crypto/bn/x86_64-gf2m.s \
-	$(SSL_DIR)/crypto/bn/modexp512-x86_64.s \
+	$(SSL_DIR)/crypto/modes/xts128.c $(SSL_DIR)/crypto/bn/bn_asm.c \
+	$(SSL_DIR)/crypto/bn/bn_add.c $(SSL_DIR)/crypto/bn/bn_div.c \
+	$(SSL_DIR)/crypto/bn/bn_exp.c $(SSL_DIR)/crypto/bn/bn_lib.c \
+	$(SSL_DIR)/crypto/bn/bn_ctx.c $(SSL_DIR)/crypto/bn/bn_mul.c \
+	$(SSL_DIR)/crypto/bn/bn_mod.c $(SSL_DIR)/crypto/bn/bn_print.c \
+	$(SSL_DIR)/crypto/bn/bn_rand.c $(SSL_DIR)/crypto/bn/bn_shift.c \
+	$(SSL_DIR)/crypto/bn/bn_word.c $(SSL_DIR)/crypto/bn/bn_blind.c \
+	$(SSL_DIR)/crypto/bn/bn_kron.c $(SSL_DIR)/crypto/bn/bn_sqrt.c \
+	$(SSL_DIR)/crypto/bn/bn_gcd.c $(SSL_DIR)/crypto/bn/bn_prime.c \
+	$(SSL_DIR)/crypto/bn/bn_err.c $(SSL_DIR)/crypto/bn/bn_sqr.c \
 	$(SSL_DIR)/crypto/bn/bn_recp.c $(SSL_DIR)/crypto/bn/bn_mont.c \
 	$(SSL_DIR)/crypto/bn/bn_mpi.c $(SSL_DIR)/crypto/bn/bn_exp2.c \
 	$(SSL_DIR)/crypto/bn/bn_gf2m.c $(SSL_DIR)/crypto/bn/bn_nist.c \
@@ -700,7 +681,26 @@ am__libshare_ssl_a_SOURCES_DIST = $(SSL_DIR)/crypto/cryptlib.c \
 	$(SSL_DIR)/engines/ccgost/gost_params.c \
 	$(SSL_DIR)/engines/ccgost/gost_pmeth.c \
 	$(SSL_DIR)/engines/ccgost/gost_sign.c \
-	$(SSL_DIR)/crypto/x86_64cpuid.s $(SSL_DIR)/crypto/mem_clr.c \
+	$(SSL_DIR)/crypto/x86_64cpuid.s \
+	$(SSL_DIR)/crypto/md5/md5-x86_64.s \
+	$(SSL_DIR)/crypto/sha/sha1-x86_64.s \
+	$(SSL_DIR)/crypto/aes/aesni-sha1-x86_64.s \
+	$(SSL_DIR)/crypto/sha/sha256-x86_64.s \
+	$(SSL_DIR)/crypto/sha/sha512-x86_64.s \
+	$(SSL_DIR)/crypto/whrlpool/wp-x86_64.s \
+	$(SSL_DIR)/crypto/aes/aes-x86_64.s \
+	$(SSL_DIR)/crypto/aes/bsaes-x86_64.s \
+	$(SSL_DIR)/crypto/aes/vpaes-x86_64.s \
+	$(SSL_DIR)/crypto/aes/aesni-x86_64.s \
+	$(SSL_DIR)/crypto/rc4/rc4-x86_64.s \
+	$(SSL_DIR)/crypto/rc4/rc4-md5-x86_64.s \
+	$(SSL_DIR)/crypto/camellia/cmll-x86_64.s \
+	$(SSL_DIR)/crypto/modes/ghash-x86_64.s \
+	$(SSL_DIR)/crypto/bn/x86_64-mont.s \
+	$(SSL_DIR)/crypto/bn/x86_64-mont5.s \
+	$(SSL_DIR)/crypto/bn/x86_64-gf2m.s \
+	$(SSL_DIR)/crypto/bn/modexp512-x86_64.s \
+	$(SSL_DIR)/crypto/mem_clr.c \
 	$(SSL_DIR)/crypto/camellia/camellia.c \
 	$(SSL_DIR)/crypto/aes/aes_x86core.c \
 	$(SSL_DIR)/crypto/whrlpool/wp_block.c \
@@ -770,14 +770,13 @@ am__objects_3 = libshare_ssl_a-cryptlib.$(OBJEXT) \
 	libshare_ssl_a-md4_dgst.$(OBJEXT) \
 	libshare_ssl_a-md4_one.$(OBJEXT) \
 	libshare_ssl_a-md5_dgst.$(OBJEXT) \
-	libshare_ssl_a-md5_one.$(OBJEXT) md5-x86_64.$(OBJEXT) \
+	libshare_ssl_a-md5_one.$(OBJEXT) \
 	libshare_ssl_a-sha_dgst.$(OBJEXT) \
-	libshare_ssl_a-sha1dgst.$(OBJEXT) sha1-x86_64.$(OBJEXT) \
+	libshare_ssl_a-sha1dgst.$(OBJEXT) \
 	libshare_ssl_a-sha_one.$(OBJEXT) \
 	libshare_ssl_a-sha1_one.$(OBJEXT) \
 	libshare_ssl_a-sha256.$(OBJEXT) \
-	libshare_ssl_a-sha512.$(OBJEXT) aesni-sha1-x86_64.$(OBJEXT) \
-	sha256-x86_64.$(OBJEXT) sha512-x86_64.$(OBJEXT) \
+	libshare_ssl_a-sha512.$(OBJEXT) \
 	libshare_ssl_a-mdc2dgst.$(OBJEXT) \
 	libshare_ssl_a-mdc2_one.$(OBJEXT) \
 	libshare_ssl_a-hmac.$(OBJEXT) \
@@ -785,7 +784,7 @@ am__objects_3 = libshare_ssl_a-cryptlib.$(OBJEXT) \
 	libshare_ssl_a-hm_pmeth.$(OBJEXT) \
 	libshare_ssl_a-rmd_dgst.$(OBJEXT) \
 	libshare_ssl_a-rmd_one.$(OBJEXT) \
-	libshare_ssl_a-wp_dgst.$(OBJEXT) wp-x86_64.$(OBJEXT) \
+	libshare_ssl_a-wp_dgst.$(OBJEXT) \
 	libshare_ssl_a-set_key.$(OBJEXT) \
 	libshare_ssl_a-ecb_enc.$(OBJEXT) \
 	libshare_ssl_a-cbc_enc.$(OBJEXT) \
@@ -820,15 +819,13 @@ am__objects_3 = libshare_ssl_a-cryptlib.$(OBJEXT) \
 	libshare_ssl_a-aes_ofb.$(OBJEXT) \
 	libshare_ssl_a-aes_ctr.$(OBJEXT) \
 	libshare_ssl_a-aes_ige.$(OBJEXT) \
-	libshare_ssl_a-aes_wrap.$(OBJEXT) aes-x86_64.$(OBJEXT) \
-	bsaes-x86_64.$(OBJEXT) vpaes-x86_64.$(OBJEXT) \
-	aesni-x86_64.$(OBJEXT) aesni-sha1-x86_64.$(OBJEXT) \
+	libshare_ssl_a-aes_wrap.$(OBJEXT) \
 	libshare_ssl_a-rc2_ecb.$(OBJEXT) \
 	libshare_ssl_a-rc2_skey.$(OBJEXT) \
 	libshare_ssl_a-rc2_cbc.$(OBJEXT) \
 	libshare_ssl_a-rc2cfb64.$(OBJEXT) \
-	libshare_ssl_a-rc2ofb64.$(OBJEXT) rc4-x86_64.$(OBJEXT) \
-	rc4-md5-x86_64.$(OBJEXT) libshare_ssl_a-rc4_utl.$(OBJEXT) \
+	libshare_ssl_a-rc2ofb64.$(OBJEXT) \
+	libshare_ssl_a-rc4_utl.$(OBJEXT) \
 	libshare_ssl_a-i_cbc.$(OBJEXT) \
 	libshare_ssl_a-i_cfb64.$(OBJEXT) \
 	libshare_ssl_a-i_ofb64.$(OBJEXT) \
@@ -850,7 +847,7 @@ am__objects_3 = libshare_ssl_a-cryptlib.$(OBJEXT) \
 	libshare_ssl_a-cmll_ofb.$(OBJEXT) \
 	libshare_ssl_a-cmll_cfb.$(OBJEXT) \
 	libshare_ssl_a-cmll_ctr.$(OBJEXT) \
-	libshare_ssl_a-cmll_utl.$(OBJEXT) cmll-x86_64.$(OBJEXT) \
+	libshare_ssl_a-cmll_utl.$(OBJEXT) \
 	libshare_ssl_a-cmll_misc.$(OBJEXT) \
 	libshare_ssl_a-e_seed.$(OBJEXT) libshare_ssl_a-seed.$(OBJEXT) \
 	libshare_ssl_a-seed_ofb.$(OBJEXT) \
@@ -865,7 +862,7 @@ am__objects_3 = libshare_ssl_a-cryptlib.$(OBJEXT) \
 	libshare_ssl_a-ofb128.$(OBJEXT) \
 	libshare_ssl_a-gcm128.$(OBJEXT) \
 	libshare_ssl_a-ccm128.$(OBJEXT) \
-	libshare_ssl_a-xts128.$(OBJEXT) ghash-x86_64.$(OBJEXT) \
+	libshare_ssl_a-xts128.$(OBJEXT) \
 	libshare_ssl_a-bn_asm.$(OBJEXT) \
 	libshare_ssl_a-bn_add.$(OBJEXT) \
 	libshare_ssl_a-bn_div.$(OBJEXT) \
@@ -884,9 +881,8 @@ am__objects_3 = libshare_ssl_a-cryptlib.$(OBJEXT) \
 	libshare_ssl_a-bn_gcd.$(OBJEXT) \
 	libshare_ssl_a-bn_prime.$(OBJEXT) \
 	libshare_ssl_a-bn_err.$(OBJEXT) \
-	libshare_ssl_a-bn_sqr.$(OBJEXT) x86_64-mont.$(OBJEXT) \
-	x86_64-mont5.$(OBJEXT) x86_64-gf2m.$(OBJEXT) \
-	modexp512-x86_64.$(OBJEXT) libshare_ssl_a-bn_recp.$(OBJEXT) \
+	libshare_ssl_a-bn_sqr.$(OBJEXT) \
+	libshare_ssl_a-bn_recp.$(OBJEXT) \
 	libshare_ssl_a-bn_mont.$(OBJEXT) \
 	libshare_ssl_a-bn_mpi.$(OBJEXT) \
 	libshare_ssl_a-bn_exp2.$(OBJEXT) \
@@ -2356,16 +2352,11 @@ libcrypto_sources = $(SSL_DIR)/crypto/cryptlib.c \
 	$(SSL_DIR)/crypto/md4/md4_one.c \
 	$(SSL_DIR)/crypto/md5/md5_dgst.c \
 	$(SSL_DIR)/crypto/md5/md5_one.c \
-	$(SSL_DIR)/crypto/md5/md5-x86_64.s \
 	$(SSL_DIR)/crypto/sha/sha_dgst.c \
 	$(SSL_DIR)/crypto/sha/sha1dgst.c \
-	$(SSL_DIR)/crypto/sha/sha1-x86_64.s \
 	$(SSL_DIR)/crypto/sha/sha_one.c \
 	$(SSL_DIR)/crypto/sha/sha1_one.c \
 	$(SSL_DIR)/crypto/sha/sha256.c $(SSL_DIR)/crypto/sha/sha512.c \
-	$(SSL_DIR)/crypto/aes/aesni-sha1-x86_64.s \
-	$(SSL_DIR)/crypto/sha/sha256-x86_64.s \
-	$(SSL_DIR)/crypto/sha/sha512-x86_64.s \
 	$(SSL_DIR)/crypto/mdc2/mdc2dgst.c \
 	$(SSL_DIR)/crypto/mdc2/mdc2_one.c \
 	$(SSL_DIR)/crypto/hmac/hmac.c \
@@ -2374,7 +2365,6 @@ libcrypto_sources = $(SSL_DIR)/crypto/cryptlib.c \
 	$(SSL_DIR)/crypto/ripemd/rmd_dgst.c \
 	$(SSL_DIR)/crypto/ripemd/rmd_one.c \
 	$(SSL_DIR)/crypto/whrlpool/wp_dgst.c \
-	$(SSL_DIR)/crypto/whrlpool/wp-x86_64.s \
 	$(SSL_DIR)/crypto/des/set_key.c \
 	$(SSL_DIR)/crypto/des/ecb_enc.c \
 	$(SSL_DIR)/crypto/des/cbc_enc.c \
@@ -2410,18 +2400,11 @@ libcrypto_sources = $(SSL_DIR)/crypto/cryptlib.c \
 	$(SSL_DIR)/crypto/aes/aes_ctr.c \
 	$(SSL_DIR)/crypto/aes/aes_ige.c \
 	$(SSL_DIR)/crypto/aes/aes_wrap.c \
-	$(SSL_DIR)/crypto/aes/aes-x86_64.s \
-	$(SSL_DIR)/crypto/aes/bsaes-x86_64.s \
-	$(SSL_DIR)/crypto/aes/vpaes-x86_64.s \
-	$(SSL_DIR)/crypto/aes/aesni-x86_64.s \
-	$(SSL_DIR)/crypto/aes/aesni-sha1-x86_64.s \
 	$(SSL_DIR)/crypto/rc2/rc2_ecb.c \
 	$(SSL_DIR)/crypto/rc2/rc2_skey.c \
 	$(SSL_DIR)/crypto/rc2/rc2_cbc.c \
 	$(SSL_DIR)/crypto/rc2/rc2cfb64.c \
 	$(SSL_DIR)/crypto/rc2/rc2ofb64.c \
-	$(SSL_DIR)/crypto/rc4/rc4-x86_64.s \
-	$(SSL_DIR)/crypto/rc4/rc4-md5-x86_64.s \
 	$(SSL_DIR)/crypto/rc4/rc4_utl.c $(SSL_DIR)/crypto/idea/i_cbc.c \
 	$(SSL_DIR)/crypto/idea/i_cfb64.c \
 	$(SSL_DIR)/crypto/idea/i_ofb64.c \
@@ -2441,7 +2424,6 @@ libcrypto_sources = $(SSL_DIR)/crypto/cryptlib.c \
 	$(SSL_DIR)/crypto/camellia/cmll_cfb.c \
 	$(SSL_DIR)/crypto/camellia/cmll_ctr.c \
 	$(SSL_DIR)/crypto/camellia/cmll_utl.c \
-	$(SSL_DIR)/crypto/camellia/cmll-x86_64.s \
 	$(SSL_DIR)/crypto/camellia/cmll_misc.c \
 	$(SSL_DIR)/crypto/evp/e_seed.c $(SSL_DIR)/crypto/seed/seed.c \
 	$(SSL_DIR)/crypto/seed/seed_ofb.c \
@@ -2456,22 +2438,16 @@ libcrypto_sources = $(SSL_DIR)/crypto/cryptlib.c \
 	$(SSL_DIR)/crypto/modes/ofb128.c \
 	$(SSL_DIR)/crypto/modes/gcm128.c \
 	$(SSL_DIR)/crypto/modes/ccm128.c \
-	$(SSL_DIR)/crypto/modes/xts128.c \
-	$(SSL_DIR)/crypto/modes/ghash-x86_64.s \
-	$(SSL_DIR)/crypto/bn/bn_asm.c $(SSL_DIR)/crypto/bn/bn_add.c \
-	$(SSL_DIR)/crypto/bn/bn_div.c $(SSL_DIR)/crypto/bn/bn_exp.c \
-	$(SSL_DIR)/crypto/bn/bn_lib.c $(SSL_DIR)/crypto/bn/bn_ctx.c \
-	$(SSL_DIR)/crypto/bn/bn_mul.c $(SSL_DIR)/crypto/bn/bn_mod.c \
-	$(SSL_DIR)/crypto/bn/bn_print.c $(SSL_DIR)/crypto/bn/bn_rand.c \
-	$(SSL_DIR)/crypto/bn/bn_shift.c $(SSL_DIR)/crypto/bn/bn_word.c \
-	$(SSL_DIR)/crypto/bn/bn_blind.c $(SSL_DIR)/crypto/bn/bn_kron.c \
-	$(SSL_DIR)/crypto/bn/bn_sqrt.c $(SSL_DIR)/crypto/bn/bn_gcd.c \
-	$(SSL_DIR)/crypto/bn/bn_prime.c $(SSL_DIR)/crypto/bn/bn_err.c \
-	$(SSL_DIR)/crypto/bn/bn_sqr.c \
-	$(SSL_DIR)/crypto/bn/x86_64-mont.s \
-	$(SSL_DIR)/crypto/bn/x86_64-mont5.s \
-	$(SSL_DIR)/crypto/bn/x86_64-gf2m.s \
-	$(SSL_DIR)/crypto/bn/modexp512-x86_64.s \
+	$(SSL_DIR)/crypto/modes/xts128.c $(SSL_DIR)/crypto/bn/bn_asm.c \
+	$(SSL_DIR)/crypto/bn/bn_add.c $(SSL_DIR)/crypto/bn/bn_div.c \
+	$(SSL_DIR)/crypto/bn/bn_exp.c $(SSL_DIR)/crypto/bn/bn_lib.c \
+	$(SSL_DIR)/crypto/bn/bn_ctx.c $(SSL_DIR)/crypto/bn/bn_mul.c \
+	$(SSL_DIR)/crypto/bn/bn_mod.c $(SSL_DIR)/crypto/bn/bn_print.c \
+	$(SSL_DIR)/crypto/bn/bn_rand.c $(SSL_DIR)/crypto/bn/bn_shift.c \
+	$(SSL_DIR)/crypto/bn/bn_word.c $(SSL_DIR)/crypto/bn/bn_blind.c \
+	$(SSL_DIR)/crypto/bn/bn_kron.c $(SSL_DIR)/crypto/bn/bn_sqrt.c \
+	$(SSL_DIR)/crypto/bn/bn_gcd.c $(SSL_DIR)/crypto/bn/bn_prime.c \
+	$(SSL_DIR)/crypto/bn/bn_err.c $(SSL_DIR)/crypto/bn/bn_sqr.c \
 	$(SSL_DIR)/crypto/bn/bn_recp.c $(SSL_DIR)/crypto/bn/bn_mont.c \
 	$(SSL_DIR)/crypto/bn/bn_mpi.c $(SSL_DIR)/crypto/bn/bn_exp2.c \
 	$(SSL_DIR)/crypto/bn/bn_gf2m.c $(SSL_DIR)/crypto/bn/bn_nist.c \
@@ -12862,6 +12838,12 @@ libshare_ssl_a-t1_reneg.obj: $(SSL_DIR)/ssl/t1_reneg.c
 .s.lo:
 	$(LTCCASCOMPILE) -c -o $@ $<
 
+x86_64cpuid.o: $(SSL_DIR)/crypto/x86_64cpuid.s
+	$(CCAS) $(AM_CCASFLAGS) $(CCASFLAGS) -c -o x86_64cpuid.o `test -f '$(SSL_DIR)/crypto/x86_64cpuid.s' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/x86_64cpuid.s
+
+x86_64cpuid.obj: $(SSL_DIR)/crypto/x86_64cpuid.s
+	$(CCAS) $(AM_CCASFLAGS) $(CCASFLAGS) -c -o x86_64cpuid.obj `if test -f '$(SSL_DIR)/crypto/x86_64cpuid.s'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/x86_64cpuid.s'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/x86_64cpuid.s'; fi`
+
 md5-x86_64.o: $(SSL_DIR)/crypto/md5/md5-x86_64.s
 	$(CCAS) $(AM_CCASFLAGS) $(CCASFLAGS) -c -o md5-x86_64.o `test -f '$(SSL_DIR)/crypto/md5/md5-x86_64.s' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/md5/md5-x86_64.s
 
@@ -12969,12 +12951,6 @@ modexp512-x86_64.o: $(SSL_DIR)/crypto/bn/modexp512-x86_64.s
 
 modexp512-x86_64.obj: $(SSL_DIR)/crypto/bn/modexp512-x86_64.s
 	$(CCAS) $(AM_CCASFLAGS) $(CCASFLAGS) -c -o modexp512-x86_64.obj `if test -f '$(SSL_DIR)/crypto/bn/modexp512-x86_64.s'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/bn/modexp512-x86_64.s'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/bn/modexp512-x86_64.s'; fi`
-
-x86_64cpuid.o: $(SSL_DIR)/crypto/x86_64cpuid.s
-	$(CCAS) $(AM_CCASFLAGS) $(CCASFLAGS) -c -o x86_64cpuid.o `test -f '$(SSL_DIR)/crypto/x86_64cpuid.s' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/x86_64cpuid.s
-
-x86_64cpuid.obj: $(SSL_DIR)/crypto/x86_64cpuid.s
-	$(CCAS) $(AM_CCASFLAGS) $(CCASFLAGS) -c -o x86_64cpuid.obj `if test -f '$(SSL_DIR)/crypto/x86_64cpuid.s'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/x86_64cpuid.s'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/x86_64cpuid.s'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo

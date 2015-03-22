@@ -20,15 +20,7 @@ Building the share-coin programs:
 <i><small><pre>
   git clone https://github.com/neonatura/share-coin
   cd share-coin
-  mkdir build
-  git clone https://github.com/neonatura/share
-  cd share
-  mkdir build
-  cd build
-  ../configure --disable-shfsyncd
-  make
-  cd ../../build
-  ../configure --with-libshare=share/build/src/share-lib/libshare.a
+  ./configure --with-libshare=../share
   make
   make install
 </pre></small><i>
