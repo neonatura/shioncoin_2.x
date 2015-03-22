@@ -12141,6 +12141,14 @@ version_patch=24
 version_info=2:24:0
 
 
+#AC_CONFIG_FILES([test/base58_encode_decode.json])
+#AC_CONFIG_FILES([test/base58_keys_invalid.json])
+#AC_CONFIG_FILES([test/base58_keys_valid.json])
+#AC_CONFIG_FILES([test/script_invalid.json])
+#AC_CONFIG_FILES([test/script_valid.json])
+#AC_CONFIG_FILES([test/tx_invalid.json])
+#AC_CONFIG_FILES([test/tx_valid.json])
+
 #VERSION_CUR=`$SED -ne 's/^#define LIBOAUTH_CUR *\([0-9]*\)/\1/p' ${srcdir}/src/oauth.h 2>/dev/null`
 #VERSION_REV=`$SED -ne 's/^#define LIBOAUTH_REV *\([0-9]*\)/\1/p' ${srcdir}/src/oauth.h 2>/dev/null`
 #VERSION_AGE=`$SED -ne 's/^#define LIBOAUTH_AGE *\([0-9]*\)/\1/p' ${srcdir}/src/oauth.h 2>/dev/null`
@@ -62451,7 +62459,7 @@ fi
 
 
 
-ac_config_files="$ac_config_files Makefile src/gnu/Makefile src/share-ssl-lib/Makefile src/share-coin/Makefile doc/Makefile bin/Makefile"
+ac_config_files="$ac_config_files Makefile src/gnu/Makefile src/share-ssl-lib/Makefile src/share-coin/Makefile doc/Makefile bin/Makefile test/Makefile"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -63754,6 +63762,7 @@ do
     "src/share-coin/Makefile") CONFIG_FILES="$CONFIG_FILES src/share-coin/Makefile" ;;
     "doc/Makefile") CONFIG_FILES="$CONFIG_FILES doc/Makefile" ;;
     "bin/Makefile") CONFIG_FILES="$CONFIG_FILES bin/Makefile" ;;
+    "test/Makefile") CONFIG_FILES="$CONFIG_FILES test/Makefile" ;;
 
   *) { { $as_echo "$as_me:$LINENO: error: invalid argument: $ac_config_target" >&5
 $as_echo "$as_me: error: invalid argument: $ac_config_target" >&2;}

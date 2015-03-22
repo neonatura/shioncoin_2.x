@@ -26,13 +26,16 @@ void get_rpc_cred(char *username, char *password)
   app_key = shbuf_data(buff);
   data_len = shbuf_size(buff);
 
-  if (err) {
+  if (err || !app_key) {
     /* generate new password */
     shkey_t *u_key = shkey_uniq();
     shbuf_clear(buff);
     shbuf_cat(buff, u_key, sizeof(shkey_t));
     shfs_write(fl, buff);
     shkey_free(&u_key);
+
+    app_key = shbuf_data(buff);
+    data_len = shbuf_size(buff);
   }
 
   shfs_free(&tree);

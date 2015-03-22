@@ -53,7 +53,8 @@ host_triplet = @host@
 @X86_64_TRUE@	$(SSL_DIR)/crypto/bn/x86_64-mont.s \
 @X86_64_TRUE@	$(SSL_DIR)/crypto/bn/x86_64-mont5.s $(SSL_DIR)/crypto/bn/x86_64-gf2m.s $(SSL_DIR)/crypto/bn/modexp512-x86_64.s
 
-@I386_TRUE@am__append_2 = \
+@X86_64_TRUE@am__append_2 = -DOPENSSL_CPUID_OBJ
+@I386_TRUE@am__append_3 = \
 @I386_TRUE@	$(SSL_DIR)/crypto/mem_clr.c \
 @I386_TRUE@	$(SSL_DIR)/crypto/camellia/camellia.c \
 @I386_TRUE@	$(SSL_DIR)/crypto/aes/aes_x86core.c \
@@ -63,7 +64,8 @@ host_triplet = @host@
 @I386_TRUE@	$(SSL_DIR)/crypto/rc4/rc4_skey.c \
 @I386_TRUE@	$(SSL_DIR)/crypto/aes/aes_cbc.c
 
-@X86_64_TRUE@am__append_3 = -DOPENSSL_IA32_SSE2 -DOPENSSL_BN_ASM_MONT -DOPENSSL_BN_ASM_MONT5 -DOPENSSL_BN_ASM_GF2m -DSHA1_ASM -DSHA256_ASM -DSHA512_ASM -DMD5_ASM -DAES_ASM -DVPAES_ASM -DBSAES_ASM -DWHIRLPOOL_ASM -DGHASH_ASM
+@I386_TRUE@am__append_4 = -DOPENSSL_NO_ASM -DI386_ONLY
+@X86_64_TRUE@am__append_5 = -DOPENSSL_IA32_SSE2 -DOPENSSL_BN_ASM_MONT -DOPENSSL_BN_ASM_MONT5 -DOPENSSL_BN_ASM_GF2m -DSHA1_ASM -DSHA256_ASM -DSHA512_ASM -DMD5_ASM -DAES_ASM -DVPAES_ASM -DBSAES_ASM -DWHIRLPOOL_ASM -DGHASH_ASM
 subdir = src/share-ssl-lib
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -1467,9 +1469,7 @@ CCAS = @CCAS@
 CCASDEPMODE = @CCASDEPMODE@
 CCASFLAGS = @CCASFLAGS@
 CCDEPMODE = @CCDEPMODE@
-@I386_TRUE@CFLAGS = -DOPENSSL_NO_ASM -DI386_ONLY
 CFLAGS = @CFLAGS@
-@X86_64_TRUE@CFLAGS = -DOPENSSL_CPUID_OBJ
 CP = @CP@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
@@ -2330,6 +2330,12 @@ with_kernel = @with_kernel@
 with_kerneldir = @with_kerneldir@
 noinst_LIBRARIES = libshare_ssl.a
 SSL_DIR = $(srcdir)/$(OPENSSL_DIR)
+libshare_ssl_a_CFLAGS = -I$(SSL_DIR)/include -I$(SSL_DIR)/crypto \
+	-I$(SSL_DIR)/crypto/asn1 -I$(SSL_DIR)/crypto/evp \
+	-I$(SSL_DIR)/crypto/modes -I$(SSL_DIR)/ -I$(SSL_DIR)/ssl \
+	-DOPENSSL_THREADS -D_REENTRANT -DDSO_DLFCN -DHAVE_DLFCN_H \
+	-Wa,--noexecstack -DL_ENDIAN -DTERMIO -Wall $(am__append_2) \
+	$(am__append_4) $(am__append_5)
 libssl_sources = \
 	$(SSL_DIR)/ssl/s2_meth.c $(SSL_DIR)/ssl/s2_srvr.c $(SSL_DIR)/ssl/s2_clnt.c $(SSL_DIR)/ssl/s2_lib.c $(SSL_DIR)/ssl/s2_enc.c $(SSL_DIR)/ssl/s2_pkt.c $(SSL_DIR)/ssl/s3_meth.c $(SSL_DIR)/ssl/s3_srvr.c $(SSL_DIR)/ssl/s3_clnt.c $(SSL_DIR)/ssl/s3_lib.c $(SSL_DIR)/ssl/s3_enc.c $(SSL_DIR)/ssl/s3_pkt.c $(SSL_DIR)/ssl/s3_both.c $(SSL_DIR)/ssl/s3_cbc.c $(SSL_DIR)/ssl/s23_meth.c $(SSL_DIR)/ssl/s23_srvr.c $(SSL_DIR)/ssl/s23_clnt.c $(SSL_DIR)/ssl/s23_lib.c $(SSL_DIR)/ssl/s23_pkt.c $(SSL_DIR)/ssl/t1_meth.c $(SSL_DIR)/ssl/t1_srvr.c $(SSL_DIR)/ssl/t1_clnt.c $(SSL_DIR)/ssl/t1_lib.c $(SSL_DIR)/ssl/t1_enc.c $(SSL_DIR)/ssl/d1_meth.c $(SSL_DIR)/ssl/d1_srvr.c $(SSL_DIR)/ssl/d1_clnt.c $(SSL_DIR)/ssl/d1_lib.c $(SSL_DIR)/ssl/d1_pkt.c $(SSL_DIR)/ssl/d1_both.c $(SSL_DIR)/ssl/d1_enc.c $(SSL_DIR)/ssl/d1_srtp.c $(SSL_DIR)/ssl/ssl_lib.c $(SSL_DIR)/ssl/ssl_err2.c $(SSL_DIR)/ssl/ssl_cert.c $(SSL_DIR)/ssl/ssl_sess.c $(SSL_DIR)/ssl/ssl_ciph.c $(SSL_DIR)/ssl/ssl_stat.c $(SSL_DIR)/ssl/ssl_rsa.c $(SSL_DIR)/ssl/ssl_asn1.c $(SSL_DIR)/ssl/ssl_txt.c $(SSL_DIR)/ssl/ssl_algs.c $(SSL_DIR)/ssl/bio_ssl.c $(SSL_DIR)/ssl/ssl_err.c $(SSL_DIR)/ssl/kssl.c $(SSL_DIR)/ssl/tls_srp.c $(SSL_DIR)/ssl/t1_reneg.c
 
@@ -2914,7 +2920,7 @@ libcrypto_sources = $(SSL_DIR)/crypto/cryptlib.c \
 	$(SSL_DIR)/engines/ccgost/gost_params.c \
 	$(SSL_DIR)/engines/ccgost/gost_pmeth.c \
 	$(SSL_DIR)/engines/ccgost/gost_sign.c $(am__append_1) \
-	$(am__append_2)
+	$(am__append_3)
 
 #	$(SSL_DIR)/crypto/x86cpuid.s
 #$(SSL_DIR)/crypto/x86cpuid.s: $(SSL_DIR)/crypto/x86cpuid.pl
@@ -2922,11 +2928,6 @@ libcrypto_sources = $(SSL_DIR)/crypto/cryptlib.c \
 libshare_ssl_a_SOURCES = \
 	$(libcrypto_sources) $(libssl_sources) 
 
-libshare_ssl_a_CFLAGS = -I$(SSL_DIR)/include -I$(SSL_DIR)/crypto \
-	-I$(SSL_DIR)/crypto/asn1 -I$(SSL_DIR)/crypto/evp \
-	-I$(SSL_DIR)/crypto/modes -I$(SSL_DIR)/ -I$(SSL_DIR)/ssl \
-	-DOPENSSL_THREADS -D_REENTRANT -DDSO_DLFCN -DHAVE_DLFCN_H \
-	-Wa,--noexecstack -DL_ENDIAN -DTERMIO -Wall $(am__append_3)
 all: all-am
 
 .SUFFIXES:
@@ -2940,9 +2941,9 @@ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu src/share-ssl-lib/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/share-ssl-lib/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --gnu src/share-ssl-lib/Makefile
+	  $(AUTOMAKE) --foreign src/share-ssl-lib/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \

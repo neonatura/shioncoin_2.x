@@ -294,7 +294,7 @@ Value stop(const Array& params, bool fHelp)
             "stop\n"
             "Stop usde server.");
     // Shutdown will take long enough that the response should get back
-    StartShutdown();
+    StartServerShutdown();
     return "usde server has now stopped running!";
 }
 
@@ -1798,7 +1798,7 @@ Value encryptwallet(const Array& params, bool fHelp)
     // BDB seems to have a bad habit of writing old data into
     // slack space in .dat files; that is bad if the old data is
     // unencrypted private keys.  So:
-    StartShutdown();
+    StartServerShutdown();
     return "wallet encrypted; usde server stopping, restart to run with encrypted wallet";
 }
 
@@ -2848,6 +2848,7 @@ void ThreadRPCServer2(void* parg)
     strRPCUserColonPass = mapArgs["-rpcuser"] + ":" + mapArgs["-rpcpassword"];
     if (mapArgs["-rpcpassword"] == "")
     {
+/*
         unsigned char rand_pwd[32];
         RAND_bytes(rand_pwd, 32);
         string strWhatAmI = "To use usded";
@@ -2855,18 +2856,8 @@ void ThreadRPCServer2(void* parg)
             strWhatAmI = strprintf(_("To use the %s option"), "\"-server\"");
         else if (mapArgs.count("-daemon"))
             strWhatAmI = strprintf(_("To use the %s option"), "\"-daemon\"");
-        uiInterface.ThreadSafeMessageBox(strprintf(
-            _("%s, you must set a rpcpassword in the configuration file:\n %s\n"
-              "It is recommended you use the following random password:\n"
-              "rpcuser=usderpc\n"
-              "rpcpassword=%s\n"
-              "(you do not need to remember this password)\n"
-              "If the file does not exist, create it with owner-readable-only file permissions.\n"),
-                strWhatAmI.c_str(),
-                GetConfigFile().string().c_str(),
-                EncodeBase58(&rand_pwd[0],&rand_pwd[0]+32).c_str()),
-            _("Error"), CClientUIInterface::OK | CClientUIInterface::MODAL);
-        StartShutdown();
+*/
+        StartServerShutdown();
         return;
     }
 
@@ -2956,8 +2947,7 @@ void ThreadRPCServer2(void* parg)
     }
 
     if (!fListening) {
-        uiInterface.ThreadSafeMessageBox(strerr, _("Error"), CClientUIInterface::OK | CClientUIInterface::MODAL);
-        StartShutdown();
+        StartServerShutdown();
         return;
     }
 
@@ -3363,6 +3353,9 @@ int CommandLineRPC(int argc, char *argv[])
 #ifdef TEST
 int main(int argc, char *argv[])
 {
+  char username[256];
+  char password[256];
+
 #ifdef _MSC_VER
     // Turn off microsoft heap dump noise
     _CrtSetReportMode(_CRT_WARN, _CRTDBG_MODE_FILE);
@@ -3371,6 +3364,14 @@ int main(int argc, char *argv[])
     setbuf(stdin, NULL);
     setbuf(stdout, NULL);
     setbuf(stderr, NULL);
+
+  /* load rpc credentials */
+  get_rpc_cred(username, password);
+  string strUser(username);
+  string strPass(username);
+  mapArgs["-rpcuser"] = strUser;
+  mapArgs["-rpcpassword"] = strPass;
+
 
     try
     {

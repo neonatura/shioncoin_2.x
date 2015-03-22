@@ -4,6 +4,15 @@ noinst_LIBRARIES = libshare_ssl.a
 
 SSL_DIR = $(srcdir)/$(OPENSSL_DIR)
 
+libshare_ssl_a_CFLAGS = \
+	-I$(SSL_DIR)/include \
+	-I$(SSL_DIR)/crypto \
+	-I$(SSL_DIR)/crypto/asn1 \
+	-I$(SSL_DIR)/crypto/evp \
+	-I$(SSL_DIR)/crypto/modes \
+	-I$(SSL_DIR)/ \
+	-I$(SSL_DIR)/ssl \
+	-DOPENSSL_THREADS -D_REENTRANT -DDSO_DLFCN -DHAVE_DLFCN_H -Wa,--noexecstack -DL_ENDIAN -DTERMIO -Wall 
 
 libssl_sources = \
 	$(SSL_DIR)/ssl/s2_meth.c $(SSL_DIR)/ssl/s2_srvr.c $(SSL_DIR)/ssl/s2_clnt.c $(SSL_DIR)/ssl/s2_lib.c $(SSL_DIR)/ssl/s2_enc.c $(SSL_DIR)/ssl/s2_pkt.c $(SSL_DIR)/ssl/s3_meth.c $(SSL_DIR)/ssl/s3_srvr.c $(SSL_DIR)/ssl/s3_clnt.c $(SSL_DIR)/ssl/s3_lib.c $(SSL_DIR)/ssl/s3_enc.c $(SSL_DIR)/ssl/s3_pkt.c $(SSL_DIR)/ssl/s3_both.c $(SSL_DIR)/ssl/s3_cbc.c $(SSL_DIR)/ssl/s23_meth.c $(SSL_DIR)/ssl/s23_srvr.c $(SSL_DIR)/ssl/s23_clnt.c $(SSL_DIR)/ssl/s23_lib.c $(SSL_DIR)/ssl/s23_pkt.c $(SSL_DIR)/ssl/t1_meth.c $(SSL_DIR)/ssl/t1_srvr.c $(SSL_DIR)/ssl/t1_clnt.c $(SSL_DIR)/ssl/t1_lib.c $(SSL_DIR)/ssl/t1_enc.c $(SSL_DIR)/ssl/d1_meth.c $(SSL_DIR)/ssl/d1_srvr.c $(SSL_DIR)/ssl/d1_clnt.c $(SSL_DIR)/ssl/d1_lib.c $(SSL_DIR)/ssl/d1_pkt.c $(SSL_DIR)/ssl/d1_both.c $(SSL_DIR)/ssl/d1_enc.c $(SSL_DIR)/ssl/d1_srtp.c $(SSL_DIR)/ssl/ssl_lib.c $(SSL_DIR)/ssl/ssl_err2.c $(SSL_DIR)/ssl/ssl_cert.c $(SSL_DIR)/ssl/ssl_sess.c $(SSL_DIR)/ssl/ssl_ciph.c $(SSL_DIR)/ssl/ssl_stat.c $(SSL_DIR)/ssl/ssl_rsa.c $(SSL_DIR)/ssl/ssl_asn1.c $(SSL_DIR)/ssl/ssl_txt.c $(SSL_DIR)/ssl/ssl_algs.c $(SSL_DIR)/ssl/bio_ssl.c $(SSL_DIR)/ssl/ssl_err.c $(SSL_DIR)/ssl/kssl.c $(SSL_DIR)/ssl/tls_srp.c $(SSL_DIR)/ssl/t1_reneg.c
@@ -31,7 +40,7 @@ libcrypto_sources += \
 	$(SSL_DIR)/crypto/modes/ghash-x86_64.s \
 	$(SSL_DIR)/crypto/bn/x86_64-mont.s \
 	$(SSL_DIR)/crypto/bn/x86_64-mont5.s $(SSL_DIR)/crypto/bn/x86_64-gf2m.s $(SSL_DIR)/crypto/bn/modexp512-x86_64.s
-CFLAGS = -DOPENSSL_CPUID_OBJ
+libshare_ssl_a_CFLAGS += -DOPENSSL_CPUID_OBJ
 endif
 
 if I386
@@ -44,8 +53,7 @@ libcrypto_sources += \
 	$(SSL_DIR)/crypto/camellia/cmll_cbc.c \
 	$(SSL_DIR)/crypto/rc4/rc4_skey.c \
 	$(SSL_DIR)/crypto/aes/aes_cbc.c
-CFLAGS = -DOPENSSL_NO_ASM -DI386_ONLY
-
+libshare_ssl_a_CFLAGS += -DOPENSSL_NO_ASM -DI386_ONLY
 
 #	$(SSL_DIR)/crypto/x86cpuid.s
 #$(SSL_DIR)/crypto/x86cpuid.s: $(SSL_DIR)/crypto/x86cpuid.pl
@@ -55,15 +63,6 @@ endif
 libshare_ssl_a_SOURCES = \
 	$(libcrypto_sources) $(libssl_sources) 
 
-libshare_ssl_a_CFLAGS = \
-	-I$(SSL_DIR)/include \
-	-I$(SSL_DIR)/crypto \
-	-I$(SSL_DIR)/crypto/asn1 \
-	-I$(SSL_DIR)/crypto/evp \
-	-I$(SSL_DIR)/crypto/modes \
-	-I$(SSL_DIR)/ \
-	-I$(SSL_DIR)/ssl \
-	-DOPENSSL_THREADS -D_REENTRANT -DDSO_DLFCN -DHAVE_DLFCN_H -Wa,--noexecstack -DL_ENDIAN -DTERMIO -Wall 
 
 if X86_64
 libshare_ssl_a_CFLAGS += -DOPENSSL_IA32_SSE2 -DOPENSSL_BN_ASM_MONT -DOPENSSL_BN_ASM_MONT5 -DOPENSSL_BN_ASM_GF2m -DSHA1_ASM -DSHA256_ASM -DSHA512_ASM -DMD5_ASM -DAES_ASM -DVPAES_ASM -DBSAES_ASM -DWHIRLPOOL_ASM -DGHASH_ASM

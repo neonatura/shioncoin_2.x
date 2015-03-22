@@ -11,8 +11,8 @@
 
 extern CWallet* pwalletMain;
 
-void StartShutdown();
-void Shutdown(void* parg);
+void StartServerShutdown();
+void ServerShutdown(void* parg);
 bool AppInit2();
 std::string HelpMessage();
 

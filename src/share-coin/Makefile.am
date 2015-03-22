@@ -8,7 +8,7 @@ INCLUDES = -I$(top_srcdir)/src/share-ssl-lib/$(OPENSSL_DIR)/include \
 	-I$(top_srcdir)/src/share-coin/leveldb \
 	-I$(top_srcdir)/src/share-coin/leveldb
 
-common_INCLUDES = \
+common_includes = \
 	$(top_builddir)/config.h \
 	$(top_srcdir)/src/share-lib/share.h \
 	$(top_srcdir)/src/share-lib/mem/shmem.h \
@@ -61,10 +61,7 @@ common_INCLUDES = \
 	shcoind_block.h \
 	shcoind_rpc.h \
 	shcoind.h
-
-
-common_SOURCES = \
-	leveldb/db/builder.cc leveldb/db/c.cc leveldb/db/dbformat.cc leveldb/db/db_impl.cc leveldb/db/db_iter.cc leveldb/db/filename.cc leveldb/db/log_reader.cc leveldb/db/log_writer.cc leveldb/db/memtable.cc leveldb/db/repair.cc leveldb/db/table_cache.cc leveldb/db/version_edit.cc leveldb/db/version_set.cc leveldb/db/write_batch.cc leveldb/table/block_builder.cc leveldb/table/block.cc leveldb/table/filter_block.cc leveldb/table/format.cc leveldb/table/iterator.cc leveldb/table/merger.cc leveldb/table/table_builder.cc leveldb/table/table.cc leveldb/table/two_level_iterator.cc leveldb/util/arena.cc leveldb/util/bloom.cc leveldb/util/cache.cc leveldb/util/coding.cc leveldb/util/comparator.cc leveldb/util/crc32c.cc leveldb/util/env.cc leveldb/util/env_posix.cc leveldb/util/env_win.cc leveldb/util/filter_policy.cc leveldb/util/hash.cc leveldb/util/histogram.cc leveldb/util/logging.cc leveldb/util/options.cc leveldb/util/status.cc leveldb/port/port_posix.cc leveldb/helpers/memenv/memenv.cc \
+common_sources = \
 	server/addrman.cpp \
 	server/bitcoinrpc.cpp \
 	server/checkpoints.cpp \
@@ -93,31 +90,49 @@ common_SOURCES = \
 	server_iface.cpp \
 	shcoind_block.c \
 	shcoind_rpc.c
+server_sources =
+stratum_sources = \
+	stratum/stratum_message.c \
+	stratum/stratum_protocol.c \
+	stratum/stratum_user.c \
+	stratum/stratum_task.c
 
 bin_PROGRAMS = shcoin
 sbin_PROGRAMS = shcoind
 
-shcoind_SOURCES = shcoind.c $(common_INCLUDES) $(common_SOURCES) \
-	stratum/stratum_message.c \
-	stratum/stratum_protocol.c \
-	stratum/stratum_user.c \
-	stratum/stratum_task.c \
+shcoind_SOURCES = \
+	$(common_includes) $(common_sources) \
+	$(server_sources) $(stratum_sources) \
+	shcoind.c \
 	shcoind_daemon.c \
 	shcoind_daemon.h
-shcoind_LDADD = $(top_builddir)/src/share-ssl-lib/libshare_ssl.a
+
+shcoind_LDADD = \
+	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
+	libleveldb.a
 if STATIC_LIBSHARE
 shcoind_LDADD += $(LIBSHARE)/src/share-lib/libshare.a
 shcoind_CFLAGS = -I$(LIBSHARE)/include
 shcoind_CXXFLAGS = -I$(LIBSHARE)/include
 endif
 
-shcoin_SOURCES = shcoind_tool.cpp $(common_INCLUDES) $(common_SOURCES)
-shcoin_LDADD = $(top_builddir)/src/share-ssl-lib/libshare_ssl.a
+shcoin_SOURCES = shcoind_tool.cpp $(common_includes) $(common_sources)
+shcoin_LDADD = \
+	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
+	libleveldb.a
 if STATIC_LIBSHARE
 shcoin_LDADD += $(LIBSHARE)/src/share-lib/libshare.a
 shcoin_CFLAGS = -I$(LIBSHARE)/include
 shcoin_CXXFLAGS = -I$(LIBSHARE)/include
 endif
+
+noinst_LIBRARIES = libleveldb.a
+
+libleveldb_a_CXXFLAGS = -I$(srcdir)/leveldb/include -I$(srcdir)/leveldb/helpers -I$(srcdir)/leveldb \
+	-std=c++0x -DOS_LINUX -DLEVELDB_CSTDATOMIC_PRESENT -DLEVELDB_PLATFORM_POSIX
+libleveldb_a_SOURCES = \
+	leveldb/db/builder.cc leveldb/db/c.cc leveldb/db/dbformat.cc leveldb/db/db_impl.cc leveldb/db/db_iter.cc leveldb/db/filename.cc leveldb/db/log_reader.cc leveldb/db/log_writer.cc leveldb/db/memtable.cc leveldb/db/repair.cc leveldb/db/table_cache.cc leveldb/db/version_edit.cc leveldb/db/version_set.cc leveldb/db/write_batch.cc leveldb/table/block_builder.cc leveldb/table/block.cc leveldb/table/filter_block.cc leveldb/table/format.cc leveldb/table/iterator.cc leveldb/table/merger.cc leveldb/table/table_builder.cc leveldb/table/table.cc leveldb/table/two_level_iterator.cc leveldb/util/arena.cc leveldb/util/bloom.cc leveldb/util/cache.cc leveldb/util/coding.cc leveldb/util/comparator.cc leveldb/util/crc32c.cc leveldb/util/env.cc leveldb/util/env_posix.cc leveldb/util/env_win.cc leveldb/util/filter_policy.cc leveldb/util/hash.cc leveldb/util/histogram.cc leveldb/util/logging.cc leveldb/util/options.cc leveldb/util/status.cc leveldb/port/port_posix.cc leveldb/helpers/memenv/memenv.cc
+
 
 if HAVE_INITD_DIR
 EXTRA_DIST = $(top_builddir)/scripts/initd/shcoind

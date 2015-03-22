@@ -23,6 +23,14 @@ AC_SUBST(version_patch)
 version_info=2:24:0
 AC_SUBST(version_info)
 
+#AC_CONFIG_FILES([test/base58_encode_decode.json])
+#AC_CONFIG_FILES([test/base58_keys_invalid.json])
+#AC_CONFIG_FILES([test/base58_keys_valid.json])
+#AC_CONFIG_FILES([test/script_invalid.json])
+#AC_CONFIG_FILES([test/script_valid.json])
+#AC_CONFIG_FILES([test/tx_invalid.json])
+#AC_CONFIG_FILES([test/tx_valid.json])
+
 #VERSION_CUR=`$SED -ne 's/^#define LIBOAUTH_CUR *\([0-9]*\)/\1/p' ${srcdir}/src/oauth.h 2>/dev/null`
 #VERSION_REV=`$SED -ne 's/^#define LIBOAUTH_REV *\([0-9]*\)/\1/p' ${srcdir}/src/oauth.h 2>/dev/null`
 #VERSION_AGE=`$SED -ne 's/^#define LIBOAUTH_AGE *\([0-9]*\)/\1/p' ${srcdir}/src/oauth.h 2>/dev/null`
@@ -307,5 +315,5 @@ esac], [debug=false])
 AM_CONDITIONAL(DEBUG, test x"$debug" = x"true")
 
 
-AC_OUTPUT(Makefile src/gnu/Makefile src/share-ssl-lib/Makefile src/share-coin/Makefile doc/Makefile bin/Makefile)
+AC_OUTPUT(Makefile src/gnu/Makefile src/share-ssl-lib/Makefile src/share-coin/Makefile doc/Makefile bin/Makefile test/Makefile)
 

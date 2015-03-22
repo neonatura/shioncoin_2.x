@@ -45,7 +45,6 @@ using namespace boost;
 using namespace json_spirit;
 
 extern CWallet* pwalletMain;
-extern CClientUIInterface uiInterface;
 
 extern int64 GetAccountBalance(CWalletDB& walletdb, const string& strAccount, int nMinDepth);
 

@@ -26,6 +26,4 @@ static bool noui_ThreadSafeAskFee(int64 nFeeRequired, const std::string& strCapt
 void noui_connect()
 {
     // Connect bitcoind signal handlers
-    uiInterface.ThreadSafeMessageBox.connect(noui_ThreadSafeMessageBox);
-    uiInterface.ThreadSafeAskFee.connect(noui_ThreadSafeAskFee);
 }

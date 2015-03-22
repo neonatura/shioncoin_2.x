@@ -25,7 +25,6 @@ using namespace std;
 using namespace boost;
 
 CWallet* pwalletMain;
-CClientUIInterface uiInterface;
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -40,15 +39,10 @@ void ExitTimeout(void* parg)
 #endif
 }
 
-void StartShutdown()
+void StartServerShutdown()
 {
-#ifdef QT_GUI
-    // ensure we leave the Qt main loop for a clean GUI exit (Shutdown() is called in bitcoin.cpp afterwards)
-    uiInterface.QueueShutdown();
-#else
     // Without UI, Shutdown() can simply be started in a new thread
-    CreateThread(Shutdown, NULL);
-#endif
+    CreateThread(ServerShutdown, NULL);
 }
 
 void Shutdown2(void)
@@ -97,7 +91,7 @@ void Shutdown2(void)
     }
 }
 
-void Shutdown(void* parg)
+void ServerShutdown(void* parg)
 {
   Shutdown2();
 }
@@ -200,13 +194,11 @@ int INIT_main(int argc, char* argv[])
 
 bool static InitError(const std::string &str)
 {
-    uiInterface.ThreadSafeMessageBox(str, _("usde"), CClientUIInterface::OK | CClientUIInterface::MODAL);
     return false;
 }
 
 bool static InitWarning(const std::string &str)
 {
-    uiInterface.ThreadSafeMessageBox(str, _("usde"), CClientUIInterface::OK | CClientUIInterface::ICON_EXCLAMATION | CClientUIInterface::MODAL);
     return true;
 }
 
@@ -591,7 +583,6 @@ bool AppInit2()
         return false;
     }
 
-    uiInterface.InitMessage(_("Loading USDE..."));
     printf("Loading USDE...\n");
     nStart = GetTimeMillis();
     if (!LoadBlockIndex())
@@ -638,7 +629,6 @@ bool AppInit2()
 
     // ********************************************************* Step 7: load wallet
 
-    uiInterface.InitMessage(_("Loading wallet..."));
     printf("Loading wallet...\n");
     nStart = GetTimeMillis();
     bool fFirstRun;
@@ -706,7 +696,6 @@ bool AppInit2()
     }
     if (pindexBest != pindexRescan)
     {
-        uiInterface.InitMessage(_("Rescanning..."));
         printf("Rescanning last %i blocks (from block %i)...\n", pindexBest->nHeight - pindexRescan->nHeight, pindexRescan->nHeight);
         nStart = GetTimeMillis();
         pwalletMain->ScanForWalletTransactions(pindexRescan, true);
@@ -727,7 +716,6 @@ bool AppInit2()
 
     // ********************************************************* Step 9: load peers
 
-    uiInterface.InitMessage(_("Loading addresses..."));
     printf("Loading addresses...\n");
     nStart = GetTimeMillis();
 
@@ -762,7 +750,6 @@ bool AppInit2()
 
     // ********************************************************* Step 11: finished
 
-    uiInterface.InitMessage(_("Done loading"));
     printf("Done loading\n");
 
     if (!strErrors.str().empty())

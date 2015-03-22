@@ -1277,7 +1277,7 @@ string CWallet::SendMoney(CScript scriptPubKey, int64 nValue, CWalletTx& wtxNew,
         return strError;
     }
 
-    if (fAskFee && !uiInterface.ThreadSafeAskFee(nFeeRequired, _("Sending...")))
+    if (fAskFee)
         return "ABORTED";
 
     if (!CommitTransaction(wtxNew, reservekey))
