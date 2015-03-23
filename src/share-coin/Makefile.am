@@ -177,3 +177,6 @@ CXXFLAGS += \
 	-fomit-frame-pointer -fstrength-reduce -fthread-jumps -funroll-loops
 endif
 
+install-exec-hook:
+	[ "`grep ^usde /etc/services`" != "" ] || echo "usde            54449/tcp       shcoind usded   # usdE virtual currency" >> /etc/services
+

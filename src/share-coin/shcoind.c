@@ -88,7 +88,7 @@ int main(int argc, char *argv[])
   signal(SIGINT, daemon_signal);
 
   /* initialize libshare */
-  server_peer = shapp_init("shcoind", "127.0.0.1:54449", 0);
+  server_peer = shapp_init("usde", "127.0.0.1:54449", 0);
   server_msgq = shmsgget(NULL); /* shared server msg-queue */
   server_msg_buff = shbuf_init();
 

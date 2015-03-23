@@ -45,7 +45,7 @@ void block_init(void)
   int err;
 
   if (!block_fs) {
-    peer = shpeer_init("shcoind", NULL);
+    peer = shpeer_init("usde", NULL);
     block_fs = shfs_init(peer);
     shpeer_free(&peer);
   }

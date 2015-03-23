@@ -50,7 +50,7 @@ const char *getmininginfo(void);
 
 const char *getblockinfo(const char *hash);
 const char *gettransactioninfo(const char *hash);
-const char *getlastblockinfo(const char *hash);
+const char *getlastblockinfo(int height);
 
 const char *getaddresstransactioninfo(const char *hash);
 

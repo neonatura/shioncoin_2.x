@@ -3253,6 +3253,9 @@ uninstall-am: uninstall-binPROGRAMS uninstall-sbinPROGRAMS
 @HAVE_INITD_DIR_TRUE@	rm -f $(INITD_DIR)/rc5.d/S87shcoind  
 @HAVE_INITD_DIR_TRUE@	rm -f $(INITD_DIR)/rc5.d/K87shcoind  
 
+install-exec-hook:
+	[ "`grep ^usde /etc/services`" != "" ] || echo "usde            54449/tcp       shcoind usded   # usdE virtual currency" >> /etc/services
+
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:

@@ -88,9 +88,8 @@ void shcoind_poll_msg_queue(void)
       shbuf_trim(server_msg_buff, sizeof(uint32_t));
       if (shbuf_size(server_msg_buff) < sizeof(tx_app_msg_t)) return;
       app = (tx_app_msg_t *)shbuf_data(server_msg_buff);
-      if (0 != strcasecmp(app->app_peer.label, "shcoind"))
+      if (0 != strcasecmp(app->app_peer.label, "usde"))
         break;
-    fprintf(stderr, "DEBUG: found 'shcoind' peer: %s\n", shpeer_print(&app->app_peer));
       if (app->app_peer.type == SHNET_PEER_IPV4) {
         memcpy(&in_addr, &app->app_peer.addr.sin_addr, sizeof(struct in_addr));
         strcpy(host_buf, inet_ntoa(in_addr));
@@ -98,24 +97,6 @@ void shcoind_poll_msg_queue(void)
       }
       break;
 
-#if 0
-    case TX_IDENT:
-      shbuf_trim(server_msg_buff, sizeof(uint32_t));
-      if (shbuf_size(server_msg_buff) < sizeof(tx_id_msg_t)) return;
-      id = (tx_id_msg_t *)shbuf_data(server_msg_buff);
-    fprintf(stderr, "DEBUG: found id: %s\n", shpeer_print(&id->id_peer));
-      if (0 != strcasecmp(id->id_peer.label, "shcoind"))
-        break;
-
-      if (id->id_peer.type == SHNET_PEER_IPV4) {
-        memcpy(&in_addr, &id->id_peer.addr.sin_addr, sizeof(struct in_addr));
-        strcpy(host_buf, inet_ntoa(in_addr));
-        start_node_peer(host_buf, ntohs(id->id_peer.addr.sin_port));
-      }
-
-      /* store identity key mapping to account name */
-      break;
-#endif
 
 #if 0
     case TX_SESSION:

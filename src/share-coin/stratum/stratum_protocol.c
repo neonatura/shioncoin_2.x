@@ -449,14 +449,14 @@ fprintf(stderr, "DEBUG: stratum_request_message[mining.submit]: %d = stratum_val
     hash = shjson_array_astr(json, "params", 1);
 
     switch (mode) {
-      case 1: /* block */
+      case 1: /* block by hash */
         json_data = getblockinfo(hash);
         break;
       case 2: /* tx */
         json_data = gettransactioninfo(hash);
         break;
-      case 3: /* list since */
-        json_data = getlastblockinfo(hash);
+      case 3: /* block by height [or last] */
+        json_data = getlastblockinfo(shjson_array_num(json, "params", 1));
         break;
     }
 

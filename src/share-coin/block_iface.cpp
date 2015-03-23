@@ -502,6 +502,38 @@ const char *c_getmininginfo(void)
 }
 
 string blockinfo_json;
+const char *c_getblockindexinfo(CBlockIndex *pblockindex)
+{
+  CBlock block;
+  Object result;
+
+  block.ReadFromDisk(pblockindex, true);
+
+  result.push_back(Pair("hash", block.GetHash().GetHex()));
+  CMerkleTx txGen(block.vtx[0]);
+  txGen.SetMerkleBranch(&block);
+  result.push_back(Pair("confirmations", (int)txGen.GetDepthInMainChain()));
+  result.push_back(Pair("size", (int)::GetSerializeSize(block, SER_NETWORK, PROTOCOL_VERSION)));
+  result.push_back(Pair("height", pblockindex->nHeight));
+  result.push_back(Pair("version", block.nVersion));
+  result.push_back(Pair("merkleroot", block.hashMerkleRoot.GetHex()));
+  Array txs;
+  BOOST_FOREACH(const CTransaction&tx, block.vtx)
+    txs.push_back(tx.GetHash().GetHex());
+  result.push_back(Pair("tx", txs));
+  result.push_back(Pair("time", (boost::int64_t)block.GetBlockTime()));
+  result.push_back(Pair("nonce", (boost::uint64_t)block.nNonce));
+  result.push_back(Pair("bits", HexBits(block.nBits)));
+  result.push_back(Pair("difficulty", GetDifficulty(pblockindex)));
+
+  if (pblockindex->pprev)
+    result.push_back(Pair("previousblockhash", pblockindex->pprev->GetBlockHash().GetHex()));
+  if (pblockindex->pnext)
+    result.push_back(Pair("nextblockhash", pblockindex->pnext->GetBlockHash().GetHex()));
+
+  blockinfo_json = JSONRPCReply(result, Value::null, Value::null);
+  return (blockinfo_json.c_str());
+}
 const char *c_getblockinfo(const char *hash_addr)
 {
   long nHeight;
@@ -532,8 +564,11 @@ const char *c_getblockinfo(const char *hash_addr)
     return (NULL);
   }
 
-  CBlock block;
   CBlockIndex* pblockindex = mapBlockIndex[hash];
+  return (c_getblockindexinfo(pblockindex));
+}
+#if 0
+  CBlock block;
   block.ReadFromDisk(pblockindex, true);
 
   Object result;
@@ -562,8 +597,130 @@ const char *c_getblockinfo(const char *hash_addr)
   blockinfo_json = JSONRPCReply(result, Value::null, Value::null);
   return (blockinfo_json.c_str());
 }
+#endif
+
+std::map<uint256, CBlockIndex*> transactionMap;
+CTransaction *findTransaction(const char *tx_id)
+{
+  CBlockIndex *pblockindex;
+
+  for (pblockindex = pindexBest; pblockindex; pblockindex = pblockindex->pprev)  {
+    CBlock block;
+
+    block.ReadFromDisk(pblockindex, true);
+    BOOST_FOREACH(CTransaction&tx, block.vtx) {
+      std::string txStr = tx.GetHash().GetHex();
+      if (0 == strcasecmp(txStr.c_str(), tx_id)) {
+        transactionMap[tx.GetHash()] = pblockindex;
+        return (&tx);
+      }
+    }
+  }
+
+  return (NULL);
+}
+CBlockIndex *findBlockByTransaction(const char *tx_id)
+{
+  CBlockIndex *pblockindex;
+
+  for (pblockindex = pindexBest; pblockindex; pblockindex = pblockindex->pprev)  {
+    CBlock block;
+
+    block.ReadFromDisk(pblockindex, true);
+    BOOST_FOREACH(const CTransaction&tx, block.vtx) {
+      std::string txStr = tx.GetHash().GetHex();
+      if (0 == strcasecmp(txStr.c_str(), tx_id))
+        return (pblockindex);
+    }
+  }
+
+  return (NULL);
+}
 
 string transactioninfo_json;
+const char *c_gettransactioninfo(const char *tx_id)
+{
+  CTransaction *tx;
+  CBlockIndex *pblockindex;
+  Object result;
+
+  if (!tx_id)
+    return (NULL);
+
+  tx = findTransaction(tx_id);
+  if (!tx)
+    return (NULL);
+
+  pblockindex = transactionMap[tx->GetHash()];
+
+  int64 nOut = tx->GetValueOut();
+/*
+  int64 nIn = tx->GetValueIn();
+*/
+  int64 nFee = 0;
+/*
+  if (!tx->IsCoinBase())
+    nFee = nOut - nIn;
+*/
+  int confirms = pindexBest->nHeight - pblockindex->nHeight;
+
+  result.push_back(Pair("txid", tx->GetHash().GetHex()));
+  result.push_back(Pair("amount", ValueFromAmount(nOut)));
+  result.push_back(Pair("confirmations", ValueFromAmount(confirms)));
+
+  //result.push_back(Pair("amount", ValueFromAmount(nNet - nFee)));
+  //result.push_back(Pair("fee", ValueFromAmount(nFee)));
+
+  if (pblockindex) {
+    result.push_back(Pair("blockhash", pblockindex->GetBlockHash().GetHex()));
+  }
+
+  Array vin_details;
+  BOOST_FOREACH(const CTxIn& txin, tx->vin)
+  {
+    Object entry;
+    //entry.push_back(Pair("account", string("")));
+    //entry.push_back(Pair("amount", ValueFromAmount(txin.nValue)));
+    entry.push_back(Pair("txid", txin.prevout.hash.GetHex()));
+
+    if (tx->IsCoinBase()) {
+      if (confirms >= (COINBASE_MATURITY+20)) 
+        entry.push_back(Pair("category", "generate"));
+      else
+        entry.push_back(Pair("category", "immature"));
+    } else {
+      entry.push_back(Pair("category", "send"));
+    }
+
+    if (txin.nSequence != std::numeric_limits<unsigned int>::max())
+      entry.push_back(Pair("index", ValueFromAmount(txin.nSequence)));
+
+    if (txin.prevout.IsNull())
+      entry.push_back(Pair("coinbase", txin.prevout.hash.GetHex()));
+    else
+      entry.push_back(Pair("scriptSig", txin.scriptSig.ToString().c_str())); /* 0..24 */
+
+    vin_details.push_back(entry);
+  }
+  result.push_back(Pair("vin", vin_details));
+
+  Array vout_details;
+  BOOST_FOREACH(const CTxOut& txout, tx->vout)
+  {
+    Object entry;
+    //entry.push_back(Pair("account", string("")));
+    entry.push_back(Pair("amount", ValueFromAmount(txout.nValue)));
+    entry.push_back(Pair("category", "receive"));
+    entry.push_back(Pair("txid", txout.GetHash().GetHex()));
+    entry.push_back(Pair("scriptPubKey", txout.scriptPubKey.ToString().c_str())); /* 0..30 */
+    vout_details.push_back(entry);
+  }
+  result.push_back(Pair("vout", vout_details));
+
+  transactioninfo_json = JSONRPCReply(result, Value::null, Value::null);
+  return (transactioninfo_json.c_str());
+}
+#if 0
 const char *c_gettransactioninfo(const char *tx_id)
 {
 
@@ -587,8 +744,8 @@ const char *c_gettransactioninfo(const char *tx_id)
   int64 nFee = (wtx.IsFromMe() ? wtx.GetValueOut() - nDebit : 0);
 
   result.push_back(Pair("amount", ValueFromAmount(nNet - nFee)));
-  if (wtx.IsFromMe())
-    result.push_back(Pair("fee", ValueFromAmount(nFee)));
+  //if (wtx.IsFromMe())
+  result.push_back(Pair("fee", ValueFromAmount(nFee)));
 
   int confirms = wtx.GetDepthInMainChain();
   result.push_back(Pair("confirmations", confirms));
@@ -609,53 +766,20 @@ const char *c_gettransactioninfo(const char *tx_id)
   transactioninfo_json = JSONRPCReply(result, Value::null, Value::null);
   return (transactioninfo_json.c_str());
 }
+#endif
 
-string lastblockinfo_json;
-const char *c_getlastblockinfo(const char *hash)
+const char *c_getlastblockinfo(int target_height)
 {
-  CBlockIndex *pindex = NULL;
-  int target_confirms = 1;
+  CBlockIndex *block;
+  uint256 blockId;
+  int blockHeight;
 
-  if (hash) {
-    std::string hashStr(hash);
-    uint256 blockId = 0;
-
-    blockId.SetHex(hashStr);
-    pindex = CBlockLocator(blockId).GetBlockIndex();
+  for (block = pindexBest; block; block = block->pprev)  {
+    if (target_height == 0 || block->nHeight == target_height)
+      return (c_getblockindexinfo(block));
   }
 
-  int depth = pindex ? (1 + nBestHeight - pindex->nHeight) : -1;
-
-  Array transactions;
-
-  for (map<uint256, CWalletTx>::iterator it = pwalletMain->mapWallet.begin(); it != pwalletMain->mapWallet.end(); it++)
-  {
-    CWalletTx tx = (*it).second;
-
-    if (depth == -1 || tx.GetDepthInMainChain() < depth)
-      ListTransactions(tx, "*", 0, true, transactions);
-  }
-
-  uint256 lastblock;
-
-  if (target_confirms == 1)
-  {
-    lastblock = hashBestChain;
-  }
-  else
-  {
-    int target_height = pindexBest->nHeight + 1 - target_confirms;
-
-    CBlockIndex *block;
-    for (block = pindexBest;
-        block && block->nHeight > target_height;
-        block = block->pprev)  { }
-
-    lastblock = block ? block->GetBlockHash() : 0;
-  }
-
-  lastblockinfo_json = JSONRPCReply(transactions, Value::null, Value::null);
-  return (lastblockinfo_json.c_str());
+  return (NULL);
 }
 
 uint64_t c_getblockheight(void)
@@ -778,9 +902,9 @@ const char *gettransactioninfo(const char *hash)
   return (c_gettransactioninfo(hash));
 }
 
-const char *getlastblockinfo(const char *hash)
+const char *getlastblockinfo(int height)
 {
-  return (c_getlastblockinfo(hash));
+  return (c_getlastblockinfo(height));
 }
 
 uint64_t getblockheight(void)
