@@ -56,12 +56,15 @@ using namespace boost;
 using namespace boost::asio;
 using namespace json_spirit;
 
+std::map<uint256, CBlockIndex*> transactionMap;
 map<int, CBlock*>mapWork;
 string blocktemplate_json; 
 string mininginfo_json; 
+string transactioninfo_json;
 
 extern std::string HexBits(unsigned int nBits);
 extern string JSONRPCReply(const Value& result, const Value& error, const Value& id);
+extern void ScriptPubKeyToJSON(const CScript& scriptPubKey, Object& out);
 extern Value ValueFromAmount(int64 amount);
 extern void WalletTxToJSON(const CWalletTx& wtx, Object& entry);
 
@@ -599,26 +602,37 @@ const char *c_getblockinfo(const char *hash_addr)
 }
 #endif
 
-std::map<uint256, CBlockIndex*> transactionMap;
-CTransaction *findTransaction(const char *tx_id)
+int findBlockTransaction(CBlockIndex *pblockindex, const char *tx_id, CTransaction& ret_tx)
 {
-  CBlockIndex *pblockindex;
+  CBlock block;
 
-  for (pblockindex = pindexBest; pblockindex; pblockindex = pblockindex->pprev)  {
-    CBlock block;
-
-    block.ReadFromDisk(pblockindex, true);
-    BOOST_FOREACH(CTransaction&tx, block.vtx) {
-      std::string txStr = tx.GetHash().GetHex();
-      if (0 == strcasecmp(txStr.c_str(), tx_id)) {
-        transactionMap[tx.GetHash()] = pblockindex;
-        return (&tx);
-      }
+  block.ReadFromDisk(pblockindex, true);
+  BOOST_FOREACH(CTransaction&tx, block.vtx) {
+    std::string txStr = tx.GetHash().GetHex();
+    if (0 == strcasecmp(txStr.c_str(), tx_id)) {
+      ret_tx = tx;
+      return (0);
     }
   }
-
-  return (NULL);
+  return (-1);
 }
+
+int findTransaction(const char *tx_id, CTransaction& ret_tx)
+{
+  CBlockIndex *pblockindex;
+  CTransaction tx;
+
+  for (pblockindex = pindexBest; pblockindex; pblockindex = pblockindex->pprev)  {
+    if (0 == findBlockTransaction(pblockindex, tx_id, tx)) {
+      transactionMap[tx.GetHash()] = pblockindex;
+      ret_tx = tx;
+      return (0);
+    }
+  }
+  return (-1);
+}
+
+#if 0
 CBlockIndex *findBlockByTransaction(const char *tx_id)
 {
   CBlockIndex *pblockindex;
@@ -636,86 +650,116 @@ CBlockIndex *findBlockByTransaction(const char *tx_id)
 
   return (NULL);
 }
+#endif
 
-string transactioninfo_json;
+int64 GetTxFee(CTransaction tx)
+{
+  map<uint256, CTxIndex> mapQueuedChanges;
+  MapPrevTx inputs;
+  int64 nFees;
+  int i;
+
+  if (tx.IsCoinBase())
+    return (0);
+
+  CTxDB txdb;
+
+  nFees = 0;
+  bool fInvalid = false;
+  if (tx.FetchInputs(txdb, mapQueuedChanges, true, false, inputs, fInvalid))
+    nFees += tx.GetValueIn(inputs) - tx.GetValueOut();
+
+  txdb.Close();
+
+  return (nFees);
+}
+
 const char *c_gettransactioninfo(const char *tx_id)
 {
-  CTransaction *tx;
+  CTransaction tx;
   CBlockIndex *pblockindex;
   Object result;
+  uint256 hashBlock;
+  uint256 hashTx;
+  int64 nOut;
+  int confirms;
 
-  if (!tx_id)
+  if (!tx_id || !*tx_id)
     return (NULL);
 
-  tx = findTransaction(tx_id);
-  if (!tx)
-    return (NULL);
+  hashTx.SetHex(tx_id);
+  pblockindex = transactionMap[hashTx]; /* check tx map */
+  if (!pblockindex) {
+    if (0 != findTransaction(tx_id, tx))
+      return (NULL);
 
-  pblockindex = transactionMap[tx->GetHash()];
-
-  int64 nOut = tx->GetValueOut();
-/*
-  int64 nIn = tx->GetValueIn();
-*/
-  int64 nFee = 0;
-/*
-  if (!tx->IsCoinBase())
-    nFee = nOut - nIn;
-*/
-  int confirms = pindexBest->nHeight - pblockindex->nHeight;
-
-  result.push_back(Pair("txid", tx->GetHash().GetHex()));
-  result.push_back(Pair("amount", ValueFromAmount(nOut)));
-  result.push_back(Pair("confirmations", ValueFromAmount(confirms)));
-
-  //result.push_back(Pair("amount", ValueFromAmount(nNet - nFee)));
-  //result.push_back(Pair("fee", ValueFromAmount(nFee)));
-
-  if (pblockindex) {
-    result.push_back(Pair("blockhash", pblockindex->GetBlockHash().GetHex()));
+    hashTx = tx.GetHash();
+    pblockindex = transactionMap[hashTx]; /* cache tx in map */
+  } else {
+    if (0 != findBlockTransaction(pblockindex, tx_id, tx))
+      return (NULL);
   }
 
-  Array vin_details;
-  BOOST_FOREACH(const CTxIn& txin, tx->vin)
-  {
-    Object entry;
-    //entry.push_back(Pair("account", string("")));
-    //entry.push_back(Pair("amount", ValueFromAmount(txin.nValue)));
-    entry.push_back(Pair("txid", txin.prevout.hash.GetHex()));
+  hashBlock = 0;
+  if (pblockindex)
+    hashBlock = pblockindex->GetBlockHash();
 
-    if (tx->IsCoinBase()) {
-      if (confirms >= (COINBASE_MATURITY+20)) 
-        entry.push_back(Pair("category", "generate"));
-      else
-        entry.push_back(Pair("category", "immature"));
-    } else {
-      entry.push_back(Pair("category", "send"));
+  if (hashBlock != 0)
+  {
+    result.push_back(Pair("blockhash", hashBlock.GetHex()));
+
+    if (!pblockindex) { /* redundant secondary lookup */
+      map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(hashBlock);
+      if (mi != mapBlockIndex.end() && (*mi).second) {
+        pblockindex = (*mi).second;
+      }
     }
 
-    if (txin.nSequence != std::numeric_limits<unsigned int>::max())
-      entry.push_back(Pair("index", ValueFromAmount(txin.nSequence)));
-
-    if (txin.prevout.IsNull())
-      entry.push_back(Pair("coinbase", txin.prevout.hash.GetHex()));
-    else
-      entry.push_back(Pair("scriptSig", txin.scriptSig.ToString().c_str())); /* 0..24 */
-
-    vin_details.push_back(entry);
+    if (pblockindex && pblockindex->IsInMainChain())
+    {
+      result.push_back(Pair("confirmations", 1 + nBestHeight - pblockindex->nHeight));
+      result.push_back(Pair("time", (boost::int64_t)pblockindex->nTime));
+    }
+    else {
+      result.push_back(Pair("confirmations", 0));
+    }
   }
-  result.push_back(Pair("vin", vin_details));
 
-  Array vout_details;
-  BOOST_FOREACH(const CTxOut& txout, tx->vout)
+  result.push_back(Pair("txid", tx.GetHash().GetHex()));
+  result.push_back(Pair("version", tx.nVersion));
+  result.push_back(Pair("locktime", (boost::int64_t)tx.nLockTime));
+  result.push_back(Pair("amount", ValueFromAmount(tx.GetValueOut())));
+  result.push_back(Pair("fee", ValueFromAmount(GetTxFee(tx))));
+
+  Array vin;
+  BOOST_FOREACH(const CTxIn& txin, tx.vin)
   {
-    Object entry;
-    //entry.push_back(Pair("account", string("")));
-    entry.push_back(Pair("amount", ValueFromAmount(txout.nValue)));
-    entry.push_back(Pair("category", "receive"));
-    entry.push_back(Pair("txid", txout.GetHash().GetHex()));
-    entry.push_back(Pair("scriptPubKey", txout.scriptPubKey.ToString().c_str())); /* 0..30 */
-    vout_details.push_back(entry);
+    Object in;
+    if (tx.IsCoinBase())
+      in.push_back(Pair("coinbase", HexStr(txin.scriptSig.begin(), txin.scriptSig.end())));
+    else
+    {
+      in.push_back(Pair("txid", txin.prevout.hash.GetHex()));
+      in.push_back(Pair("vout", (boost::int64_t)txin.prevout.n));
+      in.push_back(Pair("asm", txin.scriptSig.ToString()));
+      in.push_back(Pair("hex", HexStr(txin.scriptSig.begin(), txin.scriptSig.end())));
+    }
+    in.push_back(Pair("sequence", (boost::int64_t)txin.nSequence));
+    vin.push_back(in);
   }
-  result.push_back(Pair("vout", vout_details));
+  result.push_back(Pair("vin", vin));
+
+  Array vout;
+  for (unsigned int i = 0; i < tx.vout.size(); i++)
+  {
+    const CTxOut& txout = tx.vout[i];
+    Object out;
+    out.push_back(Pair("value", ValueFromAmount(txout.nValue)));
+    out.push_back(Pair("n", (boost::int64_t)i));
+    ScriptPubKeyToJSON(txout.scriptPubKey, out);
+    vout.push_back(out);
+  }
+  result.push_back(Pair("vout", vout));
 
   transactioninfo_json = JSONRPCReply(result, Value::null, Value::null);
   return (transactioninfo_json.c_str());

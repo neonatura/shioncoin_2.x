@@ -1030,8 +1030,6 @@ void DumpAddresses()
     CAddrDB adb;
     adb.Write(addrman);
 
-    fprintf(stderr, "Flushed %d addresses to peers.dat  %"PRI64d"ms\n",
-           addrman.size(), GetTimeMillis() - nStart);
 }
 
 void ThreadDumpAddress2(void* parg)
