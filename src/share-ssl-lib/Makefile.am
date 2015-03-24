@@ -12,7 +12,13 @@ libshare_ssl_a_CFLAGS = \
 	-I$(SSL_DIR)/crypto/modes \
 	-I$(SSL_DIR)/ \
 	-I$(SSL_DIR)/ssl \
-	-DOPENSSL_THREADS -D_REENTRANT -DDSO_DLFCN -DHAVE_DLFCN_H -Wa,--noexecstack -DL_ENDIAN -DTERMIO -Wall 
+	-DOPENSSL_THREADS -D_REENTRANT -DDSO_DLFCN -DHAVE_DLFCN_H -Wa,--noexecstack -DL_ENDIAN -DTERMIO -Wall
+if LINUX
+libshare_ssl_a_CFLAGS += -Dlinux
+endif
+if I386
+libshare_ssl_a_CFLAGS += -DI386
+endif
 
 libssl_sources = \
 	$(SSL_DIR)/ssl/s2_meth.c $(SSL_DIR)/ssl/s2_srvr.c $(SSL_DIR)/ssl/s2_clnt.c $(SSL_DIR)/ssl/s2_lib.c $(SSL_DIR)/ssl/s2_enc.c $(SSL_DIR)/ssl/s2_pkt.c $(SSL_DIR)/ssl/s3_meth.c $(SSL_DIR)/ssl/s3_srvr.c $(SSL_DIR)/ssl/s3_clnt.c $(SSL_DIR)/ssl/s3_lib.c $(SSL_DIR)/ssl/s3_enc.c $(SSL_DIR)/ssl/s3_pkt.c $(SSL_DIR)/ssl/s3_both.c $(SSL_DIR)/ssl/s3_cbc.c $(SSL_DIR)/ssl/s23_meth.c $(SSL_DIR)/ssl/s23_srvr.c $(SSL_DIR)/ssl/s23_clnt.c $(SSL_DIR)/ssl/s23_lib.c $(SSL_DIR)/ssl/s23_pkt.c $(SSL_DIR)/ssl/t1_meth.c $(SSL_DIR)/ssl/t1_srvr.c $(SSL_DIR)/ssl/t1_clnt.c $(SSL_DIR)/ssl/t1_lib.c $(SSL_DIR)/ssl/t1_enc.c $(SSL_DIR)/ssl/d1_meth.c $(SSL_DIR)/ssl/d1_srvr.c $(SSL_DIR)/ssl/d1_clnt.c $(SSL_DIR)/ssl/d1_lib.c $(SSL_DIR)/ssl/d1_pkt.c $(SSL_DIR)/ssl/d1_both.c $(SSL_DIR)/ssl/d1_enc.c $(SSL_DIR)/ssl/d1_srtp.c $(SSL_DIR)/ssl/ssl_lib.c $(SSL_DIR)/ssl/ssl_err2.c $(SSL_DIR)/ssl/ssl_cert.c $(SSL_DIR)/ssl/ssl_sess.c $(SSL_DIR)/ssl/ssl_ciph.c $(SSL_DIR)/ssl/ssl_stat.c $(SSL_DIR)/ssl/ssl_rsa.c $(SSL_DIR)/ssl/ssl_asn1.c $(SSL_DIR)/ssl/ssl_txt.c $(SSL_DIR)/ssl/ssl_algs.c $(SSL_DIR)/ssl/bio_ssl.c $(SSL_DIR)/ssl/ssl_err.c $(SSL_DIR)/ssl/kssl.c $(SSL_DIR)/ssl/tls_srp.c $(SSL_DIR)/ssl/t1_reneg.c
