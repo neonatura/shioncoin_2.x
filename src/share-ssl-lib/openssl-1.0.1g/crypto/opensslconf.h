@@ -1,5 +1,5 @@
 #ifdef I386
-#include "opensslconf-i386.h"
+#include "../crypto/opensslconf-i386.h"
 #else
-#include "opensslconf-x86_64.h"
+#include "../crypto/opensslconf-x86_64.h"
 #endif
