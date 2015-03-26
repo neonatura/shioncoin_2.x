@@ -495,10 +495,6 @@ double c_getaccountbalance(const char *accountName)
 string addresstransactioninfo_json;
 const char *c_getaddresstransactioninfo(const char *tx_account)
 {
-
-  if (!tx_account)
-    return (NULL);
-
   string strAccount(tx_account);
 
   Array result;
@@ -771,11 +767,15 @@ int wallet_account_transfer(const char *sourceAccountName, const char *accountNa
 
 const char *getaddresstransactioninfo(const char *hash)
 {
+  if (!hash)
+    return (NULL);
   return (c_getaddresstransactioninfo(hash));
 }
 
 const char *getaddressinfo(const char *addr_hash)
 {
+  if (!addr_hash)
+    return (NULL);
   return (c_getaddressinfo(addr_hash));
 }
 

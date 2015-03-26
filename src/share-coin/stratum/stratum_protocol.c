@@ -223,18 +223,18 @@ int stratum_request_message(user_t *user, shjson_t *json)
   if (idx != -1 && idx == user->cli_id && shjson_strlen(json, "result")) {
     /* response from 'client.get_version' method. */ 
     strncpy(user->cli_ver, shjson_astr(json, "result", ""), sizeof(user->cli_ver));
-fprintf(stderr, "DEBUG: set client version '%s'\n", user->cli_ver);
+//fprintf(stderr, "DEBUG: set client version '%s'\n", user->cli_ver);
     return (0);
   }
 
   method = shjson_astr(json, "method", NULL);
   if (!method) {
     /* no operation method specified. */
-fprintf(stderr, "DEBUG: no 'method' specified.\n");
+//fprintf(stderr, "DEBUG: no 'method' specified.\n");
     return (SHERR_INVAL);
   }
 
-fprintf(stderr, "DEBUG: REQUEST '%s' [idx %d].\n", method, idx);
+//fprintf(stderr, "DEBUG: JSON REQUEST '%s' [idx %d].\n", method, idx);
   if (0 == strcmp(method, "mining.ping")) {
     reply = shjson_init(NULL);
     shjson_num_add(reply, "id", idx);
@@ -247,29 +247,6 @@ fprintf(stderr, "DEBUG: REQUEST '%s' [idx %d].\n", method, idx);
 
   if (0 == strcmp(method, "mining.subscribe")) {
     err = stratum_subscribe(user, idx);
-#if 0
-    shjson_t *data;
-    shjson_t *data2;
-    char nonce_str[64];
-
-    sprintf(nonce_str, "%x", stratum_session_nonce());
-
-    reply = shjson_init(NULL);
-    shjson_num_add(reply, "id", idx);
-    shjson_null_add(reply, "error");
-    data = shjson_array_add(reply, "result");
-    data2 = shjson_array_add(data, NULL);
-    shjson_str_add(data2, NULL, "mining.notify");
-    shjson_str_add(data2, NULL, "00000000");
-    shjson_str_add(data, NULL, nonce_str);
-    shjson_num_add(data, NULL, 4);
-    shjson_str_add(data, NULL, stratum_runtime_session());
-    err = stratum_send_message(user, reply);
-    shjson_free(&reply);
-
-    user->active = TRUE;
-    return (err);
-#endif
     if (!err)
       stratum_set_difficulty(user, 32);
 
@@ -330,9 +307,7 @@ fprintf(stderr, "DEBUG: REQUEST '%s' [idx %d].\n", method, idx);
   }
 
   if (0 == strcmp(method, "mining.submit")) {
-fprintf(stderr, "DEBUG: stratum_request_message[mining.submit]: submiting blockfrom miner\n");
     err = stratum_validate_submit(user, idx, json);
-fprintf(stderr, "DEBUG: stratum_request_message[mining.submit]: %d = stratum_validate_submit()\n", err);
 
     reply = shjson_init(NULL);
     shjson_num_add(reply, "id", idx);
@@ -426,7 +401,9 @@ fprintf(stderr, "DEBUG: stratum_request_message[mining.submit]: %d = stratum_val
 
     work_id_str = (char *)shjson_array_astr(json, "params", 0);
     work_id = (unsigned int)strtoll(work_id_str, NULL, 16);
+
     json_str = getminingtransactioninfo(work_id);
+
     reply = shjson_init(json_str);
     if (!json_str) {
       set_stratum_error(reply, -2, "invalid task id");
@@ -448,10 +425,12 @@ fprintf(stderr, "DEBUG: stratum_request_message[mining.submit]: %d = stratum_val
 
     switch (mode) {
       case 1: /* block by hash */
-        json_data = getblockinfo(hash);
+        if (hash)
+          json_data = getblockinfo(hash);
         break;
       case 2: /* tx */
-        json_data = gettransactioninfo(hash);
+        if (hash)
+          json_data = gettransactioninfo(hash);
         break;
       case 3: /* block by height [or last] */
         json_data = getlastblockinfo(shjson_array_num(json, "params", 1));
@@ -481,10 +460,12 @@ fprintf(stderr, "DEBUG: stratum_request_message[mining.submit]: %d = stratum_val
 
     switch (mode) {
       case 1: /* addr */
-        json_data = getaddressinfo(hash);
+        if (hash)
+          json_data = getaddressinfo(hash);
         break;
       case 3: /* addr-tx */
-        json_data = getaddresstransactioninfo(hash);
+        if (hash)
+          json_data = getaddresstransactioninfo(hash);
         break;
     }
 
@@ -512,9 +493,11 @@ fprintf(stderr, "DEBUG: stratum_request_message[mining.submit]: %d = stratum_val
     dest = shjson_array_astr(json, "params", 2);
     amount = shjson_array_num(json, "params", 3);
 
-    /* checks sha of account's private keys to determine if valid; sends amount to dest */
-    /* returns transaction id */
-    json_data = stratum_create_transaction(account, pkey, dest, amount);
+    if (account && pkey && dest) {
+      /* checks sha of account's private keys to determine if valid; sends amount to dest */
+      /* returns transaction id */
+      json_data = stratum_create_transaction(account, pkey, dest, amount);
+    }
 
     if (!json_data) {
       reply = shjson_init(NULL);
@@ -534,9 +517,11 @@ fprintf(stderr, "DEBUG: stratum_request_message[mining.submit]: %d = stratum_val
 
     acc_name = shjson_array_astr(json, "params", 0);
 
-    /* creates a usde address for an account name */
-    /* providing account does not exist; returns usde address and sha of private key */
-    json_data = stratum_create_account(acc_name);
+    if (acc_name) {
+      /* creates a usde address for an account name */
+      /* providing account does not exist; returns usde address and sha of private key */
+      json_data = stratum_create_account(acc_name);
+    }
 
     if (!json_data) {
       reply = shjson_init(NULL);
@@ -558,7 +543,8 @@ fprintf(stderr, "DEBUG: stratum_request_message[mining.submit]: %d = stratum_val
     account = shjson_array_astr(json, "params", 0);
     pkey = shjson_array_astr(json, "params", 1);
 
-    json_data = stratum_getaccountinfo(account, pkey);
+    if (account && pkey)
+      json_data = stratum_getaccountinfo(account, pkey);
 
     if (!json_data) {
       reply = shjson_init(NULL);
