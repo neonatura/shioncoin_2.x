@@ -402,8 +402,6 @@ fprintf(stderr, "DEBUG: stratum_request_message[mining.submit]: %d = stratum_val
       shjson_num_add(udata, NULL, block_avg);
       shjson_num_add(udata, NULL, t_user->work_diff); /* miner share difficulty */
       shjson_num_add(udata, NULL, stratum_user_speed(t_user)); /* khs */
-      shjson_str_add(udata, NULL, getaddressbyaccount(uname));
-      shjson_num_add(udata, NULL, getaccountbalance(uname));
       shjson_str_add(udata, NULL, t_user->block_hash);
       shjson_str_add(udata, NULL, t_user->cli_ver);
     }
@@ -473,7 +471,7 @@ fprintf(stderr, "DEBUG: stratum_request_message[mining.submit]: %d = stratum_val
     return (err);
   }
 
-  if (0 == strcmp(method, "account.info")) {
+  if (0 == strcmp(method, "account.address")) {
     const char *json_data = "{\"result\":null,\"error\":null}";
     char *hash;
     int mode;
@@ -489,6 +487,78 @@ fprintf(stderr, "DEBUG: stratum_request_message[mining.submit]: %d = stratum_val
         json_data = getaddresstransactioninfo(hash);
         break;
     }
+
+    if (!json_data) {
+      reply = shjson_init(NULL);
+      set_stratum_error(reply, -5, "invalid");
+      shjson_null_add(reply, "result");
+    } else {
+      reply = shjson_init(json_data);
+    }
+    shjson_num_add(reply, "id", idx);
+    err = stratum_send_message(user, reply);
+    shjson_free(&reply);
+    return (err);
+  }
+  if (0 == strcmp(method, "account.transfer")) {
+    const char *json_data = "{\"result\":null,\"error\":null}";
+    char *account;
+    char *pkey;
+    char *dest;
+    double amount;
+
+    account = shjson_array_astr(json, "params", 0);
+    pkey = shjson_array_astr(json, "params", 1);
+    dest = shjson_array_astr(json, "params", 2);
+    amount = shjson_array_num(json, "params", 3);
+
+    /* checks sha of account's private keys to determine if valid; sends amount to dest */
+    /* returns transaction id */
+    json_data = stratum_create_transaction(account, pkey, dest, amount);
+
+    if (!json_data) {
+      reply = shjson_init(NULL);
+      set_stratum_error(reply, -5, "invalid");
+      shjson_null_add(reply, "result");
+    } else {
+      reply = shjson_init(json_data);
+    }
+    shjson_num_add(reply, "id", idx);
+    err = stratum_send_message(user, reply);
+    shjson_free(&reply);
+    return (err);
+  }
+  if (0 == strcmp(method, "account.create")) {
+    const char *json_data = "{\"result\":null,\"error\":null}";
+    char *acc_name;
+
+    acc_name = shjson_array_astr(json, "params", 0);
+
+    /* creates a usde address for an account name */
+    /* providing account does not exist; returns usde address and sha of private key */
+    json_data = stratum_create_account(acc_name);
+
+    if (!json_data) {
+      reply = shjson_init(NULL);
+      set_stratum_error(reply, -5, "invalid");
+      shjson_null_add(reply, "result");
+    } else {
+      reply = shjson_init(json_data);
+    }
+    shjson_num_add(reply, "id", idx);
+    err = stratum_send_message(user, reply);
+    shjson_free(&reply);
+    return (err);
+  }
+  if (0 == strcmp(method, "account.info")) {
+    const char *json_data = "{\"result\":null,\"error\":null}";
+    char *account;
+    char *pkey;
+
+    account = shjson_array_astr(json, "params", 0);
+    pkey = shjson_array_astr(json, "params", 1);
+
+    json_data = stratum_getaccountinfo(account, pkey);
 
     if (!json_data) {
       reply = shjson_init(NULL);

@@ -46,6 +46,8 @@ using namespace json_spirit;
 
 extern CWallet* pwalletMain;
 
+extern Value ValueFromAmount(int64 amount);
+
 extern int64 GetAccountBalance(CWalletDB& walletdb, const string& strAccount, int nMinDepth);
 
 extern void AcentryToJSON(const CAccountingEntry& acentry, const string& strAccount, Array& ret);
@@ -225,9 +227,13 @@ CBitcoinAddress GetAddressByAccount(const char *accountName)
     }
   }
 
+#if 0
   /* create one */
   if (!found)
     address = GetNewAddress(strAccount);
+#endif
+  if (!found)
+    return (NULL);
 
   return (address);
 }
@@ -542,6 +548,191 @@ const char *c_getaddressinfo(const char *addr_hash)
   return (addressinfo_json.c_str());
 }
 
+uint256 get_private_key_hash(CKeyID keyId)
+{
+  CSecret vchSecret;
+  bool fCompressed;
+  if (!pwalletMain->GetSecret(keyId, vchSecret, fCompressed))
+    return (NULL);
+  string secret = CBitcoinSecret(vchSecret, fCompressed).ToString();
+
+  uint256 phash;
+  unsigned char *secret_str = (unsigned char *)secret.c_str();
+  size_t secret_len = secret.length();
+  SHA256(secret_str, secret_len, (unsigned char*)&phash);
+
+  return (phash);
+}
+
+string createaccount_json;
+static const char *c_stratum_create_account(const char *acc_name)
+{
+  string strAccount(acc_name);
+
+  if (strAccount == "" || strAccount == "*")
+    return (NULL);
+
+  if (!pwalletMain->IsLocked())
+    pwalletMain->TopUpKeyPool();
+
+  // Generate a new key that is added to wallet
+  CPubKey newKey;
+  if (!pwalletMain->GetKeyFromPool(newKey, false)) {
+    //        throw JSONRPCError(-12, "Error: Keypool ran out, please call keypoolrefill first");
+    return (NULL);
+  }
+
+  CKeyID keyId = newKey.GetID();
+  pwalletMain->SetAddressBookName(keyId, strAccount);
+
+  string coinAddr = CBitcoinAddress(keyId).ToString();
+  uint256 phash = get_private_key_hash(keyId);
+
+  Object result;
+  result.push_back(Pair("address", coinAddr));
+  result.push_back(Pair("key", phash.GetHex()));
+
+  createaccount_json = JSONRPCReply(result, Value::null, Value::null);
+  return (createaccount_json.c_str());
+}
+
+int valid_pkey_hash(string strAccount, uint256 in_pkey)
+{
+  uint256 acc_pkey;
+  int valid;
+
+  BOOST_FOREACH(const PAIRTYPE(CBitcoinAddress, string)& item, pwalletMain->mapAddressBook)
+  {
+    const CBitcoinAddress& address = item.first;
+    const string& strName = item.second;
+    CKeyID keyID;
+
+    if (strName != strAccount)
+      continue;
+    if (!address.GetKeyID(keyID))
+      continue;
+
+    acc_pkey = get_private_key_hash(keyID);
+    if (acc_pkey == in_pkey)
+      valid++;
+  }
+
+  return (valid);
+}
+
+string transferaccount_json;
+static const char *c_stratum_account_transfer(char *account, char *pkey_str, char *dest, double amount)
+{
+  CWalletDB walletdb(pwalletMain->strWalletFile);
+  string strAccount(account);
+  string strDestAddress(dest);
+  CBitcoinAddress dest_address(strDestAddress);
+  int64 nAmount = roundint64(amount * COIN);
+  string strAddress;
+  CKeyID keyID;
+  CSecret vchSecret;
+  bool fCompressed;
+  uint256 acc_pkey;
+  uint256 in_pkey;
+  int nMinDepth = 1;
+  int64 nBalance;
+
+  if (pwalletMain->IsLocked()) {
+fprintf(stderr, "DEBUG: ACCOUNT-TRANSFER: wallet is locked.\n");
+    return (NULL);// throw JSONRPCError(-13, "Error: Please enter the wallet passphrase with walletpassphrase first.");
+}
+
+  if (!dest_address.IsValid()) {
+fprintf(stderr, "DEBUG: ACCOUNT_TRANFER: dest_address '%s' is invalid.\n", dest);
+    return (NULL); //throw JSONRPCError(-5, "Invalid usde dest_address");
+  }
+
+  nBalance = GetAccountBalance(walletdb, strAccount, nMinDepth);
+  if (nAmount > nBalance) {
+fprintf(stderr, "DEBUG: ACCOUNT_TRANFER: nAmount(%d) > nBalance(%d)\n", nAmount, nBalance);
+    return (NULL);// throw JSONRPCError(-6, "Account has insufficient funds");
+  }
+
+  in_pkey.SetHex(pkey_str);
+  if (!valid_pkey_hash(strAccount, in_pkey)) {
+fprintf(stderr, "DEBUG: c_stratum_account_transfer: invalid pkey has ( acc_pkey:%s in_pkey:%s )\n", acc_pkey.GetHex().c_str(), in_pkey.GetHex().c_str()); 
+    return (NULL); 
+  }
+
+  CWalletTx wtx;
+  wtx.strFromAccount = strAccount;
+//  wtx.mapValue["comment"] = "sharenet";
+  string strError = pwalletMain->SendMoneyToDestination(dest_address.Get(), nAmount, wtx);
+  if (strError != "") {
+    fprintf(stderr, "DEBUG: c_stratum_account_transfer: SendMoneyToDestination error: %s\n", strError.c_str());
+    return (NULL); //throw JSONRPCError(-4, strError);
+  }
+
+
+  Object result;
+  result.push_back(Pair("txid", wtx.GetHash().GetHex()));
+
+  transferaccount_json = JSONRPCReply(result, Value::null, Value::null);
+  return (transferaccount_json.c_str());
+}
+
+string accountinfo_json;
+static const char *c_stratum_account_info(const char *acc_name, const char *pkey_str)
+{
+  CWalletDB walletdb(pwalletMain->strWalletFile);
+  string strAccount(acc_name);
+  int64 nConfirm;
+  int64 nUnconfirm;
+  int nMinDepth = 1;
+  uint256 in_pkey;
+
+  if (strAccount == "" || strAccount == "*")
+    return (NULL);
+
+  nConfirm = GetAccountBalance(walletdb, strAccount, nMinDepth);
+  nUnconfirm = GetAccountBalance(walletdb, strAccount, 0) - nConfirm;
+
+  in_pkey.SetHex(pkey_str);
+#if 0
+  if (!valid_pkey_hash(strAccount, in_pkey)) {
+fprintf(stderr, "DEBUG: c_stratum_account_transfer: invalid pkey has ( acc_pkey:%s in_pkey:%s )\n", acc_pkey.GetHex().c_str(), in_pkey.GetHex().c_str()); 
+    return (NULL); 
+  }
+#endif
+
+  if (!pwalletMain->IsLocked())
+    pwalletMain->TopUpKeyPool();
+
+
+  Object result;
+  result.push_back(Pair("confirmed", ValueFromAmount(nConfirm)));
+  result.push_back(Pair("unconfirmed", ValueFromAmount(nUnconfirm)));
+
+
+  Array addr_list;
+  CBitcoinAddress address;
+
+  // Find all addresses that have the given account
+  uint256 phash;
+  BOOST_FOREACH(const PAIRTYPE(CBitcoinAddress, string)& item, pwalletMain->mapAddressBook)
+  {
+    const CBitcoinAddress& acc_address = item.first;
+    const string& strName = item.second;
+    if (strName == strAccount) {
+      addr_list.push_back(acc_address.ToString());
+
+      CKeyID keyID;
+      acc_address.GetKeyID(keyID);
+      phash = get_private_key_hash(keyID);
+    }
+  }
+  result.push_back(Pair("addresses", addr_list));
+  result.push_back(Pair("key", phash.GetHex()));
+
+  accountinfo_json = JSONRPCReply(result, Value::null, Value::null);
+  return (accountinfo_json.c_str());
+}
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -587,6 +778,22 @@ const char *getaddressinfo(const char *addr_hash)
 {
   return (c_getaddressinfo(addr_hash));
 }
+
+const char *stratum_create_account(const char *acc_name)
+{
+  return (c_stratum_create_account(acc_name));
+}
+
+const char *stratum_create_transaction(char *account, char *pkey_str, char *dest, double amount)
+{
+  return (c_stratum_account_transfer(account, pkey_str, dest, amount));
+}
+
+const char *stratum_getaccountinfo(const char *acc_name, const char *pkey)
+{
+  return (c_stratum_account_info(acc_name, pkey));
+}
+
 
 #ifdef __cplusplus
 }

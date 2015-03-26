@@ -60,6 +60,12 @@ const char *submitblock(unsigned int workId, unsigned int nTime, unsigned int nN
 
 const char *getminingtransactioninfo(unsigned int workId);
 
+const char *stratum_create_account(const char *acc_name);
+
+const char *stratum_create_transaction(char *account, char *pkey_str, char *dest, double amount);
+
+const char *stratum_getaccountinfo(const char *acc_name, const char *pkey);
+
 
 #ifdef __cplusplus
 }
