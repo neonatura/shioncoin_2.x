@@ -573,6 +573,8 @@ int valid_pkey_hash(string strAccount, uint256 in_pkey)
   uint256 acc_pkey;
   int valid;
 
+  valid = 0;
+  acc_pkey = 0;
   BOOST_FOREACH(const PAIRTYPE(CBitcoinAddress, string)& item, pwalletMain->mapAddressBook)
   {
     const CBitcoinAddress& address = item.first;
@@ -587,6 +589,7 @@ int valid_pkey_hash(string strAccount, uint256 in_pkey)
     acc_pkey = get_private_key_hash(keyID);
     if (acc_pkey == in_pkey)
       valid++;
+else fprintf(stderr, "DEBUG: get_private_key_hash: '%s'\n", acc_pkey.GetHex().c_str());
   }
 
   return (valid);
@@ -599,51 +602,53 @@ static const char *c_stratum_account_transfer(char *account, char *pkey_str, cha
   string strAccount(account);
   string strDestAddress(dest);
   CBitcoinAddress dest_address(strDestAddress);
-  int64 nAmount = roundint64(amount * COIN);
+  CWalletTx wtx;
+  int64 nAmount;
   string strAddress;
   CKeyID keyID;
   CSecret vchSecret;
   bool fCompressed;
   uint256 acc_pkey;
   uint256 in_pkey;
-  int nMinDepth = 1;
+  int nMinDepth;
   int64 nBalance;
 
-  if (pwalletMain->IsLocked()) {
-fprintf(stderr, "DEBUG: ACCOUNT-TRANSFER: wallet is locked.\n");
-    return (NULL);// throw JSONRPCError(-13, "Error: Please enter the wallet passphrase with walletpassphrase first.");
-}
+  try {
+    in_pkey = 0;
+    nMinDepth = 1;
+    nAmount = roundint64(amount * COIN);
 
-  if (!dest_address.IsValid()) {
-fprintf(stderr, "DEBUG: ACCOUNT_TRANFER: dest_address '%s' is invalid.\n", dest);
-    return (NULL); //throw JSONRPCError(-5, "Invalid usde dest_address");
+    if (pwalletMain->IsLocked()) {
+      throw JSONRPCError(STERR_ACCESS_NOKEY, "Account transactions are not currently available.");
+    }
+
+    if (!dest_address.IsValid()) {
+      throw JSONRPCError(STERR_INVAL, "Invalid usde destination address");
+    }
+
+    in_pkey.SetHex(pkey_str);
+    if (!valid_pkey_hash(strAccount, in_pkey)) {
+      throw JSONRPCError(STERR_ACCESS, "Invalid private key hash specified.");
+    }
+
+    nBalance = GetAccountBalance(walletdb, strAccount, nMinDepth);
+    if (nAmount > nBalance) {
+      throw JSONRPCError(STERR_FUND_UNAVAIL, "Account has insufficient funds.");
+    }
+
+    wtx.strFromAccount = strAccount;
+    wtx.mapValue["comment"] = "sharelib.net";
+    string strError = pwalletMain->SendMoneyToDestination(dest_address.Get(), nAmount, wtx);
+    if (strError != "") {
+      throw JSONRPCError(STERR_ACCESS_UNAVAIL, strError);
+    }
+  } catch(Object& objError) {
+    SetStratumError(objError);
+    return (NULL);
   }
-
-  nBalance = GetAccountBalance(walletdb, strAccount, nMinDepth);
-  if (nAmount > nBalance) {
-fprintf(stderr, "DEBUG: ACCOUNT_TRANFER: nAmount(%d) > nBalance(%d)\n", nAmount, nBalance);
-    return (NULL);// throw JSONRPCError(-6, "Account has insufficient funds");
-  }
-
-  in_pkey.SetHex(pkey_str);
-  if (!valid_pkey_hash(strAccount, in_pkey)) {
-fprintf(stderr, "DEBUG: c_stratum_account_transfer: invalid pkey has ( acc_pkey:%s in_pkey:%s )\n", acc_pkey.GetHex().c_str(), in_pkey.GetHex().c_str()); 
-    return (NULL); 
-  }
-
-  CWalletTx wtx;
-  wtx.strFromAccount = strAccount;
-//  wtx.mapValue["comment"] = "sharenet";
-  string strError = pwalletMain->SendMoneyToDestination(dest_address.Get(), nAmount, wtx);
-  if (strError != "") {
-    fprintf(stderr, "DEBUG: c_stratum_account_transfer: SendMoneyToDestination error: %s\n", strError.c_str());
-    return (NULL); //throw JSONRPCError(-4, strError);
-  }
-
 
   Object result;
   result.push_back(Pair("txid", wtx.GetHash().GetHex()));
-
   transferaccount_json = JSONRPCReply(result, Value::null, Value::null);
   return (transferaccount_json.c_str());
 }
@@ -691,7 +696,7 @@ static const char *c_stratum_account_info(const char *acc_name, const char *pkey
       }
     }
     result.push_back(Pair("addresses", addr_list));
-    result.push_back(Pair("key", phash.GetHex())); /* DEBUG: dont include in future versions */
+    result.push_back(Pair("key", phash.GetHex()));
   } catch(Object& objError) {
     SetStratumError(objError);
     return (NULL);
@@ -770,12 +775,16 @@ const char *stratum_create_account(const char *acc_name)
 
 const char *stratum_create_transaction(char *account, char *pkey_str, char *dest, double amount)
 {
+  if (!account || !pkey_str || !dest)
+    return (NULL);
   return (c_stratum_account_transfer(account, pkey_str, dest, amount));
 }
 
-const char *stratum_getaccountinfo(const char *acc_name, const char *pkey)
+const char *stratum_getaccountinfo(const char *account, const char *pkey_str)
 {
-  return (c_stratum_account_info(acc_name, pkey));
+  if (!account || !pkey_str)
+    return (NULL);
+  return (c_stratum_account_info(account, pkey_str));
 }
 
 const char *stratum_error_get(int req_id)
