@@ -205,6 +205,44 @@ void set_stratum_error(shjson_t *reply, int code, char *str)
 
 }
 
+static int stratum_request_account_address(user_t *user, int idx, int mode, char *hash, int duration)
+{
+  shjson_t *reply;
+  const char *json_data = "{\"result\":null,\"error\":null}";
+  int err;
+
+  switch (mode) {
+    case 1: /* addr */
+      if (hash) {
+        json_data = getaddressinfo(hash);
+        if (!json_data)
+          json_data = stratum_error_get();
+      }
+      break;
+    case 3: /* addr-tx */
+      if (hash) {
+        json_data = getaccounttransactioninfo(hash, duration);
+        if (!json_data)
+          json_data = stratum_error_get();
+      }
+      break;
+  }
+
+  if (!json_data) {
+    reply = shjson_init(NULL);
+    set_stratum_error(reply, -5, "invalid");
+    shjson_null_add(reply, "result");
+  } else {
+    reply = shjson_init(json_data);
+  }
+
+  shjson_num_add(reply, "id", idx);
+  err = stratum_send_message(user, reply);
+  shjson_free(&reply);
+
+  return (err);
+}
+
 static int stratum_request_account_transfer(user_t *user, int idx, char *account, char *pkey, char *dest, double amount)
 {
   shjson_t *reply;
@@ -506,38 +544,6 @@ int stratum_request_message(user_t *user, shjson_t *json)
     return (err);
   }
 
-  if (0 == strcmp(method, "account.address")) {
-    const char *json_data = "{\"result\":null,\"error\":null}";
-    char *hash;
-    int mode;
-
-    mode = shjson_array_num(json, "params", 0);
-    hash = shjson_array_astr(json, "params", 1);
-
-    switch (mode) {
-      case 1: /* addr */
-        if (hash)
-          json_data = getaddressinfo(hash);
-        break;
-      case 3: /* addr-tx */
-        if (hash)
-          json_data = getaddresstransactioninfo(hash);
-        break;
-    }
-
-    if (!json_data) {
-      reply = shjson_init(NULL);
-      set_stratum_error(reply, -5, "invalid");
-      shjson_null_add(reply, "result");
-    } else {
-      reply = shjson_init(json_data);
-    }
-    shjson_num_add(reply, "id", idx);
-    err = stratum_send_message(user, reply);
-    shjson_free(&reply);
-    return (err);
-  }
-
   if (0 == strcmp(method, "account.create")) {
     const char *json_data = "{\"result\":null,\"error\":null}";
     char *acc_name;
@@ -563,6 +569,12 @@ int stratum_request_message(user_t *user, shjson_t *json)
     return (err);
   }
 
+  if (0 == strcmp(method, "account.address")) {
+    return (stratum_request_account_address(user, idx, 
+          shjson_array_num(json, "params", 0),
+          shjson_array_astr(json, "params", 1),
+          shjson_array_num(json, "params", 2)));
+  }
   if (0 == strcmp(method, "account.transfer")) {
     return (stratum_request_account_transfer(user, idx,
           shjson_array_astr(json, "params", 0),

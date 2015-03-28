@@ -468,53 +468,56 @@ double c_getaccountbalance(const char *accountName)
  * local known transactions associated with account name.
  * @returns json string format 
  */
-string addresstransactioninfo_json;
-const char *c_getaddresstransactioninfo(const char *tx_account)
+string accounttransactioninfo_json;
+const char *c_getaccounttransactioninfo(const char *tx_account, int duration)
 {
   string strAccount(tx_account);
-
   Array result;
-  CWalletDB walletdb(pwalletMain->strWalletFile);
 
-  for (map<uint256, CWalletTx>::iterator it = pwalletMain->mapWallet.begin(); it != pwalletMain->mapWallet.end(); ++it) {
-    CWalletTx* wtx = &((*it).second);
-    ListTransactions(*wtx, strAccount, 0, true, result);
+  min_t = time(NULL) - duration;
+  try {
+    CWalletDB walletdb(pwalletMain->strWalletFile);
+
+    for (map<uint256, CWalletTx>::iterator it = pwalletMain->mapWallet.begin(); it != pwalletMain->mapWallet.end(); ++it) {
+      CWalletTx* wtx = &((*it).second);
+
+      if (wtx.GetTxTime() >= min_t)
+        ListTransactions(*wtx, strAccount, 0, true, result);
+    }
+  } catch(Object& objError) {
+    SetStratumError(objError);
+    return (NULL);
   }
 
-/*
-  list<CAccountingEntry> acentries;
-  walletdb.ListAccountCreditDebit(strAccount, acentries);
-  BOOST_FOREACH(CAccountingEntry& entry, acentries) {
-    AcentryToJSON(entry, strAccount, result);
-  }
-*/
-
-  addresstransactioninfo_json = JSONRPCReply(result, Value::null, Value::null);
-  return (addresstransactioninfo_json.c_str());
+  accounttransactioninfo_json = JSONRPCReply(result, Value::null, Value::null);
+  return (accounttransactioninfo_json.c_str());
 }
 
 string addressinfo_json;
 const char *c_getaddressinfo(const char *addr_hash)
 {
   string strAddr(addr_hash);
-  CBitcoinAddress address(strAddr);
-
-  bool isValid = address.IsValid();
-  if (!isValid)
-    return (NULL);
-
   Object result;
 
-  CTxDestination dest = address.Get();
-  string currentAddress = address.ToString();
-  result.push_back(Pair("address", currentAddress));
-  bool fMine = IsMine(*pwalletMain, dest);
+  try {
+    CBitcoinAddress address(strAddr);
+    if (!address.IsValid()) {
+      throw JSONRPCError(STERR_INVAL, "Invalid usde destination address");
+    }
 
-  Object detail = boost::apply_visitor(DescribeAddressVisitor(), dest);
-  result.insert(result.end(), detail.begin(), detail.end());
+    CTxDestination dest = address.Get();
+    string currentAddress = address.ToString();
+    result.push_back(Pair("address", currentAddress));
+    bool fMine = IsMine(*pwalletMain, dest);
 
-  if (pwalletMain->mapAddressBook.count(dest))
-    result.push_back(Pair("account", pwalletMain->mapAddressBook[dest]));
+    Object detail = boost::apply_visitor(DescribeAddressVisitor(), dest);
+    result.insert(result.end(), detail.begin(), detail.end());
+    if (pwalletMain->mapAddressBook.count(dest))
+      result.push_back(Pair("account", pwalletMain->mapAddressBook[dest]));
+  } catch(Object& objError) {
+    SetStratumError(objError);
+    return (NULL);
+  }
 
   addressinfo_json = JSONRPCReply(result, Value::null, Value::null);
   return (addressinfo_json.c_str());
@@ -754,11 +757,11 @@ int wallet_account_transfer(const char *sourceAccountName, const char *accountNa
   return (c_wallet_account_transfer(sourceAccountName, accountName, comment, amount));
 }
 
-const char *getaddresstransactioninfo(const char *hash)
+const char *getaccounttransactioninfo(const char *account, int duration)
 {
-  if (!hash)
+  if (!account)
     return (NULL);
-  return (c_getaddresstransactioninfo(hash));
+  return (c_getaccounttransactioninfo(account, duration));
 }
 
 const char *getaddressinfo(const char *addr_hash)

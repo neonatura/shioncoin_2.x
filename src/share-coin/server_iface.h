@@ -68,7 +68,7 @@ const char *getblockinfo(const char *hash);
 const char *gettransactioninfo(const char *hash);
 const char *getlastblockinfo(int height);
 
-const char *getaddresstransactioninfo(const char *hash);
+const char *getaccounttransactioninfo(const char *account, int duration);
 
 const char *getaddressinfo(const char *addr_hash);
 
