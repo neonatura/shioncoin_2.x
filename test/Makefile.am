@@ -47,7 +47,7 @@ testcase_sources = \
 
 common_sources = \
 	$(top_srcdir)/src/share-coin/server/addrman.cpp \
-	$(top_srcdir)/src/share-coin/server/bitcoinrpc.cpp \
+	$(top_srcdir)/src/share-coin/server/rpc_proto.cpp \
 	$(top_srcdir)/src/share-coin/server/checkpoints.cpp \
 	$(top_srcdir)/src/share-coin/server/crypter.cpp \
 	$(top_srcdir)/src/share-coin/server/db.cpp \

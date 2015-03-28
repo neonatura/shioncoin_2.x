@@ -205,6 +205,33 @@ void set_stratum_error(shjson_t *reply, int code, char *str)
 
 }
 
+static int stratum_request_account_info(user_t *user, int idx, char *account, char *pkey)
+{
+  const char *json_data = "{\"result\":null,\"error\":null}";
+  shjson_t *reply;
+  int err;
+
+  if (account && pkey) {
+    json_data = stratum_getaccountinfo(account, pkey);
+    if (!json_data)
+      json_data = stratum_error_get(idx);
+  }
+
+  if (!json_data) {
+    reply = shjson_init(NULL);
+    set_stratum_error(reply, -5, "invalid");
+    shjson_null_add(reply, "result");
+  } else {
+    reply = shjson_init(json_data);
+  }
+
+  shjson_num_add(reply, "id", idx);
+  err = stratum_send_message(user, reply);
+  shjson_free(&reply);
+
+  return (err);
+}
+
 /**
  * @todo: leave stale worker users (without open fd) until next round reset. current behavior does not payout if connection is severed.
  */ 
@@ -535,30 +562,14 @@ int stratum_request_message(user_t *user, shjson_t *json)
     shjson_free(&reply);
     return (err);
   }
+
   if (0 == strcmp(method, "account.info")) {
-    const char *json_data = "{\"result\":null,\"error\":null}";
-    char *account;
-    char *pkey;
-
-    account = shjson_array_astr(json, "params", 0);
-    pkey = shjson_array_astr(json, "params", 1);
-
-    if (account && pkey)
-      json_data = stratum_getaccountinfo(account, pkey);
-
-    if (!json_data) {
-      reply = shjson_init(NULL);
-      set_stratum_error(reply, -5, "invalid");
-      shjson_null_add(reply, "result");
-    } else {
-      reply = shjson_init(json_data);
-    }
-    shjson_num_add(reply, "id", idx);
-    err = stratum_send_message(user, reply);
-    shjson_free(&reply);
-    return (err);
+    return (stratum_request_account_info(user, idx,
+          shjson_array_astr(json, "params", 0),
+          shjson_array_astr(json, "params", 1)));
   }
 
+  /* unknown request in proper JSON format. */
   reply = shjson_init(NULL);
   shjson_num_add(reply, "id", idx);
   set_stratum_error(reply, -5, "invalid");

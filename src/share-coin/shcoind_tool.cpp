@@ -2,7 +2,7 @@
 
 #include "server/main.h"
 #include "server/net.h"
-#include "server/bitcoinrpc.h"
+#include "server/rpc_proto.h"
 #include "shcoind_rpc.h"
 #include <share.h>
 

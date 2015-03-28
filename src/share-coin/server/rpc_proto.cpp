@@ -16,7 +16,7 @@
 #include "init.h"
 #include "ui_interface.h"
 #include "base58.h"
-#include "bitcoinrpc.h"
+#include "rpc_proto.h"
 #include "../server_iface.h" /* BLKERR_XXX */
 
 #undef printf
@@ -44,6 +44,8 @@ using namespace std;
 using namespace boost;
 using namespace boost::asio;
 using namespace json_spirit;
+
+#include "SSLIOStreamDevice.h"
 
 void ThreadRPCServer2(void* parg);
 
@@ -2642,105 +2644,7 @@ bool ClientAllowed(const boost::asio::ip::address& address)
     return false;
 }
 
-//
-// IOStream device that speaks SSL but can also speak non-SSL
-//
-template <typename Protocol>
-class SSLIOStreamDevice : public iostreams::device<iostreams::bidirectional> {
-public:
-    SSLIOStreamDevice(asio::ssl::stream<typename Protocol::socket> &streamIn, bool fUseSSLIn) : stream(streamIn)
-    {
-        fUseSSL = fUseSSLIn;
-        fNeedHandshake = fUseSSLIn;
-    }
 
-    void handshake(ssl::stream_base::handshake_type role)
-    {
-        if (!fNeedHandshake) return;
-        fNeedHandshake = false;
-        stream.handshake(role);
-    }
-    std::streamsize read(char* s, std::streamsize n)
-    {
-        handshake(ssl::stream_base::server); // HTTPS servers read first
-        if (fUseSSL) return stream.read_some(asio::buffer(s, n));
-        return stream.next_layer().read_some(asio::buffer(s, n));
-    }
-    std::streamsize write(const char* s, std::streamsize n)
-    {
-        handshake(ssl::stream_base::client); // HTTPS clients write first
-        if (fUseSSL) return asio::write(stream, asio::buffer(s, n));
-        return asio::write(stream.next_layer(), asio::buffer(s, n));
-    }
-    bool connect(const std::string& server, const std::string& port)
-    {
-        ip::tcp::resolver resolver(stream.get_io_service());
-        ip::tcp::resolver::query query(server.c_str(), port.c_str());
-        ip::tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
-        ip::tcp::resolver::iterator end;
-        boost::system::error_code error = asio::error::host_not_found;
-        while (error && endpoint_iterator != end)
-        {
-            stream.lowest_layer().close();
-            stream.lowest_layer().connect(*endpoint_iterator++, error);
-        }
-        if (error)
-            return false;
-        return true;
-    }
-
-private:
-    bool fNeedHandshake;
-    bool fUseSSL;
-    asio::ssl::stream<typename Protocol::socket>& stream;
-};
-
-class AcceptedConnection
-{
-public:
-    virtual ~AcceptedConnection() {}
-
-    virtual std::iostream& stream() = 0;
-    virtual std::string peer_address_to_string() const = 0;
-    virtual void close() = 0;
-};
-
-template <typename Protocol>
-class AcceptedConnectionImpl : public AcceptedConnection
-{
-public:
-    AcceptedConnectionImpl(
-            asio::io_service& io_service,
-            ssl::context &context,
-            bool fUseSSL) :
-        sslStream(io_service, context),
-        _d(sslStream, fUseSSL),
-        _stream(_d)
-    {
-    }
-
-    virtual std::iostream& stream()
-    {
-        return _stream;
-    }
-
-    virtual std::string peer_address_to_string() const
-    {
-        return peer.address().to_string();
-    }
-
-    virtual void close()
-    {
-        _stream.close();
-    }
-
-    typename Protocol::endpoint peer;
-    asio::ssl::stream<typename Protocol::socket> sslStream;
-
-private:
-    SSLIOStreamDevice<Protocol> _d;
-    iostreams::stream< SSLIOStreamDevice<Protocol> > _stream;
-};
 
 void ThreadRPCServer(void* parg)
 {
@@ -3160,61 +3064,6 @@ json_spirit::Value CRPCTable::execute(const std::string &strMethod, const json_s
     }
 }
 
-
-Object CallRPC(const string& strMethod, const Array& params)
-{
-    if (mapArgs["-rpcuser"] == "" && mapArgs["-rpcpassword"] == "")
-        throw runtime_error(strprintf(
-            _("You must set rpcpassword=<password> in the configuration file:\n%s\n"
-              "If the file does not exist, create it with owner-readable-only file permissions."),
-                GetConfigFile().string().c_str()));
-
-    // Connect to localhost
-    bool fUseSSL = GetBoolArg("-rpcssl");
-    asio::io_service io_service;
-    ssl::context context(io_service, ssl::context::sslv23);
-    context.set_options(ssl::context::no_sslv2);
-    asio::ssl::stream<asio::ip::tcp::socket> sslStream(io_service, context);
-    SSLIOStreamDevice<asio::ip::tcp> d(sslStream, fUseSSL);
-    iostreams::stream< SSLIOStreamDevice<asio::ip::tcp> > stream(d);
-    if (!d.connect(GetArg("-rpcconnect", "127.0.0.1"), GetArg("-rpcport", "54448")))
-        throw runtime_error("couldn't connect to server");
-
-    // HTTP basic authentication
-    string strUserPass64 = EncodeBase64(mapArgs["-rpcuser"] + ":" + mapArgs["-rpcpassword"]);
-    map<string, string> mapRequestHeaders;
-    mapRequestHeaders["Authorization"] = string("Basic ") + strUserPass64;
-
-    // Send request
-    string strRequest = JSONRPCRequest(strMethod, params, 1);
-    string strPost = HTTPPost(strRequest, mapRequestHeaders);
-    stream << strPost << std::flush;
-
-    // Receive reply
-    map<string, string> mapHeaders;
-    string strReply;
-    int nStatus = ReadHTTP(stream, mapHeaders, strReply);
-    if (nStatus == 401)
-        throw runtime_error("incorrect rpcuser or rpcpassword (authorization failed)");
-    else if (nStatus >= 400 && nStatus != 400 && nStatus != 404 && nStatus != 500)
-        throw runtime_error(strprintf("server returned HTTP error %d", nStatus));
-    else if (strReply.empty())
-        throw runtime_error("no response from server");
-
-    // Parse reply
-    Value valReply;
-    if (!read_string(strReply, valReply))
-        throw runtime_error("couldn't parse reply from server");
-    const Object& reply = valReply.get_obj();
-    if (reply.empty())
-        throw runtime_error("expected reply to have result, error and id properties");
-
-    return reply;
-}
-
-
-
-
 template<typename T>
 void ConvertTo(Value& value)
 {
@@ -3283,116 +3132,6 @@ Array RPCConvertValues(const std::string &strMethod, const std::vector<std::stri
     return params;
 }
 
-int CommandLineRPC(int argc, char *argv[])
-{
-    string strPrint;
-    int nRet = 0;
-    try
-    {
-        // Skip switches
-        while (argc > 1 && IsSwitchChar(argv[1][0]))
-        {
-            argc--;
-            argv++;
-        }
-
-        // Method
-        if (argc < 2)
-            throw runtime_error("too few parameters");
-        string strMethod = argv[1];
-
-        // Parameters default to strings
-        std::vector<std::string> strParams(&argv[2], &argv[argc]);
-        Array params = RPCConvertValues(strMethod, strParams);
-
-        // Execute
-        Object reply = CallRPC(strMethod, params);
-
-        // Parse reply
-        const Value& result = find_value(reply, "result");
-        const Value& error  = find_value(reply, "error");
-
-        if (error.type() != null_type)
-        {
-            // Error
-            strPrint = "error: " + write_string(error, false);
-            int code = find_value(error.get_obj(), "code").get_int();
-            nRet = abs(code);
-        }
-        else
-        {
-            // Result
-            if (result.type() == null_type)
-                strPrint = "";
-            else if (result.type() == str_type)
-                strPrint = result.get_str();
-            else
-                strPrint = write_string(result, true);
-        }
-    }
-    catch (std::exception& e)
-    {
-        strPrint = string("error: ") + e.what();
-        nRet = 87;
-    }
-    catch (...)
-    {
-        PrintException(NULL, "CommandLineRPC()");
-    }
-
-    if (strPrint != "")
-    {
-        fprintf((nRet == 0 ? stdout : stderr), "%s\n", strPrint.c_str());
-    }
-    return nRet;
-}
-
-
-
-
-#ifdef TEST
-int main(int argc, char *argv[])
-{
-  char username[256];
-  char password[256];
-
-#ifdef _MSC_VER
-    // Turn off microsoft heap dump noise
-    _CrtSetReportMode(_CRT_WARN, _CRTDBG_MODE_FILE);
-    _CrtSetReportFile(_CRT_WARN, CreateFile("NUL", GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, 0));
-#endif
-    setbuf(stdin, NULL);
-    setbuf(stdout, NULL);
-    setbuf(stderr, NULL);
-
-  /* load rpc credentials */
-  get_rpc_cred(username, password);
-  string strUser(username);
-  string strPass(username);
-  mapArgs["-rpcuser"] = strUser;
-  mapArgs["-rpcpassword"] = strPass;
-
-
-    try
-    {
-        if (argc >= 2 && string(argv[1]) == "-server")
-        {
-            printf("server ready\n");
-            ThreadRPCServer(NULL);
-        }
-        else
-        {
-            return CommandLineRPC(argc, argv);
-        }
-    }
-    catch (std::exception& e) {
-        PrintException(&e, "main()");
-    } catch (...) {
-        PrintException(NULL, "main()");
-    }
-    return 0;
-}
-#endif
 
 const CRPCTable tableRPC;
 

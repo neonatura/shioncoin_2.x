@@ -26,7 +26,7 @@ common_includes = \
 	server/allocators.h \
 	server/base58.h \
 	server/bignum.h \
-	server/bitcoinrpc.h \
+	server/rpc_proto.h \
 	server/checkpoints.h \
 	server/compat.h \
 	server/crypter.h \
@@ -62,8 +62,14 @@ common_includes = \
 	shcoind_rpc.h \
 	shcoind.h
 common_sources = \
+	server/netbase.cpp \
+	server/version.cpp \
+	server/util.cpp \
+	shcoind_block.c \
+	shcoind_rpc.c
+server_sources = \
 	server/addrman.cpp \
-	server/bitcoinrpc.cpp \
+	server/rpc_proto.cpp \
 	server/checkpoints.cpp \
 	server/crypter.cpp \
 	server/db.cpp \
@@ -72,7 +78,6 @@ common_sources = \
 	server/keystore.cpp \
 	server/leveldb.cpp \
 	server/main.cpp \
-	server/netbase.cpp \
 	server/noui.cpp \
 	server/protocol.cpp \
 	server/rpcdump.cpp \
@@ -80,17 +85,12 @@ common_sources = \
 	server/rpcrawtransaction.cpp \
 	server/script.cpp \
 	server/sync.cpp \
-	server/util.cpp \
-	server/version.cpp \
 	server/wallet.cpp \
 	server/walletdb.cpp \
 	server/scrypt.c \
 	wallet_iface.cpp \
 	block_iface.cpp \
-	server_iface.cpp \
-	shcoind_block.c \
-	shcoind_rpc.c
-server_sources =
+	server_iface.cpp
 stratum_sources = \
 	stratum/stratum_message.c \
 	stratum/stratum_protocol.c \
@@ -116,14 +116,17 @@ shcoind_CFLAGS = -I$(LIBSHARE)/include
 shcoind_CXXFLAGS = -I$(LIBSHARE)/include
 endif
 
-shcoin_SOURCES = shcoind_tool.cpp $(common_includes) $(common_sources)
+shcoin_SOURCES = $(common_includes) $(common_sources) \
+	shcoind_tool.cpp clientrpc_iface.cpp
 shcoin_LDADD = \
 	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
 	libleveldb.a
+shcoin_CFLAGS = -DSHCOIN_CLIENT
+shcoin_CXXFLAGS = -DSHCOIN_CLIENT
 if STATIC_LIBSHARE
 shcoin_LDADD += $(LIBSHARE)/src/share-lib/libshare.a
-shcoin_CFLAGS = -I$(LIBSHARE)/include
-shcoin_CXXFLAGS = -I$(LIBSHARE)/include
+shcoin_CFLAGS += -I$(LIBSHARE)/include
+shcoin_CXXFLAGS += -I$(LIBSHARE)/include
 endif
 
 noinst_LIBRARIES = libleveldb.a

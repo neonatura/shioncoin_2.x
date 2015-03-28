@@ -26,11 +26,11 @@
 #include "db.h"
 #include "net.h"
 #include "init.h"
-#include "bitcoinrpc.h"
 #include "strlcpy.h"
 #include "addrman.h"
 #include "ui_interface.h"
-#include "../shcoind_rpc.h"
+#include "server/rpc_proto.h"
+#include "shcoind_rpc.h"
 
 #ifdef WIN32
 #include <string.h>

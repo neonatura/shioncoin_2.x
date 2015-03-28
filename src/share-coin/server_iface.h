@@ -12,6 +12,22 @@
 #define BLKERR_INVALID_FORMAT 72
 #define BLKERR_CHECKPOINT 73
 
+#define STERR_GENERAL -1 /* a non-descript error occurred */
+#define STERR_SAFEMODE -2
+#define STERR_INVAL_AMOUNT -3
+#define STERR_ACCESS_UNAVAIL -4 /* error accessing private key */
+#define STERR_INVAL -5 /* invalid state occurred */
+#define STERR_FUND_UNAVAIL -6
+#define STERR_INTERNAL_MEM -7
+#define STERR_INVAL_PARAM -8 /* invalid param */
+#define STERR_AGAIN -10 /* not ready to perform requested operation (downloading blocks) */
+#define STERR_INTERNAL_MAP -12 /* keypool dried up */
+#define STERR_ACCESS_NOKEY -13 /* a required key was not specified */
+#define STERR_ACCESS -14 /* a required key is not valid */
+#define STERR_INTERNAL_DB -20 /* database error */
+#define STERR_DECODE_TX -22 /* tx decode failed / tx rejected */
+#define STERR_INVAL_OBJ -32600 /* invalid request object */
+
 #ifdef __cplusplus
 extern "C" {
 #endif
