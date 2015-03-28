@@ -205,27 +205,71 @@ void set_stratum_error(shjson_t *reply, int code, char *str)
 
 }
 
-static int stratum_request_account_address(user_t *user, int idx, int mode, char *hash, int duration)
+static int stratum_request_account_create(user_t *user, int idx, char *account)
 {
   shjson_t *reply;
   const char *json_data = "{\"result\":null,\"error\":null}";
   int err;
 
-  switch (mode) {
-    case 1: /* addr */
-      if (hash) {
-        json_data = getaddressinfo(hash);
-        if (!json_data)
-          json_data = stratum_error_get();
-      }
-      break;
-    case 3: /* addr-tx */
-      if (hash) {
-        json_data = getaccounttransactioninfo(hash, duration);
-        if (!json_data)
-          json_data = stratum_error_get();
-      }
-      break;
+  if (account) {
+    /* creates a usde address for an account name */
+    /* providing account does not exist; returns usde address and sha of private key */
+    json_data = stratum_create_account(account);
+    if (!json_data)
+      json_data = stratum_error_get(idx);
+  }
+
+  if (!json_data) {
+    reply = shjson_init(NULL);
+    set_stratum_error(reply, -5, "invalid");
+    shjson_null_add(reply, "result");
+  } else {
+    reply = shjson_init(json_data);
+  }
+
+  shjson_num_add(reply, "id", idx);
+  err = stratum_send_message(user, reply);
+  shjson_free(&reply);
+
+  return (err);
+}
+
+static int stratum_request_account_address(user_t *user, int idx, char *hash, int duration)
+{
+  shjson_t *reply;
+  const char *json_data = "{\"result\":null,\"error\":null}";
+  int err;
+
+  if (hash) {
+    json_data = getaddressinfo(hash);
+    if (!json_data)
+      json_data = stratum_error_get(idx);
+  }
+
+  if (!json_data) {
+    reply = shjson_init(NULL);
+    set_stratum_error(reply, -5, "invalid");
+    shjson_null_add(reply, "result");
+  } else {
+    reply = shjson_init(json_data);
+  }
+
+  shjson_num_add(reply, "id", idx);
+  err = stratum_send_message(user, reply);
+  shjson_free(&reply);
+
+  return (err);
+}
+static int stratum_request_account_transactions(user_t *user, int idx, char *account, char *pkey_str, int duration)
+{
+  shjson_t *reply;
+  const char *json_data = "{\"result\":null,\"error\":null}";
+  int err;
+
+  if (account) {
+    json_data = getaccounttransactioninfo(account, pkey_str, duration);
+    if (!json_data)
+      json_data = stratum_error_get(idx);
   }
 
   if (!json_data) {
@@ -545,35 +589,19 @@ int stratum_request_message(user_t *user, shjson_t *json)
   }
 
   if (0 == strcmp(method, "account.create")) {
-    const char *json_data = "{\"result\":null,\"error\":null}";
-    char *acc_name;
-
-    acc_name = shjson_array_astr(json, "params", 0);
-
-    if (acc_name) {
-      /* creates a usde address for an account name */
-      /* providing account does not exist; returns usde address and sha of private key */
-      json_data = stratum_create_account(acc_name);
-    }
-
-    if (!json_data) {
-      reply = shjson_init(NULL);
-      set_stratum_error(reply, -5, "invalid");
-      shjson_null_add(reply, "result");
-    } else {
-      reply = shjson_init(json_data);
-    }
-    shjson_num_add(reply, "id", idx);
-    err = stratum_send_message(user, reply);
-    shjson_free(&reply);
-    return (err);
+    return (stratum_request_account_create(user, idx, 
+          shjson_array_astr(json, "params", 0)));
   }
-
-  if (0 == strcmp(method, "account.address")) {
-    return (stratum_request_account_address(user, idx, 
-          shjson_array_num(json, "params", 0),
+  if (0 == strcmp(method, "account.transactions")) {
+    return (stratum_request_account_transactions(user, idx, 
+          shjson_array_astr(json, "params", 0),
           shjson_array_astr(json, "params", 1),
           shjson_array_num(json, "params", 2)));
+  }
+  if (0 == strcmp(method, "account.address")) {
+    return (stratum_request_account_address(user, idx, 
+          shjson_array_astr(json, "params", 0),
+          shjson_array_num(json, "params", 1)));
   }
   if (0 == strcmp(method, "account.transfer")) {
     return (stratum_request_account_transfer(user, idx,

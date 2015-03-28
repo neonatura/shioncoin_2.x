@@ -463,22 +463,69 @@ double c_getaccountbalance(const char *accountName)
   return ((double)nBalance / (double)COIN);
 }
 
+static uint256 get_private_key_hash(CKeyID keyId)
+{
+  CSecret vchSecret;
+  bool fCompressed;
+  if (!pwalletMain->GetSecret(keyId, vchSecret, fCompressed))
+    return (NULL);
+  string secret = CBitcoinSecret(vchSecret, fCompressed).ToString();
+
+  uint256 phash;
+  unsigned char *secret_str = (unsigned char *)secret.c_str();
+  size_t secret_len = secret.length();
+  SHA256(secret_str, secret_len, (unsigned char*)&phash);
+
+  return (phash);
+}
+
+int valid_pkey_hash(string strAccount, uint256 in_pkey)
+{
+  uint256 acc_pkey;
+  int valid;
+
+  valid = 0;
+  acc_pkey = 0;
+  BOOST_FOREACH(const PAIRTYPE(CBitcoinAddress, string)& item, pwalletMain->mapAddressBook)
+  {
+    const CBitcoinAddress& address = item.first;
+    const string& strName = item.second;
+    CKeyID keyID;
+
+    if (strName != strAccount)
+      continue;
+    if (!address.GetKeyID(keyID))
+      continue;
+
+    acc_pkey = get_private_key_hash(keyID);
+    if (acc_pkey == in_pkey)
+      valid++;
+else fprintf(stderr, "DEBUG: get_private_key_hash: '%s'\n", acc_pkey.GetHex().c_str());
+  }
+
+  return (valid);
+}
 
 /**
  * local known transactions associated with account name.
  * @returns json string format 
  */
 string accounttransactioninfo_json;
-const char *c_getaccounttransactioninfo(const char *tx_account, int duration)
+static const char *cxx_getaccounttransactioninfo(const char *tx_account, const char *pkey_str, int duration)
 {
   string strAccount(tx_account);
+  uint256 in_pkey = 0;
   Array result;
   int64 min_t;
 
-  min_t = time(NULL) - duration;
   try {
-    CWalletDB walletdb(pwalletMain->strWalletFile);
+    in_pkey.SetHex(pkey_str);
+    if (!valid_pkey_hash(strAccount, in_pkey)) {
+      throw JSONRPCError(STERR_ACCESS, "Invalid private key hash specified.");
+    }
 
+    min_t = time(NULL) - duration;
+    CWalletDB walletdb(pwalletMain->strWalletFile);
     for (map<uint256, CWalletTx>::iterator it = pwalletMain->mapWallet.begin(); it != pwalletMain->mapWallet.end(); ++it) {
       CWalletTx* wtx = &((*it).second);
 
@@ -524,79 +571,46 @@ const char *c_getaddressinfo(const char *addr_hash)
   return (addressinfo_json.c_str());
 }
 
-uint256 get_private_key_hash(CKeyID keyId)
-{
-  CSecret vchSecret;
-  bool fCompressed;
-  if (!pwalletMain->GetSecret(keyId, vchSecret, fCompressed))
-    return (NULL);
-  string secret = CBitcoinSecret(vchSecret, fCompressed).ToString();
-
-  uint256 phash;
-  unsigned char *secret_str = (unsigned char *)secret.c_str();
-  size_t secret_len = secret.length();
-  SHA256(secret_str, secret_len, (unsigned char*)&phash);
-
-  return (phash);
-}
-
 string createaccount_json;
 static const char *c_stratum_create_account(const char *acc_name)
 {
   string strAccount(acc_name);
+  string coinAddr = "";
+  uint256 phash = 0;
 
-  if (strAccount == "" || strAccount == "*")
-    return (NULL);
+  try {
+    if (strAccount == "" || strAccount == "*") {
+      throw JSONRPCError(STERR_INVAL_PARAM, "The account name specified is invalid.");
+    }
 
-  if (!pwalletMain->IsLocked())
-    pwalletMain->TopUpKeyPool();
+    /* Generate a new key that is added to wallet. */
+    CPubKey newKey;
+    if (!pwalletMain->IsLocked())
+      pwalletMain->TopUpKeyPool();
+    if (!pwalletMain->GetKeyFromPool(newKey, false)) {
+      throw JSONRPCError(STERR_INTERNAL_MAP, "No new keys currently available.");
+      return (NULL);
+    }
 
-  // Generate a new key that is added to wallet
-  CPubKey newKey;
-  if (!pwalletMain->GetKeyFromPool(newKey, false)) {
-    //        throw JSONRPCError(-12, "Error: Keypool ran out, please call keypoolrefill first");
+    CBitcoinAddress address = GetAddressByAccount(acc_name);
+    if (address.IsValid()) {
+      throw JSONRPCError(STERR_INVAL_PARAM, "Account name is not unique.");
+    }
+
+    CKeyID keyId = newKey.GetID();
+    pwalletMain->SetAddressBookName(keyId, strAccount);
+    coinAddr = CBitcoinAddress(keyId).ToString();
+    phash = get_private_key_hash(keyId);
+  } catch(Object& objError) {
+    SetStratumError(objError);
     return (NULL);
   }
-
-  CKeyID keyId = newKey.GetID();
-  pwalletMain->SetAddressBookName(keyId, strAccount);
-
-  string coinAddr = CBitcoinAddress(keyId).ToString();
-  uint256 phash = get_private_key_hash(keyId);
 
   Object result;
   result.push_back(Pair("address", coinAddr));
   result.push_back(Pair("key", phash.GetHex()));
-
   createaccount_json = JSONRPCReply(result, Value::null, Value::null);
   return (createaccount_json.c_str());
-}
-
-int valid_pkey_hash(string strAccount, uint256 in_pkey)
-{
-  uint256 acc_pkey;
-  int valid;
-
-  valid = 0;
-  acc_pkey = 0;
-  BOOST_FOREACH(const PAIRTYPE(CBitcoinAddress, string)& item, pwalletMain->mapAddressBook)
-  {
-    const CBitcoinAddress& address = item.first;
-    const string& strName = item.second;
-    CKeyID keyID;
-
-    if (strName != strAccount)
-      continue;
-    if (!address.GetKeyID(keyID))
-      continue;
-
-    acc_pkey = get_private_key_hash(keyID);
-    if (acc_pkey == in_pkey)
-      valid++;
-else fprintf(stderr, "DEBUG: get_private_key_hash: '%s'\n", acc_pkey.GetHex().c_str());
-  }
-
-  return (valid);
 }
 
 string transferaccount_json;
@@ -758,11 +772,11 @@ int wallet_account_transfer(const char *sourceAccountName, const char *accountNa
   return (c_wallet_account_transfer(sourceAccountName, accountName, comment, amount));
 }
 
-const char *getaccounttransactioninfo(const char *account, int duration)
+const char *getaccounttransactioninfo(const char *account, const char *pkey_str, int duration)
 {
   if (!account)
     return (NULL);
-  return (c_getaccounttransactioninfo(account, duration));
+  return (cxx_getaccounttransactioninfo(account, pkey_str, duration));
 }
 
 const char *getaddressinfo(const char *addr_hash)
@@ -774,6 +788,8 @@ const char *getaddressinfo(const char *addr_hash)
 
 const char *stratum_create_account(const char *acc_name)
 {
+  if (!acc_name)
+    return (NULL);
   return (c_stratum_create_account(acc_name));
 }
 

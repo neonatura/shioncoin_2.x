@@ -68,7 +68,7 @@ const char *getblockinfo(const char *hash);
 const char *gettransactioninfo(const char *hash);
 const char *getlastblockinfo(int height);
 
-const char *getaccounttransactioninfo(const char *account, int duration);
+const char *getaccounttransactioninfo(const char *account, const char *pkey_str, int duration);
 
 const char *getaddressinfo(const char *addr_hash);
 
@@ -82,6 +82,7 @@ const char *stratum_create_transaction(char *account, char *pkey_str, char *dest
 
 const char *stratum_getaccountinfo(const char *acc_name, const char *pkey);
 
+const char *stratum_error_get(int req_id);
 
 #ifdef __cplusplus
 }
