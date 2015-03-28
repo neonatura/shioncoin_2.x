@@ -473,6 +473,7 @@ const char *c_getaccounttransactioninfo(const char *tx_account, int duration)
 {
   string strAccount(tx_account);
   Array result;
+  int64 min_t;
 
   min_t = time(NULL) - duration;
   try {
@@ -481,7 +482,7 @@ const char *c_getaccounttransactioninfo(const char *tx_account, int duration)
     for (map<uint256, CWalletTx>::iterator it = pwalletMain->mapWallet.begin(); it != pwalletMain->mapWallet.end(); ++it) {
       CWalletTx* wtx = &((*it).second);
 
-      if (wtx.GetTxTime() >= min_t)
+      if (wtx->GetTxTime() >= min_t)
         ListTransactions(*wtx, strAccount, 0, true, result);
     }
   } catch(Object& objError) {
