@@ -232,17 +232,8 @@ CBitcoinAddress GetAddressByAccount(const char *accountName)
     const string& strName = item.second;
     if (strName == strAccount) {
       address = acc_address;
-      found = true;
     }
   }
-
-#if 0
-  /* create one */
-  if (!found)
-    address = GetNewAddress(strAccount);
-#endif
-  if (!found)
-    return (NULL);
 
   return (address);
 }
@@ -577,24 +568,26 @@ static const char *c_stratum_create_account(const char *acc_name)
   string strAccount(acc_name);
   string coinAddr = "";
   uint256 phash = 0;
+  CPubKey newKey;
 
   try {
     if (strAccount == "" || strAccount == "*") {
       throw JSONRPCError(STERR_INVAL_PARAM, "The account name specified is invalid.");
     }
 
-    /* Generate a new key that is added to wallet. */
-    CPubKey newKey;
-    if (!pwalletMain->IsLocked())
-      pwalletMain->TopUpKeyPool();
-    if (!pwalletMain->GetKeyFromPool(newKey, false)) {
-      throw JSONRPCError(STERR_INTERNAL_MAP, "No new keys currently available.");
-      return (NULL);
-    }
-
     CBitcoinAddress address = GetAddressByAccount(acc_name);
     if (address.IsValid()) {
       throw JSONRPCError(STERR_INVAL_PARAM, "Account name is not unique.");
+    }
+
+    /* Generate a new key that is added to wallet. */
+    if (!pwalletMain->GetKeyFromPool(newKey, false)) {
+      if (!pwalletMain->IsLocked())
+        pwalletMain->TopUpKeyPool();
+      if (!pwalletMain->GetKeyFromPool(newKey, false)) {
+        throw JSONRPCError(STERR_INTERNAL_MAP, "No new keys currently available.");
+        return (NULL);
+      }
     }
 
     CKeyID keyId = newKey.GetID();

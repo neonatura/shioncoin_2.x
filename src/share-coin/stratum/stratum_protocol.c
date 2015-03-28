@@ -287,16 +287,16 @@ static int stratum_request_account_transactions(user_t *user, int idx, char *acc
   return (err);
 }
 
-static int stratum_request_account_transfer(user_t *user, int idx, char *account, char *pkey, char *dest, double amount)
+static int stratum_request_account_transfer(user_t *user, int idx, char *account, char *pkey_str, char *dest, double amount)
 {
   shjson_t *reply;
   const char *json_data = "{\"result\":null,\"error\":null}";
   int err;
 
-  if (account && pkey && dest) {
+  if (account && pkey_str && dest) {
     /* checks sha of account's private keys to determine if valid; sends amount to dest */
     /* returns transaction id */
-    json_data = stratum_create_transaction(account, pkey, dest, amount);
+    json_data = stratum_create_transaction(account, pkey_str, dest, amount);
     if (!json_data)
       json_data = stratum_error_get(idx);
   }
@@ -316,14 +316,14 @@ static int stratum_request_account_transfer(user_t *user, int idx, char *account
   return (err);
 }
 
-static int stratum_request_account_info(user_t *user, int idx, char *account, char *pkey)
+static int stratum_request_account_info(user_t *user, int idx, char *account, char *pkey_str)
 {
   const char *json_data = "{\"result\":null,\"error\":null}";
   shjson_t *reply;
   int err;
 
-  if (account && pkey) {
-    json_data = stratum_getaccountinfo(account, pkey);
+  if (account && pkey_str) {
+    json_data = stratum_getaccountinfo(account, pkey_str);
     if (!json_data)
       json_data = stratum_error_get(idx);
   }

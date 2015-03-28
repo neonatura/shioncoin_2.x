@@ -80,7 +80,7 @@ const char *stratum_create_account(const char *acc_name);
 
 const char *stratum_create_transaction(char *account, char *pkey_str, char *dest, double amount);
 
-const char *stratum_getaccountinfo(const char *acc_name, const char *pkey);
+const char *stratum_getaccountinfo(const char *acc_name, const char *pkey_str);
 
 const char *stratum_error_get(int req_id);
 

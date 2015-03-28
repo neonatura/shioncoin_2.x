@@ -55,6 +55,7 @@ void get_rpc_cred(char *username, char *password)
     shfs_write_mem(path, buf, strlen(buf));
   }
 
+  shbuf_free(&buff);
 }
 
 #ifdef __cplusplus
