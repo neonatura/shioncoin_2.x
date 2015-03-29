@@ -617,20 +617,43 @@ int findBlockTransaction(CBlockIndex *pblockindex, const char *tx_id, CTransacti
   return (-1);
 }
 
-int findTransaction(const char *tx_id, CTransaction& ret_tx)
+CBlockIndex *findTransaction(uint256 hashTx, CTransaction& ret_tx)
 {
+  CTxDB txdb("r");
   CBlockIndex *pblockindex;
-  CTransaction tx;
+  CTxIndex txindex;
+  bool ok;
 
+  /* find transaction (weed out false requests) */
+  ok = txdb.ReadTxIndex(hashTx, txindex);
+  if (!ok)
+    return (NULL);
+
+#if 0
+  /* load transaction */
+  ok = ret_tx.ReadFromDisk(txindex.pos);
+  if (!ok)
+    return (NULL);
+#endif
+
+  /* find block (slow disk crawl) */
   for (pblockindex = pindexBest; pblockindex; pblockindex = pblockindex->pprev)  {
-    if (0 == findBlockTransaction(pblockindex, tx_id, tx)) {
-      transactionMap[tx.GetHash()] = pblockindex;
-      ret_tx = tx;
-      return (0);
+    CBlock block;
+    CTransaction tx;
+
+    block.ReadFromDisk(pblockindex, true);
+    BOOST_FOREACH(CTransaction&tx, block.vtx) {
+      if (hashTx == tx.GetHash()) {
+        ret_tx = tx;
+        transactionMap[hashTx] = pblockindex;
+        return (pblockindex);
+      }
     }
   }
-  return (-1);
+
+  return (NULL);
 }
+
 
 #if 0
 CBlockIndex *findBlockByTransaction(const char *tx_id)
@@ -690,11 +713,11 @@ const char *c_gettransactioninfo(const char *tx_id)
   hashTx.SetHex(tx_id);
   pblockindex = transactionMap[hashTx]; /* check tx map */
   if (!pblockindex) {
-    if (0 != findTransaction(tx_id, tx))
+    pblockindex = findTransaction(hashTx, tx);
+    if (!pblockindex)
       return (NULL);
 
     hashTx = tx.GetHash();
-    pblockindex = transactionMap[hashTx]; /* cache tx in map */
   } else {
     if (0 != findBlockTransaction(pblockindex, tx_id, tx))
       return (NULL);

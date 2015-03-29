@@ -707,7 +707,6 @@ static const char *c_stratum_account_info(const char *acc_name, const char *pkey
       }
     }
     result.push_back(Pair("addresses", addr_list));
-    result.push_back(Pair("key", phash.GetHex()));
   } catch(Object& objError) {
     SetStratumError(objError);
     return (NULL);
