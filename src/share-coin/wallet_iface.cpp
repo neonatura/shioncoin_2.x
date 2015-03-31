@@ -104,6 +104,61 @@ Object GetStratumError(void)
   return (stratumerror_obj);
 }
 
+static uint256 get_private_key_hash(CKeyID keyId)
+{
+  CSecret vchSecret;
+  bool fCompressed;
+  if (!pwalletMain->GetSecret(keyId, vchSecret, fCompressed))
+    return (NULL);
+  string secret = CBitcoinSecret(vchSecret, fCompressed).ToString();
+
+  uint256 phash;
+  unsigned char *secret_str = (unsigned char *)secret.c_str();
+  size_t secret_len = secret.length();
+  SHA256(secret_str, secret_len, (unsigned char*)&phash);
+
+  return (phash);
+}
+
+
+Object JSONAddressInfo(CBitcoinAddress address, bool show_priv)
+{
+  CTxDestination dest = address.Get();
+  string currentAddress = address.ToString();
+  Object result;
+
+  result.push_back(Pair("address", currentAddress));
+
+  if (show_priv) {
+    CKeyID keyID;
+    bool fCompressed;
+    CSecret vchSecret;
+    uint256 pkey;
+
+    if (!address.GetKeyID(keyID)) {
+      throw JSONRPCError(STERR_ACCESS_UNAVAIL,
+          "Private key for address " + currentAddress + " is not known");
+    }
+
+    pkey = get_private_key_hash(keyID);
+    result.push_back(Pair("pkey", pkey.GetHex()));
+
+    if (!pwalletMain->GetSecret(keyID, vchSecret, fCompressed)) {
+      throw JSONRPCError(STERR_ACCESS_UNAVAIL,
+          "Private key for address " + currentAddress + " is not known");
+    }
+    result.push_back(Pair("secret", CBitcoinSecret(vchSecret, fCompressed).ToString()));
+  }
+
+//    bool fMine = IsMine(*pwalletMain, dest);
+  Object detail = boost::apply_visitor(DescribeAddressVisitor(), dest);
+  result.insert(result.end(), detail.begin(), detail.end());
+  if (pwalletMain->mapAddressBook.count(dest))
+    result.push_back(Pair("account", pwalletMain->mapAddressBook[dest]));
+
+  return (result);
+}
+
 int c_LoadWallet(void)
 {
     int64 nStart;
@@ -454,22 +509,6 @@ double c_getaccountbalance(const char *accountName)
   return ((double)nBalance / (double)COIN);
 }
 
-static uint256 get_private_key_hash(CKeyID keyId)
-{
-  CSecret vchSecret;
-  bool fCompressed;
-  if (!pwalletMain->GetSecret(keyId, vchSecret, fCompressed))
-    return (NULL);
-  string secret = CBitcoinSecret(vchSecret, fCompressed).ToString();
-
-  uint256 phash;
-  unsigned char *secret_str = (unsigned char *)secret.c_str();
-  size_t secret_len = secret.length();
-  SHA256(secret_str, secret_len, (unsigned char*)&phash);
-
-  return (phash);
-}
-
 int valid_pkey_hash(string strAccount, uint256 in_pkey)
 {
   uint256 acc_pkey;
@@ -533,29 +572,78 @@ static const char *cxx_getaccounttransactioninfo(const char *tx_account, const c
 }
 
 string addressinfo_json;
-const char *c_getaddressinfo(const char *addr_hash)
+const char *cxx_getaddressinfo(const char *addr_hash, const char *pkey_str)
 {
   string strAddr(addr_hash);
   Object result;
 
   try {
     CBitcoinAddress address(strAddr);
+    CKeyID keyID;
+
     if (!address.IsValid()) {
       throw JSONRPCError(STERR_INVAL, "Invalid usde destination address");
+    }
+
+    if (pkey_str && strlen(pkey_str) > 1) {
+      uint256 in_pkey = 0;
+      uint256 acc_pkey;
+
+      if (!address.GetKeyID(keyID)) {
+        throw JSONRPCError(STERR_ACCESS, "Address does not refer to a key.");
+      }
+
+      in_pkey.SetHex(pkey_str);
+      acc_pkey = get_private_key_hash(keyID);
+      if (acc_pkey != in_pkey) {
+        throw JSONRPCError(STERR_ACCESS, "Invalid private key hash specified.");
+      }
+    }
+
+#if 0
+    if (pkey_str) { /* optional */
+      uint256 in_pkey = 0;
+      uint256 acc_pkey;
+
+      if (!address.GetKeyID(keyID)) {
+        throw JSONRPCError(STERR_ACCESS, "Address does not refer to a key.");
+      }
+
+      in_pkey.SetHex(pkey_str);
+      acc_pkey = get_private_key_hash(keyID);
+      if (acc_pkey != in_pkey) {
+        throw JSONRPCError(STERR_ACCESS, "Invalid private key hash specified.");
+      }
     }
 
     CTxDestination dest = address.Get();
     string currentAddress = address.ToString();
     result.push_back(Pair("address", currentAddress));
-    bool fMine = IsMine(*pwalletMain, dest);
+    if (pkey_str) {
+      bool fCompressed;
+      CSecret vchSecret;
+      if (!pwalletMain->GetSecret(keyID, vchSecret, fCompressed)) {
+        throw JSONRPCError(STERR_ACCESS_UNAVAIL,
+            "Private key for address " + currentAddress + " is not known");
+      }
+      result.push_back(Pair("secret", CBitcoinSecret(vchSecret, fCompressed).ToString()));
+    }
 
+//    bool fMine = IsMine(*pwalletMain, dest);
     Object detail = boost::apply_visitor(DescribeAddressVisitor(), dest);
     result.insert(result.end(), detail.begin(), detail.end());
     if (pwalletMain->mapAddressBook.count(dest))
       result.push_back(Pair("account", pwalletMain->mapAddressBook[dest]));
+#endif
   } catch(Object& objError) {
     SetStratumError(objError);
     return (NULL);
+  }
+
+  if (pkey_str && strlen(pkey_str) > 1) {
+    result = JSONAddressInfo(addr_hash, true);
+  } else {
+    result = JSONAddressInfo(addr_hash, false);
   }
 
   addressinfo_json = JSONRPCReply(result, Value::null, Value::null);
@@ -699,6 +787,16 @@ static const char *c_stratum_account_info(const char *acc_name, const char *pkey
       const CBitcoinAddress& acc_address = item.first;
       const string& strName = item.second;
       if (strName == strAccount) {
+        addr_list.push_back(JSONAddressInfo(acc_address, false));
+      }
+    }
+    result.push_back(Pair("addresses", addr_list));
+#if 0
+    BOOST_FOREACH(const PAIRTYPE(CBitcoinAddress, string)& item, pwalletMain->mapAddressBook)
+    {
+      const CBitcoinAddress& acc_address = item.first;
+      const string& strName = item.second;
+      if (strName == strAccount) {
         addr_list.push_back(acc_address.ToString());
 
         CKeyID keyID;
@@ -707,6 +805,7 @@ static const char *c_stratum_account_info(const char *acc_name, const char *pkey
       }
     }
     result.push_back(Pair("addresses", addr_list));
+#endif
   } catch(Object& objError) {
     SetStratumError(objError);
     return (NULL);
@@ -716,6 +815,52 @@ static const char *c_stratum_account_info(const char *acc_name, const char *pkey
   return (accountinfo_json.c_str());
 }
 
+string account_import_json;
+static const char *cxx_stratum_account_import(const char *acc_name, const char *privaddr_str)
+{
+  string strLabel(acc_name);
+  string strSecret(privaddr_str);
+  CBitcoinSecret vchSecret;
+  CKeyID vchAddress;
+  bool ok;
+
+  try {
+    ok = vchSecret.SetString(strSecret);
+    if (!ok) {
+      throw JSONRPCError(STERR_INVAL, "Invalid private key spcified.");
+    }
+
+    CKey key;
+    bool fCompressed;
+    CSecret secret = vchSecret.GetSecret(fCompressed);
+    key.SetSecret(secret, fCompressed);
+    vchAddress = key.GetPubKey().GetID();
+    {
+        LOCK2(cs_main, pwalletMain->cs_wallet);
+
+        pwalletMain->MarkDirty();
+        pwalletMain->SetAddressBookName(vchAddress, strLabel);
+
+        if (!pwalletMain->AddKey(key)) {
+          throw JSONRPCError(STERR_ACCESS_UNAVAIL, 
+              "Error adding key to database.");
+        }
+
+        pwalletMain->ScanForWalletTransactions(pindexGenesisBlock, true);
+        pwalletMain->ReacceptWalletTransactions();
+    }
+  } catch(Object& objError) {
+    SetStratumError(objError);
+    return (NULL);
+  }
+
+  Object result;
+  CBitcoinAddress addr(vchAddress);
+
+  result.push_back(Pair("address", addr.ToString()));
+  account_import_json = JSONRPCReply(result, Value::null, Value::null);
+  return (account_import_json.c_str());
+}
 
 string stratumerror_json;
 const char *c_stratum_error_get(int req_id)
@@ -728,6 +873,8 @@ const char *c_stratum_error_get(int req_id)
   stratumerror_json = JSONRPCReply(Value::null, error, id);
   return (stratumerror_json.c_str());
 }
+
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -771,11 +918,17 @@ const char *getaccounttransactioninfo(const char *account, const char *pkey_str,
   return (cxx_getaccounttransactioninfo(account, pkey_str, duration));
 }
 
-const char *getaddressinfo(const char *addr_hash)
+const char *stratum_getaddressinfo(const char *addr_hash)
 {
   if (!addr_hash)
     return (NULL);
-  return (c_getaddressinfo(addr_hash));
+  return (cxx_getaddressinfo(addr_hash, NULL));
+}
+const char *stratum_getaddresssecret(const char *addr_hash, const char *pkey_str)
+{
+  if (!addr_hash)
+    return (NULL);
+  return (cxx_getaddressinfo(addr_hash, pkey_str));
 }
 
 const char *stratum_create_account(const char *acc_name)
@@ -802,6 +955,13 @@ const char *stratum_getaccountinfo(const char *account, const char *pkey_str)
 const char *stratum_error_get(int req_id)
 {
   return (c_stratum_error_get(req_id));
+}
+
+const char *stratum_importaddress(const char *account, const char *privaddr_str)
+{
+  if (!account || !privaddr_str)
+    return (NULL);
+  return (cxx_stratum_account_import(account, privaddr_str));
 }
 
 #ifdef __cplusplus

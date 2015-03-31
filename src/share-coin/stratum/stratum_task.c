@@ -284,7 +284,7 @@ fprintf(stderr, "DEBUG: task_init: cannot parse json\n");
   memset(block_hash, 0, sizeof(block_hash));
   strncpy(block_hash, shjson_astr(block, "blockhash", ""), sizeof(block_hash) - 1);
   if (0 == strcmp(block_hash, "")) {
-    fprintf(stderr, "DEBUG: check_payout: no block hash: %s\n", templ_json);
+    /* No block has been confirmed since process startup. */
     shjson_free(&tree);
     return;
   }

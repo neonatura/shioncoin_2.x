@@ -234,14 +234,14 @@ static int stratum_request_account_create(user_t *user, int idx, char *account)
   return (err);
 }
 
-static int stratum_request_account_address(user_t *user, int idx, char *hash, int duration)
+static int stratum_request_account_address(user_t *user, int idx, char *hash)
 {
   shjson_t *reply;
   const char *json_data = "{\"result\":null,\"error\":null}";
   int err;
 
   if (hash) {
-    json_data = getaddressinfo(hash);
+    json_data = stratum_getaddressinfo(hash);
     if (!json_data)
       json_data = stratum_error_get(idx);
   }
@@ -260,6 +260,61 @@ static int stratum_request_account_address(user_t *user, int idx, char *hash, in
 
   return (err);
 }
+
+static int stratum_request_account_secret(user_t *user, int idx, char *hash, const char *pkey_str)
+{
+  shjson_t *reply;
+  const char *json_data = "{\"result\":null,\"error\":null}";
+  int err;
+
+  if (hash) {
+    json_data = stratum_getaddresssecret(hash, pkey_str);
+    if (!json_data)
+      json_data = stratum_error_get(idx);
+  }
+
+  if (!json_data) {
+    reply = shjson_init(NULL);
+    set_stratum_error(reply, -5, "invalid");
+    shjson_null_add(reply, "result");
+  } else {
+    reply = shjson_init(json_data);
+  }
+
+  shjson_num_add(reply, "id", idx);
+  err = stratum_send_message(user, reply);
+  shjson_free(&reply);
+
+  return (err);
+}
+
+static int stratum_request_account_import(user_t *user, int idx, char *hash, const char *privaddr_str)
+{
+  shjson_t *reply;
+  const char *json_data = "{\"result\":null,\"error\":null}";
+  int err;
+
+  if (hash) {
+    json_data = stratum_importaddress(hash, privaddr_str);
+    if (!json_data)
+      json_data = stratum_error_get(idx);
+  }
+
+  if (!json_data) {
+    reply = shjson_init(NULL);
+    set_stratum_error(reply, -5, "invalid");
+    shjson_null_add(reply, "result");
+  } else {
+    reply = shjson_init(json_data);
+  }
+
+  shjson_num_add(reply, "id", idx);
+  err = stratum_send_message(user, reply);
+  shjson_free(&reply);
+
+  return (err);
+}
+
 static int stratum_request_account_transactions(user_t *user, int idx, char *account, char *pkey_str, int duration)
 {
   shjson_t *reply;
@@ -505,7 +560,7 @@ int stratum_request_message(user_t *user, shjson_t *json)
       for (i = 0; i < MAX_ROUNDS_PER_HOUR; i++)
         block_avg += t_user->block_avg[i]; 
       if (block_avg != 0)
-        block_avg /= 3600; /* average reported is per minute. */
+        block_avg /= 3600; /* average reported is per second. */
 
       udata = shjson_array_add(data, NULL);
       shjson_str_add(udata, NULL, t_user->worker);
@@ -600,8 +655,17 @@ int stratum_request_message(user_t *user, shjson_t *json)
   }
   if (0 == strcmp(method, "account.address")) {
     return (stratum_request_account_address(user, idx, 
+          shjson_array_astr(json, "params", 0)));
+  }
+  if (0 == strcmp(method, "account.secret")) {
+    return (stratum_request_account_secret(user, idx, 
           shjson_array_astr(json, "params", 0),
-          shjson_array_num(json, "params", 1)));
+          shjson_array_astr(json, "params", 1)));
+  }
+  if (0 == strcmp(method, "account.import")) {
+    return (stratum_request_account_import(user, idx, 
+          shjson_array_astr(json, "params", 0),
+          shjson_array_astr(json, "params", 1)));
   }
   if (0 == strcmp(method, "account.transfer")) {
     return (stratum_request_account_transfer(user, idx,
