@@ -288,6 +288,29 @@ Value help(const Array& params, bool fHelp)
     return tableRPC.help(strCommand);
 }
 
+extern CSemaphore *semOutbound;
+extern bool OpenNetworkConnection(const CAddress& addrConnect, CSemaphoreGrant *grantOutbound = NULL, const char *strDest = NULL, bool fOneShot = false);
+Value addpeer(const Array& params, bool fHelp)
+{
+  if (fHelp || params.size() != 1)
+    throw runtime_error(
+        "addpeer [host]\n"
+        "Attempt to connect to a remote usde server.");
+
+  string strHost;
+  CService vserv;
+  int port;
+
+  strHost = params[0].get_str();
+  port = GetDefaultPort();
+
+  if (Lookup(strHost.c_str(), vserv, port, false)) {
+    CSemaphoreGrant grant(*semOutbound);
+    OpenNetworkConnection(CAddress(vserv), &grant);
+  }
+
+  return "initiated new peer connection.";
+}
 
 Value stop(const Array& params, bool fHelp)
 {
@@ -310,7 +333,6 @@ Value getblockcount(const Array& params, bool fHelp)
 
     return nBestHeight;
 }
-
 
 Value getdifficulty(const Array& params, bool fHelp)
 {
@@ -2334,6 +2356,7 @@ static const CRPCCommand vRPCCommands[] =
     { "getblockcount",          &getblockcount,          true },
     { "getconnectioncount",     &getconnectioncount,     true },
     { "getpeerinfo",            &getpeerinfo,            true },
+    { "addpeer",                &addpeer,                true },
     { "getdifficulty",          &getdifficulty,          true },
     { "getnetworkhashps",       &getnetworkhashps,       true },
     { "getgenerate",            &getgenerate,            true },

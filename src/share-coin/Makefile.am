@@ -1,7 +1,4 @@
 AUTOMAKE_OPTIONS = foreign
-LDFLAGS = \
-	-lboost_system -lboost_filesystem -lboost_thread \
-	-ldb_cxx -ldl 
 
 INCLUDES = -I$(top_srcdir)/src/share-ssl-lib/$(OPENSSL_DIR)/include \
 	-I$(top_srcdir)/src/share-lib \
@@ -110,37 +107,50 @@ shcoind_SOURCES = \
 shcoind_LDADD = \
 	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
 	libleveldb.a
+shcoind_CFLAGS = -I$(srcdir)/server 
+shcoind_CXXFLAGS = \
+	-I$(srcdir)/leveldb/include -I$(srcdir)/leveldb/helpers -I$(srcdir)/leveldb -I$(srcdir)/server -DOS_LINUX
 if STATIC_LIBSHARE
 shcoind_LDADD += $(LIBSHARE)/src/share-lib/libshare.a
-shcoind_CFLAGS = -I$(LIBSHARE)/include
-shcoind_CXXFLAGS = -I$(LIBSHARE)/include
+shcoind_CFLAGS += -I$(LIBSHARE)/include
+shcoind_CXXFLAGS += -I$(LIBSHARE)/include
 endif
+shcoind_LDADD += -lboost_system -lboost_filesystem -lboost_thread -ldb_cxx -ldl
 
 shcoin_SOURCES = $(common_includes) $(common_sources) \
 	shcoind_tool.cpp clientrpc_iface.cpp
 shcoin_LDADD = \
 	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
 	libleveldb.a
-shcoin_CFLAGS = -DSHCOIN_CLIENT
-shcoin_CXXFLAGS = -DSHCOIN_CLIENT
+shcoin_CFLAGS = -DSHCOIN_CLIENT -I$(srcdir)/server 
+shcoin_CXXFLAGS = -DSHCOIN_CLIENT \
+	-I$(srcdir)/leveldb/include -I$(srcdir)/leveldb/helpers -I$(srcdir)/leveldb -I$(srcdir)/server -DOS_LINUX
 if STATIC_LIBSHARE
 shcoin_LDADD += $(LIBSHARE)/src/share-lib/libshare.a
 shcoin_CFLAGS += -I$(LIBSHARE)/include
 shcoin_CXXFLAGS += -I$(LIBSHARE)/include
 endif
+shcoind_LDADD += -lboost_system -lboost_filesystem -lboost_thread -ldb_cxx -ldl
 
 noinst_LIBRARIES = libleveldb.a
-
-libleveldb_a_CXXFLAGS = -I$(srcdir)/leveldb/include -I$(srcdir)/leveldb/helpers -I$(srcdir)/leveldb \
-	-std=c++0x -DOS_LINUX -DLEVELDB_CSTDATOMIC_PRESENT -DLEVELDB_PLATFORM_POSIX
+libleveldb_a_CXXFLAGS = \
+	-I$(srcdir)/leveldb/include -I$(srcdir)/leveldb/helpers -I$(srcdir)/leveldb \
+	-DOS_LINUX -DLEVELDB_PLATFORM_POSIX
 libleveldb_a_SOURCES = \
 	leveldb/db/builder.cc leveldb/db/c.cc leveldb/db/dbformat.cc leveldb/db/db_impl.cc leveldb/db/db_iter.cc leveldb/db/filename.cc leveldb/db/log_reader.cc leveldb/db/log_writer.cc leveldb/db/memtable.cc leveldb/db/repair.cc leveldb/db/table_cache.cc leveldb/db/version_edit.cc leveldb/db/version_set.cc leveldb/db/write_batch.cc leveldb/table/block_builder.cc leveldb/table/block.cc leveldb/table/filter_block.cc leveldb/table/format.cc leveldb/table/iterator.cc leveldb/table/merger.cc leveldb/table/table_builder.cc leveldb/table/table.cc leveldb/table/two_level_iterator.cc leveldb/util/arena.cc leveldb/util/bloom.cc leveldb/util/cache.cc leveldb/util/coding.cc leveldb/util/comparator.cc leveldb/util/crc32c.cc leveldb/util/env.cc leveldb/util/env_posix.cc leveldb/util/env_win.cc leveldb/util/filter_policy.cc leveldb/util/hash.cc leveldb/util/histogram.cc leveldb/util/logging.cc leveldb/util/options.cc leveldb/util/status.cc leveldb/port/port_posix.cc leveldb/helpers/memenv/memenv.cc
 
+if HAVE_CSTDATOMIC
+libleveldb_a_CXXFLAGS += -std=c++0x
+endif
+if HAVE_ATOMIC
+libleveldb_a_CXXFLAGS += -std=c++11
+endif
 
 if HAVE_INITD_DIR
 EXTRA_DIST = $(top_builddir)/scripts/initd/shcoind
 
 install-exec-hook:
+	[ "`grep ^usde /etc/services`" != "" ] || echo "usde            54449/tcp       shcoind usded   # usdE virtual currency" >> /etc/services
 	rm -f $(INITD_DIR)/init.d/shcoind  
 	rm -f $(INITD_DIR)/rc3.d/S87shcoind  
 	rm -f $(INITD_DIR)/rc3.d/K87shcoind  
@@ -164,10 +174,11 @@ uninstall-hook:
 	rm -f $(INITD_DIR)/rc4.d/K87shcoind  
 	rm -f $(INITD_DIR)/rc5.d/S87shcoind  
 	rm -f $(INITD_DIR)/rc5.d/K87shcoind  
+else
+install-exec-hook:
+	[ "`grep ^usde /etc/services`" != "" ] || echo "usde            54449/tcp       shcoind usded   # usdE virtual currency" >> /etc/services
 endif
 
-CXXFLAGS = -I$(srcdir)/leveldb/include -I$(srcdir)/leveldb/helpers -I$(srcdir)/leveldb -I$(srcdir)/server \
-	-std=c++0x -DOS_LINUX -DLEVELDB_CSTDATOMIC_PRESENT -DLEVELDB_PLATFORM_POSIX
 
 if DEBUG
 CFLAGS += -g3 
@@ -180,6 +191,4 @@ CXXFLAGS += \
 	-fomit-frame-pointer -fstrength-reduce -fthread-jumps -funroll-loops
 endif
 
-install-exec-hook:
-	[ "`grep ^usde /etc/services`" != "" ] || echo "usde            54449/tcp       shcoind usded   # usdE virtual currency" >> /etc/services
 

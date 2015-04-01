@@ -191,9 +191,6 @@ AC_SYS_LARGEFILE
 AC_ISC_POSIX
 AC_C_INLINE
 
-CPPFLAGS="$CPPFLAGS -I/usr/include/php/Zend -I/usr/include/php/TSRM -I/usr/include/php/main -I/usr/include/php"
-AC_SUBST(CPPFLAGS)
-
 # Checks for header files.
 AC_CHECK_HEADERS(fcntl.h linux/fd.h memory.h net/errno.h \
   sgtty.h string.h iconv.h fnmatch.h \
@@ -204,6 +201,17 @@ AC_CHECK_HEADERS(fcntl.h linux/fd.h memory.h net/errno.h \
   paths.h \
   math.h \
 )
+
+USER_CPPFLAGS="$CPPFLAGS"
+AC_LANG_PUSH([C++])
+CPPFLAGS="-std=c++0x"
+AC_CHECK_HEADERS([cstdatomic], [have_cstdatomic=1])
+CPPFLAGS="-std=c++11"
+AC_CHECK_HEADERS([atomic], [have_atomic=1])
+AC_LANG_POP([C++])
+CPPFLAGS="$USER_CPPFLAGS"
+AM_CONDITIONAL(HAVE_CSTDATOMIC, test $have_cstdatomic)
+AM_CONDITIONAL(HAVE_ATOMIC, test $have_atomic)
  
 AC_HEADER_SYS_WAIT
 AC_HEADER_DIRENT

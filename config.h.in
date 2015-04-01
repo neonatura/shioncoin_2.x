@@ -381,6 +381,9 @@
 /* Define to 1 if you have the `atoi' function. */
 #undef HAVE_ATOI
 
+/* Define to 1 if you have the <atomic> header file. */
+#undef HAVE_ATOMIC
+
 /* Define to 1 if you have the `bind' function. */
 #undef HAVE_BIND
 
@@ -410,6 +413,9 @@
 
 /* Define to 1 if you have the `connect' function. */
 #undef HAVE_CONNECT
+
+/* Define to 1 if you have the <cstdatomic> header file. */
+#undef HAVE_CSTDATOMIC
 
 /* Define to 1 if you have the declaration of `alarm', and to 0 if you don't.
    */

@@ -2,29 +2,23 @@ AUTOMAKE_OPTIONS = foreign
 
 noinst_PROGRAMS = test_shcoind
 
+test_shcoind_CFLAGS =
 test_shcoind_CXXFLAGS = \
-	-I$(LIBSHARE)/include \
 	-I$(top_srcdir)/src/share-coin/leveldb/include \
 	-I$(top_srcdir)/src/share-coin/leveldb/helpers \
 	-I$(top_srcdir)/src/share-coin/server
-
-test_shcoind_CFLAGS = \
-	-I$(LIBSHARE)/include
-
-test_shcoind_LDFLAGS = \
-	-lboost_unit_test_framework \
-  -lboost_system -lboost_filesystem -lboost_thread \
-  -ldb_cxx -ldl
-
 test_shcoind_LDADD = \
 	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
 	$(top_builddir)/src/share-coin/libleveldb.a
-
 if STATIC_LIBSHARE
 test_shcoind_LDADD += $(LIBSHARE)/src/share-lib/libshare.a
-test_shcoind_CFLAGS = -I$(LIBSHARE)/include
-test_shcoind_CXXFLAGS = -I$(LIBSHARE)/include
+test_shcoind_CFLAGS += -I$(LIBSHARE)/include
+test_shcoind_CXXFLAGS += -I$(LIBSHARE)/include
 endif
+test_shcoind_LDADD += \
+	-lboost_unit_test_framework \
+  -lboost_system -lboost_filesystem -lboost_thread \
+  -ldb_cxx -ldl
 
 test_shcoind_SOURCES = \
 	$(testcase_sources) $(common_sources)

@@ -19,10 +19,20 @@
 #ifndef PORT_ATOMIC_POINTER_H_
 #define PORT_ATOMIC_POINTER_H_
 
-#include <stdint.h>
-#ifdef LEVELDB_CSTDATOMIC_PRESENT
-#include <cstdatomic>
+#ifdef HAVE_CONFIG_H
+#include "config.h"
 #endif
+
+#include <stdint.h>
+
+#if defined(HAVE_CSTDATOMIC)
+#include <cstdatomic>
+#define LEVELDB_CSTDATOMIC_PRESENT
+#elif defined(HAVE_ATOMIC)
+#include <atomic>
+#define LEVELDB_CSTDATOMIC_PRESENT
+#endif
+
 #ifdef OS_WIN
 #include <windows.h>
 #endif

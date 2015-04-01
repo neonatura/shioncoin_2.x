@@ -57,7 +57,7 @@ void ThreadOpenConnections2(void* parg);
 void ThreadDNSAddressSeed2(void* parg);
 bool OpenNetworkConnection(const CAddress& addrConnect, CSemaphoreGrant *grantOutbound = NULL, const char *strDest = NULL, bool fOneShot = false);
 
-static CSemaphore *semOutbound = NULL;
+CSemaphore *semOutbound = NULL;
 
 struct LocalServiceInfo {
     int nScore;
