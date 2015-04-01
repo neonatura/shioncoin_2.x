@@ -1241,7 +1241,6 @@ shcoind_SOURCES = \
 
 shcoind_LDADD = $(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
 	libleveldb.a $(am__append_1) -lboost_system -lboost_filesystem \
-	-lboost_thread -ldb_cxx -ldl -lboost_system -lboost_filesystem \
 	-lboost_thread -ldb_cxx -ldl
 shcoind_CFLAGS = -I$(srcdir)/server $(am__append_2)
 shcoind_CXXFLAGS = -I$(srcdir)/leveldb/include \
@@ -1251,7 +1250,8 @@ shcoin_SOURCES = $(common_includes) $(common_sources) \
 	shcoind_tool.cpp clientrpc_iface.cpp
 
 shcoin_LDADD = $(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
-	libleveldb.a $(am__append_4)
+	libleveldb.a $(am__append_4) -lboost_system -lboost_filesystem \
+	-lboost_thread -ldb_cxx -ldl
 shcoin_CFLAGS = -DSHCOIN_CLIENT -I$(srcdir)/server $(am__append_5)
 shcoin_CXXFLAGS = -DSHCOIN_CLIENT -I$(srcdir)/leveldb/include \
 	-I$(srcdir)/leveldb/helpers -I$(srcdir)/leveldb \
