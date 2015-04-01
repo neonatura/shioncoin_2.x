@@ -130,7 +130,7 @@ shcoin_LDADD += $(LIBSHARE)/src/share-lib/libshare.a
 shcoin_CFLAGS += -I$(LIBSHARE)/include
 shcoin_CXXFLAGS += -I$(LIBSHARE)/include
 endif
-shcoind_LDADD += -lboost_system -lboost_filesystem -lboost_thread -ldb_cxx -ldl
+shcoin_LDADD += -lboost_system -lboost_filesystem -lboost_thread -ldb_cxx -ldl
 
 noinst_LIBRARIES = libleveldb.a
 libleveldb_a_CXXFLAGS = \
