@@ -253,40 +253,43 @@ CBitcoinAddress GetNewAddress(string strAccount)
 
   return CBitcoinAddress(keyID);
 }
-string c_getnewaddress(string strAccount)
+
+string getnewaddr_str;
+const char *cxx_getnewaddress(const char *account)
 {
-  return (GetNewAddress(strAccount).ToString());
-/*
+  string strAccount(account);
+
   if (!pwalletMain->IsLocked())
     pwalletMain->TopUpKeyPool();
 
   // Generate a new key that is added to wallet
   CPubKey newKey;
-  if (!pwalletMain->GetKeyFromPool(newKey, false))
-    throw JSONRPCError(-12, "Error: Keypool ran out, please call keypoolrefill first");
+  if (!pwalletMain->GetKeyFromPool(newKey, false)) {
+    return (NULL);
+  }
   CKeyID keyID = newKey.GetID();
-
   pwalletMain->SetAddressBookName(keyID, strAccount);
+  getnewaddr_str = CBitcoinAddress(keyID).ToString();
 
-  return CBitcoinAddress(keyID).ToString();
-*/
+  return (getnewaddr_str.c_str());
 }
 
 
-CBitcoinAddress GetAddressByAccount(const char *accountName)
+CBitcoinAddress GetAddressByAccount(const char *accountName, bool& found)
 {
   CBitcoinAddress address;
   string strAccount(accountName);
   Array ret;
-  bool found = false;
 
   // Find all addresses that have the given account
+  found = false;
   BOOST_FOREACH(const PAIRTYPE(CBitcoinAddress, string)& item, pwalletMain->mapAddressBook)
   {
     const CBitcoinAddress& acc_address = item.first;
     const string& strName = item.second;
     if (strName == strAccount) {
       address = acc_address;
+      found = true;
     }
   }
 
@@ -295,29 +298,11 @@ CBitcoinAddress GetAddressByAccount(const char *accountName)
 
 const char *c_getaddressbyaccount(const char *accountName)
 {
-  address = GetAddressByAccount(accountName).ToString();
-  return (address.c_str());
-/*
-  string strAccount(accountName);
-  Array ret;
   bool found = false;
-
-  // Find all addresses that have the given account
-  BOOST_FOREACH(const PAIRTYPE(CBitcoinAddress, string)& item, pwalletMain->mapAddressBook)
-  {
-    const CBitcoinAddress& acc_address = item.first;
-    const string& strName = item.second;
-    if (strName == strAccount) {
-      address = acc_address.ToString();
-      found = true;
-    }
-  }
-
-  if (!found)
-    address = c_getnewaddress(strAccount);
-
-  return (address.c_str());
-*/
+  CBitcoinAddress addr = GetAddressByAccount(accountName, found);
+  if (!found || !addr.IsValid())
+     return (NULL);
+  return (addr.ToString().c_str());
 }
 
 /**
@@ -337,69 +322,34 @@ int c_setblockreward(const char *accountName, double dAmount)
   int64 nBalance;
 
   if (pwalletMain->IsLocked()) {
-fprintf(stderr, "DEBUG: wallet is locked.\n");
     return (-13);
-}
-
-  const CBitcoinAddress address = GetAddressByAccount(accountName);
-
-
-
-  if (dAmount <= 0.0 || dAmount > 84000000.0) {
-fprintf(stderr, "DEBUG: invalid amount (%f)\n", dAmount);
-    //throw JSONRPCError(-3, "Invalid amount");
-    return (-3);
   }
 
-  nAmount = roundint64(dAmount * COIN);
-  if (!MoneyRange(nAmount)) {
-fprintf(stderr, "DEBUG: invalid amount: !MoneyRange(%d)\n", (int)nAmount);
-    //throw JSONRPCError(-3, "Invalid amount");
-    return (-3);
+  const CBitcoinAddress address = GetAddressByAccount(accountName, found);
+  if (!found) {
+    return (-5);
   }
-
-
-  nBalance  = GetAccountBalance(walletdb, strMainAccount, nMinConfirmDepth);
-  if (nAmount > nBalance) {
-fprintf(stderr, "DEBUG: account has insufficient funds\n");
-    //throw JSONRPCError(-6, "Account has insufficient funds");
-    return (-6);
-  }
-
-  //address = GetAddressByAccount(accountName);
   if (!address.IsValid()) {
 fprintf(stderr, "DEBUG: invalid usde address destination\n");
     //throw JSONRPCError(-5, "Invalid usde address");
     return (-5);
   }
 
-/*
-  BOOST_FOREACH(const PAIRTYPE(CBitcoinAddress, string)& item, pwalletMain->mapAddressBook)
-  {
-    const CBitcoinAddress& acc_address = item.first;
-    const string& strName = item.second;
-    if (strName == strAccount) {
-      address = acc_address;
-      found = true;
-    }
+
+  if (dAmount <= 0.0 || dAmount > 84000000.0) {
+    return (-3);
   }
 
-  if (!found) {
-    if (!pwalletMain->IsLocked())
-      pwalletMain->TopUpKeyPool();
-
-    // Generate a new key that is added to wallet
-    CPubKey newKey;
-    if (!pwalletMain->GetKeyFromPool(newKey, false)) {
-      //throw JSONRPCError(-12, "Error: Keypool ran out, please call keypoolrefill first");
-      return (-12);
-    }
-    CKeyID keyID = newKey.GetID();
-    pwalletMain->SetAddressBookName(keyID, strAccount);
-    address = CBitcoinAddress(keyID);
+  nAmount = roundint64(dAmount * COIN);
+  if (!MoneyRange(nAmount)) {
+    return (-3);
   }
-  
-*/
+
+  nBalance  = GetAccountBalance(walletdb, strMainAccount, nMinConfirmDepth);
+  if (nAmount > nBalance) {
+    return (-6);
+  }
+
 
   CWalletTx wtx;
   wtx.strFromAccount = strMainAccount;
@@ -410,8 +360,6 @@ fprintf(stderr, "DEBUG: '%s' = SendMoneyTo: amount %d\n", strError.c_str(), (int
     //throw JSONRPCError(-4, strError);
     return (-4);
   }
-
-fprintf(stderr, "DEBUG: c_set_block_reward: reward (%s -> %f).\n", accountName, dAmount);
 
 
   return (0);
@@ -663,8 +611,9 @@ static const char *c_stratum_create_account(const char *acc_name)
       throw JSONRPCError(STERR_INVAL_PARAM, "The account name specified is invalid.");
     }
 
-    CBitcoinAddress address = GetAddressByAccount(acc_name);
-    if (address.IsValid()) {
+    bool found = false;
+    CBitcoinAddress address = GetAddressByAccount(acc_name, found);
+    if (found && address.IsValid()) {
       throw JSONRPCError(STERR_INVAL_PARAM, "Account name is not unique.");
     }
 
@@ -694,6 +643,10 @@ static const char *c_stratum_create_account(const char *acc_name)
   return (createaccount_json.c_str());
 }
 
+/**
+ * Creates an coin transaction for a single user account. 
+ * @note charges 0.1 coins per each transaction to "bank" account.
+ */
 string transferaccount_json;
 static const char *c_stratum_account_transfer(char *account, char *pkey_str, char *dest, double amount)
 {
@@ -711,11 +664,12 @@ static const char *c_stratum_account_transfer(char *account, char *pkey_str, cha
   uint256 in_pkey;
   int nMinDepth;
   int64 nBalance;
+  int64 nFee = COIN / 10;
+  int64 nTxFee = 0;
 
   try {
     in_pkey = 0;
     nMinDepth = 1;
-    nAmount = roundint64(amount * COIN);
 
     if (pwalletMain->IsLocked()) {
       throw JSONRPCError(STERR_ACCESS_NOKEY, "Account transactions are not currently available.");
@@ -730,16 +684,44 @@ static const char *c_stratum_account_transfer(char *account, char *pkey_str, cha
       throw JSONRPCError(STERR_ACCESS, "Invalid private key hash specified.");
     }
 
+    nAmount = roundint64(amount * COIN);
+    if (!MoneyRange(nAmount) || nAmount <= nFee) {
+      throw JSONRPCError(STERR_INVAL_AMOUNT, "Invalid coin amount.");
+    }
+
     nBalance = GetAccountBalance(walletdb, strAccount, nMinDepth);
     if (nAmount > nBalance) {
       throw JSONRPCError(STERR_FUND_UNAVAIL, "Account has insufficient funds.");
     }
 
+    vector<pair<CScript, int64> > vecSend;
+    bool bankAddressFound = false;
+    CBitcoinAddress bankAddress;
+    CScript scriptPubKey;
+    CReserveKey keyChange(pwalletMain);
+
+    bankAddress = GetAddressByAccount("bank", bankAddressFound);
+    if (!bankAddressFound || !bankAddress.IsValid()) {
+      nFee = 0;
+    }
+
     wtx.strFromAccount = strAccount;
     wtx.mapValue["comment"] = "sharelib.net";
-    string strError = pwalletMain->SendMoneyToDestination(dest_address.Get(), nAmount, wtx);
-    if (strError != "") {
-      throw JSONRPCError(STERR_ACCESS_UNAVAIL, strError);
+    /* bank */
+    if (nFee) {
+      scriptPubKey.SetDestination(bankAddress.Get());
+      vecSend.push_back(make_pair(scriptPubKey, nFee));
+    }
+    /* user */
+    scriptPubKey.SetDestination(dest_address.Get());
+    vecSend.push_back(make_pair(scriptPubKey, nAmount - nFee));
+    if (!pwalletMain->CreateTransaction(vecSend, wtx, keyChange, nTxFee)) {
+      if (nAmount + nTxFee > pwalletMain->GetBalance())
+        throw JSONRPCError(STERR_FUND_UNAVAIL, "Insufficient funds for transaction.");
+      throw JSONRPCError(STERR_ACCESS_UNAVAIL, "Transaction creation failure.");
+    }
+    if (!pwalletMain->CommitTransaction(wtx, keyChange)) {
+      throw JSONRPCError(STERR_ACCESS_UNAVAIL, "Transaction commit failed.");
     }
   } catch(Object& objError) {
     SetStratumError(objError);
@@ -748,6 +730,8 @@ static const char *c_stratum_account_transfer(char *account, char *pkey_str, cha
 
   Object result;
   result.push_back(Pair("txid", wtx.GetHash().GetHex()));
+  result.push_back(Pair("fee", ValueFromAmount(nFee + nTxFee)));
+  result.push_back(Pair("amount", ValueFromAmount(nAmount - nFee - nTxFee)));
   transferaccount_json = JSONRPCReply(result, Value::null, Value::null);
   return (transferaccount_json.c_str());
 }
@@ -887,8 +871,8 @@ int load_wallet(void)
 
 const char *getaddressbyaccount(const char *accountName)
 {
-  if (!*accountName)
-    return ("");
+  if (accountName || !*accountName)
+    return (NULL);
   return (c_getaddressbyaccount(accountName));
 }
 
@@ -962,6 +946,11 @@ const char *stratum_importaddress(const char *account, const char *privaddr_str)
   if (!account || !privaddr_str)
     return (NULL);
   return (cxx_stratum_account_import(account, privaddr_str));
+}
+
+const char *getnewaddress(const char *account)
+{
+  return (cxx_getnewaddress(account));
 }
 
 #ifdef __cplusplus

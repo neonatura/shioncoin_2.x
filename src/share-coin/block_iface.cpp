@@ -520,10 +520,16 @@ const char *c_getblockindexinfo(CBlockIndex *pblockindex)
   result.push_back(Pair("height", pblockindex->nHeight));
   result.push_back(Pair("version", block.nVersion));
   result.push_back(Pair("merkleroot", block.hashMerkleRoot.GetHex()));
+
   Array txs;
-  BOOST_FOREACH(const CTransaction&tx, block.vtx)
+  int64 nAmount = 0;
+  BOOST_FOREACH(const CTransaction&tx, block.vtx) {
     txs.push_back(tx.GetHash().GetHex());
+    nAmount += tx.GetValueOut();
+  }
   result.push_back(Pair("tx", txs));
+  result.push_back(Pair("amount", ValueFromAmount(nAmount)));
+
   result.push_back(Pair("time", (boost::int64_t)block.GetBlockTime()));
   result.push_back(Pair("nonce", (boost::uint64_t)block.nNonce));
   result.push_back(Pair("bits", HexBits(block.nBits)));
@@ -550,7 +556,7 @@ const char *c_getblockinfo(const char *hash_addr)
     /* convert block index to block hash */
     if (nHeight < 0 || nHeight > nBestHeight) {
       //throw runtime_error("Block number out of range.");
-      fprintf(stderr, "DEBUG: Block number (%d) out of range.", nHeight);
+      //fprintf(stderr, "DEBUG: Block number (%d) out of range.", nHeight);
       return (NULL);
     }
 

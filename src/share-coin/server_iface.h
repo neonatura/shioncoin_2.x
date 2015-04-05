@@ -88,6 +88,8 @@ const char *stratum_error_get(int req_id);
 
 const char *stratum_importaddress(const char *account, const char *privaddr_str);
 
+const char *getnewaddress(const char *account);
+
 #ifdef __cplusplus
 }
 #endif

@@ -379,57 +379,6 @@ Value getnetworkhashps(const Array& params, bool fHelp)
     return GetNetworkHashPS(params.size() > 0 ? params[0].get_int() : 120);
 }
 
-
-Value getgenerate(const Array& params, bool fHelp)
-{
-    if (fHelp || params.size() != 0)
-        throw runtime_error(
-            "getgenerate\n"
-            "Returns true or false.");
-
-    return GetBoolArg("-gen");
-}
-
-
-Value setgenerate(const Array& params, bool fHelp)
-{
-    if (fHelp || params.size() < 1 || params.size() > 2)
-        throw runtime_error(
-            "setgenerate <generate> [genproclimit]\n"
-            "<generate> is true or false to turn generation on or off.\n"
-            "Generation is limited to [genproclimit] processors, -1 is unlimited.");
-
-    bool fGenerate = true;
-    if (params.size() > 0)
-        fGenerate = params[0].get_bool();
-
-    if (params.size() > 1)
-    {
-        int nGenProcLimit = params[1].get_int();
-        mapArgs["-genproclimit"] = itostr(nGenProcLimit);
-        if (nGenProcLimit == 0)
-            fGenerate = false;
-    }
-    mapArgs["-gen"] = (fGenerate ? "1" : "0");
-
-    //GenerateBitcoins(fGenerate, pwalletMain);
-    return Value::null;
-}
-
-
-Value gethashespersec(const Array& params, bool fHelp)
-{
-    if (fHelp || params.size() != 0)
-        throw runtime_error(
-            "gethashespersec\n"
-            "Returns a recent hashes per second performance measurement while generating.");
-
-    if (GetTimeMillis() - nHPSTimerStart > 8000)
-        return (boost::int64_t)0;
-    return (boost::int64_t)dHashesPerSec;
-}
-
-
 Value getinfo(const Array& params, bool fHelp)
 {
     if (fHelp || params.size() != 0)
@@ -474,9 +423,6 @@ Value getmininginfo(const Array& params, bool fHelp)
     obj.push_back(Pair("currentblocktx",(uint64_t)nLastBlockTx));
     obj.push_back(Pair("difficulty",    (double)GetDifficulty()));
     obj.push_back(Pair("errors",        GetWarnings("statusbar")));
-    obj.push_back(Pair("generate",      GetBoolArg("-gen")));
-    obj.push_back(Pair("genproclimit",  (int)GetArg("-genproclimit", -1)));
-    obj.push_back(Pair("hashespersec",  gethashespersec(params, false)));
     obj.push_back(Pair("networkhashps", getnetworkhashps(params, false)));
     obj.push_back(Pair("pooledtx",      (uint64_t)mempool.size()));
     obj.push_back(Pair("testnet",       fTestNet));
@@ -2359,9 +2305,6 @@ static const CRPCCommand vRPCCommands[] =
     { "addpeer",                &addpeer,                true },
     { "getdifficulty",          &getdifficulty,          true },
     { "getnetworkhashps",       &getnetworkhashps,       true },
-    { "getgenerate",            &getgenerate,            true },
-    { "setgenerate",            &setgenerate,            true },
-    { "gethashespersec",        &gethashespersec,        true },
     { "getinfo",                &getinfo,                true },
     { "getmininginfo",          &getmininginfo,          true },
     { "getnewaddress",          &getnewaddress,          true },
@@ -2376,10 +2319,10 @@ static const CRPCCommand vRPCCommands[] =
     { "listreceivedbyaccount",  &listreceivedbyaccount,  false },
     { "backupwallet",           &backupwallet,           true },
     { "keypoolrefill",          &keypoolrefill,          true },
-    { "walletpassphrase",       &walletpassphrase,       true },
-    { "walletpassphrasechange", &walletpassphrasechange, false },
-    { "walletlock",             &walletlock,             true },
-    { "encryptwallet",          &encryptwallet,          false },
+//    { "walletpassphrase",       &walletpassphrase,       true },
+//    { "walletpassphrasechange", &walletpassphrasechange, false },
+//    { "walletlock",             &walletlock,             true },
+//    { "encryptwallet",          &encryptwallet,          false },
     { "validateaddress",        &validateaddress,        true },
     { "getbalance",             &getbalance,             false },
     { "move",                   &movecmd,                false },
@@ -3117,8 +3060,6 @@ Array RPCConvertValues(const std::string &strMethod, const std::vector<std::stri
     //
     // Special case non-string parameter types
     //
-    if (strMethod == "setgenerate"            && n > 0) ConvertTo<bool>(params[0]);
-    if (strMethod == "setgenerate"            && n > 1) ConvertTo<boost::int64_t>(params[1]);
     if (strMethod == "sendtoaddress"          && n > 1) ConvertTo<double>(params[1]);
     if (strMethod == "settxfee"               && n > 0) ConvertTo<double>(params[0]);
     if (strMethod == "setmininput"            && n > 0) ConvertTo<double>(params[0]);

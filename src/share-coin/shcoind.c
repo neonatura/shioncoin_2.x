@@ -114,6 +114,9 @@ int main(int argc, char *argv[])
   block_init();
   load_wallet();
   start_node();
+
+  if (!getaddressbyaccount("bank"))
+    getnewaddress("bank"); 
   daemon_server();
 
   return (0);
