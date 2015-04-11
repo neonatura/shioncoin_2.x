@@ -35,19 +35,43 @@ A stratum server for the USDe virtual currency is provided in this library. The 
 
 Note: No additional programs from the share library suite is required in order to run the coin+stratum service. The C share library is staticly linked against the coin service, and a 'make install' is not required to run the program.
 
-The stratum service utilizes new stratum methods that are not standard, and require a compatible web-based front end. 
 
+<h3>Stratum Protocol Template</h3>
+Command: mining.ping
+Description: Verify or measure server response time.
+Example Request: {"method":"mining.ping","id":1,"params":[]}
+Example Response; {"id":1,"error":null,"result":null}
 
-<h3>Stratum Protocol Specifications</h3>
-"mining.shares"
-"mining.get_transactions"
-"mining.info"
-"mining.authorize"
-"mining.submit"
-"mining.subscribe"
-"mining.ping"
-"account.info"
-"block.info"
+Command: mining.shares
+
+Command: mining.get_transactions
+
+Command: mining.info
+
+Command: mining.authorize
+
+Command: mining.submit
+
+Command: mining.subscribe
+
+Command: block.info[<mode>,<hash>]
+Description: Obtain block and transaction info from a block hash.
+
+Command: account.info[<account>,<pkey>]
+Description: Obtain account credentials by name and account key.
+
+Command: account.create[<label>]
+
+Command: account.transactions[<amount>,<pkey>,<duration>]
+
+Command: account.address[<hash>]
+
+Command: account.secret[<addr>,<pkey>]
+
+Command: account.import[<account>,<priv addr>]
+
+Command: account.transfer[<account>,<pkey>,<addr>,<amount>]
+
 
 <h3>Build Dependencies</h3>
 
