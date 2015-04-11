@@ -598,6 +598,21 @@ const char *cxx_getaddressinfo(const char *addr_hash, const char *pkey_str)
   return (addressinfo_json.c_str());
 }
 
+bool VerifyLocalAddress(CKeyID vchAddress)
+{
+  BOOST_FOREACH(const PAIRTYPE(CBitcoinAddress, string)& item, pwalletMain->mapAddressBook)
+  {
+    const CBitcoinAddress& address = item.first;
+    const string& strName = item.second;
+    CKeyID keyID;
+    address.GetKeyID(keyID);
+    if (keyID == vchAddress)
+      return (true);
+  }
+
+  return (false);
+}
+
 string createaccount_json;
 static const char *c_stratum_create_account(const char *acc_name)
 {
@@ -811,7 +826,7 @@ static const char *cxx_stratum_account_import(const char *acc_name, const char *
   try {
     ok = vchSecret.SetString(strSecret);
     if (!ok) {
-      throw JSONRPCError(STERR_INVAL, "Invalid private key spcified.");
+      throw JSONRPCError(STERR_INVAL, "Invalid private key specified.");
     }
 
     CKey key;
@@ -819,19 +834,22 @@ static const char *cxx_stratum_account_import(const char *acc_name, const char *
     CSecret secret = vchSecret.GetSecret(fCompressed);
     key.SetSecret(secret, fCompressed);
     vchAddress = key.GetPubKey().GetID();
+
+    if (VerifyLocalAddress(vchAddress)) {
+      throw JSONRPCError(STERR_INVAL_PARAM, "Address already registered to local account.");
+    }
+
     {
-        LOCK2(cs_main, pwalletMain->cs_wallet);
+      LOCK2(cs_main, pwalletMain->cs_wallet);
 
-        pwalletMain->MarkDirty();
-        pwalletMain->SetAddressBookName(vchAddress, strLabel);
+      pwalletMain->MarkDirty();
+      pwalletMain->SetAddressBookName(vchAddress, strLabel);
 
-        if (!pwalletMain->AddKey(key)) {
-          throw JSONRPCError(STERR_ACCESS_UNAVAIL, 
-              "Error adding key to database.");
-        }
-
+      if (pwalletMain->AddKey(key)) {
+        /* key did not previously exist in wallet db */
         pwalletMain->ScanForWalletTransactions(pindexGenesisBlock, true);
         pwalletMain->ReacceptWalletTransactions();
+      }
     }
   } catch(Object& objError) {
     SetStratumError(objError);
