@@ -37,40 +37,40 @@ Note: No additional programs from the share library suite is required in order t
 
 
 <h3>Stratum Protocol Template</h3>
-Command: mining.ping
-Description: Verify or measure server response time.
-Example Request: {"method":"mining.ping","id":1,"params":[]}
-Example Response; {"id":1,"error":null,"result":null}
-
-Command: mining.shares
-
-Command: mining.get_transactions
-
-Command: mining.info
-
-Command: mining.authorize
-
-Command: mining.submit
-
-Command: mining.subscribe
-
-Command: block.info[<mode>,<hash>]
-Description: Obtain block and transaction info from a block hash.
-
-Command: account.info[<account>,<pkey>]
-Description: Obtain account credentials by name and account key.
-
-Command: account.create[<label>]
-
-Command: account.transactions[<amount>,<pkey>,<duration>]
-
-Command: account.address[<hash>]
-
-Command: account.secret[<addr>,<pkey>]
-
-Command: account.import[<account>,<priv addr>]
-
-Command: account.transfer[<account>,<pkey>,<addr>,<amount>]
+<br>Command: mining.ping
+<br>Description: Verify or measure server response time.
+<br>Example Request: {"method":"mining.ping","id":1,"params":[]}
+<br>Example Response: {"id":1,"error":null,"result":null}
+<br>
+<br>Command: mining.shares
+<br>
+<br>Command: mining.get_transactions
+<br>
+<br>Command: mining.info
+<br>
+<br>Command: mining.authorize
+<br>
+<br>Command: mining.submit
+<br>
+<br>Command: mining.subscribe
+<br>
+<br>Command: block.info[mode,hash]
+<br>Description: Obtain block and transaction info from a block hash.
+<br>
+<br>Command: account.info[account,pkey]
+<br>Description: Obtain account credentials by name and account key.
+<br>
+<br>Command: account.create[label]
+<br>
+<br>Command: account.transactions[amount,pkey,duration]
+<br>
+<br>Command: account.address[hash]
+<br>
+<br>Command: account.secret[addr,pkey]
+<br>
+<br>Command: account.import[account,priv addr]
+<br>
+<br>Command: account.transfer[account,pkey,addr,amount]
 
 
 <h3>Build Dependencies</h3>
