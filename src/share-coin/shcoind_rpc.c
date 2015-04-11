@@ -23,7 +23,7 @@ void get_rpc_cred(char *username, char *password)
   buff = shbuf_init();
   err = shfs_read(fl, buff);
 
-  app_key = shbuf_data(buff);
+  app_key = (shkey_t *)shbuf_data(buff);
   data_len = shbuf_size(buff);
 
   if (err || !app_key) {

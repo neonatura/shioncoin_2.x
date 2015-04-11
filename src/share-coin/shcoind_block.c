@@ -78,7 +78,7 @@ int block_save(int block_height, const char *json_str)
   }
 
   buff = shbuf_init();
-  shbuf_cat(buff, json_str, strlen(json_str));
+  shbuf_cat(buff, (char *)json_str, strlen(json_str));
   err = shfs_write(file, buff);
   shbuf_free(&buff);
 

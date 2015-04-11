@@ -1022,7 +1022,7 @@ public:
 
     void print() const
     {
-        fprintf(stderr, "CBlock(hash=%s, PoW=%s, ver=%d, hashPrevBlock=%s, hashMerkleRoot=%s, nTime=%u, nBits=%08x, nNonce=%u, vtx=%d)\n",
+        fprintf(stderr, "CBlock(hash=%s, PoW=%s, ver=%d, hashPrevBlock=%s, hashMerkleRoot=%s, nTime=%u, nBits=%08x, nNonce=%u, vtx=%lu)\n",
             GetHash().ToString().substr(0,20).c_str(),
             GetPoWHash().ToString().substr(0,20).c_str(),
             nVersion,
