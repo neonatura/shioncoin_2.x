@@ -96,8 +96,6 @@ decoderawtransaction <hex string>
 
 dumpprivkey <usdeaddress>
 
-encryptwallet <passphrase>
-
 getaccount <usdeaddress>
 
 getaccountaddress <account>
@@ -117,10 +115,6 @@ getblocktemplate [params]
 getconnectioncount
 
 getdifficulty
-
-getgenerate
-
-gethashespersec
 
 getinfo
 
@@ -176,8 +170,6 @@ sendtoaddress <usdeaddress> <amount> [comment] [comment-to]
 
 setaccount <usdeaddress> <account>
 
-setgenerate <generate> [genproclimit]
-
 setmininput <amount>
 
 settxfee <amount>
@@ -193,4 +185,4 @@ validateaddress <usdeaddress>
 verifymessage <usdeaddress> <signature> <message>
 </small>
 
-The shcoind and shcoin program will write data to the /var/lib/share/usde/ directory. The "usde.conf" configuration file present in this directory is written in order to supply the automatically generated RPC user/pass. 
+The shcoind and shcoin program will write data to the /var/lib/share/usde/ directory. The "usde.conf" configuration file is only present in this directory in order to supply the automatically generated RPC user/pass. 
