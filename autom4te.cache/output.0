@@ -800,6 +800,8 @@ am__EXEEXT_TRUE
 LTLIBOBJS
 DEBUG_FALSE
 DEBUG_TRUE
+HAVE_HELP2MAN_FALSE
+HAVE_HELP2MAN_TRUE
 HELP2MAN
 HAVE_DOXYGEN_FALSE
 HAVE_DOXYGEN_TRUE
@@ -62772,6 +62774,14 @@ $as_echo "no" >&6; }
 fi
 
 
+ if test x"$HELP2MAN" = x"help2man"; then
+  HAVE_HELP2MAN_TRUE=
+  HAVE_HELP2MAN_FALSE='#'
+else
+  HAVE_HELP2MAN_TRUE='#'
+  HAVE_HELP2MAN_FALSE=
+fi
+
 
 @%:@ Check whether --enable-debug was given.
 if test "${enable_debug+set}" = set; then
@@ -63149,6 +63159,13 @@ if test -z "${HAVE_DOXYGEN_TRUE}" && test -z "${HAVE_DOXYGEN_FALSE}"; then
   { { $as_echo "$as_me:$LINENO: error: conditional \"HAVE_DOXYGEN\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 $as_echo "$as_me: error: conditional \"HAVE_DOXYGEN\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
+if test -z "${HAVE_HELP2MAN_TRUE}" && test -z "${HAVE_HELP2MAN_FALSE}"; then
+  { { $as_echo "$as_me:$LINENO: error: conditional \"HAVE_HELP2MAN\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+$as_echo "$as_me: error: conditional \"HAVE_HELP2MAN\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi

@@ -1041,12 +1041,12 @@ version_patch = @version_patch@
 with_kernel = @with_kernel@
 with_kerneldir = @with_kerneldir@
 AM_CFLAGS = -DDATADIR=\"$(datadir)\"
-dist_man_MANS = \
-	man/man1/shcoin.1 \
-	man/man1/shcoind.1
-
 dist_docdir = $(datadir)/@PACKAGE@
 @HAVE_DOXYGEN_TRUE@dist_doc_DATA = shcoin_html.tar.xz
+@HAVE_HELP2MAN_TRUE@dist_man_MANS = \
+@HAVE_HELP2MAN_TRUE@	man/man1/shcoin.1 \
+@HAVE_HELP2MAN_TRUE@	man/man1/shcoind.1
+
 CLEANFILES = helpfile.stamp doxyfile.stamp
 EXTRA_DIST = $(htmldir)
 all: all-am
@@ -1315,16 +1315,14 @@ uninstall-man: uninstall-man1
 	uninstall-dist_docDATA uninstall-man uninstall-man1
 
 
-#man/man1/shared.1: helpfile.stamp
-man/man1/shcoin.1: helpfile.stamp
-man/man1/shcoind.1: helpfile.stamp
+@HAVE_HELP2MAN_TRUE@man/man1/shcoin.1: helpfile.stamp
+@HAVE_HELP2MAN_TRUE@man/man1/shcoind.1: helpfile.stamp
 
-helpfile.stamp:
-	mkdir -p man/man1
-#	$(HELP2MAN) --output=man/man1/shared.1 --name='libshare command-line tool' $(top_builddir)/scripts/shared
-	$(HELP2MAN) --output=man/man1/shcoin.1 --name='share-coin command-line tool' $(top_builddir)/src/share-coin/shcoin
-	$(HELP2MAN) --output=man/man1/shcoind.1 --name='share-coin daemon' $(top_builddir)/src/share-coin/shcoind
-	echo Timestamp > helpfile.stamp
+@HAVE_HELP2MAN_TRUE@helpfile.stamp:
+@HAVE_HELP2MAN_TRUE@	mkdir -p man/man1
+@HAVE_HELP2MAN_TRUE@	$(HELP2MAN) --output=man/man1/shcoin.1 --name='share-coin command-line tool' $(top_builddir)/src/share-coin/shcoin
+@HAVE_HELP2MAN_TRUE@	$(HELP2MAN) --output=man/man1/shcoind.1 --name='share-coin daemon' $(top_builddir)/src/share-coin/shcoind
+@HAVE_HELP2MAN_TRUE@	echo Timestamp > helpfile.stamp
 
 @HAVE_DOXYGEN_TRUE@$(htmldir): doxyfile.stamp
 
