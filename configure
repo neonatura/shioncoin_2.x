@@ -2409,7 +2409,7 @@ Optional Packages:
   --with-pic              try to use only PIC/non-PIC objects [default=use
                           both]
   --with-gnu-ld           assume the C compiler uses GNU ld [default=no]
-  --with-libshare         specify a path to the libshare.a library
+  --with-libshare         specify a path to the libshare build directory
   --with-gnu-ld           assume the C compiler uses GNU ld [default=no]
   --with-libpth-prefix[=DIR]  search for libpth in DIR/include and DIR/lib
   --without-libpth-prefix     don't search for libpth in includedir and libdir

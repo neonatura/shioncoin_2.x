@@ -223,7 +223,7 @@ AC_CHECK_LIB([m], [fabs])
 AC_CHECK_LIB([pthread], [pthread_self])
 AC_ARG_WITH([libshare],
   [AS_HELP_STRING([--with-libshare],
-  [specify a path to the libshare.a library])],
+  [specify a path to the libshare build directory])],
   [],
   [with_libshare=yes])
 LIBSHARE=

@@ -33,7 +33,7 @@ Note: The "shcoin" client utility program must be ran as the same user as the 's
 <h3>Stratum + USDe Coin Service</h3>
 A stratum server for the USDe virtual currency is provided in this library. The server is embedded into the usde coin server in the program "shcoind". The "shcoin" program is provided to perform RPC commands against the coin server.
 
-Note: No additional programs from the share library suite is required in order to run the coin+stratum service. The C share library is staticly linked against the coin service, and a 'make install' is not required to run the program.
+Note: No additional programs from the share library suite is required in order to run the coin+stratum service. The C share library can be staticly linked against the coin service, and a 'make install' is not required to run the program.
 
 
 <h3>Stratum Protocol Template</h3>
