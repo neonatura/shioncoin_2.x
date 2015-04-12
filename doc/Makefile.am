@@ -22,6 +22,12 @@ helpfile.stamp:
 	$(HELP2MAN) --output=man/man1/shcoin.1 --name='share-coin command-line tool' $(top_builddir)/src/share-coin/shcoin
 	$(HELP2MAN) --output=man/man1/shcoind.1 --name='share-coin daemon' $(top_builddir)/src/share-coin/shcoind
 	echo Timestamp > helpfile.stamp
+else
+
+helpfile.stamp:
+	mkdir -p man/man1
+	echo Timestamp > helpfile.stamp
+
 endif
 
 

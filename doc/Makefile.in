@@ -1324,6 +1324,10 @@ uninstall-man: uninstall-man1
 @HAVE_HELP2MAN_TRUE@	$(HELP2MAN) --output=man/man1/shcoind.1 --name='share-coin daemon' $(top_builddir)/src/share-coin/shcoind
 @HAVE_HELP2MAN_TRUE@	echo Timestamp > helpfile.stamp
 
+@HAVE_HELP2MAN_FALSE@helpfile.stamp:
+@HAVE_HELP2MAN_FALSE@	mkdir -p man/man1
+@HAVE_HELP2MAN_FALSE@	echo Timestamp > helpfile.stamp
+
 @HAVE_DOXYGEN_TRUE@$(htmldir): doxyfile.stamp
 
 @HAVE_DOXYGEN_TRUE@doxyfile.stamp:
