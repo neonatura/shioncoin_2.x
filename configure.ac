@@ -2,9 +2,9 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.63])
-AC_INIT(share-coin, 2.25, support@neo-natura.com)
+AC_INIT(share-coin, 2.26, support@neo-natura.com)
 AC_CONFIG_AUX_DIR([build-aux])
-AM_INIT_AUTOMAKE(share-coin, 2.25) 
+AM_INIT_AUTOMAKE(share-coin, 2.26) 
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
 
@@ -18,26 +18,12 @@ AM_CONDITIONAL([KMOD_DIR], [test -f /lib/modules/`uname -r`/build])
 
 LT_INIT
 
-version_patch=25
+version_patch=26
 AC_SUBST(version_patch)
-version_info=2:25:0
+version_info=2:26:0
 AC_SUBST(version_info)
 
-#AC_CONFIG_FILES([test/base58_encode_decode.json])
-#AC_CONFIG_FILES([test/base58_keys_invalid.json])
-#AC_CONFIG_FILES([test/base58_keys_valid.json])
-#AC_CONFIG_FILES([test/script_invalid.json])
-#AC_CONFIG_FILES([test/script_valid.json])
-#AC_CONFIG_FILES([test/tx_invalid.json])
-#AC_CONFIG_FILES([test/tx_valid.json])
-
-#VERSION_CUR=`$SED -ne 's/^#define LIBOAUTH_CUR *\([0-9]*\)/\1/p' ${srcdir}/src/oauth.h 2>/dev/null`
-#VERSION_REV=`$SED -ne 's/^#define LIBOAUTH_REV *\([0-9]*\)/\1/p' ${srcdir}/src/oauth.h 2>/dev/null`
-#VERSION_AGE=`$SED -ne 's/^#define LIBOAUTH_AGE *\([0-9]*\)/\1/p' ${srcdir}/src/oauth.h 2>/dev/null`
-#VERSION_INFO=${VERSION_CUR}:${VERSION_REV}:${VERSION_AGE}
-#AC_SUBST(VERSION_INFO)
-
-#AC_LIB_LINKFLAGS([pthread])
+AC_CONFIG_FILES([doc/NEWS])
 
 # Architecture
 AC_MSG_CHECKING([for supported operating system])

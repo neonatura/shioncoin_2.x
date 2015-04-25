@@ -347,6 +347,7 @@ fprintf(stderr, "DEBUG: invalid usde address destination\n");
 
   nBalance  = GetAccountBalance(walletdb, strMainAccount, nMinConfirmDepth);
   if (nAmount > nBalance) {
+fprintf(stderr, "DEBUG: c_setblockreward: main account has insufficient funds (%f required).\n", dAmount);
     return (-6);
   }
 
@@ -715,7 +716,8 @@ static const char *c_stratum_account_transfer(char *account, char *pkey_str, cha
     CScript scriptPubKey;
     CReserveKey keyChange(pwalletMain);
 
-    bankAddress = GetAddressByAccount("bank", bankAddressFound);
+    /* send fee to main account */
+    bankAddress = GetAddressByAccount("", bankAddressFound);
     if (!bankAddressFound || !bankAddress.IsValid()) {
       nFee = 0;
     }

@@ -35,7 +35,7 @@ build_triplet = @build@
 host_triplet = @host@
 subdir = doc
 DIST_COMMON = $(am__dist_doc_DATA_DIST) $(dist_man_MANS) \
-	$(srcdir)/Makefile.am $(srcdir)/Makefile.in \
+	$(srcdir)/Makefile.am $(srcdir)/Makefile.in $(srcdir)/NEWS.in \
 	$(srcdir)/doxygen.conf.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/00gnulib.m4 \
@@ -127,7 +127,7 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/config.h
-CONFIG_CLEAN_FILES = doxygen.conf
+CONFIG_CLEAN_FILES = NEWS doxygen.conf
 CONFIG_CLEAN_VPATH_FILES =
 SOURCES =
 DIST_SOURCES =
@@ -1082,6 +1082,8 @@ $(top_srcdir)/configure:  $(am__configure_deps)
 $(ACLOCAL_M4):  $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 $(am__aclocal_m4_deps):
+NEWS: $(top_builddir)/config.status $(srcdir)/NEWS.in
+	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
 @HAVE_DOXYGEN_TRUE@doxygen.conf: $(top_builddir)/config.status $(srcdir)/doxygen.conf.in
 @HAVE_DOXYGEN_TRUE@	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
 

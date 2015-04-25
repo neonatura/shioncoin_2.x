@@ -115,8 +115,12 @@ int main(int argc, char *argv[])
   load_wallet();
   start_node();
 
+/*
+ * main 'tx fee' account is ""
   if (!getaddressbyaccount("bank"))
     getnewaddress("bank"); 
+*/
+
   daemon_server();
 
   return (0);

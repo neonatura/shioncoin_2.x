@@ -164,7 +164,7 @@ const char *submit_hash;
   submit_hash = submitblock(task->task_id, le_ntime, task->work.nonce, xn_hex);
   if (submit_hash) {
     ret_err = 0;
-fprintf(stderr, "DEBUG: user->block_hash = \"%s\"\n", submit_hash);
+printf("DEBUG: stratum_validate_submit: info: submitted block \"%s\" for \"%s\"\n", submit_hash, user->worker);
     /* user's block was accepted by network. */
     user->block_acc++;
     strncpy(user->block_hash, submit_hash, sizeof(user->block_hash) - 1);
