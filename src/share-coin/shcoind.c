@@ -48,8 +48,12 @@ shbuf_free(&server_msg_buff);
 void usage_help(void)
 {
   fprintf(stdout,
-      "Usage: shcoind\n"
+      "Usage: shcoind [OPTIONS]\n"
       "USDe currency daemon for the Share Library Suite.\n"
+      "\n"
+      "Options:\n"
+      "\t--loadblock <path>\tLoad a blk001.dat file.\n"
+//      "\t--rescan\t\tRescan blocks for missing wallet transactions.\n"
       "\n"
       "Visit 'http://docs.sharelib.net/' for libshare API documentation."
       "Report bugs to <support@neo-natura.com>.\n"
@@ -67,8 +71,10 @@ void usage_version(void)
 
 int main(int argc, char *argv[])
 {
+  char blockfile_path[PATH_MAX];
   int fd;
   int err;
+  int i;
 
   if (argc >= 2 && 0 == strcmp(argv[1], "--help")) {
     usage_help();
@@ -77,6 +83,20 @@ int main(int argc, char *argv[])
   if (argc >= 2 && 0 == strcmp(argv[1], "--version")) {
     usage_version();
     return (0);
+  }
+
+  /* always perform 'fresh' tx rescan */
+
+  memset(blockfile_path, 0, sizeof(blockfile_path));
+  for (i = 1; i < argc; i++) {
+    if (0 == strcmp(argv[i], "--blockfile")) {
+      if (i + 1 < argc)
+        strncpy(blockfile_path, argv[i], sizeof(blockfile_path)-1);
+#if 0
+    } else if (0 == strcmp(argv[i], "--rescan")) {
+      SoftSetBoolArg("-rescan", true);
+#endif
+    }
   }
 
   daemon(0, 1);
@@ -92,10 +112,6 @@ int main(int argc, char *argv[])
   server_msgq = shmsgget(NULL); /* shared server msg-queue */
   server_msg_buff = shbuf_init();
 
-  shapp_listen(TX_APP, server_peer);
-  shapp_listen(TX_IDENT, server_peer);
-  shapp_listen(TX_SESSION, server_peer);
-  shapp_listen(TX_BOND, server_peer);
  
   fd = shnet_sk();
   if (fd == -1) {
@@ -110,9 +126,20 @@ int main(int argc, char *argv[])
     return (err);
   }
 
+  shapp_listen(TX_APP, server_peer);
+  shapp_listen(TX_IDENT, server_peer);
+  shapp_listen(TX_SESSION, server_peer);
+  shapp_listen(TX_BOND, server_peer);
+
   server_fd = fd;
   block_init();
   load_wallet();
+
+  if (*blockfile_path)
+    reloadblockfile(blockfile_path);
+
+  load_peers();
+
   start_node();
 
 /*

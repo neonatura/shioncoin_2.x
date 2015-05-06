@@ -272,9 +272,14 @@ bool CTransaction::ReadFromDisk(CTxDB& txdb, COutPoint prevout)
 
 bool CTransaction::ReadFromDisk(COutPoint prevout)
 {
-    CTxDB txdb("r");
     CTxIndex txindex;
-    return ReadFromDisk(txdb, prevout, txindex);
+    bool ret;
+
+    CTxDB txdb("r");
+    ret = ReadFromDisk(txdb, prevout, txindex);
+    txdb.Close();
+  
+    return (ret);
 }
 
 bool CTransaction::IsStandard() const
@@ -388,35 +393,41 @@ int CMerkleTx::SetMerkleBranch(const CBlock* pblock)
     }
     else
     {
-        CBlock blockTmp;
-        if (pblock == NULL)
-        {
-            // Load the block this tx is in
-            CTxIndex txindex;
-            if (!CTxDB("r").ReadTxIndex(GetHash(), txindex))
-                return 0;
-            if (!blockTmp.ReadFromDisk(txindex.pos.nFile, txindex.pos.nBlockPos))
-                return 0;
-            pblock = &blockTmp;
+      CBlock blockTmp;
+      if (pblock == NULL)
+      {
+        // Load the block this tx is in
+        CTxIndex txindex;
+        CTxDB txdb("r");
+        if (!txdb.ReadTxIndex(GetHash(), txindex)) {
+          txdb.Close();
+          return 0;
         }
-
-        // Update the tx's hashBlock
-        hashBlock = pblock->GetHash();
-
-        // Locate the transaction
-        for (nIndex = 0; nIndex < (int)pblock->vtx.size(); nIndex++)
-            if (pblock->vtx[nIndex] == *(CTransaction*)this)
-                break;
-        if (nIndex == (int)pblock->vtx.size())
-        {
-            vMerkleBranch.clear();
-            nIndex = -1;
-            printf("ERROR: SetMerkleBranch() : couldn't find tx in block\n");
-            return 0;
+        if (!blockTmp.ReadFromDisk(txindex.pos.nFile, txindex.pos.nBlockPos)) {
+          txdb.Close();
+          return 0;
         }
+        txdb.Close();
+        pblock = &blockTmp;
+      }
 
-        // Fill in merkle branch
-        vMerkleBranch = pblock->GetMerkleBranch(nIndex);
+      // Update the tx's hashBlock
+      hashBlock = pblock->GetHash();
+
+      // Locate the transaction
+      for (nIndex = 0; nIndex < (int)pblock->vtx.size(); nIndex++)
+        if (pblock->vtx[nIndex] == *(CTransaction*)this)
+          break;
+      if (nIndex == (int)pblock->vtx.size())
+      {
+        vMerkleBranch.clear();
+        nIndex = -1;
+        printf("ERROR: SetMerkleBranch() : couldn't find tx in block\n");
+        return 0;
+      }
+
+      // Fill in merkle branch
+      vMerkleBranch = pblock->GetMerkleBranch(nIndex);
     }
 
     // Is the tx in a block that's in the main chain
@@ -755,8 +766,13 @@ bool CWalletTx::AcceptWalletTransaction(CTxDB& txdb, bool fCheckInputs)
 
 bool CWalletTx::AcceptWalletTransaction()
 {
-    CTxDB txdb("r");
-    return AcceptWalletTransaction(txdb);
+  bool ret;
+
+  CTxDB txdb("r");
+  ret = AcceptWalletTransaction(txdb);
+  txdb.Close();
+
+  return (ret);
 }
 
 int CTxIndex::GetDepthInMainChain() const
@@ -795,8 +811,10 @@ bool GetTransaction(const uint256 &hash, CTransaction &tx, uint256 &hashBlock)
             CBlock block;
             if (block.ReadFromDisk(txindex.pos.nFile, txindex.pos.nBlockPos, false))
                 hashBlock = block.GetHash();
+            txdb.Close();
             return true;
         }
+        txdb.Close();
     }
     return false;
 }

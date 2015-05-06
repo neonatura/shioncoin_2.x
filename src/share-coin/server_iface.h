@@ -63,6 +63,7 @@ void start_node_peer(const char *host, int port);
 
 /* init.cpp */
 int load_wallet(void);
+int load_peers(void);
 
 /* init.cpp */
 void server_shutdown(void);
@@ -112,6 +113,8 @@ const char *stratum_error_get(int req_id);
 const char *stratum_importaddress(const char *account, const char *privaddr_str);
 
 const char *getnewaddress(const char *account);
+
+const int reloadblockfile(const char *path);
 
 #ifdef __cplusplus
 }

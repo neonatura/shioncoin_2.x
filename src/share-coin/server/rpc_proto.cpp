@@ -2180,6 +2180,7 @@ Value getblocktemplate(const Array& params, bool fHelp)
 
             transactions.push_back(entry);
         }
+        txdb.Close();
 
         Object aux;
         aux.push_back(Pair("flags", HexStr(COINBASE_FLAGS.begin(), COINBASE_FLAGS.end())));

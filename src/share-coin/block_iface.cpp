@@ -939,6 +939,19 @@ bool WriteToShareNet(CBlock* pBlock, int nHeight)
   return true;
 }
 
+extern bool LoadExternalBlockFile(FILE* fileIn);
+const int cxx_reloadblockfile(const char *path)
+{
+  string strFile(path);
+  FILE *file;
+
+  file = fopen(path, "rb");
+  if (!file)
+    return (-1);
+
+  LoadExternalBlockFile(file);
+  return (0);
+}
 
 
 #ifdef __cplusplus
@@ -988,6 +1001,10 @@ uint64_t getblockheight(void)
 const char *getminingtransactioninfo(unsigned int workId)
 {
   return (c_getminingtransactions(workId));
+}
+const int reloadblockfile(const char *path)
+{
+  return (cxx_reloadblockfile(path));
 }
 
 #ifdef __cplusplus

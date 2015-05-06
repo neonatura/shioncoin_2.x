@@ -1042,12 +1042,11 @@ with_kernel = @with_kernel@
 with_kerneldir = @with_kerneldir@
 AM_CFLAGS = -DDATADIR=\"$(datadir)\"
 dist_docdir = $(datadir)/@PACKAGE@
-@HAVE_DOXYGEN_TRUE@dist_doc_DATA = shcoin_html.tar.xz
 @HAVE_HELP2MAN_TRUE@dist_man_MANS = \
 @HAVE_HELP2MAN_TRUE@	man/man1/shcoin.1 \
 @HAVE_HELP2MAN_TRUE@	man/man1/shcoind.1
 
-CLEANFILES = helpfile.stamp doxyfile.stamp
+@HAVE_DOXYGEN_TRUE@dist_doc_DATA = shcoin_html.tar.xz
 EXTRA_DIST = $(htmldir)
 all: all-am
 
@@ -1202,7 +1201,7 @@ distdir: $(DISTFILES)
 	done
 check-am: all-am
 check: check-am
-all-am: Makefile $(MANS) $(DATA) all-local
+all-am: Makefile $(MANS) $(DATA)
 installdirs:
 	for dir in "$(DESTDIR)$(man1dir)" "$(DESTDIR)$(docdir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
@@ -1224,7 +1223,6 @@ install-strip:
 mostlyclean-generic:
 
 clean-generic:
-	-test -z "$(CLEANFILES)" || rm -f $(CLEANFILES)
 
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
@@ -1303,18 +1301,18 @@ uninstall-man: uninstall-man1
 
 .MAKE: install-am install-strip
 
-.PHONY: all all-am all-local check check-am clean clean-generic \
-	clean-libtool clean-local distclean distclean-generic \
-	distclean-libtool distdir dvi dvi-am html html-am info info-am \
-	install install-am install-data install-data-am \
-	install-dist_docDATA install-dvi install-dvi-am install-exec \
-	install-exec-am install-html install-html-am install-info \
-	install-info-am install-man install-man1 install-pdf \
-	install-pdf-am install-ps install-ps-am install-strip \
-	installcheck installcheck-am installdirs maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-generic \
-	mostlyclean-libtool pdf pdf-am ps ps-am uninstall uninstall-am \
-	uninstall-dist_docDATA uninstall-man uninstall-man1
+.PHONY: all all-am check check-am clean clean-generic clean-libtool \
+	clean-local distclean distclean-generic distclean-libtool \
+	distdir dvi dvi-am html html-am info info-am install \
+	install-am install-data install-data-am install-dist_docDATA \
+	install-dvi install-dvi-am install-exec install-exec-am \
+	install-html install-html-am install-info install-info-am \
+	install-man install-man1 install-pdf install-pdf-am install-ps \
+	install-ps-am install-strip installcheck installcheck-am \
+	installdirs maintainer-clean maintainer-clean-generic \
+	mostlyclean mostlyclean-generic mostlyclean-libtool pdf pdf-am \
+	ps ps-am uninstall uninstall-am uninstall-dist_docDATA \
+	uninstall-man uninstall-man1
 
 
 @HAVE_HELP2MAN_TRUE@man/man1/shcoin.1: helpfile.stamp
@@ -1325,10 +1323,6 @@ uninstall-man: uninstall-man1
 @HAVE_HELP2MAN_TRUE@	$(HELP2MAN) --output=man/man1/shcoin.1 --name='share-coin command-line tool' $(top_builddir)/src/share-coin/shcoin
 @HAVE_HELP2MAN_TRUE@	$(HELP2MAN) --output=man/man1/shcoind.1 --name='share-coin daemon' $(top_builddir)/src/share-coin/shcoind
 @HAVE_HELP2MAN_TRUE@	echo Timestamp > helpfile.stamp
-
-@HAVE_HELP2MAN_FALSE@helpfile.stamp:
-@HAVE_HELP2MAN_FALSE@	mkdir -p man/man1
-@HAVE_HELP2MAN_FALSE@	echo Timestamp > helpfile.stamp
 
 @HAVE_DOXYGEN_TRUE@$(htmldir): doxyfile.stamp
 
@@ -1343,15 +1337,10 @@ uninstall-man: uninstall-man1
 @HAVE_DOXYGEN_TRUE@	xz shcoin_html.tar
 @HAVE_DOXYGEN_TRUE@	rm -f shcoin_html.tar
 
-@HAVE_DOXYGEN_FALSE@doxyfile.stamp:
-@HAVE_DOXYGEN_FALSE@	mkdir -p man
-@HAVE_DOXYGEN_FALSE@	echo Timestamp > doxyfile.stamp
-
-all-local: doxyfile.stamp helpfile.stamp
 clean-local:
 	rm -f doxyfile.stamp helpfile.stamp
-	rm -rf $(top_builddir)/doc/man
-	rm -rf $(top_builddir)/doc/$(htmldir)
+	rm -rf $(builddir)/man
+	rm -rf $(builddir)/html
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

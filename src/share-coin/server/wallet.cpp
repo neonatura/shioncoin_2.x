@@ -772,6 +772,7 @@ void CWallet::ReacceptWalletTransactions()
                 fRepeat = true;  // Found missing transactions: re-do Reaccept.
         }
     }
+    txdb.Close();
 }
 
 void CWalletTx::RelayWalletTransaction(CTxDB& txdb)
@@ -800,6 +801,7 @@ void CWalletTx::RelayWalletTransaction()
 {
    CTxDB txdb("r");
    RelayWalletTransaction(txdb);
+   txdb.Close();
 }
 
 void CWallet::ResendWalletTransactions()
@@ -841,6 +843,7 @@ void CWallet::ResendWalletTransactions()
             wtx.RelayWalletTransaction(txdb);
         }
     }
+    txdb.Close();
 }
 
 
@@ -1192,6 +1195,7 @@ bool CWallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend, CW
                 break;
             }
         }
+        txdb.Close();
     }
     return true;
 }

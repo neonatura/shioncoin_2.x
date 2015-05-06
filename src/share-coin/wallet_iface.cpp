@@ -161,80 +161,82 @@ Object JSONAddressInfo(CBitcoinAddress address, bool show_priv)
 
 int c_LoadWallet(void)
 {
-    int64 nStart;
-    std::ostringstream strErrors;
+  std::ostringstream strErrors;
 
-    const char* pszP2SH = "/P2SH/";
-    COINBASE_FLAGS << std::vector<unsigned char>(pszP2SH, pszP2SH+strlen(pszP2SH));
+  const char* pszP2SH = "/P2SH/";
+  COINBASE_FLAGS << std::vector<unsigned char>(pszP2SH, pszP2SH+strlen(pszP2SH));
 
-    if (!bitdb.Open(GetDataDir()))
-    {
-fprintf(stderr, "error: unable to open data directory.\n");
-        return (-1);
-    }
+  if (!bitdb.Open(GetDataDir()))
+  {
+    fprintf(stderr, "error: unable to open data directory.\n");
+    return (-1);
+  }
 
-    if (!LoadBlockIndex()) {
-fprintf(stderr, "error: unable to open load block index.\n");
-      return (-1);
-    }
+  if (!LoadBlockIndex()) {
+    fprintf(stderr, "error: unable to open load block index.\n");
+    return (-1);
+  }
 
-    nStart = GetTimeMillis();
-    bool fFirstRun = true;
-    pwalletMain = new CWallet("wallet.dat");
-    pwalletMain->LoadWallet(fFirstRun);
+  bool fFirstRun = true;
+  pwalletMain = new CWallet("wallet.dat");
+  pwalletMain->LoadWallet(fFirstRun);
 
-    if (fFirstRun)
-    {
+  if (fFirstRun)
+  {
 
-        // Create new keyUser and set as default key
-        RandAddSeedPerfmon();
-
-        CPubKey newDefaultKey;
-        if (!pwalletMain->GetKeyFromPool(newDefaultKey, false))
-            strErrors << _("Cannot initialize keypool") << "\n";
-        pwalletMain->SetDefaultKey(newDefaultKey);
-        if (!pwalletMain->SetAddressBookName(pwalletMain->vchDefaultKey.GetID(), ""))
-            strErrors << _("Cannot write default address") << "\n";
-    }
-
-    printf("%s", strErrors.str().c_str());
-
-    RegisterWallet(pwalletMain);
-
-    CBlockIndex *pindexRescan = pindexBest;
-    if (GetBoolArg("-rescan"))
-        pindexRescan = pindexGenesisBlock;
-    else
-    {
-        CWalletDB walletdb("wallet.dat");
-        CBlockLocator locator;
-        if (walletdb.ReadBestBlock(locator))
-            pindexRescan = locator.GetBlockIndex();
-    }
-    if (pindexBest != pindexRescan && pindexBest && pindexRescan && pindexBest->nHeight > pindexRescan->nHeight)
-    {
-        printf("Rescanning last %i blocks (from block %i)...\n", pindexBest->nHeight - pindexRescan->nHeight, pindexRescan->nHeight);
-        nStart = GetTimeMillis();
-        pwalletMain->ScanForWalletTransactions(pindexRescan, true);
-        printf(" rescan      %15"PRI64d"ms\n", GetTimeMillis() - nStart);
-    }
-
-
-    /** load peers */
-    printf("Loading addresses...\n");
-    nStart = GetTimeMillis();
-
-    {
-        CAddrDB adb;
-        if (!adb.Read(addrman))
-            printf("Invalid or missing peers.dat; recreating\n");
-    }
-
-    printf("Loaded %i addresses from peers.dat  %"PRI64d"ms\n",
-           addrman.size(), GetTimeMillis() - nStart);
-
+    // Create new keyUser and set as default key
     RandAddSeedPerfmon();
-    pwalletMain->ReacceptWalletTransactions();
+
+    CPubKey newDefaultKey;
+    if (!pwalletMain->GetKeyFromPool(newDefaultKey, false))
+      strErrors << _("Cannot initialize keypool") << "\n";
+    pwalletMain->SetDefaultKey(newDefaultKey);
+    if (!pwalletMain->SetAddressBookName(pwalletMain->vchDefaultKey.GetID(), ""))
+      strErrors << _("Cannot write default address") << "\n";
+  }
+
+  printf("%s", strErrors.str().c_str());
+
+  RegisterWallet(pwalletMain);
+
+  CBlockIndex *pindexRescan = pindexBest;
+  if (GetBoolArg("-rescan"))
+    pindexRescan = pindexGenesisBlock;
+  else
+  {
+    CWalletDB walletdb("wallet.dat");
+    CBlockLocator locator;
+    if (walletdb.ReadBestBlock(locator))
+      pindexRescan = locator.GetBlockIndex();
+  }
+  if (pindexBest != pindexRescan && pindexBest && pindexRescan && pindexBest->nHeight > pindexRescan->nHeight)
+  {
+    int64 nStart;
+
+    printf("Rescanning last %i blocks (from block %i)...\n", pindexBest->nHeight - pindexRescan->nHeight, pindexRescan->nHeight);
+    nStart = GetTimeMillis();
+    pwalletMain->ScanForWalletTransactions(pindexRescan, true);
+    printf(" rescan      %15"PRI64d"ms\n", GetTimeMillis() - nStart);
+  }
+
+}
+
+/** load peers */
+int c_LoadPeers(void)
+{
+  int64 nStart;
+
+  nStart = GetTimeMillis();
+  {
+    CAddrDB adb;
+    if (!adb.Read(addrman))
+      printf("Invalid or missing peers.dat; recreating\n");
+  }
+  printf("Loaded %i addresses from peers.dat  %"PRI64d"ms\n",
+      addrman.size(), GetTimeMillis() - nStart);
+
+  RandAddSeedPerfmon();
+  pwalletMain->ReacceptWalletTransactions();
 }
 
 CBitcoinAddress GetNewAddress(string strAccount)
@@ -887,6 +889,11 @@ extern "C" {
 int load_wallet(void)
 {
   return (c_LoadWallet());
+}
+
+int load_peers(void)
+{
+  return (c_LoadPeers());
 }
 
 const char *getaddressbyaccount(const char *accountName)

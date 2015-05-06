@@ -334,6 +334,7 @@ Value signrawtransaction(const Array& params, bool fHelp)
             if (mapPrevTx.count(prevHash))
                 mapPrevOut[txin.prevout] = mapPrevTx[prevHash].second.vout[txin.prevout.n].scriptPubKey;
         }
+        txdb.Close();
     }
 
     // Add previous txouts given in the RPC call:
@@ -494,6 +495,7 @@ Value sendrawtransaction(const Array& params, bool fHelp)
         CTxDB txdb("r");
         if (!tx.AcceptToMemoryPool(txdb))
             throw JSONRPCError(-22, "TX rejected");
+        txdb.Close();
 
         SyncWithWallets(tx, NULL, true);
     }
