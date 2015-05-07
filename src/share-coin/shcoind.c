@@ -35,14 +35,21 @@ void daemon_signal(int sig_num)
 {
   signal(sig_num, SIG_DFL);
 
+fprintf(stderr, "DEBUG: daemon_signal sig_num(%d)\n", sig_num);
+
+
   block_close();
   daemon_close_clients();
   if (server_fd != -1) {
-    shnet_close(server_fd);
+    shclose(server_fd);
+fprintf(stderr, "DEBUG: closing server fd %d\n", server_fd);
     server_fd = -1;
   }
   shpeer_free(&server_peer);
 shbuf_free(&server_msg_buff);
+
+  /* terminate usde server */
+  server_shutdown();
 }
 
 void usage_help(void)

@@ -129,7 +129,7 @@ void stratum_user_block(user_t *user, task_t *task)
     user->block_tot += (uint64_t)task->work.pool_diff;
   user->block_cnt++;
 
-  cur_t = shtime();
+  cur_t = shtimef(shtime());
   if (user->block_tm) {
     span = cur_t - user->block_tm;
 

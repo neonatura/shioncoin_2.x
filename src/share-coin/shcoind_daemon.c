@@ -16,6 +16,7 @@ void daemon_close_clients(void)
     if (user->fd == -1)
       continue;
     close(user->fd);
+fprintf(stderr, "DEBUG: close'd stratum client fd %d\n", user->fd);
     user->fd = -1;
   }
 
@@ -181,19 +182,17 @@ shbuf_t *buff;
   char *data;
   size_t len;
   double work_t;
-  double cur_t;
   int fd_max;
   int cli_fd;
   int fd;
   int err;
 
-
-  work_t = shtime();
+  work_t = shtimef(shtime());
   while (server_fd != -1) {
     double start_t, diff_t;
     struct timeval to;
 
-    start_t = shtime();
+    start_t = shtimef(shtime());
 
     peer_last = NULL;
     for (peer = client_list; peer; peer = peer_next) {
@@ -258,13 +257,18 @@ shbuf_t *buff;
     }
 
     /* once per x1 seconds */
-    cur_t = shtime();
-    if (cur_t - 1.0 > work_t) {
+    if (start_t - 1.0 > work_t) {
       stratum_task_gen();
-      work_t = cur_t;
+      work_t = start_t;
     }
 
-    diff_t = (shtime() - start_t);
+    /* once per x5 minute */
+    if (start_t - 300.0 > work_t) {
+      flush_addrman_db();
+      work_t = start_t;
+    }
+
+    diff_t = (shtimef(shtime()) - start_t);
     diff_t = MAX(0, 20 - (diff_t * 1000));
     memset(&to, 0, sizeof(to));
     to.tv_usec = (1000 * diff_t);
@@ -283,7 +287,7 @@ shbuf_t *buff;
   }
 
 
-  /* terminate cgb server */
+  /* terminate usde server */
   server_shutdown();
 
   /* close block fs */

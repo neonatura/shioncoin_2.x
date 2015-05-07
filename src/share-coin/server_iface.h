@@ -64,8 +64,7 @@ void start_node_peer(const char *host, int port);
 /* init.cpp */
 int load_wallet(void);
 int load_peers(void);
-
-/* init.cpp */
+void flush_addrman_db(void);
 void server_shutdown(void);
 
 const char *getblocktemplate(void);

@@ -1025,7 +1025,7 @@ void ThreadSocketHandler2(void* parg)
 
 unsigned int pnSeed[] = {};
 
-void DumpAddresses()
+void DumpAddresses(void)
 {
     int64 nStart = GetTimeMillis();
 
@@ -1574,11 +1574,12 @@ printf ("Starting coin service.\n");
   if (!CreateThread(ThreadMessageHandler, NULL))
     fprintf(stderr, "Error: CreateThread(ThreadMessageHandler) failed\n");
 
-  // Dump network addresses
+#if 0
+  /* Flush the "address management" database (peer.dat). */
   if (!CreateThread(ThreadDumpAddress, NULL))
     fprintf(stderr, "Error; CreateThread(ThreadDumpAddress) failed\n");
+#endif
 
-printf ("shcoind daemon is now running.\n");
 }
 
 
@@ -1677,6 +1678,11 @@ void start_node_peer(const char *host, int port)
     OpenNetworkConnection(CAddress(vserv), &grant);
   }
 
+}
+
+void flush_addrman_db(void)
+{
+  DumpAddresses();
 }
 
 #ifdef __cplusplus

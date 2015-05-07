@@ -56,7 +56,7 @@ using namespace boost;
 using namespace boost::asio;
 using namespace json_spirit;
 
-std::map<uint256, CBlockIndex*> transactionMap;
+//std::map<uint256, CBlockIndex*> transactionMap;
 map<int, CBlock*>mapWork;
 string blocktemplate_json; 
 string mininginfo_json; 
@@ -651,7 +651,7 @@ CBlockIndex *findTransaction(uint256 hashTx, CTransaction& ret_tx)
     BOOST_FOREACH(CTransaction&tx, block.vtx) {
       if (hashTx == tx.GetHash()) {
         ret_tx = tx;
-        transactionMap[hashTx] = pblockindex;
+//        transactionMap[hashTx] = pblockindex;
         return (pblockindex);
       }
     }
@@ -717,7 +717,7 @@ const char *c_gettransactioninfo(const char *tx_id)
     return (NULL);
 
   hashTx.SetHex(tx_id);
-  pblockindex = transactionMap[hashTx]; /* check tx map */
+//  pblockindex = transactionMap[hashTx]; /* check tx map */
   if (!pblockindex) {
     pblockindex = findTransaction(hashTx, tx);
     if (!pblockindex)
