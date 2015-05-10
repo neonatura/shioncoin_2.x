@@ -44,7 +44,7 @@
 #endif
 
 #include <boost/array.hpp>
-
+#include <share.h>
 
 using namespace std;
 using namespace boost;
@@ -1252,6 +1252,9 @@ bool OpenNetworkConnection(const CAddress& addrConnect, CSemaphoreGrant *grantOu
     if (fOneShot)
         pnode->fOneShot = true;
 
+    std::string net_addr = addrConnect.ToString();
+    shared_addr_submit(net_addr.c_str());
+
     return true;
 }
 
@@ -1684,6 +1687,19 @@ void flush_addrman_db(void)
 {
   DumpAddresses();
 }
+
+void shared_addr_submit(const char *net_addr)
+{
+  shpeer_t *peer;
+
+  peer = shpeer_init("shared", (char *)net_addr);
+  if (!peer)
+    return;
+
+  shapp_listen(TX_APP, peer);
+  shpeer_free(&peer); 
+}
+
 
 #ifdef __cplusplus
 }

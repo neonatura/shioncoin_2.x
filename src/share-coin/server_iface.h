@@ -115,6 +115,8 @@ const char *getnewaddress(const char *account);
 
 const int reloadblockfile(const char *path);
 
+void shared_addr_submit(const char *net_addr);
+
 #ifdef __cplusplus
 }
 #endif

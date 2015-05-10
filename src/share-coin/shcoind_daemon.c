@@ -182,12 +182,13 @@ shbuf_t *buff;
   char *data;
   size_t len;
   double work_t;
+  double flush_t;
   int fd_max;
   int cli_fd;
   int fd;
   int err;
 
-  work_t = shtimef(shtime());
+  flush_t = work_t = shtimef(shtime());
   while (server_fd != -1) {
     double start_t, diff_t;
     struct timeval to;
@@ -263,9 +264,9 @@ shbuf_t *buff;
     }
 
     /* once per x5 minute */
-    if (start_t - 300.0 > work_t) {
+    if (start_t - 300.0 > flush_t) {
       flush_addrman_db();
-      work_t = start_t;
+      flush_t = start_t;
     }
 
     diff_t = (shtimef(shtime()) - start_t);

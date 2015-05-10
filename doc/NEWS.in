@@ -1,7 +1,3 @@
-v2.25 Share Coin
+v2.26 Share Coin
 --
-The share coin daemon's stratum protocol has been enhanced to support the following operations:
-* Create of user accounts.
-* Import of private keys into account.
-* Transaction information on an account or address.
-* Block chain listings from block, transaction, or address.
+Additional support for synchronization of remote peers with the share daemon.

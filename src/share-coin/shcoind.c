@@ -72,7 +72,8 @@ void usage_version(void)
       "shcoind version %s\n"
       "\n"
       "Copyright 2013 Neo Natura\n" 
-      "Licensed under the GNU GENERAL PUBLIC LICENSE Version 3\n",
+      "Licensed under the GNU GENERAL PUBLIC LICENSE Version 3\n"
+      "This product includes software developed by the OpenSSL Project for use in the OpenSSL Toolkit. (http://www.openssl.org/)\n",
       get_libshare_version());
 }
 

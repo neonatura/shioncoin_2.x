@@ -35,6 +35,7 @@ build_triplet = @build@
 host_triplet = @host@
 @LINUX_TRUE@am__append_1 = -Dlinux
 @I386_TRUE@am__append_2 = -DI386
+#	$(SSL_DIR)/crypto/cryptlib.c $(SSL_DIR)/crypto/bio/bss_mem.c $(SSL_DIR)/crypto/mem.c $(SSL_DIR)/crypto/mem_dbg.c $(SSL_DIR)/crypto/cversion.c $(SSL_DIR)/crypto/ex_data.c $(SSL_DIR)/crypto/cpt_err.c $(SSL_DIR)/crypto/ebcdic.c $(SSL_DIR)/crypto/uid.c $(SSL_DIR)/crypto/o_time.c $(SSL_DIR)/crypto/o_str.c $(SSL_DIR)/crypto/o_dir.c $(SSL_DIR)/crypto/o_fips.c $(SSL_DIR)/crypto/o_init.c $(SSL_DIR)/crypto/fips_ers.c $(SSL_DIR)/crypto/objects/o_names.c $(SSL_DIR)/crypto/objects/obj_dat.c $(SSL_DIR)/crypto/objects/obj_lib.c $(SSL_DIR)/crypto/objects/obj_err.c $(SSL_DIR)/crypto/objects/obj_xref.c $(SSL_DIR)/crypto/md4/md4_dgst.c $(SSL_DIR)/crypto/md4/md4_one.c $(SSL_DIR)/crypto/md5/md5_dgst.c $(SSL_DIR)/crypto/md5/md5_one.c $(SSL_DIR)/crypto/sha/sha_dgst.c $(SSL_DIR)/crypto/sha/sha1dgst.c $(SSL_DIR)/crypto/sha/sha_one.c $(SSL_DIR)/crypto/sha/sha1_one.c $(SSL_DIR)/crypto/sha/sha256.c $(SSL_DIR)/crypto/sha/sha512.c $(SSL_DIR)/crypto/mdc2/mdc2dgst.c $(SSL_DIR)/crypto/mdc2/mdc2_one.c $(SSL_DIR)/crypto/hmac/hmac.c $(SSL_DIR)/crypto/hmac/hm_ameth.c $(SSL_DIR)/crypto/hmac/hm_pmeth.c $(SSL_DIR)/crypto/ripemd/rmd_dgst.c $(SSL_DIR)/crypto/ripemd/rmd_one.c $(SSL_DIR)/crypto/whrlpool/wp_dgst.c $(SSL_DIR)/crypto/des/set_key.c $(SSL_DIR)/crypto/des/ecb_enc.c $(SSL_DIR)/crypto/des/cbc_enc.c $(SSL_DIR)/crypto/des/pcbc_enc.c $(SSL_DIR)/crypto/des/xcbc_enc.c $(SSL_DIR)/crypto/des/ecb3_enc.c $(SSL_DIR)/crypto/des/cfb64enc.c $(SSL_DIR)/crypto/des/cfb64ede.c $(SSL_DIR)/crypto/des/cfb_enc.c $(SSL_DIR)/crypto/des/ofb64ede.c $(SSL_DIR)/crypto/des/enc_read.c $(SSL_DIR)/crypto/des/enc_writ.c $(SSL_DIR)/crypto/des/ofb64enc.c $(SSL_DIR)/crypto/des/ofb_enc.c $(SSL_DIR)/crypto/des/str2key.c $(SSL_DIR)/crypto/des/pcbc_enc.c $(SSL_DIR)/crypto/des/qud_cksm.c $(SSL_DIR)/crypto/des/rand_key.c $(SSL_DIR)/crypto/des/des_enc.c $(SSL_DIR)/crypto/des/fcrypt_b.c $(SSL_DIR)/crypto/des/fcrypt.c $(SSL_DIR)/crypto/des/xcbc_enc.c $(SSL_DIR)/crypto/des/rpc_enc.c $(SSL_DIR)/crypto/des/cbc_cksm.c $(SSL_DIR)/crypto/des/ede_cbcm_enc.c $(SSL_DIR)/crypto/des/des_old.c $(SSL_DIR)/crypto/des/des_old2.c $(SSL_DIR)/crypto/des/read2pwd.c $(SSL_DIR)/crypto/aes/aes_misc.c $(SSL_DIR)/crypto/aes/aes_ecb.c $(SSL_DIR)/crypto/aes/aes_cfb.c $(SSL_DIR)/crypto/aes/aes_ofb.c $(SSL_DIR)/crypto/aes/aes_ctr.c $(SSL_DIR)/crypto/aes/aes_ige.c $(SSL_DIR)/crypto/aes/aes_wrap.c $(SSL_DIR)/crypto/rc2/rc2_ecb.c $(SSL_DIR)/crypto/rc2/rc2_skey.c $(SSL_DIR)/crypto/rc2/rc2_cbc.c $(SSL_DIR)/crypto/rc2/rc2cfb64.c $(SSL_DIR)/crypto/rc2/rc2ofb64.c $(SSL_DIR)/crypto/rc4/rc4_utl.c $(SSL_DIR)/crypto/idea/i_cbc.c $(SSL_DIR)/crypto/idea/i_cfb64.c $(SSL_DIR)/crypto/idea/i_ofb64.c $(SSL_DIR)/crypto/idea/i_ecb.c $(SSL_DIR)/crypto/idea/i_skey.c $(SSL_DIR)/crypto/bf/bf_skey.c $(SSL_DIR)/crypto/bf/bf_ecb.c $(SSL_DIR)/crypto/bf/bf_enc.c $(SSL_DIR)/crypto/bf/bf_cfb64.c $(SSL_DIR)/crypto/bf/bf_ofb64.c $(SSL_DIR)/crypto/cast/c_skey.c $(SSL_DIR)/crypto/cast/c_ecb.c $(SSL_DIR)/crypto/cast/c_enc.c $(SSL_DIR)/crypto/des/cbc_enc.c $(SSL_DIR)/crypto/des/pcbc_enc.c $(SSL_DIR)/crypto/des/rpc_enc.c $(SSL_DIR)/crypto/des/xcbc_enc.c $(SSL_DIR)/crypto/cast/c_cfb64.c $(SSL_DIR)/crypto/cast/c_ofb64.c $(SSL_DIR)/crypto/camellia/cmll_ecb.c $(SSL_DIR)/crypto/camellia/cmll_ofb.c $(SSL_DIR)/crypto/camellia/cmll_cfb.c $(SSL_DIR)/crypto/camellia/cmll_ctr.c $(SSL_DIR)/crypto/camellia/cmll_utl.c $(SSL_DIR)/crypto/camellia/cmll_misc.c $(SSL_DIR)/crypto/evp/e_seed.c $(SSL_DIR)/crypto/seed/seed.c $(SSL_DIR)/crypto/seed/seed_ofb.c $(SSL_DIR)/crypto/seed/seed_ecb.c $(SSL_DIR)/crypto/seed/seed_cbc.c $(SSL_DIR)/crypto/seed/seed_cfb.c $(SSL_DIR)/crypto/seed/seed_ofb.c $(SSL_DIR)/crypto/modes/cbc128.c $(SSL_DIR)/crypto/modes/ctr128.c $(SSL_DIR)/crypto/modes/cts128.c $(SSL_DIR)/crypto/modes/cfb128.c $(SSL_DIR)/crypto/modes/ofb128.c $(SSL_DIR)/crypto/modes/gcm128.c $(SSL_DIR)/crypto/modes/ccm128.c $(SSL_DIR)/crypto/modes/xts128.c $(SSL_DIR)/crypto/bn/bn_asm.c $(SSL_DIR)/crypto/bn/bn_add.c $(SSL_DIR)/crypto/bn/bn_div.c $(SSL_DIR)/crypto/bn/bn_exp.c $(SSL_DIR)/crypto/bn/bn_lib.c $(SSL_DIR)/crypto/bn/bn_ctx.c $(SSL_DIR)/crypto/bn/bn_mul.c $(SSL_DIR)/crypto/bn/bn_mod.c $(SSL_DIR)/crypto/bn/bn_print.c $(SSL_DIR)/crypto/bn/bn_rand.c $(SSL_DIR)/crypto/bn/bn_shift.c $(SSL_DIR)/crypto/bn/bn_word.c $(SSL_DIR)/crypto/bn/bn_blind.c $(SSL_DIR)/crypto/bn/bn_kron.c $(SSL_DIR)/crypto/bn/bn_sqrt.c $(SSL_DIR)/crypto/bn/bn_gcd.c $(SSL_DIR)/crypto/bn/bn_prime.c $(SSL_DIR)/crypto/bn/bn_err.c $(SSL_DIR)/crypto/bn/bn_sqr.c $(SSL_DIR)/crypto/bn/bn_recp.c $(SSL_DIR)/crypto/bn/bn_mont.c $(SSL_DIR)/crypto/bn/bn_mpi.c $(SSL_DIR)/crypto/bn/bn_exp2.c $(SSL_DIR)/crypto/bn/bn_gf2m.c $(SSL_DIR)/crypto/bn/bn_nist.c $(SSL_DIR)/crypto/bn/bn_depr.c $(SSL_DIR)/crypto/bn/bn_const.c $(SSL_DIR)/crypto/bn/bn_x931p.c $(SSL_DIR)/crypto/ec/ec_lib.c $(SSL_DIR)/crypto/ec/ecp_smpl.c $(SSL_DIR)/crypto/ec/ecp_mont.c $(SSL_DIR)/crypto/ec/ecp_nist.c $(SSL_DIR)/crypto/ec/ec_cvt.c $(SSL_DIR)/crypto/ec/ec_mult.c $(SSL_DIR)/crypto/ec/ec_err.c $(SSL_DIR)/crypto/ec/ec_curve.c $(SSL_DIR)/crypto/ec/ec_check.c $(SSL_DIR)/crypto/ec/ec_print.c $(SSL_DIR)/crypto/ec/ec_asn1.c $(SSL_DIR)/crypto/ec/ec_key.c $(SSL_DIR)/crypto/ec/ec2_smpl.c $(SSL_DIR)/crypto/ec/ec2_mult.c $(SSL_DIR)/crypto/ec/ec_ameth.c $(SSL_DIR)/crypto/ec/ec_pmeth.c $(SSL_DIR)/crypto/ec/eck_prn.c $(SSL_DIR)/crypto/ec/ecp_nistp224.c $(SSL_DIR)/crypto/ec/ecp_nistp256.c $(SSL_DIR)/crypto/ec/ecp_nistp521.c $(SSL_DIR)/crypto/ec/ecp_nistputil.c $(SSL_DIR)/crypto/ec/ecp_oct.c $(SSL_DIR)/crypto/ec/ec2_oct.c $(SSL_DIR)/crypto/ec/ec_oct.c $(SSL_DIR)/crypto/rsa/rsa_eay.c $(SSL_DIR)/crypto/rsa/rsa_gen.c $(SSL_DIR)/crypto/rsa/rsa_lib.c $(SSL_DIR)/crypto/rsa/rsa_sign.c $(SSL_DIR)/crypto/rsa/rsa_saos.c $(SSL_DIR)/crypto/rsa/rsa_err.c $(SSL_DIR)/crypto/rsa/rsa_pk1.c $(SSL_DIR)/crypto/rsa/rsa_ssl.c $(SSL_DIR)/crypto/rsa/rsa_none.c $(SSL_DIR)/crypto/rsa/rsa_oaep.c $(SSL_DIR)/crypto/rsa/rsa_chk.c $(SSL_DIR)/crypto/rsa/rsa_null.c $(SSL_DIR)/crypto/rsa/rsa_pss.c $(SSL_DIR)/crypto/rsa/rsa_x931.c $(SSL_DIR)/crypto/rsa/rsa_asn1.c $(SSL_DIR)/crypto/rsa/rsa_depr.c $(SSL_DIR)/crypto/rsa/rsa_ameth.c $(SSL_DIR)/crypto/rsa/rsa_prn.c $(SSL_DIR)/crypto/rsa/rsa_pmeth.c $(SSL_DIR)/crypto/rsa/rsa_crpt.c $(SSL_DIR)/crypto/dsa/dsa_gen.c $(SSL_DIR)/crypto/dsa/dsa_key.c $(SSL_DIR)/crypto/dsa/dsa_lib.c $(SSL_DIR)/crypto/dsa/dsa_asn1.c $(SSL_DIR)/crypto/dsa/dsa_vrf.c $(SSL_DIR)/crypto/dsa/dsa_sign.c $(SSL_DIR)/crypto/dsa/dsa_err.c $(SSL_DIR)/crypto/dsa/dsa_ossl.c $(SSL_DIR)/crypto/dsa/dsa_depr.c $(SSL_DIR)/crypto/dsa/dsa_ameth.c $(SSL_DIR)/crypto/dsa/dsa_pmeth.c $(SSL_DIR)/crypto/dsa/dsa_prn.c $(SSL_DIR)/crypto/ecdsa/ecs_lib.c $(SSL_DIR)/crypto/ecdsa/ecs_asn1.c $(SSL_DIR)/crypto/ecdsa/ecs_ossl.c $(SSL_DIR)/crypto/ecdsa/ecs_sign.c $(SSL_DIR)/crypto/ecdsa/ecs_vrf.c $(SSL_DIR)/crypto/ecdsa/ecs_err.c $(SSL_DIR)/crypto/dh/dh_asn1.c $(SSL_DIR)/crypto/dh/dh_gen.c $(SSL_DIR)/crypto/dh/dh_key.c $(SSL_DIR)/crypto/dh/dh_lib.c $(SSL_DIR)/crypto/dh/dh_check.c $(SSL_DIR)/crypto/dh/dh_err.c $(SSL_DIR)/crypto/dh/dh_depr.c $(SSL_DIR)/crypto/dh/dh_ameth.c $(SSL_DIR)/crypto/dh/dh_pmeth.c $(SSL_DIR)/crypto/dh/dh_prn.c $(SSL_DIR)/crypto/ecdh/ech_lib.c $(SSL_DIR)/crypto/ecdh/ech_ossl.c $(SSL_DIR)/crypto/ecdh/ech_key.c $(SSL_DIR)/crypto/ecdh/ech_err.c $(SSL_DIR)/crypto/dso/dso_dl.c $(SSL_DIR)/crypto/dso/dso_dlfcn.c $(SSL_DIR)/crypto/dso/dso_err.c $(SSL_DIR)/crypto/dso/dso_lib.c $(SSL_DIR)/crypto/dso/dso_null.c $(SSL_DIR)/crypto/dso/dso_openssl.c $(SSL_DIR)/crypto/dso/dso_win32.c $(SSL_DIR)/crypto/dso/dso_vms.c $(SSL_DIR)/crypto/dso/dso_beos.c $(SSL_DIR)/crypto/engine/eng_err.c $(SSL_DIR)/crypto/engine/eng_lib.c $(SSL_DIR)/crypto/engine/eng_list.c $(SSL_DIR)/crypto/engine/eng_init.c $(SSL_DIR)/crypto/engine/eng_ctrl.c $(SSL_DIR)/crypto/engine/eng_table.c $(SSL_DIR)/crypto/engine/eng_pkey.c $(SSL_DIR)/crypto/engine/eng_fat.c $(SSL_DIR)/crypto/engine/eng_all.c $(SSL_DIR)/crypto/engine/tb_rsa.c $(SSL_DIR)/crypto/engine/tb_dsa.c $(SSL_DIR)/crypto/engine/tb_ecdsa.c $(SSL_DIR)/crypto/engine/tb_dh.c $(SSL_DIR)/crypto/engine/tb_ecdh.c $(SSL_DIR)/crypto/engine/tb_rand.c $(SSL_DIR)/crypto/engine/tb_store.c $(SSL_DIR)/crypto/engine/tb_cipher.c $(SSL_DIR)/crypto/engine/tb_digest.c $(SSL_DIR)/crypto/engine/tb_pkmeth.c $(SSL_DIR)/crypto/engine/tb_asnmth.c $(SSL_DIR)/crypto/engine/eng_openssl.c $(SSL_DIR)/crypto/engine/eng_cnf.c $(SSL_DIR)/crypto/engine/eng_dyn.c $(SSL_DIR)/crypto/engine/eng_cryptodev.c $(SSL_DIR)/crypto/engine/eng_rsax.c $(SSL_DIR)/crypto/engine/eng_rdrand.c $(SSL_DIR)/crypto/buffer/buffer.c $(SSL_DIR)/crypto/buffer/buf_str.c $(SSL_DIR)/crypto/buffer/buf_err.c $(SSL_DIR)/crypto/bio/bio_lib.c $(SSL_DIR)/crypto/bio/bio_cb.c $(SSL_DIR)/crypto/bio/bio_err.c $(SSL_DIR)/crypto/bio/bss_mem.c $(SSL_DIR)/crypto/bio/bss_null.c $(SSL_DIR)/crypto/bio/bss_fd.c $(SSL_DIR)/crypto/bio/bss_file.c $(SSL_DIR)/crypto/bio/bss_sock.c $(SSL_DIR)/crypto/bio/bss_conn.c $(SSL_DIR)/crypto/bio/bf_null.c $(SSL_DIR)/crypto/bio/bf_buff.c $(SSL_DIR)/crypto/bio/b_print.c $(SSL_DIR)/crypto/bio/b_dump.c $(SSL_DIR)/crypto/bio/b_sock.c $(SSL_DIR)/crypto/bio/bss_acpt.c $(SSL_DIR)/crypto/bio/bf_nbio.c $(SSL_DIR)/crypto/bio/bss_log.c $(SSL_DIR)/crypto/bio/bss_bio.c $(SSL_DIR)/crypto/bio/bss_dgram.c $(SSL_DIR)/crypto/stack/stack.c $(SSL_DIR)/crypto/lhash/lhash.c $(SSL_DIR)/crypto/lhash/lh_stats.c $(SSL_DIR)/crypto/rand/md_rand.c $(SSL_DIR)/crypto/rand/randfile.c $(SSL_DIR)/crypto/rand/rand_lib.c $(SSL_DIR)/crypto/rand/rand_err.c $(SSL_DIR)/crypto/rand/rand_egd.c $(SSL_DIR)/crypto/rand/rand_win.c $(SSL_DIR)/crypto/rand/rand_unix.c $(SSL_DIR)/crypto/rand/rand_os2.c $(SSL_DIR)/crypto/rand/rand_nw.c $(SSL_DIR)/crypto/asn1/asn1_err.c $(SSL_DIR)/crypto/bio/bio_err.c $(SSL_DIR)/crypto/bn/bn_err.c $(SSL_DIR)/crypto/buffer/buf_err.c $(SSL_DIR)/crypto/cms/cms_err.c $(SSL_DIR)/crypto/comp/comp_err.c $(SSL_DIR)/crypto/conf/conf_err.c $(SSL_DIR)/crypto/cpt_err.c $(SSL_DIR)/crypto/dh/dh_err.c $(SSL_DIR)/crypto/dsa/dsa_err.c $(SSL_DIR)/crypto/dso/dso_err.c $(SSL_DIR)/crypto/ec/ec_err.c $(SSL_DIR)/crypto/ecdh/ech_err.c $(SSL_DIR)/crypto/ecdsa/ecs_err.c $(SSL_DIR)/crypto/engine/eng_err.c $(SSL_DIR)/crypto/err/err.c $(SSL_DIR)/crypto/err/openssl.ec $(SSL_DIR)/crypto/evp/evp_err.c $(SSL_DIR)/crypto/objects/obj_err.c $(SSL_DIR)/crypto/ocsp/ocsp_err.c $(SSL_DIR)/crypto/pem/pem_err.c $(SSL_DIR)/crypto/pkcs12/pk12err.c $(SSL_DIR)/crypto/pkcs7/pkcs7err.c $(SSL_DIR)/crypto/rand/rand_err.c $(SSL_DIR)/crypto/rsa/rsa_err.c $(SSL_DIR)/crypto/ts/ts_err.c $(SSL_DIR)/crypto/ui/ui_err.c $(SSL_DIR)/crypto/x509/x509_err.c $(SSL_DIR)/crypto/x509v3/v3err.c $(SSL_DIR)/engines/ccgost/e_gost_err.c $(SSL_DIR)/ssl/ssl_err.c $(SSL_DIR)/crypto/err/err_all.c $(SSL_DIR)/crypto/err/err_prn.c $(SSL_DIR)/crypto/evp/encode.c $(SSL_DIR)/crypto/asn1/a_digest.c $(SSL_DIR)/crypto/engine/tb_digest.c $(SSL_DIR)/crypto/evp/digest.c $(SSL_DIR)/crypto/evp/evp_enc.c $(SSL_DIR)/crypto/evp/evp_key.c $(SSL_DIR)/crypto/evp/evp_acnf.c $(SSL_DIR)/crypto/evp/evp_cnf.c $(SSL_DIR)/crypto/evp/e_des.c $(SSL_DIR)/crypto/evp/e_bf.c $(SSL_DIR)/crypto/evp/e_idea.c $(SSL_DIR)/crypto/evp/e_des3.c $(SSL_DIR)/crypto/evp/e_camellia.c $(SSL_DIR)/crypto/evp/e_rc4.c $(SSL_DIR)/crypto/evp/e_aes.c $(SSL_DIR)/crypto/evp/names.c $(SSL_DIR)/crypto/objects/o_names.c $(SSL_DIR)/crypto/evp/e_seed.c $(SSL_DIR)/crypto/evp/e_xcbc_d.c $(SSL_DIR)/crypto/evp/e_rc2.c $(SSL_DIR)/crypto/evp/e_cast.c $(SSL_DIR)/crypto/evp/e_rc5.c $(SSL_DIR)/crypto/evp/m_null.c $(SSL_DIR)/crypto/evp/m_md2.c $(SSL_DIR)/crypto/evp/m_md4.c $(SSL_DIR)/crypto/evp/m_md5.c $(SSL_DIR)/crypto/evp/m_sha.c $(SSL_DIR)/crypto/evp/m_sha1.c $(SSL_DIR)/crypto/evp/m_wp.c $(SSL_DIR)/crypto/evp/m_dss.c $(SSL_DIR)/crypto/evp/m_dss1.c $(SSL_DIR)/crypto/evp/m_mdc2.c $(SSL_DIR)/crypto/evp/m_ripemd.c $(SSL_DIR)/crypto/evp/m_ecdsa.c $(SSL_DIR)/crypto/evp/p_open.c $(SSL_DIR)/crypto/evp/p_seal.c $(SSL_DIR)/crypto/evp/p_sign.c $(SSL_DIR)/crypto/ts/ts_rsp_sign.c $(SSL_DIR)/crypto/evp/p_verify.c $(SSL_DIR)/crypto/ts/ts_rsp_verify.c $(SSL_DIR)/crypto/comp/comp_lib.c $(SSL_DIR)/crypto/evp/evp_lib.c $(SSL_DIR)/crypto/evp/p_lib.c $(SSL_DIR)/crypto/ocsp/ocsp_lib.c $(SSL_DIR)/crypto/srp/srp_lib.c $(SSL_DIR)/crypto/evp/evp_enc.c $(SSL_DIR)/crypto/evp/p_enc.c $(SSL_DIR)/crypto/evp/p_dec.c $(SSL_DIR)/crypto/evp/bio_md.c $(SSL_DIR)/crypto/evp/bio_b64.c $(SSL_DIR)/crypto/evp/bio_enc.c $(SSL_DIR)/crypto/evp/evp_err.c $(SSL_DIR)/crypto/evp/e_null.c $(SSL_DIR)/crypto/evp/c_all.c $(SSL_DIR)/crypto/evp/c_allc.c $(SSL_DIR)/crypto/evp/c_alld.c $(SSL_DIR)/crypto/evp/evp_lib.c $(SSL_DIR)/crypto/evp/bio_ok.c $(SSL_DIR)/crypto/evp/evp_pkey.c $(SSL_DIR)/crypto/evp/evp_pbe.c $(SSL_DIR)/crypto/evp/p5_crpt.c $(SSL_DIR)/crypto/evp/p5_crpt2.c $(SSL_DIR)/crypto/evp/e_old.c $(SSL_DIR)/crypto/evp/pmeth_lib.c $(SSL_DIR)/crypto/evp/pmeth_fn.c $(SSL_DIR)/crypto/evp/pmeth_gn.c $(SSL_DIR)/crypto/evp/m_sigver.c $(SSL_DIR)/crypto/evp/evp_fips.c $(SSL_DIR)/crypto/evp/e_aes_cbc_hmac_sha1.c $(SSL_DIR)/crypto/evp/e_rc4_hmac_md5.c $(SSL_DIR)/crypto/asn1/a_object.c $(SSL_DIR)/crypto/asn1/a_bitstr.c $(SSL_DIR)/crypto/asn1/a_utctm.c $(SSL_DIR)/crypto/asn1/a_gentm.c $(SSL_DIR)/crypto/asn1/a_time.c $(SSL_DIR)/crypto/asn1/a_int.c $(SSL_DIR)/crypto/asn1/a_octet.c $(SSL_DIR)/crypto/asn1/a_print.c $(SSL_DIR)/crypto/asn1/a_type.c $(SSL_DIR)/crypto/asn1/a_set.c $(SSL_DIR)/crypto/asn1/a_dup.c $(SSL_DIR)/crypto/asn1/a_d2i_fp.c $(SSL_DIR)/crypto/asn1/a_i2d_fp.c $(SSL_DIR)/crypto/asn1/a_enum.c $(SSL_DIR)/crypto/asn1/a_utf8.c $(SSL_DIR)/crypto/asn1/a_sign.c $(SSL_DIR)/crypto/dsa/dsa_sign.c $(SSL_DIR)/crypto/rsa/rsa_sign.c $(SSL_DIR)/crypto/asn1/a_digest.c $(SSL_DIR)/crypto/asn1/a_verify.c $(SSL_DIR)/crypto/asn1/a_mbstr.c $(SSL_DIR)/crypto/asn1/a_strex.c $(SSL_DIR)/crypto/asn1/x_algor.c $(SSL_DIR)/crypto/asn1/x_val.c $(SSL_DIR)/crypto/asn1/x_pubkey.c $(SSL_DIR)/crypto/asn1/x_sig.c $(SSL_DIR)/crypto/asn1/x_req.c $(SSL_DIR)/crypto/asn1/x_attrib.c $(SSL_DIR)/crypto/asn1/x_bignum.c $(SSL_DIR)/crypto/asn1/x_long.c $(SSL_DIR)/crypto/asn1/x_name.c $(SSL_DIR)/crypto/asn1/x_x509.c $(SSL_DIR)/crypto/asn1/x_x509a.c $(SSL_DIR)/crypto/asn1/x_crl.c $(SSL_DIR)/crypto/asn1/x_info.c $(SSL_DIR)/crypto/asn1/x_spki.c $(SSL_DIR)/crypto/asn1/nsseq.c $(SSL_DIR)/crypto/asn1/x_nx509.c $(SSL_DIR)/crypto/asn1/d2i_pu.c $(SSL_DIR)/crypto/asn1/d2i_pr.c $(SSL_DIR)/crypto/asn1/i2d_pu.c $(SSL_DIR)/crypto/asn1/i2d_pr.c $(SSL_DIR)/crypto/asn1/t_req.c $(SSL_DIR)/crypto/asn1/t_x509.c $(SSL_DIR)/crypto/asn1/t_x509a.c $(SSL_DIR)/crypto/asn1/t_crl.c $(SSL_DIR)/crypto/asn1/t_pkey.c $(SSL_DIR)/crypto/asn1/t_spki.c $(SSL_DIR)/crypto/asn1/t_bitst.c $(SSL_DIR)/crypto/asn1/tasn_new.c $(SSL_DIR)/crypto/asn1/tasn_fre.c $(SSL_DIR)/crypto/asn1/tasn_enc.c $(SSL_DIR)/crypto/asn1/tasn_dec.c $(SSL_DIR)/crypto/asn1/tasn_utl.c $(SSL_DIR)/crypto/asn1/tasn_typ.c $(SSL_DIR)/crypto/asn1/tasn_prn.c $(SSL_DIR)/crypto/asn1/ameth_lib.c $(SSL_DIR)/crypto/asn1/f_int.c $(SSL_DIR)/crypto/asn1/f_string.c $(SSL_DIR)/crypto/asn1/n_pkey.c $(SSL_DIR)/crypto/asn1/f_enum.c $(SSL_DIR)/crypto/asn1/x_pkey.c $(SSL_DIR)/crypto/asn1/a_bool.c $(SSL_DIR)/crypto/asn1/x_exten.c $(SSL_DIR)/crypto/asn1/bio_asn1.c $(SSL_DIR)/crypto/asn1/bio_ndef.c $(SSL_DIR)/crypto/asn1/asn_mime.c $(SSL_DIR)/crypto/asn1/asn1_gen.c $(SSL_DIR)/crypto/asn1/asn1_par.c $(SSL_DIR)/crypto/asn1/asn1_lib.c $(SSL_DIR)/crypto/asn1/asn1_err.c $(SSL_DIR)/crypto/asn1/a_bytes.c $(SSL_DIR)/crypto/asn1/a_strnid.c $(SSL_DIR)/crypto/asn1/evp_asn1.c $(SSL_DIR)/crypto/asn1/asn_pack.c $(SSL_DIR)/crypto/asn1/p5_pbe.c $(SSL_DIR)/crypto/asn1/p5_pbev2.c $(SSL_DIR)/crypto/asn1/p8_pkey.c $(SSL_DIR)/crypto/asn1/asn_moid.c $(SSL_DIR)/crypto/pem/pem_sign.c $(SSL_DIR)/crypto/pem/pem_seal.c $(SSL_DIR)/crypto/pem/pem_info.c $(SSL_DIR)/crypto/pem/pem_lib.c $(SSL_DIR)/crypto/pem/pem_all.c $(SSL_DIR)/crypto/pem/pem_err.c $(SSL_DIR)/crypto/pem/pem_x509.c $(SSL_DIR)/crypto/pem/pem_xaux.c $(SSL_DIR)/crypto/pem/pem_oth.c $(SSL_DIR)/crypto/pem/pem_pk8.c $(SSL_DIR)/crypto/pem/pem_pkey.c $(SSL_DIR)/crypto/pem/pvkfmt.c $(SSL_DIR)/crypto/x509/x509_def.c $(SSL_DIR)/crypto/x509/x509_d2.c $(SSL_DIR)/crypto/x509/x509_r2x.c $(SSL_DIR)/crypto/x509/x509_cmp.c $(SSL_DIR)/crypto/x509/x509_obj.c $(SSL_DIR)/crypto/x509/x509_req.c $(SSL_DIR)/crypto/x509/x509spki.c $(SSL_DIR)/crypto/x509/x509_vfy.c $(SSL_DIR)/crypto/x509/x509_set.c $(SSL_DIR)/crypto/x509/x509cset.c $(SSL_DIR)/crypto/x509/x509rset.c $(SSL_DIR)/crypto/x509/x509_err.c $(SSL_DIR)/crypto/x509/x509name.c $(SSL_DIR)/crypto/x509/x509_v3.c $(SSL_DIR)/crypto/x509/x509_ext.c $(SSL_DIR)/crypto/x509/x509_att.c $(SSL_DIR)/crypto/x509/x509type.c $(SSL_DIR)/crypto/x509/x509_lu.c $(SSL_DIR)/crypto/x509/x_all.c $(SSL_DIR)/crypto/x509/x509_txt.c $(SSL_DIR)/crypto/x509/x509_trs.c $(SSL_DIR)/crypto/x509/by_file.c $(SSL_DIR)/crypto/x509/by_dir.c $(SSL_DIR)/crypto/x509/x509_vpm.c $(SSL_DIR)/crypto/x509v3/v3_bcons.c $(SSL_DIR)/crypto/x509v3/v3_bitst.c $(SSL_DIR)/crypto/x509v3/v3_conf.c $(SSL_DIR)/crypto/x509v3/v3_extku.c $(SSL_DIR)/crypto/x509v3/v3_ia5.c $(SSL_DIR)/crypto/x509v3/v3_lib.c $(SSL_DIR)/crypto/x509v3/v3_prn.c $(SSL_DIR)/crypto/x509v3/v3_utl.c $(SSL_DIR)/crypto/x509v3/v3err.c $(SSL_DIR)/crypto/x509v3/v3_genn.c $(SSL_DIR)/crypto/x509v3/v3_alt.c $(SSL_DIR)/crypto/x509v3/v3_skey.c $(SSL_DIR)/crypto/x509v3/v3_akey.c $(SSL_DIR)/crypto/x509v3/v3_pku.c $(SSL_DIR)/crypto/x509v3/v3_int.c $(SSL_DIR)/crypto/x509v3/v3_enum.c $(SSL_DIR)/crypto/x509v3/v3_sxnet.c $(SSL_DIR)/crypto/x509v3/v3_cpols.c $(SSL_DIR)/crypto/x509v3/v3_crld.c $(SSL_DIR)/crypto/x509v3/v3_purp.c $(SSL_DIR)/crypto/x509v3/v3_info.c $(SSL_DIR)/crypto/x509v3/v3_ocsp.c $(SSL_DIR)/crypto/x509v3/v3_akeya.c $(SSL_DIR)/crypto/x509v3/v3_pmaps.c $(SSL_DIR)/crypto/x509v3/v3_pcons.c $(SSL_DIR)/crypto/x509v3/v3_ncons.c $(SSL_DIR)/crypto/x509v3/v3_pcia.c $(SSL_DIR)/crypto/x509v3/v3_pci.c $(SSL_DIR)/crypto/x509v3/pcy_cache.c $(SSL_DIR)/crypto/x509v3/pcy_node.c $(SSL_DIR)/crypto/x509v3/pcy_data.c $(SSL_DIR)/crypto/x509v3/pcy_map.c $(SSL_DIR)/crypto/x509v3/pcy_tree.c $(SSL_DIR)/crypto/x509v3/pcy_lib.c $(SSL_DIR)/crypto/x509v3/v3_asid.c $(SSL_DIR)/crypto/x509v3/v3_addr.c $(SSL_DIR)/crypto/conf/conf_err.c $(SSL_DIR)/crypto/conf/conf_lib.c $(SSL_DIR)/crypto/conf/conf_api.c $(SSL_DIR)/crypto/conf/conf_def.c $(SSL_DIR)/crypto/conf/conf_mod.c $(SSL_DIR)/crypto/conf/conf_mall.c $(SSL_DIR)/crypto/conf/conf_sap.c $(SSL_DIR)/crypto/txt_db/txt_db.c $(SSL_DIR)/crypto/pkcs7/pk7_asn1.c $(SSL_DIR)/crypto/pkcs7/pk7_lib.c $(SSL_DIR)/crypto/pkcs7/pkcs7err.c $(SSL_DIR)/crypto/pkcs7/pk7_doit.c $(SSL_DIR)/crypto/pkcs7/pk7_smime.c $(SSL_DIR)/crypto/pkcs7/pk7_attr.c $(SSL_DIR)/crypto/pkcs7/pk7_mime.c $(SSL_DIR)/crypto/pkcs7/bio_pk7.c $(SSL_DIR)/crypto/pkcs12/p12_add.c $(SSL_DIR)/crypto/pkcs12/p12_asn.c $(SSL_DIR)/crypto/pkcs12/p12_attr.c $(SSL_DIR)/crypto/pkcs12/p12_crpt.c $(SSL_DIR)/crypto/pkcs12/p12_crt.c $(SSL_DIR)/crypto/pkcs12/p12_decr.c $(SSL_DIR)/crypto/pkcs12/p12_init.c $(SSL_DIR)/crypto/pkcs12/p12_key.c $(SSL_DIR)/crypto/pkcs12/p12_kiss.c $(SSL_DIR)/crypto/pkcs12/p12_mutl.c $(SSL_DIR)/crypto/pkcs12/p12_utl.c $(SSL_DIR)/crypto/pkcs12/p12_npas.c $(SSL_DIR)/crypto/pkcs12/pk12err.c $(SSL_DIR)/crypto/pkcs12/p12_p8d.c $(SSL_DIR)/crypto/pkcs12/p12_p8e.c $(SSL_DIR)/crypto/comp/comp_lib.c $(SSL_DIR)/crypto/comp/comp_err.c $(SSL_DIR)/crypto/comp/c_rle.c $(SSL_DIR)/crypto/comp/c_zlib.c $(SSL_DIR)/crypto/ocsp/ocsp_asn.c $(SSL_DIR)/crypto/ocsp/ocsp_ext.c $(SSL_DIR)/crypto/ocsp/ocsp_ht.c $(SSL_DIR)/crypto/ocsp/ocsp_lib.c $(SSL_DIR)/crypto/ocsp/ocsp_cl.c $(SSL_DIR)/crypto/ocsp/ocsp_srv.c $(SSL_DIR)/crypto/ocsp/ocsp_prn.c $(SSL_DIR)/crypto/ocsp/ocsp_vfy.c $(SSL_DIR)/crypto/ocsp/ocsp_err.c $(SSL_DIR)/crypto/ui/ui_err.c $(SSL_DIR)/crypto/ui/ui_lib.c $(SSL_DIR)/crypto/ui/ui_openssl.c $(SSL_DIR)/crypto/ui/ui_util.c $(SSL_DIR)/crypto/ui/ui_compat.c $(SSL_DIR)/crypto/krb5/krb5_asn.c $(SSL_DIR)/crypto/cms/cms_lib.c $(SSL_DIR)/crypto/cms/cms_asn1.c $(SSL_DIR)/crypto/cms/cms_att.c $(SSL_DIR)/crypto/cms/cms_io.c $(SSL_DIR)/crypto/cms/cms_smime.c $(SSL_DIR)/crypto/cms/cms_err.c $(SSL_DIR)/crypto/cms/cms_sd.c $(SSL_DIR)/crypto/cms/cms_dd.c $(SSL_DIR)/crypto/cms/cms_cd.c $(SSL_DIR)/crypto/cms/cms_env.c $(SSL_DIR)/crypto/cms/cms_enc.c $(SSL_DIR)/crypto/cms/cms_ess.c $(SSL_DIR)/crypto/cms/cms_pwri.c $(SSL_DIR)/crypto/pqueue/pqueue.c $(SSL_DIR)/crypto/ts/ts_err.c $(SSL_DIR)/crypto/ts/ts_req_utils.c $(SSL_DIR)/crypto/ts/ts_req_print.c $(SSL_DIR)/crypto/ts/ts_rsp_utils.c $(SSL_DIR)/crypto/ts/ts_rsp_print.c $(SSL_DIR)/crypto/ts/ts_rsp_sign.c $(SSL_DIR)/crypto/ts/ts_rsp_verify.c $(SSL_DIR)/crypto/ts/ts_verify_ctx.c $(SSL_DIR)/crypto/ts/ts_lib.c $(SSL_DIR)/crypto/ts/ts_conf.c $(SSL_DIR)/crypto/ts/ts_asn1.c $(SSL_DIR)/crypto/srp/srp_lib.c $(SSL_DIR)/crypto/srp/srp_vfy.c $(SSL_DIR)/crypto/cmac/cmac.c $(SSL_DIR)/crypto/cmac/cm_ameth.c $(SSL_DIR)/crypto/cmac/cm_pmeth.c $(SSL_DIR)/engines/e_4758cca.c $(SSL_DIR)/engines/e_aep.c $(SSL_DIR)/engines/e_atalla.c $(SSL_DIR)/engines/e_cswift.c $(SSL_DIR)/engines/e_gmp.c $(SSL_DIR)/engines/e_chil.c $(SSL_DIR)/engines/e_nuron.c $(SSL_DIR)/engines/e_sureware.c $(SSL_DIR)/engines/e_ubsec.c $(SSL_DIR)/engines/e_padlock.c $(SSL_DIR)/engines/e_capi.c $(SSL_DIR)/engines/ccgost/e_gost_err.c $(SSL_DIR)/engines/ccgost/gost2001_keyx.c $(SSL_DIR)/engines/ccgost/gost2001.c $(SSL_DIR)/engines/ccgost/gost89.c $(SSL_DIR)/engines/ccgost/gost94_keyx.c $(SSL_DIR)/engines/ccgost/gost_ameth.c $(SSL_DIR)/engines/ccgost/gost_asn1.c $(SSL_DIR)/engines/ccgost/gost_crypt.c $(SSL_DIR)/engines/ccgost/gost_ctl.c $(SSL_DIR)/engines/ccgost/gost_eng.c $(SSL_DIR)/engines/ccgost/gosthash.c $(SSL_DIR)/engines/ccgost/gost_keywrap.c $(SSL_DIR)/engines/ccgost/gost_md.c $(SSL_DIR)/engines/ccgost/gost_params.c $(SSL_DIR)/engines/ccgost/gost_pmeth.c $(SSL_DIR)/engines/ccgost/gost_sign.c
 @X86_64_TRUE@am__append_3 = \
 @X86_64_TRUE@	$(SSL_DIR)/crypto/x86_64cpuid.s \
 @X86_64_TRUE@	$(SSL_DIR)/crypto/md5/md5-x86_64.s \
@@ -339,15 +340,6 @@ am__libshare_ssl_a_SOURCES_DIST = $(SSL_DIR)/crypto/cryptlib.c \
 	$(SSL_DIR)/crypto/ecdh/ech_ossl.c \
 	$(SSL_DIR)/crypto/ecdh/ech_key.c \
 	$(SSL_DIR)/crypto/ecdh/ech_err.c \
-	$(SSL_DIR)/crypto/dso/dso_dl.c \
-	$(SSL_DIR)/crypto/dso/dso_dlfcn.c \
-	$(SSL_DIR)/crypto/dso/dso_err.c \
-	$(SSL_DIR)/crypto/dso/dso_lib.c \
-	$(SSL_DIR)/crypto/dso/dso_null.c \
-	$(SSL_DIR)/crypto/dso/dso_openssl.c \
-	$(SSL_DIR)/crypto/dso/dso_win32.c \
-	$(SSL_DIR)/crypto/dso/dso_vms.c \
-	$(SSL_DIR)/crypto/dso/dso_beos.c \
 	$(SSL_DIR)/crypto/engine/eng_err.c \
 	$(SSL_DIR)/crypto/engine/eng_lib.c \
 	$(SSL_DIR)/crypto/engine/eng_list.c \
@@ -406,12 +398,10 @@ am__libshare_ssl_a_SOURCES_DIST = $(SSL_DIR)/crypto/cryptlib.c \
 	$(SSL_DIR)/crypto/rand/rand_os2.c \
 	$(SSL_DIR)/crypto/rand/rand_nw.c \
 	$(SSL_DIR)/crypto/asn1/asn1_err.c \
-	$(SSL_DIR)/crypto/cms/cms_err.c \
 	$(SSL_DIR)/crypto/comp/comp_err.c \
 	$(SSL_DIR)/crypto/conf/conf_err.c $(SSL_DIR)/crypto/err/err.c \
 	$(SSL_DIR)/crypto/err/openssl.ec \
 	$(SSL_DIR)/crypto/evp/evp_err.c \
-	$(SSL_DIR)/crypto/ocsp/ocsp_err.c \
 	$(SSL_DIR)/crypto/pem/pem_err.c \
 	$(SSL_DIR)/crypto/pkcs12/pk12err.c \
 	$(SSL_DIR)/crypto/pkcs7/pkcs7err.c \
@@ -446,7 +436,6 @@ am__libshare_ssl_a_SOURCES_DIST = $(SSL_DIR)/crypto/cryptlib.c \
 	$(SSL_DIR)/crypto/ts/ts_rsp_verify.c \
 	$(SSL_DIR)/crypto/comp/comp_lib.c \
 	$(SSL_DIR)/crypto/evp/evp_lib.c $(SSL_DIR)/crypto/evp/p_lib.c \
-	$(SSL_DIR)/crypto/ocsp/ocsp_lib.c \
 	$(SSL_DIR)/crypto/srp/srp_lib.c $(SSL_DIR)/crypto/evp/p_enc.c \
 	$(SSL_DIR)/crypto/evp/p_dec.c $(SSL_DIR)/crypto/evp/bio_md.c \
 	$(SSL_DIR)/crypto/evp/bio_b64.c \
@@ -630,27 +619,11 @@ am__libshare_ssl_a_SOURCES_DIST = $(SSL_DIR)/crypto/cryptlib.c \
 	$(SSL_DIR)/crypto/pkcs12/p12_p8d.c \
 	$(SSL_DIR)/crypto/pkcs12/p12_p8e.c \
 	$(SSL_DIR)/crypto/comp/c_rle.c $(SSL_DIR)/crypto/comp/c_zlib.c \
-	$(SSL_DIR)/crypto/ocsp/ocsp_asn.c \
-	$(SSL_DIR)/crypto/ocsp/ocsp_ext.c \
-	$(SSL_DIR)/crypto/ocsp/ocsp_ht.c \
-	$(SSL_DIR)/crypto/ocsp/ocsp_cl.c \
-	$(SSL_DIR)/crypto/ocsp/ocsp_srv.c \
-	$(SSL_DIR)/crypto/ocsp/ocsp_prn.c \
-	$(SSL_DIR)/crypto/ocsp/ocsp_vfy.c \
 	$(SSL_DIR)/crypto/ui/ui_lib.c \
 	$(SSL_DIR)/crypto/ui/ui_openssl.c \
 	$(SSL_DIR)/crypto/ui/ui_util.c \
 	$(SSL_DIR)/crypto/ui/ui_compat.c \
 	$(SSL_DIR)/crypto/krb5/krb5_asn.c \
-	$(SSL_DIR)/crypto/cms/cms_lib.c \
-	$(SSL_DIR)/crypto/cms/cms_asn1.c \
-	$(SSL_DIR)/crypto/cms/cms_att.c $(SSL_DIR)/crypto/cms/cms_io.c \
-	$(SSL_DIR)/crypto/cms/cms_smime.c \
-	$(SSL_DIR)/crypto/cms/cms_sd.c $(SSL_DIR)/crypto/cms/cms_dd.c \
-	$(SSL_DIR)/crypto/cms/cms_cd.c $(SSL_DIR)/crypto/cms/cms_env.c \
-	$(SSL_DIR)/crypto/cms/cms_enc.c \
-	$(SSL_DIR)/crypto/cms/cms_ess.c \
-	$(SSL_DIR)/crypto/cms/cms_pwri.c \
 	$(SSL_DIR)/crypto/pqueue/pqueue.c \
 	$(SSL_DIR)/crypto/ts/ts_req_utils.c \
 	$(SSL_DIR)/crypto/ts/ts_req_print.c \
@@ -683,6 +656,33 @@ am__libshare_ssl_a_SOURCES_DIST = $(SSL_DIR)/crypto/cryptlib.c \
 	$(SSL_DIR)/engines/ccgost/gost_params.c \
 	$(SSL_DIR)/engines/ccgost/gost_pmeth.c \
 	$(SSL_DIR)/engines/ccgost/gost_sign.c \
+	$(SSL_DIR)/crypto/dso/dso_err.c $(SSL_DIR)/crypto/dso/dso_dl.c \
+	$(SSL_DIR)/crypto/dso/dso_dlfcn.c \
+	$(SSL_DIR)/crypto/dso/dso_lib.c \
+	$(SSL_DIR)/crypto/dso/dso_null.c \
+	$(SSL_DIR)/crypto/dso/dso_openssl.c \
+	$(SSL_DIR)/crypto/dso/dso_win32.c \
+	$(SSL_DIR)/crypto/dso/dso_vms.c \
+	$(SSL_DIR)/crypto/dso/dso_beos.c \
+	$(SSL_DIR)/crypto/cms/cms_lib.c \
+	$(SSL_DIR)/crypto/cms/cms_asn1.c \
+	$(SSL_DIR)/crypto/cms/cms_att.c $(SSL_DIR)/crypto/cms/cms_io.c \
+	$(SSL_DIR)/crypto/cms/cms_smime.c \
+	$(SSL_DIR)/crypto/cms/cms_err.c $(SSL_DIR)/crypto/cms/cms_sd.c \
+	$(SSL_DIR)/crypto/cms/cms_dd.c $(SSL_DIR)/crypto/cms/cms_cd.c \
+	$(SSL_DIR)/crypto/cms/cms_env.c \
+	$(SSL_DIR)/crypto/cms/cms_enc.c \
+	$(SSL_DIR)/crypto/cms/cms_ess.c \
+	$(SSL_DIR)/crypto/cms/cms_pwri.c \
+	$(SSL_DIR)/crypto/ocsp/ocsp_asn.c \
+	$(SSL_DIR)/crypto/ocsp/ocsp_ext.c \
+	$(SSL_DIR)/crypto/ocsp/ocsp_ht.c \
+	$(SSL_DIR)/crypto/ocsp/ocsp_lib.c \
+	$(SSL_DIR)/crypto/ocsp/ocsp_cl.c \
+	$(SSL_DIR)/crypto/ocsp/ocsp_srv.c \
+	$(SSL_DIR)/crypto/ocsp/ocsp_prn.c \
+	$(SSL_DIR)/crypto/ocsp/ocsp_vfy.c \
+	$(SSL_DIR)/crypto/ocsp/ocsp_err.c \
 	$(SSL_DIR)/crypto/x86_64cpuid.s \
 	$(SSL_DIR)/crypto/md5/md5-x86_64.s \
 	$(SSL_DIR)/crypto/sha/sha1-x86_64.s \
@@ -733,7 +733,40 @@ am__libshare_ssl_a_SOURCES_DIST = $(SSL_DIR)/crypto/cryptlib.c \
 	$(SSL_DIR)/ssl/ssl_algs.c $(SSL_DIR)/ssl/bio_ssl.c \
 	$(SSL_DIR)/ssl/kssl.c $(SSL_DIR)/ssl/tls_srp.c \
 	$(SSL_DIR)/ssl/t1_reneg.c
-@X86_64_TRUE@am__objects_1 = x86_64cpuid.$(OBJEXT) \
+am__objects_1 = libshare_ssl_a-dso_err.$(OBJEXT) \
+	libshare_ssl_a-dso_dl.$(OBJEXT) \
+	libshare_ssl_a-dso_dlfcn.$(OBJEXT) \
+	libshare_ssl_a-dso_err.$(OBJEXT) \
+	libshare_ssl_a-dso_lib.$(OBJEXT) \
+	libshare_ssl_a-dso_null.$(OBJEXT) \
+	libshare_ssl_a-dso_openssl.$(OBJEXT) \
+	libshare_ssl_a-dso_win32.$(OBJEXT) \
+	libshare_ssl_a-dso_vms.$(OBJEXT) \
+	libshare_ssl_a-dso_beos.$(OBJEXT)
+am__objects_2 = libshare_ssl_a-cms_lib.$(OBJEXT) \
+	libshare_ssl_a-cms_asn1.$(OBJEXT) \
+	libshare_ssl_a-cms_att.$(OBJEXT) \
+	libshare_ssl_a-cms_io.$(OBJEXT) \
+	libshare_ssl_a-cms_smime.$(OBJEXT) \
+	libshare_ssl_a-cms_err.$(OBJEXT) \
+	libshare_ssl_a-cms_sd.$(OBJEXT) \
+	libshare_ssl_a-cms_dd.$(OBJEXT) \
+	libshare_ssl_a-cms_cd.$(OBJEXT) \
+	libshare_ssl_a-cms_env.$(OBJEXT) \
+	libshare_ssl_a-cms_enc.$(OBJEXT) \
+	libshare_ssl_a-cms_ess.$(OBJEXT) \
+	libshare_ssl_a-cms_pwri.$(OBJEXT) \
+	libshare_ssl_a-cms_err.$(OBJEXT)
+am__objects_3 = libshare_ssl_a-ocsp_asn.$(OBJEXT) \
+	libshare_ssl_a-ocsp_ext.$(OBJEXT) \
+	libshare_ssl_a-ocsp_ht.$(OBJEXT) \
+	libshare_ssl_a-ocsp_lib.$(OBJEXT) \
+	libshare_ssl_a-ocsp_cl.$(OBJEXT) \
+	libshare_ssl_a-ocsp_srv.$(OBJEXT) \
+	libshare_ssl_a-ocsp_prn.$(OBJEXT) \
+	libshare_ssl_a-ocsp_vfy.$(OBJEXT) \
+	libshare_ssl_a-ocsp_err.$(OBJEXT)
+@X86_64_TRUE@am__objects_4 = x86_64cpuid.$(OBJEXT) \
 @X86_64_TRUE@	md5-x86_64.$(OBJEXT) sha1-x86_64.$(OBJEXT) \
 @X86_64_TRUE@	aesni-sha1-x86_64.$(OBJEXT) \
 @X86_64_TRUE@	sha256-x86_64.$(OBJEXT) sha512-x86_64.$(OBJEXT) \
@@ -745,7 +778,7 @@ am__libshare_ssl_a_SOURCES_DIST = $(SSL_DIR)/crypto/cryptlib.c \
 @X86_64_TRUE@	ghash-x86_64.$(OBJEXT) x86_64-mont.$(OBJEXT) \
 @X86_64_TRUE@	x86_64-mont5.$(OBJEXT) x86_64-gf2m.$(OBJEXT) \
 @X86_64_TRUE@	modexp512-x86_64.$(OBJEXT)
-@I386_TRUE@am__objects_2 = libshare_ssl_a-mem_clr.$(OBJEXT) \
+@I386_TRUE@am__objects_5 = libshare_ssl_a-mem_clr.$(OBJEXT) \
 @I386_TRUE@	libshare_ssl_a-camellia.$(OBJEXT) \
 @I386_TRUE@	libshare_ssl_a-aes_x86core.$(OBJEXT) \
 @I386_TRUE@	libshare_ssl_a-wp_block.$(OBJEXT) \
@@ -753,7 +786,7 @@ am__libshare_ssl_a_SOURCES_DIST = $(SSL_DIR)/crypto/cryptlib.c \
 @I386_TRUE@	libshare_ssl_a-cmll_cbc.$(OBJEXT) \
 @I386_TRUE@	libshare_ssl_a-rc4_skey.$(OBJEXT) \
 @I386_TRUE@	libshare_ssl_a-aes_cbc.$(OBJEXT)
-am__objects_3 = libshare_ssl_a-cryptlib.$(OBJEXT) \
+am__objects_6 = libshare_ssl_a-cryptlib.$(OBJEXT) \
 	libshare_ssl_a-bss_mem.$(OBJEXT) libshare_ssl_a-mem.$(OBJEXT) \
 	libshare_ssl_a-mem_dbg.$(OBJEXT) \
 	libshare_ssl_a-cversion.$(OBJEXT) \
@@ -969,15 +1002,6 @@ am__objects_3 = libshare_ssl_a-cryptlib.$(OBJEXT) \
 	libshare_ssl_a-ech_ossl.$(OBJEXT) \
 	libshare_ssl_a-ech_key.$(OBJEXT) \
 	libshare_ssl_a-ech_err.$(OBJEXT) \
-	libshare_ssl_a-dso_dl.$(OBJEXT) \
-	libshare_ssl_a-dso_dlfcn.$(OBJEXT) \
-	libshare_ssl_a-dso_err.$(OBJEXT) \
-	libshare_ssl_a-dso_lib.$(OBJEXT) \
-	libshare_ssl_a-dso_null.$(OBJEXT) \
-	libshare_ssl_a-dso_openssl.$(OBJEXT) \
-	libshare_ssl_a-dso_win32.$(OBJEXT) \
-	libshare_ssl_a-dso_vms.$(OBJEXT) \
-	libshare_ssl_a-dso_beos.$(OBJEXT) \
 	libshare_ssl_a-eng_err.$(OBJEXT) \
 	libshare_ssl_a-eng_lib.$(OBJEXT) \
 	libshare_ssl_a-eng_list.$(OBJEXT) \
@@ -1041,20 +1065,17 @@ am__objects_3 = libshare_ssl_a-cryptlib.$(OBJEXT) \
 	libshare_ssl_a-bio_err.$(OBJEXT) \
 	libshare_ssl_a-bn_err.$(OBJEXT) \
 	libshare_ssl_a-buf_err.$(OBJEXT) \
-	libshare_ssl_a-cms_err.$(OBJEXT) \
 	libshare_ssl_a-comp_err.$(OBJEXT) \
 	libshare_ssl_a-conf_err.$(OBJEXT) \
 	libshare_ssl_a-cpt_err.$(OBJEXT) \
 	libshare_ssl_a-dh_err.$(OBJEXT) \
 	libshare_ssl_a-dsa_err.$(OBJEXT) \
-	libshare_ssl_a-dso_err.$(OBJEXT) \
 	libshare_ssl_a-ec_err.$(OBJEXT) \
 	libshare_ssl_a-ech_err.$(OBJEXT) \
 	libshare_ssl_a-ecs_err.$(OBJEXT) \
 	libshare_ssl_a-eng_err.$(OBJEXT) libshare_ssl_a-err.$(OBJEXT) \
 	libshare_ssl_a-evp_err.$(OBJEXT) \
 	libshare_ssl_a-obj_err.$(OBJEXT) \
-	libshare_ssl_a-ocsp_err.$(OBJEXT) \
 	libshare_ssl_a-pem_err.$(OBJEXT) \
 	libshare_ssl_a-pk12err.$(OBJEXT) \
 	libshare_ssl_a-pkcs7err.$(OBJEXT) \
@@ -1103,7 +1124,6 @@ am__objects_3 = libshare_ssl_a-cryptlib.$(OBJEXT) \
 	libshare_ssl_a-comp_lib.$(OBJEXT) \
 	libshare_ssl_a-evp_lib.$(OBJEXT) \
 	libshare_ssl_a-p_lib.$(OBJEXT) \
-	libshare_ssl_a-ocsp_lib.$(OBJEXT) \
 	libshare_ssl_a-srp_lib.$(OBJEXT) \
 	libshare_ssl_a-evp_enc.$(OBJEXT) \
 	libshare_ssl_a-p_enc.$(OBJEXT) libshare_ssl_a-p_dec.$(OBJEXT) \
@@ -1305,34 +1325,12 @@ am__objects_3 = libshare_ssl_a-cryptlib.$(OBJEXT) \
 	libshare_ssl_a-comp_lib.$(OBJEXT) \
 	libshare_ssl_a-comp_err.$(OBJEXT) \
 	libshare_ssl_a-c_rle.$(OBJEXT) libshare_ssl_a-c_zlib.$(OBJEXT) \
-	libshare_ssl_a-ocsp_asn.$(OBJEXT) \
-	libshare_ssl_a-ocsp_ext.$(OBJEXT) \
-	libshare_ssl_a-ocsp_ht.$(OBJEXT) \
-	libshare_ssl_a-ocsp_lib.$(OBJEXT) \
-	libshare_ssl_a-ocsp_cl.$(OBJEXT) \
-	libshare_ssl_a-ocsp_srv.$(OBJEXT) \
-	libshare_ssl_a-ocsp_prn.$(OBJEXT) \
-	libshare_ssl_a-ocsp_vfy.$(OBJEXT) \
-	libshare_ssl_a-ocsp_err.$(OBJEXT) \
 	libshare_ssl_a-ui_err.$(OBJEXT) \
 	libshare_ssl_a-ui_lib.$(OBJEXT) \
 	libshare_ssl_a-ui_openssl.$(OBJEXT) \
 	libshare_ssl_a-ui_util.$(OBJEXT) \
 	libshare_ssl_a-ui_compat.$(OBJEXT) \
 	libshare_ssl_a-krb5_asn.$(OBJEXT) \
-	libshare_ssl_a-cms_lib.$(OBJEXT) \
-	libshare_ssl_a-cms_asn1.$(OBJEXT) \
-	libshare_ssl_a-cms_att.$(OBJEXT) \
-	libshare_ssl_a-cms_io.$(OBJEXT) \
-	libshare_ssl_a-cms_smime.$(OBJEXT) \
-	libshare_ssl_a-cms_err.$(OBJEXT) \
-	libshare_ssl_a-cms_sd.$(OBJEXT) \
-	libshare_ssl_a-cms_dd.$(OBJEXT) \
-	libshare_ssl_a-cms_cd.$(OBJEXT) \
-	libshare_ssl_a-cms_env.$(OBJEXT) \
-	libshare_ssl_a-cms_enc.$(OBJEXT) \
-	libshare_ssl_a-cms_ess.$(OBJEXT) \
-	libshare_ssl_a-cms_pwri.$(OBJEXT) \
 	libshare_ssl_a-pqueue.$(OBJEXT) \
 	libshare_ssl_a-ts_err.$(OBJEXT) \
 	libshare_ssl_a-ts_req_utils.$(OBJEXT) \
@@ -1375,8 +1373,9 @@ am__objects_3 = libshare_ssl_a-cryptlib.$(OBJEXT) \
 	libshare_ssl_a-gost_params.$(OBJEXT) \
 	libshare_ssl_a-gost_pmeth.$(OBJEXT) \
 	libshare_ssl_a-gost_sign.$(OBJEXT) $(am__objects_1) \
-	$(am__objects_2)
-am__objects_4 = libshare_ssl_a-s2_meth.$(OBJEXT) \
+	$(am__objects_2) $(am__objects_3) $(am__objects_4) \
+	$(am__objects_5)
+am__objects_7 = libshare_ssl_a-s2_meth.$(OBJEXT) \
 	libshare_ssl_a-s2_srvr.$(OBJEXT) \
 	libshare_ssl_a-s2_clnt.$(OBJEXT) \
 	libshare_ssl_a-s2_lib.$(OBJEXT) \
@@ -1422,7 +1421,7 @@ am__objects_4 = libshare_ssl_a-s2_meth.$(OBJEXT) \
 	libshare_ssl_a-ssl_err.$(OBJEXT) libshare_ssl_a-kssl.$(OBJEXT) \
 	libshare_ssl_a-tls_srp.$(OBJEXT) \
 	libshare_ssl_a-t1_reneg.$(OBJEXT)
-am_libshare_ssl_a_OBJECTS = $(am__objects_3) $(am__objects_4)
+am_libshare_ssl_a_OBJECTS = $(am__objects_6) $(am__objects_7)
 libshare_ssl_a_OBJECTS = $(am_libshare_ssl_a_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/build-aux/depcomp
@@ -2338,6 +2337,9 @@ libshare_ssl_a_CFLAGS = -I$(SSL_DIR)/include -I$(SSL_DIR)/crypto \
 libssl_sources = \
 	$(SSL_DIR)/ssl/s2_meth.c $(SSL_DIR)/ssl/s2_srvr.c $(SSL_DIR)/ssl/s2_clnt.c $(SSL_DIR)/ssl/s2_lib.c $(SSL_DIR)/ssl/s2_enc.c $(SSL_DIR)/ssl/s2_pkt.c $(SSL_DIR)/ssl/s3_meth.c $(SSL_DIR)/ssl/s3_srvr.c $(SSL_DIR)/ssl/s3_clnt.c $(SSL_DIR)/ssl/s3_lib.c $(SSL_DIR)/ssl/s3_enc.c $(SSL_DIR)/ssl/s3_pkt.c $(SSL_DIR)/ssl/s3_both.c $(SSL_DIR)/ssl/s3_cbc.c $(SSL_DIR)/ssl/s23_meth.c $(SSL_DIR)/ssl/s23_srvr.c $(SSL_DIR)/ssl/s23_clnt.c $(SSL_DIR)/ssl/s23_lib.c $(SSL_DIR)/ssl/s23_pkt.c $(SSL_DIR)/ssl/t1_meth.c $(SSL_DIR)/ssl/t1_srvr.c $(SSL_DIR)/ssl/t1_clnt.c $(SSL_DIR)/ssl/t1_lib.c $(SSL_DIR)/ssl/t1_enc.c $(SSL_DIR)/ssl/d1_meth.c $(SSL_DIR)/ssl/d1_srvr.c $(SSL_DIR)/ssl/d1_clnt.c $(SSL_DIR)/ssl/d1_lib.c $(SSL_DIR)/ssl/d1_pkt.c $(SSL_DIR)/ssl/d1_both.c $(SSL_DIR)/ssl/d1_enc.c $(SSL_DIR)/ssl/d1_srtp.c $(SSL_DIR)/ssl/ssl_lib.c $(SSL_DIR)/ssl/ssl_err2.c $(SSL_DIR)/ssl/ssl_cert.c $(SSL_DIR)/ssl/ssl_sess.c $(SSL_DIR)/ssl/ssl_ciph.c $(SSL_DIR)/ssl/ssl_stat.c $(SSL_DIR)/ssl/ssl_rsa.c $(SSL_DIR)/ssl/ssl_asn1.c $(SSL_DIR)/ssl/ssl_txt.c $(SSL_DIR)/ssl/ssl_algs.c $(SSL_DIR)/ssl/bio_ssl.c $(SSL_DIR)/ssl/ssl_err.c $(SSL_DIR)/ssl/kssl.c $(SSL_DIR)/ssl/tls_srp.c $(SSL_DIR)/ssl/t1_reneg.c
 
+dso_sources = $(SSL_DIR)/crypto/dso/dso_err.c $(SSL_DIR)/crypto/dso/dso_dl.c $(SSL_DIR)/crypto/dso/dso_dlfcn.c $(SSL_DIR)/crypto/dso/dso_err.c $(SSL_DIR)/crypto/dso/dso_lib.c $(SSL_DIR)/crypto/dso/dso_null.c $(SSL_DIR)/crypto/dso/dso_openssl.c $(SSL_DIR)/crypto/dso/dso_win32.c $(SSL_DIR)/crypto/dso/dso_vms.c $(SSL_DIR)/crypto/dso/dso_beos.c
+cms_sources = $(SSL_DIR)/crypto/cms/cms_lib.c $(SSL_DIR)/crypto/cms/cms_asn1.c $(SSL_DIR)/crypto/cms/cms_att.c $(SSL_DIR)/crypto/cms/cms_io.c $(SSL_DIR)/crypto/cms/cms_smime.c $(SSL_DIR)/crypto/cms/cms_err.c $(SSL_DIR)/crypto/cms/cms_sd.c $(SSL_DIR)/crypto/cms/cms_dd.c $(SSL_DIR)/crypto/cms/cms_cd.c $(SSL_DIR)/crypto/cms/cms_env.c $(SSL_DIR)/crypto/cms/cms_enc.c $(SSL_DIR)/crypto/cms/cms_ess.c $(SSL_DIR)/crypto/cms/cms_pwri.c $(SSL_DIR)/crypto/cms/cms_err.c 
+ocsp_sources = $(SSL_DIR)/crypto/ocsp/ocsp_asn.c $(SSL_DIR)/crypto/ocsp/ocsp_ext.c $(SSL_DIR)/crypto/ocsp/ocsp_ht.c $(SSL_DIR)/crypto/ocsp/ocsp_lib.c $(SSL_DIR)/crypto/ocsp/ocsp_cl.c $(SSL_DIR)/crypto/ocsp/ocsp_srv.c $(SSL_DIR)/crypto/ocsp/ocsp_prn.c $(SSL_DIR)/crypto/ocsp/ocsp_vfy.c $(SSL_DIR)/crypto/ocsp/ocsp_err.c
 libcrypto_sources = $(SSL_DIR)/crypto/cryptlib.c \
 	$(SSL_DIR)/crypto/bio/bss_mem.c $(SSL_DIR)/crypto/mem.c \
 	$(SSL_DIR)/crypto/mem_dbg.c $(SSL_DIR)/crypto/cversion.c \
@@ -2519,15 +2521,6 @@ libcrypto_sources = $(SSL_DIR)/crypto/cryptlib.c \
 	$(SSL_DIR)/crypto/ecdh/ech_ossl.c \
 	$(SSL_DIR)/crypto/ecdh/ech_key.c \
 	$(SSL_DIR)/crypto/ecdh/ech_err.c \
-	$(SSL_DIR)/crypto/dso/dso_dl.c \
-	$(SSL_DIR)/crypto/dso/dso_dlfcn.c \
-	$(SSL_DIR)/crypto/dso/dso_err.c \
-	$(SSL_DIR)/crypto/dso/dso_lib.c \
-	$(SSL_DIR)/crypto/dso/dso_null.c \
-	$(SSL_DIR)/crypto/dso/dso_openssl.c \
-	$(SSL_DIR)/crypto/dso/dso_win32.c \
-	$(SSL_DIR)/crypto/dso/dso_vms.c \
-	$(SSL_DIR)/crypto/dso/dso_beos.c \
 	$(SSL_DIR)/crypto/engine/eng_err.c \
 	$(SSL_DIR)/crypto/engine/eng_lib.c \
 	$(SSL_DIR)/crypto/engine/eng_list.c \
@@ -2589,18 +2582,15 @@ libcrypto_sources = $(SSL_DIR)/crypto/cryptlib.c \
 	$(SSL_DIR)/crypto/asn1/asn1_err.c \
 	$(SSL_DIR)/crypto/bio/bio_err.c $(SSL_DIR)/crypto/bn/bn_err.c \
 	$(SSL_DIR)/crypto/buffer/buf_err.c \
-	$(SSL_DIR)/crypto/cms/cms_err.c \
 	$(SSL_DIR)/crypto/comp/comp_err.c \
 	$(SSL_DIR)/crypto/conf/conf_err.c $(SSL_DIR)/crypto/cpt_err.c \
 	$(SSL_DIR)/crypto/dh/dh_err.c $(SSL_DIR)/crypto/dsa/dsa_err.c \
-	$(SSL_DIR)/crypto/dso/dso_err.c $(SSL_DIR)/crypto/ec/ec_err.c \
-	$(SSL_DIR)/crypto/ecdh/ech_err.c \
+	$(SSL_DIR)/crypto/ec/ec_err.c $(SSL_DIR)/crypto/ecdh/ech_err.c \
 	$(SSL_DIR)/crypto/ecdsa/ecs_err.c \
 	$(SSL_DIR)/crypto/engine/eng_err.c $(SSL_DIR)/crypto/err/err.c \
 	$(SSL_DIR)/crypto/err/openssl.ec \
 	$(SSL_DIR)/crypto/evp/evp_err.c \
 	$(SSL_DIR)/crypto/objects/obj_err.c \
-	$(SSL_DIR)/crypto/ocsp/ocsp_err.c \
 	$(SSL_DIR)/crypto/pem/pem_err.c \
 	$(SSL_DIR)/crypto/pkcs12/pk12err.c \
 	$(SSL_DIR)/crypto/pkcs7/pkcs7err.c \
@@ -2640,7 +2630,6 @@ libcrypto_sources = $(SSL_DIR)/crypto/cryptlib.c \
 	$(SSL_DIR)/crypto/ts/ts_rsp_verify.c \
 	$(SSL_DIR)/crypto/comp/comp_lib.c \
 	$(SSL_DIR)/crypto/evp/evp_lib.c $(SSL_DIR)/crypto/evp/p_lib.c \
-	$(SSL_DIR)/crypto/ocsp/ocsp_lib.c \
 	$(SSL_DIR)/crypto/srp/srp_lib.c \
 	$(SSL_DIR)/crypto/evp/evp_enc.c $(SSL_DIR)/crypto/evp/p_enc.c \
 	$(SSL_DIR)/crypto/evp/p_dec.c $(SSL_DIR)/crypto/evp/bio_md.c \
@@ -2839,30 +2828,11 @@ libcrypto_sources = $(SSL_DIR)/crypto/cryptlib.c \
 	$(SSL_DIR)/crypto/comp/comp_lib.c \
 	$(SSL_DIR)/crypto/comp/comp_err.c \
 	$(SSL_DIR)/crypto/comp/c_rle.c $(SSL_DIR)/crypto/comp/c_zlib.c \
-	$(SSL_DIR)/crypto/ocsp/ocsp_asn.c \
-	$(SSL_DIR)/crypto/ocsp/ocsp_ext.c \
-	$(SSL_DIR)/crypto/ocsp/ocsp_ht.c \
-	$(SSL_DIR)/crypto/ocsp/ocsp_lib.c \
-	$(SSL_DIR)/crypto/ocsp/ocsp_cl.c \
-	$(SSL_DIR)/crypto/ocsp/ocsp_srv.c \
-	$(SSL_DIR)/crypto/ocsp/ocsp_prn.c \
-	$(SSL_DIR)/crypto/ocsp/ocsp_vfy.c \
-	$(SSL_DIR)/crypto/ocsp/ocsp_err.c \
 	$(SSL_DIR)/crypto/ui/ui_err.c $(SSL_DIR)/crypto/ui/ui_lib.c \
 	$(SSL_DIR)/crypto/ui/ui_openssl.c \
 	$(SSL_DIR)/crypto/ui/ui_util.c \
 	$(SSL_DIR)/crypto/ui/ui_compat.c \
 	$(SSL_DIR)/crypto/krb5/krb5_asn.c \
-	$(SSL_DIR)/crypto/cms/cms_lib.c \
-	$(SSL_DIR)/crypto/cms/cms_asn1.c \
-	$(SSL_DIR)/crypto/cms/cms_att.c $(SSL_DIR)/crypto/cms/cms_io.c \
-	$(SSL_DIR)/crypto/cms/cms_smime.c \
-	$(SSL_DIR)/crypto/cms/cms_err.c $(SSL_DIR)/crypto/cms/cms_sd.c \
-	$(SSL_DIR)/crypto/cms/cms_dd.c $(SSL_DIR)/crypto/cms/cms_cd.c \
-	$(SSL_DIR)/crypto/cms/cms_env.c \
-	$(SSL_DIR)/crypto/cms/cms_enc.c \
-	$(SSL_DIR)/crypto/cms/cms_ess.c \
-	$(SSL_DIR)/crypto/cms/cms_pwri.c \
 	$(SSL_DIR)/crypto/pqueue/pqueue.c \
 	$(SSL_DIR)/crypto/ts/ts_err.c \
 	$(SSL_DIR)/crypto/ts/ts_req_utils.c \
@@ -2898,8 +2868,8 @@ libcrypto_sources = $(SSL_DIR)/crypto/cryptlib.c \
 	$(SSL_DIR)/engines/ccgost/gost_md.c \
 	$(SSL_DIR)/engines/ccgost/gost_params.c \
 	$(SSL_DIR)/engines/ccgost/gost_pmeth.c \
-	$(SSL_DIR)/engines/ccgost/gost_sign.c $(am__append_3) \
-	$(am__append_5)
+	$(SSL_DIR)/engines/ccgost/gost_sign.c $(dso_sources) \
+	$(cms_sources) $(ocsp_sources) $(am__append_3) $(am__append_5)
 
 #	$(SSL_DIR)/crypto/x86cpuid.s
 #$(SSL_DIR)/crypto/x86cpuid.s: $(SSL_DIR)/crypto/x86cpuid.pl
@@ -6658,132 +6628,6 @@ libshare_ssl_a-ech_err.obj: $(SSL_DIR)/crypto/ecdh/ech_err.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-ech_err.obj `if test -f '$(SSL_DIR)/crypto/ecdh/ech_err.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/ecdh/ech_err.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/ecdh/ech_err.c'; fi`
 
-libshare_ssl_a-dso_dl.o: $(SSL_DIR)/crypto/dso/dso_dl.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-dso_dl.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-dso_dl.Tpo -c -o libshare_ssl_a-dso_dl.o `test -f '$(SSL_DIR)/crypto/dso/dso_dl.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/dso/dso_dl.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-dso_dl.Tpo $(DEPDIR)/libshare_ssl_a-dso_dl.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/dso/dso_dl.c' object='libshare_ssl_a-dso_dl.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-dso_dl.o `test -f '$(SSL_DIR)/crypto/dso/dso_dl.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/dso/dso_dl.c
-
-libshare_ssl_a-dso_dl.obj: $(SSL_DIR)/crypto/dso/dso_dl.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-dso_dl.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-dso_dl.Tpo -c -o libshare_ssl_a-dso_dl.obj `if test -f '$(SSL_DIR)/crypto/dso/dso_dl.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/dso/dso_dl.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/dso/dso_dl.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-dso_dl.Tpo $(DEPDIR)/libshare_ssl_a-dso_dl.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/dso/dso_dl.c' object='libshare_ssl_a-dso_dl.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-dso_dl.obj `if test -f '$(SSL_DIR)/crypto/dso/dso_dl.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/dso/dso_dl.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/dso/dso_dl.c'; fi`
-
-libshare_ssl_a-dso_dlfcn.o: $(SSL_DIR)/crypto/dso/dso_dlfcn.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-dso_dlfcn.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-dso_dlfcn.Tpo -c -o libshare_ssl_a-dso_dlfcn.o `test -f '$(SSL_DIR)/crypto/dso/dso_dlfcn.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/dso/dso_dlfcn.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-dso_dlfcn.Tpo $(DEPDIR)/libshare_ssl_a-dso_dlfcn.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/dso/dso_dlfcn.c' object='libshare_ssl_a-dso_dlfcn.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-dso_dlfcn.o `test -f '$(SSL_DIR)/crypto/dso/dso_dlfcn.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/dso/dso_dlfcn.c
-
-libshare_ssl_a-dso_dlfcn.obj: $(SSL_DIR)/crypto/dso/dso_dlfcn.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-dso_dlfcn.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-dso_dlfcn.Tpo -c -o libshare_ssl_a-dso_dlfcn.obj `if test -f '$(SSL_DIR)/crypto/dso/dso_dlfcn.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/dso/dso_dlfcn.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/dso/dso_dlfcn.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-dso_dlfcn.Tpo $(DEPDIR)/libshare_ssl_a-dso_dlfcn.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/dso/dso_dlfcn.c' object='libshare_ssl_a-dso_dlfcn.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-dso_dlfcn.obj `if test -f '$(SSL_DIR)/crypto/dso/dso_dlfcn.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/dso/dso_dlfcn.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/dso/dso_dlfcn.c'; fi`
-
-libshare_ssl_a-dso_err.o: $(SSL_DIR)/crypto/dso/dso_err.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-dso_err.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-dso_err.Tpo -c -o libshare_ssl_a-dso_err.o `test -f '$(SSL_DIR)/crypto/dso/dso_err.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/dso/dso_err.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-dso_err.Tpo $(DEPDIR)/libshare_ssl_a-dso_err.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/dso/dso_err.c' object='libshare_ssl_a-dso_err.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-dso_err.o `test -f '$(SSL_DIR)/crypto/dso/dso_err.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/dso/dso_err.c
-
-libshare_ssl_a-dso_err.obj: $(SSL_DIR)/crypto/dso/dso_err.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-dso_err.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-dso_err.Tpo -c -o libshare_ssl_a-dso_err.obj `if test -f '$(SSL_DIR)/crypto/dso/dso_err.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/dso/dso_err.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/dso/dso_err.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-dso_err.Tpo $(DEPDIR)/libshare_ssl_a-dso_err.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/dso/dso_err.c' object='libshare_ssl_a-dso_err.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-dso_err.obj `if test -f '$(SSL_DIR)/crypto/dso/dso_err.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/dso/dso_err.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/dso/dso_err.c'; fi`
-
-libshare_ssl_a-dso_lib.o: $(SSL_DIR)/crypto/dso/dso_lib.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-dso_lib.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-dso_lib.Tpo -c -o libshare_ssl_a-dso_lib.o `test -f '$(SSL_DIR)/crypto/dso/dso_lib.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/dso/dso_lib.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-dso_lib.Tpo $(DEPDIR)/libshare_ssl_a-dso_lib.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/dso/dso_lib.c' object='libshare_ssl_a-dso_lib.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-dso_lib.o `test -f '$(SSL_DIR)/crypto/dso/dso_lib.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/dso/dso_lib.c
-
-libshare_ssl_a-dso_lib.obj: $(SSL_DIR)/crypto/dso/dso_lib.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-dso_lib.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-dso_lib.Tpo -c -o libshare_ssl_a-dso_lib.obj `if test -f '$(SSL_DIR)/crypto/dso/dso_lib.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/dso/dso_lib.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/dso/dso_lib.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-dso_lib.Tpo $(DEPDIR)/libshare_ssl_a-dso_lib.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/dso/dso_lib.c' object='libshare_ssl_a-dso_lib.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-dso_lib.obj `if test -f '$(SSL_DIR)/crypto/dso/dso_lib.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/dso/dso_lib.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/dso/dso_lib.c'; fi`
-
-libshare_ssl_a-dso_null.o: $(SSL_DIR)/crypto/dso/dso_null.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-dso_null.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-dso_null.Tpo -c -o libshare_ssl_a-dso_null.o `test -f '$(SSL_DIR)/crypto/dso/dso_null.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/dso/dso_null.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-dso_null.Tpo $(DEPDIR)/libshare_ssl_a-dso_null.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/dso/dso_null.c' object='libshare_ssl_a-dso_null.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-dso_null.o `test -f '$(SSL_DIR)/crypto/dso/dso_null.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/dso/dso_null.c
-
-libshare_ssl_a-dso_null.obj: $(SSL_DIR)/crypto/dso/dso_null.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-dso_null.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-dso_null.Tpo -c -o libshare_ssl_a-dso_null.obj `if test -f '$(SSL_DIR)/crypto/dso/dso_null.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/dso/dso_null.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/dso/dso_null.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-dso_null.Tpo $(DEPDIR)/libshare_ssl_a-dso_null.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/dso/dso_null.c' object='libshare_ssl_a-dso_null.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-dso_null.obj `if test -f '$(SSL_DIR)/crypto/dso/dso_null.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/dso/dso_null.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/dso/dso_null.c'; fi`
-
-libshare_ssl_a-dso_openssl.o: $(SSL_DIR)/crypto/dso/dso_openssl.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-dso_openssl.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-dso_openssl.Tpo -c -o libshare_ssl_a-dso_openssl.o `test -f '$(SSL_DIR)/crypto/dso/dso_openssl.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/dso/dso_openssl.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-dso_openssl.Tpo $(DEPDIR)/libshare_ssl_a-dso_openssl.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/dso/dso_openssl.c' object='libshare_ssl_a-dso_openssl.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-dso_openssl.o `test -f '$(SSL_DIR)/crypto/dso/dso_openssl.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/dso/dso_openssl.c
-
-libshare_ssl_a-dso_openssl.obj: $(SSL_DIR)/crypto/dso/dso_openssl.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-dso_openssl.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-dso_openssl.Tpo -c -o libshare_ssl_a-dso_openssl.obj `if test -f '$(SSL_DIR)/crypto/dso/dso_openssl.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/dso/dso_openssl.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/dso/dso_openssl.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-dso_openssl.Tpo $(DEPDIR)/libshare_ssl_a-dso_openssl.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/dso/dso_openssl.c' object='libshare_ssl_a-dso_openssl.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-dso_openssl.obj `if test -f '$(SSL_DIR)/crypto/dso/dso_openssl.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/dso/dso_openssl.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/dso/dso_openssl.c'; fi`
-
-libshare_ssl_a-dso_win32.o: $(SSL_DIR)/crypto/dso/dso_win32.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-dso_win32.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-dso_win32.Tpo -c -o libshare_ssl_a-dso_win32.o `test -f '$(SSL_DIR)/crypto/dso/dso_win32.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/dso/dso_win32.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-dso_win32.Tpo $(DEPDIR)/libshare_ssl_a-dso_win32.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/dso/dso_win32.c' object='libshare_ssl_a-dso_win32.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-dso_win32.o `test -f '$(SSL_DIR)/crypto/dso/dso_win32.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/dso/dso_win32.c
-
-libshare_ssl_a-dso_win32.obj: $(SSL_DIR)/crypto/dso/dso_win32.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-dso_win32.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-dso_win32.Tpo -c -o libshare_ssl_a-dso_win32.obj `if test -f '$(SSL_DIR)/crypto/dso/dso_win32.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/dso/dso_win32.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/dso/dso_win32.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-dso_win32.Tpo $(DEPDIR)/libshare_ssl_a-dso_win32.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/dso/dso_win32.c' object='libshare_ssl_a-dso_win32.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-dso_win32.obj `if test -f '$(SSL_DIR)/crypto/dso/dso_win32.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/dso/dso_win32.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/dso/dso_win32.c'; fi`
-
-libshare_ssl_a-dso_vms.o: $(SSL_DIR)/crypto/dso/dso_vms.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-dso_vms.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-dso_vms.Tpo -c -o libshare_ssl_a-dso_vms.o `test -f '$(SSL_DIR)/crypto/dso/dso_vms.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/dso/dso_vms.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-dso_vms.Tpo $(DEPDIR)/libshare_ssl_a-dso_vms.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/dso/dso_vms.c' object='libshare_ssl_a-dso_vms.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-dso_vms.o `test -f '$(SSL_DIR)/crypto/dso/dso_vms.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/dso/dso_vms.c
-
-libshare_ssl_a-dso_vms.obj: $(SSL_DIR)/crypto/dso/dso_vms.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-dso_vms.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-dso_vms.Tpo -c -o libshare_ssl_a-dso_vms.obj `if test -f '$(SSL_DIR)/crypto/dso/dso_vms.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/dso/dso_vms.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/dso/dso_vms.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-dso_vms.Tpo $(DEPDIR)/libshare_ssl_a-dso_vms.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/dso/dso_vms.c' object='libshare_ssl_a-dso_vms.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-dso_vms.obj `if test -f '$(SSL_DIR)/crypto/dso/dso_vms.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/dso/dso_vms.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/dso/dso_vms.c'; fi`
-
-libshare_ssl_a-dso_beos.o: $(SSL_DIR)/crypto/dso/dso_beos.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-dso_beos.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-dso_beos.Tpo -c -o libshare_ssl_a-dso_beos.o `test -f '$(SSL_DIR)/crypto/dso/dso_beos.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/dso/dso_beos.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-dso_beos.Tpo $(DEPDIR)/libshare_ssl_a-dso_beos.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/dso/dso_beos.c' object='libshare_ssl_a-dso_beos.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-dso_beos.o `test -f '$(SSL_DIR)/crypto/dso/dso_beos.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/dso/dso_beos.c
-
-libshare_ssl_a-dso_beos.obj: $(SSL_DIR)/crypto/dso/dso_beos.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-dso_beos.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-dso_beos.Tpo -c -o libshare_ssl_a-dso_beos.obj `if test -f '$(SSL_DIR)/crypto/dso/dso_beos.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/dso/dso_beos.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/dso/dso_beos.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-dso_beos.Tpo $(DEPDIR)/libshare_ssl_a-dso_beos.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/dso/dso_beos.c' object='libshare_ssl_a-dso_beos.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-dso_beos.obj `if test -f '$(SSL_DIR)/crypto/dso/dso_beos.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/dso/dso_beos.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/dso/dso_beos.c'; fi`
-
 libshare_ssl_a-eng_err.o: $(SSL_DIR)/crypto/engine/eng_err.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-eng_err.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-eng_err.Tpo -c -o libshare_ssl_a-eng_err.o `test -f '$(SSL_DIR)/crypto/engine/eng_err.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/engine/eng_err.c
 @am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-eng_err.Tpo $(DEPDIR)/libshare_ssl_a-eng_err.Po
@@ -7624,20 +7468,6 @@ libshare_ssl_a-asn1_err.obj: $(SSL_DIR)/crypto/asn1/asn1_err.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-asn1_err.obj `if test -f '$(SSL_DIR)/crypto/asn1/asn1_err.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/asn1/asn1_err.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/asn1/asn1_err.c'; fi`
 
-libshare_ssl_a-cms_err.o: $(SSL_DIR)/crypto/cms/cms_err.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-cms_err.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-cms_err.Tpo -c -o libshare_ssl_a-cms_err.o `test -f '$(SSL_DIR)/crypto/cms/cms_err.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/cms/cms_err.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-cms_err.Tpo $(DEPDIR)/libshare_ssl_a-cms_err.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/cms/cms_err.c' object='libshare_ssl_a-cms_err.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-cms_err.o `test -f '$(SSL_DIR)/crypto/cms/cms_err.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/cms/cms_err.c
-
-libshare_ssl_a-cms_err.obj: $(SSL_DIR)/crypto/cms/cms_err.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-cms_err.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-cms_err.Tpo -c -o libshare_ssl_a-cms_err.obj `if test -f '$(SSL_DIR)/crypto/cms/cms_err.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/cms/cms_err.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/cms/cms_err.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-cms_err.Tpo $(DEPDIR)/libshare_ssl_a-cms_err.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/cms/cms_err.c' object='libshare_ssl_a-cms_err.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-cms_err.obj `if test -f '$(SSL_DIR)/crypto/cms/cms_err.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/cms/cms_err.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/cms/cms_err.c'; fi`
-
 libshare_ssl_a-comp_err.o: $(SSL_DIR)/crypto/comp/comp_err.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-comp_err.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-comp_err.Tpo -c -o libshare_ssl_a-comp_err.o `test -f '$(SSL_DIR)/crypto/comp/comp_err.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/comp/comp_err.c
 @am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-comp_err.Tpo $(DEPDIR)/libshare_ssl_a-comp_err.Po
@@ -7693,20 +7523,6 @@ libshare_ssl_a-evp_err.obj: $(SSL_DIR)/crypto/evp/evp_err.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/evp/evp_err.c' object='libshare_ssl_a-evp_err.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-evp_err.obj `if test -f '$(SSL_DIR)/crypto/evp/evp_err.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/evp/evp_err.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/evp/evp_err.c'; fi`
-
-libshare_ssl_a-ocsp_err.o: $(SSL_DIR)/crypto/ocsp/ocsp_err.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-ocsp_err.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-ocsp_err.Tpo -c -o libshare_ssl_a-ocsp_err.o `test -f '$(SSL_DIR)/crypto/ocsp/ocsp_err.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/ocsp/ocsp_err.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-ocsp_err.Tpo $(DEPDIR)/libshare_ssl_a-ocsp_err.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/ocsp/ocsp_err.c' object='libshare_ssl_a-ocsp_err.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-ocsp_err.o `test -f '$(SSL_DIR)/crypto/ocsp/ocsp_err.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/ocsp/ocsp_err.c
-
-libshare_ssl_a-ocsp_err.obj: $(SSL_DIR)/crypto/ocsp/ocsp_err.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-ocsp_err.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-ocsp_err.Tpo -c -o libshare_ssl_a-ocsp_err.obj `if test -f '$(SSL_DIR)/crypto/ocsp/ocsp_err.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/ocsp/ocsp_err.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/ocsp/ocsp_err.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-ocsp_err.Tpo $(DEPDIR)/libshare_ssl_a-ocsp_err.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/ocsp/ocsp_err.c' object='libshare_ssl_a-ocsp_err.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-ocsp_err.obj `if test -f '$(SSL_DIR)/crypto/ocsp/ocsp_err.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/ocsp/ocsp_err.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/ocsp/ocsp_err.c'; fi`
 
 libshare_ssl_a-pem_err.o: $(SSL_DIR)/crypto/pem/pem_err.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-pem_err.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-pem_err.Tpo -c -o libshare_ssl_a-pem_err.o `test -f '$(SSL_DIR)/crypto/pem/pem_err.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/pem/pem_err.c
@@ -8421,20 +8237,6 @@ libshare_ssl_a-p_lib.obj: $(SSL_DIR)/crypto/evp/p_lib.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/evp/p_lib.c' object='libshare_ssl_a-p_lib.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-p_lib.obj `if test -f '$(SSL_DIR)/crypto/evp/p_lib.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/evp/p_lib.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/evp/p_lib.c'; fi`
-
-libshare_ssl_a-ocsp_lib.o: $(SSL_DIR)/crypto/ocsp/ocsp_lib.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-ocsp_lib.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-ocsp_lib.Tpo -c -o libshare_ssl_a-ocsp_lib.o `test -f '$(SSL_DIR)/crypto/ocsp/ocsp_lib.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/ocsp/ocsp_lib.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-ocsp_lib.Tpo $(DEPDIR)/libshare_ssl_a-ocsp_lib.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/ocsp/ocsp_lib.c' object='libshare_ssl_a-ocsp_lib.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-ocsp_lib.o `test -f '$(SSL_DIR)/crypto/ocsp/ocsp_lib.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/ocsp/ocsp_lib.c
-
-libshare_ssl_a-ocsp_lib.obj: $(SSL_DIR)/crypto/ocsp/ocsp_lib.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-ocsp_lib.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-ocsp_lib.Tpo -c -o libshare_ssl_a-ocsp_lib.obj `if test -f '$(SSL_DIR)/crypto/ocsp/ocsp_lib.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/ocsp/ocsp_lib.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/ocsp/ocsp_lib.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-ocsp_lib.Tpo $(DEPDIR)/libshare_ssl_a-ocsp_lib.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/ocsp/ocsp_lib.c' object='libshare_ssl_a-ocsp_lib.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-ocsp_lib.obj `if test -f '$(SSL_DIR)/crypto/ocsp/ocsp_lib.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/ocsp/ocsp_lib.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/ocsp/ocsp_lib.c'; fi`
 
 libshare_ssl_a-srp_lib.o: $(SSL_DIR)/crypto/srp/srp_lib.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-srp_lib.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-srp_lib.Tpo -c -o libshare_ssl_a-srp_lib.o `test -f '$(SSL_DIR)/crypto/srp/srp_lib.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/srp/srp_lib.c
@@ -11194,104 +10996,6 @@ libshare_ssl_a-c_zlib.obj: $(SSL_DIR)/crypto/comp/c_zlib.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-c_zlib.obj `if test -f '$(SSL_DIR)/crypto/comp/c_zlib.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/comp/c_zlib.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/comp/c_zlib.c'; fi`
 
-libshare_ssl_a-ocsp_asn.o: $(SSL_DIR)/crypto/ocsp/ocsp_asn.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-ocsp_asn.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-ocsp_asn.Tpo -c -o libshare_ssl_a-ocsp_asn.o `test -f '$(SSL_DIR)/crypto/ocsp/ocsp_asn.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/ocsp/ocsp_asn.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-ocsp_asn.Tpo $(DEPDIR)/libshare_ssl_a-ocsp_asn.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/ocsp/ocsp_asn.c' object='libshare_ssl_a-ocsp_asn.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-ocsp_asn.o `test -f '$(SSL_DIR)/crypto/ocsp/ocsp_asn.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/ocsp/ocsp_asn.c
-
-libshare_ssl_a-ocsp_asn.obj: $(SSL_DIR)/crypto/ocsp/ocsp_asn.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-ocsp_asn.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-ocsp_asn.Tpo -c -o libshare_ssl_a-ocsp_asn.obj `if test -f '$(SSL_DIR)/crypto/ocsp/ocsp_asn.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/ocsp/ocsp_asn.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/ocsp/ocsp_asn.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-ocsp_asn.Tpo $(DEPDIR)/libshare_ssl_a-ocsp_asn.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/ocsp/ocsp_asn.c' object='libshare_ssl_a-ocsp_asn.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-ocsp_asn.obj `if test -f '$(SSL_DIR)/crypto/ocsp/ocsp_asn.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/ocsp/ocsp_asn.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/ocsp/ocsp_asn.c'; fi`
-
-libshare_ssl_a-ocsp_ext.o: $(SSL_DIR)/crypto/ocsp/ocsp_ext.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-ocsp_ext.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-ocsp_ext.Tpo -c -o libshare_ssl_a-ocsp_ext.o `test -f '$(SSL_DIR)/crypto/ocsp/ocsp_ext.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/ocsp/ocsp_ext.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-ocsp_ext.Tpo $(DEPDIR)/libshare_ssl_a-ocsp_ext.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/ocsp/ocsp_ext.c' object='libshare_ssl_a-ocsp_ext.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-ocsp_ext.o `test -f '$(SSL_DIR)/crypto/ocsp/ocsp_ext.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/ocsp/ocsp_ext.c
-
-libshare_ssl_a-ocsp_ext.obj: $(SSL_DIR)/crypto/ocsp/ocsp_ext.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-ocsp_ext.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-ocsp_ext.Tpo -c -o libshare_ssl_a-ocsp_ext.obj `if test -f '$(SSL_DIR)/crypto/ocsp/ocsp_ext.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/ocsp/ocsp_ext.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/ocsp/ocsp_ext.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-ocsp_ext.Tpo $(DEPDIR)/libshare_ssl_a-ocsp_ext.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/ocsp/ocsp_ext.c' object='libshare_ssl_a-ocsp_ext.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-ocsp_ext.obj `if test -f '$(SSL_DIR)/crypto/ocsp/ocsp_ext.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/ocsp/ocsp_ext.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/ocsp/ocsp_ext.c'; fi`
-
-libshare_ssl_a-ocsp_ht.o: $(SSL_DIR)/crypto/ocsp/ocsp_ht.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-ocsp_ht.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-ocsp_ht.Tpo -c -o libshare_ssl_a-ocsp_ht.o `test -f '$(SSL_DIR)/crypto/ocsp/ocsp_ht.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/ocsp/ocsp_ht.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-ocsp_ht.Tpo $(DEPDIR)/libshare_ssl_a-ocsp_ht.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/ocsp/ocsp_ht.c' object='libshare_ssl_a-ocsp_ht.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-ocsp_ht.o `test -f '$(SSL_DIR)/crypto/ocsp/ocsp_ht.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/ocsp/ocsp_ht.c
-
-libshare_ssl_a-ocsp_ht.obj: $(SSL_DIR)/crypto/ocsp/ocsp_ht.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-ocsp_ht.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-ocsp_ht.Tpo -c -o libshare_ssl_a-ocsp_ht.obj `if test -f '$(SSL_DIR)/crypto/ocsp/ocsp_ht.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/ocsp/ocsp_ht.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/ocsp/ocsp_ht.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-ocsp_ht.Tpo $(DEPDIR)/libshare_ssl_a-ocsp_ht.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/ocsp/ocsp_ht.c' object='libshare_ssl_a-ocsp_ht.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-ocsp_ht.obj `if test -f '$(SSL_DIR)/crypto/ocsp/ocsp_ht.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/ocsp/ocsp_ht.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/ocsp/ocsp_ht.c'; fi`
-
-libshare_ssl_a-ocsp_cl.o: $(SSL_DIR)/crypto/ocsp/ocsp_cl.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-ocsp_cl.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-ocsp_cl.Tpo -c -o libshare_ssl_a-ocsp_cl.o `test -f '$(SSL_DIR)/crypto/ocsp/ocsp_cl.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/ocsp/ocsp_cl.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-ocsp_cl.Tpo $(DEPDIR)/libshare_ssl_a-ocsp_cl.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/ocsp/ocsp_cl.c' object='libshare_ssl_a-ocsp_cl.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-ocsp_cl.o `test -f '$(SSL_DIR)/crypto/ocsp/ocsp_cl.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/ocsp/ocsp_cl.c
-
-libshare_ssl_a-ocsp_cl.obj: $(SSL_DIR)/crypto/ocsp/ocsp_cl.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-ocsp_cl.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-ocsp_cl.Tpo -c -o libshare_ssl_a-ocsp_cl.obj `if test -f '$(SSL_DIR)/crypto/ocsp/ocsp_cl.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/ocsp/ocsp_cl.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/ocsp/ocsp_cl.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-ocsp_cl.Tpo $(DEPDIR)/libshare_ssl_a-ocsp_cl.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/ocsp/ocsp_cl.c' object='libshare_ssl_a-ocsp_cl.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-ocsp_cl.obj `if test -f '$(SSL_DIR)/crypto/ocsp/ocsp_cl.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/ocsp/ocsp_cl.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/ocsp/ocsp_cl.c'; fi`
-
-libshare_ssl_a-ocsp_srv.o: $(SSL_DIR)/crypto/ocsp/ocsp_srv.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-ocsp_srv.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-ocsp_srv.Tpo -c -o libshare_ssl_a-ocsp_srv.o `test -f '$(SSL_DIR)/crypto/ocsp/ocsp_srv.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/ocsp/ocsp_srv.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-ocsp_srv.Tpo $(DEPDIR)/libshare_ssl_a-ocsp_srv.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/ocsp/ocsp_srv.c' object='libshare_ssl_a-ocsp_srv.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-ocsp_srv.o `test -f '$(SSL_DIR)/crypto/ocsp/ocsp_srv.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/ocsp/ocsp_srv.c
-
-libshare_ssl_a-ocsp_srv.obj: $(SSL_DIR)/crypto/ocsp/ocsp_srv.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-ocsp_srv.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-ocsp_srv.Tpo -c -o libshare_ssl_a-ocsp_srv.obj `if test -f '$(SSL_DIR)/crypto/ocsp/ocsp_srv.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/ocsp/ocsp_srv.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/ocsp/ocsp_srv.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-ocsp_srv.Tpo $(DEPDIR)/libshare_ssl_a-ocsp_srv.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/ocsp/ocsp_srv.c' object='libshare_ssl_a-ocsp_srv.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-ocsp_srv.obj `if test -f '$(SSL_DIR)/crypto/ocsp/ocsp_srv.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/ocsp/ocsp_srv.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/ocsp/ocsp_srv.c'; fi`
-
-libshare_ssl_a-ocsp_prn.o: $(SSL_DIR)/crypto/ocsp/ocsp_prn.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-ocsp_prn.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-ocsp_prn.Tpo -c -o libshare_ssl_a-ocsp_prn.o `test -f '$(SSL_DIR)/crypto/ocsp/ocsp_prn.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/ocsp/ocsp_prn.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-ocsp_prn.Tpo $(DEPDIR)/libshare_ssl_a-ocsp_prn.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/ocsp/ocsp_prn.c' object='libshare_ssl_a-ocsp_prn.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-ocsp_prn.o `test -f '$(SSL_DIR)/crypto/ocsp/ocsp_prn.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/ocsp/ocsp_prn.c
-
-libshare_ssl_a-ocsp_prn.obj: $(SSL_DIR)/crypto/ocsp/ocsp_prn.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-ocsp_prn.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-ocsp_prn.Tpo -c -o libshare_ssl_a-ocsp_prn.obj `if test -f '$(SSL_DIR)/crypto/ocsp/ocsp_prn.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/ocsp/ocsp_prn.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/ocsp/ocsp_prn.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-ocsp_prn.Tpo $(DEPDIR)/libshare_ssl_a-ocsp_prn.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/ocsp/ocsp_prn.c' object='libshare_ssl_a-ocsp_prn.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-ocsp_prn.obj `if test -f '$(SSL_DIR)/crypto/ocsp/ocsp_prn.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/ocsp/ocsp_prn.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/ocsp/ocsp_prn.c'; fi`
-
-libshare_ssl_a-ocsp_vfy.o: $(SSL_DIR)/crypto/ocsp/ocsp_vfy.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-ocsp_vfy.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-ocsp_vfy.Tpo -c -o libshare_ssl_a-ocsp_vfy.o `test -f '$(SSL_DIR)/crypto/ocsp/ocsp_vfy.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/ocsp/ocsp_vfy.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-ocsp_vfy.Tpo $(DEPDIR)/libshare_ssl_a-ocsp_vfy.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/ocsp/ocsp_vfy.c' object='libshare_ssl_a-ocsp_vfy.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-ocsp_vfy.o `test -f '$(SSL_DIR)/crypto/ocsp/ocsp_vfy.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/ocsp/ocsp_vfy.c
-
-libshare_ssl_a-ocsp_vfy.obj: $(SSL_DIR)/crypto/ocsp/ocsp_vfy.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-ocsp_vfy.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-ocsp_vfy.Tpo -c -o libshare_ssl_a-ocsp_vfy.obj `if test -f '$(SSL_DIR)/crypto/ocsp/ocsp_vfy.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/ocsp/ocsp_vfy.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/ocsp/ocsp_vfy.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-ocsp_vfy.Tpo $(DEPDIR)/libshare_ssl_a-ocsp_vfy.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/ocsp/ocsp_vfy.c' object='libshare_ssl_a-ocsp_vfy.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-ocsp_vfy.obj `if test -f '$(SSL_DIR)/crypto/ocsp/ocsp_vfy.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/ocsp/ocsp_vfy.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/ocsp/ocsp_vfy.c'; fi`
-
 libshare_ssl_a-ui_lib.o: $(SSL_DIR)/crypto/ui/ui_lib.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-ui_lib.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-ui_lib.Tpo -c -o libshare_ssl_a-ui_lib.o `test -f '$(SSL_DIR)/crypto/ui/ui_lib.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/ui/ui_lib.c
 @am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-ui_lib.Tpo $(DEPDIR)/libshare_ssl_a-ui_lib.Po
@@ -11361,174 +11065,6 @@ libshare_ssl_a-krb5_asn.obj: $(SSL_DIR)/crypto/krb5/krb5_asn.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/krb5/krb5_asn.c' object='libshare_ssl_a-krb5_asn.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-krb5_asn.obj `if test -f '$(SSL_DIR)/crypto/krb5/krb5_asn.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/krb5/krb5_asn.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/krb5/krb5_asn.c'; fi`
-
-libshare_ssl_a-cms_lib.o: $(SSL_DIR)/crypto/cms/cms_lib.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-cms_lib.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-cms_lib.Tpo -c -o libshare_ssl_a-cms_lib.o `test -f '$(SSL_DIR)/crypto/cms/cms_lib.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/cms/cms_lib.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-cms_lib.Tpo $(DEPDIR)/libshare_ssl_a-cms_lib.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/cms/cms_lib.c' object='libshare_ssl_a-cms_lib.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-cms_lib.o `test -f '$(SSL_DIR)/crypto/cms/cms_lib.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/cms/cms_lib.c
-
-libshare_ssl_a-cms_lib.obj: $(SSL_DIR)/crypto/cms/cms_lib.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-cms_lib.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-cms_lib.Tpo -c -o libshare_ssl_a-cms_lib.obj `if test -f '$(SSL_DIR)/crypto/cms/cms_lib.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/cms/cms_lib.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/cms/cms_lib.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-cms_lib.Tpo $(DEPDIR)/libshare_ssl_a-cms_lib.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/cms/cms_lib.c' object='libshare_ssl_a-cms_lib.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-cms_lib.obj `if test -f '$(SSL_DIR)/crypto/cms/cms_lib.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/cms/cms_lib.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/cms/cms_lib.c'; fi`
-
-libshare_ssl_a-cms_asn1.o: $(SSL_DIR)/crypto/cms/cms_asn1.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-cms_asn1.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-cms_asn1.Tpo -c -o libshare_ssl_a-cms_asn1.o `test -f '$(SSL_DIR)/crypto/cms/cms_asn1.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/cms/cms_asn1.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-cms_asn1.Tpo $(DEPDIR)/libshare_ssl_a-cms_asn1.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/cms/cms_asn1.c' object='libshare_ssl_a-cms_asn1.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-cms_asn1.o `test -f '$(SSL_DIR)/crypto/cms/cms_asn1.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/cms/cms_asn1.c
-
-libshare_ssl_a-cms_asn1.obj: $(SSL_DIR)/crypto/cms/cms_asn1.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-cms_asn1.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-cms_asn1.Tpo -c -o libshare_ssl_a-cms_asn1.obj `if test -f '$(SSL_DIR)/crypto/cms/cms_asn1.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/cms/cms_asn1.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/cms/cms_asn1.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-cms_asn1.Tpo $(DEPDIR)/libshare_ssl_a-cms_asn1.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/cms/cms_asn1.c' object='libshare_ssl_a-cms_asn1.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-cms_asn1.obj `if test -f '$(SSL_DIR)/crypto/cms/cms_asn1.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/cms/cms_asn1.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/cms/cms_asn1.c'; fi`
-
-libshare_ssl_a-cms_att.o: $(SSL_DIR)/crypto/cms/cms_att.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-cms_att.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-cms_att.Tpo -c -o libshare_ssl_a-cms_att.o `test -f '$(SSL_DIR)/crypto/cms/cms_att.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/cms/cms_att.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-cms_att.Tpo $(DEPDIR)/libshare_ssl_a-cms_att.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/cms/cms_att.c' object='libshare_ssl_a-cms_att.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-cms_att.o `test -f '$(SSL_DIR)/crypto/cms/cms_att.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/cms/cms_att.c
-
-libshare_ssl_a-cms_att.obj: $(SSL_DIR)/crypto/cms/cms_att.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-cms_att.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-cms_att.Tpo -c -o libshare_ssl_a-cms_att.obj `if test -f '$(SSL_DIR)/crypto/cms/cms_att.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/cms/cms_att.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/cms/cms_att.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-cms_att.Tpo $(DEPDIR)/libshare_ssl_a-cms_att.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/cms/cms_att.c' object='libshare_ssl_a-cms_att.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-cms_att.obj `if test -f '$(SSL_DIR)/crypto/cms/cms_att.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/cms/cms_att.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/cms/cms_att.c'; fi`
-
-libshare_ssl_a-cms_io.o: $(SSL_DIR)/crypto/cms/cms_io.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-cms_io.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-cms_io.Tpo -c -o libshare_ssl_a-cms_io.o `test -f '$(SSL_DIR)/crypto/cms/cms_io.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/cms/cms_io.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-cms_io.Tpo $(DEPDIR)/libshare_ssl_a-cms_io.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/cms/cms_io.c' object='libshare_ssl_a-cms_io.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-cms_io.o `test -f '$(SSL_DIR)/crypto/cms/cms_io.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/cms/cms_io.c
-
-libshare_ssl_a-cms_io.obj: $(SSL_DIR)/crypto/cms/cms_io.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-cms_io.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-cms_io.Tpo -c -o libshare_ssl_a-cms_io.obj `if test -f '$(SSL_DIR)/crypto/cms/cms_io.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/cms/cms_io.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/cms/cms_io.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-cms_io.Tpo $(DEPDIR)/libshare_ssl_a-cms_io.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/cms/cms_io.c' object='libshare_ssl_a-cms_io.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-cms_io.obj `if test -f '$(SSL_DIR)/crypto/cms/cms_io.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/cms/cms_io.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/cms/cms_io.c'; fi`
-
-libshare_ssl_a-cms_smime.o: $(SSL_DIR)/crypto/cms/cms_smime.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-cms_smime.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-cms_smime.Tpo -c -o libshare_ssl_a-cms_smime.o `test -f '$(SSL_DIR)/crypto/cms/cms_smime.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/cms/cms_smime.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-cms_smime.Tpo $(DEPDIR)/libshare_ssl_a-cms_smime.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/cms/cms_smime.c' object='libshare_ssl_a-cms_smime.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-cms_smime.o `test -f '$(SSL_DIR)/crypto/cms/cms_smime.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/cms/cms_smime.c
-
-libshare_ssl_a-cms_smime.obj: $(SSL_DIR)/crypto/cms/cms_smime.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-cms_smime.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-cms_smime.Tpo -c -o libshare_ssl_a-cms_smime.obj `if test -f '$(SSL_DIR)/crypto/cms/cms_smime.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/cms/cms_smime.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/cms/cms_smime.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-cms_smime.Tpo $(DEPDIR)/libshare_ssl_a-cms_smime.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/cms/cms_smime.c' object='libshare_ssl_a-cms_smime.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-cms_smime.obj `if test -f '$(SSL_DIR)/crypto/cms/cms_smime.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/cms/cms_smime.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/cms/cms_smime.c'; fi`
-
-libshare_ssl_a-cms_sd.o: $(SSL_DIR)/crypto/cms/cms_sd.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-cms_sd.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-cms_sd.Tpo -c -o libshare_ssl_a-cms_sd.o `test -f '$(SSL_DIR)/crypto/cms/cms_sd.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/cms/cms_sd.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-cms_sd.Tpo $(DEPDIR)/libshare_ssl_a-cms_sd.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/cms/cms_sd.c' object='libshare_ssl_a-cms_sd.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-cms_sd.o `test -f '$(SSL_DIR)/crypto/cms/cms_sd.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/cms/cms_sd.c
-
-libshare_ssl_a-cms_sd.obj: $(SSL_DIR)/crypto/cms/cms_sd.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-cms_sd.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-cms_sd.Tpo -c -o libshare_ssl_a-cms_sd.obj `if test -f '$(SSL_DIR)/crypto/cms/cms_sd.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/cms/cms_sd.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/cms/cms_sd.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-cms_sd.Tpo $(DEPDIR)/libshare_ssl_a-cms_sd.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/cms/cms_sd.c' object='libshare_ssl_a-cms_sd.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-cms_sd.obj `if test -f '$(SSL_DIR)/crypto/cms/cms_sd.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/cms/cms_sd.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/cms/cms_sd.c'; fi`
-
-libshare_ssl_a-cms_dd.o: $(SSL_DIR)/crypto/cms/cms_dd.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-cms_dd.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-cms_dd.Tpo -c -o libshare_ssl_a-cms_dd.o `test -f '$(SSL_DIR)/crypto/cms/cms_dd.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/cms/cms_dd.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-cms_dd.Tpo $(DEPDIR)/libshare_ssl_a-cms_dd.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/cms/cms_dd.c' object='libshare_ssl_a-cms_dd.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-cms_dd.o `test -f '$(SSL_DIR)/crypto/cms/cms_dd.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/cms/cms_dd.c
-
-libshare_ssl_a-cms_dd.obj: $(SSL_DIR)/crypto/cms/cms_dd.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-cms_dd.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-cms_dd.Tpo -c -o libshare_ssl_a-cms_dd.obj `if test -f '$(SSL_DIR)/crypto/cms/cms_dd.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/cms/cms_dd.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/cms/cms_dd.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-cms_dd.Tpo $(DEPDIR)/libshare_ssl_a-cms_dd.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/cms/cms_dd.c' object='libshare_ssl_a-cms_dd.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-cms_dd.obj `if test -f '$(SSL_DIR)/crypto/cms/cms_dd.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/cms/cms_dd.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/cms/cms_dd.c'; fi`
-
-libshare_ssl_a-cms_cd.o: $(SSL_DIR)/crypto/cms/cms_cd.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-cms_cd.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-cms_cd.Tpo -c -o libshare_ssl_a-cms_cd.o `test -f '$(SSL_DIR)/crypto/cms/cms_cd.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/cms/cms_cd.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-cms_cd.Tpo $(DEPDIR)/libshare_ssl_a-cms_cd.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/cms/cms_cd.c' object='libshare_ssl_a-cms_cd.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-cms_cd.o `test -f '$(SSL_DIR)/crypto/cms/cms_cd.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/cms/cms_cd.c
-
-libshare_ssl_a-cms_cd.obj: $(SSL_DIR)/crypto/cms/cms_cd.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-cms_cd.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-cms_cd.Tpo -c -o libshare_ssl_a-cms_cd.obj `if test -f '$(SSL_DIR)/crypto/cms/cms_cd.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/cms/cms_cd.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/cms/cms_cd.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-cms_cd.Tpo $(DEPDIR)/libshare_ssl_a-cms_cd.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/cms/cms_cd.c' object='libshare_ssl_a-cms_cd.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-cms_cd.obj `if test -f '$(SSL_DIR)/crypto/cms/cms_cd.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/cms/cms_cd.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/cms/cms_cd.c'; fi`
-
-libshare_ssl_a-cms_env.o: $(SSL_DIR)/crypto/cms/cms_env.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-cms_env.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-cms_env.Tpo -c -o libshare_ssl_a-cms_env.o `test -f '$(SSL_DIR)/crypto/cms/cms_env.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/cms/cms_env.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-cms_env.Tpo $(DEPDIR)/libshare_ssl_a-cms_env.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/cms/cms_env.c' object='libshare_ssl_a-cms_env.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-cms_env.o `test -f '$(SSL_DIR)/crypto/cms/cms_env.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/cms/cms_env.c
-
-libshare_ssl_a-cms_env.obj: $(SSL_DIR)/crypto/cms/cms_env.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-cms_env.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-cms_env.Tpo -c -o libshare_ssl_a-cms_env.obj `if test -f '$(SSL_DIR)/crypto/cms/cms_env.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/cms/cms_env.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/cms/cms_env.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-cms_env.Tpo $(DEPDIR)/libshare_ssl_a-cms_env.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/cms/cms_env.c' object='libshare_ssl_a-cms_env.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-cms_env.obj `if test -f '$(SSL_DIR)/crypto/cms/cms_env.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/cms/cms_env.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/cms/cms_env.c'; fi`
-
-libshare_ssl_a-cms_enc.o: $(SSL_DIR)/crypto/cms/cms_enc.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-cms_enc.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-cms_enc.Tpo -c -o libshare_ssl_a-cms_enc.o `test -f '$(SSL_DIR)/crypto/cms/cms_enc.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/cms/cms_enc.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-cms_enc.Tpo $(DEPDIR)/libshare_ssl_a-cms_enc.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/cms/cms_enc.c' object='libshare_ssl_a-cms_enc.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-cms_enc.o `test -f '$(SSL_DIR)/crypto/cms/cms_enc.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/cms/cms_enc.c
-
-libshare_ssl_a-cms_enc.obj: $(SSL_DIR)/crypto/cms/cms_enc.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-cms_enc.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-cms_enc.Tpo -c -o libshare_ssl_a-cms_enc.obj `if test -f '$(SSL_DIR)/crypto/cms/cms_enc.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/cms/cms_enc.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/cms/cms_enc.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-cms_enc.Tpo $(DEPDIR)/libshare_ssl_a-cms_enc.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/cms/cms_enc.c' object='libshare_ssl_a-cms_enc.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-cms_enc.obj `if test -f '$(SSL_DIR)/crypto/cms/cms_enc.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/cms/cms_enc.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/cms/cms_enc.c'; fi`
-
-libshare_ssl_a-cms_ess.o: $(SSL_DIR)/crypto/cms/cms_ess.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-cms_ess.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-cms_ess.Tpo -c -o libshare_ssl_a-cms_ess.o `test -f '$(SSL_DIR)/crypto/cms/cms_ess.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/cms/cms_ess.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-cms_ess.Tpo $(DEPDIR)/libshare_ssl_a-cms_ess.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/cms/cms_ess.c' object='libshare_ssl_a-cms_ess.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-cms_ess.o `test -f '$(SSL_DIR)/crypto/cms/cms_ess.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/cms/cms_ess.c
-
-libshare_ssl_a-cms_ess.obj: $(SSL_DIR)/crypto/cms/cms_ess.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-cms_ess.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-cms_ess.Tpo -c -o libshare_ssl_a-cms_ess.obj `if test -f '$(SSL_DIR)/crypto/cms/cms_ess.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/cms/cms_ess.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/cms/cms_ess.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-cms_ess.Tpo $(DEPDIR)/libshare_ssl_a-cms_ess.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/cms/cms_ess.c' object='libshare_ssl_a-cms_ess.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-cms_ess.obj `if test -f '$(SSL_DIR)/crypto/cms/cms_ess.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/cms/cms_ess.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/cms/cms_ess.c'; fi`
-
-libshare_ssl_a-cms_pwri.o: $(SSL_DIR)/crypto/cms/cms_pwri.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-cms_pwri.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-cms_pwri.Tpo -c -o libshare_ssl_a-cms_pwri.o `test -f '$(SSL_DIR)/crypto/cms/cms_pwri.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/cms/cms_pwri.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-cms_pwri.Tpo $(DEPDIR)/libshare_ssl_a-cms_pwri.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/cms/cms_pwri.c' object='libshare_ssl_a-cms_pwri.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-cms_pwri.o `test -f '$(SSL_DIR)/crypto/cms/cms_pwri.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/cms/cms_pwri.c
-
-libshare_ssl_a-cms_pwri.obj: $(SSL_DIR)/crypto/cms/cms_pwri.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-cms_pwri.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-cms_pwri.Tpo -c -o libshare_ssl_a-cms_pwri.obj `if test -f '$(SSL_DIR)/crypto/cms/cms_pwri.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/cms/cms_pwri.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/cms/cms_pwri.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-cms_pwri.Tpo $(DEPDIR)/libshare_ssl_a-cms_pwri.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/cms/cms_pwri.c' object='libshare_ssl_a-cms_pwri.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-cms_pwri.obj `if test -f '$(SSL_DIR)/crypto/cms/cms_pwri.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/cms/cms_pwri.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/cms/cms_pwri.c'; fi`
 
 libshare_ssl_a-pqueue.o: $(SSL_DIR)/crypto/pqueue/pqueue.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-pqueue.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-pqueue.Tpo -c -o libshare_ssl_a-pqueue.o `test -f '$(SSL_DIR)/crypto/pqueue/pqueue.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/pqueue/pqueue.c
@@ -12075,6 +11611,440 @@ libshare_ssl_a-gost_sign.obj: $(SSL_DIR)/engines/ccgost/gost_sign.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/engines/ccgost/gost_sign.c' object='libshare_ssl_a-gost_sign.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-gost_sign.obj `if test -f '$(SSL_DIR)/engines/ccgost/gost_sign.c'; then $(CYGPATH_W) '$(SSL_DIR)/engines/ccgost/gost_sign.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/engines/ccgost/gost_sign.c'; fi`
+
+libshare_ssl_a-dso_err.o: $(SSL_DIR)/crypto/dso/dso_err.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-dso_err.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-dso_err.Tpo -c -o libshare_ssl_a-dso_err.o `test -f '$(SSL_DIR)/crypto/dso/dso_err.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/dso/dso_err.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-dso_err.Tpo $(DEPDIR)/libshare_ssl_a-dso_err.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/dso/dso_err.c' object='libshare_ssl_a-dso_err.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-dso_err.o `test -f '$(SSL_DIR)/crypto/dso/dso_err.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/dso/dso_err.c
+
+libshare_ssl_a-dso_err.obj: $(SSL_DIR)/crypto/dso/dso_err.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-dso_err.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-dso_err.Tpo -c -o libshare_ssl_a-dso_err.obj `if test -f '$(SSL_DIR)/crypto/dso/dso_err.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/dso/dso_err.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/dso/dso_err.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-dso_err.Tpo $(DEPDIR)/libshare_ssl_a-dso_err.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/dso/dso_err.c' object='libshare_ssl_a-dso_err.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-dso_err.obj `if test -f '$(SSL_DIR)/crypto/dso/dso_err.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/dso/dso_err.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/dso/dso_err.c'; fi`
+
+libshare_ssl_a-dso_dl.o: $(SSL_DIR)/crypto/dso/dso_dl.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-dso_dl.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-dso_dl.Tpo -c -o libshare_ssl_a-dso_dl.o `test -f '$(SSL_DIR)/crypto/dso/dso_dl.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/dso/dso_dl.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-dso_dl.Tpo $(DEPDIR)/libshare_ssl_a-dso_dl.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/dso/dso_dl.c' object='libshare_ssl_a-dso_dl.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-dso_dl.o `test -f '$(SSL_DIR)/crypto/dso/dso_dl.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/dso/dso_dl.c
+
+libshare_ssl_a-dso_dl.obj: $(SSL_DIR)/crypto/dso/dso_dl.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-dso_dl.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-dso_dl.Tpo -c -o libshare_ssl_a-dso_dl.obj `if test -f '$(SSL_DIR)/crypto/dso/dso_dl.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/dso/dso_dl.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/dso/dso_dl.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-dso_dl.Tpo $(DEPDIR)/libshare_ssl_a-dso_dl.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/dso/dso_dl.c' object='libshare_ssl_a-dso_dl.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-dso_dl.obj `if test -f '$(SSL_DIR)/crypto/dso/dso_dl.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/dso/dso_dl.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/dso/dso_dl.c'; fi`
+
+libshare_ssl_a-dso_dlfcn.o: $(SSL_DIR)/crypto/dso/dso_dlfcn.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-dso_dlfcn.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-dso_dlfcn.Tpo -c -o libshare_ssl_a-dso_dlfcn.o `test -f '$(SSL_DIR)/crypto/dso/dso_dlfcn.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/dso/dso_dlfcn.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-dso_dlfcn.Tpo $(DEPDIR)/libshare_ssl_a-dso_dlfcn.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/dso/dso_dlfcn.c' object='libshare_ssl_a-dso_dlfcn.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-dso_dlfcn.o `test -f '$(SSL_DIR)/crypto/dso/dso_dlfcn.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/dso/dso_dlfcn.c
+
+libshare_ssl_a-dso_dlfcn.obj: $(SSL_DIR)/crypto/dso/dso_dlfcn.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-dso_dlfcn.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-dso_dlfcn.Tpo -c -o libshare_ssl_a-dso_dlfcn.obj `if test -f '$(SSL_DIR)/crypto/dso/dso_dlfcn.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/dso/dso_dlfcn.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/dso/dso_dlfcn.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-dso_dlfcn.Tpo $(DEPDIR)/libshare_ssl_a-dso_dlfcn.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/dso/dso_dlfcn.c' object='libshare_ssl_a-dso_dlfcn.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-dso_dlfcn.obj `if test -f '$(SSL_DIR)/crypto/dso/dso_dlfcn.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/dso/dso_dlfcn.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/dso/dso_dlfcn.c'; fi`
+
+libshare_ssl_a-dso_lib.o: $(SSL_DIR)/crypto/dso/dso_lib.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-dso_lib.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-dso_lib.Tpo -c -o libshare_ssl_a-dso_lib.o `test -f '$(SSL_DIR)/crypto/dso/dso_lib.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/dso/dso_lib.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-dso_lib.Tpo $(DEPDIR)/libshare_ssl_a-dso_lib.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/dso/dso_lib.c' object='libshare_ssl_a-dso_lib.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-dso_lib.o `test -f '$(SSL_DIR)/crypto/dso/dso_lib.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/dso/dso_lib.c
+
+libshare_ssl_a-dso_lib.obj: $(SSL_DIR)/crypto/dso/dso_lib.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-dso_lib.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-dso_lib.Tpo -c -o libshare_ssl_a-dso_lib.obj `if test -f '$(SSL_DIR)/crypto/dso/dso_lib.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/dso/dso_lib.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/dso/dso_lib.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-dso_lib.Tpo $(DEPDIR)/libshare_ssl_a-dso_lib.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/dso/dso_lib.c' object='libshare_ssl_a-dso_lib.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-dso_lib.obj `if test -f '$(SSL_DIR)/crypto/dso/dso_lib.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/dso/dso_lib.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/dso/dso_lib.c'; fi`
+
+libshare_ssl_a-dso_null.o: $(SSL_DIR)/crypto/dso/dso_null.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-dso_null.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-dso_null.Tpo -c -o libshare_ssl_a-dso_null.o `test -f '$(SSL_DIR)/crypto/dso/dso_null.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/dso/dso_null.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-dso_null.Tpo $(DEPDIR)/libshare_ssl_a-dso_null.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/dso/dso_null.c' object='libshare_ssl_a-dso_null.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-dso_null.o `test -f '$(SSL_DIR)/crypto/dso/dso_null.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/dso/dso_null.c
+
+libshare_ssl_a-dso_null.obj: $(SSL_DIR)/crypto/dso/dso_null.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-dso_null.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-dso_null.Tpo -c -o libshare_ssl_a-dso_null.obj `if test -f '$(SSL_DIR)/crypto/dso/dso_null.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/dso/dso_null.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/dso/dso_null.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-dso_null.Tpo $(DEPDIR)/libshare_ssl_a-dso_null.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/dso/dso_null.c' object='libshare_ssl_a-dso_null.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-dso_null.obj `if test -f '$(SSL_DIR)/crypto/dso/dso_null.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/dso/dso_null.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/dso/dso_null.c'; fi`
+
+libshare_ssl_a-dso_openssl.o: $(SSL_DIR)/crypto/dso/dso_openssl.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-dso_openssl.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-dso_openssl.Tpo -c -o libshare_ssl_a-dso_openssl.o `test -f '$(SSL_DIR)/crypto/dso/dso_openssl.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/dso/dso_openssl.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-dso_openssl.Tpo $(DEPDIR)/libshare_ssl_a-dso_openssl.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/dso/dso_openssl.c' object='libshare_ssl_a-dso_openssl.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-dso_openssl.o `test -f '$(SSL_DIR)/crypto/dso/dso_openssl.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/dso/dso_openssl.c
+
+libshare_ssl_a-dso_openssl.obj: $(SSL_DIR)/crypto/dso/dso_openssl.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-dso_openssl.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-dso_openssl.Tpo -c -o libshare_ssl_a-dso_openssl.obj `if test -f '$(SSL_DIR)/crypto/dso/dso_openssl.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/dso/dso_openssl.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/dso/dso_openssl.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-dso_openssl.Tpo $(DEPDIR)/libshare_ssl_a-dso_openssl.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/dso/dso_openssl.c' object='libshare_ssl_a-dso_openssl.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-dso_openssl.obj `if test -f '$(SSL_DIR)/crypto/dso/dso_openssl.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/dso/dso_openssl.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/dso/dso_openssl.c'; fi`
+
+libshare_ssl_a-dso_win32.o: $(SSL_DIR)/crypto/dso/dso_win32.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-dso_win32.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-dso_win32.Tpo -c -o libshare_ssl_a-dso_win32.o `test -f '$(SSL_DIR)/crypto/dso/dso_win32.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/dso/dso_win32.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-dso_win32.Tpo $(DEPDIR)/libshare_ssl_a-dso_win32.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/dso/dso_win32.c' object='libshare_ssl_a-dso_win32.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-dso_win32.o `test -f '$(SSL_DIR)/crypto/dso/dso_win32.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/dso/dso_win32.c
+
+libshare_ssl_a-dso_win32.obj: $(SSL_DIR)/crypto/dso/dso_win32.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-dso_win32.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-dso_win32.Tpo -c -o libshare_ssl_a-dso_win32.obj `if test -f '$(SSL_DIR)/crypto/dso/dso_win32.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/dso/dso_win32.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/dso/dso_win32.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-dso_win32.Tpo $(DEPDIR)/libshare_ssl_a-dso_win32.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/dso/dso_win32.c' object='libshare_ssl_a-dso_win32.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-dso_win32.obj `if test -f '$(SSL_DIR)/crypto/dso/dso_win32.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/dso/dso_win32.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/dso/dso_win32.c'; fi`
+
+libshare_ssl_a-dso_vms.o: $(SSL_DIR)/crypto/dso/dso_vms.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-dso_vms.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-dso_vms.Tpo -c -o libshare_ssl_a-dso_vms.o `test -f '$(SSL_DIR)/crypto/dso/dso_vms.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/dso/dso_vms.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-dso_vms.Tpo $(DEPDIR)/libshare_ssl_a-dso_vms.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/dso/dso_vms.c' object='libshare_ssl_a-dso_vms.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-dso_vms.o `test -f '$(SSL_DIR)/crypto/dso/dso_vms.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/dso/dso_vms.c
+
+libshare_ssl_a-dso_vms.obj: $(SSL_DIR)/crypto/dso/dso_vms.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-dso_vms.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-dso_vms.Tpo -c -o libshare_ssl_a-dso_vms.obj `if test -f '$(SSL_DIR)/crypto/dso/dso_vms.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/dso/dso_vms.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/dso/dso_vms.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-dso_vms.Tpo $(DEPDIR)/libshare_ssl_a-dso_vms.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/dso/dso_vms.c' object='libshare_ssl_a-dso_vms.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-dso_vms.obj `if test -f '$(SSL_DIR)/crypto/dso/dso_vms.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/dso/dso_vms.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/dso/dso_vms.c'; fi`
+
+libshare_ssl_a-dso_beos.o: $(SSL_DIR)/crypto/dso/dso_beos.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-dso_beos.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-dso_beos.Tpo -c -o libshare_ssl_a-dso_beos.o `test -f '$(SSL_DIR)/crypto/dso/dso_beos.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/dso/dso_beos.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-dso_beos.Tpo $(DEPDIR)/libshare_ssl_a-dso_beos.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/dso/dso_beos.c' object='libshare_ssl_a-dso_beos.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-dso_beos.o `test -f '$(SSL_DIR)/crypto/dso/dso_beos.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/dso/dso_beos.c
+
+libshare_ssl_a-dso_beos.obj: $(SSL_DIR)/crypto/dso/dso_beos.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-dso_beos.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-dso_beos.Tpo -c -o libshare_ssl_a-dso_beos.obj `if test -f '$(SSL_DIR)/crypto/dso/dso_beos.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/dso/dso_beos.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/dso/dso_beos.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-dso_beos.Tpo $(DEPDIR)/libshare_ssl_a-dso_beos.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/dso/dso_beos.c' object='libshare_ssl_a-dso_beos.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-dso_beos.obj `if test -f '$(SSL_DIR)/crypto/dso/dso_beos.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/dso/dso_beos.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/dso/dso_beos.c'; fi`
+
+libshare_ssl_a-cms_lib.o: $(SSL_DIR)/crypto/cms/cms_lib.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-cms_lib.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-cms_lib.Tpo -c -o libshare_ssl_a-cms_lib.o `test -f '$(SSL_DIR)/crypto/cms/cms_lib.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/cms/cms_lib.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-cms_lib.Tpo $(DEPDIR)/libshare_ssl_a-cms_lib.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/cms/cms_lib.c' object='libshare_ssl_a-cms_lib.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-cms_lib.o `test -f '$(SSL_DIR)/crypto/cms/cms_lib.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/cms/cms_lib.c
+
+libshare_ssl_a-cms_lib.obj: $(SSL_DIR)/crypto/cms/cms_lib.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-cms_lib.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-cms_lib.Tpo -c -o libshare_ssl_a-cms_lib.obj `if test -f '$(SSL_DIR)/crypto/cms/cms_lib.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/cms/cms_lib.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/cms/cms_lib.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-cms_lib.Tpo $(DEPDIR)/libshare_ssl_a-cms_lib.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/cms/cms_lib.c' object='libshare_ssl_a-cms_lib.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-cms_lib.obj `if test -f '$(SSL_DIR)/crypto/cms/cms_lib.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/cms/cms_lib.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/cms/cms_lib.c'; fi`
+
+libshare_ssl_a-cms_asn1.o: $(SSL_DIR)/crypto/cms/cms_asn1.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-cms_asn1.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-cms_asn1.Tpo -c -o libshare_ssl_a-cms_asn1.o `test -f '$(SSL_DIR)/crypto/cms/cms_asn1.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/cms/cms_asn1.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-cms_asn1.Tpo $(DEPDIR)/libshare_ssl_a-cms_asn1.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/cms/cms_asn1.c' object='libshare_ssl_a-cms_asn1.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-cms_asn1.o `test -f '$(SSL_DIR)/crypto/cms/cms_asn1.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/cms/cms_asn1.c
+
+libshare_ssl_a-cms_asn1.obj: $(SSL_DIR)/crypto/cms/cms_asn1.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-cms_asn1.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-cms_asn1.Tpo -c -o libshare_ssl_a-cms_asn1.obj `if test -f '$(SSL_DIR)/crypto/cms/cms_asn1.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/cms/cms_asn1.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/cms/cms_asn1.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-cms_asn1.Tpo $(DEPDIR)/libshare_ssl_a-cms_asn1.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/cms/cms_asn1.c' object='libshare_ssl_a-cms_asn1.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-cms_asn1.obj `if test -f '$(SSL_DIR)/crypto/cms/cms_asn1.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/cms/cms_asn1.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/cms/cms_asn1.c'; fi`
+
+libshare_ssl_a-cms_att.o: $(SSL_DIR)/crypto/cms/cms_att.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-cms_att.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-cms_att.Tpo -c -o libshare_ssl_a-cms_att.o `test -f '$(SSL_DIR)/crypto/cms/cms_att.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/cms/cms_att.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-cms_att.Tpo $(DEPDIR)/libshare_ssl_a-cms_att.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/cms/cms_att.c' object='libshare_ssl_a-cms_att.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-cms_att.o `test -f '$(SSL_DIR)/crypto/cms/cms_att.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/cms/cms_att.c
+
+libshare_ssl_a-cms_att.obj: $(SSL_DIR)/crypto/cms/cms_att.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-cms_att.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-cms_att.Tpo -c -o libshare_ssl_a-cms_att.obj `if test -f '$(SSL_DIR)/crypto/cms/cms_att.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/cms/cms_att.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/cms/cms_att.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-cms_att.Tpo $(DEPDIR)/libshare_ssl_a-cms_att.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/cms/cms_att.c' object='libshare_ssl_a-cms_att.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-cms_att.obj `if test -f '$(SSL_DIR)/crypto/cms/cms_att.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/cms/cms_att.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/cms/cms_att.c'; fi`
+
+libshare_ssl_a-cms_io.o: $(SSL_DIR)/crypto/cms/cms_io.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-cms_io.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-cms_io.Tpo -c -o libshare_ssl_a-cms_io.o `test -f '$(SSL_DIR)/crypto/cms/cms_io.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/cms/cms_io.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-cms_io.Tpo $(DEPDIR)/libshare_ssl_a-cms_io.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/cms/cms_io.c' object='libshare_ssl_a-cms_io.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-cms_io.o `test -f '$(SSL_DIR)/crypto/cms/cms_io.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/cms/cms_io.c
+
+libshare_ssl_a-cms_io.obj: $(SSL_DIR)/crypto/cms/cms_io.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-cms_io.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-cms_io.Tpo -c -o libshare_ssl_a-cms_io.obj `if test -f '$(SSL_DIR)/crypto/cms/cms_io.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/cms/cms_io.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/cms/cms_io.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-cms_io.Tpo $(DEPDIR)/libshare_ssl_a-cms_io.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/cms/cms_io.c' object='libshare_ssl_a-cms_io.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-cms_io.obj `if test -f '$(SSL_DIR)/crypto/cms/cms_io.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/cms/cms_io.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/cms/cms_io.c'; fi`
+
+libshare_ssl_a-cms_smime.o: $(SSL_DIR)/crypto/cms/cms_smime.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-cms_smime.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-cms_smime.Tpo -c -o libshare_ssl_a-cms_smime.o `test -f '$(SSL_DIR)/crypto/cms/cms_smime.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/cms/cms_smime.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-cms_smime.Tpo $(DEPDIR)/libshare_ssl_a-cms_smime.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/cms/cms_smime.c' object='libshare_ssl_a-cms_smime.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-cms_smime.o `test -f '$(SSL_DIR)/crypto/cms/cms_smime.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/cms/cms_smime.c
+
+libshare_ssl_a-cms_smime.obj: $(SSL_DIR)/crypto/cms/cms_smime.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-cms_smime.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-cms_smime.Tpo -c -o libshare_ssl_a-cms_smime.obj `if test -f '$(SSL_DIR)/crypto/cms/cms_smime.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/cms/cms_smime.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/cms/cms_smime.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-cms_smime.Tpo $(DEPDIR)/libshare_ssl_a-cms_smime.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/cms/cms_smime.c' object='libshare_ssl_a-cms_smime.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-cms_smime.obj `if test -f '$(SSL_DIR)/crypto/cms/cms_smime.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/cms/cms_smime.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/cms/cms_smime.c'; fi`
+
+libshare_ssl_a-cms_err.o: $(SSL_DIR)/crypto/cms/cms_err.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-cms_err.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-cms_err.Tpo -c -o libshare_ssl_a-cms_err.o `test -f '$(SSL_DIR)/crypto/cms/cms_err.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/cms/cms_err.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-cms_err.Tpo $(DEPDIR)/libshare_ssl_a-cms_err.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/cms/cms_err.c' object='libshare_ssl_a-cms_err.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-cms_err.o `test -f '$(SSL_DIR)/crypto/cms/cms_err.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/cms/cms_err.c
+
+libshare_ssl_a-cms_err.obj: $(SSL_DIR)/crypto/cms/cms_err.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-cms_err.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-cms_err.Tpo -c -o libshare_ssl_a-cms_err.obj `if test -f '$(SSL_DIR)/crypto/cms/cms_err.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/cms/cms_err.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/cms/cms_err.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-cms_err.Tpo $(DEPDIR)/libshare_ssl_a-cms_err.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/cms/cms_err.c' object='libshare_ssl_a-cms_err.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-cms_err.obj `if test -f '$(SSL_DIR)/crypto/cms/cms_err.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/cms/cms_err.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/cms/cms_err.c'; fi`
+
+libshare_ssl_a-cms_sd.o: $(SSL_DIR)/crypto/cms/cms_sd.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-cms_sd.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-cms_sd.Tpo -c -o libshare_ssl_a-cms_sd.o `test -f '$(SSL_DIR)/crypto/cms/cms_sd.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/cms/cms_sd.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-cms_sd.Tpo $(DEPDIR)/libshare_ssl_a-cms_sd.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/cms/cms_sd.c' object='libshare_ssl_a-cms_sd.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-cms_sd.o `test -f '$(SSL_DIR)/crypto/cms/cms_sd.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/cms/cms_sd.c
+
+libshare_ssl_a-cms_sd.obj: $(SSL_DIR)/crypto/cms/cms_sd.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-cms_sd.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-cms_sd.Tpo -c -o libshare_ssl_a-cms_sd.obj `if test -f '$(SSL_DIR)/crypto/cms/cms_sd.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/cms/cms_sd.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/cms/cms_sd.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-cms_sd.Tpo $(DEPDIR)/libshare_ssl_a-cms_sd.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/cms/cms_sd.c' object='libshare_ssl_a-cms_sd.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-cms_sd.obj `if test -f '$(SSL_DIR)/crypto/cms/cms_sd.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/cms/cms_sd.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/cms/cms_sd.c'; fi`
+
+libshare_ssl_a-cms_dd.o: $(SSL_DIR)/crypto/cms/cms_dd.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-cms_dd.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-cms_dd.Tpo -c -o libshare_ssl_a-cms_dd.o `test -f '$(SSL_DIR)/crypto/cms/cms_dd.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/cms/cms_dd.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-cms_dd.Tpo $(DEPDIR)/libshare_ssl_a-cms_dd.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/cms/cms_dd.c' object='libshare_ssl_a-cms_dd.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-cms_dd.o `test -f '$(SSL_DIR)/crypto/cms/cms_dd.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/cms/cms_dd.c
+
+libshare_ssl_a-cms_dd.obj: $(SSL_DIR)/crypto/cms/cms_dd.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-cms_dd.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-cms_dd.Tpo -c -o libshare_ssl_a-cms_dd.obj `if test -f '$(SSL_DIR)/crypto/cms/cms_dd.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/cms/cms_dd.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/cms/cms_dd.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-cms_dd.Tpo $(DEPDIR)/libshare_ssl_a-cms_dd.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/cms/cms_dd.c' object='libshare_ssl_a-cms_dd.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-cms_dd.obj `if test -f '$(SSL_DIR)/crypto/cms/cms_dd.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/cms/cms_dd.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/cms/cms_dd.c'; fi`
+
+libshare_ssl_a-cms_cd.o: $(SSL_DIR)/crypto/cms/cms_cd.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-cms_cd.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-cms_cd.Tpo -c -o libshare_ssl_a-cms_cd.o `test -f '$(SSL_DIR)/crypto/cms/cms_cd.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/cms/cms_cd.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-cms_cd.Tpo $(DEPDIR)/libshare_ssl_a-cms_cd.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/cms/cms_cd.c' object='libshare_ssl_a-cms_cd.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-cms_cd.o `test -f '$(SSL_DIR)/crypto/cms/cms_cd.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/cms/cms_cd.c
+
+libshare_ssl_a-cms_cd.obj: $(SSL_DIR)/crypto/cms/cms_cd.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-cms_cd.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-cms_cd.Tpo -c -o libshare_ssl_a-cms_cd.obj `if test -f '$(SSL_DIR)/crypto/cms/cms_cd.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/cms/cms_cd.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/cms/cms_cd.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-cms_cd.Tpo $(DEPDIR)/libshare_ssl_a-cms_cd.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/cms/cms_cd.c' object='libshare_ssl_a-cms_cd.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-cms_cd.obj `if test -f '$(SSL_DIR)/crypto/cms/cms_cd.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/cms/cms_cd.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/cms/cms_cd.c'; fi`
+
+libshare_ssl_a-cms_env.o: $(SSL_DIR)/crypto/cms/cms_env.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-cms_env.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-cms_env.Tpo -c -o libshare_ssl_a-cms_env.o `test -f '$(SSL_DIR)/crypto/cms/cms_env.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/cms/cms_env.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-cms_env.Tpo $(DEPDIR)/libshare_ssl_a-cms_env.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/cms/cms_env.c' object='libshare_ssl_a-cms_env.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-cms_env.o `test -f '$(SSL_DIR)/crypto/cms/cms_env.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/cms/cms_env.c
+
+libshare_ssl_a-cms_env.obj: $(SSL_DIR)/crypto/cms/cms_env.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-cms_env.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-cms_env.Tpo -c -o libshare_ssl_a-cms_env.obj `if test -f '$(SSL_DIR)/crypto/cms/cms_env.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/cms/cms_env.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/cms/cms_env.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-cms_env.Tpo $(DEPDIR)/libshare_ssl_a-cms_env.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/cms/cms_env.c' object='libshare_ssl_a-cms_env.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-cms_env.obj `if test -f '$(SSL_DIR)/crypto/cms/cms_env.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/cms/cms_env.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/cms/cms_env.c'; fi`
+
+libshare_ssl_a-cms_enc.o: $(SSL_DIR)/crypto/cms/cms_enc.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-cms_enc.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-cms_enc.Tpo -c -o libshare_ssl_a-cms_enc.o `test -f '$(SSL_DIR)/crypto/cms/cms_enc.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/cms/cms_enc.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-cms_enc.Tpo $(DEPDIR)/libshare_ssl_a-cms_enc.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/cms/cms_enc.c' object='libshare_ssl_a-cms_enc.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-cms_enc.o `test -f '$(SSL_DIR)/crypto/cms/cms_enc.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/cms/cms_enc.c
+
+libshare_ssl_a-cms_enc.obj: $(SSL_DIR)/crypto/cms/cms_enc.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-cms_enc.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-cms_enc.Tpo -c -o libshare_ssl_a-cms_enc.obj `if test -f '$(SSL_DIR)/crypto/cms/cms_enc.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/cms/cms_enc.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/cms/cms_enc.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-cms_enc.Tpo $(DEPDIR)/libshare_ssl_a-cms_enc.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/cms/cms_enc.c' object='libshare_ssl_a-cms_enc.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-cms_enc.obj `if test -f '$(SSL_DIR)/crypto/cms/cms_enc.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/cms/cms_enc.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/cms/cms_enc.c'; fi`
+
+libshare_ssl_a-cms_ess.o: $(SSL_DIR)/crypto/cms/cms_ess.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-cms_ess.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-cms_ess.Tpo -c -o libshare_ssl_a-cms_ess.o `test -f '$(SSL_DIR)/crypto/cms/cms_ess.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/cms/cms_ess.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-cms_ess.Tpo $(DEPDIR)/libshare_ssl_a-cms_ess.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/cms/cms_ess.c' object='libshare_ssl_a-cms_ess.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-cms_ess.o `test -f '$(SSL_DIR)/crypto/cms/cms_ess.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/cms/cms_ess.c
+
+libshare_ssl_a-cms_ess.obj: $(SSL_DIR)/crypto/cms/cms_ess.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-cms_ess.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-cms_ess.Tpo -c -o libshare_ssl_a-cms_ess.obj `if test -f '$(SSL_DIR)/crypto/cms/cms_ess.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/cms/cms_ess.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/cms/cms_ess.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-cms_ess.Tpo $(DEPDIR)/libshare_ssl_a-cms_ess.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/cms/cms_ess.c' object='libshare_ssl_a-cms_ess.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-cms_ess.obj `if test -f '$(SSL_DIR)/crypto/cms/cms_ess.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/cms/cms_ess.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/cms/cms_ess.c'; fi`
+
+libshare_ssl_a-cms_pwri.o: $(SSL_DIR)/crypto/cms/cms_pwri.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-cms_pwri.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-cms_pwri.Tpo -c -o libshare_ssl_a-cms_pwri.o `test -f '$(SSL_DIR)/crypto/cms/cms_pwri.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/cms/cms_pwri.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-cms_pwri.Tpo $(DEPDIR)/libshare_ssl_a-cms_pwri.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/cms/cms_pwri.c' object='libshare_ssl_a-cms_pwri.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-cms_pwri.o `test -f '$(SSL_DIR)/crypto/cms/cms_pwri.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/cms/cms_pwri.c
+
+libshare_ssl_a-cms_pwri.obj: $(SSL_DIR)/crypto/cms/cms_pwri.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-cms_pwri.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-cms_pwri.Tpo -c -o libshare_ssl_a-cms_pwri.obj `if test -f '$(SSL_DIR)/crypto/cms/cms_pwri.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/cms/cms_pwri.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/cms/cms_pwri.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-cms_pwri.Tpo $(DEPDIR)/libshare_ssl_a-cms_pwri.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/cms/cms_pwri.c' object='libshare_ssl_a-cms_pwri.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-cms_pwri.obj `if test -f '$(SSL_DIR)/crypto/cms/cms_pwri.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/cms/cms_pwri.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/cms/cms_pwri.c'; fi`
+
+libshare_ssl_a-ocsp_asn.o: $(SSL_DIR)/crypto/ocsp/ocsp_asn.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-ocsp_asn.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-ocsp_asn.Tpo -c -o libshare_ssl_a-ocsp_asn.o `test -f '$(SSL_DIR)/crypto/ocsp/ocsp_asn.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/ocsp/ocsp_asn.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-ocsp_asn.Tpo $(DEPDIR)/libshare_ssl_a-ocsp_asn.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/ocsp/ocsp_asn.c' object='libshare_ssl_a-ocsp_asn.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-ocsp_asn.o `test -f '$(SSL_DIR)/crypto/ocsp/ocsp_asn.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/ocsp/ocsp_asn.c
+
+libshare_ssl_a-ocsp_asn.obj: $(SSL_DIR)/crypto/ocsp/ocsp_asn.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-ocsp_asn.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-ocsp_asn.Tpo -c -o libshare_ssl_a-ocsp_asn.obj `if test -f '$(SSL_DIR)/crypto/ocsp/ocsp_asn.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/ocsp/ocsp_asn.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/ocsp/ocsp_asn.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-ocsp_asn.Tpo $(DEPDIR)/libshare_ssl_a-ocsp_asn.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/ocsp/ocsp_asn.c' object='libshare_ssl_a-ocsp_asn.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-ocsp_asn.obj `if test -f '$(SSL_DIR)/crypto/ocsp/ocsp_asn.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/ocsp/ocsp_asn.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/ocsp/ocsp_asn.c'; fi`
+
+libshare_ssl_a-ocsp_ext.o: $(SSL_DIR)/crypto/ocsp/ocsp_ext.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-ocsp_ext.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-ocsp_ext.Tpo -c -o libshare_ssl_a-ocsp_ext.o `test -f '$(SSL_DIR)/crypto/ocsp/ocsp_ext.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/ocsp/ocsp_ext.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-ocsp_ext.Tpo $(DEPDIR)/libshare_ssl_a-ocsp_ext.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/ocsp/ocsp_ext.c' object='libshare_ssl_a-ocsp_ext.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-ocsp_ext.o `test -f '$(SSL_DIR)/crypto/ocsp/ocsp_ext.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/ocsp/ocsp_ext.c
+
+libshare_ssl_a-ocsp_ext.obj: $(SSL_DIR)/crypto/ocsp/ocsp_ext.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-ocsp_ext.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-ocsp_ext.Tpo -c -o libshare_ssl_a-ocsp_ext.obj `if test -f '$(SSL_DIR)/crypto/ocsp/ocsp_ext.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/ocsp/ocsp_ext.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/ocsp/ocsp_ext.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-ocsp_ext.Tpo $(DEPDIR)/libshare_ssl_a-ocsp_ext.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/ocsp/ocsp_ext.c' object='libshare_ssl_a-ocsp_ext.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-ocsp_ext.obj `if test -f '$(SSL_DIR)/crypto/ocsp/ocsp_ext.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/ocsp/ocsp_ext.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/ocsp/ocsp_ext.c'; fi`
+
+libshare_ssl_a-ocsp_ht.o: $(SSL_DIR)/crypto/ocsp/ocsp_ht.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-ocsp_ht.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-ocsp_ht.Tpo -c -o libshare_ssl_a-ocsp_ht.o `test -f '$(SSL_DIR)/crypto/ocsp/ocsp_ht.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/ocsp/ocsp_ht.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-ocsp_ht.Tpo $(DEPDIR)/libshare_ssl_a-ocsp_ht.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/ocsp/ocsp_ht.c' object='libshare_ssl_a-ocsp_ht.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-ocsp_ht.o `test -f '$(SSL_DIR)/crypto/ocsp/ocsp_ht.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/ocsp/ocsp_ht.c
+
+libshare_ssl_a-ocsp_ht.obj: $(SSL_DIR)/crypto/ocsp/ocsp_ht.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-ocsp_ht.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-ocsp_ht.Tpo -c -o libshare_ssl_a-ocsp_ht.obj `if test -f '$(SSL_DIR)/crypto/ocsp/ocsp_ht.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/ocsp/ocsp_ht.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/ocsp/ocsp_ht.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-ocsp_ht.Tpo $(DEPDIR)/libshare_ssl_a-ocsp_ht.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/ocsp/ocsp_ht.c' object='libshare_ssl_a-ocsp_ht.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-ocsp_ht.obj `if test -f '$(SSL_DIR)/crypto/ocsp/ocsp_ht.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/ocsp/ocsp_ht.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/ocsp/ocsp_ht.c'; fi`
+
+libshare_ssl_a-ocsp_lib.o: $(SSL_DIR)/crypto/ocsp/ocsp_lib.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-ocsp_lib.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-ocsp_lib.Tpo -c -o libshare_ssl_a-ocsp_lib.o `test -f '$(SSL_DIR)/crypto/ocsp/ocsp_lib.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/ocsp/ocsp_lib.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-ocsp_lib.Tpo $(DEPDIR)/libshare_ssl_a-ocsp_lib.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/ocsp/ocsp_lib.c' object='libshare_ssl_a-ocsp_lib.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-ocsp_lib.o `test -f '$(SSL_DIR)/crypto/ocsp/ocsp_lib.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/ocsp/ocsp_lib.c
+
+libshare_ssl_a-ocsp_lib.obj: $(SSL_DIR)/crypto/ocsp/ocsp_lib.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-ocsp_lib.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-ocsp_lib.Tpo -c -o libshare_ssl_a-ocsp_lib.obj `if test -f '$(SSL_DIR)/crypto/ocsp/ocsp_lib.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/ocsp/ocsp_lib.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/ocsp/ocsp_lib.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-ocsp_lib.Tpo $(DEPDIR)/libshare_ssl_a-ocsp_lib.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/ocsp/ocsp_lib.c' object='libshare_ssl_a-ocsp_lib.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-ocsp_lib.obj `if test -f '$(SSL_DIR)/crypto/ocsp/ocsp_lib.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/ocsp/ocsp_lib.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/ocsp/ocsp_lib.c'; fi`
+
+libshare_ssl_a-ocsp_cl.o: $(SSL_DIR)/crypto/ocsp/ocsp_cl.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-ocsp_cl.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-ocsp_cl.Tpo -c -o libshare_ssl_a-ocsp_cl.o `test -f '$(SSL_DIR)/crypto/ocsp/ocsp_cl.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/ocsp/ocsp_cl.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-ocsp_cl.Tpo $(DEPDIR)/libshare_ssl_a-ocsp_cl.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/ocsp/ocsp_cl.c' object='libshare_ssl_a-ocsp_cl.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-ocsp_cl.o `test -f '$(SSL_DIR)/crypto/ocsp/ocsp_cl.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/ocsp/ocsp_cl.c
+
+libshare_ssl_a-ocsp_cl.obj: $(SSL_DIR)/crypto/ocsp/ocsp_cl.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-ocsp_cl.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-ocsp_cl.Tpo -c -o libshare_ssl_a-ocsp_cl.obj `if test -f '$(SSL_DIR)/crypto/ocsp/ocsp_cl.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/ocsp/ocsp_cl.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/ocsp/ocsp_cl.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-ocsp_cl.Tpo $(DEPDIR)/libshare_ssl_a-ocsp_cl.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/ocsp/ocsp_cl.c' object='libshare_ssl_a-ocsp_cl.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-ocsp_cl.obj `if test -f '$(SSL_DIR)/crypto/ocsp/ocsp_cl.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/ocsp/ocsp_cl.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/ocsp/ocsp_cl.c'; fi`
+
+libshare_ssl_a-ocsp_srv.o: $(SSL_DIR)/crypto/ocsp/ocsp_srv.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-ocsp_srv.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-ocsp_srv.Tpo -c -o libshare_ssl_a-ocsp_srv.o `test -f '$(SSL_DIR)/crypto/ocsp/ocsp_srv.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/ocsp/ocsp_srv.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-ocsp_srv.Tpo $(DEPDIR)/libshare_ssl_a-ocsp_srv.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/ocsp/ocsp_srv.c' object='libshare_ssl_a-ocsp_srv.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-ocsp_srv.o `test -f '$(SSL_DIR)/crypto/ocsp/ocsp_srv.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/ocsp/ocsp_srv.c
+
+libshare_ssl_a-ocsp_srv.obj: $(SSL_DIR)/crypto/ocsp/ocsp_srv.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-ocsp_srv.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-ocsp_srv.Tpo -c -o libshare_ssl_a-ocsp_srv.obj `if test -f '$(SSL_DIR)/crypto/ocsp/ocsp_srv.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/ocsp/ocsp_srv.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/ocsp/ocsp_srv.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-ocsp_srv.Tpo $(DEPDIR)/libshare_ssl_a-ocsp_srv.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/ocsp/ocsp_srv.c' object='libshare_ssl_a-ocsp_srv.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-ocsp_srv.obj `if test -f '$(SSL_DIR)/crypto/ocsp/ocsp_srv.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/ocsp/ocsp_srv.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/ocsp/ocsp_srv.c'; fi`
+
+libshare_ssl_a-ocsp_prn.o: $(SSL_DIR)/crypto/ocsp/ocsp_prn.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-ocsp_prn.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-ocsp_prn.Tpo -c -o libshare_ssl_a-ocsp_prn.o `test -f '$(SSL_DIR)/crypto/ocsp/ocsp_prn.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/ocsp/ocsp_prn.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-ocsp_prn.Tpo $(DEPDIR)/libshare_ssl_a-ocsp_prn.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/ocsp/ocsp_prn.c' object='libshare_ssl_a-ocsp_prn.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-ocsp_prn.o `test -f '$(SSL_DIR)/crypto/ocsp/ocsp_prn.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/ocsp/ocsp_prn.c
+
+libshare_ssl_a-ocsp_prn.obj: $(SSL_DIR)/crypto/ocsp/ocsp_prn.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-ocsp_prn.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-ocsp_prn.Tpo -c -o libshare_ssl_a-ocsp_prn.obj `if test -f '$(SSL_DIR)/crypto/ocsp/ocsp_prn.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/ocsp/ocsp_prn.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/ocsp/ocsp_prn.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-ocsp_prn.Tpo $(DEPDIR)/libshare_ssl_a-ocsp_prn.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/ocsp/ocsp_prn.c' object='libshare_ssl_a-ocsp_prn.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-ocsp_prn.obj `if test -f '$(SSL_DIR)/crypto/ocsp/ocsp_prn.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/ocsp/ocsp_prn.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/ocsp/ocsp_prn.c'; fi`
+
+libshare_ssl_a-ocsp_vfy.o: $(SSL_DIR)/crypto/ocsp/ocsp_vfy.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-ocsp_vfy.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-ocsp_vfy.Tpo -c -o libshare_ssl_a-ocsp_vfy.o `test -f '$(SSL_DIR)/crypto/ocsp/ocsp_vfy.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/ocsp/ocsp_vfy.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-ocsp_vfy.Tpo $(DEPDIR)/libshare_ssl_a-ocsp_vfy.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/ocsp/ocsp_vfy.c' object='libshare_ssl_a-ocsp_vfy.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-ocsp_vfy.o `test -f '$(SSL_DIR)/crypto/ocsp/ocsp_vfy.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/ocsp/ocsp_vfy.c
+
+libshare_ssl_a-ocsp_vfy.obj: $(SSL_DIR)/crypto/ocsp/ocsp_vfy.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-ocsp_vfy.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-ocsp_vfy.Tpo -c -o libshare_ssl_a-ocsp_vfy.obj `if test -f '$(SSL_DIR)/crypto/ocsp/ocsp_vfy.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/ocsp/ocsp_vfy.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/ocsp/ocsp_vfy.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-ocsp_vfy.Tpo $(DEPDIR)/libshare_ssl_a-ocsp_vfy.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/ocsp/ocsp_vfy.c' object='libshare_ssl_a-ocsp_vfy.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-ocsp_vfy.obj `if test -f '$(SSL_DIR)/crypto/ocsp/ocsp_vfy.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/ocsp/ocsp_vfy.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/ocsp/ocsp_vfy.c'; fi`
+
+libshare_ssl_a-ocsp_err.o: $(SSL_DIR)/crypto/ocsp/ocsp_err.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-ocsp_err.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-ocsp_err.Tpo -c -o libshare_ssl_a-ocsp_err.o `test -f '$(SSL_DIR)/crypto/ocsp/ocsp_err.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/ocsp/ocsp_err.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-ocsp_err.Tpo $(DEPDIR)/libshare_ssl_a-ocsp_err.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/ocsp/ocsp_err.c' object='libshare_ssl_a-ocsp_err.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-ocsp_err.o `test -f '$(SSL_DIR)/crypto/ocsp/ocsp_err.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/ocsp/ocsp_err.c
+
+libshare_ssl_a-ocsp_err.obj: $(SSL_DIR)/crypto/ocsp/ocsp_err.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-ocsp_err.obj -MD -MP -MF $(DEPDIR)/libshare_ssl_a-ocsp_err.Tpo -c -o libshare_ssl_a-ocsp_err.obj `if test -f '$(SSL_DIR)/crypto/ocsp/ocsp_err.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/ocsp/ocsp_err.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/ocsp/ocsp_err.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libshare_ssl_a-ocsp_err.Tpo $(DEPDIR)/libshare_ssl_a-ocsp_err.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(SSL_DIR)/crypto/ocsp/ocsp_err.c' object='libshare_ssl_a-ocsp_err.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -c -o libshare_ssl_a-ocsp_err.obj `if test -f '$(SSL_DIR)/crypto/ocsp/ocsp_err.c'; then $(CYGPATH_W) '$(SSL_DIR)/crypto/ocsp/ocsp_err.c'; else $(CYGPATH_W) '$(srcdir)/$(SSL_DIR)/crypto/ocsp/ocsp_err.c'; fi`
 
 libshare_ssl_a-mem_clr.o: $(SSL_DIR)/crypto/mem_clr.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libshare_ssl_a_CFLAGS) $(CFLAGS) -MT libshare_ssl_a-mem_clr.o -MD -MP -MF $(DEPDIR)/libshare_ssl_a-mem_clr.Tpo -c -o libshare_ssl_a-mem_clr.o `test -f '$(SSL_DIR)/crypto/mem_clr.c' || echo '$(srcdir)/'`$(SSL_DIR)/crypto/mem_clr.c
