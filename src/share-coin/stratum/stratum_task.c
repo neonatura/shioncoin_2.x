@@ -195,7 +195,7 @@ fprintf(stderr, "DEBUG: task_init: coinbase does not contain sigScript (coinbase
   shjson_free(&tree);
 
   /* keep list of shares to check for dups */
-  task->share_list = shmeta_init(); /* mem */
+  task->share_list = shmap_init(); /* mem */
 
   task->next = task_list;
   task_list = task;
@@ -214,7 +214,7 @@ void task_free(task_t **task_p)
   task = *task_p;
   *task_p = NULL;
 
-  shmeta_free(&task->share_list);
+  shmap_free(&task->share_list);
 
   if (task->merkle && task->merkle_len) {
     for (i = 0; i < task->merkle_len; i++) {

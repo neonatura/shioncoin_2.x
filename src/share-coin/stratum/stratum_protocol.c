@@ -140,12 +140,12 @@ const char *submit_hash;
   err = !scanhash_scrypt(task->work.midstate, task->work.data, task->work.hash, task->work.target, be_nonce+1, &last_nonce, be_nonce-2, &last_diff);
   if (!err) { 
     key = shkey_bin(task->work.data, 80);
-    dup = shmeta_get_str(task->share_list, key);
+    dup = shmap_get_str(task->share_list, key);
     bin2hex(share_hash, task->work.hash, 32);
     if (dup && 0 == strcmp(dup, share_hash)) {
       ret_err = SHERR_ALREADY;
     }
-    shmeta_set_str(task->share_list, key, share_hash);
+    shmap_set_str(task->share_list, key, share_hash);
     shkey_free(&key);
   } else {
     fprintf(stderr, "DEBUG: err %d = scanhash_scrypt(%d)\n", err, be_nonce);

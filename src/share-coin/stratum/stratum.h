@@ -111,7 +111,7 @@ typedef struct task_t
 
   double target;
 
-  shmeta_t *share_list;
+  shmap_t *share_list;
   shfs_ino_t *share_file; 
 
   scrypt_work work;

@@ -2590,8 +2590,6 @@ bool static AlreadyHave(CTxDB& txdb, const CInv& inv)
 // The characters are rarely used upper ascii, not valid as UTF-8, and produce
 // a large 4-byte int at any alignment.
 
-unsigned char pchMessageStart[4] = { 0xd9, 0xd9, 0xf9, 0xbd };
-
 bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
 {
     static map<CService, CPubKey> mapReuseKey;

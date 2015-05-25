@@ -185,11 +185,13 @@ libleveldb_a_OBJECTS = $(am_libleveldb_a_OBJECTS)
 am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(sbindir)"
 PROGRAMS = $(bin_PROGRAMS) $(sbin_PROGRAMS)
 am__objects_1 =
-am__objects_2 = shcoin-netbase.$(OBJEXT) shcoin-version.$(OBJEXT) \
-	shcoin-util.$(OBJEXT) shcoin-shcoind_block.$(OBJEXT) \
-	shcoin-shcoind_rpc.$(OBJEXT)
+am__objects_2 = shcoin-protocol.$(OBJEXT) shcoin-netbase.$(OBJEXT) \
+	shcoin-version.$(OBJEXT) shcoin-util.$(OBJEXT) \
+	shcoin-shcoind_block.$(OBJEXT) shcoin-shcoind_rpc.$(OBJEXT)
+am__objects_3 = shcoin-tool_irc.$(OBJEXT)
 am_shcoin_OBJECTS = $(am__objects_1) $(am__objects_2) \
-	shcoin-shcoind_tool.$(OBJEXT) shcoin-clientrpc_iface.$(OBJEXT)
+	shcoin-shcoind_tool.$(OBJEXT) shcoin-clientrpc_iface.$(OBJEXT) \
+	$(am__objects_3)
 shcoin_OBJECTS = $(am_shcoin_OBJECTS)
 shcoin_DEPENDENCIES =  \
 	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a libleveldb.a \
@@ -197,26 +199,25 @@ shcoin_DEPENDENCIES =  \
 shcoin_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CXXLD) $(shcoin_CXXFLAGS) $(CXXFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
-am__objects_3 = shcoind-netbase.$(OBJEXT) shcoind-version.$(OBJEXT) \
-	shcoind-util.$(OBJEXT) shcoind-shcoind_block.$(OBJEXT) \
-	shcoind-shcoind_rpc.$(OBJEXT)
-am__objects_4 = shcoind-addrman.$(OBJEXT) shcoind-rpc_proto.$(OBJEXT) \
+am__objects_4 = shcoind-protocol.$(OBJEXT) shcoind-netbase.$(OBJEXT) \
+	shcoind-version.$(OBJEXT) shcoind-util.$(OBJEXT) \
+	shcoind-shcoind_block.$(OBJEXT) shcoind-shcoind_rpc.$(OBJEXT)
+am__objects_5 = shcoind-addrman.$(OBJEXT) shcoind-rpc_proto.$(OBJEXT) \
 	shcoind-checkpoints.$(OBJEXT) shcoind-crypter.$(OBJEXT) \
 	shcoind-db.$(OBJEXT) shcoind-init.$(OBJEXT) \
 	shcoind-key.$(OBJEXT) shcoind-keystore.$(OBJEXT) \
 	shcoind-leveldb.$(OBJEXT) shcoind-main.$(OBJEXT) \
-	shcoind-noui.$(OBJEXT) shcoind-protocol.$(OBJEXT) \
-	shcoind-rpcdump.$(OBJEXT) shcoind-rpcnet.$(OBJEXT) \
-	shcoind-rpcrawtransaction.$(OBJEXT) shcoind-script.$(OBJEXT) \
-	shcoind-sync.$(OBJEXT) shcoind-wallet.$(OBJEXT) \
-	shcoind-walletdb.$(OBJEXT) shcoind-scrypt.$(OBJEXT) \
-	shcoind-wallet_iface.$(OBJEXT) shcoind-block_iface.$(OBJEXT) \
-	shcoind-server_iface.$(OBJEXT)
-am__objects_5 = shcoind-stratum_message.$(OBJEXT) \
+	shcoind-noui.$(OBJEXT) shcoind-rpcdump.$(OBJEXT) \
+	shcoind-rpcnet.$(OBJEXT) shcoind-rpcrawtransaction.$(OBJEXT) \
+	shcoind-script.$(OBJEXT) shcoind-sync.$(OBJEXT) \
+	shcoind-wallet.$(OBJEXT) shcoind-walletdb.$(OBJEXT) \
+	shcoind-scrypt.$(OBJEXT) shcoind-wallet_iface.$(OBJEXT) \
+	shcoind-block_iface.$(OBJEXT) shcoind-server_iface.$(OBJEXT)
+am__objects_6 = shcoind-stratum_message.$(OBJEXT) \
 	shcoind-stratum_protocol.$(OBJEXT) \
 	shcoind-stratum_user.$(OBJEXT) shcoind-stratum_task.$(OBJEXT)
-am_shcoind_OBJECTS = $(am__objects_1) $(am__objects_3) \
-	$(am__objects_4) $(am__objects_5) shcoind-shcoind.$(OBJEXT) \
+am_shcoind_OBJECTS = $(am__objects_1) $(am__objects_4) \
+	$(am__objects_5) $(am__objects_6) shcoind-shcoind.$(OBJEXT) \
 	shcoind-shcoind_daemon.$(OBJEXT)
 shcoind_OBJECTS = $(am_shcoind_OBJECTS)
 shcoind_DEPENDENCIES =  \
@@ -1195,6 +1196,7 @@ common_includes = \
 	shcoind.h
 
 common_sources = \
+	server/protocol.cpp \
 	server/netbase.cpp \
 	server/version.cpp \
 	server/util.cpp \
@@ -1213,7 +1215,6 @@ server_sources = \
 	server/leveldb.cpp \
 	server/main.cpp \
 	server/noui.cpp \
-	server/protocol.cpp \
 	server/rpcdump.cpp \
 	server/rpcnet.cpp \
 	server/rpcrawtransaction.cpp \
@@ -1232,6 +1233,9 @@ stratum_sources = \
 	stratum/stratum_user.c \
 	stratum/stratum_task.c
 
+tool_sources = \
+	tool/tool_irc.cpp
+
 shcoind_SOURCES = \
 	$(common_includes) $(common_sources) \
 	$(server_sources) $(stratum_sources) \
@@ -1247,7 +1251,7 @@ shcoind_CXXFLAGS = -I$(srcdir)/leveldb/include \
 	-I$(srcdir)/leveldb/helpers -I$(srcdir)/leveldb \
 	-I$(srcdir)/server -DOS_LINUX $(am__append_3)
 shcoin_SOURCES = $(common_includes) $(common_sources) \
-	shcoind_tool.cpp clientrpc_iface.cpp
+	shcoind_tool.cpp clientrpc_iface.cpp $(tool_sources)
 
 shcoin_LDADD = $(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
 	libleveldb.a $(am__append_4) -lboost_system -lboost_filesystem \
@@ -1446,9 +1450,11 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libleveldb_a-write_batch.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoin-clientrpc_iface.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoin-netbase.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoin-protocol.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoin-shcoind_block.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoin-shcoind_rpc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoin-shcoind_tool.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoin-tool_irc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoin-util.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoin-version.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-addrman.Po@am__quote@
@@ -2242,6 +2248,20 @@ libleveldb_a-memenv.obj: leveldb/helpers/memenv/memenv.cc
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-memenv.obj `if test -f 'leveldb/helpers/memenv/memenv.cc'; then $(CYGPATH_W) 'leveldb/helpers/memenv/memenv.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/helpers/memenv/memenv.cc'; fi`
 
+shcoin-protocol.o: server/protocol.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoin_CXXFLAGS) $(CXXFLAGS) -MT shcoin-protocol.o -MD -MP -MF $(DEPDIR)/shcoin-protocol.Tpo -c -o shcoin-protocol.o `test -f 'server/protocol.cpp' || echo '$(srcdir)/'`server/protocol.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoin-protocol.Tpo $(DEPDIR)/shcoin-protocol.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/protocol.cpp' object='shcoin-protocol.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoin_CXXFLAGS) $(CXXFLAGS) -c -o shcoin-protocol.o `test -f 'server/protocol.cpp' || echo '$(srcdir)/'`server/protocol.cpp
+
+shcoin-protocol.obj: server/protocol.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoin_CXXFLAGS) $(CXXFLAGS) -MT shcoin-protocol.obj -MD -MP -MF $(DEPDIR)/shcoin-protocol.Tpo -c -o shcoin-protocol.obj `if test -f 'server/protocol.cpp'; then $(CYGPATH_W) 'server/protocol.cpp'; else $(CYGPATH_W) '$(srcdir)/server/protocol.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoin-protocol.Tpo $(DEPDIR)/shcoin-protocol.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/protocol.cpp' object='shcoin-protocol.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoin_CXXFLAGS) $(CXXFLAGS) -c -o shcoin-protocol.obj `if test -f 'server/protocol.cpp'; then $(CYGPATH_W) 'server/protocol.cpp'; else $(CYGPATH_W) '$(srcdir)/server/protocol.cpp'; fi`
+
 shcoin-netbase.o: server/netbase.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoin_CXXFLAGS) $(CXXFLAGS) -MT shcoin-netbase.o -MD -MP -MF $(DEPDIR)/shcoin-netbase.Tpo -c -o shcoin-netbase.o `test -f 'server/netbase.cpp' || echo '$(srcdir)/'`server/netbase.cpp
 @am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoin-netbase.Tpo $(DEPDIR)/shcoin-netbase.Po
@@ -2311,6 +2331,34 @@ shcoin-clientrpc_iface.obj: clientrpc_iface.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='clientrpc_iface.cpp' object='shcoin-clientrpc_iface.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoin_CXXFLAGS) $(CXXFLAGS) -c -o shcoin-clientrpc_iface.obj `if test -f 'clientrpc_iface.cpp'; then $(CYGPATH_W) 'clientrpc_iface.cpp'; else $(CYGPATH_W) '$(srcdir)/clientrpc_iface.cpp'; fi`
+
+shcoin-tool_irc.o: tool/tool_irc.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoin_CXXFLAGS) $(CXXFLAGS) -MT shcoin-tool_irc.o -MD -MP -MF $(DEPDIR)/shcoin-tool_irc.Tpo -c -o shcoin-tool_irc.o `test -f 'tool/tool_irc.cpp' || echo '$(srcdir)/'`tool/tool_irc.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoin-tool_irc.Tpo $(DEPDIR)/shcoin-tool_irc.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='tool/tool_irc.cpp' object='shcoin-tool_irc.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoin_CXXFLAGS) $(CXXFLAGS) -c -o shcoin-tool_irc.o `test -f 'tool/tool_irc.cpp' || echo '$(srcdir)/'`tool/tool_irc.cpp
+
+shcoin-tool_irc.obj: tool/tool_irc.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoin_CXXFLAGS) $(CXXFLAGS) -MT shcoin-tool_irc.obj -MD -MP -MF $(DEPDIR)/shcoin-tool_irc.Tpo -c -o shcoin-tool_irc.obj `if test -f 'tool/tool_irc.cpp'; then $(CYGPATH_W) 'tool/tool_irc.cpp'; else $(CYGPATH_W) '$(srcdir)/tool/tool_irc.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoin-tool_irc.Tpo $(DEPDIR)/shcoin-tool_irc.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='tool/tool_irc.cpp' object='shcoin-tool_irc.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoin_CXXFLAGS) $(CXXFLAGS) -c -o shcoin-tool_irc.obj `if test -f 'tool/tool_irc.cpp'; then $(CYGPATH_W) 'tool/tool_irc.cpp'; else $(CYGPATH_W) '$(srcdir)/tool/tool_irc.cpp'; fi`
+
+shcoind-protocol.o: server/protocol.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-protocol.o -MD -MP -MF $(DEPDIR)/shcoind-protocol.Tpo -c -o shcoind-protocol.o `test -f 'server/protocol.cpp' || echo '$(srcdir)/'`server/protocol.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-protocol.Tpo $(DEPDIR)/shcoind-protocol.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/protocol.cpp' object='shcoind-protocol.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-protocol.o `test -f 'server/protocol.cpp' || echo '$(srcdir)/'`server/protocol.cpp
+
+shcoind-protocol.obj: server/protocol.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-protocol.obj -MD -MP -MF $(DEPDIR)/shcoind-protocol.Tpo -c -o shcoind-protocol.obj `if test -f 'server/protocol.cpp'; then $(CYGPATH_W) 'server/protocol.cpp'; else $(CYGPATH_W) '$(srcdir)/server/protocol.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-protocol.Tpo $(DEPDIR)/shcoind-protocol.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/protocol.cpp' object='shcoind-protocol.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-protocol.obj `if test -f 'server/protocol.cpp'; then $(CYGPATH_W) 'server/protocol.cpp'; else $(CYGPATH_W) '$(srcdir)/server/protocol.cpp'; fi`
 
 shcoind-netbase.o: server/netbase.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-netbase.o -MD -MP -MF $(DEPDIR)/shcoind-netbase.Tpo -c -o shcoind-netbase.o `test -f 'server/netbase.cpp' || echo '$(srcdir)/'`server/netbase.cpp
@@ -2507,20 +2555,6 @@ shcoind-noui.obj: server/noui.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/noui.cpp' object='shcoind-noui.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-noui.obj `if test -f 'server/noui.cpp'; then $(CYGPATH_W) 'server/noui.cpp'; else $(CYGPATH_W) '$(srcdir)/server/noui.cpp'; fi`
-
-shcoind-protocol.o: server/protocol.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-protocol.o -MD -MP -MF $(DEPDIR)/shcoind-protocol.Tpo -c -o shcoind-protocol.o `test -f 'server/protocol.cpp' || echo '$(srcdir)/'`server/protocol.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-protocol.Tpo $(DEPDIR)/shcoind-protocol.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/protocol.cpp' object='shcoind-protocol.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-protocol.o `test -f 'server/protocol.cpp' || echo '$(srcdir)/'`server/protocol.cpp
-
-shcoind-protocol.obj: server/protocol.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-protocol.obj -MD -MP -MF $(DEPDIR)/shcoind-protocol.Tpo -c -o shcoind-protocol.obj `if test -f 'server/protocol.cpp'; then $(CYGPATH_W) 'server/protocol.cpp'; else $(CYGPATH_W) '$(srcdir)/server/protocol.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-protocol.Tpo $(DEPDIR)/shcoind-protocol.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/protocol.cpp' object='shcoind-protocol.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-protocol.obj `if test -f 'server/protocol.cpp'; then $(CYGPATH_W) 'server/protocol.cpp'; else $(CYGPATH_W) '$(srcdir)/server/protocol.cpp'; fi`
 
 shcoind-rpcdump.o: server/rpcdump.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-rpcdump.o -MD -MP -MF $(DEPDIR)/shcoind-rpcdump.Tpo -c -o shcoind-rpcdump.o `test -f 'server/rpcdump.cpp' || echo '$(srcdir)/'`server/rpcdump.cpp

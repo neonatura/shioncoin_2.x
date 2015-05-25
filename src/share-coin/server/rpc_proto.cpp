@@ -294,15 +294,27 @@ Value addpeer(const Array& params, bool fHelp)
 {
   if (fHelp || params.size() != 1)
     throw runtime_error(
-        "addpeer [host]\n"
+        "addpeer <host>[:<port>]\n"
         "Attempt to connect to a remote usde server.");
 
   string strHost;
   CService vserv;
+  char buf[256];
+  char *ptr;
   int port;
 
   strHost = params[0].get_str();
-  port = GetDefaultPort();
+
+  port = 0;
+  memset(buf, 0, sizeof(buf));
+  strncpy(buf, strHost.c_str(), sizeof(buf)-1);
+  ptr = strchr(buf, ':');
+  if (ptr) {
+    port = atoi(ptr+1);
+    *ptr = '\000';
+  }
+  if (port == 0)
+    port = GetDefaultPort();
 
   if (Lookup(strHost.c_str(), vserv, port, false)) {
     CSemaphoreGrant grant(*semOutbound);

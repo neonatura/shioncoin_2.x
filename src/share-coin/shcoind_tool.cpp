@@ -14,6 +14,8 @@
 using namespace std;
 using namespace boost;
 
+extern void IRCDiscover(void);
+
 
 int main(int argc, char *argv[])
 {
@@ -53,6 +55,11 @@ int main(int argc, char *argv[])
           get_libshare_version());
       return (0);
     }
+  }
+
+  if (argc >= 2 && 0 == strcasecmp(argv[1], "discover")) {
+    IRCDiscover();
+    return (0);
   }
 
   /* perform rpc operation */

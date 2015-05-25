@@ -47,8 +47,9 @@ rm -rf $RPM_BUILD_ROOT
 %files
 %defattr(-,root,root,-)
 %doc
-shcoind
-shcoin
+%{_sbindir}/shcoind
+%{_bindir}/shcoin
+%{_docdir}/share-coin/shcoin_html.tar.xz
 
 %changelog
 * Fri May  9 2015 Neo Natura <support@neo-natura.com> - 2.26

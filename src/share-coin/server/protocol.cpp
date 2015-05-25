@@ -13,6 +13,8 @@
 # include <arpa/inet.h>
 #endif
 
+unsigned char pchMessageStart[4] = { 0xd9, 0xd9, 0xf9, 0xbd };
+
 static const char* ppszTypeName[] =
 {
     "ERROR",

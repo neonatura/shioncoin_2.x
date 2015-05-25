@@ -59,6 +59,7 @@ common_includes = \
 	shcoind_rpc.h \
 	shcoind.h
 common_sources = \
+	server/protocol.cpp \
 	server/netbase.cpp \
 	server/version.cpp \
 	server/util.cpp \
@@ -76,7 +77,6 @@ server_sources = \
 	server/leveldb.cpp \
 	server/main.cpp \
 	server/noui.cpp \
-	server/protocol.cpp \
 	server/rpcdump.cpp \
 	server/rpcnet.cpp \
 	server/rpcrawtransaction.cpp \
@@ -93,6 +93,9 @@ stratum_sources = \
 	stratum/stratum_protocol.c \
 	stratum/stratum_user.c \
 	stratum/stratum_task.c
+
+tool_sources = \
+	tool/tool_irc.cpp
 
 bin_PROGRAMS = shcoin
 sbin_PROGRAMS = shcoind
@@ -118,7 +121,7 @@ endif
 shcoind_LDADD += -lboost_system -lboost_filesystem -lboost_thread -ldb_cxx -ldl
 
 shcoin_SOURCES = $(common_includes) $(common_sources) \
-	shcoind_tool.cpp clientrpc_iface.cpp
+	shcoind_tool.cpp clientrpc_iface.cpp $(tool_sources)
 shcoin_LDADD = \
 	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
 	libleveldb.a
