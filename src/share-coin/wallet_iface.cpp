@@ -108,11 +108,13 @@ static uint256 get_private_key_hash(CKeyID keyId)
 {
   CSecret vchSecret;
   bool fCompressed;
+  uint256 phash;
+
   if (!pwalletMain->GetSecret(keyId, vchSecret, fCompressed))
-    return (NULL);
+    return (phash);
+
   string secret = CBitcoinSecret(vchSecret, fCompressed).ToString();
 
-  uint256 phash;
   unsigned char *secret_str = (unsigned char *)secret.c_str();
   size_t secret_len = secret.length();
   SHA256(secret_str, secret_len, (unsigned char*)&phash);
@@ -157,6 +159,22 @@ Object JSONAddressInfo(CBitcoinAddress address, bool show_priv)
     result.push_back(Pair("account", pwalletMain->mapAddressBook[dest]));
 
   return (result);
+}
+
+int c_UpgradeWallet(void)
+{
+int nMaxVersion = 0;//GetArg("-upgradewallet", 0);
+        if (nMaxVersion == 0) // the -upgradewallet without argument case
+        {
+            printf("Performing wallet upgrade to %i\n", FEATURE_LATEST);
+            nMaxVersion = CLIENT_VERSION;
+            pwalletMain->SetMinVersion(FEATURE_LATEST); // permanently upgrade the wallet immediately
+        }
+        else
+            printf("Allowing wallet upgrade up to %i\n", nMaxVersion);
+        if (nMaxVersion > pwalletMain->GetVersion())
+                pwalletMain->SetMaxVersion(nMaxVersion);
+
 }
 
 int c_LoadWallet(void)
@@ -488,7 +506,8 @@ else fprintf(stderr, "DEBUG: get_private_key_hash: '%s'\n", acc_pkey.GetHex().c_
 }
 
 /**
- * local known transactions associated with account name.
+ * local up to 100 transactions associated with account name.
+ * @param duration The range in the past to search for account transactions (in seconds).
  * @returns json string format 
  */
 string accounttransactioninfo_json;
@@ -498,6 +517,8 @@ static const char *cxx_getaccounttransactioninfo(const char *tx_account, const c
   uint256 in_pkey = 0;
   Array result;
   int64 min_t;
+  int max = 100;
+  int idx;
 
   try {
     in_pkey.SetHex(pkey_str);
@@ -507,11 +528,18 @@ static const char *cxx_getaccounttransactioninfo(const char *tx_account, const c
 
     min_t = time(NULL) - duration;
     CWalletDB walletdb(pwalletMain->strWalletFile);
-    for (map<uint256, CWalletTx>::iterator it = pwalletMain->mapWallet.begin(); it != pwalletMain->mapWallet.end(); ++it) {
+    //for (map<uint256, CWalletTx>::iterator it = pwalletMain->mapWallet.begin(); it != pwalletMain->mapWallet.end(); ++it) {
+    for (map<uint256, CWalletTx>::iterator it = pwalletMain->mapWallet.end(); it != pwalletMain->mapWallet.begin(); --it) {
       CWalletTx* wtx = &((*it).second);
 
-      if (wtx->GetTxTime() >= min_t)
-        ListTransactions(*wtx, strAccount, 0, true, result);
+      if (wtx->GetTxTime() < min_t)
+        continue;
+
+      ListTransactions(*wtx, strAccount, 0, true, result);
+
+      idx++;
+      if (idx > max)
+        break;
     }
   } catch(Object& objError) {
     SetStratumError(objError);
@@ -889,6 +917,11 @@ extern "C" {
 int load_wallet(void)
 {
   return (c_LoadWallet());
+}
+
+int upgrade_wallet(void)
+{
+  return (c_UpgradeWallet());
 }
 
 int load_peers(void)

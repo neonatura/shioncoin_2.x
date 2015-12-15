@@ -2,9 +2,9 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.63])
-AC_INIT(share-coin, 2.26, support@neo-natura.com)
+AC_INIT(share-coin, 2.27, support@neo-natura.com)
 AC_CONFIG_AUX_DIR([build-aux])
-AM_INIT_AUTOMAKE(share-coin, 2.26) 
+AM_INIT_AUTOMAKE(share-coin, 2.27) 
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
 
@@ -18,9 +18,9 @@ AM_CONDITIONAL([KMOD_DIR], [test -f /lib/modules/`uname -r`/build])
 
 LT_INIT
 
-version_patch=26
+version_patch=27
 AC_SUBST(version_patch)
-version_info=2:26:0
+version_info=2:27:0
 AC_SUBST(version_info)
 
 AC_CONFIG_FILES([doc/NEWS])

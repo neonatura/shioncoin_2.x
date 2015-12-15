@@ -31,6 +31,26 @@ int server_msgq;
 shbuf_t *server_msg_buff;
 int server_fd;
 
+#if 0
+/* DEBUG: */
+static void usde_term(void)
+{
+  server_shutdown();
+}
+
+void shcoind_term(void)
+{
+
+  rpc_term();
+  stratum_term();
+  usde_term();
+
+  block_close();
+  shpeer_free(&server_peer);
+
+}
+#endif
+
 void daemon_signal(int sig_num)
 {
   signal(sig_num, SIG_DFL);
@@ -145,6 +165,8 @@ int main(int argc, char *argv[])
 
   if (*blockfile_path)
     reloadblockfile(blockfile_path);
+
+  upgrade_wallet();
 
   load_peers();
 

@@ -336,14 +336,9 @@ void IRCDiscover(void)
     if (!ConnectSocket(addrConnect, hSocket))
     {
       printf("IRC connect failed\n");
-fprintf(stderr, "DEBUG: IRC connect failure\n");
       return;
-    } else {
-fprintf(stderr, "DEBUG: IRC connect success to 'pelican.heliacal.net'\n");
-}
-  } else {
-fprintf(stderr, "DEBUG: IRC connect success to 'irc.lfnet.org'\n");
-}
+    }
+  } 
 
   if (!RecvUntil(hSocket, "Found your hostname", "using your IP address instead", "Couldn't look up your hostname", "ignoring hostname"))
   {
@@ -364,7 +359,6 @@ fprintf(stderr, "DEBUG: IRC connect success to 'irc.lfnet.org'\n");
   Send(hSocket, strprintf("USER %s 8 * : %s\r", strMyName.c_str(), strMyName.c_str()).c_str());
 
   int nRet = RecvUntil(hSocket, " 004 ", " 433 ");
-fprintf(stderr, "DEBUG: %d = RecvUntil()\n", nRet);
   if (nRet != 1)
   {
     closesocket(hSocket);
@@ -379,7 +373,6 @@ fprintf(stderr, "DEBUG: %d = RecvUntil()\n", nRet);
 
   // Get our external IP from the IRC server and re-nick before joining the channel
   CNetAddr addrFromIRC;
-fprintf(stderr, "DEBUG: getting IP from IRC\n");
   if (GetIPFromIRC(hSocket, strMyName, addrFromIRC))
   {
     printf("GetIPFromIRC() returned %s\n", addrFromIRC.ToString().c_str());
@@ -399,7 +392,6 @@ fprintf(stderr, "DEBUG: getting IP from IRC\n");
     // randomly join #usde00-#usde99
     int channel_number = GetRandInt(100);
     channel_number = 0; // usde: for now, just use one channel
-fprintf(stderr, "DEBUG: joining channel #usde\n");
     Send(hSocket, strprintf("JOIN #usde%02d\r", channel_number).c_str());
     Send(hSocket, strprintf("WHO #usde%02d\r", channel_number).c_str());
   }
@@ -408,10 +400,8 @@ fprintf(stderr, "DEBUG: joining channel #usde\n");
   string strLine;
   strLine.reserve(10000);
   for (nAttempts = 0; nAttempts < 100; nAttempts++) {
-fprintf(stderr, "DEBUG: RecvLineIRC/start..\n");
     if (!RecvLineIRC(hSocket, strLine))
       break;
-fprintf(stderr, "DEBUG: line: '%s'\n", strLine.c_str());
     if (strLine.empty() || strLine.size() > 900 || strLine[0] != ':') {
       continue;
     }
@@ -456,7 +446,6 @@ fprintf(stderr, "DEBUG: DecodeAddress: success '%s'\n", addr.ToString().c_str())
       }
       else
       {
-fprintf(stderr, "DEBUG: DecodeAddress: failure\n");
         printf("IRC decode failed\n");
       }
     }
