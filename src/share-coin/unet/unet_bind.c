@@ -31,7 +31,7 @@ unet_bind_t *unet_bind_table(int mode)
 {
   if (mode < 0 || mode >= MAX_UNET_MODES)
     return (NULL);
-  return (_unet_bind[mode]);
+  return (_unet_bind + mode);
 }
 
 int unet_bind(int mode, int port)
@@ -39,7 +39,7 @@ int unet_bind(int mode, int port)
   int err;
   int sk;
 
-  if (_unet_bind[mode] != UNDEFINED_SOCKET)
+  if (_unet_bind[mode].fd != UNDEFINED_SOCKET)
     return (0); /* already bound */
 
   sk = shnet_sk();
@@ -55,13 +55,29 @@ int unet_bind(int mode, int port)
   return (0);
 }
 
+void unet_connop_set(int mode, unet_addr_op accept_op)
+{
+  if (mode < 0 || mode >= MAX_UNET_MODES)
+    return; 
+  _unet_bind[mode].op_accept = accept_op;
+}
 
-void unet_unbind(int mode)
+void unet_disconnop_set(int mode, unet_addr_op close_op)
+{
+  if (mode < 0 || mode >= MAX_UNET_MODES)
+    return; 
+  _unet_bind[mode].op_close = close_op;
+}
+
+int unet_unbind(int mode)
 {
   int err;
 
   if (_unet_bind[mode].fd == UNDEFINED_SOCKET)
     return (SHERR_INVAL);
+
+  /* close all accepted sockets */
+  unet_close_all(mode);
 
   err = unet_close(_unet_bind[mode].fd);
   _unet_bind[mode].fd = UNDEFINED_SOCKET;

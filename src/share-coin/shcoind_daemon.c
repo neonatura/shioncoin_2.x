@@ -16,52 +16,11 @@ void daemon_close_clients(void)
     if (user->fd == -1)
       continue;
     close(user->fd);
-fprintf(stderr, "DEBUG: close'd stratum client fd %d\n", user->fd);
     user->fd = -1;
   }
 
 }
 
-user_t *register_client(int fd)
-{
-  user_t *user;
-  int err;
-
-  err = shnet_fcntl(fd, F_SETFL, O_NONBLOCK);
-  if (err) {
-    shnet_close(fd);
-    return (NULL);
-  }
-
-  user = stratum_user_init(fd);
-  user->next = client_list;
-  client_list = user;
-
-  return (user);
-}
-
-int register_client_task(user_t *user, char *json_text)
-{
-  shjson_t *tree;
-  int err;
-
-  if (!*json_text) {
-fprintf(stderr, "DEBUG: empty JSON message.\n");
-    return (0);
-}
-
-  tree = shjson_init(json_text);
-  if (tree == NULL) {
-fprintf(stderr, "DEBUG: unknown JSON:\n%s\n", json_text);
-    return (SHERR_INVAL);
-  }
-
-//fprintf(stderr, "DEBUG: stratum_request_message: %s\n", json_text);
-  err = stratum_request_message(user, tree);
-  shjson_free(&tree);
-
-  return (err);
-}
 
 void shcoind_poll_msg_queue(void)
 {
@@ -171,6 +130,7 @@ void shcoind_poll_msg_queue(void)
 
 }
 
+#if 0
 void daemon_server(void)
 {
   user_t *peer;
@@ -293,6 +253,22 @@ shbuf_t *buff;
 
   /* close block fs */
   block_close();
+
+}
+#endif
+
+void daemon_server(void)
+{
+
+  while (TRUE) {
+
+    /* handle network communication. */
+    unet_cycle(0.025); /* 25ms */
+
+    /* handle libshare message queue */
+    shcoind_poll_msg_queue();
+
+  }
 
 }
 

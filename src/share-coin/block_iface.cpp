@@ -267,8 +267,7 @@ bool ok;
   err = c_processblock(pblock);
   if (err)
     return (NULL);
-
-  
+ 
   submit_block_hash = pblock->GetHash().GetHex();
   return (submit_block_hash.c_str());
 }
@@ -380,22 +379,24 @@ const char *c_getblocktransactions(void)
   }
 */
 
-  // iterate backwards until we have nCount items to return:
-  for (TxItems::reverse_iterator it = txByTime.rbegin(); it != txByTime.rend(); ++it)
-  {
-    CWalletTx *const pwtx = (*it).second.first;
-    if (pwtx != 0)
-      c_ListTransactions(*pwtx, strAccount, 0, true, ret);
-/*
-    CAccountingEntry *const pacentry = (*it).second.second;
-    if (pacentry != 0)
-      AcentryToJSON(*pacentry, strAccount, ret);
-*/
+  if ((int)vNodes.size() > 1) { /* if more than one usde server connection */
+    // iterate backwards until we have nCount items to return:
+    for (TxItems::reverse_iterator it = txByTime.rbegin(); it != txByTime.rend(); ++it)
+    {
+      CWalletTx *const pwtx = (*it).second.first;
+      if (pwtx != 0)
+        c_ListTransactions(*pwtx, strAccount, 0, true, ret);
+      /*
+         CAccountingEntry *const pacentry = (*it).second.second;
+         if (pacentry != 0)
+         AcentryToJSON(*pacentry, strAccount, ret);
+         */
 
-    if ((int)ret.size() >= (nCount+nFrom)) break;
+      if ((int)ret.size() >= (nCount+nFrom)) break;
+    }
   }
-  // ret is newest to oldest
 
+  // ret is newest to oldest
   if (nFrom > (int)ret.size())
     nFrom = ret.size();
   if ((nFrom + nCount) > (int)ret.size())
@@ -407,7 +408,6 @@ const char *c_getblocktransactions(void)
 
   if (last != ret.end()) ret.erase(last, ret.end());
   if (first != ret.begin()) ret.erase(ret.begin(), first);
-
 
   /* convert to a json string. */
   if (ret.size() > 0)

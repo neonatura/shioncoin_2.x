@@ -31,20 +31,24 @@ int unet_connect(int mode, struct sockaddr_in *net_addr, SOCKET *sk_p)
 {
   unet_bind_t *bind;
   unet_table_t *table;
-  struct sockaddr_in *addr;
   char buf[256];
   SOCKET cli_fd;
+  int err;
 
   if (!sk_p)
     return (SHERR_INVAL);
 
   cli_fd = shnet_sk();
   if (cli_fd < 0) 
-    return (sk);
+    return (cli_fd);
 
   if (cli_fd >= MAX_UNET_SOCKETS) {
+    char buf[256];
+
+    sprintf(buf, "unet_connect: socket descriptor (%u) exceeds supported maximum.", (unsigned int)cli_fd);
+    unet_log(mode, buf); 
+
     /* exceeds supported limit (hard-coded) */
-    unet_log(mode, unet_printf("unet_connect: socket descriptor (%u) exceeds supported maximum.", (unsigned int)cli_fd));
     close(cli_fd);
     return (SHERR_AGAIN);
   }
@@ -55,7 +59,8 @@ int unet_connect(int mode, struct sockaddr_in *net_addr, SOCKET *sk_p)
     return (SHERR_INVAL);
   }
 
-  err = shnet_connect(cli_fd, net_addr, sizeof(struct sockaddr_in));
+  err = shconnect(cli_fd,
+      (struct sockaddr *)net_addr, sizeof(struct sockaddr_in));
   if (err) {
     close(cli_fd);
     return (err);
@@ -68,10 +73,11 @@ int unet_connect(int mode, struct sockaddr_in *net_addr, SOCKET *sk_p)
 
   sprintf(buf, "created new '%s' connection (%s).\n", 
       unet_mode_label(mode), inet_ntoa(net_addr->sin_addr));
-  unet_log(buf);
+  unet_log(mode, buf);
 
-  if (_unet_bind[cli_fd].op_accept) {
-    (*_unet_bind[cli_fd].op_accept)(addr);
+  bind = unet_bind_table(cli_fd);
+  if (bind && bind->op_accept) {
+    (*bind->op_accept)(cli_fd, net_addr);
   }
 
   *sk_p = cli_fd;

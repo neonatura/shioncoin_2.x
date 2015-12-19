@@ -42,72 +42,167 @@ const char *unet_mode_label(int mode)
 
 int unet_add(int mode, SOCKET sk)
 {
-}
+  unet_table_t *t;
+  struct sockaddr *addr;
+  sa_family_t in_fam;
 
-int unet_remove(SOCKET sk)
-{
-  memset(_unet_table + sk, '\000', sizeof(unet_table_t));
+  t = get_unet_table(sk);
+  if (!t)
+    return (SHERR_INVAL);
+
+  /* fill network info */
+  t->fd = sk;
+  t->mode = mode;
+  t->cstamp = shtime(); /* init connect time-stamp */
+  t->stamp = 0; /* reset I/O timestamp */
+
+  /* retain remote network addr (ipv4) */
+  addr = shnet_host(sk);
+  if (addr)
+    memcpy(&t->net_addr, addr, sizeof(struct sockaddr));
+
+  in_fam = *((sa_family_t *)addr);
+  if (in_fam == AF_INET) {
+    struct sockaddr_in *in = (struct sockaddr_in *)&t->net_addr;
+    char buf[256];
+
+    sprintf(buf, "unet_add: new connection '%s' (%s).", 
+        unet_mode_label(mode), inet_ntoa(in->sin_addr));
+    unet_log(mode, buf);
+  }
+
+  shnet_fcntl(sk, F_SETFL, O_NONBLOCK);
+  return (0);
 }
 
 int unet_mode(SOCKET sk)
 {
+  unet_table_t *t;
+
+  t = get_unet_table(sk);
+  if (!t || t->fd == UNDEFINED_SOCKET)
+    return (UNET_NONE);
+
+  return (t->mode);
 }
 
+#if 0
 int unet_flag_set(SOCKET sk)
 {
 }
 int unet_flag(SOCKET sk)
 {
 }
+#endif
 
 
 /**
  * The maximum desired time-span to perform the cycle.
  */
-void unet_cycle(shtime_t max_t)
+void unet_cycle(double max_t)
 {
-  size_t len;
+  unet_bind_t *bind;
+  unet_table_t *t;
+  shbuf_t *buff;
+  struct timeval to;
+  shtime_t start_t;
   fd_set r_set;
   SOCKET fd;
+  double diff_t;
+  size_t w_len;
+  SOCKET sk;
+  int mode;
+  int err;
 
-  FD_ZERO(&r_set);
   start_t = shtime();
-  for (fd = 1; fd < MAX_UNET_SOCKETS; fd++) {
-    if (_unet_table[fd].fd == UNDEFINED_SOCKET)
+
+  /* add daemon listen sockets to read set for accepting new sockets */
+  for (mode = 1; mode < MAX_UNET_MODES; mode++) {
+    bind = unet_bind_table(mode);
+    if (!bind || bind->fd == UNDEFINED_SOCKET)
       continue;
+
+    err = unet_accept(mode, NULL);
+  }
+
+  /* process I/O for sockets */
+  FD_ZERO(&r_set);
+  for (fd = 1; fd < MAX_UNET_SOCKETS; fd++) {
+    t = get_unet_table(fd);
+    if (!t || t->fd == UNDEFINED_SOCKET)
+      continue;
+
+    if ((t->flag & UNETF_SHUTDOWN) &&
+        shbuf_size(t->wbuff) == 0) {
+      /* marked for closure and write buffer is empty */
+      unet_close(t->fd);
+      continue;
+    }
+
+    /* write outgoing buffer to socket */
+    if (shbuf_size(t->wbuff)) {
+      w_len = shnet_write(fd, shbuf_data(t->wbuff), shbuf_size(t->wbuff));
+      if (w_len < 0) {
+        unet_close(fd);
+        continue;
+      }
+
+      shbuf_trim(t->wbuff, w_len);
+    }
+
+    /* handle incoming data */
+    buff = shnet_read_buf(fd);
+    if (buff && shbuf_size(buff)) {
+      unet_rbuff_add(fd, shbuf_data(buff), shbuf_size(buff));
+      shbuf_clear(buff);
+    }
 
     /* flush pending writes */
-    len = shnet_write_flush(fd);
-    if (len == -1) {
+    w_len = shnet_write_flush(fd);
+    if (w_len == -1) {
       unet_close(fd);
       continue;
     }
-
-    buff = shnet_read_buf(fd);
-    if (!buff) {
-      unet_close(fd);
-      continue;
-    }
-    unet_buff_add(fd, shbuf_data(buff), shbuf_size(buff));
-    shbuf_clear(buff);
-
-    unet_timer_cycle();
 
     FD_SET(fd, &r_set);
   }
 
-  diff_t = (shtimef(shtime()) - start_t);
+  /* work proc */
+  unet_timer_cycle();
+
+  /* free expunged sockets */
+  unet_close_free();
+
+  diff_t = max_t - (shtimef(shtime()) - shtimef(start_t));
   diff_t = MAX(0, 20 - (diff_t * 1000));
   memset(&to, 0, sizeof(to));
-  to.tv_usec = (1000 * diff_t);
-  if (to.tv_usec > 1000) {
+  to.tv_usec = (long)(1000 * diff_t);
+  if (to.tv_usec > 1000) { /* > 1ms */
     select(1, &r_set, NULL, NULL, &to);
   }
 
 }
 
-
-void unet_log(int mode, char *text)
+int unet_flag_set(int mode, int flags)
 {
-  shcoind_log("unet", mode ? unet_mode_label(mode) : "", text);
+  unet_bind_t *bind;
+  
+  bind = unet_bind_table(mode);
+  if (!bind)
+    return (SHERR_INVAL);
+
+  bind->flag |= flags;
+
+  return (0);
+} 
+
+void unet_shutdown(SOCKET sk)
+{
+  unet_table_t *t;
+
+  t = get_unet_table(sk);
+  if (!t || t->fd == UNDEFINED_SOCKET)
+    return;
+
+  t->flag |= UNETF_SHUTDOWN;
 }

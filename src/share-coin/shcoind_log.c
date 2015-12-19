@@ -32,6 +32,8 @@ void f_shcoind_log(int err_code, char *tag, char *text, const char *src_fname, l
   char origin[256];
   char *date_str;
 
+fprintf(stderr, "DEBUG: %s\n", text);
+
   if (!buff)
     buff = shbuf_init();
 

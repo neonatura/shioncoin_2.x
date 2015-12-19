@@ -125,6 +125,12 @@ typedef struct task_t
 #include "stratum_task.h"
 
 
+user_t *stratum_register_client(int fd);
+
+int stratum_register_client_task(user_t *user, char *json_text);
+
+int get_stratum_daemon_port(void);
+
 /**
  * @}
  */

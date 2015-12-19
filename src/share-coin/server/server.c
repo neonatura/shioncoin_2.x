@@ -25,61 +25,36 @@
 
 #include "shcoind.h"
 
-int get_stratum_daemon_port(void)
+int get_usde_server_port(void)
 {
 /* todo: config */
-  return (STRATUM_DAEMON_PORT);
+  return (COIN_DAEMON_PORT);
 }
 
 /**
  * Called when a new socket is accepted on the shcoind stratum port (default 9448).
  */
-static void stratum_accept(int fd, struct sockaddr *net_addr)
+static void usde_accept(int fd, struct sockaddr *net_addr)
 {
+#if 0
   sa_family_t in_fam;
-  char buf[256];
-
-  if (fd < 1 || !net_addr) {
-fprintf(stderr, "DEBUG: stratum_accept: invalid fd/addr: fd(%d) net_addr(#%x)\n", fd, net_addr);
-return;
-}
 
   in_fam = *((sa_family_t *)net_addr);
   if (in_fam == AF_INET) {
     struct sockaddr_in *addr = (struct sockaddr_in *)net_addr;
+    char buf[256];
 
-    sprintf(buf, "stratum_accept: received connection (%s port %d).", inet_ntoa(addr->sin_addr), get_stratum_daemon_port());
+    sprintf(buf, "stratum_accept: received connection (%s port %d).\n", inet_ntoa(addr->sin_addr), STRATUM_DAEMON_PORT);
     shcoind_log(buf);  
-  } else {
-    sprintf(buf, "stratum_accept: received connection (family %d)", in_fam);
-    shcoind_log(buf);  
-}
+  }
 
   stratum_register_client(fd);
- 
+#endif 
 }
 
-static void stratum_close(int fd, struct sockaddr *net_addr)
+static void usde_close(int fd, struct sockaddr *net_addr)
 {
-  user_t *peer;
-
-  if (fd < 0)
-    return; /* invalid */
-
-  for (peer = client_list; peer; peer = peer->next) {
-    if (peer->flags & USER_SYSTEM)
-      continue;
-
-    if (peer->fd == fd) {
-      peer->fd = -1;
-    }
-
-  }
-   
-}
-
-static void stratum_close_free(void)
-{
+#if 0
   user_t *peer_next;
   user_t *peer_last;
   user_t *peer;
@@ -88,8 +63,9 @@ static void stratum_close_free(void)
   for (peer = client_list; peer; peer = peer_next) {
     peer_next = peer->next;
 
-    if (peer->flags & USER_SYSTEM)
-      continue;
+    if (peer->fd == fd) {
+      peer->fd = -1;
+    }
 
     if (peer->fd == -1) {
       if (peer_last)
@@ -102,11 +78,12 @@ static void stratum_close_free(void)
 
     peer_last = peer;
   }
-   
+#endif
 }
 
-static void stratum_timer(void)
+static void usde_timer(void)
 {
+#if 0
   unet_table_t *t;
   user_t *peer;
   shbuf_t *buff;
@@ -119,10 +96,10 @@ static void stratum_timer(void)
       continue;
 
     t = get_unet_table(peer->fd);
-    if (!t || t->fd == UNDEFINED_SOCKET) {
-      continue;
-}
+    if (!t) continue;
 
+    buff = t->rbuff;
+    if (!buff) continue;
 
     /* check status of socket. */
     err = write(peer->fd, "", 0);
@@ -138,9 +115,6 @@ static void stratum_timer(void)
       continue;
     }
 
-    buff = t->rbuff;
-    if (!buff) continue;
-
     /* process incoming requests */
     len = shbuf_idx(buff, '\n');
     if (len == -1)
@@ -148,76 +122,35 @@ static void stratum_timer(void)
     data = shbuf_data(buff);
     data[len] = '\0';
 
-    if (0 == strncmp(data, "GET ", strlen("GET "))) {
-      stratum_register_html_task(peer, data + strlen("GET "));
-    } else if (*data == '{') {
-      stratum_register_client_task(peer, data);
-    }
+    stratum_register_client_task(peer, data);
     shbuf_trim(buff, len + 1);
   }
 
-  stratum_close_free();
-
   stratum_task_gen();
-
+#endif
 }
 
-void stratum_term(void)
+void usde_server_term(void)
 {
 
-  unet_unbind(UNET_STRATUM);
+  unet_unbind(UNET_COIN);
 
 }
 
-user_t *stratum_register_client(int fd)
-{
-  user_t *user;
-  int err;
 
-  user = stratum_user_init(fd);
-  user->next = client_list;
-  client_list = user;
-
-  return (user);
-}
-
-int stratum_register_html_task(user_t *user, char *html_text)
-{
-  strtok(html_text, " ");
-  return (stratum_http_request(user->fd, html_text));
-}
-
-int stratum_register_client_task(user_t *user, char *json_text)
-{
-  shjson_t *tree;
-  int err;
-
-  if (!*json_text) {
-    return (0);
-  }
-
-  tree = shjson_init(json_text);
-  if (tree == NULL) {
-    return (SHERR_INVAL);
-  }
-
-  err = stratum_request_message(user, tree);
-  shjson_free(&tree);
-
-  return (err);
-}
-
-int stratum_init(void)
+int usde_server_init(void)
 {
   int err;
 
-  err = unet_bind(UNET_STRATUM, get_stratum_daemon_port());
+  err = unet_bind(UNET_COIN, get_usde_server_port());
   if (err)
     return (err);
 
-  unet_timer_set(UNET_STRATUM, stratum_timer); /* x1/s */
-  unet_connop_set(UNET_STRATUM, stratum_accept);
-  unet_disconnop_set(UNET_STRATUM, stratum_close);
+  unet_flag_set(UNET_COIN, UNETF_PEER_SCAN);
+
+  unet_timer_set(UNET_COIN, usde_timer); /* x1/s */
+  unet_connop_set(UNET_COIN, usde_accept);
+  unet_disconnop_set(UNET_COIN, usde_close);
 
   return (0);
 }

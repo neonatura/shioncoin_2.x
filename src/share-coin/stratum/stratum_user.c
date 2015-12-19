@@ -147,8 +147,7 @@ void stratum_user_block(user_t *user, task_t *task)
       if (user->work_diff < 16384)
         stratum_set_difficulty(user, user->work_diff + 8);
     } else if (user->block_freq > 15) { 
-      if (user->work_diff > 32)
-        stratum_set_difficulty(user, user->work_diff - 8);
+      stratum_set_difficulty(user, user->work_diff - 8);
     }
   }
   user->block_tm = cur_t;

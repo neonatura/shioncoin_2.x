@@ -23,39 +23,21 @@
  *  @endcopyright
  */  
 
-#include "shcoind.h"
+#ifndef __SERVER__SERVER_H__
+#define __SERVER__SERVER_H__
+
+/**
+ * The usde currency server.
+ * @ingroup sharecoin
+ * @defgroup sharecoin_usde The share-coin daemon usde server.
+ * @{
+ */
 
 
-int unet_rbuff_add(int sk, unsigned char *data, size_t data_len)
-{
-  unet_table_t *t;
-  int err;
+/**
+ * @}
+ */
 
-  t = get_unet_table(sk);
-  if (!t)
-    return (SHERR_INVAL);
+#endif /* ndef __SERVER__SERVER_H__ */
 
-  if (!t->rbuff)
-    t->rbuff = shbuf_init();
 
-  shbuf_cat(t->rbuff, data, data_len);
-
-  return (0);
-}
-
-int unet_sbuff_add(int sk, unsigned char *data, size_t data_len)
-{
-  unet_table_t *t;
-  int err;
-
-  t = get_unet_table(sk);
-  if (!t) 
-    return (SHERR_INVAL);
-
-  if (!t->rbuff)
-    t->rbuff = shbuf_init();
-
-  shbuf_cat(t->rbuff, data, data_len);
-
-  return (0);
-}

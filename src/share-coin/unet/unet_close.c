@@ -29,16 +29,19 @@
 int unet_close(SOCKET sk)
 {
   unet_table_t *table;
+  unet_bind_t *bind;
   char buf[256];
   int err;
 
   table = get_unet_table(sk);
-  if (!table)
+  if (!table || table->fd == UNDEFINED_SOCKET)
     return (SHERR_INVAL);
 
-  sprintf(buf, "unet_close: closed '%s' connection (%s).",
-    unet_mode_label(table->mode),  inet_ntoa(table->net_addr.sin_addr));
-  shcoind_log(buf);
+  /* inform user-level of socket closure. */
+  bind = unet_bind_table(table->mode);
+  if (bind && bind->op_close) {
+    (*bind->op_close)(sk, &table->net_addr);
+  }
 
 #ifdef WIN32
   err = closesocket(sk);
@@ -46,6 +49,13 @@ int unet_close(SOCKET sk)
   err = close(sk);
 #endif
 
+  sprintf(buf, "unet_close: closed '%s' connection (%s).",
+    unet_mode_label(table->mode),  inet_ntoa(table->net_addr.sin_addr));
+  unet_log(table->mode, buf);
+
+  table->fd = UNDEFINED_SOCKET;
+
+#if 0
   /* free [user-level] socket buffer */
   if (table->rbuff)
     shbuf_free(&table->rbuff);
@@ -54,21 +64,47 @@ int unet_close(SOCKET sk)
 
   /* empty slate */
   memset(table, '\000', sizeof(unet_table_t));
+#endif
 
   return (err);
 }
 
 int unet_close_all(int mode)
 {
+  unet_table_t *t;
   int sk;
 
   for (sk = 1; sk < MAX_UNET_SOCKETS; sk++) {
-    if (_unet_table[sk].mode != mode)
-      continue;
-    if (_unet_table[sk] == UNDEFINED_SOCKET)
-      continue;
+    t = get_unet_table(sk);
+    if (!t || t->fd == UNDEFINED_SOCKET)
+      continue; /* not active */
+    if (t->mode != mode)
+      continue; /* wrong mode bra */
 
-    unet_close(_unet_table[sk].fd);
+    unet_close(t->fd);
+  }
+
+  return (0);
+}
+
+void unet_close_free(void)
+{
+  unet_table_t *t;
+  int sk;
+
+  for (sk = 1; sk < MAX_UNET_SOCKETS; sk++) {
+    t = get_unet_table(sk);
+    if (!t || t->fd != UNDEFINED_SOCKET)
+      continue; /* active */
+
+    /* free [user-level] socket buffer */
+    if (t->rbuff || t->wbuff) {
+      shbuf_free(&t->rbuff);
+      shbuf_free(&t->wbuff);
+
+      /* empty slate */
+      memset(t, '\000', sizeof(unet_table_t));
+    }
   }
 
   return (0);

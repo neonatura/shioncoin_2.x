@@ -34,8 +34,9 @@
 #define MAX_UNET_MODES 4
 
 
-/** The socket has been marked for disconnect and removal.  */
-#define UNETF_DEAD (1 << 0)
+
+#define UNETF_SHUTDOWN (1 << 0)
+#define UNETF_PEER_SCAN (1 << 1)
 
 
 #define UNDEFINED_SOCKET 0
@@ -56,7 +57,7 @@ typedef unsigned int SOCKET;
  
 typedef void (*unet_op)(void);
 
-typedef void (*unet_addr_op)(struct sockaddr_in *);
+typedef void (*unet_addr_op)(int, struct sockaddr *);
 
 
 /* per unet mode */
@@ -76,6 +77,7 @@ typedef struct unet_bind_t
 
   /** called when a new socket is accepted. */
   unet_addr_op op_accept;
+  unet_addr_op op_close;
 } unet_bind_t;
 
 /* per client socket connection */
@@ -91,6 +93,9 @@ typedef struct unet_table_t
   /** bitvector flags (UNETF_XXX) */
   int flag;
 
+  /** The time-stamp of when the connection initially occurred. */
+  shtime_t cstamp;
+
   /** The last time that I/O was processed on socket. */
   shtime_t stamp;
 
@@ -99,19 +104,36 @@ typedef struct unet_table_t
 
   /** outgoing data buffer */
   shbuf_t *wbuff;
-}
 
+  /* remote network address */
+  struct sockaddr_in net_addr;
+} unet_table_t;
+
+
+
+/**
+ * Write a log message from inside the unet network engine.
+ */
+#define unet_log(_mode, _text) \
+  (f_shcoind_log(0, ((_mode != 0) ? unet_mode_label(_mode) : "Info"), \
+     (_text), __FILE__, __LINE__))
+
+
+const char *unet_mode_label(int mode);
+
+int unet_add(int mode, SOCKET sk);
+
+
+int unet_mode(SOCKET sk);
 
 
 
 unet_bind_t *unet_bind_table(int mode);
 
-int unet_bind(int mode, int port);
-
-void unet_unbind(int mode);
 
 
-int get_unet_table(int sk);
+
+unet_table_t *get_unet_table(SOCKET sk);
 
 int unet_accept(int mode, SOCKET *sk_p);
 
@@ -119,7 +141,6 @@ int unet_accept(int mode, SOCKET *sk_p);
 int unet_close(SOCKET sk);
 int unet_close_all(int mode);
 
-int unet_timer_add(unet_timer_t timer_f);
 
 int unet_sbuff_add(int sk, unsigned char *data, size_t data_len);
 
@@ -130,12 +151,24 @@ int unet_read(SOCKET sk, char *data, size_t *data_len_p);
 
 int unet_write(SOCKET sk, char *data, size_t data_len);
 
+
 int unet_timer_set(int mode, unet_op timer_f);
 void unet_timer_unset(int mode);
 
 
 int unet_connect(int mode, struct sockaddr_in *net_addr, SOCKET *sk_p);
 
+
+int unet_bind(int mode, int port);
+
+int unet_unbind(int mode);
+
+
+void unet_cycle(double max_t);
+
+int unet_flag_set(int mode, int flags);
+
+void unet_shutdown(SOCKET sk);
 
 
 #endif /* ndef __UNET__UNET_H__ */

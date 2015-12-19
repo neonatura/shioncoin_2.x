@@ -29,7 +29,11 @@
 shpeer_t *server_peer;
 int server_msgq;
 shbuf_t *server_msg_buff;
+#if 0
 int server_fd;
+#endif
+
+static int opt_no_fork;
 
 #if 0
 /* DEBUG: */
@@ -55,16 +59,21 @@ void daemon_signal(int sig_num)
 {
   signal(sig_num, SIG_DFL);
 
-fprintf(stderr, "DEBUG: daemon_signal sig_num(%d)\n", sig_num);
+  /* terminate stratum server */
+  stratum_term();
 
-
+  /* close sharefs partition */
   block_close();
+
+#if 0
   daemon_close_clients();
   if (server_fd != -1) {
     shclose(server_fd);
 fprintf(stderr, "DEBUG: closing server fd %d\n", server_fd);
     server_fd = -1;
   }
+#endif
+
   shpeer_free(&server_peer);
 shbuf_free(&server_msg_buff);
 
@@ -100,6 +109,7 @@ void usage_version(void)
 int main(int argc, char *argv[])
 {
   char blockfile_path[PATH_MAX];
+  char buf[1024];
   int fd;
   int err;
   int i;
@@ -120,6 +130,8 @@ int main(int argc, char *argv[])
     if (0 == strcmp(argv[i], "--blockfile")) {
       if (i + 1 < argc)
         strncpy(blockfile_path, argv[i], sizeof(blockfile_path)-1);
+    } else if (0 == strcmp(argv[i], "-nf")) {
+      opt_no_fork = TRUE;
 #if 0
     } else if (0 == strcmp(argv[i], "--rescan")) {
       SoftSetBoolArg("-rescan", true);
@@ -127,7 +139,8 @@ int main(int argc, char *argv[])
     }
   }
 
-  daemon(0, 1);
+  if (!opt_no_fork)
+    daemon(0, 1);
 
   signal(SIGHUP, SIG_IGN);
   signal(SIGPIPE, SIG_IGN);
@@ -141,6 +154,7 @@ int main(int argc, char *argv[])
   server_msg_buff = shbuf_init();
 
  
+#if 0
   fd = shnet_sk();
   if (fd == -1) {
     perror("shnet_sk");
@@ -153,24 +167,49 @@ int main(int argc, char *argv[])
     shnet_close(fd);
     return (err);
   }
+#endif
 
   shapp_listen(TX_APP, server_peer);
   shapp_listen(TX_IDENT, server_peer);
   shapp_listen(TX_SESSION, server_peer);
   shapp_listen(TX_BOND, server_peer);
 
+#if 0
   server_fd = fd;
+#endif
+
+  /* debug;  usde_server_init(); */
+
+  /* open app's sharefs partition */
   block_init();
+
+  /* open 'wallet.dat' */
   load_wallet();
 
+  /* initialize stratum server */
+  err = stratum_init();
+  if (err) {
+    fprintf(stderr, "critical: init stratum: %s. [sherr %d]", sherrstr(err), err);
+    return (-1);
+  }
+sprintf(buf, "info: initialized stratum server on port %d.", get_stratum_daemon_port());
+shcoind_log(buf);
+
+  /* debug: cmdline option */
   if (*blockfile_path)
     reloadblockfile(blockfile_path);
 
+  /* debug: performed auto. in original required manual 'upgrade'. */
   upgrade_wallet();
 
+  /* debug; replace with shnet_track */
   load_peers();
 
+  /* debug: usde_server_init() */
   start_node();
+
+/* debug: invokes unet_cycle() loop */
+  daemon_server();
 
 /*
  * main 'tx fee' account is ""
@@ -178,7 +217,6 @@ int main(int argc, char *argv[])
     getnewaddress("bank"); 
 */
 
-  daemon_server();
 
   return (0);
 }

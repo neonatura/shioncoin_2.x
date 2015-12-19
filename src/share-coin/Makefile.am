@@ -19,6 +19,7 @@ common_includes = \
 	$(top_srcdir)/src/share-lib/fs/shfs.h \
 	$(top_srcdir)/src/share-lib/delta/xdelta3.h \
 	$(top_srcdir)/src/share-lib/net/shnet.h \
+	unet/unet.h \
 	server/addrman.h \
 	server/allocators.h \
 	server/base58.h \
@@ -50,6 +51,8 @@ common_includes = \
 	server/wallet.h \
 	shcoind_version.h \
 	server_iface.h \
+	stratum/stratum.h \
+	stratum/stratum_http.h \
 	stratum/stratum_message.h \
 	stratum/stratum_protocol.h \
 	stratum/stratum_user.h \
@@ -57,14 +60,26 @@ common_includes = \
 	stratum/stratum.h \
 	shcoind_block.h \
 	shcoind_rpc.h \
+	shcoind_log.h \
 	shcoind.h
 common_sources = \
+	unet/unet_accept.c \
+	unet/unet_bind.c \
+	unet/unet_buff.c \
+	unet/unet.c \
+	unet/unet_close.c \
+	unet/unet_connect.c \
+	unet/unet.h \
+	unet/unet_io.c \
+	unet/unet_select.c \
+	unet/unet_timer.c \
 	server/protocol.cpp \
 	server/netbase.cpp \
 	server/version.cpp \
 	server/util.cpp \
 	shcoind_block.c \
-	shcoind_rpc.c
+	shcoind_rpc.c \
+	shcoind_log.c
 server_sources = \
 	server/addrman.cpp \
 	server/rpc_proto.cpp \
@@ -89,6 +104,8 @@ server_sources = \
 	block_iface.cpp \
 	server_iface.cpp
 stratum_sources = \
+	stratum/stratum.c \
+	stratum/stratum_http.c \
 	stratum/stratum_message.c \
 	stratum/stratum_protocol.c \
 	stratum/stratum_user.c \

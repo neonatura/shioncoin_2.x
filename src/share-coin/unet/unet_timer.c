@@ -67,16 +67,20 @@ void unet_timer_cycle(void)
   shtime_t now;
   int idx;
 
-  min_t = shtime_adj(shtime(), -1); /* one second ago */
   for (idx = 0; idx < MAX_UNET_MODES; idx++) {
-    bind = unet_bind_table(mode);
+    bind = unet_bind_table(idx);
 
-    if (shtime_after(min_t, bind->stamp))
-      continue;
+    if (!bind->op_timer)
+      continue; /* all done */
+
+    now = shtime();
+    min_t = shtime_adj(now, -1); /* one second ago */
+    if (shtime_before(min_t, bind->stamp))
+      continue; /* not ready */
 
     /* call work procedure */
-    bind->stamp = shtime();
-    (*work->op)();
+    bind->stamp = now;
+    (*bind->op_timer)();
   }
 
 }

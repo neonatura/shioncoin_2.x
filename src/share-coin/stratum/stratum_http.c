@@ -25,37 +25,33 @@
 
 #include "shcoind.h"
 
+static const char *_stratum_html_template = 
+"\r\n"
+"%s\r\n"
+"\r\n";
 
-int unet_rbuff_add(int sk, unsigned char *data, size_t data_len)
+char *stratum_http_response(SOCKET sk, char *url)
 {
-  unet_table_t *t;
-  int err;
+  static char ret_html[10240];
 
-  t = get_unet_table(sk);
-  if (!t)
-    return (SHERR_INVAL);
+  sprintf(ret_html, _stratum_html_template, url);
 
-  if (!t->rbuff)
-    t->rbuff = shbuf_init();
-
-  shbuf_cat(t->rbuff, data, data_len);
-
-  return (0);
+  return (ret_html);
 }
 
-int unet_sbuff_add(int sk, unsigned char *data, size_t data_len)
+void stratum_http_request(SOCKET sk, char *url)
 {
-  unet_table_t *t;
-  int err;
+  shbuf_t *buff;
 
-  t = get_unet_table(sk);
-  if (!t) 
-    return (SHERR_INVAL);
+  buff = shbuf_init();
+  shbuf_catstr(buff, "HTTP/1.0 200 OK\r\n"); 
+  shbuf_catstr(buff, "Content-Type: text/html\r\n");
+  shbuf_catstr(buff, "\r\n"); 
+  shbuf_catstr(buff, "<html><body>\r\n"); 
+  shbuf_catstr(buff, stratum_http_response(sk, url));
+  shbuf_catstr(buff, "</body></html>\r\n"); 
 
-  if (!t->rbuff)
-    t->rbuff = shbuf_init();
+  unet_write(sk, shbuf_data(buff), shbuf_size(buff));
+  unet_shutdown(sk);
 
-  shbuf_cat(t->rbuff, data, data_len);
-
-  return (0);
 }

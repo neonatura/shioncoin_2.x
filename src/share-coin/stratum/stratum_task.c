@@ -8,10 +8,7 @@
 #define MAX_ROUND_TIME 600
 
 static task_t *task_list;
-
-char last_payout_hash[512];
-
-user_t *sys_user;
+static user_t *sys_user;
 
 
 void free_tasks(void)
@@ -59,12 +56,36 @@ void reset_task_work_time(void)
 
 #define MEDIAN_TIME_PER_BLOCK 28
 
+static int work_idx = 0;
+
+static int work_reset;
+
+/** 
+ * Called after a new block is generated.
+ */
+static int task_verify(void)
+{
+  static uint64_t last_block_height;
+  uint64_t block_height;
+
+  block_height = getblockheight();
+  if (block_height == last_block_height)
+    return (SHERR_AGAIN);
+
+  check_payout();
+
+  reset_task_work_time();
+  work_idx = -1;
+  work_reset = TRUE;
+
+  free_tasks();
+  last_block_height = block_height;
+
+  return (0);
+}
+
 task_t *task_init(void)
 {
-  static int work_idx = 0;
-  static uint64_t last_block_height;
-  static int xn_len = 8;
-  static time_t last_block_change;
   shjson_t *block;
   unsigned char hash_swap[32];
   shjson_t *tree;
@@ -78,9 +99,12 @@ task_t *task_init(void)
   uint64_t block_height;
   unsigned long cb1;
   unsigned long cb2;
-  int work_reset;
   int i;
 
+  task_verify();
+
+#if 0
+  static time_t last_block_change;
   work_reset = FALSE;
   block_height = getblockheight();
   if (block_height != last_block_height ||
@@ -95,6 +119,7 @@ task_t *task_init(void)
     last_block_change = time(NULL);
     last_block_height = block_height;
   }
+#endif
 
   work_idx++;
   if (0 != (work_idx % task_work_t)) {
@@ -111,14 +136,12 @@ task_t *task_init(void)
 
   tree = shjson_init(templ_json);
   if (!tree) {
-fprintf(stderr, "DEBUG: task_init: cannot parse json\n");
     return (NULL);
   }
 
   block = shjson_obj(tree, "result");
   if (!block) {
     shjson_free(&tree);
-fprintf(stderr, "DEBUG: task_init: cannot parse json result\n");
     return (NULL);
   }
 
@@ -153,6 +176,7 @@ fprintf(stderr, "DEBUG: task_init: coinbase does not contain sigScript (coinbase
   }
 
   strncpy(task->cb1, coinbase, strlen(coinbase) - strlen(ptr) - 16 /* xnonce */);
+//static int xn_len = 8;
   //xn_len = user->peer.n1_len + user->peer.n2_len;
 //  sprintf(task->cb1 + strlen(task->cb1), "%-2.2x", xn_len);
 
@@ -187,7 +211,7 @@ fprintf(stderr, "DEBUG: task_init: coinbase does not contain sigScript (coinbase
 
   strncpy(task->nbits, shjson_astr(block, "bits", "00000000"), sizeof(task->nbits) - 1);
   task->curtime = (time_t)shjson_num(block, "curtime", time(NULL));
-  task->height = block_height;
+  task->height = getblockheight();
 
   /* generate unique job id from user and coinbase */
   task->task_id = (unsigned int)shjson_num(block, "task", shcrc(task, sizeof(task_t)));
@@ -246,22 +270,24 @@ cnt++;
  * Monitors when a new accepted block becomes confirmed.
  * @note format: ["height"=<block height>, "category"=<'generate'>, "amount"=<block reward>, "time":<block time>, "confirmations":<block confirmations>]
  */
-void check_payout()
+void check_payout(void)
 {
+  static char last_payout_hash[1024];
   shjson_t *tree;
   shjson_t *block;
   user_t *user;
   char block_hash[512];
   char category[64];
   char uname[256];
-  const char *templ_json;
+  char *templ_json;
   double tot_shares;
   double weight;
   double reward;
   int i;
 
-
-  templ_json = getblocktransactions();
+//fprintf(stderr, "DEBUG: getblocktransactions()/start\n");
+  templ_json = (char *)getblocktransactions();
+//fprintf(stderr, "DEBUG: getblocktransactions()/end <%d bytes>\n", strlen(templ_json));
   if (!templ_json) {
 fprintf(stderr, "DEBUG: task_init: getblocktransactions NULL\n");
     return;
@@ -412,7 +438,8 @@ void stratum_task_work(task_t *task)
   sys_user->peer.diff = 0.125;
   sprintf(task->work.xnonce2, "%-8.8x", 0x00000000);
 sprintf(ntime, "%-8.8x", task->curtime);
-  shscrypt_work(&sys_user->peer, &task->work, task->merkle, task->prev_hash, task->cb1, task->cb2, task->nbits, ntime);
+  shscrypt_work(&sys_user->peer,
+ &task->work, task->merkle, task->prev_hash, task->cb1, task->cb2, task->nbits, ntime);
 
   err = shscrypt(&task->work, MAX_SERVER_NONCE);
   if (!err && task->work.nonce != MAX_SERVER_NONCE) {

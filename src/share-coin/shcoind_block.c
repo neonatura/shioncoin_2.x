@@ -5,7 +5,7 @@ shfs_t *block_fs;
 
 
 
-
+/* experimental */
 char *block_load(int block_height)
 {
   shfs_ino_t *file;

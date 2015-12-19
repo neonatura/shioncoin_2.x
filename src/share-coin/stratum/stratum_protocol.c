@@ -188,6 +188,9 @@ int stratum_set_difficulty(user_t *user, int diff)
 {
   int err;
 
+  diff = MAX(64, diff);
+  diff = MIN(16384, diff);
+
   user->work_diff = diff;
   err = stratum_send_difficulty(user);
 //fprintf(stderr, "DEBUG: %d = stratum_send_difficulty(diff %d)", err, user->work_diff);
@@ -441,7 +444,7 @@ int stratum_request_message(user_t *user, shjson_t *json)
   if (0 == strcmp(method, "mining.subscribe")) {
     err = stratum_subscribe(user, idx);
     if (!err)
-      stratum_set_difficulty(user, 32);
+      stratum_set_difficulty(user, 64);
 
     reset_task_work_time();
 
@@ -452,9 +455,7 @@ int stratum_request_message(user_t *user, shjson_t *json)
     shjson_t *param;
     char *username;
     char *password;
-    int diff = 0;
 
-    /* todo: set diff off "username/<diff>" syntax. */
     username = shjson_array_astr(json, "params", 0);
     password = shjson_array_astr(json, "params", 1);
     user = stratum_user(user, username);
@@ -473,9 +474,11 @@ int stratum_request_message(user_t *user, shjson_t *json)
     err = stratum_send_message(user, reply);
     shjson_free(&reply);
 
-    diff = MAX(32, diff);
-    stratum_set_difficulty(user, diff);
+    stratum_set_difficulty(user, 64);
+
+    /* does not support password "x:<diff>" */
     //stratum_set_difficulty(user, MAX(32, atoi(password)));
+
     stratum_send_client_ver(user);
     return (err);
   }
