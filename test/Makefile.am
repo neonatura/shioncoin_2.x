@@ -2,7 +2,8 @@ AUTOMAKE_OPTIONS = foreign
 
 noinst_PROGRAMS = test_shcoind
 
-test_shcoind_CFLAGS =
+test_shcoind_CFLAGS = \
+	-I$(top_srcdir)/src/share-coin
 test_shcoind_CXXFLAGS = \
 	-I$(top_srcdir)/src/share-coin/leveldb/include \
 	-I$(top_srcdir)/src/share-coin/leveldb/helpers \
@@ -40,6 +41,19 @@ testcase_sources = \
 	wallet_tests.cpp
 
 common_sources = \
+	$(top_srcdir)/src/share-coin/shcoind_opt.c \
+	$(top_srcdir)/src/share-coin/shcoind_log.c \
+	$(top_srcdir)/src/share-coin/unet/unet_accept.c \
+	$(top_srcdir)/src/share-coin/unet/unet_bind.c \
+	$(top_srcdir)/src/share-coin/unet/unet_buff.c \
+	$(top_srcdir)/src/share-coin/unet/unet.c \
+	$(top_srcdir)/src/share-coin/unet/unet_close.c \
+	$(top_srcdir)/src/share-coin/unet/unet_connect.c \
+	$(top_srcdir)/src/share-coin/unet/unet.h \
+	$(top_srcdir)/src/share-coin/unet/unet_io.c \
+	$(top_srcdir)/src/share-coin/unet/unet_select.c \
+	$(top_srcdir)/src/share-coin/unet/unet_timer.c \
+	$(top_srcdir)/src/share-coin/unet/unet_peer.c \
 	$(top_srcdir)/src/share-coin/server/addrman.cpp \
 	$(top_srcdir)/src/share-coin/server/rpc_proto.cpp \
 	$(top_srcdir)/src/share-coin/server/checkpoints.cpp \
