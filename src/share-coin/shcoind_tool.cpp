@@ -3,6 +3,8 @@
 #include "server/main.h"
 #include "server/net.h"
 #include "server/rpc_proto.h"
+#include "server/db.h"
+#include "server/addrman.h"
 #include "shcoind_rpc.h"
 #include <share.h>
 
@@ -15,6 +17,8 @@ using namespace std;
 using namespace boost;
 
 extern void IRCDiscover(void);
+extern void ImportPeers(void);
+extern void PrintPeers(void);
 
 
 int main(int argc, char *argv[])
@@ -61,6 +65,16 @@ int main(int argc, char *argv[])
     IRCDiscover();
     return (0);
   }
+  if (argc >= 2 && 0 == strcasecmp(argv[1], "importpeers")) {
+    /* load 'peers.dat' into sharefs peer db */
+    ImportPeers();
+    return (0);
+  }
+  if (argc >= 2 && 0 == strcasecmp(argv[1], "printpeers")) {
+    /* load 'peers.dat' into sharefs peer db */
+    PrintPeers();
+    return (0);
+  }
 
   /* perform rpc operation */
   ret = CommandLineRPC(argc, argv);
@@ -69,5 +83,70 @@ int main(int argc, char *argv[])
 }
 
 
+CAddrMan addrman;
+void shcoind_tool_LoadPeers(void)
+{
+  int64 nStart;
+
+  nStart = GetTimeMillis();
+  {
+    CAddrDB adb;
+    if (!adb.Read(addrman))
+      printf("Invalid or missing peers.dat; recreating\n");
+  }
+  printf("Loaded %i addresses from peers.dat  %"PRI64d"ms\n",
+      addrman.size(), GetTimeMillis() - nStart);
+
+/*
+  RandAddSeedPerfmon();
+  pwalletMain->ReacceptWalletTransactions();
+*/
+}
+
+void ImportPeers(void)
+{
+  char addr_str[256];
+  shpeer_t *peer;
+  shpeer_t *serv_peer;
+
+  serv_peer = shapp_init("usde", NULL, SHAPP_LOCAL);
+
+  shcoind_tool_LoadPeers();
+
+  vector<CAddress> vAddr = addrman.GetAddr();
+
+  fprintf(stdout, "Import Peers:\n");
+  BOOST_FOREACH(const CAddress &addr, vAddr) {
+    sprintf(addr_str, "%s %d", addr.ToStringIP().c_str(), addr.GetPort());
+    peer = shpeer_init("usde", addr_str);
+    shnet_track_add(peer);
+    shpeer_free(&peer);
+    fprintf(stdout, "\t%s\n", addr_str);
+  }
+
+  shpeer_free(&serv_peer);
+
+}
+void PrintPeers(void)
+{
+  shdb_t *db;
+  shjson_t *json;
+  shpeer_t *serv_peer;
+  char *text;
+
+  serv_peer = shapp_init("usde", NULL, SHAPP_LOCAL);
+
+  db = shdb_open("net");
+  json = shdb_json(db, "track", 0, 0);
+  text = shjson_print(json);
+  shjson_free(&json);
+  shdb_close(db);
+
+  fwrite(text, sizeof(char), strlen(text), stdout);
+  free(text);
+
+  shpeer_free(&serv_peer);
+
+}
 
 

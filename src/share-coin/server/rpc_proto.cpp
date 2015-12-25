@@ -64,6 +64,7 @@ extern Value createrawtransaction(const Array& params, bool fHelp);
 extern Value decoderawtransaction(const Array& params, bool fHelp);
 extern Value signrawtransaction(const Array& params, bool fHelp);
 extern Value sendrawtransaction(const Array& params, bool fHelp);
+extern bool OpenNetworkConnection(const CAddress& addrConnect, const char *strDest = NULL);
 
 const Object emptyobj;
 
@@ -288,8 +289,6 @@ Value help(const Array& params, bool fHelp)
     return tableRPC.help(strCommand);
 }
 
-extern CSemaphore *semOutbound;
-extern bool OpenNetworkConnection(const CAddress& addrConnect, CSemaphoreGrant *grantOutbound = NULL, const char *strDest = NULL, bool fOneShot = false);
 Value addpeer(const Array& params, bool fHelp)
 {
   if (fHelp || params.size() != 1)
@@ -309,6 +308,8 @@ Value addpeer(const Array& params, bool fHelp)
   memset(buf, 0, sizeof(buf));
   strncpy(buf, strHost.c_str(), sizeof(buf)-1);
   ptr = strchr(buf, ':');
+  if (!ptr)
+    ptr = strchr(buf, ' '); /* ipv6 */
   if (ptr) {
     port = atoi(ptr+1);
     *ptr = '\000';
@@ -317,8 +318,11 @@ Value addpeer(const Array& params, bool fHelp)
     port = GetDefaultPort();
 
   if (Lookup(strHost.c_str(), vserv, port, false)) {
+#if 0
     CSemaphoreGrant grant(*semOutbound);
     OpenNetworkConnection(CAddress(vserv), &grant);
+#endif
+    OpenNetworkConnection(CAddress(vserv));
   }
 
   return "initiated new peer connection.";

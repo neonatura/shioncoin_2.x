@@ -19,7 +19,12 @@
 #include "mruset.h"
 #include "netbase.h"
 #include "protocol.h"
-#include "addrman.h"
+//#include "addrman.h"
+#include "util.h"
+#include "sync.h"
+
+#include <map>
+#include <vector>
 
 class CRequestTracker;
 class CNode;
@@ -118,7 +123,7 @@ extern bool fUseUPnP;
 extern uint64 nLocalServices;
 extern uint64 nLocalHostNonce;
 extern boost::array<int, THREAD_MAX> vnThreadsRunning;
-extern CAddrMan addrman;
+//extern CAddrMan addrman;
 
 extern std::vector<CNode*> vNodes;
 extern CCriticalSection cs_vNodes;

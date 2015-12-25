@@ -31,21 +31,24 @@ int unet_read(SOCKET sk, char *data, size_t *data_len_p)
   unet_table_t *t;
   size_t r_len;
 
-  if (sk == UNDEFINED_SOCKET || sk == INVALID_SOCKET)
+  if (sk < 1)
     return (SHERR_BADF);
 
   if (!data || !data_len_p)
     return (SHERR_INVAL);
 
   t = get_unet_table(sk);
-  if (!t || t->fd == UNDEFINED_SOCKET)
+  if (!t || t->fd == UNDEFINED_SOCKET) {
     return (SHERR_INVAL);
+}
 
   if (!t->rbuff)
     return (SHERR_AGAIN);
 
-  /* determine max length */
   r_len = *data_len_p;
+  *data_len_p = 0;
+
+  /* determine max length */
   r_len = MIN(r_len, shbuf_size(t->rbuff));
   if (r_len == 0)
     return (SHERR_AGAIN);
@@ -64,7 +67,7 @@ int unet_write(SOCKET sk, char *data, size_t data_len)
 {
   unet_table_t *t;
 
-  if (sk == UNDEFINED_SOCKET || sk == INVALID_SOCKET)
+  if (sk < 1)
     return (SHERR_BADF);
 
   if (!data_len)
@@ -74,6 +77,9 @@ int unet_write(SOCKET sk, char *data, size_t data_len)
     return (SHERR_INVAL);
 
   t = get_unet_table(sk);
+  if (!t)
+    return (SHERR_INVAL);
+
   if (!t->wbuff)
     t->wbuff = shbuf_init();
   

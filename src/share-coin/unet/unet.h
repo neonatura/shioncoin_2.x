@@ -26,6 +26,10 @@
 #ifndef __UNET__UNET_H__
 #define __UNET__UNET_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 #define UNET_NONE 0
 #define UNET_STRATUM 1
@@ -37,9 +41,11 @@
 
 #define UNETF_SHUTDOWN (1 << 0)
 #define UNETF_PEER_SCAN (1 << 1)
+#define UNETF_INBOUND (1 << 2)
 
 
 #define UNDEFINED_SOCKET 0
+#define UNDEFINED_TIME 0
 
 #ifdef WIN32
 #define MSG_NOSIGNAL        0
@@ -51,6 +57,9 @@ typedef int socklen_t;
 #endif
 
 #define MAX_UNET_SOCKETS 4096
+
+#define MAX_CONNECT_IDLE_TIME 45
+#define MAX_IDLE_TIME 3600
 
 
 typedef unsigned int SOCKET;
@@ -69,8 +78,26 @@ typedef struct unet_bind_t
   /** bitvector flags (UNETF_XXX) */
   int flag;
 
+  /** the port listening for new connections. */
+  int port;
+
+  /** the current socket desciptor being used to scan peers. */
+  int scan_fd;
+
+  /** the frequency of successfull connections. */
+  double scan_freq;
+
+  /* a public peer reference to the bound server. */
+  shpeer_t peer;
+
+  /** the peer currently being scanned. */
+  shpeer_t scan_peer;
+
   /** the last time the timer callback was called. */
-  shtime_t stamp;
+  shtime_t timer_stamp;
+
+  /** the last time a new peer connection was attempted. */
+  shtime_t scan_stamp;
 
   /** the timer callback */
   unet_op op_timer;
@@ -106,7 +133,7 @@ typedef struct unet_table_t
   shbuf_t *wbuff;
 
   /* remote network address */
-  struct sockaddr_in net_addr;
+  struct sockaddr net_addr;
 } unet_table_t;
 
 
@@ -156,20 +183,32 @@ int unet_timer_set(int mode, unet_op timer_f);
 void unet_timer_unset(int mode);
 
 
-int unet_connect(int mode, struct sockaddr_in *net_addr, SOCKET *sk_p);
+int unet_connect(int mode, struct sockaddr *net_addr, SOCKET *sk_p);
 
 
 int unet_bind(int mode, int port);
 
 int unet_unbind(int mode);
+void unet_bind_flag_set(int mode, int flags);
+void unet_bind_flag_unset(int mode, int flags);
 
 
 void unet_cycle(double max_t);
 
-int unet_flag_set(int mode, int flags);
-
 void unet_shutdown(SOCKET sk);
 
+void unet_connop_set(int mode, unet_addr_op accept_op);
+
+void unet_disconnop_set(int mode, unet_addr_op close_op);
+
+
+void unet_peer_scan(void);
+
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* ndef __UNET__UNET_H__ */
 

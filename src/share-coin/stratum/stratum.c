@@ -107,6 +107,7 @@ static void stratum_close_free(void)
 
 static void stratum_timer(void)
 {
+  static time_t last_task_t;
   unet_table_t *t;
   user_t *peer;
   shbuf_t *buff;
@@ -158,7 +159,10 @@ static void stratum_timer(void)
 
   stratum_close_free();
 
-  stratum_task_gen();
+  if (last_task_t != time(NULL)) {
+    stratum_task_gen();
+    last_task_t = time(NULL);
+  }
 
 }
 

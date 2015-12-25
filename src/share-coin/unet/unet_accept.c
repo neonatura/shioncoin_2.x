@@ -70,8 +70,15 @@ int unet_accept(int mode, SOCKET *sk_p)
 
   unet_add(mode, cli_fd);
 
+{
+unet_table_t *t = get_unet_table(cli_fd);
+if (t) {
+  t->flag |= UNETF_INBOUND; 
+}
+}
+
   if (bind->op_accept) {
-    (*bind->op_accept)(cli_fd, shnet_host(cli_fd));
+    (*bind->op_accept)(cli_fd, shaddr(cli_fd));
   }
 
   if (sk_p)

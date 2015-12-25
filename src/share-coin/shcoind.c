@@ -29,56 +29,37 @@
 shpeer_t *server_peer;
 int server_msgq;
 shbuf_t *server_msg_buff;
-#if 0
-int server_fd;
-#endif
 
 static int opt_no_fork;
 
-#if 0
-/* DEBUG: */
-static void usde_term(void)
-{
-  server_shutdown();
-}
+static int _usde_thread_running;
+
+
 
 void shcoind_term(void)
 {
-
-  rpc_term();
-  stratum_term();
-  usde_term();
-
-  block_close();
-  shpeer_free(&server_peer);
-
-}
-#endif
-
-void daemon_signal(int sig_num)
-{
-  signal(sig_num, SIG_DFL);
-
   /* terminate stratum server */
   stratum_term();
+
+  /* terminate usde server */
+  usde_server_term();
 
   /* close sharefs partition */
   block_close();
 
-#if 0
-  daemon_close_clients();
-  if (server_fd != -1) {
-    shclose(server_fd);
-fprintf(stderr, "DEBUG: closing server fd %d\n", server_fd);
-    server_fd = -1;
-  }
-#endif
-
   shpeer_free(&server_peer);
-shbuf_free(&server_msg_buff);
+  shbuf_free(&server_msg_buff);
 
-  /* terminate usde server */
-  server_shutdown();
+  if (_usde_thread_running) {
+    /* terminate usde server */
+    server_shutdown();
+  }
+}
+void daemon_signal(int sig_num)
+{
+  signal(sig_num, SIG_DFL);
+
+  shcoind_term();
 }
 
 void usage_help(void)
@@ -87,13 +68,19 @@ void usage_help(void)
       "Usage: shcoind [OPTIONS]\n"
       "USDe currency daemon for the Share Library Suite.\n"
       "\n"
-      "Options:\n"
-      "\t--loadblock <path>\tLoad a blk001.dat file.\n"
-//      "\t--rescan\t\tRescan blocks for missing wallet transactions.\n"
+      "Network Options:\n"
+      "\t--maxconn <#>\tThe maximum number of incoming connections (usde server).\n"
+      "\n"
+      "Block Options:\n"
+      "\t--blockfile <path>\tLoad a blk001.dat file.\n"
+      "\n"
+      "Diagnostic Options:\n"
+      "\t-nf\t\tRun daemon in foreground (no fork).\n"
       "\n"
       "Visit 'http://docs.sharelib.net/' for libshare API documentation."
       "Report bugs to <support@neo-natura.com>.\n"
       );
+//      "\t--rescan\t\tRescan blocks for missing wallet transactions.\n"
 }
 void usage_version(void)
 {
@@ -132,6 +119,11 @@ int main(int argc, char *argv[])
         strncpy(blockfile_path, argv[i], sizeof(blockfile_path)-1);
     } else if (0 == strcmp(argv[i], "-nf")) {
       opt_no_fork = TRUE;
+    } else if (0 == strcmp(argv[i], "--maxconn")) {
+      if (i + 1 < argc && isdigit(argv[i+1][0])) {
+        i++;
+        opt_max_conn = MAX(129, atoi(argv[i]));
+      }
 #if 0
     } else if (0 == strcmp(argv[i], "--rescan")) {
       SoftSetBoolArg("-rescan", true);
@@ -178,14 +170,6 @@ int main(int argc, char *argv[])
   server_fd = fd;
 #endif
 
-  /* debug;  usde_server_init(); */
-
-  /* open app's sharefs partition */
-  block_init();
-
-  /* open 'wallet.dat' */
-  load_wallet();
-
   /* initialize stratum server */
   err = stratum_init();
   if (err) {
@@ -194,6 +178,12 @@ int main(int argc, char *argv[])
   }
 sprintf(buf, "info: initialized stratum server on port %d.", get_stratum_daemon_port());
 shcoind_log(buf);
+
+  /* open app's sharefs partition */
+  block_init();
+
+  /* open 'wallet.dat' */
+  load_wallet();
 
   /* debug: cmdline option */
   if (*blockfile_path)
@@ -205,10 +195,17 @@ shcoind_log(buf);
   /* debug; replace with shnet_track */
   load_peers();
 
+  err = usde_server_init();
+  if (err) {
+    fprintf(stderr, "critical: init usde server: %s. [sherr %d]", sherrstr(err), err);
+    return (-1);
+  }
+
   /* debug: usde_server_init() */
+  _usde_thread_running = TRUE;
   start_node();
 
-/* debug: invokes unet_cycle() loop */
+  /* debug: invokes unet_cycle() loop */
   daemon_server();
 
 /*

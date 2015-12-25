@@ -27,10 +27,11 @@
 #include "net.h"
 #include "init.h"
 #include "strlcpy.h"
-#include "addrman.h"
+//#include "addrman.h"
 #include "ui_interface.h"
 #include "server/rpc_proto.h"
-#include "shcoind_rpc.h"
+//#include "shcoind_rpc.h"
+#include "shcoind.h"
 
 #ifdef WIN32
 #include <string.h>
@@ -49,13 +50,12 @@
 using namespace std;
 using namespace boost;
 
-static const int MAX_OUTBOUND_CONNECTIONS = 16;
+static const int MAX_OUTBOUND_CONNECTIONS = 64;
 
 void ThreadMessageHandler2(void* parg);
 void ThreadSocketHandler2(void* parg);
-void ThreadOpenConnections2(void* parg);
 void ThreadDNSAddressSeed2(void* parg);
-bool OpenNetworkConnection(const CAddress& addrConnect, CSemaphoreGrant *grantOutbound = NULL, const char *strDest = NULL, bool fOneShot = false);
+bool OpenNetworkConnection(const CAddress& addrConnect, const char *strDest = NULL);
 
 CSemaphore *semOutbound = NULL;
 
@@ -78,7 +78,9 @@ static bool vfLimited[NET_MAX] = {};
 static CNode* pnodeLocalHost = NULL;
 uint64 nLocalHostNonce = 0;
 static std::vector<SOCKET> vhListenSocket;
+#if 0
 CAddrMan addrman;
+#endif
 
 vector<CNode*> vNodes;
 CCriticalSection cs_vNodes;
@@ -426,10 +428,8 @@ bool GetMyExternalIP(CNetAddr& ipRet)
     return false;
 }
 
-void ThreadGetMyExternalIP(void* parg)
+void GetMyExternalIP(void)
 {
-    // Make this thread recognisable as the external IP detection thread
-    RenameThread("bitcoin-ext-ip");
 
     CNetAddr addrLocalHost;
     if (GetMyExternalIP(addrLocalHost))
@@ -438,14 +438,23 @@ void ThreadGetMyExternalIP(void* parg)
         AddLocal(addrLocalHost, LOCAL_HTTP);
     }
 }
+void ThreadGetMyExternalIP(void* parg)
+{
+    // Make this thread recognisable as the external IP detection thread
+    RenameThread("bitcoin-ext-ip");
 
+    GetMyExternalIP();
+}
 
 
 
 
 void AddressCurrentlyConnected(const CService& addr)
 {
+#if 0
+    CNode* pnode = FindNode(addr);
     addrman.Connected(addr);
+#endif
 }
 
 
@@ -485,70 +494,114 @@ CNode* FindNode(const CService& addr)
     return NULL;
 }
 
+CNode* FindNode(SOCKET sk)
+{
+  {
+    LOCK(cs_vNodes);
+    BOOST_FOREACH(CNode* pnode, vNodes)
+      if (pnode->hSocket == sk)
+        return (pnode);
+  }
+  return NULL;
+}
+
 CNode* ConnectNode(CAddress addrConnect, const char *pszDest, int64 nTimeout)
 {
-    if (pszDest == NULL) {
-        if (IsLocal(addrConnect))
-            return NULL;
+  if (pszDest == NULL) {
+    if (IsLocal(addrConnect))
+      return NULL;
 
-        // Look for an existing connection
-        CNode* pnode = FindNode((CService)addrConnect);
-        if (pnode)
-        {
-            if (nTimeout != 0)
-                pnode->AddRef(nTimeout);
-            else
-                pnode->AddRef();
-            return pnode;
-        }
+    // Look for an existing connection
+    CNode* pnode = FindNode((CService)addrConnect);
+    if (pnode)
+    {
+      if (nTimeout != 0)
+        pnode->AddRef(nTimeout);
+      else
+        pnode->AddRef();
+      return pnode;
     }
+  }
 
+  SOCKET hSocket;
+  struct hostent *h;
+  struct sockaddr_in in;
+  bool ok = false;
+  if (pszDest) {
+    char dest_str[256];
+    strcpy(dest_str, pszDest);
+    h = shresolve(dest_str);
+    if (h) {
+      memset(&in, 0, sizeof(sockaddr_in));
+      in.sin_family = AF_INET;
+      memcpy(&in.sin_addr, h->h_addr, sizeof(struct in_addr));
+      in.sin_port = htons(GetDefaultPort());
+      ok = true;
+    }
+  } else {
+    memset(&in, 0, sizeof(sockaddr_in));
+    socklen_t in_len = sizeof(in);
+    if (addrConnect.GetSockAddr((struct sockaddr *)&in, &in_len)) {
+      ok = true;
+    }
+  }
 
-    /// debug print
-#if 0
-    fprintf(stderr, "trying connection %s lastseen=%.1fhrs\n",
+  if (!ok)
+    return (NULL);
+
+  int err = unet_connect(UNET_COIN, (struct sockaddr *)&in, &hSocket);
+  if (err) {
+    fprintf(stderr, "failed connection %s lastseen=%.1fhrs\n",
         pszDest ? pszDest : addrConnect.ToString().c_str(),
         pszDest ? 0 : (double)(GetAdjustedTime() - addrConnect.nTime)/3600.0);
-#endif
+    return (NULL);
+  }
 
-    // Connect
-    SOCKET hSocket;
-    if (pszDest ? ConnectSocketByName(addrConnect, hSocket, pszDest, GetDefaultPort()) : ConnectSocket(addrConnect, hSocket))
-    {
-        addrman.Attempt(addrConnect);
+  CNode* pnode = FindNode(hSocket);
+  if (pnode)
+    pnode->nTimeConnected = GetTime();
+  return pnode;
 
-        /// debug print
-        fprintf(stderr, "connected %s\n", pszDest ? pszDest : addrConnect.ToString().c_str());
+#if 0
+  // Connect
+  SOCKET hSocket;
+  if (pszDest ? ConnectSocketByName(addrConnect, hSocket, pszDest, GetDefaultPort()) : ConnectSocket(addrConnect, hSocket))
+  {
+    addrman.Attempt(addrConnect);
 
-        // Set to nonblocking
+    /// debug print
+    fprintf(stderr, "connected %s\n", pszDest ? pszDest : addrConnect.ToString().c_str());
+
+    // Set to nonblocking
 #ifdef WIN32
-        u_long nOne = 1;
-        if (ioctlsocket(hSocket, FIONBIO, &nOne) == SOCKET_ERROR)
-            fprintf(stderr, "ConnectSocket() : ioctlsocket nonblocking setting failed, error %d\n", WSAGetLastError());
+    u_long nOne = 1;
+    if (ioctlsocket(hSocket, FIONBIO, &nOne) == SOCKET_ERROR)
+      fprintf(stderr, "ConnectSocket() : ioctlsocket nonblocking setting failed, error %d\n", WSAGetLastError());
 #else
-        if (fcntl(hSocket, F_SETFL, O_NONBLOCK) == SOCKET_ERROR)
-            fprintf(stderr, "ConnectSocket() : fcntl nonblocking setting failed, error %d\n", errno);
+    if (fcntl(hSocket, F_SETFL, O_NONBLOCK) == SOCKET_ERROR)
+      fprintf(stderr, "ConnectSocket() : fcntl nonblocking setting failed, error %d\n", errno);
 #endif
 
-        // Add node
-        CNode* pnode = new CNode(hSocket, addrConnect, pszDest ? pszDest : "", false);
-        if (nTimeout != 0)
-            pnode->AddRef(nTimeout);
-        else
-            pnode->AddRef();
-
-        {
-            LOCK(cs_vNodes);
-            vNodes.push_back(pnode);
-        }
-
-        pnode->nTimeConnected = GetTime();
-        return pnode;
-    }
+    // Add node
+    CNode* pnode = new CNode(hSocket, addrConnect, pszDest ? pszDest : "", false);
+    if (nTimeout != 0)
+      pnode->AddRef(nTimeout);
     else
+      pnode->AddRef();
+
     {
-        return NULL;
+      LOCK(cs_vNodes);
+      vNodes.push_back(pnode);
     }
+
+    pnode->nTimeConnected = GetTime();
+    return pnode;
+  }
+  else
+  {
+    return NULL;
+  }
+#endif
 }
 
 void CNode::CloseSocketDisconnect()
@@ -570,14 +623,21 @@ void CNode::Cleanup()
 
 void CNode::PushVersion()
 {
-    /// when NTP implemented, change to just nTime = GetAdjustedTime()
-    int64 nTime = (fInbound ? GetAdjustedTime() : GetTime());
-    CAddress addrYou = (addr.IsRoutable() && !IsProxy(addr) ? addr : CAddress(CService("0.0.0.0",0)));
-    CAddress addrMe = GetLocalAddress(&addr);
-    RAND_bytes((unsigned char*)&nLocalHostNonce, sizeof(nLocalHostNonce));
-    fprintf(stderr, "send version message: version %d, blocks=%d, us=%s, them=%s, peer=%s\n", PROTOCOL_VERSION, nBestHeight, addrMe.ToString().c_str(), addrYou.ToString().c_str(), addr.ToString().c_str());
-    PushMessage("version", PROTOCOL_VERSION, nLocalServices, nTime, addrYou, addrMe,
-                nLocalHostNonce, FormatSubVersion(CLIENT_NAME, CLIENT_VERSION, std::vector<string>()), nBestHeight);
+
+  /// when NTP implemented, change to just nTime = GetAdjustedTime()
+  int64 nTime = (fInbound ? GetAdjustedTime() : GetTime());
+  CAddress addrYou = (addr.IsRoutable() && !IsProxy(addr) ? addr : CAddress(CService("0.0.0.0",0)));
+  CAddress addrMe = GetLocalAddress(&addr);
+  RAND_bytes((unsigned char*)&nLocalHostNonce, sizeof(nLocalHostNonce));
+
+  {
+    char buf[256];
+    sprintf(buf, "PushVersion: version %d, blocks=%d, us=%s, them=%s, peer=%s", PROTOCOL_VERSION, nBestHeight, addrMe.ToString().c_str(), addrYou.ToString().c_str(), addr.ToString().c_str());
+    unet_log(UNET_COIN, buf);
+  }
+
+  PushMessage("version", PROTOCOL_VERSION, nLocalServices, nTime, addrYou, addrMe,
+      nLocalHostNonce, FormatSubVersion(CLIENT_NAME, CLIENT_VERSION, std::vector<string>()), nBestHeight);
 }
 
 
@@ -658,7 +718,7 @@ void CNode::copyStats(CNodeStats &stats)
 
 
 
-
+#if 0
 void ThreadSocketHandler(void* parg)
 {
 //    IMPLEMENT_RANDOMIZE_STACK(ThreadSocketHandler(parg));
@@ -847,7 +907,7 @@ void ThreadSocketHandler2(void* parg)
                 if (WSAGetLastError() != WSAEWOULDBLOCK)
                     fprintf(stderr, "socket error accept failed: %d\n", WSAGetLastError());
             }
-            else if (nInbound >= GetArg("-maxconnections", 125) - MAX_OUTBOUND_CONNECTIONS)
+            else if (nInbound >= opt_max_conn - MAX_OUTBOUND_CONNECTIONS)
             {
                 {
                     LOCK(cs_setservAddNodeAddresses);
@@ -1004,6 +1064,258 @@ void ThreadSocketHandler2(void* parg)
         Sleep(10);
     }
 }
+#endif
+
+void usde_server_close(int fd, struct sockaddr *addr)
+{
+
+  LOCK(cs_vNodes);
+  vector<CNode*> vNodesCopy = vNodes;
+  BOOST_FOREACH(CNode* pnode, vNodesCopy)
+  {
+    if (pnode->hSocket == fd) {
+      pnode->fDisconnect = true;
+    }
+  }
+
+}
+
+list<CNode*> vNodesDisconnected;
+void usde_close_free(void)
+{
+
+  LOCK(cs_vNodes);
+  vector<CNode*> vNodesCopy = vNodes;
+
+  // Disconnect unused nodes
+  BOOST_FOREACH(CNode* pnode, vNodesCopy)
+  {
+    if (pnode->fDisconnect ||
+        (pnode->GetRefCount() <= 0 && pnode->vRecv.empty() && pnode->vSend.empty()))
+    {
+fprintf(stderr, "DEBUG: usde_close_free: removing pnode\n"); 
+      // remove from vNodes
+      vNodes.erase(remove(vNodes.begin(), vNodes.end(), pnode), vNodes.end());
+
+      // release outbound grant (if any)
+      pnode->grantOutbound.Release();
+
+/* socket is closed by underlying 'unet' network engine 
+              pnode->CloseSocketDisconnect();
+*/
+      pnode->Cleanup();
+
+      // hold in disconnected pool until all refs are released
+      pnode->nReleaseTime = max(pnode->nReleaseTime, GetTime() + 15 * 60);
+      if (pnode->fNetworkNode || pnode->fInbound)
+        pnode->Release();
+      vNodesDisconnected.push_back(pnode);
+    }
+  }
+
+  // Delete disconnected nodes
+  list<CNode*> vNodesDisconnectedCopy = vNodesDisconnected;
+  BOOST_FOREACH(CNode* pnode, vNodesDisconnectedCopy)
+  {
+#if 0
+    // wait until threads are done using it
+    if (pnode->GetRefCount() <= 0)
+    {
+#endif
+      bool fDelete = false;
+      {
+        TRY_LOCK(pnode->cs_vSend, lockSend);
+        if (lockSend)
+        {
+          TRY_LOCK(pnode->cs_vRecv, lockRecv);
+          if (lockRecv)
+          {
+            TRY_LOCK(pnode->cs_mapRequests, lockReq);
+            if (lockReq)
+            {
+              TRY_LOCK(pnode->cs_inventory, lockInv);
+              if (lockInv)
+                fDelete = true;
+            }
+          }
+        }
+      }
+      if (fDelete)
+      {
+fprintf(stderr, "DEBUG: deleting pnode (fd %d).\n", pnode->hSocket);
+        vNodesDisconnected.remove(pnode);
+        delete pnode;
+      }
+#if 0
+    }
+#endif
+  }
+}
+
+void usde_server_accept(int hSocket, struct sockaddr *net_addr)
+{
+#ifdef USE_IPV6
+  struct sockaddr_storage sockaddr;
+#else
+  struct sockaddr sockaddr;
+#endif
+  CAddress addr;
+  int nInbound = 0;
+  bool inBound = false;
+  unet_table_t *t = get_unet_table(hSocket);
+
+  if (t && (t->flag & UNETF_INBOUND))
+    inBound = true;
+
+  if (!addr.SetSockAddr(net_addr))
+    fprintf(stderr, "warning: unknown socket family\n");
+
+  if (inBound) {
+    {
+      LOCK(cs_vNodes);
+      BOOST_FOREACH(CNode* pnode, vNodes)
+        if (pnode->fInbound)
+          nInbound++;
+    }
+
+    if (nInbound >= opt_max_conn - MAX_OUTBOUND_CONNECTIONS)
+    {
+      {
+        LOCK(cs_setservAddNodeAddresses);
+        if (!setservAddNodeAddresses.count(addr)) {
+      fprintf(stderr, "connection from %s dropped (inbound limit %d exceeded)\n", addr.ToString().c_str(), (opt_max_conn - MAX_OUTBOUND_CONNECTIONS));
+          unet_close(hSocket);
+#if 0
+          closesocket(hSocket);
+#endif
+        }
+      }
+    }
+
+    if (CNode::IsBanned(addr))
+    {
+      fprintf(stderr, "connection from %s dropped (banned)\n", addr.ToString().c_str());
+      unet_close(hSocket);
+      //    closesocket(hSocket);
+      return;
+    }
+  }
+
+  if (inBound) {
+    fprintf(stderr, "usde: accepted connection %s\n", addr.ToString().c_str());
+  } else {
+    fprintf(stderr, "usde: initialized connection %s\n", addr.ToString().c_str());
+  }
+
+
+  CNode* pnode = new CNode(hSocket, addr, 
+      shaddr_print(shaddr(hSocket)), inBound);
+
+  //if (inBound)
+    pnode->AddRef();
+
+  if (!inBound)
+    pnode->fNetworkNode = true;
+
+  {
+    LOCK(cs_vNodes);
+    vNodes.push_back(pnode);
+  }
+
+  /* submit address to shared daemon */
+  shared_addr_submit(shaddr_print(net_addr));
+}
+
+void usde_server_timer(void)
+{
+
+  if (fShutdown)
+    return;
+
+  usde_close_free();
+
+  //
+  // Service each socket
+  //
+  vector<CNode*> vNodesCopy;
+  {
+    LOCK(cs_vNodes);
+    vNodesCopy = vNodes;
+    BOOST_FOREACH(CNode* pnode, vNodesCopy)
+      pnode->AddRef();
+  }
+
+  char pchBuf[65536];
+  BOOST_FOREACH(CNode* pnode, vNodesCopy)
+  {
+    if (fShutdown)
+      return;
+
+    memset(pchBuf, '\000', 65536);
+
+    /* incoming data */
+    CDataStream& vRecv = pnode->vRecv;
+    unsigned int nPos = vRecv.size();
+    size_t nBytes = sizeof(pchBuf);
+    int err = unet_read(pnode->hSocket, pchBuf, &nBytes);
+    if (!err && nBytes > 0) { 
+      vRecv.resize(nPos + nBytes);
+      memcpy(&vRecv[nPos], pchBuf, nBytes);
+      pnode->nLastRecv = GetTime();
+    }
+
+    {
+      LOCK(pnode->cs_vSend);
+      /* transmit pending outgoing data */
+      CDataStream& vSend = pnode->vSend;
+      if (!vSend.empty())
+      {
+        size_t nBytes = vSend.size();
+        int err = unet_write(pnode->hSocket, &vSend[0], nBytes);
+        if (!err) {
+          vSend.erase(vSend.begin(), vSend.begin() + nBytes);
+          pnode->nLastSend = GetTime();
+        }
+      }
+    }
+  }
+
+  {
+    LOCK(cs_vNodes);
+    BOOST_FOREACH(CNode* pnode, vNodesCopy)
+      pnode->Release();
+  }
+
+}
+
+int get_usde_server_port(void)
+{
+/* todo: config */
+  return (COIN_DAEMON_PORT);
+}
+
+int usde_server_init(void)
+{
+  int err;
+
+  err = unet_bind(UNET_COIN, get_usde_server_port());
+  if (err)
+    return (err);
+
+  unet_timer_set(UNET_COIN, usde_server_timer); /* x10/s */
+  unet_connop_set(UNET_COIN, usde_server_accept);
+  unet_disconnop_set(UNET_COIN, usde_server_close);
+
+  /* automatically connect to peers of 'usde' service. */
+  unet_bind_flag_set(UNET_COIN, UNETF_PEER_SCAN); 
+
+  return (0);
+}
+
+void usde_server_term(void)
+{
+  unet_unbind(UNET_COIN);
+}
 
 
 
@@ -1018,11 +1330,7 @@ void ThreadSocketHandler2(void* parg)
 
 
 
-
-
-
-
-
+#if 0
 unsigned int pnSeed[] = {};
 
 void DumpAddresses(void)
@@ -1063,7 +1371,9 @@ void ThreadDumpAddress(void* parg)
     }
     fprintf(stderr, "ThreadDumpAddress exited\n");
 }
+#endif
 
+#if 0
 void ThreadOpenConnections(void* parg)
 {
 //    IMPLEMENT_RANDOMIZE_STACK(ThreadOpenConnections(parg));
@@ -1086,6 +1396,7 @@ void ThreadOpenConnections(void* parg)
     }
     fprintf(stderr, "ThreadOpenConnections exited\n");
 }
+#endif
 
 void static ProcessOneShot()
 {
@@ -1098,13 +1409,17 @@ void static ProcessOneShot()
         vOneShots.pop_front();
     }
     CAddress addr;
+#if 0
     CSemaphoreGrant grant(*semOutbound, true);
     if (grant) {
         if (!OpenNetworkConnection(addr, &grant, strDest.c_str(), true))
             AddOneShot(strDest);
     }
+#endif
+    OpenNetworkConnection(addr, strDest.c_str());
 }
 
+#if 0
 void ThreadOpenConnections2(void* parg)
 {
     fprintf(stderr, "ThreadOpenConnections started\n");
@@ -1220,11 +1535,12 @@ void ThreadOpenConnections2(void* parg)
             OpenNetworkConnection(addrConnect, &grant);
     }
 }
+#endif
 
 
 
 // if succesful, this moves the passed grant to the constructed node
-bool OpenNetworkConnection(const CAddress& addrConnect, CSemaphoreGrant *grantOutbound, const char *strDest, bool fOneShot)
+bool OpenNetworkConnection(const CAddress& addrConnect, const char *strDest)
 {
     //
     // Initiate outbound network connection
@@ -1244,16 +1560,28 @@ bool OpenNetworkConnection(const CAddress& addrConnect, CSemaphoreGrant *grantOu
     vnThreadsRunning[THREAD_OPENCONNECTIONS]++;
     if (fShutdown)
         return false;
-    if (!pnode)
+    if (!pnode) {
         return false;
+}
+
+    CSemaphoreGrant grant(*semOutbound);
+    CSemaphoreGrant *grantOutbound = &grant;
+#if 0
     if (grantOutbound)
         grantOutbound->MoveTo(pnode->grantOutbound);
+#endif
+    grantOutbound->MoveTo(pnode->grantOutbound);
     pnode->fNetworkNode = true;
+#if 0
     if (fOneShot)
         pnode->fOneShot = true;
+#endif
 
+#if 0
     std::string net_addr = addrConnect.ToString();
     shared_addr_submit(net_addr.c_str());
+#endif
+
 
     return true;
 }
@@ -1509,7 +1837,8 @@ void static Discover()
     }
 #endif
 
-    CreateThread(ThreadGetMyExternalIP, NULL);
+    //CreateThread(ThreadGetMyExternalIP, NULL);
+    GetMyExternalIP();
 }
 
 bool static Bind(const CService &addr, bool fError = true) {
@@ -1542,7 +1871,9 @@ void BindServer(void)
 void StartCoinServer(void)
 {
 
+#if 0
   BindServer();
+#endif
 
   CreateThread(ThreadRPCServer, NULL);
   fprintf(stderr, "RPC server has been started.\n");
@@ -1551,7 +1882,7 @@ void StartCoinServer(void)
 
   if (semOutbound == NULL) {
     // initialize semaphore
-    int nMaxOutbound = min(MAX_OUTBOUND_CONNECTIONS, (int)GetArg("-maxconnections", 125));
+    int nMaxOutbound = min(MAX_OUTBOUND_CONNECTIONS, opt_max_conn);
     semOutbound = new CSemaphore(nMaxOutbound);
   }
 
@@ -1565,13 +1896,17 @@ void StartCoinServer(void)
   //
 
 printf ("Starting coin service.\n");
+#if 0
   // Send and receive from sockets, accept connections
   if (!CreateThread(ThreadSocketHandler, NULL))
     fprintf(stderr, "Error: CreateThread(ThreadSocketHandler) failed\n");
+#endif
 
+#if 0
   // Initiate outbound connections
   if (!CreateThread(ThreadOpenConnections, NULL))
     fprintf(stderr, "Error: CreateThread(ThreadOpenConnections) failed\n");
+#endif
 
   // Process messages
   if (!CreateThread(ThreadMessageHandler, NULL))
@@ -1606,17 +1941,31 @@ bool StopNode()
             break;
         Sleep(20);
     } while(true);
+#if 0
     if (vnThreadsRunning[THREAD_SOCKETHANDLER] > 0) fprintf(stderr, "ThreadSocketHandler still running\n");
+#endif
+#if 0
     if (vnThreadsRunning[THREAD_OPENCONNECTIONS] > 0) fprintf(stderr, "ThreadOpenConnections still running\n");
     if (vnThreadsRunning[THREAD_MESSAGEHANDLER] > 0) fprintf(stderr, "ThreadMessageHandler still running\n");
+#endif
+#if 0
     if (vnThreadsRunning[THREAD_MINER] > 0) fprintf(stderr, "ThreadBitcoinMiner still running\n");
+#endif
     if (vnThreadsRunning[THREAD_RPCLISTENER] > 0) fprintf(stderr, "ThreadRPCListener still running\n");
     if (vnThreadsRunning[THREAD_RPCHANDLER] > 0) fprintf(stderr, "ThreadsRPCServer still running\n");
+#if 0
     if (vnThreadsRunning[THREAD_DUMPADDRESS] > 0) fprintf(stderr, "ThreadDumpAddresses still running\n");
+#endif
+
+
+#if 0
     while (vnThreadsRunning[THREAD_MESSAGEHANDLER] > 0 || vnThreadsRunning[THREAD_RPCHANDLER] > 0)
         Sleep(20);
     Sleep(50);
     DumpAddresses();
+#endif
+
+
     return true;
 }
 
@@ -1677,16 +2026,17 @@ void start_node_peer(const char *host, int port)
     port = GetDefaultPort();
 
   if (Lookup(host, vserv, port, false)) {
-    CSemaphoreGrant grant(*semOutbound);
-    OpenNetworkConnection(CAddress(vserv), &grant);
+    OpenNetworkConnection(CAddress(vserv));
   }
 
 }
 
+#if 0
 void flush_addrman_db(void)
 {
   DumpAddresses();
 }
+#endif
 
 void shared_addr_submit(const char *net_addr)
 {
@@ -1700,8 +2050,71 @@ void shared_addr_submit(const char *net_addr)
   shpeer_free(&peer); 
 }
 
+void AddAddress(const char *hostname, int port)
+{
+  shpeer_t *peer;
+  char addr_str[256];
+
+  sprintf(addr_str, "%s %d", hostname, port); 
+  peer = shpeer_init("usde", addr_str);
+  shnet_track_add(peer);
+  shpeer_free(&peer);
+fprintf(stderr, "DEBUG: AddAddress: host '%s' port %d\n", hostname, port);
+}
+
+int GetRandomAddress(char *hostname, int *port_p)
+{
+  shpeer_t *self_peer;
+  shpeer_t *peer;
+  char buf[256];
+  int err;
+
+  sprintf(buf, "127.0.0.1 %d", GetDefaultPort());
+  self_peer = shpeer_init("usde", buf);
+  err = shnet_track_scan(self_peer, &peer);
+  shpeer_free(&self_peer);
+  if (err)
+    return (err);
+
+  shpeer_host(peer, hostname, port_p);
+  shpeer_free(&peer);
+
+  return (0);
+}
+
+
+
 
 #ifdef __cplusplus
 }
 #endif
 
+vector <CAddress> GetAddresses(void)
+{
+  vector<CAddress> vAddr;
+  shpeer_t **addr_list;
+  shpeer_t *peer;
+  char hostname[256];
+  char buf[256];
+  int port;
+  int idx;
+
+  sprintf(buf, "127.0.0.1 %d", GetDefaultPort());
+  peer = shpeer_init("usde", buf);
+  addr_list = shnet_track_list(peer, 256);
+  shpeer_free(&peer);
+  if (!addr_list)
+    return (vAddr);
+
+  for (idx = 0; addr_list[idx]; idx++) {
+    peer = addr_list[idx];
+
+    shpeer_host(peer, hostname, &port);
+    CAddress addr(CService(hostname, port));
+    vAddr.push_back(addr);
+
+    shpeer_free(&peer);
+  }
+
+  return (vAddr);
+}

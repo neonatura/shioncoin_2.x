@@ -20,7 +20,6 @@ common_includes = \
 	$(top_srcdir)/src/share-lib/delta/xdelta3.h \
 	$(top_srcdir)/src/share-lib/net/shnet.h \
 	unet/unet.h \
-	server/addrman.h \
 	server/allocators.h \
 	server/base58.h \
 	server/bignum.h \
@@ -61,6 +60,7 @@ common_includes = \
 	shcoind_block.h \
 	shcoind_rpc.h \
 	shcoind_log.h \
+	shcoind_opt.h \
 	shcoind.h
 common_sources = \
 	unet/unet_accept.c \
@@ -73,15 +73,16 @@ common_sources = \
 	unet/unet_io.c \
 	unet/unet_select.c \
 	unet/unet_timer.c \
+	unet/unet_peer.c \
 	server/protocol.cpp \
 	server/netbase.cpp \
 	server/version.cpp \
 	server/util.cpp \
 	shcoind_block.c \
 	shcoind_rpc.c \
-	shcoind_log.c
+	shcoind_log.c \
+	shcoind_opt.c
 server_sources = \
-	server/addrman.cpp \
 	server/rpc_proto.cpp \
 	server/checkpoints.cpp \
 	server/crypter.cpp \
@@ -112,6 +113,8 @@ stratum_sources = \
 	stratum/stratum_task.c
 
 tool_sources = \
+	server/addrman.h \
+	server/addrman.cpp \
 	tool/tool_irc.cpp
 
 bin_PROGRAMS = shcoin

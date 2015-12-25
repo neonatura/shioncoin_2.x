@@ -263,7 +263,7 @@ void daemon_server(void)
   while (TRUE) {
 
     /* handle network communication. */
-    unet_cycle(0.025); /* 25ms */
+    unet_cycle(0.05); /* max 50ms */
 
     /* handle libshare message queue */
     shcoind_poll_msg_queue();

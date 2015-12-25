@@ -23,29 +23,6 @@
  *  @endcopyright
  */  
 
-#ifndef __SHCOIND_LOG_H__
-#define __SHCOIND_LOG_H__
+#include "shcoind.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-
-
-#define shcoind_log(_text) \
-  (f_shcoind_log(0, "Info", _text, __FILE__, __LINE__))
-
-#define shcoind_err(_err, _tag, _text) \
-  (f_shcoind_log(_err, _tag, _text, __FILE__, __LINE__))
-
-
-void f_shcoind_log(int err_code, const char *tag, char *text, const char *src_fname, long src_line);
-
-
-
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif /* ndef __SHCOIND_LOG_H__ */
+int opt_max_conn = 512;

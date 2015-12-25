@@ -25,18 +25,16 @@
 
 #include "shcoind.h"
 
+#define UNET_CONNECT_TIMEOUT 3
 
 /* ipv4 */
-int unet_connect(int mode, struct sockaddr_in *net_addr, SOCKET *sk_p)
+int unet_connect(int mode, struct sockaddr *net_addr, SOCKET *sk_p)
 {
   unet_bind_t *bind;
   unet_table_t *table;
   char buf[256];
   SOCKET cli_fd;
   int err;
-
-  if (!sk_p)
-    return (SHERR_INVAL);
 
   cli_fd = shnet_sk();
   if (cli_fd < 0) 
@@ -59,8 +57,24 @@ int unet_connect(int mode, struct sockaddr_in *net_addr, SOCKET *sk_p)
     return (SHERR_INVAL);
   }
 
-  err = shconnect(cli_fd,
-      (struct sockaddr *)net_addr, sizeof(struct sockaddr_in));
+  shnet_fcntl(cli_fd, F_SETFL, O_NONBLOCK);
+  err = shconnect(cli_fd, net_addr, sizeof(struct sockaddr));
+  if (err == SHERR_INPROGRESS) {
+    /* async connect -- waits up to UNET_CONNECT_TIMEOUT seconds */
+    struct timeval to = { UNET_CONNECT_TIMEOUT, 0 };
+    fd_set w_set;
+
+    FD_ZERO(&w_set);
+    FD_SET(cli_fd, &w_set);
+    err = select(cli_fd+1, NULL, &w_set, NULL, &to);
+    if (err > 0) {
+      err = 0;
+    } else if (err == 0) {
+      err = SHERR_TIMEDOUT;
+    } else {
+      err = -errno;
+    }
+  }
   if (err) {
     close(cli_fd);
     return (err);
@@ -69,18 +83,28 @@ int unet_connect(int mode, struct sockaddr_in *net_addr, SOCKET *sk_p)
   table->mode = mode;
   table->fd = cli_fd;
   table->stamp = 0;
-  memcpy(&table->net_addr, net_addr, sizeof(struct sockaddr_in));
+  memcpy(&table->net_addr, net_addr, sizeof(struct sockaddr));
+
+  unet_add(mode, cli_fd);
 
   sprintf(buf, "created new '%s' connection (%s).\n", 
-      unet_mode_label(mode), inet_ntoa(net_addr->sin_addr));
+      unet_mode_label(mode), shaddr_print(net_addr));
   unet_log(mode, buf);
 
-  bind = unet_bind_table(cli_fd);
+  bind = unet_bind_table(mode);
   if (bind && bind->op_accept) {
     (*bind->op_accept)(cli_fd, net_addr);
   }
 
-  *sk_p = cli_fd;
+  if (sk_p)
+    *sk_p = cli_fd;
+
+  if (bind->flag & UNETF_PEER_SCAN) {
+    /* ensure addr is listed in service peer db */
+    shpeer_t *peer = shpeer_init("usde", shaddr_print(net_addr));
+    shnet_track_add(peer);
+    shpeer_free(&peer);
+  }
 
   return (0);
 }

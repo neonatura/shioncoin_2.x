@@ -245,6 +245,7 @@ int c_LoadPeers(void)
   int64 nStart;
 
   nStart = GetTimeMillis();
+#if 0
   {
     CAddrDB adb;
     if (!adb.Read(addrman))
@@ -252,6 +253,7 @@ int c_LoadPeers(void)
   }
   printf("Loaded %i addresses from peers.dat  %"PRI64d"ms\n",
       addrman.size(), GetTimeMillis() - nStart);
+#endif
 
   RandAddSeedPerfmon();
   pwalletMain->ReacceptWalletTransactions();

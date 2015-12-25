@@ -28,9 +28,9 @@
 static const char *_unet_label[MAX_UNET_MODES] = 
 {
   "NONE",
-  "STRATUM",
-  "RPC",
-  "COIN"
+  "stratum",
+  "usde-rpc",
+  "usde"
 };
 const char *unet_mode_label(int mode)
 {
@@ -57,7 +57,7 @@ int unet_add(int mode, SOCKET sk)
   t->stamp = 0; /* reset I/O timestamp */
 
   /* retain remote network addr (ipv4) */
-  addr = shnet_host(sk);
+  addr = shaddr(sk);
   if (addr)
     memcpy(&t->net_addr, addr, sizeof(struct sockaddr));
 
@@ -86,14 +86,6 @@ int unet_mode(SOCKET sk)
   return (t->mode);
 }
 
-#if 0
-int unet_flag_set(SOCKET sk)
-{
-}
-int unet_flag(SOCKET sk)
-{
-}
-#endif
 
 
 /**
@@ -107,10 +99,12 @@ void unet_cycle(double max_t)
   struct timeval to;
   shtime_t start_t;
   fd_set r_set;
+  fd_set x_set;
   SOCKET fd;
   double diff_t;
   size_t w_len;
   SOCKET sk;
+  int fd_max;
   int mode;
   int err;
 
@@ -126,7 +120,9 @@ void unet_cycle(double max_t)
   }
 
   /* process I/O for sockets */
+  fd_max = 1;
   FD_ZERO(&r_set);
+  FD_ZERO(&x_set);
   for (fd = 1; fd < MAX_UNET_SOCKETS; fd++) {
     t = get_unet_table(fd);
     if (!t || t->fd == UNDEFINED_SOCKET)
@@ -148,53 +144,62 @@ void unet_cycle(double max_t)
       }
 
       shbuf_trim(t->wbuff, w_len);
+      t->stamp = shtime();
     }
 
     /* handle incoming data */
     buff = shnet_read_buf(fd);
-    if (buff && shbuf_size(buff)) {
+    if (!buff) {
+      unet_close(fd);
+      continue;
+    }
+    if (shbuf_size(buff)) {
       unet_rbuff_add(fd, shbuf_data(buff), shbuf_size(buff));
       shbuf_clear(buff);
+      t->stamp = shtime();
     }
 
+#if 0
     /* flush pending writes */
     w_len = shnet_write_flush(fd);
     if (w_len == -1) {
       unet_close(fd);
       continue;
     }
+#endif
 
     FD_SET(fd, &r_set);
+    FD_SET(fd, &x_set);
+    fd_max = MAX(fd, fd_max);
   }
 
   /* work proc */
   unet_timer_cycle();
 
+  /* scan for new service connections */
+  unet_peer_scan();
+
+  /* purge idle sockets */
+  unet_close_idle(); 
+
+  memset(&to, 0, sizeof(to));
+  diff_t = max_t - (shtimef(shtime()) - shtimef(start_t));
+  to.tv_usec = MIN(999999, (long)(1000000 * MAX(0, diff_t)));
+  err = select(fd_max+1, &r_set, NULL, &x_set, &to);
+  if (err > 0) {
+    for (fd = 1; fd <= fd_max; fd++) {
+      if (FD_ISSET(fd, &x_set)) {
+        /* socket is in error state */
+        unet_close(fd);
+      }
+    }
+  }
+
   /* free expunged sockets */
   unet_close_free();
 
-  diff_t = max_t - (shtimef(shtime()) - shtimef(start_t));
-  diff_t = MAX(0, 20 - (diff_t * 1000));
-  memset(&to, 0, sizeof(to));
-  to.tv_usec = (long)(1000 * diff_t);
-  if (to.tv_usec > 1000) { /* > 1ms */
-    select(1, &r_set, NULL, NULL, &to);
-  }
-
 }
 
-int unet_flag_set(int mode, int flags)
-{
-  unet_bind_t *bind;
-  
-  bind = unet_bind_table(mode);
-  if (!bind)
-    return (SHERR_INVAL);
-
-  bind->flag |= flags;
-
-  return (0);
-} 
 
 void unet_shutdown(SOCKET sk)
 {
@@ -206,3 +211,4 @@ void unet_shutdown(SOCKET sk)
 
   t->flag |= UNETF_SHUTDOWN;
 }
+

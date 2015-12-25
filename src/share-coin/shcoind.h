@@ -38,10 +38,6 @@
 
 
 /**
- * The stratum server's file descriptor.
- */
-extern int server_fd;
-/**
  * The share coin daemon's 'peer' reference.
  */
 extern shpeer_t *server_peer;
@@ -60,6 +56,7 @@ extern shbuf_t *server_msg_buff;
 #include "proto.h"
 #include "server_iface.h"
 #include "shcoind_version.h"
+#include "shcoind_opt.h"
 #include "stratum/stratum.h"
 #include "shcoind_log.h"
 #include "shcoind_daemon.h"

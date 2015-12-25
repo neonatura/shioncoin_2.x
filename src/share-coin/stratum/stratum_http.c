@@ -25,16 +25,48 @@
 
 #include "shcoind.h"
 
+static const char *_stratum_user_html_template = 
+"\r\n"
+"Name: %s\r\n"
+"Speed: %f\r\n"
+"Shares: %lu\r\n"
+"Accepted: %u\r\n"
+"\r\n";
 static const char *_stratum_html_template = 
 "\r\n"
-"%s\r\n"
+"Ledger Blocks: %lu\r\n"
+"Difficulty: %f\r\n"
+"USDE Network: %-2.2fkh/s\r\n"
 "\r\n";
+
 
 char *stratum_http_response(SOCKET sk, char *url)
 {
   static char ret_html[10240];
+  char uname[512];
 
-  sprintf(ret_html, _stratum_html_template, url);
+  if (0 == strncmp(url, "/user/", strlen("/user/"))) {
+    user_t *user;
+
+    memset(uname, 0, sizeof(uname));
+    strncpy(uname, url + strlen("/user/"), sizeof(uname)-1); 
+    strtok(uname, "/?&");
+
+    user = stratum_user_find(uname); 
+    if (!user)
+      return (ret_html); /* blank */
+
+    sprintf(ret_html, _stratum_user_html_template,
+        user->worker, stratum_user_speed(user), 
+        (unsigned long)user->block_tot, (unsigned int)user->block_cnt);
+  } else {
+    shjson_t *json = shjson_init(getmininginfo());
+    sprintf(ret_html, _stratum_html_template, 
+        (unsigned long)shjson_array_num(json, "result", 0),
+        shjson_array_num(json, "result", 1),
+        shjson_array_num(json, "result", 2));
+    shjson_free(&json);
+  }
 
   return (ret_html);
 }
@@ -52,6 +84,8 @@ void stratum_http_request(SOCKET sk, char *url)
   shbuf_catstr(buff, "</body></html>\r\n"); 
 
   unet_write(sk, shbuf_data(buff), shbuf_size(buff));
+  shbuf_free(&buff);
+
   unet_shutdown(sk);
 
 }

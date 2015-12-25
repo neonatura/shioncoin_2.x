@@ -38,7 +38,7 @@ int unet_timer_set(int mode, unet_op timer_f)
   if (!bind)
     return (SHERR_INVAL);
 
-  bind->stamp = shtime();
+  bind->timer_stamp = shtime();
   bind->op_timer = timer_f;
 
   return(0);
@@ -52,7 +52,7 @@ void unet_timer_unset(int mode)
   if (!bind)
     return;
 
-  bind->stamp = 0;
+  bind->timer_stamp = 0;
   bind->op_timer = NULL;
 
 }
@@ -74,12 +74,12 @@ void unet_timer_cycle(void)
       continue; /* all done */
 
     now = shtime();
-    min_t = shtime_adj(now, -1); /* one second ago */
-    if (shtime_before(min_t, bind->stamp))
+    min_t = shtime_adj(now, -0.1); /* one/tenth second ago */
+    if (shtime_before(min_t, bind->timer_stamp))
       continue; /* not ready */
 
     /* call work procedure */
-    bind->stamp = now;
+    bind->timer_stamp = now;
     (*bind->op_timer)();
   }
 

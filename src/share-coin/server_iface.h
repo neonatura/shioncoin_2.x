@@ -117,6 +117,14 @@ const int reloadblockfile(const char *path);
 
 void shared_addr_submit(const char *net_addr);
 
+int usde_server_init(void);
+
+void usde_server_term(void);
+
+void AddAddress(const char *hostname, int port);
+
+int GetRandomAddress(char *hostname, int *port_p);
+
 #ifdef __cplusplus
 }
 #endif

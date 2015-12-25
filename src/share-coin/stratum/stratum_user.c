@@ -27,13 +27,13 @@ int stratum_user_count(user_t *user)
   int cnt;
 
   cnt = 0;
-  addr = (struct sockaddr_in *)shnet_host(user->fd);
+  addr = (struct sockaddr_in *)shaddr(user->fd);
   for (t_user = client_list; t_user; t_user = t_user->next) {
     if (t_user->fd == -1)
       continue;
     if (t_user->flags & USER_SYSTEM)
       continue;
-    t_addr = (struct sockaddr_in *)shnet_host(t_user->fd);
+    t_addr = (struct sockaddr_in *)shaddr(t_user->fd);
     if (!t_addr)
       continue;
     if (0 == memcmp(&addr->sin_addr, 
@@ -78,7 +78,7 @@ user_t *stratum_user_init(int fd)
   user->fd = fd;
   user->round_stamp = time(NULL);
 
-addr = shnet_host(fd);
+addr = shaddr(fd);
 if (!addr)
 sprintf(nonce1, "%-8.8x", 0);
 else
@@ -140,7 +140,7 @@ void stratum_user_block(user_t *user, task_t *task)
       user->speed[step] = (user->speed[step] + speed) / 2;
     }
 
-//  fprintf(stderr, "DEBUG: stratum_user_block: worker '%s' submitted diff %6.6f block with speed %fkh/s (avg %fkh/s) [%lu/x%d]\n", user->worker, diff, speed, stratum_user_speed(user), (unsigned long)user->block_tot, user->block_cnt);
+//  fprintf(stderr, "stratum_user_block: worker '%s' submitted diff %6.6f block with speed %fkh/s (avg %fkh/s) [%lu/x%d]\n", user->worker, diff, speed, stratum_user_speed(user), (unsigned long)user->block_tot, user->block_cnt);
 
     user->block_freq = (span + user->block_freq) / 2;
     if (user->block_freq < 1) { 

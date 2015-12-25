@@ -36,6 +36,8 @@ unet_bind_t *unet_bind_table(int mode)
 
 int unet_bind(int mode, int port)
 {
+  shpeer_t *peer;
+  char hostname[MAXHOSTNAMELEN+1];
   int err;
   int sk;
 
@@ -51,6 +53,14 @@ int unet_bind(int mode, int port)
     return (err);
 
   _unet_bind[mode].fd = sk;
+  _unet_bind[mode].port = port;
+  _unet_bind[mode].scan_stamp = shtime();
+  _unet_bind[mode].scan_freq = 0.1;
+
+  sprintf(hostname, "127.0.0.1 %d", port);
+  peer = shpeer_init(unet_mode_label(mode), hostname);
+  memcpy(&_unet_bind[mode].peer, peer, sizeof(shpeer_t));
+  shpeer_free(&peer);
   
   return (0);
 }
@@ -85,3 +95,16 @@ int unet_unbind(int mode)
   return (err);
 }
 
+void unet_bind_flag_set(int mode, int flags)
+{
+  if (mode < 0 || mode >= MAX_UNET_MODES)
+    return; 
+  _unet_bind[mode].flag |= flags;
+}
+
+void unet_bind_flag_unset(int mode, int flags)
+{
+  if (mode < 0 || mode >= MAX_UNET_MODES)
+    return; 
+  _unet_bind[mode].flag &= ~flags;
+}

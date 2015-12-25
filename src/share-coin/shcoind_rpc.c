@@ -56,6 +56,7 @@ void get_rpc_cred(char *username, char *password)
   }
 
   shbuf_free(&buff);
+  shpeer_free(&peer);
 }
 
 #ifdef __cplusplus

@@ -2,7 +2,7 @@
 /*
  * @copyright
  *
- *  Copyright 2014 Neo Natura
+ *  Copyright 2015 Neo Natura
  *
  *  This file is part of the Share Library.
  *  (https://github.com/neonatura/share)
@@ -23,29 +23,16 @@
  *  @endcopyright
  */  
 
-#ifndef __SHCOIND_LOG_H__
-#define __SHCOIND_LOG_H__
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+#ifndef __SHCOIND_OPT_H__
+#define __SHCOIND_OPT_H__
 
 
 
-#define shcoind_log(_text) \
-  (f_shcoind_log(0, "Info", _text, __FILE__, __LINE__))
+/**
+ * The maximum number of inbound connections to allow for the usde server.
+ */
+extern int opt_max_conn;
 
-#define shcoind_err(_err, _tag, _text) \
-  (f_shcoind_log(_err, _tag, _text, __FILE__, __LINE__))
-
-
-void f_shcoind_log(int err_code, const char *tag, char *text, const char *src_fname, long src_line);
+#endif /* ndef __SHCOIND_OPT_H__ */
 
 
-
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif /* ndef __SHCOIND_LOG_H__ */

@@ -2586,6 +2586,9 @@ bool static AlreadyHave(CTxDB& txdb, const CInv& inv)
 
 
 
+extern vector <CAddress> GetAddresses(void);
+
+
 // The message start string is designed to be unlikely to occur in normal data.
 // The characters are rarely used upper ascii, not valid as UTF-8, and produce
 // a large 4-byte int at any alignment.
@@ -2674,6 +2677,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
                     pfrom->PushAddress(addr);
             }
 
+#if 0
             // Get recent addresses
             if (pfrom->fOneShot || pfrom->nVersion >= CADDR_TIME_VERSION || addrman.size() < 1000)
             {
@@ -2681,12 +2685,18 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
                 pfrom->fGetAddr = true;
             }
             addrman.Good(pfrom->addr);
+#endif
+
+            pfrom->PushMessage("getaddr");
+            pfrom->fGetAddr = true;
         } else {
+#if 0
             if (((CNetAddr)pfrom->addr) == (CNetAddr)addrFrom)
             {
                 addrman.Add(addrFrom, addrFrom);
                 addrman.Good(addrFrom);
             }
+#endif
         }
 
         // Ask the first connected node for block updates
@@ -2734,9 +2744,14 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
         vector<CAddress> vAddr;
         vRecv >> vAddr;
 
+#if 0
         // Don't want addr from older versions unless seeding
         if (pfrom->nVersion < CADDR_TIME_VERSION && addrman.size() > 1000)
             return true;
+#endif
+        if (pfrom->nVersion < CADDR_TIME_VERSION)
+            return true;
+
         if (vAddr.size() > 1000)
         {
             pfrom->Misbehaving(20);
@@ -2788,7 +2803,17 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
             if (fReachable)
                 vAddrOk.push_back(addr);
         }
+
+
+  BOOST_FOREACH(const CAddress &addr, vAddrOk) {
+    AddAddress(addr.ToStringIP().c_str(), addr.GetPort());
+  }
+#if 0
         addrman.Add(vAddrOk, pfrom->addr, 2 * 60 * 60);
+#endif
+
+
+
         if (vAddr.size() < 1000)
             pfrom->fGetAddr = false;
         if (pfrom->fOneShot)
@@ -3066,9 +3091,15 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
     else if (strCommand == "getaddr")
     {
         pfrom->vAddrToSend.clear();
+
+#if 0
+        vector<CAddress> vAddr;
         vector<CAddress> vAddr = addrman.GetAddr();
+#endif
+        vector<CAddress> vAddr = GetAddresses();
         BOOST_FOREACH(const CAddress &addr, vAddr)
             pfrom->PushAddress(addr);
+
     }
 
 
@@ -3179,8 +3210,6 @@ bool ProcessMessages(CNode* pfrom)
     CDataStream& vRecv = pfrom->vRecv;
     if (vRecv.empty())
         return true;
-    //if (fDebug)
-    //    printf("ProcessMessages(%u bytes)\n", vRecv.size());
 
     //
     // Message format
