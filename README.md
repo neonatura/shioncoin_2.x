@@ -9,8 +9,8 @@ share-coin
 
 Building the share library:
 <i><small><pre>
-  git clone https://github.com/neonatura/share
-  cd share
+  git clone https://github.com/neonatura/share libshare
+  cd libshare
   ./configure
   make
   make install
@@ -20,7 +20,7 @@ Building the share-coin programs:
 <i><small><pre>
   git clone https://github.com/neonatura/share-coin
   cd share-coin
-  ./configure --with-libshare=../share
+  ./configure --with-libshare=../libshare
   make
   make install
 </pre></small><i>
