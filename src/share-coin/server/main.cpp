@@ -2687,8 +2687,10 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
             addrman.Good(pfrom->addr);
 #endif
 
-            pfrom->PushMessage("getaddr");
-            pfrom->fGetAddr = true;
+            if (pfrom->fOneShot || pfrom->nVersion >= CADDR_TIME_VERSION) {
+              pfrom->PushMessage("getaddr");
+              pfrom->fGetAddr = true;
+            }
         } else {
 #if 0
             if (((CNetAddr)pfrom->addr) == (CNetAddr)addrFrom)
@@ -2804,10 +2806,14 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
                 vAddrOk.push_back(addr);
         }
 
+        int cnt = 0;
+        BOOST_FOREACH(const CAddress &addr, vAddrOk) {
+          AddAddress(addr.ToStringIP().c_str(), addr.GetPort());
 
-  BOOST_FOREACH(const CAddress &addr, vAddrOk) {
-    AddAddress(addr.ToStringIP().c_str(), addr.GetPort());
-  }
+          cnt++;
+          if (cnt > 256)
+            break;
+        }
 #if 0
         addrman.Add(vAddrOk, pfrom->addr, 2 * 60 * 60);
 #endif

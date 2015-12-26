@@ -14,6 +14,11 @@ int stratum_send_message(user_t *user, shjson_t *msg)
 fprintf(stderr, "DEBUG: stratum_send_message: null user\n");
     return (0);
 }
+
+ if (user->flags & USER_SYSTEM)
+    return (0); /* dummy user */
+
+
   if (user->fd == -1) {
 fprintf(stderr, "DEBUG: stratum_send_message: null fd\n");
     return (0);

@@ -154,7 +154,6 @@ am__objects_2 = test_shcoind-shcoind_opt.$(OBJEXT) \
 	test_shcoind-unet_close.$(OBJEXT) \
 	test_shcoind-unet_connect.$(OBJEXT) \
 	test_shcoind-unet_io.$(OBJEXT) \
-	test_shcoind-unet_select.$(OBJEXT) \
 	test_shcoind-unet_timer.$(OBJEXT) \
 	test_shcoind-unet_peer.$(OBJEXT) \
 	test_shcoind-addrman.$(OBJEXT) \
@@ -1132,7 +1131,6 @@ common_sources = \
 	$(top_srcdir)/src/share-coin/unet/unet_connect.c \
 	$(top_srcdir)/src/share-coin/unet/unet.h \
 	$(top_srcdir)/src/share-coin/unet/unet_io.c \
-	$(top_srcdir)/src/share-coin/unet/unet_select.c \
 	$(top_srcdir)/src/share-coin/unet/unet_timer.c \
 	$(top_srcdir)/src/share-coin/unet/unet_peer.c \
 	$(top_srcdir)/src/share-coin/server/addrman.cpp \
@@ -1262,7 +1260,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-unet_connect.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-unet_io.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-unet_peer.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-unet_select.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-unet_timer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-util.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-util_tests.Po@am__quote@
@@ -1418,20 +1415,6 @@ test_shcoind-unet_io.obj: $(top_srcdir)/src/share-coin/unet/unet_io.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/src/share-coin/unet/unet_io.c' object='test_shcoind-unet_io.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-unet_io.obj `if test -f '$(top_srcdir)/src/share-coin/unet/unet_io.c'; then $(CYGPATH_W) '$(top_srcdir)/src/share-coin/unet/unet_io.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/src/share-coin/unet/unet_io.c'; fi`
-
-test_shcoind-unet_select.o: $(top_srcdir)/src/share-coin/unet/unet_select.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-unet_select.o -MD -MP -MF $(DEPDIR)/test_shcoind-unet_select.Tpo -c -o test_shcoind-unet_select.o `test -f '$(top_srcdir)/src/share-coin/unet/unet_select.c' || echo '$(srcdir)/'`$(top_srcdir)/src/share-coin/unet/unet_select.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-unet_select.Tpo $(DEPDIR)/test_shcoind-unet_select.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/src/share-coin/unet/unet_select.c' object='test_shcoind-unet_select.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-unet_select.o `test -f '$(top_srcdir)/src/share-coin/unet/unet_select.c' || echo '$(srcdir)/'`$(top_srcdir)/src/share-coin/unet/unet_select.c
-
-test_shcoind-unet_select.obj: $(top_srcdir)/src/share-coin/unet/unet_select.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-unet_select.obj -MD -MP -MF $(DEPDIR)/test_shcoind-unet_select.Tpo -c -o test_shcoind-unet_select.obj `if test -f '$(top_srcdir)/src/share-coin/unet/unet_select.c'; then $(CYGPATH_W) '$(top_srcdir)/src/share-coin/unet/unet_select.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/src/share-coin/unet/unet_select.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-unet_select.Tpo $(DEPDIR)/test_shcoind-unet_select.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/src/share-coin/unet/unet_select.c' object='test_shcoind-unet_select.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-unet_select.obj `if test -f '$(top_srcdir)/src/share-coin/unet/unet_select.c'; then $(CYGPATH_W) '$(top_srcdir)/src/share-coin/unet/unet_select.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/src/share-coin/unet/unet_select.c'; fi`
 
 test_shcoind-unet_timer.o: $(top_srcdir)/src/share-coin/unet/unet_timer.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-unet_timer.o -MD -MP -MF $(DEPDIR)/test_shcoind-unet_timer.Tpo -c -o test_shcoind-unet_timer.o `test -f '$(top_srcdir)/src/share-coin/unet/unet_timer.c' || echo '$(srcdir)/'`$(top_srcdir)/src/share-coin/unet/unet_timer.c

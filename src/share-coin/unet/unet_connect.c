@@ -66,7 +66,7 @@ int unet_connect(int mode, struct sockaddr *net_addr, SOCKET *sk_p)
 
     FD_ZERO(&w_set);
     FD_SET(cli_fd, &w_set);
-    err = select(cli_fd+1, NULL, &w_set, NULL, &to);
+    err = shselect(cli_fd+1, NULL, &w_set, NULL, &to);
     if (err > 0) {
       err = 0;
     } else if (err == 0) {

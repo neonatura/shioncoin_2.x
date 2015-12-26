@@ -78,7 +78,7 @@ void unet_peer_verify(int mode)
     if (!err) {
       /* success */
       shnet_track_mark(&bind->scan_peer, 1);
-      bind->scan_freq *= 2;
+      bind->scan_freq = MAX(0.001, bind->scan_freq * 1.1);
 
       sprintf(buf, "unet_peer_verify: connect '%s' (success).", shpeer_print(&bind->scan_peer));
       unet_log(mode, buf);
@@ -89,26 +89,26 @@ void unet_peer_verify(int mode)
     } else {
       /* error */
       shnet_track_mark(&bind->scan_peer, -1);
-      bind->scan_freq /= 2;
+      bind->scan_freq = MAX(0.001, bind->scan_freq * 0.9);
 
       sprintf(buf, "unet_peer_verify: error: connect '%s' (%s) [sherr %d].", shpeer_print(&bind->scan_peer), sherrstr(err), err);
       unet_log(mode, buf);
     }
   } else {
-    if (shtime_before(shtime_adj(bind->scan_stamp, 5), shtime())) {
+    shtime_t now = shtime();
+    shtime_t expire_t = shtime_adj(bind->scan_stamp, 5);
+    if (shtime_before(expire_t, now)) {
       /* error */
       shnet_track_mark(&bind->scan_peer, -1);
-      bind->scan_freq /= 2;
-
+      bind->scan_freq = MAX(0.001, bind->scan_freq * 0.9);
 
       err = SHERR_TIMEDOUT;
-      sprintf(buf, "unet_peer_verify: error: connect '%s' (%s) [sherr %d].", shpeer_print(&bind->scan_peer), sherrstr(err), err);
+      sprintf(buf, "unet_peer_verify: error: connect '%s' (%s) [wait %-1.1fs] [sherr %d].", shpeer_print(&bind->scan_peer), sherrstr(err), err, shtime_diff(expire_t, now));
       unet_log(mode, buf);
 
       shnet_close(bind->scan_fd);
       bind->scan_fd = 0;
-  }
-    /* DEBUG: connection timeout */
+    }
   }
 
 
@@ -120,6 +120,7 @@ void unet_peer_scan(void)
   unet_bind_t *bind;
   shpeer_t *peer;
   double dur;
+  char buf[256];
   int mode;
   int err;
 
@@ -135,20 +136,26 @@ void unet_peer_scan(void)
       continue;
     }
 
-    dur = MAX(2, MIN(300, 300 * bind->scan_freq));
+    dur = MAX(10, MIN(600, 600 * bind->scan_freq));
     if (shtime_after(shtime_adj(bind->scan_stamp, dur), shtime()))
       continue;
     bind->scan_stamp = shtime();
 
     err = shnet_track_scan(&bind->peer, &peer);
-    if (err)
+    if (err) {
       continue;
+    }
 
+/* todo : check local ip addr list */
     if (unet_peer_find(shpeer_addr(peer))) {
+      shnet_track_mark(peer, 0); /* update mtime */
       /* already connected */
       shpeer_free(&peer);
       continue;
     }
+
+    sprintf(buf, "unet_peer_scan: next scan ~ %s [scan-freq %-1.1f%%]: scanning '%s'\n", shctime(shtime_adj(bind->scan_stamp, dur)), (bind->scan_freq * 100), shpeer_print(&bind->scan_peer));
+    unet_log(mode, buf);
 
     memcpy(&bind->scan_peer, peer, sizeof(shpeer_t));
     unet_peer_verify(mode);

@@ -51,7 +51,6 @@ common_sources = \
 	$(top_srcdir)/src/share-coin/unet/unet_connect.c \
 	$(top_srcdir)/src/share-coin/unet/unet.h \
 	$(top_srcdir)/src/share-coin/unet/unet_io.c \
-	$(top_srcdir)/src/share-coin/unet/unet_select.c \
 	$(top_srcdir)/src/share-coin/unet/unet_timer.c \
 	$(top_srcdir)/src/share-coin/unet/unet_peer.c \
 	$(top_srcdir)/src/share-coin/server/addrman.cpp \

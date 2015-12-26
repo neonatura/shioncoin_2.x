@@ -71,7 +71,6 @@ common_sources = \
 	unet/unet_connect.c \
 	unet/unet.h \
 	unet/unet_io.c \
-	unet/unet_select.c \
 	unet/unet_timer.c \
 	unet/unet_peer.c \
 	server/protocol.cpp \
