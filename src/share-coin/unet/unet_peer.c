@@ -103,7 +103,7 @@ void unet_peer_verify(int mode)
       bind->scan_freq = MAX(0.001, bind->scan_freq * 0.9);
 
       err = SHERR_TIMEDOUT;
-      sprintf(buf, "unet_peer_verify: error: connect '%s' (%s) [wait %-1.1fs] [sherr %d].", shpeer_print(&bind->scan_peer), sherrstr(err), err, shtime_diff(expire_t, now));
+      sprintf(buf, "unet_peer_verify: error: connect '%s' (%s) [wait %-1.1fs] [sherr %d].", shpeer_print(&bind->scan_peer), sherrstr(err), shtime_diff(expire_t, now), err);
       unet_log(mode, buf);
 
       shnet_close(bind->scan_fd);
@@ -154,7 +154,7 @@ void unet_peer_scan(void)
       continue;
     }
 
-    sprintf(buf, "unet_peer_scan: next scan ~ %s [scan-freq %-1.1f%%]: scanning '%s'\n", shctime(shtime_adj(bind->scan_stamp, dur)), (bind->scan_freq * 100), shpeer_print(&bind->scan_peer));
+    sprintf(buf, "unet_peer_scan: next scan ~ %s [scan-freq %-1.1f%%]: scanning '%s'\n", shctime(shtime_adj(bind->scan_stamp, dur)), (bind->scan_freq * 100), shpeer_print(peer));
     unet_log(mode, buf);
 
     memcpy(&bind->scan_peer, peer, sizeof(shpeer_t));

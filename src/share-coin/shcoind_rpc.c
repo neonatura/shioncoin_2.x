@@ -53,6 +53,7 @@ void get_rpc_cred(char *username, char *password)
     strcat(path, "usde.conf");
     sprintf(buf, "rpcuser=%s\nrpcpassword=%s\n", username, password); 
     shfs_write_mem(path, buf, strlen(buf));
+    chmod(path, 0700);
   }
 
   shbuf_free(&buff);

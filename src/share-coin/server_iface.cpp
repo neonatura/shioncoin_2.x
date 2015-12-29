@@ -50,7 +50,6 @@
 using namespace std;
 using namespace boost;
 
-static const int MAX_OUTBOUND_CONNECTIONS = 64;
 
 void ThreadMessageHandler2(void* parg);
 void ThreadSocketHandler2(void* parg);
@@ -58,6 +57,7 @@ void ThreadDNSAddressSeed2(void* parg);
 bool OpenNetworkConnection(const CAddress& addrConnect, const char *strDest = NULL);
 
 CSemaphore *semOutbound = NULL;
+
 
 struct LocalServiceInfo {
     int nScore;
@@ -70,6 +70,7 @@ struct LocalServiceInfo {
 bool fClient = false;
 bool fDiscover = true;
 bool fUseUPnP = false;
+int _shutdown_timer;
 uint64 nLocalServices = (fClient ? 0 : NODE_NETWORK);
 static CCriticalSection cs_mapLocalHost;
 static map<CNetAddr, LocalServiceInfo> mapLocalHost;
@@ -322,6 +323,7 @@ bool IsReachable(const CNetAddr& addr)
     return vfReachable[net] && !vfLimited[net];
 }
 
+#if 0
 bool GetMyExternalIP2(const CService& addrConnect, const char* pszGet, const char* pszKeyword, CNetAddr& ipRet)
 {
     SOCKET hSocket;
@@ -445,7 +447,7 @@ void ThreadGetMyExternalIP(void* parg)
 
     GetMyExternalIP();
 }
-
+#endif
 
 
 
@@ -1093,7 +1095,6 @@ void usde_close_free(void)
     if (pnode->fDisconnect ||
         (pnode->GetRefCount() <= 0 && pnode->vRecv.empty() && pnode->vSend.empty()))
     {
-fprintf(stderr, "DEBUG: usde_close_free: removing pnode\n"); 
       // remove from vNodes
       vNodes.erase(remove(vNodes.begin(), vNodes.end(), pnode), vNodes.end());
 
@@ -1142,7 +1143,6 @@ fprintf(stderr, "DEBUG: usde_close_free: removing pnode\n");
       }
       if (fDelete)
       {
-fprintf(stderr, "DEBUG: deleting pnode (fd %d).\n", pnode->hSocket);
         vNodesDisconnected.remove(pnode);
         delete pnode;
       }
@@ -1285,6 +1285,8 @@ void usde_server_timer(void)
     BOOST_FOREACH(CNode* pnode, vNodesCopy)
       pnode->Release();
   }
+
+  MessageHandler();
 
 }
 
@@ -1592,7 +1594,7 @@ bool OpenNetworkConnection(const CAddress& addrConnect, const char *strDest)
 
 
 
-
+#if 0
 void ThreadMessageHandler(void* parg)
 {
 //    IMPLEMENT_RANDOMIZE_STACK(ThreadMessageHandler(parg));
@@ -1672,6 +1674,52 @@ void ThreadMessageHandler2(void* parg)
         if (fShutdown)
             return;
     }
+}
+#endif
+
+void MessageHandler(void)
+{
+
+  vector<CNode*> vNodesCopy;
+  {
+    LOCK(cs_vNodes);
+    vNodesCopy = vNodes;
+    BOOST_FOREACH(CNode* pnode, vNodesCopy)
+      pnode->AddRef();
+  }
+
+  // Poll the connected nodes for messages
+  CNode* pnodeTrickle = NULL;
+  if (!vNodesCopy.empty())
+    pnodeTrickle = vNodesCopy[GetRand(vNodesCopy.size())];
+  BOOST_FOREACH(CNode* pnode, vNodesCopy)
+  {
+    // Receive messages
+    {
+      TRY_LOCK(pnode->cs_vRecv, lockRecv);
+      if (lockRecv)
+        ProcessMessages(pnode);
+    }
+    if (fShutdown)
+      return;
+
+    // Send messages
+    {
+      TRY_LOCK(pnode->cs_vSend, lockSend);
+      if (lockSend)
+        SendMessages(pnode, pnode == pnodeTrickle);
+    }
+    if (fShutdown)
+      return;
+  }
+
+  {
+    LOCK(cs_vNodes);
+    BOOST_FOREACH(CNode* pnode, vNodesCopy)
+      pnode->Release();
+  }
+
+
 }
 
 
@@ -1871,12 +1919,7 @@ void BindServer(void)
 void StartCoinServer(void)
 {
 
-#if 0
-  BindServer();
-#endif
-
   CreateThread(ThreadRPCServer, NULL);
-  fprintf(stderr, "RPC server has been started.\n");
 
   // Make this thread recognisable as the startup thread
 
@@ -1890,33 +1933,6 @@ void StartCoinServer(void)
     pnodeLocalHost = new CNode(INVALID_SOCKET, CAddress(CService("127.0.0.1", 0), nLocalServices));
 
   Discover();
-
-  //
-  // Start threads
-  //
-
-printf ("Starting coin service.\n");
-#if 0
-  // Send and receive from sockets, accept connections
-  if (!CreateThread(ThreadSocketHandler, NULL))
-    fprintf(stderr, "Error: CreateThread(ThreadSocketHandler) failed\n");
-#endif
-
-#if 0
-  // Initiate outbound connections
-  if (!CreateThread(ThreadOpenConnections, NULL))
-    fprintf(stderr, "Error: CreateThread(ThreadOpenConnections) failed\n");
-#endif
-
-  // Process messages
-  if (!CreateThread(ThreadMessageHandler, NULL))
-    fprintf(stderr, "Error: CreateThread(ThreadMessageHandler) failed\n");
-
-#if 0
-  /* Flush the "address management" database (peer.dat). */
-  if (!CreateThread(ThreadDumpAddress, NULL))
-    fprintf(stderr, "Error; CreateThread(ThreadDumpAddress) failed\n");
-#endif
 
 }
 
@@ -2059,7 +2075,6 @@ void AddAddress(const char *hostname, int port)
   peer = shpeer_init("usde", addr_str);
   shnet_track_add(peer);
   shpeer_free(&peer);
-fprintf(stderr, "DEBUG: AddAddress: host '%s' port %d\n", hostname, port);
 }
 
 int GetRandomAddress(char *hostname, int *port_p)
@@ -2118,3 +2133,96 @@ vector <CAddress> GetAddresses(void)
 
   return (vAddr);
 }
+
+#define DEFAULT_SHUTDOWN_CYCLES 5
+void set_shutdown_timer(void)
+{
+
+  if (_shutdown_timer == 0)
+    _shutdown_timer = DEFAULT_SHUTDOWN_CYCLES;
+
+}
+
+
+
+
+
+#define CHKIP_HTML_TEMPLATE \
+  "GET / HTTP/1.1\r\n" \
+  "Host: checkip.dyndns.org\r\n" \
+  "User-Agent: Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1)\r\n" \
+  "Connection: close\r\n" \
+  "\r\n"
+static const char *CHKIP_IP_TAG = "Current IP Address: ";
+
+int check_ip(char *serv_hostname, struct in_addr *net_addr)
+{
+  shbuf_t *buff;
+  fd_set r_set;
+  long to;
+  char *text;
+  int err;
+  int sk;
+
+  /* checkip.dyndns.org */ 
+  sk = shconnect_host(serv_hostname, 80, SHNET_ASYNC);
+  if (sk < 0) {
+    return (sk);
+  }
+
+  err = shnet_write(sk, CHKIP_HTML_TEMPLATE, strlen(CHKIP_HTML_TEMPLATE));
+  if (err < 0) {
+    shnet_close(sk);
+    return (err);  
+  }
+
+  to = 3000; /* 3s */
+  FD_ZERO(&r_set);
+  FD_SET(sk, &r_set);
+  shnet_verify(&r_set, NULL, &to);
+
+  buff = shnet_read_buf(sk);
+  if (!buff) {
+    shnet_close(sk);
+    return (SHERR_INVAL);
+  }
+
+  text = (char *)shbuf_data(buff);
+  text = strstr(text, CHKIP_IP_TAG);
+  if (!text) {
+    shnet_close(sk);
+    return (SHERR_INVAL);
+  }
+
+  text += strlen(CHKIP_IP_TAG);
+  strtok(text, "<");
+  inet_aton(text, net_addr);
+
+  shbuf_clear(buff);
+  shnet_close(sk);
+
+  return (0);
+}
+
+
+void GetMyExternalIP(void)
+{
+  struct in_addr addr;
+  char buf[256];
+  int err;
+
+  err = check_ip("91.198.22.70", &addr);
+  if (err)
+    return;
+
+  CNetAddr addrLocalHost(addr);
+  if (!addrLocalHost.IsValid() || !addrLocalHost.IsRoutable())
+    return;
+
+  AddLocal(addrLocalHost, LOCAL_HTTP);
+
+  sprintf(buf, "GetMyExternalIP: listening on IP addr '%s'.", inet_ntoa(addr));
+  shcoind_log(buf);
+}
+
+

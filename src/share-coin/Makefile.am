@@ -91,6 +91,7 @@ server_sources = \
 	server/keystore.cpp \
 	server/leveldb.cpp \
 	server/main.cpp \
+	server/cmd_msg.cpp \
 	server/noui.cpp \
 	server/rpcdump.cpp \
 	server/rpcnet.cpp \

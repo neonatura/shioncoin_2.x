@@ -8,6 +8,9 @@
 
 user_t *client_list;
 
+extern int fShutdown;
+
+
 void daemon_close_clients(void)
 {
   user_t *user;
@@ -257,10 +260,24 @@ shbuf_t *buff;
 }
 #endif
 
+
+#define RUN_NONE 0
+#define RUN_CYCLE 1
+#define RUN_SHUTDOWN 2
+#define RUN_RESTART 3 /* not used */
+
 void daemon_server(void)
 {
+  int run_mode;
 
-  while (TRUE) {
+  run_mode = RUN_CYCLE;
+  while (run_mode != RUN_SHUTDOWN) {
+    if (_shutdown_timer == 1) {
+      printf("info: shcoind daemon shutting down.\n");
+      run_mode = RUN_SHUTDOWN;
+    } else if (_shutdown_timer > 1) {
+      _shutdown_timer--;
+    }
 
     /* handle network communication. */
     unet_cycle(0.05); /* max 50ms */
@@ -268,8 +285,12 @@ void daemon_server(void)
     /* handle libshare message queue */
     shcoind_poll_msg_queue();
 
+    if (fShutdown && !_shutdown_timer) {
+      set_shutdown_timer();
+    }
   }
 
+  shcoind_term(); 
 }
 
 

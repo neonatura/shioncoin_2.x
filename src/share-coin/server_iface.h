@@ -51,10 +51,13 @@
 #define STERR_DECODE_TX -22 /* tx decode failed / tx rejected */
 #define STERR_INVAL_OBJ -32600 /* invalid request object */
 
+#define MAX_OUTBOUND_CONNECTIONS 64
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+extern int _shutdown_timer;
 
 
 /* net.cpp */
@@ -124,6 +127,12 @@ void usde_server_term(void);
 void AddAddress(const char *hostname, int port);
 
 int GetRandomAddress(char *hostname, int *port_p);
+
+void MessageHandler(void);
+
+void set_shutdown_timer(void);
+
+void GetMyExternalIP(void);
 
 #ifdef __cplusplus
 }

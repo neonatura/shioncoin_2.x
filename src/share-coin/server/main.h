@@ -89,9 +89,7 @@ static const int fHaveUPnP = false;
 
 
 extern CScript COINBASE_FLAGS;
-
-
-
+extern CCriticalSection cs_mapAlerts;
 
 
 
@@ -151,6 +149,7 @@ int GetNumBlocksOfPeers();
 bool IsInitialBlockDownload();
 std::string GetWarnings(std::string strFor);
 bool GetTransaction(const uint256 &hash, CTransaction &tx, uint256 &hashBlock);
+uint256 GetOrphanRoot(const CBlock* pblock);
 
 
 
@@ -1684,6 +1683,7 @@ public:
 };
 
 extern CTxMemPool mempool;
+
 
 /**
  * @}

@@ -59,7 +59,10 @@ void daemon_signal(int sig_num)
 {
   signal(sig_num, SIG_DFL);
 
+  set_shutdown_timer();
+#if 0
   shcoind_term();
+#endif
 }
 
 void usage_help(void)
@@ -134,8 +137,11 @@ int main(int argc, char *argv[])
   if (!opt_no_fork)
     daemon(0, 1);
 
+  signal(SIGSEGV, SIG_DFL);
   signal(SIGHUP, SIG_IGN);
   signal(SIGPIPE, SIG_IGN);
+  signal(SIGUSR1, SIG_IGN);
+  signal(SIGUSR2, SIG_IGN);
   signal(SIGTERM, daemon_signal);
   signal(SIGQUIT, daemon_signal);
   signal(SIGINT, daemon_signal);

@@ -219,12 +219,13 @@ am__objects_5 = shcoind-rpc_proto.$(OBJEXT) \
 	shcoind-db.$(OBJEXT) shcoind-init.$(OBJEXT) \
 	shcoind-key.$(OBJEXT) shcoind-keystore.$(OBJEXT) \
 	shcoind-leveldb.$(OBJEXT) shcoind-main.$(OBJEXT) \
-	shcoind-noui.$(OBJEXT) shcoind-rpcdump.$(OBJEXT) \
-	shcoind-rpcnet.$(OBJEXT) shcoind-rpcrawtransaction.$(OBJEXT) \
-	shcoind-script.$(OBJEXT) shcoind-sync.$(OBJEXT) \
-	shcoind-wallet.$(OBJEXT) shcoind-walletdb.$(OBJEXT) \
-	shcoind-scrypt.$(OBJEXT) shcoind-wallet_iface.$(OBJEXT) \
-	shcoind-block_iface.$(OBJEXT) shcoind-server_iface.$(OBJEXT)
+	shcoind-cmd_msg.$(OBJEXT) shcoind-noui.$(OBJEXT) \
+	shcoind-rpcdump.$(OBJEXT) shcoind-rpcnet.$(OBJEXT) \
+	shcoind-rpcrawtransaction.$(OBJEXT) shcoind-script.$(OBJEXT) \
+	shcoind-sync.$(OBJEXT) shcoind-wallet.$(OBJEXT) \
+	shcoind-walletdb.$(OBJEXT) shcoind-scrypt.$(OBJEXT) \
+	shcoind-wallet_iface.$(OBJEXT) shcoind-block_iface.$(OBJEXT) \
+	shcoind-server_iface.$(OBJEXT)
 am__objects_6 = shcoind-stratum.$(OBJEXT) \
 	shcoind-stratum_http.$(OBJEXT) \
 	shcoind-stratum_message.$(OBJEXT) \
@@ -1243,6 +1244,7 @@ server_sources = \
 	server/keystore.cpp \
 	server/leveldb.cpp \
 	server/main.cpp \
+	server/cmd_msg.cpp \
 	server/noui.cpp \
 	server/rpcdump.cpp \
 	server/rpcnet.cpp \
@@ -1504,6 +1506,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoin-version.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-block_iface.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-checkpoints.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-cmd_msg.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-crypter.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-db.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-init.Po@am__quote@
@@ -2934,6 +2937,20 @@ shcoind-main.obj: server/main.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/main.cpp' object='shcoind-main.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-main.obj `if test -f 'server/main.cpp'; then $(CYGPATH_W) 'server/main.cpp'; else $(CYGPATH_W) '$(srcdir)/server/main.cpp'; fi`
+
+shcoind-cmd_msg.o: server/cmd_msg.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-cmd_msg.o -MD -MP -MF $(DEPDIR)/shcoind-cmd_msg.Tpo -c -o shcoind-cmd_msg.o `test -f 'server/cmd_msg.cpp' || echo '$(srcdir)/'`server/cmd_msg.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-cmd_msg.Tpo $(DEPDIR)/shcoind-cmd_msg.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/cmd_msg.cpp' object='shcoind-cmd_msg.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-cmd_msg.o `test -f 'server/cmd_msg.cpp' || echo '$(srcdir)/'`server/cmd_msg.cpp
+
+shcoind-cmd_msg.obj: server/cmd_msg.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-cmd_msg.obj -MD -MP -MF $(DEPDIR)/shcoind-cmd_msg.Tpo -c -o shcoind-cmd_msg.obj `if test -f 'server/cmd_msg.cpp'; then $(CYGPATH_W) 'server/cmd_msg.cpp'; else $(CYGPATH_W) '$(srcdir)/server/cmd_msg.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-cmd_msg.Tpo $(DEPDIR)/shcoind-cmd_msg.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/cmd_msg.cpp' object='shcoind-cmd_msg.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-cmd_msg.obj `if test -f 'server/cmd_msg.cpp'; then $(CYGPATH_W) 'server/cmd_msg.cpp'; else $(CYGPATH_W) '$(srcdir)/server/cmd_msg.cpp'; fi`
 
 shcoind-noui.o: server/noui.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-noui.o -MD -MP -MF $(DEPDIR)/shcoind-noui.Tpo -c -o shcoind-noui.o `test -f 'server/noui.cpp' || echo '$(srcdir)/'`server/noui.cpp

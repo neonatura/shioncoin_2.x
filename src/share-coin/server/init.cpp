@@ -26,6 +26,8 @@ using namespace boost;
 
 CWallet* pwalletMain;
 
+extern CSemaphore *semOutbound;
+
 //////////////////////////////////////////////////////////////////////////////
 //
 // Shutdown
@@ -861,7 +863,24 @@ int load_wallet(void)
 #endif
 void server_shutdown(void)
 {
-  Shutdown2();
+
+  printf("info: shcoind daemon terminating.\n");
+
+  fShutdown = true;
+  nTransactionsUpdated++;
+  bitdb.Flush(false);
+
+  if (semOutbound)
+    for (int i=0; i<MAX_OUTBOUND_CONNECTIONS; i++)
+      semOutbound->post();
+  //StopNode();
+
+  bitdb.Flush(true);
+  boost::filesystem::remove(GetPidFile());
+  UnregisterWallet(pwalletMain);
+  delete pwalletMain;
+
+//  Shutdown2();
 }
 
 #ifdef __cplusplus

@@ -16,6 +16,7 @@
 #include "init.h"
 #include "ui_interface.h"
 #include "base58.h"
+#include "cmd_msg.h"
 #include "rpc_proto.h"
 #include "../server_iface.h" /* BLKERR_XXX */
 
@@ -330,13 +331,19 @@ Value addpeer(const Array& params, bool fHelp)
 
 Value stop(const Array& params, bool fHelp)
 {
-    if (fHelp || params.size() != 0)
-        throw runtime_error(
-            "stop\n"
-            "Stop usde server.");
+
+  if (fHelp || params.size() != 0)
+    throw runtime_error(
+        "stop\n"
+        "Stop usde server.");
+
+  set_shutdown_timer();
+#if 0
     // Shutdown will take long enough that the response should get back
     StartServerShutdown();
-    return "usde server has now stopped running!";
+#endif
+
+  return "usde server has now stopped running!";
 }
 
 

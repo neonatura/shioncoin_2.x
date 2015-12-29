@@ -63,6 +63,7 @@ common_sources = \
 	$(top_srcdir)/src/share-coin/server/keystore.cpp \
 	$(top_srcdir)/src/share-coin/server/leveldb.cpp \
 	$(top_srcdir)/src/share-coin/server/main.cpp \
+	$(top_srcdir)/src/share-coin/server/cmd_msg.cpp \
 	$(top_srcdir)/src/share-coin/server/netbase.cpp \
 	$(top_srcdir)/src/share-coin/server/noui.cpp \
 	$(top_srcdir)/src/share-coin/server/protocol.cpp \
