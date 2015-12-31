@@ -608,32 +608,62 @@ const char *c_getblockinfo(const char *hash_addr)
 }
 #endif
 
-int findBlockTransaction(CBlockIndex *pblockindex, const char *tx_id, CTransaction& ret_tx)
+int findBlockTransaction(CBlockIndex *pblockindex, const char *tx_id, CTransaction& ret_tx, time_t dur)
 {
   CBlock block;
+  uint256 hashTx;
+  int64 nOut;
+  int confirms;
+  time_t min_t;
+
+  if (!tx_id || !*tx_id)
+    return (NULL);
+
+  hashTx.SetHex(tx_id);
+
+  min_t = 0;
+  if (dur)
+    min_t = time(NULL) - dur;
 
   block.ReadFromDisk(pblockindex, true);
+  if (min_t && ((time_t)block.GetBlockTime() < min_t)) {
+    /* exceeds duration limit */
+    return (-1);
+  }
   BOOST_FOREACH(CTransaction&tx, block.vtx) {
+/*
     std::string txStr = tx.GetHash().GetHex();
     if (0 == strcasecmp(txStr.c_str(), tx_id)) {
       ret_tx = tx;
       return (0);
     }
+*/
+    if (tx.GetHash() == hashTx) {
+      ret_tx = tx;
+      return (0);
+    }
+
   }
+
   return (-1);
 }
 
-CBlockIndex *findTransaction(uint256 hashTx, CTransaction& ret_tx)
+CBlockIndex *findTransaction(uint256 hashTx, CTransaction& ret_tx, time_t dur)
 {
   CTxDB txdb("r");
   CBlockIndex *pblockindex;
   CTxIndex txindex;
+  time_t min_t;
   bool ok;
 
   /* find transaction (weed out false requests) */
   ok = txdb.ReadTxIndex(hashTx, txindex);
   if (!ok)
     return (NULL);
+
+  min_t = 0;
+  if (dur)
+    min_t = time(NULL) - dur;
 
 #if 0
   /* load transaction */
@@ -648,6 +678,11 @@ CBlockIndex *findTransaction(uint256 hashTx, CTransaction& ret_tx)
     CTransaction tx;
 
     block.ReadFromDisk(pblockindex, true);
+    if (min_t && ((time_t)block.GetBlockTime() < min_t)) {
+      /* exceeds duration limit */
+      return (NULL);
+    }
+
     BOOST_FOREACH(CTransaction&tx, block.vtx) {
       if (hashTx == tx.GetHash()) {
         ret_tx = tx;
@@ -703,6 +738,7 @@ int64 GetTxFee(CTransaction tx)
   return (nFees);
 }
 
+#define MAX_HISTORY_TIME 31536000 /* one year */
 const char *c_gettransactioninfo(const char *tx_id)
 {
   CTransaction tx;
@@ -716,16 +752,22 @@ const char *c_gettransactioninfo(const char *tx_id)
   if (!tx_id || !*tx_id)
     return (NULL);
 
+
   hashTx.SetHex(tx_id);
 //  pblockindex = transactionMap[hashTx]; /* check tx map */
   if (!pblockindex) {
-    pblockindex = findTransaction(hashTx, tx);
+fprintf(stderr, "DEBUG: TIMING: findTransaction/start\n");
+    pblockindex = findTransaction(hashTx, tx, MAX_HISTORY_TIME);
+fprintf(stderr, "DEBUG: TIMING: findTransaction/end\n");
     if (!pblockindex)
       return (NULL);
 
     hashTx = tx.GetHash();
   } else {
-    if (0 != findBlockTransaction(pblockindex, tx_id, tx))
+fprintf(stderr, "DEBUG: TIMING: findBlockTransaction/start\n");
+    int err = findBlockTransaction(pblockindex, tx_id, tx, MAX_HISTORY_TIME);
+fprintf(stderr, "DEBUG: TIMING: findBlockTransaction/end\n");
+    if (err)
       return (NULL);
   }
 

@@ -57,11 +57,12 @@ int unet_add(int mode, SOCKET sk)
   t->stamp = 0; /* reset I/O timestamp */
 
   /* retain remote network addr (ipv4) */
+  memset(&t->net_addr, 0, sizeof(t->net_addr));
   addr = shaddr(sk);
   if (addr)
     memcpy(&t->net_addr, addr, sizeof(struct sockaddr));
 
-  in_fam = *((sa_family_t *)addr);
+  in_fam = *((sa_family_t *)&t->net_addr);
   if (in_fam == AF_INET) {
     struct sockaddr_in *in = (struct sockaddr_in *)&t->net_addr;
     char buf[256];
