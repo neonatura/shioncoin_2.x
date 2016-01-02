@@ -3,6 +3,19 @@ share-coin
 
 <h4>Part of the Share Library Suite.</b>
 
+<h2>USDe Specifications</h2>
+The shcoind usde server recalcultes the block difficulty rate every block using the Kmmooto Gravity Well algorythm. The target duration for blocks is one minute.
+
+A maximum of 1.6Billion USDe will be generated. Block reward halves every 130,000 blocks. The current money supply is estimated at 1.12 billion coins in circulation.
+
+USDE Server Port: 54449
+USDE RPC Port: 54448
+Stratum Port: 9448
+
+The USDE network requires 5 confirmations per transaction.
+The USDE network requires 120 confirmations per block for maturity.
+
+
 <h2>Quick Instructions</h2>
 
 64-bit: Add '--libdir=/usr/local/lib64' as configure command-line option

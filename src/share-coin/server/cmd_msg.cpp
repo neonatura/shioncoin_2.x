@@ -729,8 +729,8 @@ shtime_t ts;
         if (block.nDoS) pfrom->Misbehaving(block.nDoS);
         timing_term(tag2, &ts);
 
-        printf("received block %s\n", block.GetHash().ToString().substr(0,20).c_str());
-        block.print();
+        //printf("received block %s\n", block.GetHash().ToString().substr(0,20).c_str());
+        //block.print();
     }
 
 

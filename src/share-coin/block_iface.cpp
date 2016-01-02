@@ -205,6 +205,8 @@ fprintf(stderr, "DEBUG: c_processblock: !AcceptBlock()\n");
     return (BLKERR_INVALID_BLOCK);
   }
 
+  pblock->print();
+
   return (0);
 }
 

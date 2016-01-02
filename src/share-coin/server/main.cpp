@@ -857,11 +857,14 @@ bnNew /= PastRateTargetSeconds;
 }
     if (bnNew > bnProofOfWorkLimit) { bnNew = bnProofOfWorkLimit; }
 
+  
+#if 0
     /// debug print
     printf("Difficulty Retarget - Kimoto Gravity Well\n");
     printf("PastRateAdjustmentRatio = %g\n", PastRateAdjustmentRatio);
     printf("Before: %08x %s\n", BlockLastSolved->nBits, CBigNum().SetCompact(BlockLastSolved->nBits).getuint256().ToString().c_str());
     printf("After: %08x %s\n", bnNew.GetCompact(), bnNew.getuint256().ToString().c_str());
+#endif
 
 return bnNew.GetCompact();
 }
@@ -2186,7 +2189,7 @@ bool LoadBlockIndex(bool fAllowNew)
             printf("block.GetHash = %s\n", block.GetHash().ToString().c_str());
         }
 
-        block.print();
+        //block.print();
         assert(block.GetHash() == hashGenesisBlock);
 
         // Start new block file
