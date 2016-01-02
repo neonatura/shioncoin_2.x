@@ -294,7 +294,7 @@ int CMerkleTx::SetMerkleBranch(const CBlock* pblock)
       {
         vMerkleBranch.clear();
         nIndex = -1;
-        printf("ERROR: SetMerkleBranch() : couldn't find tx in block\n");
+        error(SHERR_INVAL, "SetMerkleBranch() : couldn't find tx in block");
         return 0;
       }
 
@@ -475,8 +475,7 @@ bool CTxMemPool::accept(CTxDB& txdb, CTransaction &tx, bool fCheckInputs,
                 // At default rate it would take over a month to fill 1GB
                 if (dFreeCount > GetArg("-limitfreerelay", 15)*10*1000 && !IsFromMe(tx))
                     return error(SHERR_INVAL, "CTxMemPool::accept() : free transaction rejected by rate limiter");
-                if (fDebug)
-                    printf("Rate limit dFreeCount: %g => %g\n", dFreeCount, dFreeCount+nSize);
+                Debug("Rate limit dFreeCount: %g => %g\n", dFreeCount, dFreeCount+nSize);
                 dFreeCount += nSize;
             }
         }
@@ -494,7 +493,7 @@ bool CTxMemPool::accept(CTxDB& txdb, CTransaction &tx, bool fCheckInputs,
         LOCK(cs);
         if (ptxOld)
         {
-            printf("CTxMemPool::accept() : replacing tx %s with new version\n", ptxOld->GetHash().ToString().c_str());
+            Debug("CTxMemPool::accept() : replacing tx %s with new version\n", ptxOld->GetHash().ToString().c_str());
             remove(*ptxOld);
         }
         addUnchecked(hash, tx);
@@ -505,7 +504,7 @@ bool CTxMemPool::accept(CTxDB& txdb, CTransaction &tx, bool fCheckInputs,
     if (ptxOld)
         EraseFromWallets(ptxOld->GetHash());
 
-    printf("CTxMemPool::accept() : accepted %s (poolsz %u)\n",
+    Debug("CTxMemPool::accept() : accepted %s (poolsz %u)\n",
            hash.ToString().substr(0,10).c_str(),
            mapTx.size());
     return true;
@@ -957,7 +956,7 @@ unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBl
 	 
 	 if (nHeight > 27000)
         {   //Fixed
-            printf("  nActualTimespan = %"PRI64d"  before bounds\n", nActualTimespan);
+            //printf("  nActualTimespan = %"PRI64d"  before bounds\n", nActualTimespan);
 			if (nActualTimespan < nActualTimespanMax)
 				nActualTimespan = nActualTimespanMax;
 			if (nActualTimespan > nActualTimespanMin)
@@ -992,11 +991,13 @@ unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBl
     if (bnNew > bnProofOfWorkLimit)
         bnNew = bnProofOfWorkLimit;
 
+#if 0
     /// debug print
     printf("GetNextWorkRequired RETARGET\n");
     printf("nTargetTimespan = %"PRI64d"    nActualTimespan = %"PRI64d"\n", nTargetTimespan, nActualTimespan);
     printf("Before: %08x  %s\n", pindexLast->nBits, CBigNum().SetCompact(pindexLast->nBits).getuint256().ToString().c_str());
     printf("After:  %08x  %s\n", bnNew.GetCompact(), bnNew.getuint256().ToString().c_str());
+#endif
 
     return bnNew.GetCompact();
 }
@@ -1023,23 +1024,22 @@ int GetNumBlocksOfPeers()
     return std::max(cPeerBlockCounts.median(), Checkpoints::GetTotalBlocksEstimate());
 }
 
+/* if block is over one day old than consider it history. */
 bool IsInitialBlockDownload()
 {
-    if (pindexBest == NULL || nBestHeight < Checkpoints::GetTotalBlocksEstimate())
-        return true;
-#if 0
-    static int64 nLastUpdate;
-    static CBlockIndex* pindexLastBest;
-    if (pindexBest != pindexLastBest)
-    {
-        pindexLastBest = pindexBest;
-        nLastUpdate = GetTime();
-    }
-    return (GetTime() - nLastUpdate < 10 &&
-            pindexBest->GetBlockTime() < GetTime() - 24 * 60 * 60);
-#endif
-    /* if block is over one day old than consider it history. */
-    return (pindexBest->GetBlockTime() < (GetTime() - 24 * 60 * 60));
+
+  if (pindexBest == NULL || nBestHeight < Checkpoints::GetTotalBlocksEstimate())
+    return true;
+
+  static int64 nLastUpdate;
+  static CBlockIndex* pindexLastBest;
+  if (pindexBest != pindexLastBest)
+  {
+    pindexLastBest = pindexBest;
+    nLastUpdate = GetTime();
+  }
+  return (GetTime() - nLastUpdate < 15 &&
+      pindexBest->GetBlockTime() < GetTime() - 24 * 60 * 60);
 }
 
 void static InvalidChainFound(CBlockIndex* pindexNew)
@@ -1049,15 +1049,17 @@ void static InvalidChainFound(CBlockIndex* pindexNew)
         bnBestInvalidWork = pindexNew->bnChainWork;
         CTxDB().WriteBestInvalidWork(bnBestInvalidWork);
     }
-    printf("InvalidChainFound: invalid block=%s  height=%d  work=%s  date=%s\n",
+    error(SHERR_INVAL, "InvalidChainFound: invalid block=%s  height=%d  work=%s  date=%s\n",
       pindexNew->GetBlockHash().ToString().substr(0,20).c_str(), pindexNew->nHeight,
       pindexNew->bnChainWork.ToString().c_str(), DateTimeStrFormat("%x %H:%M:%S",
       pindexNew->GetBlockTime()).c_str());
-    printf("InvalidChainFound:  current best=%s  height=%d  work=%s  date=%s\n",
+    error(SHERR_INVAL, "InvalidChainFound:  current best=%s  height=%d  work=%s  date=%s\n",
       hashBestChain.ToString().substr(0,20).c_str(), nBestHeight, bnBestChainWork.ToString().c_str(),
       DateTimeStrFormat("%x %H:%M:%S", pindexBest->GetBlockTime()).c_str());
-    if (pindexBest && bnBestInvalidWork > bnBestChainWork + pindexBest->GetBlockWork() * 6)
-        printf("InvalidChainFound: WARNING: Displayed transactions may not be correct!  You may need to upgrade, or other nodes may need to upgrade.\n");
+    if (pindexBest && bnBestInvalidWork > bnBestChainWork + pindexBest->GetBlockWork() * 6) {
+/* DEBUG: todo: trace down possible origins */
+      error(SHERR_INVAL, "InvalidChainFound: WARNING: Displayed transactions may not be correct!  You may need to upgrade, or other nodes may need to upgrade.\n");
+    }
 }
 
 void CBlock::UpdateTime(const CBlockIndex* pindexPrev)
@@ -1193,12 +1195,16 @@ bool CTransaction::FetchInputs(CTxDB& txdb, const map<uint256, CTxIndex>& mapTes
 const CTxOut& CTransaction::GetOutputFor(const CTxIn& input, const MapPrevTx& inputs) const
 {
     MapPrevTx::const_iterator mi = inputs.find(input.prevout.hash);
-    if (mi == inputs.end())
-        throw std::runtime_error("CTransaction::GetOutputFor() : prevout.hash not found");
+    if (mi == inputs.end()) {
+/* DEBUG: todo: check how critical this is */
+      throw std::runtime_error("CTransaction::GetOutputFor() : prevout.hash not found");
+    }
 
     const CTransaction& txPrev = (mi->second).second;
-    if (input.prevout.n >= txPrev.vout.size())
-        throw std::runtime_error("CTransaction::GetOutputFor() : prevout.n out of range");
+    if (input.prevout.n >= txPrev.vout.size()) {
+/* DEBUG: todo: check how critical this is */
+      throw std::runtime_error("CTransaction::GetOutputFor() : prevout.n out of range");
+    }
 
     return txPrev.vout[input.prevout.n];
 }
@@ -1497,7 +1503,7 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)
 
 bool static Reorganize(CTxDB& txdb, CBlockIndex* pindexNew)
 {
-    printf("REORGANIZE\n");
+    //printf("REORGANIZE\n");
 
     // Find the fork
     CBlockIndex* pfork = pindexBest;
@@ -1524,8 +1530,8 @@ bool static Reorganize(CTxDB& txdb, CBlockIndex* pindexNew)
         vConnect.push_back(pindex);
     reverse(vConnect.begin(), vConnect.end());
 
-    printf("REORGANIZE: Disconnect %i blocks; %s..%s\n", vDisconnect.size(), pfork->GetBlockHash().ToString().substr(0,20).c_str(), pindexBest->GetBlockHash().ToString().substr(0,20).c_str());
-    printf("REORGANIZE: Connect %i blocks; %s..%s\n", vConnect.size(), pfork->GetBlockHash().ToString().substr(0,20).c_str(), pindexNew->GetBlockHash().ToString().substr(0,20).c_str());
+    Debug("REORGANIZE: Disconnect %i blocks; %s..%s\n", vDisconnect.size(), pfork->GetBlockHash().ToString().substr(0,20).c_str(), pindexBest->GetBlockHash().ToString().substr(0,20).c_str());
+    Debug("REORGANIZE: Connect %i blocks; %s..%s\n", vConnect.size(), pfork->GetBlockHash().ToString().substr(0,20).c_str(), pindexNew->GetBlockHash().ToString().substr(0,20).c_str());
 
     // Disconnect shorter branch
     vector<CTransaction> vResurrect;
@@ -1586,7 +1592,7 @@ bool static Reorganize(CTxDB& txdb, CBlockIndex* pindexNew)
     BOOST_FOREACH(CTransaction& tx, vDelete)
         mempool.remove(tx);
 
-    printf("REORGANIZE: done\n");
+    //printf("REORGANIZE: done\n");
 
     return true;
 }
@@ -1653,7 +1659,7 @@ bool CBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
         }
 
         if (!vpindexSecondary.empty())
-            printf("Postponing %i reconnects\n", vpindexSecondary.size());
+            Debug("Postponing %i reconnects\n", vpindexSecondary.size());
 
         // Switch to new best branch
         if (!Reorganize(txdb, pindexIntermediate))
@@ -1669,11 +1675,11 @@ bool CBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
             CBlock block;
             if (!block.ReadFromDisk(pindex))
             {
-                printf("SetBestChain() : ReadFromDisk failed\n");
+                error(SHERR_IO, "SetBestChain() : ReadFromDisk failed\n");
                 break;
             }
             if (!txdb.TxnBegin()) {
-                printf("SetBestChain() : TxnBegin 2 failed\n");
+                error(SHERR_INVAL, "SetBestChain() : TxnBegin 2 failed\n");
                 break;
             }
             // errors now are not fatal, we still did a reorganisation to a new chain in a valid way
@@ -1697,9 +1703,8 @@ bool CBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
     bnBestChainWork = pindexNew->bnChainWork;
     nTimeBestReceived = GetTime();
     nTransactionsUpdated++;
-    printf("SetBestChain: new best=%s  height=%d  work=%s  date=%s\n",
-      hashBestChain.ToString().substr(0,20).c_str(), nBestHeight, bnBestChainWork.ToString().c_str(),
-      DateTimeStrFormat("%x %H:%M:%S", pindexBest->GetBlockTime()).c_str());
+
+    Debug("SetBestChain: new best=%s  height=%d  work=%s  date=%s\n", hashBestChain.ToString().substr(0,20).c_str(), nBestHeight, bnBestChainWork.ToString().c_str(), DateTimeStrFormat("%x %H:%M:%S", pindexBest->GetBlockTime()).c_str());
 
     // Check the version of the last 100 blocks to see if we need to upgrade:
     if (!fIsInitialDownload)
@@ -1713,7 +1718,7 @@ bool CBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
             pindex = pindex->pprev;
         }
         if (nUpgraded > 0)
-            printf("SetBestChain: %d of last 100 blocks above version %d\n", nUpgraded, CBlock::CURRENT_VERSION);
+          Debug("SetBestChain: %d of last 100 blocks above version %d\n", nUpgraded, CBlock::CURRENT_VERSION);
 	//        if (nUpgraded > 100/2)
             // strMiscWarning is read by GetWarnings(), called by Qt and the JSON-RPC code to warn the user:
 	//            strMiscWarning = _("Warning: this version is obsolete, upgrade required");
@@ -1791,37 +1796,31 @@ bool CBlock::CheckBlock() const
 
     // Size limits
     if (vtx.empty() || vtx.size() > MAX_BLOCK_SIZE || ::GetSerializeSize(*this, SER_NETWORK, PROTOCOL_VERSION) > MAX_BLOCK_SIZE) {
-        fprintf(stderr, "DEBUG: CheckBlock() : size limits failed\n");
         return DoS(100, error(SHERR_INVAL, "CheckBlock() : size limits failed"));
   }
 
     // Check proof of work matches claimed amount
     if (!CheckProofOfWork(GetPoWHash(), nBits)) {
-        fprintf(stderr, "DEBUG: CheckBlock() : proof of work failed\n");
         return DoS(50, error(SHERR_INVAL, "CheckBlock() : proof of work failed"));
 }
 
     // Check timestamp
     if (GetBlockTime() > GetAdjustedTime() + 2 * 60 * 60) {
-        fprintf(stderr, "DEBUG: CheckBlock() : block timestamp too far in the future\n");
         return error(SHERR_INVAL, "CheckBlock() : block timestamp too far in the future");
 }
 
     // First transaction must be coinbase, the rest must not be
     if (vtx.empty() || !vtx[0].IsCoinBase()) {
-        fprintf(stderr, "DEBUG: CheckBlock() : first tx is not coinbase\n");
         return DoS(100, error(SHERR_INVAL, "CheckBlock() : first tx is not coinbase"));
     }
     for (unsigned int i = 1; i < vtx.size(); i++)
         if (vtx[i].IsCoinBase()) {
-          fprintf(stderr, "DEBUG: CheckBlock() : more than one coinbase");
           return DoS(100, error(SHERR_INVAL, "CheckBlock() : more than one coinbase"));
         }
 
     // Check transactions
     BOOST_FOREACH(const CTransaction& tx, vtx)
         if (!tx.CheckTransaction()) {
-            fprintf(stderr, "DEBUG: CheckBlock() : CheckTransaction failed\n");
             return DoS(tx.nDoS, error(SHERR_INVAL, "CheckBlock() : CheckTransaction failed"));
         }
 
@@ -1833,7 +1832,6 @@ bool CBlock::CheckBlock() const
         uniqueTx.insert(tx.GetHash());
     }
     if (uniqueTx.size() != vtx.size()) {
-        fprintf(stderr, "DEBUG: CheckBlock() : duplicate transactioni\n");
         return DoS(100, error(SHERR_INVAL, "CheckBlock() : duplicate transaction"));
     }
 
@@ -1843,13 +1841,11 @@ bool CBlock::CheckBlock() const
         nSigOps += tx.GetLegacySigOpCount();
     }
     if (nSigOps > MAX_BLOCK_SIGOPS) {
-        fprintf(stderr, "DEBUG: CheckBlock() : out-of-bounds SigOpCount\n");
         return DoS(100, error(SHERR_INVAL, "CheckBlock() : out-of-bounds SigOpCount"));
     }
 
     // Check merkleroot
     if (hashMerkleRoot != BuildMerkleTree()) {
-        fprintf(stderr, "DEBUG: CheckBlock() : hashMerkleRoot mismatch\n");
         return DoS(100, error(SHERR_INVAL, "CheckBlock() : hashMerkleRoot mismatch"));
 }
 
@@ -1862,7 +1858,6 @@ shtime_t ts;
   // Check for duplicate
   uint256 hash = GetHash();
   if (mapBlockIndex.count(hash)) {
-    fprintf(stderr, "DEBUG: AcceptBlock() : block already in mapBlockIndex\n");
     return error(SHERR_INVAL, "AcceptBlock() : block already in mapBlockIndex");
   }
 
@@ -1875,27 +1870,23 @@ shtime_t ts;
 
   // Check proof of work
   if (nBits != GetNextWorkRequired(pindexPrev, this)) {
-    fprintf(stderr, "DEBUG: AcceptBlock() : incorrect proof of work\n");
     return DoS(100, error(SHERR_INVAL, "AcceptBlock() : incorrect proof of work"));
   }
 
   // Check timestamp against prev
   if (GetBlockTime() <= pindexPrev->GetMedianTimePast()) {
-    fprintf(stderr, "DEBUG: AcceptBlock() : block's timestamp is too early\n");
     return error(SHERR_INVAL, "AcceptBlock() : block's timestamp is too early");
   }
 
   // Check that all transactions are finalized
   BOOST_FOREACH(const CTransaction& tx, vtx)
     if (!tx.IsFinal(nHeight, GetBlockTime())) {
-      fprintf(stderr, "DEBUG: AcceptBlock() : contains a non-final transaction\n");
       return DoS(10, error(SHERR_INVAL, "AcceptBlock() : contains a non-final transaction"));
     }
 
   // Check that the block chain matches the known block chain up to a checkpoint
   timing_init("Checkpoints::CheckBlock", &ts);
   if (!Checkpoints::CheckBlock(nHeight, hash)) {
-    fprintf(stderr, "DEBUG: AcceptBlock() : rejected by checkpoint lockin at %d\n", nHeight);
     return DoS(100, error(SHERR_INVAL, "AcceptBlock() : rejected by checkpoint lockin at %d", nHeight));
   }
   timing_term("Checkpoints::CheckBlock", &ts);
@@ -1916,21 +1907,18 @@ free(sBlockData);
 
   // Write block to history file
   if (!CheckDiskSpace(::GetSerializeSize(*this, SER_DISK, CLIENT_VERSION))) {
-    fprintf(stderr, "DEBUG: AcceptBlock() : out of disk space\n");
     return error(SHERR_IO, "AcceptBlock() : out of disk space");
   }
   unsigned int nFile = -1;
   unsigned int nBlockPos = 0;
   timing_init("Block::WriteToDisk", &ts);
   if (!WriteToDisk(nFile, nBlockPos)) {
-    fprintf(stderr, "AcceptBlock() : WriteToDisk failed\n");
     return error(SHERR_IO, "AcceptBlock() : WriteToDisk failed");
   }
   timing_term("Block::WriteToDisk", &ts);
 
   timing_init("AddToBlockIndex", &ts);
   if (!AddToBlockIndex(nFile, nBlockPos)) {
-    fprintf(stderr, "AcceptBlock() : AddToBlockIndex failed\n");
     return error(SHERR_IO, "AcceptBlock() : AddToBlockIndex failed");
   }
   timing_term("AddToBlockIndex", &ts);
@@ -1952,86 +1940,84 @@ free(sBlockData);
 
 bool ProcessBlock(CNode* pfrom, CBlock* pblock)
 {
-shtime_t ts;
-    // Check for duplicate
-    uint256 hash = pblock->GetHash();
-    if (mapBlockIndex.count(hash))
-        return Debug("ProcessBlock() : already have block %d %s", mapBlockIndex[hash]->nHeight, hash.ToString().substr(0,20).c_str());
-    if (mapOrphanBlocks.count(hash))
-        return Debug("ProcessBlock() : already have block (orphan) %s", hash.ToString().substr(0,20).c_str());
+  shtime_t ts;
+  // Check for duplicate
+  uint256 hash = pblock->GetHash();
+  if (mapBlockIndex.count(hash))
+    return Debug("ProcessBlock() : already have block %d %s", mapBlockIndex[hash]->nHeight, hash.ToString().substr(0,20).c_str());
+  if (mapOrphanBlocks.count(hash))
+    return Debug("ProcessBlock() : already have block (orphan) %s", hash.ToString().substr(0,20).c_str());
 
-    // Preliminary checks
-    if (!pblock->CheckBlock()) {
-fprintf(stderr, "DEBUG: CheckBlock Fail.\n");
-        return error(SHERR_INVAL, "ProcessBlock() : CheckBlock FAILED");
-    }
+  // Preliminary checks
+  if (!pblock->CheckBlock()) {
+    return error(SHERR_INVAL, "ProcessBlock() : CheckBlock FAILED");
+  }
 
-    CBlockIndex* pcheckpoint = Checkpoints::GetLastCheckpoint(mapBlockIndex);
-    if (pcheckpoint && pblock->hashPrevBlock != hashBestChain)
+  CBlockIndex* pcheckpoint = Checkpoints::GetLastCheckpoint(mapBlockIndex);
+  if (pcheckpoint && pblock->hashPrevBlock != hashBestChain)
+  {
+    // Extra checks to prevent "fill up memory by spamming with bogus blocks"
+    int64 deltaTime = pblock->GetBlockTime() - pcheckpoint->nTime;
+    if (deltaTime < 0)
     {
-        // Extra checks to prevent "fill up memory by spamming with bogus blocks"
-        int64 deltaTime = pblock->GetBlockTime() - pcheckpoint->nTime;
-        if (deltaTime < 0)
-        {
-            if (pfrom)
-                pfrom->Misbehaving(100);
-            return error(SHERR_INVAL, "ProcessBlock() : block with timestamp before last checkpoint");
-        }
-        CBigNum bnNewBlock;
-        bnNewBlock.SetCompact(pblock->nBits);
-        CBigNum bnRequired;
-        bnRequired.SetCompact(ComputeMinWork(pcheckpoint->nBits, deltaTime));
-        if (bnNewBlock > bnRequired)
-        {
-            if (pfrom)
-                pfrom->Misbehaving(100);
-            return error(SHERR_INVAL, "ProcessBlock() : block with too little proof-of-work");
-        }
+      if (pfrom)
+        pfrom->Misbehaving(100);
+      return error(SHERR_INVAL, "ProcessBlock() : block with timestamp before last checkpoint");
     }
-
-
-    // If don't already have its previous block, shunt it off to holding area until we get it
-    if (!mapBlockIndex.count(pblock->hashPrevBlock))
+    CBigNum bnNewBlock;
+    bnNewBlock.SetCompact(pblock->nBits);
+    CBigNum bnRequired;
+    bnRequired.SetCompact(ComputeMinWork(pcheckpoint->nBits, deltaTime));
+    if (bnNewBlock > bnRequired)
     {
-        printf("ProcessBlock: ORPHAN BLOCK, prev=%s\n", pblock->hashPrevBlock.ToString().substr(0,20).c_str());
-        CBlock* pblock2 = new CBlock(*pblock);
-        mapOrphanBlocks.insert(make_pair(hash, pblock2));
-        mapOrphanBlocksByPrev.insert(make_pair(pblock2->hashPrevBlock, pblock2));
-
-        // Ask this guy to fill in what we're missing
-        if (pfrom)
-            pfrom->PushGetBlocks(pindexBest, GetOrphanRoot(pblock2));
-        return true;
+      if (pfrom)
+        pfrom->Misbehaving(100);
+      return error(SHERR_INVAL, "ProcessBlock() : block with too little proof-of-work");
     }
+  }
 
-    // Store to disk
 
-    timing_init("AcceptBlock", &ts);
-    if (!pblock->AcceptBlock())
-        return error(SHERR_INVAL, "ProcessBlock() : AcceptBlock FAILED");
-    timing_term("AcceptBlock", &ts);
+  // If don't already have its previous block, shunt it off to holding area until we get it
+  if (!mapBlockIndex.count(pblock->hashPrevBlock))
+  {
+    Debug("ProcessBlock: ORPHAN BLOCK, prev=%s\n", pblock->hashPrevBlock.ToString().substr(0,20).c_str());
+    CBlock* pblock2 = new CBlock(*pblock);
+    mapOrphanBlocks.insert(make_pair(hash, pblock2));
+    mapOrphanBlocksByPrev.insert(make_pair(pblock2->hashPrevBlock, pblock2));
 
-    // Recursively process any orphan blocks that depended on this one
-    vector<uint256> vWorkQueue;
-    vWorkQueue.push_back(hash);
-    for (unsigned int i = 0; i < vWorkQueue.size(); i++)
-    {
-        uint256 hashPrev = vWorkQueue[i];
-        for (multimap<uint256, CBlock*>::iterator mi = mapOrphanBlocksByPrev.lower_bound(hashPrev);
-             mi != mapOrphanBlocksByPrev.upper_bound(hashPrev);
-             ++mi)
-        {
-            CBlock* pblockOrphan = (*mi).second;
-            if (pblockOrphan->AcceptBlock())
-                vWorkQueue.push_back(pblockOrphan->GetHash());
-            mapOrphanBlocks.erase(pblockOrphan->GetHash());
-            delete pblockOrphan;
-        }
-        mapOrphanBlocksByPrev.erase(hashPrev);
-    }
-
-//    printf("ProcessBlock: ACCEPTED\n");
+    // Ask this guy to fill in what we're missing
+    if (pfrom)
+      pfrom->PushGetBlocks(pindexBest, GetOrphanRoot(pblock2));
     return true;
+  }
+
+  // Store to disk
+
+  timing_init("AcceptBlock", &ts);
+  if (!pblock->AcceptBlock())
+    return error(SHERR_INVAL, "ProcessBlock() : AcceptBlock FAILED");
+  timing_term("AcceptBlock", &ts);
+
+  // Recursively process any orphan blocks that depended on this one
+  vector<uint256> vWorkQueue;
+  vWorkQueue.push_back(hash);
+  for (unsigned int i = 0; i < vWorkQueue.size(); i++)
+  {
+    uint256 hashPrev = vWorkQueue[i];
+    for (multimap<uint256, CBlock*>::iterator mi = mapOrphanBlocksByPrev.lower_bound(hashPrev);
+        mi != mapOrphanBlocksByPrev.upper_bound(hashPrev);
+        ++mi)
+    {
+      CBlock* pblockOrphan = (*mi).second;
+      if (pblockOrphan->AcceptBlock())
+        vWorkQueue.push_back(pblockOrphan->GetHash());
+      mapOrphanBlocks.erase(pblockOrphan->GetHash());
+      delete pblockOrphan;
+    }
+    mapOrphanBlocksByPrev.erase(hashPrev);
+  }
+
+  return true;
 }
 
 
@@ -2370,6 +2356,7 @@ string GetWarnings(string strFor)
     // Longer invalid proof-of-work chain
     if (pindexBest && bnBestInvalidWork > bnBestChainWork + pindexBest->GetBlockWork() * 6)
     {
+/* !! */
         nPriority = 2000;
         strStatusBar = strRPC = "WARNING: Displayed transactions may not be correct!  You may need to upgrade, or other nodes may need to upgrade.";
     }
