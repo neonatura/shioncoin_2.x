@@ -1024,6 +1024,7 @@ bool IsInitialBlockDownload()
 {
     if (pindexBest == NULL || nBestHeight < Checkpoints::GetTotalBlocksEstimate())
         return true;
+#if 0
     static int64 nLastUpdate;
     static CBlockIndex* pindexLastBest;
     if (pindexBest != pindexLastBest)
@@ -1033,6 +1034,9 @@ bool IsInitialBlockDownload()
     }
     return (GetTime() - nLastUpdate < 10 &&
             pindexBest->GetBlockTime() < GetTime() - 24 * 60 * 60);
+#endif
+    /* if block is over one day old than consider it history. */
+    return (pindexBest->GetBlockTime() < (GetTime() - 24 * 60 * 60));
 }
 
 void static InvalidChainFound(CBlockIndex* pindexNew)
@@ -1726,6 +1730,7 @@ bool CBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
 
 bool CBlock::AddToBlockIndex(unsigned int nFile, unsigned int nBlockPos)
 {
+shtime_t ts;
     // Check for duplicate
     uint256 hash = GetHash();
     if (mapBlockIndex.count(hash))
@@ -1753,9 +1758,12 @@ bool CBlock::AddToBlockIndex(unsigned int nFile, unsigned int nBlockPos)
         return false;
 
     // New best
-    if (pindexNew->bnChainWork > bnBestChainWork)
+    if (pindexNew->bnChainWork > bnBestChainWork) {
+      timing_init("SetBestChain", &ts);
         if (!SetBestChain(txdb, pindexNew))
             return false;
+      timing_term("SetBestChain", &ts);
+    }
 
     txdb.Close();
 
@@ -1847,6 +1855,7 @@ bool CBlock::CheckBlock() const
 
 bool CBlock::AcceptBlock()
 {
+shtime_t ts;
   // Check for duplicate
   uint256 hash = GetHash();
   if (mapBlockIndex.count(hash)) {
@@ -1881,10 +1890,26 @@ bool CBlock::AcceptBlock()
     }
 
   // Check that the block chain matches the known block chain up to a checkpoint
+  timing_init("Checkpoints::CheckBlock", &ts);
   if (!Checkpoints::CheckBlock(nHeight, hash)) {
     fprintf(stderr, "DEBUG: AcceptBlock() : rejected by checkpoint lockin at %d\n", nHeight);
     return DoS(100, error(SHERR_INVAL, "AcceptBlock() : rejected by checkpoint lockin at %d", nHeight));
   }
+  timing_term("Checkpoints::CheckBlock", &ts);
+
+#if 0
+{
+CDataStream sBlock(SER_DISK, CLIENT_VERSION);
+long sBlockLen = sBlock.size();
+char *sBlockData = (char *)calloc(1, sBlockLen);
+sBlock.read(sBlockData, sBlockLen);
+fprintf(stderr, "DEBUG: MAP-BLOCK: {%x} <%d bytes>\n", sBlockData, sBlockLen);
+//umap_write(UMAP_BLOCK, sBlockData, sBlockLen);
+free(sBlockData);
+}
+#endif
+
+
 
   // Write block to history file
   if (!CheckDiskSpace(::GetSerializeSize(*this, SER_DISK, CLIENT_VERSION))) {
@@ -1893,14 +1918,19 @@ bool CBlock::AcceptBlock()
   }
   unsigned int nFile = -1;
   unsigned int nBlockPos = 0;
+  timing_init("Block::WriteToDisk", &ts);
   if (!WriteToDisk(nFile, nBlockPos)) {
     fprintf(stderr, "AcceptBlock() : WriteToDisk failed\n");
     return error(SHERR_IO, "AcceptBlock() : WriteToDisk failed");
   }
+  timing_term("Block::WriteToDisk", &ts);
+
+  timing_init("AddToBlockIndex", &ts);
   if (!AddToBlockIndex(nFile, nBlockPos)) {
     fprintf(stderr, "AcceptBlock() : AddToBlockIndex failed\n");
     return error(SHERR_IO, "AcceptBlock() : AddToBlockIndex failed");
   }
+  timing_term("AddToBlockIndex", &ts);
 
 //  WriteToShareNet(this, nHeight);
 
@@ -1919,12 +1949,13 @@ bool CBlock::AcceptBlock()
 
 bool ProcessBlock(CNode* pfrom, CBlock* pblock)
 {
+shtime_t ts;
     // Check for duplicate
     uint256 hash = pblock->GetHash();
     if (mapBlockIndex.count(hash))
-        return error(SHERR_INVAL, "ProcessBlock() : already have block %d %s", mapBlockIndex[hash]->nHeight, hash.ToString().substr(0,20).c_str());
+        return Debug("ProcessBlock() : already have block %d %s", mapBlockIndex[hash]->nHeight, hash.ToString().substr(0,20).c_str());
     if (mapOrphanBlocks.count(hash))
-        return error(SHERR_INVAL, "ProcessBlock() : already have block (orphan) %s", hash.ToString().substr(0,20).c_str());
+        return Debug("ProcessBlock() : already have block (orphan) %s", hash.ToString().substr(0,20).c_str());
 
     // Preliminary checks
     if (!pblock->CheckBlock()) {
@@ -1971,8 +2002,11 @@ fprintf(stderr, "DEBUG: CheckBlock Fail.\n");
     }
 
     // Store to disk
+
+    timing_init("AcceptBlock", &ts);
     if (!pblock->AcceptBlock())
         return error(SHERR_INVAL, "ProcessBlock() : AcceptBlock FAILED");
+    timing_term("AcceptBlock", &ts);
 
     // Recursively process any orphan blocks that depended on this one
     vector<uint256> vWorkQueue;
@@ -1993,7 +2027,7 @@ fprintf(stderr, "DEBUG: CheckBlock Fail.\n");
         mapOrphanBlocksByPrev.erase(hashPrev);
     }
 
-    printf("ProcessBlock: ACCEPTED\n");
+//    printf("ProcessBlock: ACCEPTED\n");
     return true;
 }
 
@@ -3085,121 +3119,131 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
 
 bool ProcessMessages(CNode* pfrom)
 {
-    CDataStream& vRecv = pfrom->vRecv;
-    if (vRecv.empty())
-        return true;
+  CDataStream& vRecv = pfrom->vRecv;
+  if (vRecv.empty())
+    return true;
 
-    //
-    // Message format
-    //  (4) message start
-    //  (12) command
-    //  (4) size
-    //  (4) checksum
-    //  (x) data
-    //
+  //
+  // Message format
+  //  (4) message start
+  //  (12) command
+  //  (4) size
+  //  (4) checksum
+  //  (x) data
+  //
 
-    loop
+  start_t = shtime();
+  loop
+  {
+    // Don't bother if send buffer is too full to respond anyway
+    if (pfrom->vSend.size() >= SendBufferSize())
+      break;
+
+
+    // Scan for message start
+    CDataStream::iterator pstart = search(vRecv.begin(), vRecv.end(), BEGIN(pchMessageStart), END(pchMessageStart));
+    int nHeaderSize = vRecv.GetSerializeSize(CMessageHeader());
+    if (vRecv.end() - pstart < nHeaderSize)
     {
-        // Don't bother if send buffer is too full to respond anyway
-        if (pfrom->vSend.size() >= SendBufferSize())
-            break;
+      if ((int)vRecv.size() > nHeaderSize)
+      {
+        printf("\n\nPROCESSMESSAGE MESSAGESTART NOT FOUND\n\n");
+        vRecv.erase(vRecv.begin(), vRecv.end() - nHeaderSize);
+      }
+      break;
+    }
+    if (pstart - vRecv.begin() > 0)
+      printf("\n\nPROCESSMESSAGE SKIPPED %d BYTES\n\n", pstart - vRecv.begin());
+    vRecv.erase(vRecv.begin(), pstart);
 
-        // Scan for message start
-        CDataStream::iterator pstart = search(vRecv.begin(), vRecv.end(), BEGIN(pchMessageStart), END(pchMessageStart));
-        int nHeaderSize = vRecv.GetSerializeSize(CMessageHeader());
-        if (vRecv.end() - pstart < nHeaderSize)
-        {
-            if ((int)vRecv.size() > nHeaderSize)
-            {
-                printf("\n\nPROCESSMESSAGE MESSAGESTART NOT FOUND\n\n");
-                vRecv.erase(vRecv.begin(), vRecv.end() - nHeaderSize);
-            }
-            break;
-        }
-        if (pstart - vRecv.begin() > 0)
-            printf("\n\nPROCESSMESSAGE SKIPPED %d BYTES\n\n", pstart - vRecv.begin());
-        vRecv.erase(vRecv.begin(), pstart);
+    // Read header
+    vector<char> vHeaderSave(vRecv.begin(), vRecv.begin() + nHeaderSize);
+    CMessageHeader hdr;
+    vRecv >> hdr;
+    if (!hdr.IsValid())
+    {
+      printf("\n\nPROCESSMESSAGE: ERRORS IN HEADER %s\n\n\n", hdr.GetCommand().c_str());
+      continue;
+    }
+    string strCommand = hdr.GetCommand();
 
-        // Read header
-        vector<char> vHeaderSave(vRecv.begin(), vRecv.begin() + nHeaderSize);
-        CMessageHeader hdr;
-        vRecv >> hdr;
-        if (!hdr.IsValid())
-        {
-            printf("\n\nPROCESSMESSAGE: ERRORS IN HEADER %s\n\n\n", hdr.GetCommand().c_str());
-            continue;
-        }
-        string strCommand = hdr.GetCommand();
-
-        // Message size
-        unsigned int nMessageSize = hdr.nMessageSize;
-        if (nMessageSize > MAX_SIZE)
-        {
-            printf("ProcessMessages(%s, %u bytes) : nMessageSize > MAX_SIZE\n", strCommand.c_str(), nMessageSize);
-            continue;
-        }
-        if (nMessageSize > vRecv.size())
-        {
-            // Rewind and wait for rest of message
-            vRecv.insert(vRecv.begin(), vHeaderSave.begin(), vHeaderSave.end());
-            break;
-        }
-
-        // Checksum
-        uint256 hash = Hash(vRecv.begin(), vRecv.begin() + nMessageSize);
-        unsigned int nChecksum = 0;
-        memcpy(&nChecksum, &hash, sizeof(nChecksum));
-        if (nChecksum != hdr.nChecksum)
-        {
-            printf("ProcessMessages(%s, %u bytes) : CHECKSUM ERROR nChecksum=%08x hdr.nChecksum=%08x\n",
-               strCommand.c_str(), nMessageSize, nChecksum, hdr.nChecksum);
-            continue;
-        }
-
-        // Copy message to its own buffer
-        CDataStream vMsg(vRecv.begin(), vRecv.begin() + nMessageSize, vRecv.nType, vRecv.nVersion);
-        vRecv.ignore(nMessageSize);
-
-        // Process message
-        bool fRet = false;
-        try
-        {
-            {
-                LOCK(cs_main);
-                fRet = ProcessMessage(pfrom, strCommand, vMsg);
-            }
-            if (fShutdown)
-                return true;
-        }
-        catch (std::ios_base::failure& e)
-        {
-            if (strstr(e.what(), "end of data"))
-            {
-                // Allow exceptions from underlength message on vRecv
-                printf("ProcessMessages(%s, %u bytes) : Exception '%s' caught, normally caused by a message being shorter than its stated length\n", strCommand.c_str(), nMessageSize, e.what());
-            }
-            else if (strstr(e.what(), "size too large"))
-            {
-                // Allow exceptions from overlong size
-                printf("ProcessMessages(%s, %u bytes) : Exception '%s' caught\n", strCommand.c_str(), nMessageSize, e.what());
-            }
-            else
-            {
-                PrintExceptionContinue(&e, "ProcessMessages()");
-            }
-        }
-        catch (std::exception& e) {
-            PrintExceptionContinue(&e, "ProcessMessages()");
-        } catch (...) {
-            PrintExceptionContinue(NULL, "ProcessMessages()");
-        }
-
-        if (!fRet)
-            printf("ProcessMessage(%s, %u bytes) FAILED\n", strCommand.c_str(), nMessageSize);
+    // Message size
+    unsigned int nMessageSize = hdr.nMessageSize;
+    if (nMessageSize > MAX_SIZE)
+    {
+      printf("ProcessMessages(%s, %u bytes) : nMessageSize > MAX_SIZE\n", strCommand.c_str(), nMessageSize);
+      continue;
+    }
+    if (nMessageSize > vRecv.size())
+    {
+      // Rewind and wait for rest of message
+      vRecv.insert(vRecv.begin(), vHeaderSave.begin(), vHeaderSave.end());
+      break;
     }
 
+    // Checksum
+    uint256 hash = Hash(vRecv.begin(), vRecv.begin() + nMessageSize);
+    unsigned int nChecksum = 0;
+    memcpy(&nChecksum, &hash, sizeof(nChecksum));
+    if (nChecksum != hdr.nChecksum)
+    {
+      printf("ProcessMessages(%s, %u bytes) : CHECKSUM ERROR nChecksum=%08x hdr.nChecksum=%08x\n",
+          strCommand.c_str(), nMessageSize, nChecksum, hdr.nChecksum);
+      continue;
+    }
+
+    // Copy message to its own buffer
+    CDataStream vMsg(vRecv.begin(), vRecv.begin() + nMessageSize, vRecv.nType, vRecv.nVersion);
+    vRecv.ignore(nMessageSize);
+
+    // Process message
+    bool fRet = false;
+    try
+    {
+      {
+        LOCK(cs_main);
+        fRet = ProcessMessage(pfrom, strCommand, vMsg);
+      }
+      if (fShutdown)
+        return true;
+    }
+    catch (std::ios_base::failure& e)
+    {
+      if (strstr(e.what(), "end of data"))
+      {
+        // Allow exceptions from underlength message on vRecv
+        printf("ProcessMessages(%s, %u bytes) : Exception '%s' caught, normally caused by a message being shorter than its stated length\n", strCommand.c_str(), nMessageSize, e.what());
+      }
+      else if (strstr(e.what(), "size too large"))
+      {
+        // Allow exceptions from overlong size
+        printf("ProcessMessages(%s, %u bytes) : Exception '%s' caught\n", strCommand.c_str(), nMessageSize, e.what());
+      }
+      else
+      {
+        PrintExceptionContinue(&e, "ProcessMessages()");
+      }
+    }
+    catch (std::exception& e) {
+      PrintExceptionContinue(&e, "ProcessMessages()");
+    } catch (...) {
+      PrintExceptionContinue(NULL, "ProcessMessages()");
+    }
+
+    if (!fRet)
+      error(SHERR_INVAL, "ProcessMessage: '%s' error <%u bytes>.",
+          strCommand.c_str(), nMessageSize);
+
+    if (shtime_after(shtime(), shtime_adj(start_t, 0.1))) {
+      /* load blance */
+      break;
+    }
+  }
+
+  if (vRecv.empty())
     vRecv.Compact();
-    return true;
+
+  return true;
 }
 
 

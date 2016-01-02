@@ -229,6 +229,7 @@ extern vector <CAddress> GetAddresses(void);
 bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
 {
     static map<CService, CPubKey> mapReuseKey;
+shtime_t ts;
     RandAddSeedPerfmon();
     if (fDebug)
         printf("received: %s (%d bytes)\n", strCommand.c_str(), vRecv.size());
@@ -715,15 +716,21 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
         CBlock block;
         vRecv >> block;
 
-        printf("received block %s\n", block.GetHash().ToString().substr(0,20).c_str());
-        // block.print();
 
+        timing_init("AddInventoryKnown", &ts);
         CInv inv(MSG_BLOCK, block.GetHash());
         pfrom->AddInventoryKnown(inv);
+        timing_term("AddInventoryKnown", &ts);
 
+        char *tag2 = "ProcessBlock";
+        timing_init(tag2, &ts);
         if (ProcessBlock(pfrom, &block))
             mapAlreadyAskedFor.erase(inv);
         if (block.nDoS) pfrom->Misbehaving(block.nDoS);
+        timing_term(tag2, &ts);
+
+        printf("received block %s\n", block.GetHash().ToString().substr(0,20).c_str());
+        block.print();
     }
 
 
@@ -846,6 +853,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
 
 bool ProcessMessages(CNode* pfrom)
 {
+shtime_t ts;
     CDataStream& vRecv = pfrom->vRecv;
     if (vRecv.empty())
         return true;
@@ -921,10 +929,14 @@ bool ProcessMessages(CNode* pfrom)
         CDataStream vMsg(vRecv.begin(), vRecv.begin() + nMessageSize, vRecv.nType, vRecv.nVersion);
         vRecv.ignore(nMessageSize);
 
-fprintf(stderr, "DEBUG: PROC USDE MSG: '%s'\n", strCommand.c_str());
 
         // Process message
         bool fRet = false;
+        char tag[256];
+        memset(tag, 0, sizeof(tag));
+        sprintf(tag, "ProcessMessage('%s')", strCommand.c_str());
+
+        timing_init(tag, &ts);
         try
         {
             {
@@ -956,6 +968,7 @@ fprintf(stderr, "DEBUG: PROC USDE MSG: '%s'\n", strCommand.c_str());
         } catch (...) {
             PrintExceptionContinue(NULL, "ProcessMessages()");
         }
+        timing_term(tag, &ts);
 
         if (!fRet)
             printf("ProcessMessage(%s, %u bytes) FAILED\n", strCommand.c_str(), nMessageSize);
