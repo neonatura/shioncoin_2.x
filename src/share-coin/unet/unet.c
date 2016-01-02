@@ -99,6 +99,7 @@ void unet_cycle(double max_t)
   shbuf_t *buff;
   struct timeval to;
   shtime_t start_t;
+  shtime_t ts;
   fd_set r_set;
   fd_set x_set;
   SOCKET fd;
@@ -132,15 +133,17 @@ void unet_cycle(double max_t)
     if ((t->flag & UNETF_SHUTDOWN) &&
         shbuf_size(t->wbuff) == 0) {
       /* marked for closure and write buffer is empty */
-      unet_close(t->fd);
+      unet_close(t->fd, "shutdown");
       continue;
     }
 
     /* write outgoing buffer to socket */
     if (shbuf_size(t->wbuff)) {
+      timing_init("shnet_write", &ts);
       w_len = shnet_write(fd, shbuf_data(t->wbuff), shbuf_size(t->wbuff));
+      timing_term("shnet_write", &ts);
       if (w_len < 0) {
-        unet_close(fd);
+        unet_close(fd, "write");
         continue;
       }
 
@@ -149,9 +152,12 @@ void unet_cycle(double max_t)
     }
 
     /* handle incoming data */
+    timing_init("shnet_read", &ts);
     buff = shnet_read_buf(fd);
+    timing_term("shnet_read", &ts);
     if (!buff) {
-      unet_close(fd);
+      /* connection reset by peer */
+      unet_close(fd, "read");
       continue;
     }
     if (shbuf_size(buff)) {
@@ -177,8 +183,12 @@ void unet_cycle(double max_t)
   /* work proc */
   unet_timer_cycle();
 
+  /* events */
+  uevent_cycle();
+
   /* scan for new service connections */
-  unet_peer_scan();
+  if (uevent_type_count(UEVENT_PEER) == 0)
+    unet_peer_scan();
 
   /* purge idle sockets */
   unet_close_idle(); 
@@ -191,7 +201,7 @@ void unet_cycle(double max_t)
     for (fd = 1; fd <= fd_max; fd++) {
       if (FD_ISSET(fd, &x_set)) {
         /* socket is in error state */
-        unet_close(fd);
+        unet_close(fd, "exception");
       }
     }
   }

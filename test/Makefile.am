@@ -7,7 +7,8 @@ test_shcoind_CFLAGS = \
 test_shcoind_CXXFLAGS = \
 	-I$(top_srcdir)/src/share-coin/leveldb/include \
 	-I$(top_srcdir)/src/share-coin/leveldb/helpers \
-	-I$(top_srcdir)/src/share-coin/server
+	-I$(top_srcdir)/src/share-coin/server \
+	-I$(top_srcdir)/src/share-coin
 test_shcoind_LDADD = \
 	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
 	$(top_builddir)/src/share-coin/libleveldb.a
@@ -53,6 +54,7 @@ common_sources = \
 	$(top_srcdir)/src/share-coin/unet/unet_io.c \
 	$(top_srcdir)/src/share-coin/unet/unet_timer.c \
 	$(top_srcdir)/src/share-coin/unet/unet_peer.c \
+	$(top_srcdir)/src/share-coin/unet/unet_event.c \
 	$(top_srcdir)/src/share-coin/server/addrman.cpp \
 	$(top_srcdir)/src/share-coin/server/rpc_proto.cpp \
 	$(top_srcdir)/src/share-coin/server/checkpoints.cpp \

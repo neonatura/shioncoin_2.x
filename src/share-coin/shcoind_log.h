@@ -42,6 +42,8 @@ extern "C" {
 void f_shcoind_log(int err_code, const char *tag, char *text, const char *src_fname, long src_line);
 
 
+void timing_init(char *tag, shtime_t *stamp_p);
+void timing_term(char *tag, shtime_t *stamp_p);
 
 
 #ifdef __cplusplus

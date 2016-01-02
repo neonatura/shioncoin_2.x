@@ -156,6 +156,7 @@ am__objects_2 = test_shcoind-shcoind_opt.$(OBJEXT) \
 	test_shcoind-unet_io.$(OBJEXT) \
 	test_shcoind-unet_timer.$(OBJEXT) \
 	test_shcoind-unet_peer.$(OBJEXT) \
+	test_shcoind-unet_event.$(OBJEXT) \
 	test_shcoind-addrman.$(OBJEXT) \
 	test_shcoind-rpc_proto.$(OBJEXT) \
 	test_shcoind-checkpoints.$(OBJEXT) \
@@ -1097,7 +1098,8 @@ test_shcoind_CFLAGS = -I$(top_srcdir)/src/share-coin $(am__append_2)
 test_shcoind_CXXFLAGS =  \
 	-I$(top_srcdir)/src/share-coin/leveldb/include \
 	-I$(top_srcdir)/src/share-coin/leveldb/helpers \
-	-I$(top_srcdir)/src/share-coin/server $(am__append_3)
+	-I$(top_srcdir)/src/share-coin/server \
+	-I$(top_srcdir)/src/share-coin $(am__append_3)
 test_shcoind_LDADD = $(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
 	$(top_builddir)/src/share-coin/libleveldb.a $(am__append_1) \
 	-lboost_unit_test_framework -lboost_system -lboost_filesystem \
@@ -1134,6 +1136,7 @@ common_sources = \
 	$(top_srcdir)/src/share-coin/unet/unet_io.c \
 	$(top_srcdir)/src/share-coin/unet/unet_timer.c \
 	$(top_srcdir)/src/share-coin/unet/unet_peer.c \
+	$(top_srcdir)/src/share-coin/unet/unet_event.c \
 	$(top_srcdir)/src/share-coin/server/addrman.cpp \
 	$(top_srcdir)/src/share-coin/server/rpc_proto.cpp \
 	$(top_srcdir)/src/share-coin/server/checkpoints.cpp \
@@ -1261,6 +1264,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-unet_buff.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-unet_close.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-unet_connect.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-unet_event.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-unet_io.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-unet_peer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-unet_timer.Po@am__quote@
@@ -1446,6 +1450,20 @@ test_shcoind-unet_peer.obj: $(top_srcdir)/src/share-coin/unet/unet_peer.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/src/share-coin/unet/unet_peer.c' object='test_shcoind-unet_peer.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-unet_peer.obj `if test -f '$(top_srcdir)/src/share-coin/unet/unet_peer.c'; then $(CYGPATH_W) '$(top_srcdir)/src/share-coin/unet/unet_peer.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/src/share-coin/unet/unet_peer.c'; fi`
+
+test_shcoind-unet_event.o: $(top_srcdir)/src/share-coin/unet/unet_event.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-unet_event.o -MD -MP -MF $(DEPDIR)/test_shcoind-unet_event.Tpo -c -o test_shcoind-unet_event.o `test -f '$(top_srcdir)/src/share-coin/unet/unet_event.c' || echo '$(srcdir)/'`$(top_srcdir)/src/share-coin/unet/unet_event.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-unet_event.Tpo $(DEPDIR)/test_shcoind-unet_event.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/src/share-coin/unet/unet_event.c' object='test_shcoind-unet_event.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-unet_event.o `test -f '$(top_srcdir)/src/share-coin/unet/unet_event.c' || echo '$(srcdir)/'`$(top_srcdir)/src/share-coin/unet/unet_event.c
+
+test_shcoind-unet_event.obj: $(top_srcdir)/src/share-coin/unet/unet_event.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-unet_event.obj -MD -MP -MF $(DEPDIR)/test_shcoind-unet_event.Tpo -c -o test_shcoind-unet_event.obj `if test -f '$(top_srcdir)/src/share-coin/unet/unet_event.c'; then $(CYGPATH_W) '$(top_srcdir)/src/share-coin/unet/unet_event.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/src/share-coin/unet/unet_event.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-unet_event.Tpo $(DEPDIR)/test_shcoind-unet_event.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/src/share-coin/unet/unet_event.c' object='test_shcoind-unet_event.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-unet_event.obj `if test -f '$(top_srcdir)/src/share-coin/unet/unet_event.c'; then $(CYGPATH_W) '$(top_srcdir)/src/share-coin/unet/unet_event.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/src/share-coin/unet/unet_event.c'; fi`
 
 test_shcoind-scrypt.o: $(top_srcdir)/src/share-coin/server/scrypt.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-scrypt.o -MD -MP -MF $(DEPDIR)/test_shcoind-scrypt.Tpo -c -o test_shcoind-scrypt.o `test -f '$(top_srcdir)/src/share-coin/server/scrypt.c' || echo '$(srcdir)/'`$(top_srcdir)/src/share-coin/server/scrypt.c

@@ -12,27 +12,8 @@
 #include "strlcpy.h"
 #include "version.h"
 #include "ui_interface.h"
-//#include <boost/algorithm/string/join.hpp>
+//#include "shcoind.h"
 
-extern "C" {
-  const char *get_libshare_path(void);
-  void shwarn(char *log_str);
-}
-
-// Work around clang compilation problem in Boost 1.46:
-// /usr/include/boost/program_options/detail/config_file.hpp:163:17: error: call to function 'to_internal' that is neither visible in the template definition nor found by argument-dependent lookup
-// See also: http://stackoverflow.com/questions/10020179/compilation-fail-in-boost-librairies-program-options
-//           http://clang.debian.net/status.php?version=3.0&key=CANNOT_FIND_FUNCTION
-/*
-namespace boost {
-    namespace program_options {
-        std::string to_internal(const std::string&);
-    }
-}
-*/
-
-//#include <boost/program_options/detail/config_file.hpp>
-//#include <boost/program_options/parsers.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <boost/foreach.hpp>
@@ -72,8 +53,8 @@ map<string, string> mapArgs;
 map<string, vector<string> > mapMultiArgs;
 bool fDebug = false;
 bool fDebugNet = false;
-bool fPrintToConsole = false;
-bool fPrintToDebugger = false;
+//bool fPrintToConsole = false;
+//bool fPrintToDebugger = false;
 bool fRequestShutdown = false;
 bool fShutdown = false;
 bool fDaemon = false;
@@ -165,7 +146,7 @@ void RandAddSeedPerfmon()
     {
         RAND_add(pdata, nSize, nSize/100.0);
         memset(pdata, 0, nSize);
-        printf("RandAddSeed() %d bytes\n", nSize);
+        Debug("RandAddSeed() %d bytes", nSize);
     }
 #endif
 }
@@ -204,8 +185,20 @@ uint256 GetRandHash()
 
 
 
-inline int OutputDebugStringF(const char* pszFormat, ...)
+int Debug(const char* pszFormat, ...)
 {
+  va_list arg_ptr;
+  char buf[4096];
+  int ret = 0;
+
+  va_start(arg_ptr, pszFormat);
+  memset(buf, 0, sizeof(buf));
+  ret = vsnprintf(buf, sizeof(buf) - 1, pszFormat, arg_ptr);
+  va_end(arg_ptr);
+
+  shcoind_log(buf);
+
+#if 0
     int ret = 0;
     if (fPrintToConsole)
     {
@@ -280,7 +273,10 @@ inline int OutputDebugStringF(const char* pszFormat, ...)
         }
     }
 #endif
-    return ret;
+#endif
+
+
+  return ret;
 }
 
 string vstrprintf(const std::string &format, va_list ap)
@@ -319,6 +315,7 @@ string real_strprintf(const std::string &format, int dummy, ...)
     return str;
 }
 
+#if 0
 bool error(const char *format, ...)
 {
     va_list arg_ptr;
@@ -328,6 +325,20 @@ bool error(const char *format, ...)
     //shwarn(str.c_str());
     printf("ERROR: %s\n", str.c_str());
     return false;
+}
+#endif
+bool error(int err_code, const char *pszFormat, ...)
+{
+  va_list arg_ptr;
+  char buf[4096];
+  int ret = 0;
+
+  va_start(arg_ptr, pszFormat);
+  memset(buf, 0, sizeof(buf));
+  ret = vsnprintf(buf, sizeof(buf) - 1, pszFormat, arg_ptr);
+  va_end(arg_ptr);
+
+  shcoind_err(err_code, "USDE", buf);
 }
 
 
@@ -1106,6 +1117,7 @@ int GetFilesize(FILE* file)
     return nFilesize;
 }
 
+#if 0
 void ShrinkDebugFile()
 {
     // Scroll debug.log if it's getting too big
@@ -1127,6 +1139,7 @@ void ShrinkDebugFile()
         }
     }
 }
+#endif
 
 
 

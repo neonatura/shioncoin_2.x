@@ -102,7 +102,7 @@ bool CDBEnv::Open(boost::filesystem::path pathEnv_)
                      nEnvFlags,
                      S_IRUSR | S_IWUSR);
     if (ret > 0)
-        return error("CDB() : error %d opening database environment", ret);
+        return error(SHERR_ACCESS, "CDB() : error %d opening database environment", ret);
 
     fDbEnvInit = true;
     return true;
@@ -505,10 +505,10 @@ bool CTxDB::LoadBlockIndex()
     {
         if (pindexGenesisBlock == NULL)
             return true;
-        return error("CTxDB::LoadBlockIndex() : hashBestChain not loaded");
+        return error(SHERR_IO, "CTxDB::LoadBlockIndex() : hashBestChain not loaded");
     }
     if (!mapBlockIndex.count(hashBestChain))
-        return error("CTxDB::LoadBlockIndex() : hashBestChain not found in the block index");
+        return error(SHERR_IO, "CTxDB::LoadBlockIndex() : hashBestChain not found in the block index");
     pindexBest = mapBlockIndex[hashBestChain];
     nBestHeight = pindexBest->nHeight;
     bnBestChainWork = pindexBest->bnChainWork;
@@ -535,7 +535,7 @@ bool CTxDB::LoadBlockIndex()
             break;
         CBlock block;
         if (!block.ReadFromDisk(pindex))
-            return error("LoadBlockIndex() : block.ReadFromDisk failed");
+            return error(SHERR_IO, "LoadBlockIndex() : block.ReadFromDisk failed");
         // check level 1: verify block validity
         if (nCheckLevel>0 && !block.CheckBlock())
         {
@@ -639,7 +639,7 @@ bool CTxDB::LoadBlockIndex()
         printf("LoadBlockIndex() : *** moving best chain pointer back to block %d\n", pindexFork->nHeight);
         CBlock block;
         if (!block.ReadFromDisk(pindexFork))
-            return error("LoadBlockIndex() : block.ReadFromDisk failed");
+            return error(SHERR_IO, "LoadBlockIndex() : block.ReadFromDisk failed");
 
         CTxDB txdb;
         block.SetBestChain(txdb, pindexFork);
@@ -702,7 +702,7 @@ bool CTxDB::LoadBlockIndexGuts()
                 pindexGenesisBlock = pindexNew;
 
             if (!pindexNew->CheckIndex())
-                return error("LoadBlockIndex() : CheckIndex failed at %d", pindexNew->nHeight);
+                return error(SHERR_IO, "LoadBlockIndex() : CheckIndex failed at %d", pindexNew->nHeight);
         }
         else
         {
@@ -710,7 +710,7 @@ bool CTxDB::LoadBlockIndexGuts()
         }
         }    // try
         catch (std::exception &e) {
-            return error("%s() : deserialize error", __PRETTY_FUNCTION__);
+            return error(SHERR_IO, "%s() : deserialize error", __PRETTY_FUNCTION__);
         }
     }
     pcursor->close();

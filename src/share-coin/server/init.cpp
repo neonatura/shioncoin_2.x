@@ -460,8 +460,11 @@ bool AppInit2()
     }
 #endif
 
+#if 0
     if (!fDebug)
         ShrinkDebugFile();
+#endif
+
     printf("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
     printf("usde version %s (%s)\n", FormatFullVersion().c_str(), CLIENT_DATE.c_str());
     printf("Startup time: %s\n", DateTimeStrFormat("%x %H:%M:%S", GetTime()).c_str());

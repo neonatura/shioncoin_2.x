@@ -32,13 +32,11 @@ void f_shcoind_log(int err_code, const char *tag, char *text, const char *src_fn
   char origin[256];
   char *date_str;
 
-fprintf(stderr, "DEBUG: %s\n", text);
-
   if (!buff)
     buff = shbuf_init();
 
   if (tag) {
-    shbuf_catstr(buff, tag);
+    shbuf_catstr(buff, (char *)tag);
     shbuf_catstr(buff, ": ");
   }
   if (text) {
@@ -58,4 +56,27 @@ fprintf(stderr, "DEBUG: %s\n", text);
 
   shbuf_free(&buff);
 }
+
+
+void timing_init(char *tag, shtime_t *stamp_p)
+{
+  
+  *stamp_p = shtime();
+
+}
+
+void timing_term(char *tag, shtime_t *stamp_p)
+{
+  shtime_t stamp = *stamp_p;
+  double diff = shtime_diff(stamp, shtime());
+  char buf[1024];
+
+  if (diff > 0.1) {
+    sprintf(buf, "TIMING[%s]: total %-2.2f seconds.", tag, diff);
+    shcoind_log(buf);
+  }
+
+
+}
+
 

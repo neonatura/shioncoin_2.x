@@ -61,6 +61,11 @@ typedef int socklen_t;
 #define MAX_CONNECT_IDLE_TIME 45
 #define MAX_IDLE_TIME 3600
 
+#define UNET_MAX_EVENTS 10240
+
+#define UEVENT_NONE 0
+#define UEVENT_PEER 1
+
 
 typedef unsigned int SOCKET;
  
@@ -81,17 +86,11 @@ typedef struct unet_bind_t
   /** the port listening for new connections. */
   int port;
 
-  /** the current socket desciptor being used to scan peers. */
-  int scan_fd;
-
   /** the frequency of successfull connections. */
   double scan_freq;
 
   /* a public peer reference to the bound server. */
   shpeer_t peer;
-
-  /** the peer currently being scanned. */
-  shpeer_t scan_peer;
 
   /** the last time the timer callback was called. */
   shtime_t timer_stamp;
@@ -136,6 +135,17 @@ typedef struct unet_table_t
   struct sockaddr net_addr;
 } unet_table_t;
 
+typedef struct uevent_t
+{
+  int mode;
+  int flag;
+  int type;
+  int fd;
+  void *data;
+} uevent_t;
+
+
+
 
 
 /**
@@ -165,7 +175,8 @@ unet_table_t *get_unet_table(SOCKET sk);
 int unet_accept(int mode, SOCKET *sk_p);
 
 
-int unet_close(SOCKET sk);
+int unet_close(SOCKET sk, char *tag);
+
 int unet_close_all(int mode);
 
 
@@ -203,6 +214,16 @@ void unet_disconnop_set(int mode, unet_addr_op close_op);
 
 
 void unet_peer_scan(void);
+
+int unet_peer_wait(unet_bind_t *bind);
+
+uevent_t *uevent_new_peer(int umode, shpeer_t *peer);
+
+void uevent_cycle(void);
+
+unsigned int uevent_type_count(int type);
+
+void unet_peer_fill(int mode);
 
 
 

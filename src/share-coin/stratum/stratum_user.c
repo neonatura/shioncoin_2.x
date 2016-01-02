@@ -48,6 +48,7 @@ user_t *stratum_user(user_t *user, char *username)
 {
   char name[256]; 
   char *ptr;
+  int cli_cnt;
 
   memset(name, 0, sizeof(name));
   strncpy(name, username, sizeof(name) - 1);
@@ -55,7 +56,11 @@ user_t *stratum_user(user_t *user, char *username)
   if (ptr)
     *ptr = '\0';
 
-  if (stratum_user_count(user) > MAX_STRATUM_USERS) {
+  cli_cnt = stratum_user_count(user);
+  if (cli_cnt >= MAX_STRATUM_USERS) {
+    char buf[256];
+
+    sprintf(buf, "stratum_user: too many stratum connections (%d/%d).", cli_cnt, MAX_STRATUM_USERS); 
     /* too many connections. */
     return (NULL);
   }
@@ -78,7 +83,7 @@ user_t *stratum_user_init(int fd)
   user->fd = fd;
   user->round_stamp = time(NULL);
 
-addr = shaddr(fd);
+addr = (struct sockaddr_in *)shaddr(fd);
 if (!addr)
 sprintf(nonce1, "%-8.8x", 0);
 else
@@ -146,7 +151,7 @@ void stratum_user_block(user_t *user, task_t *task)
     if (user->block_freq < 1) { 
       if (user->work_diff < 16384)
         stratum_set_difficulty(user, user->work_diff + 8);
-    } else if (user->block_freq > 15) { 
+    } else if (user->block_freq > 64) { 
       stratum_set_difficulty(user, user->work_diff - 8);
     }
   }

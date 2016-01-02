@@ -89,7 +89,7 @@ int unet_unbind(int mode)
   /* close all accepted sockets */
   unet_close_all(mode);
 
-  err = unet_close(_unet_bind[mode].fd);
+  err = unet_close(_unet_bind[mode].fd, "unbind");
   _unet_bind[mode].fd = UNDEFINED_SOCKET;
 
   return (err);
@@ -100,6 +100,10 @@ void unet_bind_flag_set(int mode, int flags)
   if (mode < 0 || mode >= MAX_UNET_MODES)
     return; 
   _unet_bind[mode].flag |= flags;
+
+  if (flags & UNETF_PEER_SCAN) {
+    unet_peer_fill(mode);
+  }
 }
 
 void unet_bind_flag_unset(int mode, int flags)

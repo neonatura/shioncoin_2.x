@@ -32,6 +32,7 @@ int unet_connect(int mode, struct sockaddr *net_addr, SOCKET *sk_p)
 {
   unet_bind_t *bind;
   unet_table_t *table;
+  shtime_t ts;
   char buf[256];
   SOCKET cli_fd;
   int err;
@@ -58,7 +59,9 @@ int unet_connect(int mode, struct sockaddr *net_addr, SOCKET *sk_p)
   }
 
   shnet_fcntl(cli_fd, F_SETFL, O_NONBLOCK);
+  timing_init("shconnect", &ts);
   err = shconnect(cli_fd, net_addr, sizeof(struct sockaddr));
+  timing_term("shconnect", &ts);
   if (err == SHERR_INPROGRESS) {
     /* async connect -- waits up to UNET_CONNECT_TIMEOUT seconds */
     struct timeval to = { UNET_CONNECT_TIMEOUT, 0 };

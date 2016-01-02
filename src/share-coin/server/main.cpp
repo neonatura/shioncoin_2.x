@@ -323,24 +323,24 @@ bool CTransaction::CheckTransaction() const
 {
     // Basic checks that don't depend on any context
     if (vin.empty())
-        return DoS(10, error("CTransaction::CheckTransaction() : vin empty"));
+        return DoS(10, error(SHERR_INVAL, "CTransaction::CheckTransaction() : vin empty"));
     if (vout.empty())
-        return DoS(10, error("CTransaction::CheckTransaction() : vout empty"));
+        return DoS(10, error(SHERR_INVAL, "CTransaction::CheckTransaction() : vout empty"));
     // Size limits
     if (::GetSerializeSize(*this, SER_NETWORK, PROTOCOL_VERSION) > MAX_BLOCK_SIZE)
-        return DoS(100, error("CTransaction::CheckTransaction() : size limits failed"));
+        return DoS(100, error(SHERR_INVAL, "CTransaction::CheckTransaction() : size limits failed"));
 
     // Check for negative or overflow output values
     int64 nValueOut = 0;
     BOOST_FOREACH(const CTxOut& txout, vout)
     {
         if (txout.nValue < 0)
-            return DoS(100, error("CTransaction::CheckTransaction() : txout.nValue negative"));
+            return DoS(100, error(SHERR_INVAL, "CTransaction::CheckTransaction() : txout.nValue negative"));
         if (txout.nValue > MAX_MONEY)
-            return DoS(100, error("CTransaction::CheckTransaction() : txout.nValue too high"));
+            return DoS(100, error(SHERR_INVAL, "CTransaction::CheckTransaction() : txout.nValue too high"));
         nValueOut += txout.nValue;
         if (!MoneyRange(nValueOut))
-            return DoS(100, error("CTransaction::CheckTransaction() : txout total out of range"));
+            return DoS(100, error(SHERR_INVAL, "CTransaction::CheckTransaction() : txout total out of range"));
     }
 
     // Check for duplicate inputs
@@ -355,13 +355,13 @@ bool CTransaction::CheckTransaction() const
     if (IsCoinBase())
     {
         if (vin[0].scriptSig.size() < 2 || vin[0].scriptSig.size() > 100)
-            return DoS(100, error("CTransaction::CheckTransaction() : coinbase script size"));
+            return DoS(100, error(SHERR_INVAL, "CTransaction::CheckTransaction() : coinbase script size"));
     }
     else
     {
         BOOST_FOREACH(const CTxIn& txin, vin)
             if (txin.prevout.IsNull())
-                return DoS(10, error("CTransaction::CheckTransaction() : prevout is null"));
+                return DoS(10, error(SHERR_INVAL, "CTransaction::CheckTransaction() : prevout is null"));
     }
 
     return true;
@@ -374,19 +374,19 @@ bool CTxMemPool::accept(CTxDB& txdb, CTransaction &tx, bool fCheckInputs,
         *pfMissingInputs = false;
 
     if (!tx.CheckTransaction())
-        return error("CTxMemPool::accept() : CheckTransaction failed");
+        return error(SHERR_INVAL, "CTxMemPool::accept() : CheckTransaction failed");
 
     // Coinbase is only valid in a block, not as a loose transaction
     if (tx.IsCoinBase())
-        return tx.DoS(100, error("CTxMemPool::accept() : coinbase as individual tx"));
+        return tx.DoS(100, error(SHERR_INVAL, "CTxMemPool::accept() : coinbase as individual tx"));
 
     // To help v0.1.5 clients who would see it as a negative number
     if ((int64)tx.nLockTime > std::numeric_limits<int>::max())
-        return error("CTxMemPool::accept() : not accepting nLockTime beyond 2038 yet");
+        return error(SHERR_INVAL, "CTxMemPool::accept() : not accepting nLockTime beyond 2038 yet");
 
     // Rather not work on nonstandard transactions (unless -testnet)
     if (!fTestNet && !tx.IsStandard())
-        return error("CTxMemPool::accept() : nonstandard transaction type");
+        return error(SHERR_INVAL, "CTxMemPool::accept() : nonstandard transaction type");
 
     // Do we already have it?
     uint256 hash = tx.GetHash();
@@ -435,7 +435,7 @@ bool CTxMemPool::accept(CTxDB& txdb, CTransaction &tx, bool fCheckInputs,
         if (!tx.FetchInputs(txdb, mapUnused, false, false, mapInputs, fInvalid))
         {
             if (fInvalid)
-                return error("CTxMemPool::accept() : FetchInputs found invalid tx %s", hash.ToString().substr(0,10).c_str());
+                return error(SHERR_INVAL, "CTxMemPool::accept() : FetchInputs found invalid tx %s", hash.ToString().substr(0,10).c_str());
             if (pfMissingInputs)
                 *pfMissingInputs = true;
             return false;
@@ -443,7 +443,7 @@ bool CTxMemPool::accept(CTxDB& txdb, CTransaction &tx, bool fCheckInputs,
 
         // Check for non-standard pay-to-script-hash in inputs
         if (!tx.AreInputsStandard(mapInputs) && !fTestNet)
-            return error("CTxMemPool::accept() : nonstandard transaction input");
+            return error(SHERR_INVAL, "CTxMemPool::accept() : nonstandard transaction input");
 
         // Note: if you modify this code to accept non-standard transactions, then
         // you should add code here to check that the transaction does a
@@ -454,7 +454,7 @@ bool CTxMemPool::accept(CTxDB& txdb, CTransaction &tx, bool fCheckInputs,
 
         // Don't accept it if it can't get into a block
         if (nFees < tx.GetMinFee(1000, true, GMF_RELAY))
-            return error("CTxMemPool::accept() : not enough fees");
+            return error(SHERR_INVAL, "CTxMemPool::accept() : not enough fees");
 
         // Continuously rate-limit free transactions
         // This mitigates 'penny-flooding' -- sending thousands of free transactions just to
@@ -474,7 +474,7 @@ bool CTxMemPool::accept(CTxDB& txdb, CTransaction &tx, bool fCheckInputs,
                 // -limitfreerelay unit is thousand-bytes-per-minute
                 // At default rate it would take over a month to fill 1GB
                 if (dFreeCount > GetArg("-limitfreerelay", 15)*10*1000 && !IsFromMe(tx))
-                    return error("CTxMemPool::accept() : free transaction rejected by rate limiter");
+                    return error(SHERR_INVAL, "CTxMemPool::accept() : free transaction rejected by rate limiter");
                 if (fDebug)
                     printf("Rate limit dFreeCount: %g => %g\n", dFreeCount, dFreeCount+nSize);
                 dFreeCount += nSize;
@@ -485,7 +485,7 @@ bool CTxMemPool::accept(CTxDB& txdb, CTransaction &tx, bool fCheckInputs,
         // This is done last to help prevent CPU exhaustion denial-of-service attacks.
         if (!tx.ConnectInputs(mapInputs, mapUnused, CDiskTxPos(1,1,1), pindexBest, false, false))
         {
-            return error("CTxMemPool::accept() : ConnectInputs failed %s", hash.ToString().substr(0,10).c_str());
+            return error(SHERR_INVAL, "CTxMemPool::accept() : ConnectInputs failed %s", hash.ToString().substr(0,10).c_str());
         }
     }
 
@@ -713,7 +713,7 @@ bool CBlock::ReadFromDisk(const CBlockIndex* pindex, bool fReadTransactions)
     if (!ReadFromDisk(pindex->nFile, pindex->nBlockPos, fReadTransactions))
         return false;
     if (GetHash() != pindex->GetBlockHash())
-        return error("CBlock::ReadFromDisk() : GetHash() doesn't match index");
+        return error(SHERR_INVAL, "CBlock::ReadFromDisk() : GetHash() doesn't match index");
     return true;
 }
 
@@ -1005,11 +1005,11 @@ bool CheckProofOfWork(uint256 hash, unsigned int nBits)
 
     // Check range
     if (bnTarget <= 0 || bnTarget > bnProofOfWorkLimit)
-        return error("CheckProofOfWork() : nBits below minimum work");
+        return error(SHERR_INVAL, "CheckProofOfWork() : nBits below minimum work");
 
     // Check proof of work matches claimed amount
     if (hash > bnTarget.getuint256())
-        return error("CheckProofOfWork() : hash doesn't match nBits");
+        return error(SHERR_INVAL, "CheckProofOfWork() : hash doesn't match nBits");
 
     return true;
 }
@@ -1084,17 +1084,17 @@ bool CTransaction::DisconnectInputs(CTxDB& txdb)
             // Get prev txindex from disk
             CTxIndex txindex;
             if (!txdb.ReadTxIndex(prevout.hash, txindex))
-                return error("DisconnectInputs() : ReadTxIndex failed");
+                return error(SHERR_INVAL, "DisconnectInputs() : ReadTxIndex failed");
 
             if (prevout.n >= txindex.vSpent.size())
-                return error("DisconnectInputs() : prevout.n out of range");
+                return error(SHERR_INVAL, "DisconnectInputs() : prevout.n out of range");
 
             // Mark outpoint as not spent
             txindex.vSpent[prevout.n].SetNull();
 
             // Write back
             if (!txdb.UpdateTxIndex(prevout.hash, txindex))
-                return error("DisconnectInputs() : UpdateTxIndex failed");
+                return error(SHERR_INVAL, "DisconnectInputs() : UpdateTxIndex failed");
         }
     }
 
@@ -1140,7 +1140,7 @@ bool CTransaction::FetchInputs(CTxDB& txdb, const map<uint256, CTxIndex>& mapTes
             fFound = txdb.ReadTxIndex(prevout.hash, txindex);
         }
         if (!fFound && (fBlock || fMiner))
-            return fMiner ? false : error("FetchInputs() : %s prev tx %s index entry not found", GetHash().ToString().substr(0,10).c_str(),  prevout.hash.ToString().substr(0,10).c_str());
+            return fMiner ? false : error(SHERR_INVAL, "FetchInputs() : %s prev tx %s index entry not found", GetHash().ToString().substr(0,10).c_str(),  prevout.hash.ToString().substr(0,10).c_str());
 
         // Read txPrev
         CTransaction& txPrev = inputsRet[prevout.hash].second;
@@ -1150,7 +1150,7 @@ bool CTransaction::FetchInputs(CTxDB& txdb, const map<uint256, CTxIndex>& mapTes
             {
                 LOCK(mempool.cs);
                 if (!mempool.exists(prevout.hash))
-                    return error("FetchInputs() : %s mempool Tx prev not found %s", GetHash().ToString().substr(0,10).c_str(),  prevout.hash.ToString().substr(0,10).c_str());
+                    return error(SHERR_INVAL, "FetchInputs() : %s mempool Tx prev not found %s", GetHash().ToString().substr(0,10).c_str(),  prevout.hash.ToString().substr(0,10).c_str());
                 txPrev = mempool.lookup(prevout.hash);
             }
             if (!fFound)
@@ -1160,7 +1160,7 @@ bool CTransaction::FetchInputs(CTxDB& txdb, const map<uint256, CTxIndex>& mapTes
         {
             // Get prev tx from disk
             if (!txPrev.ReadFromDisk(txindex.pos))
-                return error("FetchInputs() : %s ReadFromDisk prev tx %s failed", GetHash().ToString().substr(0,10).c_str(),  prevout.hash.ToString().substr(0,10).c_str());
+                return error(SHERR_INVAL, "FetchInputs() : %s ReadFromDisk prev tx %s failed", GetHash().ToString().substr(0,10).c_str(),  prevout.hash.ToString().substr(0,10).c_str());
         }
     }
 
@@ -1176,7 +1176,7 @@ bool CTransaction::FetchInputs(CTxDB& txdb, const map<uint256, CTxIndex>& mapTes
             // Revisit this if/when transaction replacement is implemented and allows
             // adding inputs:
             fInvalid = true;
-            return DoS(100, error("FetchInputs() : %s prevout.n out of range %d %d %d prev tx %s\n%s", GetHash().ToString().substr(0,10).c_str(), prevout.n, txPrev.vout.size(), txindex.vSpent.size(), prevout.hash.ToString().substr(0,10).c_str(), txPrev.ToString().c_str()));
+            return DoS(100, error(SHERR_INVAL, "FetchInputs() : %s prevout.n out of range %d %d %d prev tx %s\n%s", GetHash().ToString().substr(0,10).c_str(), prevout.n, txPrev.vout.size(), txindex.vSpent.size(), prevout.hash.ToString().substr(0,10).c_str(), txPrev.ToString().c_str()));
         }
     }
 
@@ -1245,18 +1245,18 @@ bool CTransaction::ConnectInputs(MapPrevTx inputs,
             CTransaction& txPrev = inputs[prevout.hash].second;
 
             if (prevout.n >= txPrev.vout.size() || prevout.n >= txindex.vSpent.size())
-                return DoS(100, error("ConnectInputs() : %s prevout.n out of range %d %d %d prev tx %s\n%s", GetHash().ToString().substr(0,10).c_str(), prevout.n, txPrev.vout.size(), txindex.vSpent.size(), prevout.hash.ToString().substr(0,10).c_str(), txPrev.ToString().c_str()));
+                return DoS(100, error(SHERR_INVAL, "ConnectInputs() : %s prevout.n out of range %d %d %d prev tx %s\n%s", GetHash().ToString().substr(0,10).c_str(), prevout.n, txPrev.vout.size(), txindex.vSpent.size(), prevout.hash.ToString().substr(0,10).c_str(), txPrev.ToString().c_str()));
 
             // If prev is coinbase, check that it's matured
             if (txPrev.IsCoinBase())
                 for (const CBlockIndex* pindex = pindexBlock; pindex && pindexBlock->nHeight - pindex->nHeight < COINBASE_MATURITY; pindex = pindex->pprev)
                     if (pindex->nBlockPos == txindex.pos.nBlockPos && pindex->nFile == txindex.pos.nFile)
-                        return error("ConnectInputs() : tried to spend coinbase at depth %d", pindexBlock->nHeight - pindex->nHeight);
+                        return error(SHERR_INVAL, "ConnectInputs() : tried to spend coinbase at depth %d", pindexBlock->nHeight - pindex->nHeight);
 
             // Check for negative or overflow input values
             nValueIn += txPrev.vout[prevout.n].nValue;
             if (!MoneyRange(txPrev.vout[prevout.n].nValue) || !MoneyRange(nValueIn))
-                return DoS(100, error("ConnectInputs() : txin values out of range"));
+                return DoS(100, error(SHERR_INVAL, "ConnectInputs() : txin values out of range"));
 
         }
         // The first loop above does all the inexpensive checks.
@@ -1273,7 +1273,7 @@ bool CTransaction::ConnectInputs(MapPrevTx inputs,
             // This doesn't trigger the DoS code on purpose; if it did, it would make it easier
             // for an attacker to attempt to split the network.
             if (!txindex.vSpent[prevout.n].IsNull())
-                return fMiner ? false : error("ConnectInputs() : %s prev tx already used at %s", GetHash().ToString().substr(0,10).c_str(), txindex.vSpent[prevout.n].ToString().c_str());
+                return fMiner ? false : error(SHERR_INVAL, "ConnectInputs() : %s prev tx already used at %s", GetHash().ToString().substr(0,10).c_str(), txindex.vSpent[prevout.n].ToString().c_str());
 
             // Skip ECDSA signature verification when connecting blocks (fBlock=true)
             // before the last blockchain checkpoint. This is safe because block merkle hashes are
@@ -1286,9 +1286,9 @@ bool CTransaction::ConnectInputs(MapPrevTx inputs,
                     // only during transition phase for P2SH: do not invoke anti-DoS code for
                     // potentially old clients relaying bad P2SH transactions
                     if (fStrictPayToScriptHash && VerifySignature(txPrev, *this, i, false, 0))
-                        return error("ConnectInputs() : %s P2SH VerifySignature failed", GetHash().ToString().substr(0,10).c_str());
+                        return error(SHERR_INVAL, "ConnectInputs() : %s P2SH VerifySignature failed", GetHash().ToString().substr(0,10).c_str());
 
-                    return DoS(100,error("ConnectInputs() : %s VerifySignature failed", GetHash().ToString().substr(0,10).c_str()));
+                    return DoS(100,error(SHERR_INVAL, "ConnectInputs() : %s VerifySignature failed", GetHash().ToString().substr(0,10).c_str()));
                 }
             }
 
@@ -1303,15 +1303,15 @@ bool CTransaction::ConnectInputs(MapPrevTx inputs,
         }
 
         if (nValueIn < GetValueOut())
-            return DoS(100, error("ConnectInputs() : %s value in < value out", GetHash().ToString().substr(0,10).c_str()));
+            return DoS(100, error(SHERR_INVAL, "ConnectInputs() : %s value in < value out", GetHash().ToString().substr(0,10).c_str()));
 
         // Tally transaction fees
         int64 nTxFee = nValueIn - GetValueOut();
         if (nTxFee < 0)
-            return DoS(100, error("ConnectInputs() : %s nTxFee < 0", GetHash().ToString().substr(0,10).c_str()));
+            return DoS(100, error(SHERR_INVAL, "ConnectInputs() : %s nTxFee < 0", GetHash().ToString().substr(0,10).c_str()));
         nFees += nTxFee;
         if (!MoneyRange(nFees))
-            return DoS(100, error("ConnectInputs() : nFees out of range"));
+            return DoS(100, error(SHERR_INVAL, "ConnectInputs() : nFees out of range"));
     }
 
     return true;
@@ -1340,7 +1340,7 @@ bool CTransaction::ClientConnectInputs()
 
             // Verify signature
             if (!VerifySignature(txPrev, *this, i, true, 0))
-                return error("ConnectInputs() : VerifySignature failed");
+                return error(SHERR_INVAL, "ConnectInputs() : VerifySignature failed");
 
             ///// this is redundant with the mempool.mapNextTx stuff,
             ///// not sure which I want to get rid of
@@ -1355,7 +1355,7 @@ bool CTransaction::ClientConnectInputs()
             nValueIn += txPrev.vout[prevout.n].nValue;
 
             if (!MoneyRange(txPrev.vout[prevout.n].nValue) || !MoneyRange(nValueIn))
-                return error("ClientConnectInputs() : txin values out of range");
+                return error(SHERR_INVAL, "ClientConnectInputs() : txin values out of range");
         }
         if (GetValueOut() > nValueIn)
             return false;
@@ -1381,7 +1381,7 @@ bool CBlock::DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex)
         CDiskBlockIndex blockindexPrev(pindex->pprev);
         blockindexPrev.hashNext = 0;
         if (!txdb.WriteBlockIndex(blockindexPrev))
-            return error("DisconnectBlock() : WriteBlockIndex failed");
+            return error(SHERR_INVAL, "DisconnectBlock() : WriteBlockIndex failed");
     }
 
     return true;
@@ -1430,7 +1430,7 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)
 
         nSigOps += tx.GetLegacySigOpCount();
         if (nSigOps > MAX_BLOCK_SIGOPS)
-            return DoS(100, error("ConnectBlock() : too many sigops"));
+            return DoS(100, error(SHERR_INVAL, "ConnectBlock() : too many sigops"));
 
         CDiskTxPos posThisTx(pindex->nFile, pindex->nBlockPos, nTxPos);
         nTxPos += ::GetSerializeSize(tx, SER_DISK, CLIENT_VERSION);
@@ -1449,7 +1449,7 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)
                 // an incredibly-expensive-to-validate block.
                 nSigOps += tx.GetP2SHSigOpCount(mapInputs);
                 if (nSigOps > MAX_BLOCK_SIGOPS)
-                    return DoS(100, error("ConnectBlock() : too many sigops"));
+                    return DoS(100, error(SHERR_INVAL, "ConnectBlock() : too many sigops"));
             }
 
             nFees += tx.GetValueIn(mapInputs)-tx.GetValueOut();
@@ -1465,7 +1465,7 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)
     for (map<uint256, CTxIndex>::iterator mi = mapQueuedChanges.begin(); mi != mapQueuedChanges.end(); ++mi)
     {
         if (!txdb.UpdateTxIndex((*mi).first, (*mi).second))
-            return error("ConnectBlock() : UpdateTxIndex failed");
+            return error(SHERR_INVAL, "ConnectBlock() : UpdateTxIndex failed");
     }
 
     if (vtx[0].GetValueOut() > GetBlockValue(pindex->nHeight, nFees))
@@ -1478,7 +1478,7 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)
         CDiskBlockIndex blockindexPrev(pindex->pprev);
         blockindexPrev.hashNext = pindex->GetBlockHash();
         if (!txdb.WriteBlockIndex(blockindexPrev))
-            return error("ConnectBlock() : WriteBlockIndex failed");
+            return error(SHERR_INVAL, "ConnectBlock() : WriteBlockIndex failed");
     }
 
     // Watch for transactions paying to me
@@ -1499,11 +1499,11 @@ bool static Reorganize(CTxDB& txdb, CBlockIndex* pindexNew)
     {
         while (plonger->nHeight > pfork->nHeight)
             if (!(plonger = plonger->pprev))
-                return error("Reorganize() : plonger->pprev is null");
+                return error(SHERR_INVAL, "Reorganize() : plonger->pprev is null");
         if (pfork == plonger)
             break;
         if (!(pfork = pfork->pprev))
-            return error("Reorganize() : pfork->pprev is null");
+            return error(SHERR_INVAL, "Reorganize() : pfork->pprev is null");
     }
 
     // List of what to disconnect
@@ -1526,9 +1526,9 @@ bool static Reorganize(CTxDB& txdb, CBlockIndex* pindexNew)
     {
         CBlock block;
         if (!block.ReadFromDisk(pindex))
-            return error("Reorganize() : ReadFromDisk for disconnect failed");
+            return error(SHERR_INVAL, "Reorganize() : ReadFromDisk for disconnect failed");
         if (!block.DisconnectBlock(txdb, pindex))
-            return error("Reorganize() : DisconnectBlock %s failed", pindex->GetBlockHash().ToString().substr(0,20).c_str());
+            return error(SHERR_INVAL, "Reorganize() : DisconnectBlock %s failed", pindex->GetBlockHash().ToString().substr(0,20).c_str());
 
         // Queue memory transactions to resurrect
         BOOST_FOREACH(const CTransaction& tx, block.vtx)
@@ -1543,11 +1543,11 @@ bool static Reorganize(CTxDB& txdb, CBlockIndex* pindexNew)
         CBlockIndex* pindex = vConnect[i];
         CBlock block;
         if (!block.ReadFromDisk(pindex))
-            return error("Reorganize() : ReadFromDisk for connect failed");
+            return error(SHERR_INVAL, "Reorganize() : ReadFromDisk for connect failed");
         if (!block.ConnectBlock(txdb, pindex))
         {
             // Invalid block
-            return error("Reorganize() : ConnectBlock %s failed", pindex->GetBlockHash().ToString().substr(0,20).c_str());
+            return error(SHERR_INVAL, "Reorganize() : ConnectBlock %s failed", pindex->GetBlockHash().ToString().substr(0,20).c_str());
         }
 
         // Queue memory transactions to delete
@@ -1555,11 +1555,11 @@ bool static Reorganize(CTxDB& txdb, CBlockIndex* pindexNew)
             vDelete.push_back(tx);
     }
     if (!txdb.WriteHashBestChain(pindexNew->GetBlockHash()))
-        return error("Reorganize() : WriteHashBestChain failed");
+        return error(SHERR_INVAL, "Reorganize() : WriteHashBestChain failed");
 
     // Make sure it's successfully written to disk before changing memory structure
     if (!txdb.TxnCommit())
-        return error("Reorganize() : TxnCommit failed");
+        return error(SHERR_INVAL, "Reorganize() : TxnCommit failed");
 
     // Disconnect shorter branch
     BOOST_FOREACH(CBlockIndex* pindex, vDisconnect)
@@ -1598,7 +1598,7 @@ bool CBlock::SetBestChainInner(CTxDB& txdb, CBlockIndex *pindexNew)
         return false;
     }
     if (!txdb.TxnCommit())
-        return error("SetBestChain() : TxnCommit failed");
+        return error(SHERR_INVAL, "SetBestChain() : TxnCommit failed");
 
     // Add to current best branch
     pindexNew->pprev->pnext = pindexNew;
@@ -1615,19 +1615,19 @@ bool CBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
     uint256 hash = GetHash();
 
     if (!txdb.TxnBegin())
-        return error("SetBestChain() : TxnBegin failed");
+        return error(SHERR_INVAL, "SetBestChain() : TxnBegin failed");
 
     if (pindexGenesisBlock == NULL && hash == hashGenesisBlock)
     {
         txdb.WriteHashBestChain(hash);
         if (!txdb.TxnCommit())
-            return error("SetBestChain() : TxnCommit failed");
+            return error(SHERR_INVAL, "SetBestChain() : TxnCommit failed");
         pindexGenesisBlock = pindexNew;
     }
     else if (hashPrevBlock == hashBestChain)
     {
         if (!SetBestChainInner(txdb, pindexNew))
-            return error("SetBestChain() : SetBestChainInner failed");
+            return error(SHERR_INVAL, "SetBestChain() : SetBestChainInner failed");
     }
     else
     {
@@ -1653,7 +1653,7 @@ bool CBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
         {
             txdb.TxnAbort();
             InvalidChainFound(pindexNew);
-            return error("SetBestChain() : Reorganize failed");
+            return error(SHERR_INVAL, "SetBestChain() : Reorganize failed");
         }
 
         // Connect futher blocks
@@ -1729,12 +1729,12 @@ bool CBlock::AddToBlockIndex(unsigned int nFile, unsigned int nBlockPos)
     // Check for duplicate
     uint256 hash = GetHash();
     if (mapBlockIndex.count(hash))
-        return error("AddToBlockIndex() : %s already exists", hash.ToString().substr(0,20).c_str());
+        return error(SHERR_INVAL, "AddToBlockIndex() : %s already exists", hash.ToString().substr(0,20).c_str());
 
     // Construct new block index object
     CBlockIndex* pindexNew = new CBlockIndex(nFile, nBlockPos, *this);
     if (!pindexNew)
-        return error("AddToBlockIndex() : new CBlockIndex failed");
+        return error(SHERR_INVAL, "AddToBlockIndex() : new CBlockIndex failed");
     map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.insert(make_pair(hash, pindexNew)).first;
     pindexNew->phashBlock = &((*mi).first);
     map<uint256, CBlockIndex*>::iterator miPrev = mapBlockIndex.find(hashPrevBlock);
@@ -1781,37 +1781,37 @@ bool CBlock::CheckBlock() const
     // Size limits
     if (vtx.empty() || vtx.size() > MAX_BLOCK_SIZE || ::GetSerializeSize(*this, SER_NETWORK, PROTOCOL_VERSION) > MAX_BLOCK_SIZE) {
         fprintf(stderr, "DEBUG: CheckBlock() : size limits failed\n");
-        return DoS(100, error("CheckBlock() : size limits failed"));
+        return DoS(100, error(SHERR_INVAL, "CheckBlock() : size limits failed"));
   }
 
     // Check proof of work matches claimed amount
     if (!CheckProofOfWork(GetPoWHash(), nBits)) {
         fprintf(stderr, "DEBUG: CheckBlock() : proof of work failed\n");
-        return DoS(50, error("CheckBlock() : proof of work failed"));
+        return DoS(50, error(SHERR_INVAL, "CheckBlock() : proof of work failed"));
 }
 
     // Check timestamp
     if (GetBlockTime() > GetAdjustedTime() + 2 * 60 * 60) {
         fprintf(stderr, "DEBUG: CheckBlock() : block timestamp too far in the future\n");
-        return error("CheckBlock() : block timestamp too far in the future");
+        return error(SHERR_INVAL, "CheckBlock() : block timestamp too far in the future");
 }
 
     // First transaction must be coinbase, the rest must not be
     if (vtx.empty() || !vtx[0].IsCoinBase()) {
         fprintf(stderr, "DEBUG: CheckBlock() : first tx is not coinbase\n");
-        return DoS(100, error("CheckBlock() : first tx is not coinbase"));
+        return DoS(100, error(SHERR_INVAL, "CheckBlock() : first tx is not coinbase"));
     }
     for (unsigned int i = 1; i < vtx.size(); i++)
         if (vtx[i].IsCoinBase()) {
           fprintf(stderr, "DEBUG: CheckBlock() : more than one coinbase");
-          return DoS(100, error("CheckBlock() : more than one coinbase"));
+          return DoS(100, error(SHERR_INVAL, "CheckBlock() : more than one coinbase"));
         }
 
     // Check transactions
     BOOST_FOREACH(const CTransaction& tx, vtx)
         if (!tx.CheckTransaction()) {
             fprintf(stderr, "DEBUG: CheckBlock() : CheckTransaction failed\n");
-            return DoS(tx.nDoS, error("CheckBlock() : CheckTransaction failed"));
+            return DoS(tx.nDoS, error(SHERR_INVAL, "CheckBlock() : CheckTransaction failed"));
         }
 
     // Check for duplicate txids. This is caught by ConnectInputs(),
@@ -1823,7 +1823,7 @@ bool CBlock::CheckBlock() const
     }
     if (uniqueTx.size() != vtx.size()) {
         fprintf(stderr, "DEBUG: CheckBlock() : duplicate transactioni\n");
-        return DoS(100, error("CheckBlock() : duplicate transaction"));
+        return DoS(100, error(SHERR_INVAL, "CheckBlock() : duplicate transaction"));
     }
 
     unsigned int nSigOps = 0;
@@ -1833,13 +1833,13 @@ bool CBlock::CheckBlock() const
     }
     if (nSigOps > MAX_BLOCK_SIGOPS) {
         fprintf(stderr, "DEBUG: CheckBlock() : out-of-bounds SigOpCount\n");
-        return DoS(100, error("CheckBlock() : out-of-bounds SigOpCount"));
+        return DoS(100, error(SHERR_INVAL, "CheckBlock() : out-of-bounds SigOpCount"));
     }
 
     // Check merkleroot
     if (hashMerkleRoot != BuildMerkleTree()) {
         fprintf(stderr, "DEBUG: CheckBlock() : hashMerkleRoot mismatch\n");
-        return DoS(100, error("CheckBlock() : hashMerkleRoot mismatch"));
+        return DoS(100, error(SHERR_INVAL, "CheckBlock() : hashMerkleRoot mismatch"));
 }
 
     return true;
@@ -1851,55 +1851,55 @@ bool CBlock::AcceptBlock()
   uint256 hash = GetHash();
   if (mapBlockIndex.count(hash)) {
     fprintf(stderr, "DEBUG: AcceptBlock() : block already in mapBlockIndex\n");
-    return error("AcceptBlock() : block already in mapBlockIndex");
+    return error(SHERR_INVAL, "AcceptBlock() : block already in mapBlockIndex");
   }
 
   // Get prev block index
   map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(hashPrevBlock);
   if (mi == mapBlockIndex.end())
-    return DoS(10, error("AcceptBlock() : prev block not found"));
+    return DoS(10, error(SHERR_INVAL, "AcceptBlock() : prev block not found"));
   CBlockIndex* pindexPrev = (*mi).second;
   int nHeight = pindexPrev->nHeight+1;
 
   // Check proof of work
   if (nBits != GetNextWorkRequired(pindexPrev, this)) {
     fprintf(stderr, "DEBUG: AcceptBlock() : incorrect proof of work\n");
-    return DoS(100, error("AcceptBlock() : incorrect proof of work"));
+    return DoS(100, error(SHERR_INVAL, "AcceptBlock() : incorrect proof of work"));
   }
 
   // Check timestamp against prev
   if (GetBlockTime() <= pindexPrev->GetMedianTimePast()) {
     fprintf(stderr, "DEBUG: AcceptBlock() : block's timestamp is too early\n");
-    return error("AcceptBlock() : block's timestamp is too early");
+    return error(SHERR_INVAL, "AcceptBlock() : block's timestamp is too early");
   }
 
   // Check that all transactions are finalized
   BOOST_FOREACH(const CTransaction& tx, vtx)
     if (!tx.IsFinal(nHeight, GetBlockTime())) {
       fprintf(stderr, "DEBUG: AcceptBlock() : contains a non-final transaction\n");
-      return DoS(10, error("AcceptBlock() : contains a non-final transaction"));
+      return DoS(10, error(SHERR_INVAL, "AcceptBlock() : contains a non-final transaction"));
     }
 
   // Check that the block chain matches the known block chain up to a checkpoint
   if (!Checkpoints::CheckBlock(nHeight, hash)) {
     fprintf(stderr, "DEBUG: AcceptBlock() : rejected by checkpoint lockin at %d\n", nHeight);
-    return DoS(100, error("AcceptBlock() : rejected by checkpoint lockin at %d", nHeight));
+    return DoS(100, error(SHERR_INVAL, "AcceptBlock() : rejected by checkpoint lockin at %d", nHeight));
   }
 
   // Write block to history file
   if (!CheckDiskSpace(::GetSerializeSize(*this, SER_DISK, CLIENT_VERSION))) {
     fprintf(stderr, "DEBUG: AcceptBlock() : out of disk space\n");
-    return error("AcceptBlock() : out of disk space");
+    return error(SHERR_IO, "AcceptBlock() : out of disk space");
   }
   unsigned int nFile = -1;
   unsigned int nBlockPos = 0;
   if (!WriteToDisk(nFile, nBlockPos)) {
     fprintf(stderr, "AcceptBlock() : WriteToDisk failed\n");
-    return error("AcceptBlock() : WriteToDisk failed");
+    return error(SHERR_IO, "AcceptBlock() : WriteToDisk failed");
   }
   if (!AddToBlockIndex(nFile, nBlockPos)) {
     fprintf(stderr, "AcceptBlock() : AddToBlockIndex failed\n");
-    return error("AcceptBlock() : AddToBlockIndex failed");
+    return error(SHERR_IO, "AcceptBlock() : AddToBlockIndex failed");
   }
 
 //  WriteToShareNet(this, nHeight);
@@ -1922,14 +1922,14 @@ bool ProcessBlock(CNode* pfrom, CBlock* pblock)
     // Check for duplicate
     uint256 hash = pblock->GetHash();
     if (mapBlockIndex.count(hash))
-        return error("ProcessBlock() : already have block %d %s", mapBlockIndex[hash]->nHeight, hash.ToString().substr(0,20).c_str());
+        return error(SHERR_INVAL, "ProcessBlock() : already have block %d %s", mapBlockIndex[hash]->nHeight, hash.ToString().substr(0,20).c_str());
     if (mapOrphanBlocks.count(hash))
-        return error("ProcessBlock() : already have block (orphan) %s", hash.ToString().substr(0,20).c_str());
+        return error(SHERR_INVAL, "ProcessBlock() : already have block (orphan) %s", hash.ToString().substr(0,20).c_str());
 
     // Preliminary checks
     if (!pblock->CheckBlock()) {
 fprintf(stderr, "DEBUG: CheckBlock Fail.\n");
-        return error("ProcessBlock() : CheckBlock FAILED");
+        return error(SHERR_INVAL, "ProcessBlock() : CheckBlock FAILED");
     }
 
     CBlockIndex* pcheckpoint = Checkpoints::GetLastCheckpoint(mapBlockIndex);
@@ -1941,7 +1941,7 @@ fprintf(stderr, "DEBUG: CheckBlock Fail.\n");
         {
             if (pfrom)
                 pfrom->Misbehaving(100);
-            return error("ProcessBlock() : block with timestamp before last checkpoint");
+            return error(SHERR_INVAL, "ProcessBlock() : block with timestamp before last checkpoint");
         }
         CBigNum bnNewBlock;
         bnNewBlock.SetCompact(pblock->nBits);
@@ -1951,7 +1951,7 @@ fprintf(stderr, "DEBUG: CheckBlock Fail.\n");
         {
             if (pfrom)
                 pfrom->Misbehaving(100);
-            return error("ProcessBlock() : block with too little proof-of-work");
+            return error(SHERR_INVAL, "ProcessBlock() : block with too little proof-of-work");
         }
     }
 
@@ -1972,7 +1972,7 @@ fprintf(stderr, "DEBUG: CheckBlock Fail.\n");
 
     // Store to disk
     if (!pblock->AcceptBlock())
-        return error("ProcessBlock() : AcceptBlock FAILED");
+        return error(SHERR_INVAL, "ProcessBlock() : AcceptBlock FAILED");
 
     // Recursively process any orphan blocks that depended on this one
     vector<uint256> vWorkQueue;
@@ -2159,9 +2159,9 @@ bool LoadBlockIndex(bool fAllowNew)
         unsigned int nFile;
         unsigned int nBlockPos;
         if (!block.WriteToDisk(nFile, nBlockPos))
-            return error("LoadBlockIndex() : writing genesis block to disk failed");
+            return error(SHERR_INVAL, "LoadBlockIndex() : writing genesis block to disk failed");
         if (!block.AddToBlockIndex(nFile, nBlockPos))
-            return error("LoadBlockIndex() : genesis block not accepted");
+            return error(SHERR_INVAL, "LoadBlockIndex() : genesis block not accepted");
     }
 
     return true;
@@ -2629,7 +2629,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
         if (vAddr.size() > 1000)
         {
             pfrom->Misbehaving(20);
-            return error("message addr size() = %d", vAddr.size());
+            return error(SHERR_INVAL, "message addr size() = %d", vAddr.size());
         }
 
         // Store the new addresses
@@ -2706,7 +2706,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
         if (vInv.size() > 50000)
         {
             pfrom->Misbehaving(20);
-            return error("message inv size() = %d", vInv.size());
+            return error(SHERR_INVAL, "message inv size() = %d", vInv.size());
         }
 
         // find last block in inv vector
@@ -2757,7 +2757,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
         if (vInv.size() > 50000)
         {
             pfrom->Misbehaving(20);
-            return error("message getdata size() = %d", vInv.size());
+            return error(SHERR_INVAL, "message getdata size() = %d", vInv.size());
         }
 
         if (fDebugNet || (vInv.size() != 1))
@@ -3736,7 +3736,7 @@ bool CheckWork(CBlock* pblock, CWallet& wallet, CReserveKey& reservekey)
     {
         LOCK(cs_main);
         if (pblock->hashPrevBlock != hashBestChain)
-            return error("BitcoinMiner : generated block is stale");
+            return error(SHERR_INVAL, "BitcoinMiner : generated block is stale");
 
         // Remove key from key pool
         reservekey.KeepKey();
@@ -3749,7 +3749,7 @@ bool CheckWork(CBlock* pblock, CWallet& wallet, CReserveKey& reservekey)
 
         // Process this block the same as if we had received it from another node
         if (!ProcessBlock(NULL, pblock))
-            return error("BitcoinMiner : ProcessBlock, block not accepted");
+            return error(SHERR_INVAL, "BitcoinMiner : ProcessBlock, block not accepted");
     }
 
     return true;

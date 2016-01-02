@@ -27,7 +27,7 @@
 
 #define MAX_SOCKET_BUFFER_SIZE 1024000 /* 10meg */
 
-int unet_close(SOCKET sk)
+int unet_close(SOCKET sk, char *tag)
 {
   unet_table_t *table;
   unet_bind_t *bind;
@@ -50,22 +50,13 @@ int unet_close(SOCKET sk)
   err = close(sk);
 #endif
 
-  sprintf(buf, "unet_close: closed '%s' connection (%s).",
-    unet_mode_label(table->mode), shaddr_print(&table->net_addr));
+  sprintf(buf, "closed connection '%s' (%-2.2fh) [%s].",
+      shaddr_print(&table->net_addr), 
+      shtime_diff(shtime(), table->cstamp) / 3600,
+      tag ? tag : "n/a");
   unet_log(table->mode, buf);
 
   table->fd = UNDEFINED_SOCKET;
-
-#if 0
-  /* free [user-level] socket buffer */
-  if (table->rbuff)
-    shbuf_free(&table->rbuff);
-  if (table->wbuff)
-    shbuf_free(&table->wbuff);
-
-  /* empty slate */
-  memset(table, '\000', sizeof(unet_table_t));
-#endif
 
   return (err);
 }
@@ -82,7 +73,7 @@ int unet_close_all(int mode)
     if (t->mode != mode)
       continue; /* wrong mode bra */
 
-    unet_close(t->fd);
+    unet_close(t->fd, "terminate");
   }
 
   return (0);

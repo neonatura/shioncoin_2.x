@@ -80,6 +80,7 @@ int stratum_validate_submit(user_t *user, int req_id, shjson_t *json)
   shjson_t *block;
   task_t *task;
   shkey_t *key;
+  shtime_t ts;
   char *worker = shjson_array_astr(json, "params", 0); 
   char *job_id = shjson_array_astr(json, "params", 1); 
   char *extranonce2 = shjson_array_astr(json, "params", 2); 
@@ -161,7 +162,9 @@ const char *submit_hash;
 
   /* submit everything to server regardless of return code. */
   sprintf(xn_hex, "%s%s", user->peer.nonce1, task->work.xnonce2); 
+  timing_init("submitblock", &ts);
   submit_hash = submitblock(task->task_id, le_ntime, task->work.nonce, xn_hex);
+  timing_term("submitblock", &ts);
   if (submit_hash) {
     ret_err = 0;
 printf("DEBUG: stratum_validate_submit: info: submitted block \"%s\" for \"%s\"\n", submit_hash, user->worker);
@@ -408,6 +411,8 @@ int stratum_request_message(user_t *user, shjson_t *json)
 {
   shjson_t *reply;
   user_t *t_user;
+  shtime_t ts;
+  char buf[256];
   char uname[256];
   char *method;
   double block_avg;
@@ -430,7 +435,9 @@ int stratum_request_message(user_t *user, shjson_t *json)
     return (SHERR_INVAL);
   }
 
-//fprintf(stderr, "DEBUG: JSON REQUEST '%s' [idx %d].\n", method, idx);
+sprintf(buf, "STRATUM REQUEST '%s' [idx %d].\n", method, idx);
+shcoind_log(buf);
+
   if (0 == strcmp(method, "mining.ping")) {
     reply = shjson_init(NULL);
     shjson_num_add(reply, "id", idx);
@@ -454,12 +461,19 @@ int stratum_request_message(user_t *user, shjson_t *json)
   if (0 == strcmp(method, "mining.authorize")) {
     shjson_t *param;
     char *username;
-    char *password;
 
-    username = shjson_array_astr(json, "params", 0);
-    password = shjson_array_astr(json, "params", 1);
-    user = stratum_user(user, username);
-    if (!user) {
+    username = shjson_array_str(json, "params", 0);
+
+    t_user = NULL;
+    if (username && *username)
+      t_user = stratum_user(user, username);
+else {
+fprintf(stderr, "DEBUG: mining.authorize w/ user(%s)\n", username);
+}
+
+    if (username) free(username);
+
+    if (!t_user) {
       reply = shjson_init(NULL);
       set_stratum_error(reply, -2, "unknown user");
       shjson_bool_add(reply, "result", FALSE);
@@ -480,6 +494,8 @@ int stratum_request_message(user_t *user, shjson_t *json)
     //stratum_set_difficulty(user, MAX(32, atoi(password)));
 
     stratum_send_client_ver(user);
+
+
     return (err);
   }
 
@@ -621,15 +637,23 @@ int stratum_request_message(user_t *user, shjson_t *json)
 
     switch (mode) {
       case 1: /* block by hash */
-        if (hash)
+        if (hash) {
+          timing_init("getblockinfo", &ts);
           json_data = getblockinfo(hash);
+          timing_term("getblockinfo", &ts);
+        }
         break;
       case 2: /* tx */
-        if (hash)
+        if (hash) {
+          timing_init("gettransactioninfo", &ts);
           json_data = gettransactioninfo(hash);
+          timing_term("gettransactioninfo", &ts);
+        }
         break;
       case 3: /* block by height [or last] */
+        timing_init("getlastblockinfo", &ts);
         json_data = getlastblockinfo(shjson_array_num(json, "params", 1));
+        timing_term("getlastblockinfo", &ts);
         break;
     }
 

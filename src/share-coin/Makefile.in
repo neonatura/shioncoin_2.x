@@ -190,10 +190,11 @@ am__objects_2 = shcoin-unet_accept.$(OBJEXT) \
 	shcoin-unet.$(OBJEXT) shcoin-unet_close.$(OBJEXT) \
 	shcoin-unet_connect.$(OBJEXT) shcoin-unet_io.$(OBJEXT) \
 	shcoin-unet_timer.$(OBJEXT) shcoin-unet_peer.$(OBJEXT) \
-	shcoin-protocol.$(OBJEXT) shcoin-netbase.$(OBJEXT) \
-	shcoin-version.$(OBJEXT) shcoin-util.$(OBJEXT) \
-	shcoin-shcoind_block.$(OBJEXT) shcoin-shcoind_rpc.$(OBJEXT) \
-	shcoin-shcoind_log.$(OBJEXT) shcoin-shcoind_opt.$(OBJEXT)
+	shcoin-unet_event.$(OBJEXT) shcoin-protocol.$(OBJEXT) \
+	shcoin-netbase.$(OBJEXT) shcoin-version.$(OBJEXT) \
+	shcoin-util.$(OBJEXT) shcoin-shcoind_block.$(OBJEXT) \
+	shcoin-shcoind_rpc.$(OBJEXT) shcoin-shcoind_log.$(OBJEXT) \
+	shcoin-shcoind_opt.$(OBJEXT)
 am__objects_3 = shcoin-addrman.$(OBJEXT) shcoin-tool_irc.$(OBJEXT)
 am_shcoin_OBJECTS = $(am__objects_1) $(am__objects_2) \
 	shcoin-shcoind_tool.$(OBJEXT) shcoin-clientrpc_iface.$(OBJEXT) \
@@ -210,10 +211,11 @@ am__objects_4 = shcoind-unet_accept.$(OBJEXT) \
 	shcoind-unet.$(OBJEXT) shcoind-unet_close.$(OBJEXT) \
 	shcoind-unet_connect.$(OBJEXT) shcoind-unet_io.$(OBJEXT) \
 	shcoind-unet_timer.$(OBJEXT) shcoind-unet_peer.$(OBJEXT) \
-	shcoind-protocol.$(OBJEXT) shcoind-netbase.$(OBJEXT) \
-	shcoind-version.$(OBJEXT) shcoind-util.$(OBJEXT) \
-	shcoind-shcoind_block.$(OBJEXT) shcoind-shcoind_rpc.$(OBJEXT) \
-	shcoind-shcoind_log.$(OBJEXT) shcoind-shcoind_opt.$(OBJEXT)
+	shcoind-unet_event.$(OBJEXT) shcoind-protocol.$(OBJEXT) \
+	shcoind-netbase.$(OBJEXT) shcoind-version.$(OBJEXT) \
+	shcoind-util.$(OBJEXT) shcoind-shcoind_block.$(OBJEXT) \
+	shcoind-shcoind_rpc.$(OBJEXT) shcoind-shcoind_log.$(OBJEXT) \
+	shcoind-shcoind_opt.$(OBJEXT)
 am__objects_5 = shcoind-rpc_proto.$(OBJEXT) \
 	shcoind-checkpoints.$(OBJEXT) shcoind-crypter.$(OBJEXT) \
 	shcoind-db.$(OBJEXT) shcoind-init.$(OBJEXT) \
@@ -1225,6 +1227,7 @@ common_sources = \
 	unet/unet_io.c \
 	unet/unet_timer.c \
 	unet/unet_peer.c \
+	unet/unet_event.c \
 	server/protocol.cpp \
 	server/netbase.cpp \
 	server/version.cpp \
@@ -1499,6 +1502,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoin-unet_buff.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoin-unet_close.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoin-unet_connect.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoin-unet_event.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoin-unet_io.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoin-unet_peer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoin-unet_timer.Po@am__quote@
@@ -1543,6 +1547,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-unet_buff.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-unet_close.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-unet_connect.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-unet_event.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-unet_io.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-unet_peer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-unet_timer.Po@am__quote@
@@ -1698,6 +1703,20 @@ shcoin-unet_peer.obj: unet/unet_peer.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unet/unet_peer.c' object='shcoin-unet_peer.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoin_CFLAGS) $(CFLAGS) -c -o shcoin-unet_peer.obj `if test -f 'unet/unet_peer.c'; then $(CYGPATH_W) 'unet/unet_peer.c'; else $(CYGPATH_W) '$(srcdir)/unet/unet_peer.c'; fi`
+
+shcoin-unet_event.o: unet/unet_event.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoin_CFLAGS) $(CFLAGS) -MT shcoin-unet_event.o -MD -MP -MF $(DEPDIR)/shcoin-unet_event.Tpo -c -o shcoin-unet_event.o `test -f 'unet/unet_event.c' || echo '$(srcdir)/'`unet/unet_event.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shcoin-unet_event.Tpo $(DEPDIR)/shcoin-unet_event.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unet/unet_event.c' object='shcoin-unet_event.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoin_CFLAGS) $(CFLAGS) -c -o shcoin-unet_event.o `test -f 'unet/unet_event.c' || echo '$(srcdir)/'`unet/unet_event.c
+
+shcoin-unet_event.obj: unet/unet_event.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoin_CFLAGS) $(CFLAGS) -MT shcoin-unet_event.obj -MD -MP -MF $(DEPDIR)/shcoin-unet_event.Tpo -c -o shcoin-unet_event.obj `if test -f 'unet/unet_event.c'; then $(CYGPATH_W) 'unet/unet_event.c'; else $(CYGPATH_W) '$(srcdir)/unet/unet_event.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shcoin-unet_event.Tpo $(DEPDIR)/shcoin-unet_event.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unet/unet_event.c' object='shcoin-unet_event.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoin_CFLAGS) $(CFLAGS) -c -o shcoin-unet_event.obj `if test -f 'unet/unet_event.c'; then $(CYGPATH_W) 'unet/unet_event.c'; else $(CYGPATH_W) '$(srcdir)/unet/unet_event.c'; fi`
 
 shcoin-shcoind_block.o: shcoind_block.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoin_CFLAGS) $(CFLAGS) -MT shcoin-shcoind_block.o -MD -MP -MF $(DEPDIR)/shcoin-shcoind_block.Tpo -c -o shcoin-shcoind_block.o `test -f 'shcoind_block.c' || echo '$(srcdir)/'`shcoind_block.c
@@ -1880,6 +1899,20 @@ shcoind-unet_peer.obj: unet/unet_peer.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unet/unet_peer.c' object='shcoind-unet_peer.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CFLAGS) $(CFLAGS) -c -o shcoind-unet_peer.obj `if test -f 'unet/unet_peer.c'; then $(CYGPATH_W) 'unet/unet_peer.c'; else $(CYGPATH_W) '$(srcdir)/unet/unet_peer.c'; fi`
+
+shcoind-unet_event.o: unet/unet_event.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CFLAGS) $(CFLAGS) -MT shcoind-unet_event.o -MD -MP -MF $(DEPDIR)/shcoind-unet_event.Tpo -c -o shcoind-unet_event.o `test -f 'unet/unet_event.c' || echo '$(srcdir)/'`unet/unet_event.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shcoind-unet_event.Tpo $(DEPDIR)/shcoind-unet_event.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unet/unet_event.c' object='shcoind-unet_event.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CFLAGS) $(CFLAGS) -c -o shcoind-unet_event.o `test -f 'unet/unet_event.c' || echo '$(srcdir)/'`unet/unet_event.c
+
+shcoind-unet_event.obj: unet/unet_event.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CFLAGS) $(CFLAGS) -MT shcoind-unet_event.obj -MD -MP -MF $(DEPDIR)/shcoind-unet_event.Tpo -c -o shcoind-unet_event.obj `if test -f 'unet/unet_event.c'; then $(CYGPATH_W) 'unet/unet_event.c'; else $(CYGPATH_W) '$(srcdir)/unet/unet_event.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shcoind-unet_event.Tpo $(DEPDIR)/shcoind-unet_event.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unet/unet_event.c' object='shcoind-unet_event.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CFLAGS) $(CFLAGS) -c -o shcoind-unet_event.obj `if test -f 'unet/unet_event.c'; then $(CYGPATH_W) 'unet/unet_event.c'; else $(CYGPATH_W) '$(srcdir)/unet/unet_event.c'; fi`
 
 shcoind-shcoind_block.o: shcoind_block.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CFLAGS) $(CFLAGS) -MT shcoind-shcoind_block.o -MD -MP -MF $(DEPDIR)/shcoind-shcoind_block.Tpo -c -o shcoind-shcoind_block.o `test -f 'shcoind_block.c' || echo '$(srcdir)/'`shcoind_block.c

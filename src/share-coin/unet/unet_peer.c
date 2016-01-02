@@ -63,6 +63,8 @@ int unet_peer_find(struct sockaddr *addr)
   
   return (0);
 }
+
+#if 0
 void unet_peer_verify(int mode)
 {
   unet_bind_t *bind;
@@ -98,13 +100,13 @@ void unet_peer_verify(int mode)
     shtime_t now = shtime();
     shtime_t expire_t = shtime_adj(bind->scan_stamp, 5);
     if (shtime_before(expire_t, now)) {
+      err = SHERR_TIMEDOUT;
+      sprintf(buf, "unet_peer_verify: error: connect '%s' (%s) [wait %-1.1fs] [sherr %d].", shpeer_print(&bind->scan_peer), sherrstr(err), shtime_diff(bind->scan_stamp, now), err);
+      unet_log(mode, buf);
+
       /* error */
       shnet_track_mark(&bind->scan_peer, -1);
       bind->scan_freq = MAX(0.001, bind->scan_freq * 0.9);
-
-      err = SHERR_TIMEDOUT;
-      sprintf(buf, "unet_peer_verify: error: connect '%s' (%s) [wait %-1.1fs] [sherr %d].", shpeer_print(&bind->scan_peer), sherrstr(err), shtime_diff(expire_t, now), err);
-      unet_log(mode, buf);
 
       shnet_close(bind->scan_fd);
       bind->scan_fd = 0;
@@ -114,7 +116,52 @@ void unet_peer_verify(int mode)
 
   
 }
+#endif
 
+int unet_peer_wait(unet_bind_t *bind)
+{
+  double dur;
+
+  dur = MAX(10, MIN(600, 600 * bind->scan_freq));
+  if (shtime_after(shtime(), shtime_adj(bind->scan_stamp, dur)))
+    return (FALSE);
+
+  return (TRUE);
+}
+
+void unet_peer_scan(void)
+{
+  unet_bind_t *bind;
+  shpeer_t *peer;
+  shtime_t ts;
+  double dur;
+  char buf[256];
+  int mode;
+  int err;
+
+  for (mode = 0; mode < MAX_UNET_MODES; mode++) {
+    bind = unet_bind_table(mode);
+    if (!bind)
+      continue;
+    if (!(bind->flag & UNETF_PEER_SCAN))
+      continue;
+
+    if (unet_peer_wait(bind))
+      continue;
+
+    timing_init("shnet_track_scan", &ts);
+    err = shnet_track_scan(&bind->peer, &peer);
+    timing_term("shnet_track_scan", &ts);
+    if (err) {
+      continue;
+    }
+
+    uevent_new_peer(mode, peer);
+  }
+
+}
+
+#if 0
 void unet_peer_scan(void)
 {
   unet_bind_t *bind;
@@ -163,5 +210,32 @@ void unet_peer_scan(void)
   }
 
 }
+#endif
 
+void unet_peer_fill(int mode)
+{
+  shpeer_t **peer_list;
+  unet_bind_t *bind;
+  int i;
+int tot;
 
+  bind = unet_bind_table(mode);
+  if (!bind)
+    return;
+
+  peer_list = shnet_track_list(&bind->peer, 16);
+  if (!peer_list) {
+fprintf(stderr, "DEBUG: unet_peer_fill: peer_list 0x0\n");
+    return;
+}
+
+tot = 0;
+  for (i = 0; peer_list[i]; i++) {
+fprintf(stderr, "DEBUG: unet_peer_fill: found peer '%s'\n", shpeer_print(peer_list[i]));
+    uevent_new_peer(mode, peer_list[i]);
+tot++;
+  }
+fprintf(stderr, "DEBUG: unet_peer_fill: found x%d/16 total 'good' peers.\n", tot);
+
+  free(peer_list);
+}

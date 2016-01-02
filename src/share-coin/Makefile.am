@@ -73,6 +73,7 @@ common_sources = \
 	unet/unet_io.c \
 	unet/unet_timer.c \
 	unet/unet_peer.c \
+	unet/unet_event.c \
 	server/protocol.cpp \
 	server/netbase.cpp \
 	server/version.cpp \

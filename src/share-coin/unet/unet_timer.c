@@ -65,6 +65,7 @@ void unet_timer_cycle(void)
   unet_bind_t *bind;
   shtime_t min_t;
   shtime_t now;
+  shtime_t ts;
   int idx;
 
   for (idx = 0; idx < MAX_UNET_MODES; idx++) {
@@ -80,7 +81,9 @@ void unet_timer_cycle(void)
 
     /* call work procedure */
     bind->timer_stamp = now;
+    timing_init("op_timer", &ts);
     (*bind->op_timer)();
+    timing_term("op_timer", &ts);
   }
 
 }

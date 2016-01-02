@@ -390,7 +390,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
         if (vAddr.size() > 1000)
         {
             pfrom->Misbehaving(20);
-            return error("message addr size() = %d", vAddr.size());
+            return error(SHERR_INVAL, "message addr size() = %d", vAddr.size());
         }
 
         // Store the new addresses
@@ -467,7 +467,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
         if (vInv.size() > 50000)
         {
             pfrom->Misbehaving(20);
-            return error("message inv size() = %d", vInv.size());
+            return error(SHERR_INVAL, "message inv size() = %d", vInv.size());
         }
 
         // find last block in inv vector
@@ -518,7 +518,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
         if (vInv.size() > 50000)
         {
             pfrom->Misbehaving(20);
-            return error("message getdata size() = %d", vInv.size());
+            return error(SHERR_INVAL, "message getdata size() = %d", vInv.size());
         }
 
         if (fDebugNet || (vInv.size() != 1))
@@ -920,6 +920,8 @@ bool ProcessMessages(CNode* pfrom)
         // Copy message to its own buffer
         CDataStream vMsg(vRecv.begin(), vRecv.begin() + nMessageSize, vRecv.nType, vRecv.nVersion);
         vRecv.ignore(nMessageSize);
+
+fprintf(stderr, "DEBUG: PROC USDE MSG: '%s'\n", strCommand.c_str());
 
         // Process message
         bool fRet = false;

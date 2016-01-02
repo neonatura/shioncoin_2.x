@@ -738,16 +738,18 @@ int64 GetTxFee(CTransaction tx)
   return (nFees);
 }
 
-#define MAX_HISTORY_TIME 31536000 /* one year */
+#define MAX_HISTORY_TIME 10454400 /* 1/3 year */
 const char *c_gettransactioninfo(const char *tx_id)
 {
   CTransaction tx;
   CBlockIndex *pblockindex;
   Object result;
+  shtime_t ts;
   uint256 hashBlock;
   uint256 hashTx;
   int64 nOut;
   int confirms;
+  int err;
 
   if (!tx_id || !*tx_id)
     return (NULL);
@@ -756,17 +758,17 @@ const char *c_gettransactioninfo(const char *tx_id)
   hashTx.SetHex(tx_id);
 //  pblockindex = transactionMap[hashTx]; /* check tx map */
   if (!pblockindex) {
-fprintf(stderr, "DEBUG: TIMING: findTransaction/start\n");
+    timing_init("findTransaction", &ts);
     pblockindex = findTransaction(hashTx, tx, MAX_HISTORY_TIME);
-fprintf(stderr, "DEBUG: TIMING: findTransaction/end\n");
+    timing_term("findTransaction", &ts);
     if (!pblockindex)
       return (NULL);
 
     hashTx = tx.GetHash();
   } else {
-fprintf(stderr, "DEBUG: TIMING: findBlockTransaction/start\n");
-    int err = findBlockTransaction(pblockindex, tx_id, tx, MAX_HISTORY_TIME);
-fprintf(stderr, "DEBUG: TIMING: findBlockTransaction/end\n");
+    timing_init("findBlockTransaction", &ts);
+    err = findBlockTransaction(pblockindex, tx_id, tx, MAX_HISTORY_TIME);
+    timing_term("findBlockTransaction", &ts);
     if (err)
       return (NULL);
   }

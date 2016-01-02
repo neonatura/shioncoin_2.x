@@ -72,6 +72,7 @@ static void stratum_close(int fd, struct sockaddr *net_addr)
 
     if (peer->fd == fd) {
       peer->fd = -1;
+fprintf(stderr, "DEBUG: stratum_close: closing fd %d\n", fd);
     }
 
   }
@@ -125,6 +126,7 @@ static void stratum_timer(void)
 }
 
 
+#if 0
     /* check status of socket. */
     err = write(peer->fd, "", 0);
     if (err) {
@@ -134,10 +136,11 @@ static void stratum_timer(void)
       shcoind_log(buf);
 
       /* socket is inaccesible */
-      unet_close(peer->fd);
+      unet_close(peer->fd, "exception");
       peer->fd = -1;
       continue;
     }
+#endif
 
     buff = t->rbuff;
     if (!buff) continue;

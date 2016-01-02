@@ -38,7 +38,6 @@ typedef int pid_t; /* define for windows compatiblity */
 #define UBEGIN(a)           ((unsigned char*)&(a))
 #define UEND(a)             ((unsigned char*)&((&(a))[1]))
 #define ARRAYLEN(array)     (sizeof(array)/sizeof((array)[0]))
-#define printf              OutputDebugStringF
 
 #ifndef PRI64d
 #if defined(_MSC_VER) || defined(__MSVCRT__)
@@ -118,7 +117,7 @@ extern bool fReopenDebugLog;
 
 void RandAddSeed();
 void RandAddSeedPerfmon();
-int OutputDebugStringF(const char* pszFormat, ...);
+int Debug(const char* pszFormat, ...);
 int my_snprintf(char* buffer, size_t limit, const char* format, ...);
 
 /* It is not allowed to use va_start with a pass-by-reference argument.
@@ -129,7 +128,7 @@ std::string real_strprintf(const std::string &format, int dummy, ...);
 #define strprintf(format, ...) real_strprintf(format, 0, __VA_ARGS__)
 std::string vstrprintf(const std::string &format, va_list ap);
 
-bool error(const char *format, ...);
+bool error(int err_code, const char *format, ...);
 void LogException(std::exception* pex, const char* pszThread);
 void PrintException(std::exception* pex, const char* pszThread);
 void PrintExceptionContinue(std::exception* pex, const char* pszThread);

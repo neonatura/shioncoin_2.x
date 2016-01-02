@@ -1184,7 +1184,7 @@ void usde_server_accept(int hSocket, struct sockaddr *net_addr)
         LOCK(cs_setservAddNodeAddresses);
         if (!setservAddNodeAddresses.count(addr)) {
       fprintf(stderr, "connection from %s dropped (inbound limit %d exceeded)\n", addr.ToString().c_str(), (opt_max_conn - MAX_OUTBOUND_CONNECTIONS));
-          unet_close(hSocket);
+          unet_close(hSocket, "inbound limit");
 #if 0
           closesocket(hSocket);
 #endif
@@ -1195,7 +1195,7 @@ void usde_server_accept(int hSocket, struct sockaddr *net_addr)
     if (CNode::IsBanned(addr))
     {
       fprintf(stderr, "connection from %s dropped (banned)\n", addr.ToString().c_str());
-      unet_close(hSocket);
+      unet_close(hSocket, "banned");
       //    closesocket(hSocket);
       return;
     }
@@ -2068,6 +2068,7 @@ void shared_addr_submit(const char *net_addr)
 
 void AddAddress(const char *hostname, int port)
 {
+#if 0
   shpeer_t *peer;
   char addr_str[256];
 
@@ -2075,6 +2076,14 @@ void AddAddress(const char *hostname, int port)
   peer = shpeer_init("usde", addr_str);
   shnet_track_add(peer);
   shpeer_free(&peer);
+#endif
+
+  shpeer_t *peer;
+  char addr_str[256];
+
+  sprintf(addr_str, "%s %d", hostname, port); 
+  peer = shpeer_init("usde", addr_str);
+  uevent_new_peer(UNET_COIN, peer);
 }
 
 int GetRandomAddress(char *hostname, int *port_p)

@@ -182,7 +182,7 @@ bool static Socks4(const CService &addrDest, SOCKET& hSocket)
     if (!addrDest.IsIPv4())
     {
         closesocket(hSocket);
-        return error("Proxy destination is not IPv4");
+        return error(SHERR_INVAL, "Proxy destination is not IPv4");
     }
     char pszSocks4IP[] = "\4\1\0\0\0\0\0\0user";
     struct sockaddr_in addr;
@@ -190,7 +190,7 @@ bool static Socks4(const CService &addrDest, SOCKET& hSocket)
     if (!addrDest.GetSockAddr((struct sockaddr*)&addr, &len) || addr.sin_family != AF_INET)
     {
         closesocket(hSocket);
-        return error("Cannot get proxy destination address");
+        return error(SHERR_INVAL, "Cannot get proxy destination address");
     }
     memcpy(pszSocks4IP + 2, &addr.sin_port, 2);
     memcpy(pszSocks4IP + 4, &addr.sin_addr, 4);
@@ -201,13 +201,13 @@ bool static Socks4(const CService &addrDest, SOCKET& hSocket)
     if (ret != nSize)
     {
         closesocket(hSocket);
-        return error("Error sending to proxy");
+        return error(SHERR_INVAL, "Error sending to proxy");
     }
     char pchRet[8];
     if (recv(hSocket, pchRet, 8, 0) != 8)
     {
         closesocket(hSocket);
-        return error("Error reading proxy response");
+        return error(SHERR_INVAL, "Error reading proxy response");
     }
     if (pchRet[1] != 0x5a)
     {
@@ -226,7 +226,7 @@ bool static Socks5(string strDest, int port, SOCKET& hSocket)
     if (strDest.size() > 255)
     {
         closesocket(hSocket);
-        return error("Hostname too long");
+        return error(SHERR_INVAL, "Hostname too long");
     }
     char pszSocks5Init[] = "\5\1\0";
     char *pszSocks5 = pszSocks5Init;
@@ -236,18 +236,18 @@ bool static Socks5(string strDest, int port, SOCKET& hSocket)
     if (ret != nSize)
     {
         closesocket(hSocket);
-        return error("Error sending to proxy");
+        return error(SHERR_INVAL, "Error sending to proxy");
     }
     char pchRet1[2];
     if (recv(hSocket, pchRet1, 2, 0) != 2)
     {
         closesocket(hSocket);
-        return error("Error reading proxy response");
+        return error(SHERR_INVAL, "Error reading proxy response");
     }
     if (pchRet1[0] != 0x05 || pchRet1[1] != 0x00)
     {
         closesocket(hSocket);
-        return error("Proxy failed to initialize");
+        return error(SHERR_INVAL, "Proxy failed to initialize");
     }
     string strSocks5("\5\1");
     strSocks5 += '\000'; strSocks5 += '\003';
@@ -259,39 +259,39 @@ bool static Socks5(string strDest, int port, SOCKET& hSocket)
     if (ret != (ssize_t)strSocks5.size())
     {
         closesocket(hSocket);
-        return error("Error sending to proxy");
+        return error(SHERR_INVAL, "Error sending to proxy");
     }
     char pchRet2[4];
     if (recv(hSocket, pchRet2, 4, 0) != 4)
     {
         closesocket(hSocket);
-        return error("Error reading proxy response");
+        return error(SHERR_INVAL, "Error reading proxy response");
     }
     if (pchRet2[0] != 0x05)
     {
         closesocket(hSocket);
-        return error("Proxy failed to accept request");
+        return error(SHERR_INVAL, "Proxy failed to accept request");
     }
     if (pchRet2[1] != 0x00)
     {
         closesocket(hSocket);
         switch (pchRet2[1])
         {
-            case 0x01: return error("Proxy error: general failure");
-            case 0x02: return error("Proxy error: connection not allowed");
-            case 0x03: return error("Proxy error: network unreachable");
-            case 0x04: return error("Proxy error: host unreachable");
-            case 0x05: return error("Proxy error: connection refused");
-            case 0x06: return error("Proxy error: TTL expired");
-            case 0x07: return error("Proxy error: protocol error");
-            case 0x08: return error("Proxy error: address type not supported");
-            default:   return error("Proxy error: unknown");
+            case 0x01: return error(SHERR_INVAL, "Proxy error: general failure");
+            case 0x02: return error(SHERR_INVAL, "Proxy error: connection not allowed");
+            case 0x03: return error(SHERR_INVAL, "Proxy error: network unreachable");
+            case 0x04: return error(SHERR_INVAL, "Proxy error: host unreachable");
+            case 0x05: return error(SHERR_INVAL, "Proxy error: connection refused");
+            case 0x06: return error(SHERR_INVAL, "Proxy error: TTL expired");
+            case 0x07: return error(SHERR_INVAL, "Proxy error: protocol error");
+            case 0x08: return error(SHERR_INVAL, "Proxy error: address type not supported");
+            default:   return error(SHERR_INVAL, "Proxy error: unknown");
         }
     }
     if (pchRet2[2] != 0x00)
     {
         closesocket(hSocket);
-        return error("Error: malformed proxy response");
+        return error(SHERR_INVAL, "Error: malformed proxy response");
     }
     char pchRet3[256];
     switch (pchRet2[3])
@@ -302,22 +302,22 @@ bool static Socks5(string strDest, int port, SOCKET& hSocket)
         {
             ret = recv(hSocket, pchRet3, 1, 0) != 1;
             if (ret)
-                return error("Error reading from proxy");
+                return error(SHERR_INVAL, "Error reading from proxy");
             int nRecv = pchRet3[0];
             ret = recv(hSocket, pchRet3, nRecv, 0) != nRecv;
             break;
         }
-        default: closesocket(hSocket); return error("Error: malformed proxy response");
+        default: closesocket(hSocket); return error(SHERR_INVAL, "Error: malformed proxy response");
     }
     if (ret)
     {
         closesocket(hSocket);
-        return error("Error reading from proxy");
+        return error(SHERR_INVAL, "Error reading from proxy");
     }
     if (recv(hSocket, pchRet3, 2, 0) != 2)
     {
         closesocket(hSocket);
-        return error("Error reading from proxy");
+        return error(SHERR_INVAL, "Error reading from proxy");
     }
     printf("SOCKS5 connected %s\n", strDest.c_str());
     return true;
@@ -326,6 +326,8 @@ bool static Socks5(string strDest, int port, SOCKET& hSocket)
 bool static ConnectSocketDirectly(const CService &addrConnect, SOCKET& hSocketRet, int nTimeout)
 {
     hSocketRet = INVALID_SOCKET;
+
+fprintf(stderr, "DEBUG: ConnectSocketDirectly()\n");
 
 #ifdef USE_IPV6
     struct sockaddr_storage sockaddr;
