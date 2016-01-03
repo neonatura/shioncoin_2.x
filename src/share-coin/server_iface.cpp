@@ -1236,54 +1236,55 @@ void usde_server_timer(void)
 
   //
   // Service each socket
-  //
-  vector<CNode*> vNodesCopy;
   {
-    LOCK(cs_vNodes);
-    vNodesCopy = vNodes;
-    BOOST_FOREACH(CNode* pnode, vNodesCopy)
-      pnode->AddRef();
-  }
-
-  char pchBuf[65536];
-  BOOST_FOREACH(CNode* pnode, vNodesCopy)
-  {
-    if (fShutdown)
-      return;
-
-    memset(pchBuf, '\000', 65536);
-
-    /* incoming data */
-    CDataStream& vRecv = pnode->vRecv;
-    unsigned int nPos = vRecv.size();
-    size_t nBytes = sizeof(pchBuf);
-    int err = unet_read(pnode->hSocket, pchBuf, &nBytes);
-    if (!err && nBytes > 0) { 
-      vRecv.resize(nPos + nBytes);
-      memcpy(&vRecv[nPos], pchBuf, nBytes);
-      pnode->nLastRecv = GetTime();
+    vector<CNode*> vNodesCopy;
+    {
+      LOCK(cs_vNodes);
+      vNodesCopy = vNodes;
+      BOOST_FOREACH(CNode* pnode, vNodesCopy)
+        pnode->AddRef();
     }
 
+    char pchBuf[65536];
+    BOOST_FOREACH(CNode* pnode, vNodesCopy)
     {
-      LOCK(pnode->cs_vSend);
-      /* transmit pending outgoing data */
-      CDataStream& vSend = pnode->vSend;
-      if (!vSend.empty())
+      if (fShutdown)
+        return;
+
+      memset(pchBuf, '\000', 65536);
+
+      /* incoming data */
+      CDataStream& vRecv = pnode->vRecv;
+      unsigned int nPos = vRecv.size();
+      size_t nBytes = sizeof(pchBuf);
+      int err = unet_read(pnode->hSocket, pchBuf, &nBytes);
+      if (!err && nBytes > 0) { 
+        vRecv.resize(nPos + nBytes);
+        memcpy(&vRecv[nPos], pchBuf, nBytes);
+        pnode->nLastRecv = GetTime();
+      }
+
       {
-        size_t nBytes = vSend.size();
-        int err = unet_write(pnode->hSocket, &vSend[0], nBytes);
-        if (!err) {
-          vSend.erase(vSend.begin(), vSend.begin() + nBytes);
-          pnode->nLastSend = GetTime();
+        LOCK(pnode->cs_vSend);
+        /* transmit pending outgoing data */
+        CDataStream& vSend = pnode->vSend;
+        if (!vSend.empty())
+        {
+          size_t nBytes = vSend.size();
+          int err = unet_write(pnode->hSocket, &vSend[0], nBytes);
+          if (!err) {
+            vSend.erase(vSend.begin(), vSend.begin() + nBytes);
+            pnode->nLastSend = GetTime();
+          }
         }
       }
     }
-  }
 
-  {
-    LOCK(cs_vNodes);
-    BOOST_FOREACH(CNode* pnode, vNodesCopy)
-      pnode->Release();
+    {
+      LOCK(cs_vNodes);
+      BOOST_FOREACH(CNode* pnode, vNodesCopy)
+        pnode->Release();
+    }
   }
 
   MessageHandler();
