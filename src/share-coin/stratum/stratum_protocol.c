@@ -435,8 +435,12 @@ int stratum_request_message(user_t *user, shjson_t *json)
     return (SHERR_INVAL);
   }
 
+#if 0
 sprintf(buf, "STRATUM REQUEST '%s' [idx %d].\n", method, idx);
 shcoind_log(buf);
+#endif
+
+  timing_init(method, &ts);
 
   if (0 == strcmp(method, "mining.ping")) {
     reply = shjson_init(NULL);
@@ -629,6 +633,7 @@ fprintf(stderr, "DEBUG: mining.authorize w/ user(%s)\n", username);
 
   if (0 == strcmp(method, "block.info")) {
     const char *json_data = "{\"result\":null,\"error\":null}";
+    shtime_t ts2;
     char *hash;
     int mode;
 
@@ -638,22 +643,22 @@ fprintf(stderr, "DEBUG: mining.authorize w/ user(%s)\n", username);
     switch (mode) {
       case 1: /* block by hash */
         if (hash) {
-          timing_init("getblockinfo", &ts);
+          timing_init("getblockinfo", &ts2);
           json_data = getblockinfo(hash);
-          timing_term("getblockinfo", &ts);
+          timing_term("getblockinfo", &ts2);
         }
         break;
       case 2: /* tx */
         if (hash) {
-          timing_init("gettransactioninfo", &ts);
+          timing_init("gettransactioninfo", &ts2);
           json_data = gettransactioninfo(hash);
-          timing_term("gettransactioninfo", &ts);
+          timing_term("gettransactioninfo", &ts2);
         }
         break;
       case 3: /* block by height [or last] */
-        timing_init("getlastblockinfo", &ts);
+        timing_init("getlastblockinfo", &ts2);
         json_data = getlastblockinfo(shjson_array_num(json, "params", 1));
-        timing_term("getlastblockinfo", &ts);
+        timing_term("getlastblockinfo", &ts2);
         break;
     }
 
@@ -706,6 +711,8 @@ fprintf(stderr, "DEBUG: mining.authorize w/ user(%s)\n", username);
           shjson_array_astr(json, "params", 0),
           shjson_array_astr(json, "params", 1)));
   }
+
+  timing_term(method, &ts);
 
   /* unknown request in proper JSON format. */
   reply = shjson_init(NULL);

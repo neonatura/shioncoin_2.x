@@ -72,7 +72,6 @@ static void stratum_close(int fd, struct sockaddr *net_addr)
 
     if (peer->fd == fd) {
       peer->fd = -1;
-fprintf(stderr, "DEBUG: stratum_close: closing fd %d\n", fd);
     }
 
   }

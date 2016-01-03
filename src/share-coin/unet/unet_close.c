@@ -131,15 +131,14 @@ void unet_close_free(void)
     t = get_unet_table(sk);
     if (!t || t->fd != UNDEFINED_SOCKET)
       continue; /* active */
+    if (t->mode == UNET_NONE)
+      continue; /* already cleared */ 
 
     /* free [user-level] socket buffer */
-    if (t->rbuff || t->wbuff) {
-      shbuf_free(&t->rbuff);
-      shbuf_free(&t->wbuff);
+    shbuf_free(&t->rbuff);
+    shbuf_free(&t->wbuff);
 
-      /* empty slate */
-      memset(t, '\000', sizeof(unet_table_t));
-    }
+    memset(t, '\000', sizeof(unet_table_t));
   }
 
 }
