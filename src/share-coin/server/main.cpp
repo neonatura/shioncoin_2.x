@@ -1704,7 +1704,7 @@ bool CBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
     nTimeBestReceived = GetTime();
     nTransactionsUpdated++;
 
-    Debug("SetBestChain: new best=%s  height=%d  work=%s  date=%s\n", hashBestChain.ToString().substr(0,20).c_str(), nBestHeight, bnBestChainWork.ToString().c_str(), DateTimeStrFormat("%x %H:%M:%S", pindexBest->GetBlockTime()).c_str());
+//    Debug("SetBestChain: new best=%s  height=%d  work=%s  date=%s\n", hashBestChain.ToString().substr(0,20).c_str(), nBestHeight, bnBestChainWork.ToString().c_str(), DateTimeStrFormat("%x %H:%M:%S", pindexBest->GetBlockTime()).c_str());
 
     // Check the version of the last 100 blocks to see if we need to upgrade:
     if (!fIsInitialDownload)
@@ -2583,7 +2583,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
             addrman.Good(pfrom->addr);
 #endif
 
-            if (pfrom->fOneShot || pfrom->nVersion >= CADDR_TIME_VERSION) {
+            if (vNodes.size() < 2 || pfrom->nVersion == CADDR_TIME_VERSION) {
               pfrom->PushMessage("getaddr");
               pfrom->fGetAddr = true;
             }
@@ -2707,7 +2707,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
           AddAddress(addr.ToStringIP().c_str(), addr.GetPort());
 
           cnt++;
-          if (cnt > 256)
+          if (cnt > 640)
             break;
         }
 #if 0

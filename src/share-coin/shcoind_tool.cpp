@@ -19,6 +19,7 @@ using namespace boost;
 extern void IRCDiscover(void);
 extern void ImportPeers(void);
 extern void PrintPeers(void);
+extern void ListPeers(void);
 
 
 int main(int argc, char *argv[])
@@ -73,6 +74,11 @@ int main(int argc, char *argv[])
   if (argc >= 2 && 0 == strcasecmp(argv[1], "printpeers")) {
     /* load 'peers.dat' into sharefs peer db */
     PrintPeers();
+    return (0);
+  }
+  if (argc >= 2 && 0 == strcasecmp(argv[1], "listpeers")) {
+    /* load 'peers.dat' into sharefs peer db */
+    ListPeers();
     return (0);
   }
 
@@ -144,6 +150,29 @@ void PrintPeers(void)
 
   fwrite(text, sizeof(char), strlen(text), stdout);
   free(text);
+
+  shpeer_free(&serv_peer);
+
+}
+void ListPeers(void)
+{
+  shdb_t *db;
+  shpeer_t **peer_list;
+  shpeer_t *serv_peer;
+  int i;
+
+  serv_peer = shapp_init("usde", NULL, SHAPP_LOCAL);
+
+  db = shdb_open("net");
+  peer_list = shnet_track_list(serv_peer, 16);
+  shdb_close(db);
+
+  for (i = 0; peer_list[i]; i++) {
+    fprintf(stdout, "%s\n", shpeer_print(peer_list[i]));
+    free(peer_list[i]);
+  }
+  free(peer_list);
+
 
   shpeer_free(&serv_peer);
 

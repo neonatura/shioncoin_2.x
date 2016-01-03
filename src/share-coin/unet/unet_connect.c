@@ -103,9 +103,9 @@ int unet_connect(int mode, struct sockaddr *net_addr, SOCKET *sk_p)
     *sk_p = cli_fd;
 
   if (bind->flag & UNETF_PEER_SCAN) {
-    /* ensure addr is listed in service peer db */
+    /* record successfull connection */
     shpeer_t *peer = shpeer_init("usde", shaddr_print(net_addr));
-    shnet_track_add(peer);
+    shnet_track_mark(peer, 1);
     shpeer_free(&peer);
   }
 

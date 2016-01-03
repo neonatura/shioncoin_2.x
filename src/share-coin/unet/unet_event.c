@@ -67,7 +67,6 @@ void uevent_clear_pos(int idx)
   if (idx < 0 || idx > UNET_MAX_EVENTS)
     return;
   memset(&event_table[idx], '\000', sizeof(uevent_t));
-fprintf(stderr, "DEBUG: uevent_clear_pos(%d)\n", idx);
 }
 void uevent_clear(uevent_t *e)
 {
@@ -88,13 +87,18 @@ int uevent_peer_verify(uevent_t *e)
   shpeer_t *peer;
   shtime_t now;
   shtime_t expire_t;
+  char buf[1024];
   int err;
+
+  peer = (shpeer_t *)e->data;
+  if (!peer) {
+    return (0); /* all done */
+  }
 
   bind = unet_bind_table(e->mode);
   if (!bind)
     return (0); /* all done */
 
-  peer = (shpeer_t *)e->data;
   err = shnet_track_verify(peer, &e->fd);
   if (!err) {
     /* success */
@@ -105,6 +109,9 @@ int uevent_peer_verify(uevent_t *e)
     if (!unet_peer_find(shpeer_addr(peer))) /* x2check */
       unet_connect(e->mode, shpeer_addr(peer), NULL);
 
+    sprintf(buf, "unet_peer_verify: peer '%s' verified.\n", shpeer_print(peer));
+    unet_log(e->mode, buf);
+
     return (0); /* dispose of event */
   }
 
@@ -113,10 +120,8 @@ int uevent_peer_verify(uevent_t *e)
     shnet_track_mark(peer, -1);
     bind->scan_freq = MAX(0.001, bind->scan_freq * 0.9);
 
-#if 0
-    sprintf(buf, "unet_peer_verify: error: connect '%s' (%s) [sherr %d].", shpeer_print(&bind->scan_peer), sherrstr(err), err);
-    unet_log(mode, buf);
-#endif
+    sprintf(buf, "unet_peer_verify: error: peer '%s' (%s) [sherr %d].", shpeer_print(peer), sherrstr(err), err);
+    unet_log(e->mode, buf);
 
     return (0); /* dispose of event */
   }
@@ -126,10 +131,8 @@ int uevent_peer_verify(uevent_t *e)
     /* async connection socket timeout */
     err = SHERR_TIMEDOUT;
 
-#if 0
-    sprintf(buf, "unet_peer_verify: error: connect '%s' (%s) [wait %-1.1fs] [sherr %d].", shpeer_print(&bind->scan_peer), sherrstr(err), shtime_diff(bind->scan_stamp, now), err);
-    unet_log(mode, buf);
-#endif
+    sprintf(buf, "unet_peer_verify: error: peer '%s' (%s) [wait %-1.1fs] [sherr %d].", shpeer_print(peer), sherrstr(err), shtime_diff(bind->scan_stamp, now), err);
+    unet_log(e->mode, buf);
 
     /* error */
     shnet_track_mark(peer, -1);

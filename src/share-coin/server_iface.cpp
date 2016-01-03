@@ -2125,7 +2125,7 @@ vector <CAddress> GetAddresses(void)
 
   sprintf(buf, "127.0.0.1 %d", GetDefaultPort());
   peer = shpeer_init("usde", buf);
-  addr_list = shnet_track_list(peer, 256);
+  addr_list = shnet_track_list(peer, 640);
   shpeer_free(&peer);
   if (!addr_list)
     return (vAddr);

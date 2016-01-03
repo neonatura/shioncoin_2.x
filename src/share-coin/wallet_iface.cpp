@@ -161,19 +161,21 @@ Object JSONAddressInfo(CBitcoinAddress address, bool show_priv)
   return (result);
 }
 
-int c_UpgradeWallet(void)
+int cxx_UpgradeWallet(void)
 {
-int nMaxVersion = 0;//GetArg("-upgradewallet", 0);
-        if (nMaxVersion == 0) // the -upgradewallet without argument case
-        {
-            printf("Performing wallet upgrade to %i\n", FEATURE_LATEST);
-            nMaxVersion = CLIENT_VERSION;
-            pwalletMain->SetMinVersion(FEATURE_LATEST); // permanently upgrade the wallet immediately
-        }
-        else
-            printf("Allowing wallet upgrade up to %i\n", nMaxVersion);
-        if (nMaxVersion > pwalletMain->GetVersion())
-                pwalletMain->SetMaxVersion(nMaxVersion);
+  int nMaxVersion = 0;//GetArg("-upgradewallet", 0);
+  if (nMaxVersion == 0) // the -upgradewallet without argument case
+  {
+    nMaxVersion = CLIENT_VERSION;
+    pwalletMain->SetMinVersion(FEATURE_LATEST); // permanently upgrade the wallet immediately
+    Debug("using wallet version %d", FEATURE_LATEST);
+  }
+  else
+    printf("Allowing wallet upgrade up to %i\n", nMaxVersion);
+
+  if (nMaxVersion > pwalletMain->GetVersion()) {
+    pwalletMain->SetMaxVersion(nMaxVersion);
+  }
 
 }
 
@@ -923,7 +925,7 @@ int load_wallet(void)
 
 int upgrade_wallet(void)
 {
-  return (c_UpgradeWallet());
+  return (cxx_UpgradeWallet());
 }
 
 int load_peers(void)

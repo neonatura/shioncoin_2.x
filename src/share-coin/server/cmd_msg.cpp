@@ -321,7 +321,7 @@ shtime_t ts;
             addrman.Good(pfrom->addr);
 #endif
 
-            if (pfrom->fOneShot || pfrom->nVersion >= CADDR_TIME_VERSION) {
+            if (pfrom->fOneShot || pfrom->nVersion >= CADDR_TIME_VERSION || (int)vNodes.size() < 2) {
               pfrom->PushMessage("getaddr");
               pfrom->fGetAddr = true;
             }

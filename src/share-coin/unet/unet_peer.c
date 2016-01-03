@@ -24,6 +24,7 @@
  */  
 
 #include "shcoind.h"
+#include "unet_seed.h"
 
 
 int unet_peer_find(struct sockaddr *addr)
@@ -212,30 +213,56 @@ void unet_peer_scan(void)
 }
 #endif
 
+void unet_peer_fill_seed(int mode)
+{
+  unet_bind_t *bind;
+  shpeer_t *peer;
+  char hostname[MAXHOSTNAMELEN+1];
+  char buf[1024];
+  int i;
+
+  bind = unet_bind_table(mode);
+  if (!bind)
+    return;
+
+  memset(hostname, 0, sizeof(hostname));
+  if (mode == UNET_COIN) {
+    for (i = 0; i < USDE_SEED_LIST_SIZE; i++) {
+      sprintf(hostname, "%s %d", usde_seed_list[i], bind->port);
+      peer = shpeer_init("usde", hostname); 
+      uevent_new_peer(mode, peer);
+
+      sprintf(buf, "unet_peer_fill_seed: seeding peer '%s'.", shpeer_print(peer));
+      unet_log(mode, buf);
+    }
+  }
+
+}
 void unet_peer_fill(int mode)
 {
   shpeer_t **peer_list;
   unet_bind_t *bind;
   int i;
-int tot;
 
   bind = unet_bind_table(mode);
   if (!bind)
     return;
 
   peer_list = shnet_track_list(&bind->peer, 16);
-  if (!peer_list) {
-fprintf(stderr, "DEBUG: unet_peer_fill: peer_list 0x0\n");
-    return;
-}
 
-tot = 0;
-  for (i = 0; peer_list[i]; i++) {
-fprintf(stderr, "DEBUG: unet_peer_fill: found peer '%s'\n", shpeer_print(peer_list[i]));
-    uevent_new_peer(mode, peer_list[i]);
-tot++;
+  i = 0;
+  if (peer_list) {
+    for (; peer_list[i]; i++) {
+      uevent_new_peer(mode, peer_list[i]);
+    }
   }
-fprintf(stderr, "DEBUG: unet_peer_fill: found x%d/16 total 'good' peers.\n", tot);
+  if (i == 0) {
+    char buf[256];
+    sprintf(buf, "unet_peer_fill: fresh peer database [%s].", shpeer_print(&bind->peer)); 
+    unet_log(mode, buf);
+
+    unet_peer_fill_seed(mode);
+  }
 
   free(peer_list);
 }

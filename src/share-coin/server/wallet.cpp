@@ -1454,7 +1454,7 @@ bool CWallet::TopUpKeyPool()
             if (!walletdb.WritePool(nEnd, CKeyPool(GenerateNewKey())))
                 throw runtime_error("TopUpKeyPool() : writing generated key failed");
             setKeyPool.insert(nEnd);
-            Debug("keypool added key %"PRI64d", size=%d\n", nEnd, setKeyPool.size());
+//            Debug("keypool added key %"PRI64d", size=%d\n", nEnd, setKeyPool.size());
         }
     }
     return true;
