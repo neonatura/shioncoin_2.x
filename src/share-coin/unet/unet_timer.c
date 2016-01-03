@@ -81,9 +81,9 @@ void unet_timer_cycle(void)
 
     /* call work procedure */
     bind->timer_stamp = now;
-    timing_init("op_timer", &ts);
+    timing_init(unet_mode_label(idx), &ts);
     (*bind->op_timer)();
-    timing_term("op_timer", &ts);
+    timing_term(unet_mode_label(idx), &ts);
   }
 
 }

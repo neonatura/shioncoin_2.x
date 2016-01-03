@@ -153,17 +153,23 @@ void RandAddSeedPerfmon()
 
 uint64 GetRand(uint64 nMax)
 {
-    if (nMax == 0)
-        return 0;
+  uint64 nRand = 0;
 
-    // The range of the random source must be a multiple of the modulus
-    // to give every possible output value an equal possibility
-    uint64 nRange = (std::numeric_limits<uint64>::max() / nMax) * nMax;
-    uint64 nRand = 0;
-    do
-        RAND_bytes((unsigned char*)&nRand, sizeof(nRand));
-    while (nRand >= nRange);
-    return (nRand % nMax);
+  if (nMax == 0)
+    return (nRand);
+
+#if 0
+  // The range of the random source must be a multiple of the modulus
+  // to give every possible output value an equal possibility
+  uint64 nRange = (std::numeric_limits<uint64>::max() / nMax) * nMax;
+  uint64 nRand = 0;
+  do
+    RAND_bytes((unsigned char*)&nRand, sizeof(nRand));
+  while (nRand >= nRange);
+#endif
+
+  nRand = shrand();
+  return (nRand % nMax);
 }
 
 int GetRandInt(int nMax)
