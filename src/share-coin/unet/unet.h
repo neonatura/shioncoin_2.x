@@ -45,7 +45,7 @@ extern "C" {
 
 
 #define UNDEFINED_SOCKET 0
-#define UNDEFINED_TIME 0
+#define UNDEFINED_TIME SHTIME_UNDEFINED
 
 #ifdef WIN32
 #define MSG_NOSIGNAL        0

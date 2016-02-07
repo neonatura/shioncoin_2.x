@@ -72,6 +72,36 @@ extern double GetDifficulty(const CBlockIndex* blockindex = NULL);
 
 extern void ListTransactions(const CWalletTx& wtx, const string& strAccount, int nMinDepth, bool fLong, Array& ret);
 
+static double nextDifficulty;
+double GetBitsDifficulty(unsigned int nBits)
+{
+  // Floating point number that is a multiple of the minimum difficulty,
+  // minimum difficulty = 1.0.
+
+  int nShift = (nBits >> 24) & 0xff;
+
+  double dDiff =
+    (double)0x0000ffff / (double)(nBits & 0x00ffffff);
+
+  while (nShift < 29)
+  {
+    dDiff *= 256.0;
+    nShift++;
+  }
+  while (nShift > 29)
+  {
+    dDiff /= 256.0;
+    nShift--;
+  }
+
+  return (dDiff);
+}
+
+void SetNextDifficulty(unsigned int nBits)
+{
+  nextDifficulty = GetBitsDifficulty(nBits);
+}
+
 /**
  * Generate a block to work on.
  * @returns JSON encoded block state information
@@ -131,6 +161,8 @@ const char *c_getblocktemplate(void)
   // Update nTime
   pblock->UpdateTime(pindexPrev);
   pblock->nNonce = 0;
+
+  SetNextDifficulty(pblock->nBits);
 
   Array transactions;
   //map<uint256, int64_t> setTxIndex;
@@ -210,11 +242,15 @@ fprintf(stderr, "DEBUG: c_processblock: !AcceptBlock()\n");
   return (0);
 }
 
-bool QuickCheckWork(CBlock* pblock)
+#if 0
+static bool QuickCheckWork(CBlock* pblock, double *ret_diff)
 {
   uint256 hash = pblock->GetPoWHash();
   uint256 hashTarget = CBigNum().SetCompact(pblock->nBits).getuint256();
 //  uint256 bhash = Hash(BEGIN(pblock->nVersion), END(pblock->nNonce));
+
+  if (ret_diff)
+    *ret_diff = GetBitsDifficulty(hash.GetCompact());
 
   if (hash > hashTarget)
     return false;
@@ -223,27 +259,7 @@ fprintf(stderr, "generated %s\n", FormatMoney(pblock->vtx[0].vout[0].nValue).c_s
 
   return true;
 }
-
-string submit_block_hash;
-const char *c_submitblock(unsigned int workId, unsigned int nTime, unsigned int nNonce, char *xn_hex)
-{
-  CBlock *pblock;
-int err;
-bool ok;
-
-  pblock = mapWork[workId];
-  if (pblock == NULL)
-    return (NULL);
-//    return (BLKERR_INVALID_JOB);
-
-  pblock->nTime = nTime;
-  pblock->nNonce = nNonce;
-
-  /* set coinbase. */
-  SetExtraNonce(pblock, xn_hex);
-
-  /* generate merkle root */
-  pblock->hashMerkleRoot = pblock->BuildMerkleTree();
+#endif
 
 #if 0
   fprintf(stderr, "DEBUG: submitblock: previousblockhash %s\n", pblock->hashPrevBlock.GetHex().c_str());
@@ -257,21 +273,63 @@ bool ok;
   fprintf(stderr, "DEBUG: submitblock: merkleroot %s\n", HexStr(pblock->hashMerkleRoot.begin(), pblock->hashMerkleRoot.end()).c_str());
   fprintf(stderr, "DEBUG: submitblock: hash %s\n", pblock->GetHash().GetHex().c_str());
   fprintf(stderr, "DEBUG: submitblock: target %s\n",  CBigNum().SetCompact(pblock->nBits).GetHex().c_str());
-  fprintf(stderr, "DEBUG: submitblock: target diff %f\n", 
-      (double)0x0000ffff / (double)(pblock->nBits & 0x00ffffff));
 #endif
+int c_submitblock(unsigned int workId, unsigned int nTime, unsigned int nNonce, char *xn_hex, char *ret_hash, double *ret_diff)
+{
+  CBlock *pblock;
+  uint256 hash;
+  uint256 hashTarget;
+  int err;
+  bool ok;
 
-  ok = QuickCheckWork(pblock);
-  if (!ok)
-    return (NULL);
-//    return (BLKERR_LOW_DIFFICULTY);
+  if (ret_hash)
+    ret_hash[0] = '\000';
+  if (ret_diff)
+    *ret_diff = 0.0;
+
+  pblock = mapWork[workId];
+  if (pblock == NULL)
+    return (SHERR_TIME); /* task is stale */
+
+  if (pblock->nNonce == nNonce)
+    return (SHERR_ALREADY);
+
+  pblock->nTime = nTime;
+  pblock->nNonce = nNonce;
+  SetExtraNonce(pblock, xn_hex);
+  pblock->hashMerkleRoot = pblock->BuildMerkleTree();
+
+  hash = pblock->GetPoWHash();
+  hashTarget = CBigNum().SetCompact(pblock->nBits).getuint256();
+
+  if (ret_diff) {
+    char nbit_str[256];
+
+    strcpy(nbit_str, hash.ToString().substr(0,8).c_str());
+    *ret_diff = GetBitsDifficulty(strtol(nbit_str, NULL, 16));
+fprintf(stderr, "DEBUG: submit_block: share nbits '%s' with diff %f\n", nbit_str, *ret_diff);
+  }
+
+  if (hash > hashTarget) {
+    fprintf(stderr, "DEBUG: submitblock: target diff %f\n", 
+        (double)0x0000ffff / (double)(pblock->nBits & 0x00ffffff));
+    return (0); /* share was submitted successfully */
+  }
 
   err = c_processblock(pblock);
-  if (err)
-    return (NULL);
- 
-  submit_block_hash = pblock->GetHash().GetHex();
-  return (submit_block_hash.c_str());
+  if (!err) {
+    string submit_block_hash;
+    char errbuf[1024];
+
+    submit_block_hash = pblock->GetHash().GetHex();
+    if (ret_hash)
+      strcpy(ret_hash, submit_block_hash.c_str());
+
+    sprintf(errbuf, "submitblock: local block (%s) generated %s coins.\n", submit_block_hash.c_str(), FormatMoney(pblock->vtx[0].vout[0].nValue).c_str());
+    shcoind_log(errbuf);
+  }
+
+  return (0);
 }
 
 Object c_AcentryToJSON(const CAccountingEntry& acentry, const string& strAccount, Object entry)
@@ -493,17 +551,26 @@ double c_GetNetworkHashRate(void)
   return ((double)GetDifficulty() * pow(2.0, 32)) / (double)timePerBlock;
 }
 
-
 const char *c_getmininginfo(void)
 {
   Array result;
 
   result.push_back((int)nBestHeight);
-  result.push_back((double)GetDifficulty());
+
+  if (nextDifficulty > 0.00000000)
+    result.push_back((double)nextDifficulty);
+  else
+    result.push_back((double)GetDifficulty());
+
   result.push_back((double)c_GetNetworkHashRate());
 
   mininginfo_json = JSONRPCReply(result, Value::null, Value::null);
   return (mininginfo_json.c_str());
+}
+
+double c_getdifficulty(void)
+{
+  return ((double)GetDifficulty());
 }
 
 string blockinfo_json;
@@ -1009,9 +1076,9 @@ const char *getblocktemplate(void)
   return (c_getblocktemplate());
 }
 
-const char *submitblock(unsigned int workId, unsigned int nTime, unsigned int nNonce, char *xn_hex)
+int submitblock(unsigned int workId, unsigned int nTime, unsigned int nNonce, char *xn_hex, char *ret_hash, double *ret_diff)
 {
-  return (c_submitblock(workId, nTime, nNonce, xn_hex));
+  return (c_submitblock(workId, nTime, nNonce, xn_hex, ret_hash, ret_diff));
 }
 
 const char *getblocktransactions(void)
@@ -1022,6 +1089,11 @@ const char *getblocktransactions(void)
 const char *getmininginfo(void)
 {
   return (c_getmininginfo());
+}
+
+double getdifficulty(void)
+{
+  return (c_getdifficulty());
 }
 
 const char *getblockinfo(const char *hash)

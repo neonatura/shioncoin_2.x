@@ -4,7 +4,7 @@
 #include <math.h>
 
 #define MAX_STRATUM_USERS 32
-#define MIN_SHARE_DIFFICULTY 0.125 /* diff 4 */
+#define MIN_SHARE_DIFFICULTY 0.03125 /* diff 1 */
 
 
 user_t *stratum_user_find(char *username)
@@ -150,7 +150,7 @@ void stratum_user_block(user_t *user, task_t *task)
     user->block_freq = (span + user->block_freq) / 2;
     if (user->block_freq < 1) { 
       if (user->work_diff < 16384)
-        stratum_set_difficulty(user, user->work_diff + 8);
+        stratum_set_difficulty(user, user->work_diff + 16);
     } else if (user->block_freq > 64) { 
       stratum_set_difficulty(user, user->work_diff - 8);
     }

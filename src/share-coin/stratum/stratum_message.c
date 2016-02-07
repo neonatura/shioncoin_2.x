@@ -11,30 +11,18 @@ int stratum_send_message(user_t *user, shjson_t *msg)
   int err;
 
   if (!user) {
-fprintf(stderr, "DEBUG: stratum_send_message: null user\n");
+    shcoind_log("stratum_send_message: stratum_send_message: null user");
     return (0);
-}
+  }
 
- if (user->flags & USER_SYSTEM)
+  if (user->flags & USER_SYSTEM)
     return (0); /* dummy user */
 
 
   if (user->fd == -1) {
-fprintf(stderr, "DEBUG: stratum_send_message: null fd\n");
+    shcoind_log("stratum_send_message: stratum_send_message: null fd");
     return (0);
-}
-
-#if 0
-  text = shjson_print(msg);
-//fprintf(stderr, "DEBUG: NOTIFY:\n%s\n", text);
-  err = shnet_write(user->fd, text, strlen(text));
-  if (err == -1)
-    return (-errno);
-  err = shnet_write(user->fd, "\n", 1);
-  if (err == -1)
-    return (-errno);
-  free(text);
-#endif
+  }
 
   text = shjson_print(msg);
   if (text) {
@@ -137,12 +125,10 @@ int stratum_send_task(user_t *user, task_t *task, int clean)
   sprintf(time_str, "%-8.8x", task->curtime);
   sprintf(task_id, "%-8.8x", task->task_id);
 
-// fprintf(stderr, "DEBUG: mining.notify: prevhash/stratum: %s\n", task->prev_hash);  
   hex2bin(hash_swap, task->prev_hash, 32);
   shscrypt_swap256(prev_bin, hash_swap);
   memset(prev_hash, 0, sizeof(prev_hash));
   bin2hex(prev_hash, prev_bin, 32);
-// fprintf(stderr, "DEBUG: mining.notify: prevhash/miner: %s\n", prev_hash);  
 
   reply = shjson_init(NULL);
   shjson_null_add(reply, "id");

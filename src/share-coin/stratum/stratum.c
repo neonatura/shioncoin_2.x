@@ -40,9 +40,10 @@ static void stratum_accept(int fd, struct sockaddr *net_addr)
   char buf[256];
 
   if (fd < 1 || !net_addr) {
-fprintf(stderr, "DEBUG: stratum_accept: invalid fd/addr: fd(%d) net_addr(#%x)\n", fd, net_addr);
-return;
-}
+    sprintf(buf, "stratum_accept: invalid fd/addr: fd(%d) net_addr(#%x)\n", fd, net_addr);
+    shcoind_log(buf);
+    return;
+  }
 
   in_fam = *((sa_family_t *)net_addr);
   if (in_fam == AF_INET) {

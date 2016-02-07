@@ -35,6 +35,7 @@
 #include <boost/filesystem/convenience.hpp>
 #include <boost/interprocess/sync/file_lock.hpp>
 #include <boost/algorithm/string/predicate.hpp>
+#include "shcoind.h"
 
 #ifndef WIN32
 #include <signal.h>
@@ -354,7 +355,9 @@ int c_setblockreward(const char *accountName, double dAmount)
     return (-5);
   }
   if (!address.IsValid()) {
-fprintf(stderr, "DEBUG: invalid usde address destination\n");
+    char errbuf[1024];
+    sprintf(errbuf, "setblockreward: account '%s' has invalid usde address.", accountName);
+    shcoind_log(errbuf);
     //throw JSONRPCError(-5, "Invalid usde address");
     return (-5);
   }

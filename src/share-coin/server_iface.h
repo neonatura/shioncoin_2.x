@@ -100,7 +100,6 @@ const char *stratum_getaddressinfo(const char *addr_hash);
 
 const char *stratum_getaddresssecret(const char *addr_hash, const char *pkey_str);
 
-const char *submitblock(unsigned int workId, unsigned int nTime, unsigned int nNonce, char *xn_hex);
 
 const char *getminingtransactioninfo(unsigned int workId);
 
@@ -133,6 +132,11 @@ void MessageHandler(void);
 void set_shutdown_timer(void);
 
 void GetMyExternalIP(void);
+
+int submitblock(unsigned int workId, unsigned int nTime, unsigned int nNonce, char *xn_hex, char *ret_hash, double *ret_diff);
+
+double getdifficulty(void);
+
 
 #ifdef __cplusplus
 }

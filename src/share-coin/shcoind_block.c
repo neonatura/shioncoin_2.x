@@ -12,6 +12,7 @@ char *block_load(int block_height)
   shbuf_t *buff;
   char path[PATH_MAX+1];
   char *data;
+  char errbuf[1024];
   size_t data_len;
   int err;
 
@@ -19,15 +20,13 @@ char *block_load(int block_height)
   sprintf(path, "/block/index/%d", block_height);
   file = shfs_file_find(block_fs, path);
   if (!file) {
-    printf ("DEBUG: JSON ERROR[no file]: %s\n", path);
     return (NULL);
   }
 
   buff = shbuf_init();
   err = shfs_read(file, buff);
   if (err) {
-  shbuf_free(&buff);
-    printf ("DEBUG: JSON ERROR[err %d, readfile]: %s\n", err, path);
+    shbuf_free(&buff);
     return (NULL);
   }
 
@@ -65,6 +64,7 @@ void block_close(void)
 int block_save(int block_height, const char *json_str)
 {
   char path[PATH_MAX+1];
+  char errbuf[1024];
   shfs_ino_t *file;
   shbuf_t *buff;
   int err;
@@ -73,7 +73,6 @@ int block_save(int block_height, const char *json_str)
   sprintf(path, "/block/%d.json", block_height);
   file = shfs_file_find(block_fs, path);
   if (!file) {
-    printf ("DEBUG: JSON ERROR[no file]: '%s'.\n", json_str);
     return (SHERR_INVAL);
   }
 

@@ -60,19 +60,131 @@ static int work_idx = 0;
 
 static int work_reset;
 
+/**
+ * Monitors when a new accepted block becomes confirmed.
+ * @note format: ["height"=<block height>, "category"=<'generate'>, "amount"=<block reward>, "time":<block time>, "confirmations":<block confirmations>]
+ */
+static void check_payout(void)
+{
+  static char last_payout_hash[1024];
+  shjson_t *tree;
+  shjson_t *block;
+  user_t *user;
+  char block_hash[512];
+  char category[64];
+  char uname[256];
+  char *templ_json;
+  double tot_shares;
+  double weight;
+  double reward;
+  int i;
+
+  templ_json = (char *)getblocktransactions();
+  if (!templ_json) {
+    return;
+  }
+
+  tree = shjson_init(templ_json);
+  if (!tree) {
+    shcoind_log("task_init: cannot parse json");
+    return;
+  }
+
+  block = shjson_obj(tree, "result");
+  if (!block) {
+    shcoind_log("task_init: cannot parse json result");
+    shjson_free(&tree);
+    return;
+  }
+
+  memset(block_hash, 0, sizeof(block_hash));
+  strncpy(block_hash, shjson_astr(block, "blockhash", ""), sizeof(block_hash) - 1);
+  if (0 == strcmp(block_hash, "")) {
+    /* No block has been confirmed since process startup. */
+    shjson_free(&tree);
+    return;
+  }
+
+  if (0 == strcmp(last_payout_hash, ""))
+    strcpy(last_payout_hash, block_hash);
+  if (0 == strcmp(last_payout_hash, block_hash)) {
+    shjson_free(&tree);
+    return;
+  }
+
+  memset(category, 0, sizeof(category));
+  strncpy(category, shjson_astr(block, "category", "none"), sizeof(category) - 1);
+
+
+  if (0 == strcmp(category, "generate")) {
+    double amount = shjson_num(block, "amount", 0);
+    double fee;
+
+    if (amount < 1) {
+      shjson_free(&tree);
+      return;
+    }
+    fee = amount * 0.001; /* 0.1% */
+    amount -= fee;
+
+    tot_shares = 0;
+    for (user = client_list; user; user = user->next) {
+      for (i = 0; i < MAX_ROUNDS_PER_HOUR; i++)
+        tot_shares += user->block_avg[i];
+    }
+
+    if (tot_shares < 1)
+      return; /* wait until users have registered round shares. */
+    
+    /* divvy up profit */
+    weight = amount / tot_shares;
+    for (user = client_list; user; user = user->next) {
+      memset(uname, 0, sizeof(uname));
+      strncpy(uname, user->worker, sizeof(uname) - 1);
+      strtok(uname, "."); 
+      if (!*uname)
+        continue;
+
+      reward = 0;
+      for (i = 0; i < MAX_ROUNDS_PER_HOUR; i++)
+        reward += weight * user->block_avg[i];
+      if (reward >= 1)
+        setblockreward(uname, reward);  
+    }
+
+/*
+ * Just leave in main account to avoid transaction charge. 
+    if (fee >= 1.0) 
+      setblockreward("bank", fee);
+*/
+
+  }
+
+  shjson_free(&tree);
+
+  strcpy(last_payout_hash, block_hash);
+
+}
+
 /** 
  * Called after a new block is generated.
  */
 static int task_verify(void)
 {
   static uint64_t last_block_height;
+  static time_t last_block_time;
   uint64_t block_height;
+  time_t now;
+
+  now = time(NULL);
 
   block_height = getblockheight();
-  if (block_height == last_block_height)
-    return (SHERR_AGAIN);
-
-  check_payout();
+  if (block_height == last_block_height) {
+    if ((last_block_time + MEDIAN_TIME_PER_BLOCK) > now)
+      return (SHERR_AGAIN);
+  } else {
+    check_payout();
+  }
 
   reset_task_work_time();
   work_idx = -1;
@@ -80,6 +192,7 @@ static int task_verify(void)
 
   free_tasks();
   last_block_height = block_height;
+  last_block_time = now;
 
   return (0);
 }
@@ -95,6 +208,7 @@ task_t *task_init(void)
   char sig[256];
   char *ptr;
   char target[32];
+  char errbuf[1024];
   char path[PATH_MAX+1];
   uint64_t block_height;
   unsigned long cb1;
@@ -128,7 +242,7 @@ task_t *task_init(void)
 
   /* gradually decrease task generation rate per block. */
   work_idx = 0;
-  task_work_t++;
+//  task_work_t++;
 
   templ_json = getblocktemplate();
   if (!templ_json)
@@ -169,7 +283,9 @@ task_t *task_init(void)
 
   ptr = strstr(coinbase, sig);
   if (!ptr) {
-fprintf(stderr, "DEBUG: task_init: coinbase does not contain sigScript (coinbase:%s, sig:%s)\n", coinbase, sig);
+    sprintf(errbuf, "task_init: coinbase does not contain sigScript (coinbase:%s, sig:%s)\n", coinbase, sig);
+    shcoind_log(errbuf);
+
     shjson_free(&tree);
     task_free(&task);
     return (NULL);
@@ -266,116 +382,6 @@ cnt++;
   return (task);
 }
 
-/**
- * Monitors when a new accepted block becomes confirmed.
- * @note format: ["height"=<block height>, "category"=<'generate'>, "amount"=<block reward>, "time":<block time>, "confirmations":<block confirmations>]
- */
-void check_payout(void)
-{
-  static char last_payout_hash[1024];
-  shjson_t *tree;
-  shjson_t *block;
-  user_t *user;
-  char block_hash[512];
-  char category[64];
-  char uname[256];
-  char *templ_json;
-  double tot_shares;
-  double weight;
-  double reward;
-  int i;
-
-//fprintf(stderr, "DEBUG: getblocktransactions()/start\n");
-  templ_json = (char *)getblocktransactions();
-//fprintf(stderr, "DEBUG: getblocktransactions()/end <%d bytes>\n", strlen(templ_json));
-  if (!templ_json) {
-fprintf(stderr, "DEBUG: task_init: getblocktransactions NULL\n");
-    return;
-  }
-//fprintf(stderr, "DEBUG: check_payout: %s\n", templ_json); 
-
-  tree = shjson_init(templ_json);
-  if (!tree) {
-fprintf(stderr, "DEBUG: task_init: cannot parse json\n");
-    return;
-  }
-
-  block = shjson_obj(tree, "result");
-  if (!block) {
-    fprintf(stderr, "DEBUG: task_init: cannot parse json result\n");
-    shjson_free(&tree);
-    return;
-  }
-
-  memset(block_hash, 0, sizeof(block_hash));
-  strncpy(block_hash, shjson_astr(block, "blockhash", ""), sizeof(block_hash) - 1);
-  if (0 == strcmp(block_hash, "")) {
-    /* No block has been confirmed since process startup. */
-    shjson_free(&tree);
-    return;
-  }
-
-  if (0 == strcmp(last_payout_hash, ""))
-    strcpy(last_payout_hash, block_hash);
-  if (0 == strcmp(last_payout_hash, block_hash)) {
-    shjson_free(&tree);
-    return;
-  }
-
-  memset(category, 0, sizeof(category));
-  strncpy(category, shjson_astr(block, "category", "none"), sizeof(category) - 1);
-
-
-  if (0 == strcmp(category, "generate")) {
-    double amount = shjson_num(block, "amount", 0);
-    double fee;
-
-    if (amount < 1) {
-      shjson_free(&tree);
-      return;
-    }
-    fee = amount * 0.001; /* 0.1% */
-    amount -= fee;
-
-    tot_shares = 0;
-    for (user = client_list; user; user = user->next) {
-      for (i = 0; i < MAX_ROUNDS_PER_HOUR; i++)
-        tot_shares += user->block_avg[i];
-    }
-
-    if (tot_shares < 1)
-      return; /* wait until users have registered round shares. */
-    
-    /* divvy up profit */
-    weight = amount / tot_shares;
-    for (user = client_list; user; user = user->next) {
-      memset(uname, 0, sizeof(uname));
-      strncpy(uname, user->worker, sizeof(uname) - 1);
-      strtok(uname, "."); 
-      if (!*uname)
-        continue;
-
-      reward = 0;
-      for (i = 0; i < MAX_ROUNDS_PER_HOUR; i++)
-        reward += weight * user->block_avg[i];
-//      fprintf(stderr, "DEBUG: setblockreward(\"%s\", %f)\n", uname, reward);
-      if (reward >= 1)
-        setblockreward(uname, reward);  
-    }
-
-/*
- * Just leave in main account to avoid transaction charge. 
-    if (fee >= 1.0) 
-      setblockreward("bank", fee);
-*/
-
-  }
-
-  shjson_free(&tree);
-
-  strcpy(last_payout_hash, block_hash);
-
-}
 
 void stratum_round_reset(time_t stamp)
 {
@@ -437,13 +443,12 @@ void stratum_task_work(task_t *task)
 */
   sys_user->peer.diff = 0.125;
   sprintf(task->work.xnonce2, "%-8.8x", 0x00000000);
-sprintf(ntime, "%-8.8x", task->curtime);
+sprintf(ntime, "%-8.8x", (unsigned int)task->curtime);
   shscrypt_work(&sys_user->peer,
  &task->work, task->merkle, task->prev_hash, task->cb1, task->cb2, task->nbits, ntime);
 
   err = shscrypt(&task->work, MAX_SERVER_NONCE);
   if (!err && task->work.nonce != MAX_SERVER_NONCE) {
-//    fprintf(stderr, "DEBUG: [SWORK] %d = shscrypt() [sdiff %f, diff %f]\n", err, task->work.sdiff, shscrypt_hash_diff(&task->work));
     luck = MAX(1, (luck / 2));
 
     err = shscrypt_verify(&task->work);
@@ -457,7 +462,8 @@ sprintf(ntime, "%-8.8x", task->curtime);
         uint32_t be_nonce =  htobe32(task->work.nonce);
 
         sprintf(xn_hex, "%s%s", sys_user->peer.nonce1, task->work.xnonce2);
-        submitblock(task->task_id, task->curtime, be_nonce, xn_hex);
+        //submitblock(task->task_id, task->curtime, be_nonce, xn_hex, NULL, NULL);
+        submitblock(task->task_id, task->curtime, task->work.nonce, xn_hex, NULL, NULL);
       }
     }
   } else {

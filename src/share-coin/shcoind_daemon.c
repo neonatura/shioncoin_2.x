@@ -127,7 +127,6 @@ void shcoind_poll_msg_queue(void)
 #endif
 
     default:
-      fprintf(stderr, "DEBUG: server sent msg type %d\n", tx_op);
       break;
   }
 
