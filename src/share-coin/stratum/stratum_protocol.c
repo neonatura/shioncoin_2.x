@@ -81,6 +81,7 @@ int stratum_validate_submit(user_t *user, int req_id, shjson_t *json)
   task_t *task;
   shkey_t *key;
   shtime_t ts;
+  double share_diff;
   char *worker = shjson_array_astr(json, "params", 0); 
   char *job_id = shjson_array_astr(json, "params", 1); 
   char *extranonce2 = shjson_array_astr(json, "params", 2); 
@@ -110,9 +111,11 @@ int stratum_validate_submit(user_t *user, int req_id, shjson_t *json)
   if (!job_id)
     return (SHERR_INVAL);
   task_id = (unsigned int)strtoll(job_id, NULL, 16);
+#if 0
   task = stratum_task(task_id);
   if (!task)
     return (SHERR_INVAL);
+#endif
 
   le_ntime = (uint32_t)strtoll(ntime, NULL, 16);
   //be_ntime = htobe32(le_ntime);
@@ -170,12 +173,13 @@ int stratum_validate_submit(user_t *user, int req_id, shjson_t *json)
   sprintf(xn_hex, "%s%s", user->peer.nonce1, extranonce2);
   timing_init("submitblock", &ts);
   ret_err = submitblock(task->task_id, le_ntime, be_nonce, xn_hex,
-      submit_hash, &task->work.pool_diff);
+      submit_hash, &share_diff);
   timing_term("submitblock", &ts);
   if (ret_err)
     return (ret_err);
 
-  stratum_user_block(user, task);
+  /* add share to current round */
+  stratum_user_block(user, share_diff);
 
   if (*submit_hash) {
     sprintf(errbuf, "stratum_validate_submit: submitted block \"%s\" for \"%s\"\n", submit_hash, user->worker);

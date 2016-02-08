@@ -236,8 +236,8 @@ void unet_peer_fill_seed(int mode)
       unet_log(mode, buf);
     }
   }
-
 }
+
 void unet_peer_fill(int mode)
 {
   shpeer_t **peer_list;

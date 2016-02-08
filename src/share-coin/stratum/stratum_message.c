@@ -26,6 +26,7 @@ int stratum_send_message(user_t *user, shjson_t *msg)
 
   text = shjson_print(msg);
   if (text) {
+fprintf(stderr, "DEBUG: stratum_send_message: user(%s): %s\n", user->worker, text);
     unet_write(user->fd, text, strlen(text));
     unet_write(user->fd, "\n", 1);
     free(text);

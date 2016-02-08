@@ -120,7 +120,7 @@ double stratum_user_speed(user_t *user)
   return (speed / (double)speed_cnt);
 }
 
-void stratum_user_block(user_t *user, task_t *task)
+void stratum_user_block(user_t *user, double share_diff)
 {
   double diff;
   double cur_t;
@@ -128,11 +128,10 @@ void stratum_user_block(user_t *user, task_t *task)
   double span;
   int step;
   
-//  diff = shscrypt_hash_diff(&task->work);
-  diff = task->work.pool_diff;
-  if (diff != INFINITY)
-    user->block_tot += (uint64_t)task->work.pool_diff;
-  user->block_cnt++;
+  if (share_diff != INFINITY) {
+    user->block_tot += share_diff;
+    user->block_cnt++;
+  }
 
   cur_t = shtimef(shtime());
   if (user->block_tm) {

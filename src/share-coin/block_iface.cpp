@@ -112,7 +112,9 @@ const char *c_getblocktemplate(void)
   static unsigned int nTransactionsUpdatedLast;
   static CBlockIndex* pindexPrev;
   static unsigned int work_id;
+  static time_t last_reset_t;
   CBlock* pblock;
+  int reset;
 
   /* DEBUG: required for release
      if (vNodes.empty())
@@ -133,8 +135,16 @@ const char *c_getblocktemplate(void)
 
   pblock = NULL;
 
+  /* clear work after new block and every 5 minutes. */
+  reset = 0;
   if (pindexPrev != NULL && pindexPrev->nHeight != pindexBest->nHeight) {
-    /* delete all worker blocks. */
+    reset = 1;
+    last_reset_t = time(NULL);
+  } else if ((last_reset_t + 300) < time(NULL)) {
+    reset = 1;
+    last_reset_t = time(NULL);
+  }
+  if (reset == 1) { /* delete all worker blocks. */
     for (map<int, CBlock*>::const_iterator mi = mapWork.begin(); mi != mapWork.end(); ++mi)
     {
       CBlock *tblock = mi->second;
@@ -178,6 +188,11 @@ const char *c_getblocktemplate(void)
   }
 
   uint256 hashTarget = CBigNum().SetCompact(pblock->nBits).getuint256();
+
+  fprintf(stderr, "DEBUG: getblocktemplate: target hash '%s'\n",
+      hashTarget.GetHex().c_str());
+  fprintf(stderr, "DEBUG: getblocktemplate: target diff %f\n", 
+      (double)0x0000ffff / (double)(pblock->nBits & 0x00ffffff));
 
   Object result;
 
@@ -298,21 +313,28 @@ int c_submitblock(unsigned int workId, unsigned int nTime, unsigned int nNonce, 
   pblock->nNonce = nNonce;
   SetExtraNonce(pblock, xn_hex);
   pblock->hashMerkleRoot = pblock->BuildMerkleTree();
+fprintf(stderr, "DEBUG: submitblock: nTime(%u) nNonce(%u) xNonce(%s)\n", (unsigned int)nTime, (unsigned int)nNonce, xn_hex);
 
   hash = pblock->GetPoWHash();
   hashTarget = CBigNum().SetCompact(pblock->nBits).getuint256();
 
   if (ret_diff) {
+    const char *hash_str = hash.ToString().c_str();
     char nbit_str[256];
+    unsigned int nbit;
 
+    memset(nbit_str, '\000', sizeof(nbit_str));
     strcpy(nbit_str, hash.ToString().substr(0,8).c_str());
-    *ret_diff = GetBitsDifficulty(strtol(nbit_str, NULL, 16));
-fprintf(stderr, "DEBUG: submit_block: share nbits '%s' with diff %f\n", nbit_str, *ret_diff);
+
+    nbit = (unsigned int)strtoll(nbit_str, NULL, 16);
+    if (nbit == 0) nbit = 1;
+
+    *ret_diff = ((double)0x0000ffff /  (double)nbit);
+fprintf(stderr, "DEBUG: submit_block: share nbits '%s' with diff %f [hash length %d, hash '%s']\n", nbit_str, *ret_diff, strlen(hash_str), hash_str);
   }
 
   if (hash > hashTarget) {
-    fprintf(stderr, "DEBUG: submitblock: target diff %f\n", 
-        (double)0x0000ffff / (double)(pblock->nBits & 0x00ffffff));
+fprintf(stderr, "DEBUG: submitblock: proof-of-work not found  \n  hash: %s  \ntarget: %s\n", hash.GetHex().c_str(), hashTarget.GetHex().c_str());
     return (0); /* share was submitted successfully */
   }
 
@@ -325,9 +347,16 @@ fprintf(stderr, "DEBUG: submit_block: share nbits '%s' with diff %f\n", nbit_str
     if (ret_hash)
       strcpy(ret_hash, submit_block_hash.c_str());
 
-    sprintf(errbuf, "submitblock: local block (%s) generated %s coins.\n", submit_block_hash.c_str(), FormatMoney(pblock->vtx[0].vout[0].nValue).c_str());
+ fprintf(stderr, "proof-of-work found: hash(%s) target(%s)\n", hash.GetHex().c_str(), hashTarget.GetHex().c_str());
+    pblock->print();
+
+
+    sprintf(errbuf, "submitblock: mined block (%s) generated %s coins.\n", submit_block_hash.c_str(), FormatMoney(pblock->vtx[0].vout[0].nValue).c_str());
     shcoind_log(errbuf);
-  }
+  } else {
+fprintf(stderr, "DEBUG: submitblock: processblock error %d\n", err); 
+pblock->print();
+}
 
   return (0);
 }

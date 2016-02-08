@@ -7,10 +7,11 @@
 #define MAX_SERVER_NONCE 128
 #define MAX_ROUND_TIME 600
 
-static task_t *task_list;
+//static task_t *task_list;
 static user_t *sys_user;
 
 
+#if 0
 void free_tasks(void)
 {
   task_t *task;
@@ -23,6 +24,7 @@ void free_tasks(void)
   task_list = NULL;
 
 }
+#endif
 
 #if 0
 void free_task(task_t **task_p)
@@ -53,8 +55,6 @@ void reset_task_work_time(void)
 {
   task_work_t = 3;
 }
-
-#define MEDIAN_TIME_PER_BLOCK 28
 
 static int work_idx = 0;
 
@@ -166,9 +166,6 @@ static void check_payout(void)
 
 }
 
-/** 
- * Called after a new block is generated.
- */
 static int task_verify(void)
 {
   static uint64_t last_block_height;
@@ -180,17 +177,16 @@ static int task_verify(void)
 
   block_height = getblockheight();
   if (block_height == last_block_height) {
-    if ((last_block_time + MEDIAN_TIME_PER_BLOCK) > now)
-      return (SHERR_AGAIN);
-  } else {
-    check_payout();
-  }
+    return (SHERR_AGAIN);
+  } 
+
+  check_payout();
 
   reset_task_work_time();
   work_idx = -1;
   work_reset = TRUE;
 
-  free_tasks();
+//  free_tasks();
   last_block_height = block_height;
   last_block_time = now;
 
@@ -247,6 +243,7 @@ task_t *task_init(void)
   templ_json = getblocktemplate();
   if (!templ_json)
     return (NULL); /* template not currently available. */
+fprintf(stderr, "DEBUG: task_init: getblocktemplate \"%s\"\n", templ_json); 
 
   tree = shjson_init(templ_json);
   if (!tree) {
@@ -335,10 +332,14 @@ task_t *task_init(void)
   shjson_free(&tree);
 
   /* keep list of shares to check for dups */
-  task->share_list = shmap_init(); /* mem */
+//  task->share_list = shmap_init(); /* mem */
 
+#if 0
   task->next = task_list;
   task_list = task;
+#endif
+
+fprintf(stderr, "DEBUG: task_init: #%u TARGET(%f) CB1(%s) TIME(%u) NBIT(%s) HEIGHT(%u)\n", (unsigned int)task->task_id, task->target, task->cb1, (unsigned int)task->curtime, task->nbits, (unsigned int)task->height);
 
   return (task);
 }
@@ -354,7 +355,7 @@ void task_free(task_t **task_p)
   task = *task_p;
   *task_p = NULL;
 
-  shmap_free(&task->share_list);
+//  shmap_free(&task->share_list);
 
   if (task->merkle && task->merkle_len) {
     for (i = 0; i < task->merkle_len; i++) {
@@ -366,6 +367,7 @@ void task_free(task_t **task_p)
   free(task);
 }
 
+#if 0
 task_t *stratum_task(unsigned int task_id)
 {
   task_t *task;
@@ -381,6 +383,7 @@ cnt++;
 
   return (task);
 }
+#endif
 
 
 void stratum_round_reset(time_t stamp)
@@ -455,7 +458,7 @@ sprintf(ntime, "%-8.8x", (unsigned int)task->curtime);
 
     if (!err) {
       /* update server's mining stats. */
-      stratum_user_block(sys_user, task);
+      stratum_user_block(sys_user, task->work.pool_diff);
 
       if (task->work.pool_diff >= task->target) {
         char xn_hex[256];
@@ -490,6 +493,7 @@ void stratum_task_gen(void)
 
   stratum_task_work(task);
 
+  task_free(&task);
 }
 
 
