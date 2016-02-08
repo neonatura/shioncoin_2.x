@@ -321,15 +321,15 @@ fprintf(stderr, "DEBUG: submitblock: nTime(%u) nNonce(%u) xNonce(%s)\n", (unsign
   if (ret_diff) {
     const char *hash_str = hash.ToString().c_str();
     char nbit_str[256];
-    unsigned int nbit;
+    uint64_t nbit;
 
     memset(nbit_str, '\000', sizeof(nbit_str));
-    strcpy(nbit_str, hash.ToString().substr(0,8).c_str());
+    strcpy(nbit_str, hash.ToString().substr(0,12).c_str());
 
-    nbit = (unsigned int)strtoll(nbit_str, NULL, 16);
+    nbit = (uint64_t)strtoll(nbit_str, NULL, 16);
     if (nbit == 0) nbit = 1;
 
-    *ret_diff = ((double)0x0000ffff /  (double)nbit);
+    *ret_diff = ((double)0x0000ffff /  (double)(nbit & 0x00ffffff));
 fprintf(stderr, "DEBUG: submit_block: share nbits '%s' with diff %f [hash length %d, hash '%s']\n", nbit_str, *ret_diff, strlen(hash_str), hash_str);
   }
 

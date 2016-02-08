@@ -267,8 +267,8 @@ fprintf(stderr, "DEBUG: task_init: getblocktemplate \"%s\"\n", templ_json);
   task->work_reset = work_reset;
 
   memset(target, 0, sizeof(target));
-  strncpy(target, shjson_astr(block, "target", "0000ffff"), 8);
-  task->target = (double)0xffff / (double)strtoll(target, NULL, 16);
+  strncpy(target, shjson_astr(block, "target", "ffff"), 12);
+  task->target = (double)0xffff / (double)(strtoll(target, NULL, 16) & 0x00ffffff);
 
   memset(coinbase, 0, sizeof(coinbase));
   strncpy(coinbase, shjson_astr(block, "coinbase", ""), sizeof(coinbase) - 1);
