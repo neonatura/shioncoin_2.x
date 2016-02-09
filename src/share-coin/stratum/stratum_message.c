@@ -26,7 +26,6 @@ int stratum_send_message(user_t *user, shjson_t *msg)
 
   text = shjson_print(msg);
   if (text) {
-fprintf(stderr, "DEBUG: stratum_send_message: user(%s): %s\n", user->worker, text);
     unet_write(user->fd, text, strlen(text));
     unet_write(user->fd, "\n", 1);
     free(text);
@@ -101,6 +100,22 @@ int stratum_send_subscribe(user_t *user, int req_id)
   return (err);
 }
 
+static void shscrypt_swab256(void *dest_p, const void *src_p)
+{
+  uint32_t *dest = dest_p;
+  const uint32_t *src = src_p;
+
+  dest[0] = swab32(src[7]);
+  dest[1] = swab32(src[6]);
+  dest[2] = swab32(src[5]);
+  dest[3] = swab32(src[4]);
+  dest[4] = swab32(src[3]);
+  dest[5] = swab32(src[2]);
+  dest[6] = swab32(src[1]);
+  dest[7] = swab32(src[0]);
+}
+
+
 int stratum_send_task(user_t *user, task_t *task, int clean)
 {
   shjson_t *reply;
@@ -110,9 +125,12 @@ int stratum_send_task(user_t *user, task_t *task, int clean)
   char hash_swap[32];
   char prev_bin[32];
   char prev_hash[128];
+  char merk_bin[32];
+  char merk_hash[128];
   char time_str[32];
   char task_id[32];
   uint64_t cb1;
+
   int err;
   int i;
 
@@ -141,7 +159,12 @@ int stratum_send_task(user_t *user, task_t *task, int clean)
   shjson_str_add(param, NULL, task->cb2);
   merk_ar = shjson_array_add(param, NULL);
   for (i = 0; i < task->merkle_len; i++) {
-    shjson_str_add(merk_ar, NULL, task->merkle[i]);
+ hex2bin(hash_swap, task->merkle[i], 32);
+          shscrypt_swab256(prev_bin, hash_swap);
+          memset(merk_hash, 0, sizeof(merk_hash));
+          bin2hex(merk_hash, prev_bin, 32);
+
+    shjson_str_add(merk_ar, NULL, merk_hash);
   }
   shjson_str_add(param, NULL, proto_str);
   shjson_str_add(param, NULL, task->nbits);

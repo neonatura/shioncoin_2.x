@@ -116,10 +116,8 @@ const char *c_getblocktemplate(void)
   CBlock* pblock;
   int reset;
 
-  /* DEBUG: required for release
      if (vNodes.empty())
      return (NULL);
-     */
 
   /* DEBUG: required for release
      if (IsInitialBlockDownload())
@@ -135,12 +133,12 @@ const char *c_getblocktemplate(void)
 
   pblock = NULL;
 
-  /* clear work after new block and every 5 minutes. */
+  /* clear work after new block and every ten minutes. */
   reset = 0;
   if (pindexPrev != NULL && pindexPrev->nHeight != pindexBest->nHeight) {
     reset = 1;
     last_reset_t = time(NULL);
-  } else if ((last_reset_t + 300) < time(NULL)) {
+  } else if ((last_reset_t + 600) < time(NULL)) {
     reset = 1;
     last_reset_t = time(NULL);
   }
@@ -189,10 +187,6 @@ const char *c_getblocktemplate(void)
 
   uint256 hashTarget = CBigNum().SetCompact(pblock->nBits).getuint256();
 
-  fprintf(stderr, "DEBUG: getblocktemplate: target hash '%s'\n",
-      hashTarget.GetHex().c_str());
-  fprintf(stderr, "DEBUG: getblocktemplate: target diff %f\n", 
-      (double)0x0000ffff / (double)(pblock->nBits & 0x00ffffff));
 
   Object result;
 
@@ -313,7 +307,7 @@ int c_submitblock(unsigned int workId, unsigned int nTime, unsigned int nNonce, 
   pblock->nNonce = nNonce;
   SetExtraNonce(pblock, xn_hex);
   pblock->hashMerkleRoot = pblock->BuildMerkleTree();
-fprintf(stderr, "DEBUG: submitblock: nTime(%u) nNonce(%u) xNonce(%s)\n", (unsigned int)nTime, (unsigned int)nNonce, xn_hex);
+
 
   hash = pblock->GetPoWHash();
   hashTarget = CBigNum().SetCompact(pblock->nBits).getuint256();
@@ -330,7 +324,6 @@ fprintf(stderr, "DEBUG: submitblock: nTime(%u) nNonce(%u) xNonce(%s)\n", (unsign
     if (nbit == 0) nbit = 1;
 
     *ret_diff = ((double)0x0000ffff /  (double)(nbit & 0x00ffffff));
-fprintf(stderr, "DEBUG: submit_block: share nbits '%s' with diff %f [hash length %d, hash '%s']\n", nbit_str, *ret_diff, strlen(hash_str), hash_str);
   }
 
   if (hash > hashTarget) {

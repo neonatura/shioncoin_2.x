@@ -3699,6 +3699,7 @@ void IncrementExtraNonce(CBlock* pblock, CBlockIndex* pindexPrev, unsigned int& 
 }
 void SetExtraNonce(CBlock* pblock, const char *xn_hex)
 {
+    //pblock->vtx[0].vin[0].scriptSig = (CScript() << pblock->nTime << ParseHex(xn_hex)) + COINBASE_FLAGS;
     pblock->vtx[0].vin[0].scriptSig = (CScript() << CBigNum(pblock->nTime) << ParseHex(xn_hex)) + COINBASE_FLAGS;
     //pblock->vtx[0].vin[0].scriptSig = (CScript() << pblock->nTime << CBigNum(nExtraNonce)) + COINBASE_FLAGS;
     assert(pblock->vtx[0].vin[0].scriptSig.size() <= 100);

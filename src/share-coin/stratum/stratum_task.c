@@ -243,7 +243,6 @@ task_t *task_init(void)
   templ_json = getblocktemplate();
   if (!templ_json)
     return (NULL); /* template not currently available. */
-fprintf(stderr, "DEBUG: task_init: getblocktemplate \"%s\"\n", templ_json); 
 
   tree = shjson_init(templ_json);
   if (!tree) {
@@ -339,7 +338,6 @@ fprintf(stderr, "DEBUG: task_init: getblocktemplate \"%s\"\n", templ_json);
   task_list = task;
 #endif
 
-fprintf(stderr, "DEBUG: task_init: #%u TARGET(%f) CB1(%s) TIME(%u) NBIT(%s) HEIGHT(%u)\n", (unsigned int)task->task_id, task->target, task->cb1, (unsigned int)task->curtime, task->nbits, (unsigned int)task->height);
 
   return (task);
 }
