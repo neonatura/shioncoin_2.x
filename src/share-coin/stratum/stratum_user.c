@@ -86,7 +86,7 @@ user_t *stratum_user_init(int fd)
 
   seed = htonl(shrand() & 0xFFFF);
   sprintf(nonce1, "%-8.8x", (unsigned int)seed);
-fprintf(stderr, "DEBUG: stratum_user_init: nonce1 '%s'\n", nonce1);
+//fprintf(stderr, "DEBUG: stratum_user_init: nonce1 '%s'\n", nonce1);
 
   shscrypt_peer(&user->peer, nonce1, MIN_SHARE_DIFFICULTY);
   //shscrypt_peer_gen(&user->peer, MIN_SHARE_DIFFICULTY);

@@ -184,6 +184,7 @@ int stratum_validate_submit(user_t *user, int req_id, shjson_t *json)
         submit_hash, &be_diff);
     if (!ret_err && (be_diff > share_diff)) {
       fprintf(stderr, "DEBUG: stratum_validate_submit: be_nonce (%x) is lower hash than le_nonce (%x).\n", be_nonce, le_nonce);
+      share_diff = be_diff;
     }
   }
 

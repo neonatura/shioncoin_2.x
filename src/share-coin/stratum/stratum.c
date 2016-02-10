@@ -203,7 +203,7 @@ int stratum_register_client_task(user_t *user, char *json_text)
     return (0);
   }
 
-fprintf(stderr, "DEBUG: stratum_register_client_task: %s\n", json_text);
+//fprintf(stderr, "DEBUG: stratum_register_client_task: %s\n", json_text);
   tree = shjson_init(json_text);
   if (tree == NULL) {
     return (SHERR_INVAL);
