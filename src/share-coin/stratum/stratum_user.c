@@ -78,16 +78,15 @@ user_t *stratum_user_init(int fd)
   struct sockaddr_in *addr;
   user_t *user;
   char nonce1[32];
+  uint32_t seed;
 
   user = (user_t *)calloc(1, sizeof(user_t));
   user->fd = fd;
   user->round_stamp = time(NULL);
 
-addr = (struct sockaddr_in *)shaddr(fd);
-if (!addr)
-sprintf(nonce1, "%-8.8x", 0);
-else
-sprintf(nonce1, "%-8.8x", (unsigned int)shcrc(&addr->sin_addr, sizeof(addr->sin_addr)));
+  seed = htonl(shrand() & 0xFFFF);
+  sprintf(nonce1, "%-8.8x", (unsigned int)seed);
+fprintf(stderr, "DEBUG: stratum_user_init: nonce1 '%s'\n", nonce1);
 
   shscrypt_peer(&user->peer, nonce1, MIN_SHARE_DIFFICULTY);
   //shscrypt_peer_gen(&user->peer, MIN_SHARE_DIFFICULTY);

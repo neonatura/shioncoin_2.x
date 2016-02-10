@@ -326,6 +326,19 @@ int c_submitblock(unsigned int workId, unsigned int nTime, unsigned int nNonce, 
     *ret_diff = ((double)0x0000ffff /  (double)(nbit & 0x00ffffff));
   }
 
+pblock->print();
+fprintf(stderr, "DEBUG: submitblock: raw hash(%s) target(%s)\n", hash.GetHex().c_str(), hashTarget.GetHex().c_str());
+  fprintf(stderr, "DEBUG: submitblock: hash(%s) target(%s) diff(%f) nonce(%x)\n", HexStr(hash.begin(), hash.end()).c_str(), HexStr(hashTarget.begin(), hashTarget.end()).c_str(), ret_diff ? *ret_diff : 0.0, htonl(nNonce));
+  fprintf(stderr, "DEBUG: submitblock: previousblockhash(%s) merkleroot(%s)\n", 
+      HexStr(pblock->hashPrevBlock.begin(), pblock->hashPrevBlock.end()).c_str(),
+      HexStr(pblock->hashMerkleRoot.begin(), pblock->hashMerkleRoot.end()).c_str());
+  {
+    CTransaction coinbaseTx = pblock->vtx[0];
+    CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION);
+    ssTx << coinbaseTx;
+    fprintf(stderr, "DEBUG: submitblock: coinbase %s\n", HexStr(ssTx.begin(), ssTx.end()).c_str());
+  }
+
   if (hash > hashTarget) {
 fprintf(stderr, "DEBUG: submitblock: proof-of-work not found  \n  hash: %s  \ntarget: %s\n", hash.GetHex().c_str(), hashTarget.GetHex().c_str());
     return (0); /* share was submitted successfully */

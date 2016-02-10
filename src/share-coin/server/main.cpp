@@ -3697,12 +3697,17 @@ void IncrementExtraNonce(CBlock* pblock, CBlockIndex* pindexPrev, unsigned int& 
 
     pblock->hashMerkleRoot = pblock->BuildMerkleTree();
 }
+
 void SetExtraNonce(CBlock* pblock, const char *xn_hex)
 {
-    //pblock->vtx[0].vin[0].scriptSig = (CScript() << pblock->nTime << ParseHex(xn_hex)) + COINBASE_FLAGS;
-    pblock->vtx[0].vin[0].scriptSig = (CScript() << CBigNum(pblock->nTime) << ParseHex(xn_hex)) + COINBASE_FLAGS;
-    //pblock->vtx[0].vin[0].scriptSig = (CScript() << pblock->nTime << CBigNum(nExtraNonce)) + COINBASE_FLAGS;
-    assert(pblock->vtx[0].vin[0].scriptSig.size() <= 100);
+
+  pblock->vtx[0].vin[0].scriptSig = (CScript() << pblock->nTime << ParseHex(xn_hex)) + COINBASE_FLAGS;
+  //pblock->vtx[0].vin[0].scriptSig = (CScript() << CBigNum(pblock->nTime) << ParseHex(xn_hex)) + COINBASE_FLAGS;
+  //pblock->vtx[0].vin[0].scriptSig = (CScript() << pblock->nTime << CBigNum(nExtraNonce)) + COINBASE_FLAGS;
+
+  if (pblock->vtx[0].vin[0].scriptSig.size() > 100) {
+    shcoind_log("SetExtraNonce: warning: scriptSig.size() > 100");
+  }
 
 }
 

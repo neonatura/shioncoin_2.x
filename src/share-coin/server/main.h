@@ -954,8 +954,9 @@ public:
             for (int i = 0; i < nSize; i += 2)
             {
                 int i2 = std::min(i+1, nSize-1);
-                vMerkleTree.push_back(Hash(BEGIN(vMerkleTree[j+i]),  END(vMerkleTree[j+i]),
-                                           BEGIN(vMerkleTree[j+i2]), END(vMerkleTree[j+i2])));
+                uint256 hash = Hash(BEGIN(vMerkleTree[j+i]),  END(vMerkleTree[j+i]), BEGIN(vMerkleTree[j+i2]), END(vMerkleTree[j+i2]));
+fprintf(stderr, "DEBUG: BuildMerkleTree: ( '%s' + '%s' ) = '%s'\n", HexStr(vMerkleTree[j+i].begin(), vMerkleTree[j+1].end()).c_str(), HexStr(vMerkleTree[j+i2].begin(), vMerkleTree[j+12].end()).c_str(), HexStr(hash.begin(), hash.end()).c_str());
+                vMerkleTree.push_back(hash);
             }
             j += nSize;
         }
