@@ -148,8 +148,8 @@ void stratum_user_block(user_t *user, double share_diff)
     user->block_freq = (span + user->block_freq) / 2;
     if (user->block_freq < 1) { 
       if (user->work_diff < 16384)
-        stratum_set_difficulty(user, user->work_diff + 16);
-    } else if (user->block_freq > 64) { 
+        stratum_set_difficulty(user, user->work_diff + 8);
+    } else if (user->block_freq > 128) { 
       stratum_set_difficulty(user, user->work_diff - 8);
     }
   }
