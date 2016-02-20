@@ -183,7 +183,7 @@ int stratum_validate_submit(user_t *user, int req_id, shjson_t *json)
     ret_err = submitblock(task_id, le_ntime, be_nonce, xn_hex,
         submit_hash, &be_diff);
     if (!ret_err && (be_diff > share_diff)) {
-      fprintf(stderr, "DEBUG: stratum_validate_submit: be_nonce (%x) is lower hash than le_nonce (%x).\n", be_nonce, le_nonce);
+fprintf(stderr, "DEBUG: stratum_validate_submit: be_nonce (%x) is lower hash than le_nonce (%x) [ntime %x, xn_hex %s].\n", be_nonce, le_nonce, (unsigned int)le_ntime, xn_hex);
       share_diff = be_diff;
     }
   }
@@ -237,26 +237,32 @@ void set_stratum_error(shjson_t *reply, int code, char *str)
 
 }
 
+static shjson_t *stratum_generic_error(void)
+{
+  shjson_t *reply;
+
+  reply = shjson_init(NULL);
+  set_stratum_error(reply, -5, "invalid");
+  shjson_null_add(reply, "result");
+
+  return (reply);
+}
+
 static int stratum_request_account_create(user_t *user, int idx, char *account)
 {
   shjson_t *reply;
   const char *json_data = "{\"result\":null,\"error\":null}";
   int err;
 
+  reply = NULL;
   if (account) {
     /* creates a usde address for an account name */
     /* providing account does not exist; returns usde address and sha of private key */
-    json_data = stratum_create_account(account);
-    if (!json_data)
-      json_data = stratum_error_get(idx);
-  }
-
-  if (!json_data) {
-    reply = shjson_init(NULL);
-    set_stratum_error(reply, -5, "invalid");
-    shjson_null_add(reply, "result");
+    reply = stratum_json(stratum_create_account(account));
+    if (!reply)
+      reply = stratum_json(stratum_error_get(idx));
   } else {
-    reply = shjson_init(json_data);
+    reply = stratum_generic_error();
   }
 
   shjson_num_add(reply, "id", idx);
@@ -269,21 +275,14 @@ static int stratum_request_account_create(user_t *user, int idx, char *account)
 static int stratum_request_account_address(user_t *user, int idx, char *hash)
 {
   shjson_t *reply;
-  const char *json_data = "{\"result\":null,\"error\":null}";
   int err;
 
   if (hash) {
-    json_data = stratum_getaddressinfo(hash);
-    if (!json_data)
-      json_data = stratum_error_get(idx);
-  }
-
-  if (!json_data) {
-    reply = shjson_init(NULL);
-    set_stratum_error(reply, -5, "invalid");
-    shjson_null_add(reply, "result");
+    reply = stratum_json(stratum_getaddressinfo(hash));
+    if (!reply)
+      reply = stratum_json(stratum_error_get(idx));
   } else {
-    reply = shjson_init(json_data);
+    reply = stratum_generic_error();
   }
 
   shjson_num_add(reply, "id", idx);
@@ -296,21 +295,14 @@ static int stratum_request_account_address(user_t *user, int idx, char *hash)
 static int stratum_request_account_secret(user_t *user, int idx, char *hash, const char *pkey_str)
 {
   shjson_t *reply;
-  const char *json_data = "{\"result\":null,\"error\":null}";
   int err;
 
   if (hash) {
-    json_data = stratum_getaddresssecret(hash, pkey_str);
-    if (!json_data)
-      json_data = stratum_error_get(idx);
-  }
-
-  if (!json_data) {
-    reply = shjson_init(NULL);
-    set_stratum_error(reply, -5, "invalid");
-    shjson_null_add(reply, "result");
+    reply = stratum_json(stratum_getaddresssecret(hash, pkey_str));
+    if (!reply)
+      reply = stratum_json(stratum_error_get(idx));
   } else {
-    reply = shjson_init(json_data);
+    reply = stratum_generic_error();
   }
 
   shjson_num_add(reply, "id", idx);
@@ -327,19 +319,13 @@ static int stratum_request_account_import(user_t *user, int idx, char *hash, con
   int err;
 
   if (hash) {
-    json_data = stratum_importaddress(hash, privaddr_str);
-    if (!json_data)
-      json_data = stratum_error_get(idx);
-  }
-
-  if (!json_data) {
-    reply = shjson_init(NULL);
-    set_stratum_error(reply, -5, "invalid");
-    shjson_null_add(reply, "result");
+    reply = stratum_json(stratum_importaddress(hash, privaddr_str));
+    if (!reply)
+      reply = stratum_json(stratum_error_get(idx));
   } else {
-    reply = shjson_init(json_data);
+    reply = stratum_generic_error();
   }
-
+    
   shjson_num_add(reply, "id", idx);
   err = stratum_send_message(user, reply);
   shjson_free(&reply);
@@ -350,21 +336,14 @@ static int stratum_request_account_import(user_t *user, int idx, char *hash, con
 static int stratum_request_account_transactions(user_t *user, int idx, char *account, char *pkey_str, int duration)
 {
   shjson_t *reply;
-  const char *json_data = "{\"result\":null,\"error\":null}";
   int err;
 
   if (account) {
-    json_data = getaccounttransactioninfo(account, pkey_str, duration);
-    if (!json_data)
-      json_data = stratum_error_get(idx);
-  }
-
-  if (!json_data) {
-    reply = shjson_init(NULL);
-    set_stratum_error(reply, -5, "invalid");
-    shjson_null_add(reply, "result");
+    reply = stratum_json(getaccounttransactioninfo(account, pkey_str, duration));
+    if (!reply)
+      reply = stratum_json(stratum_error_get(idx));
   } else {
-    reply = shjson_init(json_data);
+    reply = stratum_generic_error();
   }
 
   shjson_num_add(reply, "id", idx);
@@ -381,19 +360,11 @@ static int stratum_request_account_transfer(user_t *user, int idx, char *account
   int err;
 
   if (account && pkey_str && dest) {
-    /* checks sha of account's private keys to determine if valid; sends amount to dest */
-    /* returns transaction id */
-    json_data = stratum_create_transaction(account, pkey_str, dest, amount);
-    if (!json_data)
-      json_data = stratum_error_get(idx);
-  }
-
-  if (!json_data) {
-    reply = shjson_init(NULL);
-    set_stratum_error(reply, -5, "invalid");
-    shjson_null_add(reply, "result");
+    reply = stratum_json(stratum_create_transaction(account, pkey_str, dest, amount));
+    if (!reply)
+      reply = stratum_json(stratum_error_get(idx));
   } else {
-    reply = shjson_init(json_data);
+    reply = stratum_generic_error();
   }
 
   shjson_num_add(reply, "id", idx);
@@ -405,22 +376,15 @@ static int stratum_request_account_transfer(user_t *user, int idx, char *account
 
 static int stratum_request_account_info(user_t *user, int idx, char *account, char *pkey_str)
 {
-  const char *json_data = "{\"result\":null,\"error\":null}";
   shjson_t *reply;
   int err;
 
   if (account && pkey_str) {
-    json_data = stratum_getaccountinfo(account, pkey_str);
-    if (!json_data)
-      json_data = stratum_error_get(idx);
-  }
-
-  if (!json_data) {
-    reply = shjson_init(NULL);
-    set_stratum_error(reply, -5, "invalid");
-    shjson_null_add(reply, "result");
+    reply = stratum_json(stratum_getaccountinfo(account, pkey_str));
+    if (!reply)
+      reply = stratum_json(stratum_error_get(idx));
   } else {
-    reply = shjson_init(json_data);
+    reply = stratum_generic_error();
   }
 
   shjson_num_add(reply, "id", idx);
@@ -459,10 +423,9 @@ int stratum_request_message(user_t *user, shjson_t *json)
     return (SHERR_INVAL);
   }
 
-#if 0
+/* DEBUG: */
 sprintf(buf, "STRATUM REQUEST '%s' [idx %d].\n", method, idx);
 shcoind_log(buf);
-#endif
 
   timing_init(method, &ts);
 

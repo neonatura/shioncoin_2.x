@@ -374,7 +374,7 @@ int c_setblockreward(const char *accountName, double dAmount)
 
   nBalance  = GetAccountBalance(walletdb, strMainAccount, nMinConfirmDepth);
   if (nAmount > nBalance) {
-fprintf(stderr, "DEBUG: c_setblockreward: main account has insufficient funds (%f required).\n", dAmount);
+    shcoind_log("c_setblockreward: warning: main account has insufficient funds for block reward distribution.");
     return (-6);
   }
 
@@ -416,7 +416,7 @@ static int c_wallet_account_transfer(const char *sourceAccountName,
   int64 nBalance;
 
   if (pwalletMain->IsLocked()) {
-    fprintf(stderr, "DEBUG: wallet is locked.\n");
+    shcoind_log("c_wallet_account_transfer: wallet is locked.");
     return (-13);
   }
 

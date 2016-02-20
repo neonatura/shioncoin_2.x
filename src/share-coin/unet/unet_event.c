@@ -45,8 +45,8 @@ uevent_t *uevent_new(int umode, int type, void *data)
       break;
   }
   if (of > UNET_MAX_EVENTS) {
-fprintf(stderr, "DEBUG: uevent_new: out of event slots..\n");
-return (NULL);
+    shcoind_log("uevent_new: warning: out of event slots");
+    return (NULL);
   }
   event_idx = (event_idx + of) % UNET_MAX_EVENTS;
   

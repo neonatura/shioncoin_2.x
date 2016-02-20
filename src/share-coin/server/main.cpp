@@ -3701,12 +3701,13 @@ void IncrementExtraNonce(CBlock* pblock, CBlockIndex* pindexPrev, unsigned int& 
 void SetExtraNonce(CBlock* pblock, const char *xn_hex)
 {
 
-  pblock->vtx[0].vin[0].scriptSig = (CScript() << pblock->nTime << ParseHex(xn_hex)) + COINBASE_FLAGS;
-  //pblock->vtx[0].vin[0].scriptSig = (CScript() << CBigNum(pblock->nTime) << ParseHex(xn_hex)) + COINBASE_FLAGS;
-  //pblock->vtx[0].vin[0].scriptSig = (CScript() << pblock->nTime << CBigNum(nExtraNonce)) + COINBASE_FLAGS;
-
+  pblock->vtx[0].vin[0].scriptSig = (CScript() << CBigNum(pblock->nTime) << ParseHex(xn_hex)) + COINBASE_FLAGS;
   if (pblock->vtx[0].vin[0].scriptSig.size() > 100) {
-    shcoind_log("SetExtraNonce: warning: scriptSig.size() > 100");
+    char errbuf[1024];
+
+    sprintf(errbuf, "SetExtraNonce: warning: scriptSig byte size is %u [which is over 100]. (xn_hex: %s)", 
+      (unsigned int)pblock->vtc[0].vin[0].scriptSig.size(), xn_hex);
+    shcoind_log(errbuf);
   }
 
 }

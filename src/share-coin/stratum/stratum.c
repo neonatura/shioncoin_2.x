@@ -230,3 +230,19 @@ int stratum_init(void)
   return (0);
 }
 
+shjson_t *stratum_json(const char *json_text)
+{
+  shjson_t *tree;
+  char *text;
+
+  if (!json_text)
+    return (NULL);
+
+  text = strdup(json_text);
+  tree = shjson_init(text);
+  free(text);
+  if (!tree)
+    return (NULL);
+
+  return (tree);
+}

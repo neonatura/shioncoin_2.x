@@ -131,6 +131,8 @@ int stratum_register_client_task(user_t *user, char *json_text);
 
 int get_stratum_daemon_port(void);
 
+shjson_t *stratum_json(const char *json_text);
+
 /**
  * @}
  */

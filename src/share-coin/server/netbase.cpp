@@ -327,8 +327,6 @@ bool static ConnectSocketDirectly(const CService &addrConnect, SOCKET& hSocketRe
 {
     hSocketRet = INVALID_SOCKET;
 
-fprintf(stderr, "DEBUG: ConnectSocketDirectly()\n");
-
 #ifdef USE_IPV6
     struct sockaddr_storage sockaddr;
 #else

@@ -160,10 +160,10 @@ int stratum_send_task(user_t *user, task_t *task, int clean)
   shjson_str_add(param, NULL, task->cb2);
   merk_ar = shjson_array_add(param, NULL);
   for (i = 0; i < task->merkle_len; i++) {
- hex2bin(hash_swap, task->merkle[i], 32);
-          shscrypt_swab256(prev_bin, hash_swap);
-          memset(merk_hash, 0, sizeof(merk_hash));
-          bin2hex(merk_hash, prev_bin, 32);
+    hex2bin(hash_swap, task->merkle[i], 32);
+    shscrypt_swab256(prev_bin, hash_swap);
+    memset(merk_hash, 0, sizeof(merk_hash));
+    bin2hex(merk_hash, prev_bin, 32);
 
     shjson_str_add(merk_ar, NULL, merk_hash);
   }

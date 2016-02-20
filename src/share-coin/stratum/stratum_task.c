@@ -49,11 +49,19 @@ void free_task(task_t **task_p)
 }
 #endif
 
-int task_work_t = 3;
+int task_work_t = 2;
 
 void reset_task_work_time(void)
 {
-  task_work_t = 3;
+  task_work_t = 2;
+}
+
+void incr_task_work_time(void)
+{
+
+  if (task_work_t < 10)
+    task_work_t++;
+    
 }
 
 static int work_idx = 0;
@@ -213,49 +221,21 @@ task_t *task_init(void)
 
   task_verify();
 
-#if 0
-  static time_t last_block_change;
-  work_reset = FALSE;
-  block_height = getblockheight();
-  if (block_height != last_block_height ||
-      (time(NULL) - MEDIAN_TIME_PER_BLOCK) > last_block_change) {
-    check_payout();
-
-    reset_task_work_time();
-    work_idx = -1;
-    work_reset = TRUE;
-
-    free_tasks();
-    last_block_change = time(NULL);
-    last_block_height = block_height;
-  }
-#endif
-
   work_idx++;
   if (0 != (work_idx % task_work_t)) {
     return (NULL);
   }
-
-  /* gradually decrease task generation rate per block. */
+  /* reset work index */
   work_idx = 0;
-//  task_work_t++;
+  incr_task_work_time();
 
-  templ_json = getblocktemplate();
-  if (!templ_json)
-    return (NULL); /* template not currently available. */
-
-  tree = shjson_init(templ_json);
-  if (!tree) {
-    return (NULL);
-  }
+  tree = stratum_json(getblocktemplate());
 
   block = shjson_obj(tree, "result");
   if (!block) {
     shjson_free(&tree);
     return (NULL);
   }
-
-
 
   task = (task_t *)calloc(1, sizeof(task_t));
   if (!task) { 

@@ -437,7 +437,6 @@ void IRCDiscover(void)
       CAddress addr;
       if (DecodeAddress(pszName, addr))
       {
-fprintf(stderr, "DEBUG: DecodeAddress: success '%s'\n", addr.ToString().c_str());
         addr.nTime = GetAdjustedTime();
 //        if (addrman.Add(addr, addrConnect, 51 * 60))
         printf("IRC got new address: %s\n", addr.ToString().c_str());

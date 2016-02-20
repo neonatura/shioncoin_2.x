@@ -119,13 +119,11 @@ const char *c_getblocktemplate(void)
      if (vNodes.empty())
      return (NULL);
 
-  /* DEBUG: required for release
-     if (IsInitialBlockDownload())
+   if (IsInitialBlockDownload())
      return (NULL);
-     */
 
   if (!pwalletMain) {
-    fprintf(stderr, "DEBUG: CreateNewBlock: Wallet not initialized.");
+    shcoind_log("c_getblocktemplate: Wallet not initialized.");
     return (NULL);
   }
 
@@ -236,13 +234,13 @@ int c_processblock(CBlock* pblock)
 
   // Preliminary checks
   if (!pblock->CheckBlock()) {
-fprintf(stderr, "DEBUG: c_processblock: !CheckBlock()\n");
+    shcoind_log("c_processblock: !CheckBlock()");
     return (BLKERR_CHECKPOINT);
   }
 
   // Store to disk
   if (!pblock->AcceptBlock()) {
-fprintf(stderr, "DEBUG: c_processblock: !AcceptBlock()\n");
+    shcoind_log("c_processblock: !AcceptBlock()");
     return (BLKERR_INVALID_BLOCK);
   }
 
@@ -271,17 +269,10 @@ fprintf(stderr, "generated %s\n", FormatMoney(pblock->vtx[0].vout[0].nValue).c_s
 #endif
 
 #if 0
-  fprintf(stderr, "DEBUG: submitblock: previousblockhash %s\n", pblock->hashPrevBlock.GetHex().c_str());
-  fprintf(stderr, "DEBUG: submitblock: previousblockhash %s\n", HexStr(pblock->hashPrevBlock.begin(), pblock->hashPrevBlock.end()).c_str());
   CTransaction coinbaseTx = pblock->vtx[0];
   CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION);
   ssTx << coinbaseTx;
   fprintf(stderr, "DEBUG: submitblock: coinbase %s\n", HexStr(ssTx.begin(), ssTx.end()).c_str());
-  fprintf(stderr, "DEBUG: sigScript: %s\n", HexStr(pblock->vtx[0].vin[0].scriptSig.begin(), pblock->vtx[0].vin[0].scriptSig.end()).c_str());
-  fprintf(stderr, "DEBUG: submitblock: merkleroot %s\n", pblock->hashMerkleRoot.GetHex().c_str());
-  fprintf(stderr, "DEBUG: submitblock: merkleroot %s\n", HexStr(pblock->hashMerkleRoot.begin(), pblock->hashMerkleRoot.end()).c_str());
-  fprintf(stderr, "DEBUG: submitblock: hash %s\n", pblock->GetHash().GetHex().c_str());
-  fprintf(stderr, "DEBUG: submitblock: target %s\n",  CBigNum().SetCompact(pblock->nBits).GetHex().c_str());
 #endif
 int c_submitblock(unsigned int workId, unsigned int nTime, unsigned int nNonce, char *xn_hex, char *ret_hash, double *ret_diff)
 {
@@ -326,23 +317,7 @@ int c_submitblock(unsigned int workId, unsigned int nTime, unsigned int nNonce, 
     *ret_diff = ((double)0x0000ffff /  (double)(nbit & 0x00ffffff));
   }
 
-#if 0
-pblock->print();
-fprintf(stderr, "DEBUG: submitblock: raw hash(%s) target(%s)\n", hash.GetHex().c_str(), hashTarget.GetHex().c_str());
-  fprintf(stderr, "DEBUG: submitblock: hash(%s) target(%s) diff(%f) nonce(%x)\n", HexStr(hash.begin(), hash.end()).c_str(), HexStr(hashTarget.begin(), hashTarget.end()).c_str(), ret_diff ? *ret_diff : 0.0, htonl(nNonce));
-  fprintf(stderr, "DEBUG: submitblock: previousblockhash(%s) merkleroot(%s)\n", 
-      HexStr(pblock->hashPrevBlock.begin(), pblock->hashPrevBlock.end()).c_str(),
-      HexStr(pblock->hashMerkleRoot.begin(), pblock->hashMerkleRoot.end()).c_str());
-  {
-    CTransaction coinbaseTx = pblock->vtx[0];
-    CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION);
-    ssTx << coinbaseTx;
-    fprintf(stderr, "DEBUG: submitblock: coinbase %s\n", HexStr(ssTx.begin(), ssTx.end()).c_str());
-  }
-#endif
-
   if (hash > hashTarget) {
-//fprintf(stderr, "DEBUG: submitblock: proof-of-work not found  \n  hash: %s  \ntarget: %s\n", hash.GetHex().c_str(), hashTarget.GetHex().c_str());
     return (0); /* share was submitted successfully */
   }
 
@@ -661,8 +636,7 @@ const char *c_getblockinfo(const char *hash_addr)
   if (strlen(hash_addr) <= 12 && (nHeight = atol(hash_addr))) {
     /* convert block index to block hash */
     if (nHeight < 0 || nHeight > nBestHeight) {
-      //throw runtime_error("Block number out of range.");
-      //fprintf(stderr, "DEBUG: Block number (%d) out of range.", nHeight);
+      shcoind_log("c_getblockinfo: block number out of range.");
       return (NULL);
     }
 
