@@ -3706,7 +3706,7 @@ void SetExtraNonce(CBlock* pblock, const char *xn_hex)
     char errbuf[1024];
 
     sprintf(errbuf, "SetExtraNonce: warning: scriptSig byte size is %u [which is over 100]. (xn_hex: %s)", 
-      (unsigned int)pblock->vtc[0].vin[0].scriptSig.size(), xn_hex);
+      (unsigned int)pblock->vtx[0].vin[0].scriptSig.size(), xn_hex);
     shcoind_log(errbuf);
   }
 
