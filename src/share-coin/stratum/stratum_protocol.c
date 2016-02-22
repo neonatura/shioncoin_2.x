@@ -177,6 +177,7 @@ int stratum_validate_submit(user_t *user, int req_id, shjson_t *json)
   if (ret_err)
     return (ret_err);
 
+#if 0
   /* attempt 'reverse nonce' */
   if (!*submit_hash) {
     double be_diff;
@@ -187,6 +188,7 @@ fprintf(stderr, "DEBUG: stratum_validate_submit: be_nonce (%x) is lower hash tha
       share_diff = be_diff;
     }
   }
+#endif
 
   /* add share to current round */
   stratum_user_block(user, share_diff);

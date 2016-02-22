@@ -443,7 +443,6 @@ sprintf(ntime, "%-8.8x", (unsigned int)task->curtime);
         uint32_t be_nonce =  htobe32(task->work.nonce);
 
         sprintf(xn_hex, "%s%s", sys_user->peer.nonce1, task->work.xnonce2);
-        //submitblock(task->task_id, task->curtime, be_nonce, xn_hex, NULL, NULL);
         submitblock(task->task_id, task->curtime, task->work.nonce, xn_hex, NULL, NULL);
       }
     }
