@@ -16,6 +16,7 @@
 #include "net.h"
 #include "init.h"
 #include "ui_interface.h"
+#include "reward.h"
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
@@ -724,6 +725,7 @@ uint256 GetOrphanRoot(const CBlock* pblock)
     return pblock->GetHash();
 }
 
+#if 0
 int64 static GetBlockValue(int nHeight, int64 nFees)
 {
 	int64 nSubsidy = 4000 * COIN;
@@ -766,6 +768,7 @@ int64 static GetBlockValue(int nHeight, int64 nFees)
 	
     return nSubsidy + nFees;
 }
+#endif
 
 static int64 nTargetTimespan = 2 * 60 * 60; // USDE: 2 hours
 static int64 nTargetSpacing = 60; // USDE: 60 seconds
@@ -1481,6 +1484,7 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)
             return error(SHERR_INVAL, "ConnectBlock() : UpdateTxIndex failed");
     }
 
+    /* Ensure that the expected coinbase amount dose not exceed expectations. */
     if (vtx[0].GetValueOut() > GetBlockValue(pindex->nHeight, nFees))
         return false;
 

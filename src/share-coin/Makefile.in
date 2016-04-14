@@ -221,13 +221,13 @@ am__objects_5 = shcoind-rpc_proto.$(OBJEXT) \
 	shcoind-db.$(OBJEXT) shcoind-init.$(OBJEXT) \
 	shcoind-key.$(OBJEXT) shcoind-keystore.$(OBJEXT) \
 	shcoind-leveldb.$(OBJEXT) shcoind-main.$(OBJEXT) \
-	shcoind-cmd_msg.$(OBJEXT) shcoind-noui.$(OBJEXT) \
-	shcoind-rpcdump.$(OBJEXT) shcoind-rpcnet.$(OBJEXT) \
-	shcoind-rpcrawtransaction.$(OBJEXT) shcoind-script.$(OBJEXT) \
-	shcoind-sync.$(OBJEXT) shcoind-wallet.$(OBJEXT) \
-	shcoind-walletdb.$(OBJEXT) shcoind-scrypt.$(OBJEXT) \
-	shcoind-wallet_iface.$(OBJEXT) shcoind-block_iface.$(OBJEXT) \
-	shcoind-server_iface.$(OBJEXT)
+	shcoind-reward.$(OBJEXT) shcoind-cmd_msg.$(OBJEXT) \
+	shcoind-noui.$(OBJEXT) shcoind-rpcdump.$(OBJEXT) \
+	shcoind-rpcnet.$(OBJEXT) shcoind-rpcrawtransaction.$(OBJEXT) \
+	shcoind-script.$(OBJEXT) shcoind-sync.$(OBJEXT) \
+	shcoind-wallet.$(OBJEXT) shcoind-walletdb.$(OBJEXT) \
+	shcoind-scrypt.$(OBJEXT) shcoind-wallet_iface.$(OBJEXT) \
+	shcoind-block_iface.$(OBJEXT) shcoind-server_iface.$(OBJEXT)
 am__objects_6 = shcoind-stratum.$(OBJEXT) \
 	shcoind-stratum_http.$(OBJEXT) \
 	shcoind-stratum_message.$(OBJEXT) \
@@ -1186,6 +1186,7 @@ common_includes = \
 	server/keystore.h \
 	server/leveldb.h \
 	server/main.h \
+	server/reward.h \
 	server/mruset.h \
 	server/netbase.h \
 	server/net.h \
@@ -1247,6 +1248,7 @@ server_sources = \
 	server/keystore.cpp \
 	server/leveldb.cpp \
 	server/main.cpp \
+	server/reward.cpp \
 	server/cmd_msg.cpp \
 	server/noui.cpp \
 	server/rpcdump.cpp \
@@ -1521,6 +1523,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-netbase.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-noui.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-protocol.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-reward.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-rpc_proto.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-rpcdump.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-rpcnet.Po@am__quote@
@@ -2970,6 +2973,20 @@ shcoind-main.obj: server/main.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/main.cpp' object='shcoind-main.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-main.obj `if test -f 'server/main.cpp'; then $(CYGPATH_W) 'server/main.cpp'; else $(CYGPATH_W) '$(srcdir)/server/main.cpp'; fi`
+
+shcoind-reward.o: server/reward.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-reward.o -MD -MP -MF $(DEPDIR)/shcoind-reward.Tpo -c -o shcoind-reward.o `test -f 'server/reward.cpp' || echo '$(srcdir)/'`server/reward.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-reward.Tpo $(DEPDIR)/shcoind-reward.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/reward.cpp' object='shcoind-reward.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-reward.o `test -f 'server/reward.cpp' || echo '$(srcdir)/'`server/reward.cpp
+
+shcoind-reward.obj: server/reward.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-reward.obj -MD -MP -MF $(DEPDIR)/shcoind-reward.Tpo -c -o shcoind-reward.obj `if test -f 'server/reward.cpp'; then $(CYGPATH_W) 'server/reward.cpp'; else $(CYGPATH_W) '$(srcdir)/server/reward.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-reward.Tpo $(DEPDIR)/shcoind-reward.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/reward.cpp' object='shcoind-reward.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-reward.obj `if test -f 'server/reward.cpp'; then $(CYGPATH_W) 'server/reward.cpp'; else $(CYGPATH_W) '$(srcdir)/server/reward.cpp'; fi`
 
 shcoind-cmd_msg.o: server/cmd_msg.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-cmd_msg.o -MD -MP -MF $(DEPDIR)/shcoind-cmd_msg.Tpo -c -o shcoind-cmd_msg.o `test -f 'server/cmd_msg.cpp' || echo '$(srcdir)/'`server/cmd_msg.cpp

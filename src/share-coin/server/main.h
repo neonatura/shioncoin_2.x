@@ -71,13 +71,18 @@ class CInv;
 class CRequestTracker;
 class CNode;
 
+/* 1MEG Max Block Size */
 static const unsigned int MAX_BLOCK_SIZE = 1000000;
 static const unsigned int MAX_BLOCK_SIZE_GEN = MAX_BLOCK_SIZE/2;
 static const unsigned int MAX_BLOCK_SIGOPS = MAX_BLOCK_SIZE/50;
 static const unsigned int MAX_ORPHAN_TRANSACTIONS = MAX_BLOCK_SIZE/100;
 static const int64 MIN_TX_FEE = 10000000;
 static const int64 MIN_RELAY_TX_FEE = MIN_TX_FEE;
-static const int64 MAX_MONEY = 1600000000 * COIN;
+#if CLIENT_VERSION_REVISION > 4
+static const int64 MAX_MONEY = 320000000000 * COIN; /* 320bil */
+#else
+static const int64 MAX_MONEY = 1600000000 * COIN; /* 1.6bil */
+#endif
 inline bool MoneyRange(int64 nValue) { return (nValue >= 0 && nValue <= MAX_MONEY); }
 static const int COINBASE_MATURITY = 100;
 // Threshold for nLockTime: below this value it is interpreted as block number, otherwise as UNIX timestamp.

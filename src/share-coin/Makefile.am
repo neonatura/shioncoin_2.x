@@ -33,6 +33,7 @@ common_includes = \
 	server/keystore.h \
 	server/leveldb.h \
 	server/main.h \
+	server/reward.h \
 	server/mruset.h \
 	server/netbase.h \
 	server/net.h \
@@ -92,6 +93,7 @@ server_sources = \
 	server/keystore.cpp \
 	server/leveldb.cpp \
 	server/main.cpp \
+	server/reward.cpp \
 	server/cmd_msg.cpp \
 	server/noui.cpp \
 	server/rpcdump.cpp \
