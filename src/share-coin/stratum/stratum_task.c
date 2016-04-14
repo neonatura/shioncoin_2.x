@@ -59,7 +59,7 @@ void reset_task_work_time(void)
 void incr_task_work_time(void)
 {
 
-  if (task_work_t < 10)
+  if (task_work_t < 4)
     task_work_t++;
     
 }
