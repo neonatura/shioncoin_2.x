@@ -226,7 +226,7 @@ void unet_peer_fill_seed(int mode)
     return;
 
   memset(hostname, 0, sizeof(hostname));
-  if (mode == UNET_COIN) {
+  if (mode == UNET_USDE) {
     for (i = 0; i < USDE_SEED_LIST_SIZE; i++) {
       sprintf(hostname, "%s %d", usde_seed_list[i], bind->port);
       peer = shpeer_init("usde", hostname); 

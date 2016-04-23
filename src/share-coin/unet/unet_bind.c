@@ -55,7 +55,7 @@ int unet_bind(int mode, int port)
   _unet_bind[mode].fd = sk;
   _unet_bind[mode].port = port;
   _unet_bind[mode].scan_stamp = shtime();
-  _unet_bind[mode].scan_freq = 0.1;
+  _unet_bind[mode].scan_freq = 0.025;
 
   sprintf(hostname, "127.0.0.1 %d", port);
   peer = shpeer_init(unet_mode_label(mode), hostname);

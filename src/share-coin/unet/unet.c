@@ -27,10 +27,13 @@
 
 static const char *_unet_label[MAX_UNET_MODES] = 
 {
-  "NONE",
+  "!NONE!",
+  "usde",
+  "shc",
+  "!RESERVED!",
+  "!RESERVED!",
   "stratum",
-  "usde-rpc",
-  "usde"
+  "rpc",
 };
 const char *unet_mode_label(int mode)
 {

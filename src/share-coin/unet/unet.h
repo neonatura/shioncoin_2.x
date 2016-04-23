@@ -32,10 +32,14 @@ extern "C" {
 
 
 #define UNET_NONE 0
-#define UNET_STRATUM 1
-#define UNET_RPC 2
-#define UNET_COIN 3
-#define MAX_UNET_MODES 4
+#define UNET_USDE 1
+#define UNET_SHC 2
+#define UNET_RESERVED_1 3
+#define UNET_RESERVED_2 4
+#define UNET_STRATUM 5
+#define UNET_RPC 6
+//#define UNET_COIN 3
+#define MAX_UNET_MODES 7
 
 
 
