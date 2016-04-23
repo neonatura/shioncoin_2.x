@@ -1,5 +1,6 @@
 
 
+#include "server/block.h"
 #include "server/main.h"
 #include "server/net.h"
 #include "server/rpc_proto.h"

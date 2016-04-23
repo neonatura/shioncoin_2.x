@@ -1,3 +1,5 @@
+
+
 #include <boost/assert.hpp>
 #include <boost/assign/list_of.hpp>
 #include <boost/assign/list_inserter.hpp>
@@ -9,6 +11,7 @@
 #include <openssl/ec.h>
 #include <openssl/err.h>
 
+#include "block.h"
 #include "keystore.h"
 #include "main.h"
 #include "script.h"

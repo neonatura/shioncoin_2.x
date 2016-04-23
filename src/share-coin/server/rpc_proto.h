@@ -16,6 +16,8 @@
 #include "json/json_spirit_writer_template.h"
 #include "json/json_spirit_utils.h"
 
+#include "coin_proto.h"
+
 json_spirit::Object JSONRPCError(int code, const std::string& message);
 
 void ThreadRPCServer(void* parg);
@@ -67,7 +69,7 @@ public:
      * @returns Result of the call.
      * @throws an exception (json_spirit::Value) when an error happens.
      */
-    json_spirit::Value execute(const std::string &method, const json_spirit::Array &params) const;
+    json_spirit::Value execute(CIface *iface, const std::string &method, const json_spirit::Array &params) const;
 };
 
 extern const CRPCTable tableRPC;

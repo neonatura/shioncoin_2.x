@@ -13,6 +13,7 @@
 // client versioning
 //
 
+#if 0
 // These need to be macro's, as version.cpp's voodoo requires it
 #define CLIENT_VERSION_MAJOR       1
 #define CLIENT_VERSION_MINOR       0
@@ -24,6 +25,15 @@ static const int CLIENT_VERSION =
                          +   10000 * CLIENT_VERSION_MINOR 
                          +     100 * CLIENT_VERSION_REVISION
                          +       1 * CLIENT_VERSION_BUILD;
+#endif
+#define CLIENT_VERSION_MAJOR       USDE_VERSION_MAJOR
+#define CLIENT_VERSION_MINOR       USDE_VERSION_MINOR
+#define CLIENT_VERSION_REVISION    USDE_VERSION_REVISION
+#define CLIENT_VERSION_BUILD       USDE_VERSION_BUILD
+
+#define CLIENT_VERSION \
+    COIN_IFACE_VERSION(USDE_VERSION_MAJOR, USDE_VERSION_MINOR, \
+      USDE_VERSION_REVISION, USDE_VERSION_BUILD)
 
 
 //

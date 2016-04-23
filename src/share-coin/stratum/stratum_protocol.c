@@ -195,7 +195,7 @@ fprintf(stderr, "DEBUG: stratum_validate_submit: be_nonce (%x) is lower hash tha
 
   if (*submit_hash) {
     sprintf(errbuf, "stratum_validate_submit: submitted block \"%s\" for \"%s\"\n", submit_hash, user->worker);
-    unet_log(UNET_COIN, errbuf);
+    unet_log(UNET_STRATUM, errbuf);
 
     /* user's block was accepted by network. */
     user->block_acc++;

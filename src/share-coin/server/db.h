@@ -321,6 +321,7 @@ public:
     bool LoadBlockIndex();
 private:
     bool LoadBlockIndexGuts();
+    bool InitBlockChainIndex();
 };
 
 

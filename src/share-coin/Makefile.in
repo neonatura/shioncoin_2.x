@@ -15,7 +15,6 @@
 
 @SET_MAKE@
 
-
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
 pkgincludedir = $(includedir)/@PACKAGE@
@@ -42,14 +41,12 @@ sbin_PROGRAMS = shcoind$(EXEEXT)
 @STATIC_LIBSHARE_TRUE@am__append_4 = $(LIBSHARE)/src/share-lib/libshare.a
 @STATIC_LIBSHARE_TRUE@am__append_5 = -I$(LIBSHARE)/include
 @STATIC_LIBSHARE_TRUE@am__append_6 = -I$(LIBSHARE)/include
-@HAVE_CSTDATOMIC_TRUE@am__append_7 = -std=c++0x
-@HAVE_ATOMIC_TRUE@am__append_8 = -std=c++11
-@DEBUG_TRUE@am__append_9 = -g3 
-@DEBUG_TRUE@am__append_10 = -g3
-@DEBUG_FALSE@am__append_11 = -fexpensive-optimizations -ffast-math \
+@DEBUG_TRUE@am__append_7 = -g3 
+@DEBUG_TRUE@am__append_8 = -g3
+@DEBUG_FALSE@am__append_9 = -fexpensive-optimizations -ffast-math \
 @DEBUG_FALSE@	-fomit-frame-pointer -fstrength-reduce -fthread-jumps -funroll-loops
 
-@DEBUG_FALSE@am__append_12 = \
+@DEBUG_FALSE@am__append_10 = \
 @DEBUG_FALSE@	-fexpensive-optimizations -ffast-math \
 @DEBUG_FALSE@	-fomit-frame-pointer -fstrength-reduce -fthread-jumps -funroll-loops
 
@@ -147,98 +144,67 @@ mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/config.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
-LIBRARIES = $(noinst_LIBRARIES)
-libleveldb_a_AR = $(AR) $(ARFLAGS)
-libleveldb_a_LIBADD =
-am_libleveldb_a_OBJECTS = libleveldb_a-builder.$(OBJEXT) \
-	libleveldb_a-c.$(OBJEXT) libleveldb_a-dbformat.$(OBJEXT) \
-	libleveldb_a-db_impl.$(OBJEXT) libleveldb_a-db_iter.$(OBJEXT) \
-	libleveldb_a-filename.$(OBJEXT) \
-	libleveldb_a-log_reader.$(OBJEXT) \
-	libleveldb_a-log_writer.$(OBJEXT) \
-	libleveldb_a-memtable.$(OBJEXT) libleveldb_a-repair.$(OBJEXT) \
-	libleveldb_a-table_cache.$(OBJEXT) \
-	libleveldb_a-version_edit.$(OBJEXT) \
-	libleveldb_a-version_set.$(OBJEXT) \
-	libleveldb_a-write_batch.$(OBJEXT) \
-	libleveldb_a-block_builder.$(OBJEXT) \
-	libleveldb_a-block.$(OBJEXT) \
-	libleveldb_a-filter_block.$(OBJEXT) \
-	libleveldb_a-format.$(OBJEXT) libleveldb_a-iterator.$(OBJEXT) \
-	libleveldb_a-merger.$(OBJEXT) \
-	libleveldb_a-table_builder.$(OBJEXT) \
-	libleveldb_a-table.$(OBJEXT) \
-	libleveldb_a-two_level_iterator.$(OBJEXT) \
-	libleveldb_a-arena.$(OBJEXT) libleveldb_a-bloom.$(OBJEXT) \
-	libleveldb_a-cache.$(OBJEXT) libleveldb_a-coding.$(OBJEXT) \
-	libleveldb_a-comparator.$(OBJEXT) \
-	libleveldb_a-crc32c.$(OBJEXT) libleveldb_a-env.$(OBJEXT) \
-	libleveldb_a-env_posix.$(OBJEXT) \
-	libleveldb_a-env_win.$(OBJEXT) \
-	libleveldb_a-filter_policy.$(OBJEXT) \
-	libleveldb_a-hash.$(OBJEXT) libleveldb_a-histogram.$(OBJEXT) \
-	libleveldb_a-logging.$(OBJEXT) libleveldb_a-options.$(OBJEXT) \
-	libleveldb_a-status.$(OBJEXT) \
-	libleveldb_a-port_posix.$(OBJEXT) \
-	libleveldb_a-memenv.$(OBJEXT)
-libleveldb_a_OBJECTS = $(am_libleveldb_a_OBJECTS)
 am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(sbindir)"
 PROGRAMS = $(bin_PROGRAMS) $(sbin_PROGRAMS)
 am__objects_1 =
-am__objects_2 = shcoin-unet_accept.$(OBJEXT) \
+am__objects_2 = shcoin-bc_block.$(OBJEXT) shcoin-bc_index.$(OBJEXT) \
+	shcoin-bc_fmap.$(OBJEXT)
+am__objects_3 = $(am__objects_2) shcoin-unet_accept.$(OBJEXT) \
 	shcoin-unet_bind.$(OBJEXT) shcoin-unet_buff.$(OBJEXT) \
 	shcoin-unet.$(OBJEXT) shcoin-unet_close.$(OBJEXT) \
 	shcoin-unet_connect.$(OBJEXT) shcoin-unet_io.$(OBJEXT) \
 	shcoin-unet_timer.$(OBJEXT) shcoin-unet_peer.$(OBJEXT) \
 	shcoin-unet_event.$(OBJEXT) shcoin-protocol.$(OBJEXT) \
 	shcoin-netbase.$(OBJEXT) shcoin-version.$(OBJEXT) \
-	shcoin-util.$(OBJEXT) shcoin-shcoind_block.$(OBJEXT) \
-	shcoin-shcoind_rpc.$(OBJEXT) shcoin-shcoind_log.$(OBJEXT) \
-	shcoin-shcoind_opt.$(OBJEXT)
-am__objects_3 = shcoin-addrman.$(OBJEXT) shcoin-tool_irc.$(OBJEXT)
-am_shcoin_OBJECTS = $(am__objects_1) $(am__objects_2) \
+	shcoin-util.$(OBJEXT) shcoin-shcoind_rpc.$(OBJEXT) \
+	shcoin-shcoind_log.$(OBJEXT) shcoin-shcoind_opt.$(OBJEXT)
+am__objects_4 = shcoin-addrman.$(OBJEXT) shcoin-tool_irc.$(OBJEXT)
+am_shcoin_OBJECTS = $(am__objects_1) $(am__objects_3) \
 	shcoin-shcoind_tool.$(OBJEXT) shcoin-clientrpc_iface.$(OBJEXT) \
-	$(am__objects_3)
+	$(am__objects_4)
 shcoin_OBJECTS = $(am_shcoin_OBJECTS)
 shcoin_DEPENDENCIES =  \
-	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a libleveldb.a \
+	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
 	$(am__append_4)
 shcoin_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CXXLD) $(shcoin_CXXFLAGS) $(CXXFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
-am__objects_4 = shcoind-unet_accept.$(OBJEXT) \
+am__objects_5 = shcoind-bc_block.$(OBJEXT) shcoind-bc_index.$(OBJEXT) \
+	shcoind-bc_fmap.$(OBJEXT)
+am__objects_6 = $(am__objects_5) shcoind-unet_accept.$(OBJEXT) \
 	shcoind-unet_bind.$(OBJEXT) shcoind-unet_buff.$(OBJEXT) \
 	shcoind-unet.$(OBJEXT) shcoind-unet_close.$(OBJEXT) \
 	shcoind-unet_connect.$(OBJEXT) shcoind-unet_io.$(OBJEXT) \
 	shcoind-unet_timer.$(OBJEXT) shcoind-unet_peer.$(OBJEXT) \
 	shcoind-unet_event.$(OBJEXT) shcoind-protocol.$(OBJEXT) \
 	shcoind-netbase.$(OBJEXT) shcoind-version.$(OBJEXT) \
-	shcoind-util.$(OBJEXT) shcoind-shcoind_block.$(OBJEXT) \
-	shcoind-shcoind_rpc.$(OBJEXT) shcoind-shcoind_log.$(OBJEXT) \
-	shcoind-shcoind_opt.$(OBJEXT)
-am__objects_5 = shcoind-rpc_proto.$(OBJEXT) \
-	shcoind-checkpoints.$(OBJEXT) shcoind-crypter.$(OBJEXT) \
-	shcoind-db.$(OBJEXT) shcoind-init.$(OBJEXT) \
-	shcoind-key.$(OBJEXT) shcoind-keystore.$(OBJEXT) \
-	shcoind-leveldb.$(OBJEXT) shcoind-main.$(OBJEXT) \
-	shcoind-reward.$(OBJEXT) shcoind-cmd_msg.$(OBJEXT) \
+	shcoind-util.$(OBJEXT) shcoind-shcoind_rpc.$(OBJEXT) \
+	shcoind-shcoind_log.$(OBJEXT) shcoind-shcoind_opt.$(OBJEXT)
+am__objects_7 = shcoind-coin_proto.$(OBJEXT) \
+	shcoind-usde_proto.$(OBJEXT) shcoind-shc_proto.$(OBJEXT)
+am__objects_8 = $(am__objects_7) shcoind-usde_netmsg.$(OBJEXT) \
+	shcoind-shc_netmsg.$(OBJEXT) shcoind-block.$(OBJEXT) \
+	shcoind-rpc_proto.$(OBJEXT) shcoind-checkpoints.$(OBJEXT) \
+	shcoind-crypter.$(OBJEXT) shcoind-db.$(OBJEXT) \
+	shcoind-init.$(OBJEXT) shcoind-key.$(OBJEXT) \
+	shcoind-keystore.$(OBJEXT) shcoind-main.$(OBJEXT) \
 	shcoind-noui.$(OBJEXT) shcoind-rpcdump.$(OBJEXT) \
 	shcoind-rpcnet.$(OBJEXT) shcoind-rpcrawtransaction.$(OBJEXT) \
 	shcoind-script.$(OBJEXT) shcoind-sync.$(OBJEXT) \
 	shcoind-wallet.$(OBJEXT) shcoind-walletdb.$(OBJEXT) \
 	shcoind-scrypt.$(OBJEXT) shcoind-wallet_iface.$(OBJEXT) \
 	shcoind-block_iface.$(OBJEXT) shcoind-server_iface.$(OBJEXT)
-am__objects_6 = shcoind-stratum.$(OBJEXT) \
+am__objects_9 = shcoind-stratum.$(OBJEXT) \
 	shcoind-stratum_http.$(OBJEXT) \
 	shcoind-stratum_message.$(OBJEXT) \
 	shcoind-stratum_protocol.$(OBJEXT) \
 	shcoind-stratum_user.$(OBJEXT) shcoind-stratum_task.$(OBJEXT)
-am_shcoind_OBJECTS = $(am__objects_1) $(am__objects_4) \
-	$(am__objects_5) $(am__objects_6) shcoind-shcoind.$(OBJEXT) \
+am_shcoind_OBJECTS = $(am__objects_1) $(am__objects_6) \
+	$(am__objects_8) $(am__objects_9) shcoind-shcoind.$(OBJEXT) \
 	shcoind-shcoind_daemon.$(OBJEXT)
 shcoind_OBJECTS = $(am_shcoind_OBJECTS)
 shcoind_DEPENDENCIES =  \
-	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a libleveldb.a \
+	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
 	$(am__append_1)
 shcoind_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CXXLD) $(shcoind_CXXFLAGS) $(CXXFLAGS) \
@@ -265,9 +231,8 @@ CXXLD = $(CXX)
 CXXLINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(libleveldb_a_SOURCES) $(shcoin_SOURCES) $(shcoind_SOURCES)
-DIST_SOURCES = $(libleveldb_a_SOURCES) $(shcoin_SOURCES) \
-	$(shcoind_SOURCES)
+SOURCES = $(shcoin_SOURCES) $(shcoind_SOURCES)
+DIST_SOURCES = $(shcoin_SOURCES) $(shcoind_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -293,14 +258,14 @@ CCAS = @CCAS@
 CCASDEPMODE = @CCASDEPMODE@
 CCASFLAGS = @CCASFLAGS@
 CCDEPMODE = @CCDEPMODE@
-CFLAGS = @CFLAGS@ $(am__append_9) $(am__append_11)
+CFLAGS = @CFLAGS@ $(am__append_7) $(am__append_9)
 CP = @CP@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
 CXX = @CXX@
 CXXCPP = @CXXCPP@
 CXXDEPMODE = @CXXDEPMODE@
-CXXFLAGS = @CXXFLAGS@ $(am__append_10) $(am__append_12)
+CXXFLAGS = @CXXFLAGS@ $(am__append_8) $(am__append_10)
 CYGPATH_W = @CYGPATH_W@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
@@ -1154,9 +1119,24 @@ with_kernel = @with_kernel@
 with_kerneldir = @with_kerneldir@
 AUTOMAKE_OPTIONS = foreign
 INCLUDES = -I$(top_srcdir)/src/share-ssl-lib/$(OPENSSL_DIR)/include \
-	-I$(top_srcdir)/src/share-lib \
-	-I$(top_srcdir)/src/share-coin/leveldb \
-	-I$(top_srcdir)/src/share-coin/leveldb
+	-I$(top_srcdir)/src/share-lib
+
+blockchain_sources = \
+	$(srcdir)/blockchain/bc_block.c \
+	$(srcdir)/blockchain/bc_index.c \
+	$(srcdir)/blockchain/bc_fmap.c \
+	$(srcdir)/blockchain/bc.h \
+	$(srcdir)/blockchain/bc_block.h \
+	$(srcdir)/blockchain/bc_index.h \
+	$(srcdir)/blockchain/bc_fmap.h
+
+proto_sources = \
+	$(srcdir)/proto/coin_proto.c \
+	$(srcdir)/proto/usde_proto.cpp \
+	$(srcdir)/proto/shc_proto.cpp \
+	$(srcdir)/proto/coin_proto.h \
+	$(srcdir)/proto/usde_proto.h \
+	$(srcdir)/proto/shc_proto.h
 
 common_includes = \
 	$(top_builddir)/config.h \
@@ -1173,6 +1153,7 @@ common_includes = \
 	$(top_srcdir)/src/share-lib/delta/xdelta3.h \
 	$(top_srcdir)/src/share-lib/net/shnet.h \
 	unet/unet.h \
+	server/block.h \
 	server/allocators.h \
 	server/base58.h \
 	server/bignum.h \
@@ -1184,9 +1165,6 @@ common_includes = \
 	server/init.h \
 	server/key.h \
 	server/keystore.h \
-	server/leveldb.h \
-	server/main.h \
-	server/reward.h \
 	server/mruset.h \
 	server/netbase.h \
 	server/net.h \
@@ -1211,13 +1189,13 @@ common_includes = \
 	stratum/stratum_user.h \
 	stratum/stratum_task.h \
 	stratum/stratum.h \
-	shcoind_block.h \
 	shcoind_rpc.h \
 	shcoind_log.h \
 	shcoind_opt.h \
 	shcoind.h
 
 common_sources = \
+	$(blockchain_sources) \
 	unet/unet_accept.c \
 	unet/unet_bind.c \
 	unet/unet_buff.c \
@@ -1233,12 +1211,17 @@ common_sources = \
 	server/netbase.cpp \
 	server/version.cpp \
 	server/util.cpp \
-	shcoind_block.c \
 	shcoind_rpc.c \
 	shcoind_log.c \
 	shcoind_opt.c
 
 server_sources = \
+	$(proto_sources) \
+	server/usde/usde_netmsg.cpp \
+	server/usde/usde_netmsg.h \
+	server/shc/shc_netmsg.cpp \
+	server/shc/shc_netmsg.h \
+	server/block.cpp \
 	server/rpc_proto.cpp \
 	server/checkpoints.cpp \
 	server/crypter.cpp \
@@ -1246,10 +1229,7 @@ server_sources = \
 	server/init.cpp \
 	server/key.cpp \
 	server/keystore.cpp \
-	server/leveldb.cpp \
 	server/main.cpp \
-	server/reward.cpp \
-	server/cmd_msg.cpp \
 	server/noui.cpp \
 	server/rpcdump.cpp \
 	server/rpcnet.cpp \
@@ -1284,34 +1264,43 @@ shcoind_SOURCES = \
 	shcoind_daemon.h
 
 shcoind_LDADD = $(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
-	libleveldb.a $(am__append_1) -lboost_system -lboost_filesystem \
+	$(am__append_1) -lboost_system -lboost_filesystem \
 	-lboost_thread -ldb_cxx -ldl
-shcoind_CFLAGS = -I$(srcdir)/server $(am__append_2)
-shcoind_CXXFLAGS = -I$(srcdir)/leveldb/include \
-	-I$(srcdir)/leveldb/helpers -I$(srcdir)/leveldb \
-	-I$(srcdir)/server -DOS_LINUX $(am__append_3)
+shcoind_CFLAGS = -I$(srcdir)/server -I$(srcdir)/blockchain \
+	-I$(srcdir)/proto -DSHCOIN_SERVER $(am__append_2)
+shcoind_CXXFLAGS = -I$(srcdir)/server -I$(srcdir)/blockchain \
+	-I$(srcdir)/proto -DOS_LINUX -DSHCOIN_SERVER $(am__append_3)
 shcoin_SOURCES = $(common_includes) $(common_sources) \
 	shcoind_tool.cpp clientrpc_iface.cpp $(tool_sources)
 
 shcoin_LDADD = $(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
-	libleveldb.a $(am__append_4) -lboost_system -lboost_filesystem \
+	$(am__append_4) -lboost_system -lboost_filesystem \
 	-lboost_thread -ldb_cxx -ldl
-shcoin_CFLAGS = -DSHCOIN_CLIENT -I$(srcdir)/server $(am__append_5)
-shcoin_CXXFLAGS = -DSHCOIN_CLIENT -I$(srcdir)/leveldb/include \
-	-I$(srcdir)/leveldb/helpers -I$(srcdir)/leveldb \
-	-I$(srcdir)/server -DOS_LINUX $(am__append_6)
-noinst_LIBRARIES = libleveldb.a
-libleveldb_a_CXXFLAGS = -I$(srcdir)/leveldb/include \
-	-I$(srcdir)/leveldb/helpers -I$(srcdir)/leveldb -DOS_LINUX \
-	-DLEVELDB_PLATFORM_POSIX $(am__append_7) $(am__append_8)
-libleveldb_a_SOURCES = \
-	leveldb/db/builder.cc leveldb/db/c.cc leveldb/db/dbformat.cc leveldb/db/db_impl.cc leveldb/db/db_iter.cc leveldb/db/filename.cc leveldb/db/log_reader.cc leveldb/db/log_writer.cc leveldb/db/memtable.cc leveldb/db/repair.cc leveldb/db/table_cache.cc leveldb/db/version_edit.cc leveldb/db/version_set.cc leveldb/db/write_batch.cc leveldb/table/block_builder.cc leveldb/table/block.cc leveldb/table/filter_block.cc leveldb/table/format.cc leveldb/table/iterator.cc leveldb/table/merger.cc leveldb/table/table_builder.cc leveldb/table/table.cc leveldb/table/two_level_iterator.cc leveldb/util/arena.cc leveldb/util/bloom.cc leveldb/util/cache.cc leveldb/util/coding.cc leveldb/util/comparator.cc leveldb/util/crc32c.cc leveldb/util/env.cc leveldb/util/env_posix.cc leveldb/util/env_win.cc leveldb/util/filter_policy.cc leveldb/util/hash.cc leveldb/util/histogram.cc leveldb/util/logging.cc leveldb/util/options.cc leveldb/util/status.cc leveldb/port/port_posix.cc leveldb/helpers/memenv/memenv.cc
+shcoin_CFLAGS = -DSHCOIN_CLIENT -I$(srcdir)/server \
+	-I$(top_srcdir)/src/share-coin/blockchain -I$(srcdir)/proto \
+	$(am__append_5)
+shcoin_CXXFLAGS = -DSHCOIN_CLIENT -I$(srcdir)/server \
+	-I$(top_srcdir)/src/share-coin/blockchain -I$(srcdir)/proto \
+	-DOS_LINUX $(am__append_6)
 
+#noinst_LIBRARIES = libleveldb.a
+#libleveldb_a_CXXFLAGS = \
+#	-I$(srcdir)/leveldb/include -I$(srcdir)/leveldb/helpers -I$(srcdir)/leveldb \
+#	-DOS_LINUX -DLEVELDB_PLATFORM_POSIX
+#libleveldb_a_SOURCES = \
+#	leveldb/db/builder.cc leveldb/db/c.cc leveldb/db/dbformat.cc leveldb/db/db_impl.cc leveldb/db/db_iter.cc leveldb/db/filename.cc leveldb/db/log_reader.cc leveldb/db/log_writer.cc leveldb/db/memtable.cc leveldb/db/repair.cc leveldb/db/table_cache.cc leveldb/db/version_edit.cc leveldb/db/version_set.cc leveldb/db/write_batch.cc leveldb/table/block_builder.cc leveldb/table/block.cc leveldb/table/filter_block.cc leveldb/table/format.cc leveldb/table/iterator.cc leveldb/table/merger.cc leveldb/table/table_builder.cc leveldb/table/table.cc leveldb/table/two_level_iterator.cc leveldb/util/arena.cc leveldb/util/bloom.cc leveldb/util/cache.cc leveldb/util/coding.cc leveldb/util/comparator.cc leveldb/util/crc32c.cc leveldb/util/env.cc leveldb/util/env_posix.cc leveldb/util/env_win.cc leveldb/util/filter_policy.cc leveldb/util/hash.cc leveldb/util/histogram.cc leveldb/util/logging.cc leveldb/util/options.cc leveldb/util/status.cc leveldb/port/port_posix.cc leveldb/helpers/memenv/memenv.cc
+#
+#if HAVE_CSTDATOMIC
+#libleveldb_a_CXXFLAGS += -std=c++0x
+#endif
+#if HAVE_ATOMIC
+#libleveldb_a_CXXFLAGS += -std=c++11
+#endif
 @HAVE_INITD_DIR_TRUE@EXTRA_DIST = $(top_builddir)/scripts/initd/shcoind
 all: all-am
 
 .SUFFIXES:
-.SUFFIXES: .c .cc .cpp .lo .o .obj
+.SUFFIXES: .c .cpp .lo .o .obj
 $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
@@ -1342,13 +1331,6 @@ $(top_srcdir)/configure:  $(am__configure_deps)
 $(ACLOCAL_M4):  $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 $(am__aclocal_m4_deps):
-
-clean-noinstLIBRARIES:
-	-test -z "$(noinst_LIBRARIES)" || rm -f $(noinst_LIBRARIES)
-libleveldb.a: $(libleveldb_a_OBJECTS) $(libleveldb_a_DEPENDENCIES) 
-	-rm -f libleveldb.a
-	$(libleveldb_a_AR) libleveldb.a $(libleveldb_a_OBJECTS) $(libleveldb_a_LIBADD)
-	$(RANLIB) libleveldb.a
 install-binPROGRAMS: $(bin_PROGRAMS)
 	@$(NORMAL_INSTALL)
 	test -z "$(bindir)" || $(MKDIR_P) "$(DESTDIR)$(bindir)"
@@ -1448,51 +1430,13 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libleveldb_a-arena.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libleveldb_a-block.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libleveldb_a-block_builder.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libleveldb_a-bloom.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libleveldb_a-builder.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libleveldb_a-c.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libleveldb_a-cache.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libleveldb_a-coding.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libleveldb_a-comparator.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libleveldb_a-crc32c.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libleveldb_a-db_impl.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libleveldb_a-db_iter.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libleveldb_a-dbformat.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libleveldb_a-env.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libleveldb_a-env_posix.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libleveldb_a-env_win.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libleveldb_a-filename.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libleveldb_a-filter_block.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libleveldb_a-filter_policy.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libleveldb_a-format.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libleveldb_a-hash.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libleveldb_a-histogram.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libleveldb_a-iterator.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libleveldb_a-log_reader.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libleveldb_a-log_writer.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libleveldb_a-logging.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libleveldb_a-memenv.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libleveldb_a-memtable.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libleveldb_a-merger.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libleveldb_a-options.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libleveldb_a-port_posix.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libleveldb_a-repair.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libleveldb_a-status.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libleveldb_a-table.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libleveldb_a-table_builder.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libleveldb_a-table_cache.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libleveldb_a-two_level_iterator.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libleveldb_a-version_edit.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libleveldb_a-version_set.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libleveldb_a-write_batch.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoin-addrman.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoin-bc_block.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoin-bc_fmap.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoin-bc_index.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoin-clientrpc_iface.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoin-netbase.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoin-protocol.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoin-shcoind_block.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoin-shcoind_log.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoin-shcoind_opt.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoin-shcoind_rpc.Po@am__quote@
@@ -1510,20 +1454,22 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoin-unet_timer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoin-util.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoin-version.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-bc_block.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-bc_fmap.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-bc_index.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-block.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-block_iface.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-checkpoints.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-cmd_msg.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-coin_proto.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-crypter.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-db.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-init.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-key.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-keystore.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-leveldb.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-main.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-netbase.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-noui.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-protocol.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-reward.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-rpc_proto.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-rpcdump.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-rpcnet.Po@am__quote@
@@ -1531,8 +1477,9 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-script.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-scrypt.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-server_iface.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-shc_netmsg.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-shc_proto.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-shcoind.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-shcoind_block.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-shcoind_daemon.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-shcoind_log.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-shcoind_opt.Po@am__quote@
@@ -1554,6 +1501,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-unet_io.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-unet_peer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-unet_timer.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-usde_netmsg.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-usde_proto.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-util.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-version.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-wallet.Po@am__quote@
@@ -1580,6 +1529,48 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LTCOMPILE) -c -o $@ $<
+
+shcoin-bc_block.o: $(srcdir)/blockchain/bc_block.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoin_CFLAGS) $(CFLAGS) -MT shcoin-bc_block.o -MD -MP -MF $(DEPDIR)/shcoin-bc_block.Tpo -c -o shcoin-bc_block.o `test -f '$(srcdir)/blockchain/bc_block.c' || echo '$(srcdir)/'`$(srcdir)/blockchain/bc_block.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shcoin-bc_block.Tpo $(DEPDIR)/shcoin-bc_block.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(srcdir)/blockchain/bc_block.c' object='shcoin-bc_block.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoin_CFLAGS) $(CFLAGS) -c -o shcoin-bc_block.o `test -f '$(srcdir)/blockchain/bc_block.c' || echo '$(srcdir)/'`$(srcdir)/blockchain/bc_block.c
+
+shcoin-bc_block.obj: $(srcdir)/blockchain/bc_block.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoin_CFLAGS) $(CFLAGS) -MT shcoin-bc_block.obj -MD -MP -MF $(DEPDIR)/shcoin-bc_block.Tpo -c -o shcoin-bc_block.obj `if test -f '$(srcdir)/blockchain/bc_block.c'; then $(CYGPATH_W) '$(srcdir)/blockchain/bc_block.c'; else $(CYGPATH_W) '$(srcdir)/$(srcdir)/blockchain/bc_block.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shcoin-bc_block.Tpo $(DEPDIR)/shcoin-bc_block.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(srcdir)/blockchain/bc_block.c' object='shcoin-bc_block.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoin_CFLAGS) $(CFLAGS) -c -o shcoin-bc_block.obj `if test -f '$(srcdir)/blockchain/bc_block.c'; then $(CYGPATH_W) '$(srcdir)/blockchain/bc_block.c'; else $(CYGPATH_W) '$(srcdir)/$(srcdir)/blockchain/bc_block.c'; fi`
+
+shcoin-bc_index.o: $(srcdir)/blockchain/bc_index.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoin_CFLAGS) $(CFLAGS) -MT shcoin-bc_index.o -MD -MP -MF $(DEPDIR)/shcoin-bc_index.Tpo -c -o shcoin-bc_index.o `test -f '$(srcdir)/blockchain/bc_index.c' || echo '$(srcdir)/'`$(srcdir)/blockchain/bc_index.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shcoin-bc_index.Tpo $(DEPDIR)/shcoin-bc_index.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(srcdir)/blockchain/bc_index.c' object='shcoin-bc_index.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoin_CFLAGS) $(CFLAGS) -c -o shcoin-bc_index.o `test -f '$(srcdir)/blockchain/bc_index.c' || echo '$(srcdir)/'`$(srcdir)/blockchain/bc_index.c
+
+shcoin-bc_index.obj: $(srcdir)/blockchain/bc_index.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoin_CFLAGS) $(CFLAGS) -MT shcoin-bc_index.obj -MD -MP -MF $(DEPDIR)/shcoin-bc_index.Tpo -c -o shcoin-bc_index.obj `if test -f '$(srcdir)/blockchain/bc_index.c'; then $(CYGPATH_W) '$(srcdir)/blockchain/bc_index.c'; else $(CYGPATH_W) '$(srcdir)/$(srcdir)/blockchain/bc_index.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shcoin-bc_index.Tpo $(DEPDIR)/shcoin-bc_index.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(srcdir)/blockchain/bc_index.c' object='shcoin-bc_index.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoin_CFLAGS) $(CFLAGS) -c -o shcoin-bc_index.obj `if test -f '$(srcdir)/blockchain/bc_index.c'; then $(CYGPATH_W) '$(srcdir)/blockchain/bc_index.c'; else $(CYGPATH_W) '$(srcdir)/$(srcdir)/blockchain/bc_index.c'; fi`
+
+shcoin-bc_fmap.o: $(srcdir)/blockchain/bc_fmap.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoin_CFLAGS) $(CFLAGS) -MT shcoin-bc_fmap.o -MD -MP -MF $(DEPDIR)/shcoin-bc_fmap.Tpo -c -o shcoin-bc_fmap.o `test -f '$(srcdir)/blockchain/bc_fmap.c' || echo '$(srcdir)/'`$(srcdir)/blockchain/bc_fmap.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shcoin-bc_fmap.Tpo $(DEPDIR)/shcoin-bc_fmap.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(srcdir)/blockchain/bc_fmap.c' object='shcoin-bc_fmap.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoin_CFLAGS) $(CFLAGS) -c -o shcoin-bc_fmap.o `test -f '$(srcdir)/blockchain/bc_fmap.c' || echo '$(srcdir)/'`$(srcdir)/blockchain/bc_fmap.c
+
+shcoin-bc_fmap.obj: $(srcdir)/blockchain/bc_fmap.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoin_CFLAGS) $(CFLAGS) -MT shcoin-bc_fmap.obj -MD -MP -MF $(DEPDIR)/shcoin-bc_fmap.Tpo -c -o shcoin-bc_fmap.obj `if test -f '$(srcdir)/blockchain/bc_fmap.c'; then $(CYGPATH_W) '$(srcdir)/blockchain/bc_fmap.c'; else $(CYGPATH_W) '$(srcdir)/$(srcdir)/blockchain/bc_fmap.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shcoin-bc_fmap.Tpo $(DEPDIR)/shcoin-bc_fmap.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(srcdir)/blockchain/bc_fmap.c' object='shcoin-bc_fmap.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoin_CFLAGS) $(CFLAGS) -c -o shcoin-bc_fmap.obj `if test -f '$(srcdir)/blockchain/bc_fmap.c'; then $(CYGPATH_W) '$(srcdir)/blockchain/bc_fmap.c'; else $(CYGPATH_W) '$(srcdir)/$(srcdir)/blockchain/bc_fmap.c'; fi`
 
 shcoin-unet_accept.o: unet/unet_accept.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoin_CFLAGS) $(CFLAGS) -MT shcoin-unet_accept.o -MD -MP -MF $(DEPDIR)/shcoin-unet_accept.Tpo -c -o shcoin-unet_accept.o `test -f 'unet/unet_accept.c' || echo '$(srcdir)/'`unet/unet_accept.c
@@ -1721,20 +1712,6 @@ shcoin-unet_event.obj: unet/unet_event.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoin_CFLAGS) $(CFLAGS) -c -o shcoin-unet_event.obj `if test -f 'unet/unet_event.c'; then $(CYGPATH_W) 'unet/unet_event.c'; else $(CYGPATH_W) '$(srcdir)/unet/unet_event.c'; fi`
 
-shcoin-shcoind_block.o: shcoind_block.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoin_CFLAGS) $(CFLAGS) -MT shcoin-shcoind_block.o -MD -MP -MF $(DEPDIR)/shcoin-shcoind_block.Tpo -c -o shcoin-shcoind_block.o `test -f 'shcoind_block.c' || echo '$(srcdir)/'`shcoind_block.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shcoin-shcoind_block.Tpo $(DEPDIR)/shcoin-shcoind_block.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='shcoind_block.c' object='shcoin-shcoind_block.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoin_CFLAGS) $(CFLAGS) -c -o shcoin-shcoind_block.o `test -f 'shcoind_block.c' || echo '$(srcdir)/'`shcoind_block.c
-
-shcoin-shcoind_block.obj: shcoind_block.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoin_CFLAGS) $(CFLAGS) -MT shcoin-shcoind_block.obj -MD -MP -MF $(DEPDIR)/shcoin-shcoind_block.Tpo -c -o shcoin-shcoind_block.obj `if test -f 'shcoind_block.c'; then $(CYGPATH_W) 'shcoind_block.c'; else $(CYGPATH_W) '$(srcdir)/shcoind_block.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shcoin-shcoind_block.Tpo $(DEPDIR)/shcoin-shcoind_block.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='shcoind_block.c' object='shcoin-shcoind_block.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoin_CFLAGS) $(CFLAGS) -c -o shcoin-shcoind_block.obj `if test -f 'shcoind_block.c'; then $(CYGPATH_W) 'shcoind_block.c'; else $(CYGPATH_W) '$(srcdir)/shcoind_block.c'; fi`
-
 shcoin-shcoind_rpc.o: shcoind_rpc.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoin_CFLAGS) $(CFLAGS) -MT shcoin-shcoind_rpc.o -MD -MP -MF $(DEPDIR)/shcoin-shcoind_rpc.Tpo -c -o shcoin-shcoind_rpc.o `test -f 'shcoind_rpc.c' || echo '$(srcdir)/'`shcoind_rpc.c
 @am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shcoin-shcoind_rpc.Tpo $(DEPDIR)/shcoin-shcoind_rpc.Po
@@ -1776,6 +1753,48 @@ shcoin-shcoind_opt.obj: shcoind_opt.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='shcoind_opt.c' object='shcoin-shcoind_opt.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoin_CFLAGS) $(CFLAGS) -c -o shcoin-shcoind_opt.obj `if test -f 'shcoind_opt.c'; then $(CYGPATH_W) 'shcoind_opt.c'; else $(CYGPATH_W) '$(srcdir)/shcoind_opt.c'; fi`
+
+shcoind-bc_block.o: $(srcdir)/blockchain/bc_block.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CFLAGS) $(CFLAGS) -MT shcoind-bc_block.o -MD -MP -MF $(DEPDIR)/shcoind-bc_block.Tpo -c -o shcoind-bc_block.o `test -f '$(srcdir)/blockchain/bc_block.c' || echo '$(srcdir)/'`$(srcdir)/blockchain/bc_block.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shcoind-bc_block.Tpo $(DEPDIR)/shcoind-bc_block.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(srcdir)/blockchain/bc_block.c' object='shcoind-bc_block.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CFLAGS) $(CFLAGS) -c -o shcoind-bc_block.o `test -f '$(srcdir)/blockchain/bc_block.c' || echo '$(srcdir)/'`$(srcdir)/blockchain/bc_block.c
+
+shcoind-bc_block.obj: $(srcdir)/blockchain/bc_block.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CFLAGS) $(CFLAGS) -MT shcoind-bc_block.obj -MD -MP -MF $(DEPDIR)/shcoind-bc_block.Tpo -c -o shcoind-bc_block.obj `if test -f '$(srcdir)/blockchain/bc_block.c'; then $(CYGPATH_W) '$(srcdir)/blockchain/bc_block.c'; else $(CYGPATH_W) '$(srcdir)/$(srcdir)/blockchain/bc_block.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shcoind-bc_block.Tpo $(DEPDIR)/shcoind-bc_block.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(srcdir)/blockchain/bc_block.c' object='shcoind-bc_block.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CFLAGS) $(CFLAGS) -c -o shcoind-bc_block.obj `if test -f '$(srcdir)/blockchain/bc_block.c'; then $(CYGPATH_W) '$(srcdir)/blockchain/bc_block.c'; else $(CYGPATH_W) '$(srcdir)/$(srcdir)/blockchain/bc_block.c'; fi`
+
+shcoind-bc_index.o: $(srcdir)/blockchain/bc_index.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CFLAGS) $(CFLAGS) -MT shcoind-bc_index.o -MD -MP -MF $(DEPDIR)/shcoind-bc_index.Tpo -c -o shcoind-bc_index.o `test -f '$(srcdir)/blockchain/bc_index.c' || echo '$(srcdir)/'`$(srcdir)/blockchain/bc_index.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shcoind-bc_index.Tpo $(DEPDIR)/shcoind-bc_index.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(srcdir)/blockchain/bc_index.c' object='shcoind-bc_index.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CFLAGS) $(CFLAGS) -c -o shcoind-bc_index.o `test -f '$(srcdir)/blockchain/bc_index.c' || echo '$(srcdir)/'`$(srcdir)/blockchain/bc_index.c
+
+shcoind-bc_index.obj: $(srcdir)/blockchain/bc_index.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CFLAGS) $(CFLAGS) -MT shcoind-bc_index.obj -MD -MP -MF $(DEPDIR)/shcoind-bc_index.Tpo -c -o shcoind-bc_index.obj `if test -f '$(srcdir)/blockchain/bc_index.c'; then $(CYGPATH_W) '$(srcdir)/blockchain/bc_index.c'; else $(CYGPATH_W) '$(srcdir)/$(srcdir)/blockchain/bc_index.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shcoind-bc_index.Tpo $(DEPDIR)/shcoind-bc_index.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(srcdir)/blockchain/bc_index.c' object='shcoind-bc_index.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CFLAGS) $(CFLAGS) -c -o shcoind-bc_index.obj `if test -f '$(srcdir)/blockchain/bc_index.c'; then $(CYGPATH_W) '$(srcdir)/blockchain/bc_index.c'; else $(CYGPATH_W) '$(srcdir)/$(srcdir)/blockchain/bc_index.c'; fi`
+
+shcoind-bc_fmap.o: $(srcdir)/blockchain/bc_fmap.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CFLAGS) $(CFLAGS) -MT shcoind-bc_fmap.o -MD -MP -MF $(DEPDIR)/shcoind-bc_fmap.Tpo -c -o shcoind-bc_fmap.o `test -f '$(srcdir)/blockchain/bc_fmap.c' || echo '$(srcdir)/'`$(srcdir)/blockchain/bc_fmap.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shcoind-bc_fmap.Tpo $(DEPDIR)/shcoind-bc_fmap.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(srcdir)/blockchain/bc_fmap.c' object='shcoind-bc_fmap.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CFLAGS) $(CFLAGS) -c -o shcoind-bc_fmap.o `test -f '$(srcdir)/blockchain/bc_fmap.c' || echo '$(srcdir)/'`$(srcdir)/blockchain/bc_fmap.c
+
+shcoind-bc_fmap.obj: $(srcdir)/blockchain/bc_fmap.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CFLAGS) $(CFLAGS) -MT shcoind-bc_fmap.obj -MD -MP -MF $(DEPDIR)/shcoind-bc_fmap.Tpo -c -o shcoind-bc_fmap.obj `if test -f '$(srcdir)/blockchain/bc_fmap.c'; then $(CYGPATH_W) '$(srcdir)/blockchain/bc_fmap.c'; else $(CYGPATH_W) '$(srcdir)/$(srcdir)/blockchain/bc_fmap.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shcoind-bc_fmap.Tpo $(DEPDIR)/shcoind-bc_fmap.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(srcdir)/blockchain/bc_fmap.c' object='shcoind-bc_fmap.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CFLAGS) $(CFLAGS) -c -o shcoind-bc_fmap.obj `if test -f '$(srcdir)/blockchain/bc_fmap.c'; then $(CYGPATH_W) '$(srcdir)/blockchain/bc_fmap.c'; else $(CYGPATH_W) '$(srcdir)/$(srcdir)/blockchain/bc_fmap.c'; fi`
 
 shcoind-unet_accept.o: unet/unet_accept.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CFLAGS) $(CFLAGS) -MT shcoind-unet_accept.o -MD -MP -MF $(DEPDIR)/shcoind-unet_accept.Tpo -c -o shcoind-unet_accept.o `test -f 'unet/unet_accept.c' || echo '$(srcdir)/'`unet/unet_accept.c
@@ -1917,20 +1936,6 @@ shcoind-unet_event.obj: unet/unet_event.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CFLAGS) $(CFLAGS) -c -o shcoind-unet_event.obj `if test -f 'unet/unet_event.c'; then $(CYGPATH_W) 'unet/unet_event.c'; else $(CYGPATH_W) '$(srcdir)/unet/unet_event.c'; fi`
 
-shcoind-shcoind_block.o: shcoind_block.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CFLAGS) $(CFLAGS) -MT shcoind-shcoind_block.o -MD -MP -MF $(DEPDIR)/shcoind-shcoind_block.Tpo -c -o shcoind-shcoind_block.o `test -f 'shcoind_block.c' || echo '$(srcdir)/'`shcoind_block.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shcoind-shcoind_block.Tpo $(DEPDIR)/shcoind-shcoind_block.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='shcoind_block.c' object='shcoind-shcoind_block.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CFLAGS) $(CFLAGS) -c -o shcoind-shcoind_block.o `test -f 'shcoind_block.c' || echo '$(srcdir)/'`shcoind_block.c
-
-shcoind-shcoind_block.obj: shcoind_block.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CFLAGS) $(CFLAGS) -MT shcoind-shcoind_block.obj -MD -MP -MF $(DEPDIR)/shcoind-shcoind_block.Tpo -c -o shcoind-shcoind_block.obj `if test -f 'shcoind_block.c'; then $(CYGPATH_W) 'shcoind_block.c'; else $(CYGPATH_W) '$(srcdir)/shcoind_block.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shcoind-shcoind_block.Tpo $(DEPDIR)/shcoind-shcoind_block.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='shcoind_block.c' object='shcoind-shcoind_block.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CFLAGS) $(CFLAGS) -c -o shcoind-shcoind_block.obj `if test -f 'shcoind_block.c'; then $(CYGPATH_W) 'shcoind_block.c'; else $(CYGPATH_W) '$(srcdir)/shcoind_block.c'; fi`
-
 shcoind-shcoind_rpc.o: shcoind_rpc.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CFLAGS) $(CFLAGS) -MT shcoind-shcoind_rpc.o -MD -MP -MF $(DEPDIR)/shcoind-shcoind_rpc.Tpo -c -o shcoind-shcoind_rpc.o `test -f 'shcoind_rpc.c' || echo '$(srcdir)/'`shcoind_rpc.c
 @am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shcoind-shcoind_rpc.Tpo $(DEPDIR)/shcoind-shcoind_rpc.Po
@@ -1972,6 +1977,20 @@ shcoind-shcoind_opt.obj: shcoind_opt.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='shcoind_opt.c' object='shcoind-shcoind_opt.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CFLAGS) $(CFLAGS) -c -o shcoind-shcoind_opt.obj `if test -f 'shcoind_opt.c'; then $(CYGPATH_W) 'shcoind_opt.c'; else $(CYGPATH_W) '$(srcdir)/shcoind_opt.c'; fi`
+
+shcoind-coin_proto.o: $(srcdir)/proto/coin_proto.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CFLAGS) $(CFLAGS) -MT shcoind-coin_proto.o -MD -MP -MF $(DEPDIR)/shcoind-coin_proto.Tpo -c -o shcoind-coin_proto.o `test -f '$(srcdir)/proto/coin_proto.c' || echo '$(srcdir)/'`$(srcdir)/proto/coin_proto.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shcoind-coin_proto.Tpo $(DEPDIR)/shcoind-coin_proto.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(srcdir)/proto/coin_proto.c' object='shcoind-coin_proto.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CFLAGS) $(CFLAGS) -c -o shcoind-coin_proto.o `test -f '$(srcdir)/proto/coin_proto.c' || echo '$(srcdir)/'`$(srcdir)/proto/coin_proto.c
+
+shcoind-coin_proto.obj: $(srcdir)/proto/coin_proto.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CFLAGS) $(CFLAGS) -MT shcoind-coin_proto.obj -MD -MP -MF $(DEPDIR)/shcoind-coin_proto.Tpo -c -o shcoind-coin_proto.obj `if test -f '$(srcdir)/proto/coin_proto.c'; then $(CYGPATH_W) '$(srcdir)/proto/coin_proto.c'; else $(CYGPATH_W) '$(srcdir)/$(srcdir)/proto/coin_proto.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shcoind-coin_proto.Tpo $(DEPDIR)/shcoind-coin_proto.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(srcdir)/proto/coin_proto.c' object='shcoind-coin_proto.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CFLAGS) $(CFLAGS) -c -o shcoind-coin_proto.obj `if test -f '$(srcdir)/proto/coin_proto.c'; then $(CYGPATH_W) '$(srcdir)/proto/coin_proto.c'; else $(CYGPATH_W) '$(srcdir)/$(srcdir)/proto/coin_proto.c'; fi`
 
 shcoind-scrypt.o: server/scrypt.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CFLAGS) $(CFLAGS) -MT shcoind-scrypt.o -MD -MP -MF $(DEPDIR)/shcoind-scrypt.Tpo -c -o shcoind-scrypt.o `test -f 'server/scrypt.c' || echo '$(srcdir)/'`server/scrypt.c
@@ -2099,586 +2118,26 @@ shcoind-shcoind_daemon.obj: shcoind_daemon.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CFLAGS) $(CFLAGS) -c -o shcoind-shcoind_daemon.obj `if test -f 'shcoind_daemon.c'; then $(CYGPATH_W) 'shcoind_daemon.c'; else $(CYGPATH_W) '$(srcdir)/shcoind_daemon.c'; fi`
 
-.cc.o:
+.cpp.o:
 @am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
 @am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXXCOMPILE) -c -o $@ $<
 
-.cc.obj:
+.cpp.obj:
 @am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
 @am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
 
-.cc.lo:
+.cpp.lo:
 @am__fastdepCXX_TRUE@	$(LTCXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
 @am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LTCXXCOMPILE) -c -o $@ $<
-
-libleveldb_a-builder.o: leveldb/db/builder.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-builder.o -MD -MP -MF $(DEPDIR)/libleveldb_a-builder.Tpo -c -o libleveldb_a-builder.o `test -f 'leveldb/db/builder.cc' || echo '$(srcdir)/'`leveldb/db/builder.cc
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-builder.Tpo $(DEPDIR)/libleveldb_a-builder.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/db/builder.cc' object='libleveldb_a-builder.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-builder.o `test -f 'leveldb/db/builder.cc' || echo '$(srcdir)/'`leveldb/db/builder.cc
-
-libleveldb_a-builder.obj: leveldb/db/builder.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-builder.obj -MD -MP -MF $(DEPDIR)/libleveldb_a-builder.Tpo -c -o libleveldb_a-builder.obj `if test -f 'leveldb/db/builder.cc'; then $(CYGPATH_W) 'leveldb/db/builder.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/db/builder.cc'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-builder.Tpo $(DEPDIR)/libleveldb_a-builder.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/db/builder.cc' object='libleveldb_a-builder.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-builder.obj `if test -f 'leveldb/db/builder.cc'; then $(CYGPATH_W) 'leveldb/db/builder.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/db/builder.cc'; fi`
-
-libleveldb_a-c.o: leveldb/db/c.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-c.o -MD -MP -MF $(DEPDIR)/libleveldb_a-c.Tpo -c -o libleveldb_a-c.o `test -f 'leveldb/db/c.cc' || echo '$(srcdir)/'`leveldb/db/c.cc
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-c.Tpo $(DEPDIR)/libleveldb_a-c.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/db/c.cc' object='libleveldb_a-c.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-c.o `test -f 'leveldb/db/c.cc' || echo '$(srcdir)/'`leveldb/db/c.cc
-
-libleveldb_a-c.obj: leveldb/db/c.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-c.obj -MD -MP -MF $(DEPDIR)/libleveldb_a-c.Tpo -c -o libleveldb_a-c.obj `if test -f 'leveldb/db/c.cc'; then $(CYGPATH_W) 'leveldb/db/c.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/db/c.cc'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-c.Tpo $(DEPDIR)/libleveldb_a-c.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/db/c.cc' object='libleveldb_a-c.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-c.obj `if test -f 'leveldb/db/c.cc'; then $(CYGPATH_W) 'leveldb/db/c.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/db/c.cc'; fi`
-
-libleveldb_a-dbformat.o: leveldb/db/dbformat.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-dbformat.o -MD -MP -MF $(DEPDIR)/libleveldb_a-dbformat.Tpo -c -o libleveldb_a-dbformat.o `test -f 'leveldb/db/dbformat.cc' || echo '$(srcdir)/'`leveldb/db/dbformat.cc
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-dbformat.Tpo $(DEPDIR)/libleveldb_a-dbformat.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/db/dbformat.cc' object='libleveldb_a-dbformat.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-dbformat.o `test -f 'leveldb/db/dbformat.cc' || echo '$(srcdir)/'`leveldb/db/dbformat.cc
-
-libleveldb_a-dbformat.obj: leveldb/db/dbformat.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-dbformat.obj -MD -MP -MF $(DEPDIR)/libleveldb_a-dbformat.Tpo -c -o libleveldb_a-dbformat.obj `if test -f 'leveldb/db/dbformat.cc'; then $(CYGPATH_W) 'leveldb/db/dbformat.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/db/dbformat.cc'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-dbformat.Tpo $(DEPDIR)/libleveldb_a-dbformat.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/db/dbformat.cc' object='libleveldb_a-dbformat.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-dbformat.obj `if test -f 'leveldb/db/dbformat.cc'; then $(CYGPATH_W) 'leveldb/db/dbformat.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/db/dbformat.cc'; fi`
-
-libleveldb_a-db_impl.o: leveldb/db/db_impl.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-db_impl.o -MD -MP -MF $(DEPDIR)/libleveldb_a-db_impl.Tpo -c -o libleveldb_a-db_impl.o `test -f 'leveldb/db/db_impl.cc' || echo '$(srcdir)/'`leveldb/db/db_impl.cc
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-db_impl.Tpo $(DEPDIR)/libleveldb_a-db_impl.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/db/db_impl.cc' object='libleveldb_a-db_impl.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-db_impl.o `test -f 'leveldb/db/db_impl.cc' || echo '$(srcdir)/'`leveldb/db/db_impl.cc
-
-libleveldb_a-db_impl.obj: leveldb/db/db_impl.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-db_impl.obj -MD -MP -MF $(DEPDIR)/libleveldb_a-db_impl.Tpo -c -o libleveldb_a-db_impl.obj `if test -f 'leveldb/db/db_impl.cc'; then $(CYGPATH_W) 'leveldb/db/db_impl.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/db/db_impl.cc'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-db_impl.Tpo $(DEPDIR)/libleveldb_a-db_impl.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/db/db_impl.cc' object='libleveldb_a-db_impl.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-db_impl.obj `if test -f 'leveldb/db/db_impl.cc'; then $(CYGPATH_W) 'leveldb/db/db_impl.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/db/db_impl.cc'; fi`
-
-libleveldb_a-db_iter.o: leveldb/db/db_iter.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-db_iter.o -MD -MP -MF $(DEPDIR)/libleveldb_a-db_iter.Tpo -c -o libleveldb_a-db_iter.o `test -f 'leveldb/db/db_iter.cc' || echo '$(srcdir)/'`leveldb/db/db_iter.cc
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-db_iter.Tpo $(DEPDIR)/libleveldb_a-db_iter.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/db/db_iter.cc' object='libleveldb_a-db_iter.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-db_iter.o `test -f 'leveldb/db/db_iter.cc' || echo '$(srcdir)/'`leveldb/db/db_iter.cc
-
-libleveldb_a-db_iter.obj: leveldb/db/db_iter.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-db_iter.obj -MD -MP -MF $(DEPDIR)/libleveldb_a-db_iter.Tpo -c -o libleveldb_a-db_iter.obj `if test -f 'leveldb/db/db_iter.cc'; then $(CYGPATH_W) 'leveldb/db/db_iter.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/db/db_iter.cc'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-db_iter.Tpo $(DEPDIR)/libleveldb_a-db_iter.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/db/db_iter.cc' object='libleveldb_a-db_iter.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-db_iter.obj `if test -f 'leveldb/db/db_iter.cc'; then $(CYGPATH_W) 'leveldb/db/db_iter.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/db/db_iter.cc'; fi`
-
-libleveldb_a-filename.o: leveldb/db/filename.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-filename.o -MD -MP -MF $(DEPDIR)/libleveldb_a-filename.Tpo -c -o libleveldb_a-filename.o `test -f 'leveldb/db/filename.cc' || echo '$(srcdir)/'`leveldb/db/filename.cc
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-filename.Tpo $(DEPDIR)/libleveldb_a-filename.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/db/filename.cc' object='libleveldb_a-filename.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-filename.o `test -f 'leveldb/db/filename.cc' || echo '$(srcdir)/'`leveldb/db/filename.cc
-
-libleveldb_a-filename.obj: leveldb/db/filename.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-filename.obj -MD -MP -MF $(DEPDIR)/libleveldb_a-filename.Tpo -c -o libleveldb_a-filename.obj `if test -f 'leveldb/db/filename.cc'; then $(CYGPATH_W) 'leveldb/db/filename.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/db/filename.cc'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-filename.Tpo $(DEPDIR)/libleveldb_a-filename.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/db/filename.cc' object='libleveldb_a-filename.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-filename.obj `if test -f 'leveldb/db/filename.cc'; then $(CYGPATH_W) 'leveldb/db/filename.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/db/filename.cc'; fi`
-
-libleveldb_a-log_reader.o: leveldb/db/log_reader.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-log_reader.o -MD -MP -MF $(DEPDIR)/libleveldb_a-log_reader.Tpo -c -o libleveldb_a-log_reader.o `test -f 'leveldb/db/log_reader.cc' || echo '$(srcdir)/'`leveldb/db/log_reader.cc
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-log_reader.Tpo $(DEPDIR)/libleveldb_a-log_reader.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/db/log_reader.cc' object='libleveldb_a-log_reader.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-log_reader.o `test -f 'leveldb/db/log_reader.cc' || echo '$(srcdir)/'`leveldb/db/log_reader.cc
-
-libleveldb_a-log_reader.obj: leveldb/db/log_reader.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-log_reader.obj -MD -MP -MF $(DEPDIR)/libleveldb_a-log_reader.Tpo -c -o libleveldb_a-log_reader.obj `if test -f 'leveldb/db/log_reader.cc'; then $(CYGPATH_W) 'leveldb/db/log_reader.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/db/log_reader.cc'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-log_reader.Tpo $(DEPDIR)/libleveldb_a-log_reader.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/db/log_reader.cc' object='libleveldb_a-log_reader.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-log_reader.obj `if test -f 'leveldb/db/log_reader.cc'; then $(CYGPATH_W) 'leveldb/db/log_reader.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/db/log_reader.cc'; fi`
-
-libleveldb_a-log_writer.o: leveldb/db/log_writer.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-log_writer.o -MD -MP -MF $(DEPDIR)/libleveldb_a-log_writer.Tpo -c -o libleveldb_a-log_writer.o `test -f 'leveldb/db/log_writer.cc' || echo '$(srcdir)/'`leveldb/db/log_writer.cc
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-log_writer.Tpo $(DEPDIR)/libleveldb_a-log_writer.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/db/log_writer.cc' object='libleveldb_a-log_writer.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-log_writer.o `test -f 'leveldb/db/log_writer.cc' || echo '$(srcdir)/'`leveldb/db/log_writer.cc
-
-libleveldb_a-log_writer.obj: leveldb/db/log_writer.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-log_writer.obj -MD -MP -MF $(DEPDIR)/libleveldb_a-log_writer.Tpo -c -o libleveldb_a-log_writer.obj `if test -f 'leveldb/db/log_writer.cc'; then $(CYGPATH_W) 'leveldb/db/log_writer.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/db/log_writer.cc'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-log_writer.Tpo $(DEPDIR)/libleveldb_a-log_writer.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/db/log_writer.cc' object='libleveldb_a-log_writer.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-log_writer.obj `if test -f 'leveldb/db/log_writer.cc'; then $(CYGPATH_W) 'leveldb/db/log_writer.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/db/log_writer.cc'; fi`
-
-libleveldb_a-memtable.o: leveldb/db/memtable.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-memtable.o -MD -MP -MF $(DEPDIR)/libleveldb_a-memtable.Tpo -c -o libleveldb_a-memtable.o `test -f 'leveldb/db/memtable.cc' || echo '$(srcdir)/'`leveldb/db/memtable.cc
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-memtable.Tpo $(DEPDIR)/libleveldb_a-memtable.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/db/memtable.cc' object='libleveldb_a-memtable.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-memtable.o `test -f 'leveldb/db/memtable.cc' || echo '$(srcdir)/'`leveldb/db/memtable.cc
-
-libleveldb_a-memtable.obj: leveldb/db/memtable.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-memtable.obj -MD -MP -MF $(DEPDIR)/libleveldb_a-memtable.Tpo -c -o libleveldb_a-memtable.obj `if test -f 'leveldb/db/memtable.cc'; then $(CYGPATH_W) 'leveldb/db/memtable.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/db/memtable.cc'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-memtable.Tpo $(DEPDIR)/libleveldb_a-memtable.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/db/memtable.cc' object='libleveldb_a-memtable.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-memtable.obj `if test -f 'leveldb/db/memtable.cc'; then $(CYGPATH_W) 'leveldb/db/memtable.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/db/memtable.cc'; fi`
-
-libleveldb_a-repair.o: leveldb/db/repair.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-repair.o -MD -MP -MF $(DEPDIR)/libleveldb_a-repair.Tpo -c -o libleveldb_a-repair.o `test -f 'leveldb/db/repair.cc' || echo '$(srcdir)/'`leveldb/db/repair.cc
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-repair.Tpo $(DEPDIR)/libleveldb_a-repair.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/db/repair.cc' object='libleveldb_a-repair.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-repair.o `test -f 'leveldb/db/repair.cc' || echo '$(srcdir)/'`leveldb/db/repair.cc
-
-libleveldb_a-repair.obj: leveldb/db/repair.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-repair.obj -MD -MP -MF $(DEPDIR)/libleveldb_a-repair.Tpo -c -o libleveldb_a-repair.obj `if test -f 'leveldb/db/repair.cc'; then $(CYGPATH_W) 'leveldb/db/repair.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/db/repair.cc'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-repair.Tpo $(DEPDIR)/libleveldb_a-repair.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/db/repair.cc' object='libleveldb_a-repair.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-repair.obj `if test -f 'leveldb/db/repair.cc'; then $(CYGPATH_W) 'leveldb/db/repair.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/db/repair.cc'; fi`
-
-libleveldb_a-table_cache.o: leveldb/db/table_cache.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-table_cache.o -MD -MP -MF $(DEPDIR)/libleveldb_a-table_cache.Tpo -c -o libleveldb_a-table_cache.o `test -f 'leveldb/db/table_cache.cc' || echo '$(srcdir)/'`leveldb/db/table_cache.cc
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-table_cache.Tpo $(DEPDIR)/libleveldb_a-table_cache.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/db/table_cache.cc' object='libleveldb_a-table_cache.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-table_cache.o `test -f 'leveldb/db/table_cache.cc' || echo '$(srcdir)/'`leveldb/db/table_cache.cc
-
-libleveldb_a-table_cache.obj: leveldb/db/table_cache.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-table_cache.obj -MD -MP -MF $(DEPDIR)/libleveldb_a-table_cache.Tpo -c -o libleveldb_a-table_cache.obj `if test -f 'leveldb/db/table_cache.cc'; then $(CYGPATH_W) 'leveldb/db/table_cache.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/db/table_cache.cc'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-table_cache.Tpo $(DEPDIR)/libleveldb_a-table_cache.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/db/table_cache.cc' object='libleveldb_a-table_cache.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-table_cache.obj `if test -f 'leveldb/db/table_cache.cc'; then $(CYGPATH_W) 'leveldb/db/table_cache.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/db/table_cache.cc'; fi`
-
-libleveldb_a-version_edit.o: leveldb/db/version_edit.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-version_edit.o -MD -MP -MF $(DEPDIR)/libleveldb_a-version_edit.Tpo -c -o libleveldb_a-version_edit.o `test -f 'leveldb/db/version_edit.cc' || echo '$(srcdir)/'`leveldb/db/version_edit.cc
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-version_edit.Tpo $(DEPDIR)/libleveldb_a-version_edit.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/db/version_edit.cc' object='libleveldb_a-version_edit.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-version_edit.o `test -f 'leveldb/db/version_edit.cc' || echo '$(srcdir)/'`leveldb/db/version_edit.cc
-
-libleveldb_a-version_edit.obj: leveldb/db/version_edit.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-version_edit.obj -MD -MP -MF $(DEPDIR)/libleveldb_a-version_edit.Tpo -c -o libleveldb_a-version_edit.obj `if test -f 'leveldb/db/version_edit.cc'; then $(CYGPATH_W) 'leveldb/db/version_edit.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/db/version_edit.cc'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-version_edit.Tpo $(DEPDIR)/libleveldb_a-version_edit.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/db/version_edit.cc' object='libleveldb_a-version_edit.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-version_edit.obj `if test -f 'leveldb/db/version_edit.cc'; then $(CYGPATH_W) 'leveldb/db/version_edit.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/db/version_edit.cc'; fi`
-
-libleveldb_a-version_set.o: leveldb/db/version_set.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-version_set.o -MD -MP -MF $(DEPDIR)/libleveldb_a-version_set.Tpo -c -o libleveldb_a-version_set.o `test -f 'leveldb/db/version_set.cc' || echo '$(srcdir)/'`leveldb/db/version_set.cc
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-version_set.Tpo $(DEPDIR)/libleveldb_a-version_set.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/db/version_set.cc' object='libleveldb_a-version_set.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-version_set.o `test -f 'leveldb/db/version_set.cc' || echo '$(srcdir)/'`leveldb/db/version_set.cc
-
-libleveldb_a-version_set.obj: leveldb/db/version_set.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-version_set.obj -MD -MP -MF $(DEPDIR)/libleveldb_a-version_set.Tpo -c -o libleveldb_a-version_set.obj `if test -f 'leveldb/db/version_set.cc'; then $(CYGPATH_W) 'leveldb/db/version_set.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/db/version_set.cc'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-version_set.Tpo $(DEPDIR)/libleveldb_a-version_set.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/db/version_set.cc' object='libleveldb_a-version_set.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-version_set.obj `if test -f 'leveldb/db/version_set.cc'; then $(CYGPATH_W) 'leveldb/db/version_set.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/db/version_set.cc'; fi`
-
-libleveldb_a-write_batch.o: leveldb/db/write_batch.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-write_batch.o -MD -MP -MF $(DEPDIR)/libleveldb_a-write_batch.Tpo -c -o libleveldb_a-write_batch.o `test -f 'leveldb/db/write_batch.cc' || echo '$(srcdir)/'`leveldb/db/write_batch.cc
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-write_batch.Tpo $(DEPDIR)/libleveldb_a-write_batch.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/db/write_batch.cc' object='libleveldb_a-write_batch.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-write_batch.o `test -f 'leveldb/db/write_batch.cc' || echo '$(srcdir)/'`leveldb/db/write_batch.cc
-
-libleveldb_a-write_batch.obj: leveldb/db/write_batch.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-write_batch.obj -MD -MP -MF $(DEPDIR)/libleveldb_a-write_batch.Tpo -c -o libleveldb_a-write_batch.obj `if test -f 'leveldb/db/write_batch.cc'; then $(CYGPATH_W) 'leveldb/db/write_batch.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/db/write_batch.cc'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-write_batch.Tpo $(DEPDIR)/libleveldb_a-write_batch.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/db/write_batch.cc' object='libleveldb_a-write_batch.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-write_batch.obj `if test -f 'leveldb/db/write_batch.cc'; then $(CYGPATH_W) 'leveldb/db/write_batch.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/db/write_batch.cc'; fi`
-
-libleveldb_a-block_builder.o: leveldb/table/block_builder.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-block_builder.o -MD -MP -MF $(DEPDIR)/libleveldb_a-block_builder.Tpo -c -o libleveldb_a-block_builder.o `test -f 'leveldb/table/block_builder.cc' || echo '$(srcdir)/'`leveldb/table/block_builder.cc
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-block_builder.Tpo $(DEPDIR)/libleveldb_a-block_builder.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/table/block_builder.cc' object='libleveldb_a-block_builder.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-block_builder.o `test -f 'leveldb/table/block_builder.cc' || echo '$(srcdir)/'`leveldb/table/block_builder.cc
-
-libleveldb_a-block_builder.obj: leveldb/table/block_builder.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-block_builder.obj -MD -MP -MF $(DEPDIR)/libleveldb_a-block_builder.Tpo -c -o libleveldb_a-block_builder.obj `if test -f 'leveldb/table/block_builder.cc'; then $(CYGPATH_W) 'leveldb/table/block_builder.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/table/block_builder.cc'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-block_builder.Tpo $(DEPDIR)/libleveldb_a-block_builder.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/table/block_builder.cc' object='libleveldb_a-block_builder.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-block_builder.obj `if test -f 'leveldb/table/block_builder.cc'; then $(CYGPATH_W) 'leveldb/table/block_builder.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/table/block_builder.cc'; fi`
-
-libleveldb_a-block.o: leveldb/table/block.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-block.o -MD -MP -MF $(DEPDIR)/libleveldb_a-block.Tpo -c -o libleveldb_a-block.o `test -f 'leveldb/table/block.cc' || echo '$(srcdir)/'`leveldb/table/block.cc
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-block.Tpo $(DEPDIR)/libleveldb_a-block.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/table/block.cc' object='libleveldb_a-block.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-block.o `test -f 'leveldb/table/block.cc' || echo '$(srcdir)/'`leveldb/table/block.cc
-
-libleveldb_a-block.obj: leveldb/table/block.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-block.obj -MD -MP -MF $(DEPDIR)/libleveldb_a-block.Tpo -c -o libleveldb_a-block.obj `if test -f 'leveldb/table/block.cc'; then $(CYGPATH_W) 'leveldb/table/block.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/table/block.cc'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-block.Tpo $(DEPDIR)/libleveldb_a-block.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/table/block.cc' object='libleveldb_a-block.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-block.obj `if test -f 'leveldb/table/block.cc'; then $(CYGPATH_W) 'leveldb/table/block.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/table/block.cc'; fi`
-
-libleveldb_a-filter_block.o: leveldb/table/filter_block.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-filter_block.o -MD -MP -MF $(DEPDIR)/libleveldb_a-filter_block.Tpo -c -o libleveldb_a-filter_block.o `test -f 'leveldb/table/filter_block.cc' || echo '$(srcdir)/'`leveldb/table/filter_block.cc
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-filter_block.Tpo $(DEPDIR)/libleveldb_a-filter_block.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/table/filter_block.cc' object='libleveldb_a-filter_block.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-filter_block.o `test -f 'leveldb/table/filter_block.cc' || echo '$(srcdir)/'`leveldb/table/filter_block.cc
-
-libleveldb_a-filter_block.obj: leveldb/table/filter_block.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-filter_block.obj -MD -MP -MF $(DEPDIR)/libleveldb_a-filter_block.Tpo -c -o libleveldb_a-filter_block.obj `if test -f 'leveldb/table/filter_block.cc'; then $(CYGPATH_W) 'leveldb/table/filter_block.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/table/filter_block.cc'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-filter_block.Tpo $(DEPDIR)/libleveldb_a-filter_block.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/table/filter_block.cc' object='libleveldb_a-filter_block.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-filter_block.obj `if test -f 'leveldb/table/filter_block.cc'; then $(CYGPATH_W) 'leveldb/table/filter_block.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/table/filter_block.cc'; fi`
-
-libleveldb_a-format.o: leveldb/table/format.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-format.o -MD -MP -MF $(DEPDIR)/libleveldb_a-format.Tpo -c -o libleveldb_a-format.o `test -f 'leveldb/table/format.cc' || echo '$(srcdir)/'`leveldb/table/format.cc
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-format.Tpo $(DEPDIR)/libleveldb_a-format.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/table/format.cc' object='libleveldb_a-format.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-format.o `test -f 'leveldb/table/format.cc' || echo '$(srcdir)/'`leveldb/table/format.cc
-
-libleveldb_a-format.obj: leveldb/table/format.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-format.obj -MD -MP -MF $(DEPDIR)/libleveldb_a-format.Tpo -c -o libleveldb_a-format.obj `if test -f 'leveldb/table/format.cc'; then $(CYGPATH_W) 'leveldb/table/format.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/table/format.cc'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-format.Tpo $(DEPDIR)/libleveldb_a-format.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/table/format.cc' object='libleveldb_a-format.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-format.obj `if test -f 'leveldb/table/format.cc'; then $(CYGPATH_W) 'leveldb/table/format.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/table/format.cc'; fi`
-
-libleveldb_a-iterator.o: leveldb/table/iterator.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-iterator.o -MD -MP -MF $(DEPDIR)/libleveldb_a-iterator.Tpo -c -o libleveldb_a-iterator.o `test -f 'leveldb/table/iterator.cc' || echo '$(srcdir)/'`leveldb/table/iterator.cc
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-iterator.Tpo $(DEPDIR)/libleveldb_a-iterator.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/table/iterator.cc' object='libleveldb_a-iterator.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-iterator.o `test -f 'leveldb/table/iterator.cc' || echo '$(srcdir)/'`leveldb/table/iterator.cc
-
-libleveldb_a-iterator.obj: leveldb/table/iterator.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-iterator.obj -MD -MP -MF $(DEPDIR)/libleveldb_a-iterator.Tpo -c -o libleveldb_a-iterator.obj `if test -f 'leveldb/table/iterator.cc'; then $(CYGPATH_W) 'leveldb/table/iterator.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/table/iterator.cc'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-iterator.Tpo $(DEPDIR)/libleveldb_a-iterator.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/table/iterator.cc' object='libleveldb_a-iterator.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-iterator.obj `if test -f 'leveldb/table/iterator.cc'; then $(CYGPATH_W) 'leveldb/table/iterator.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/table/iterator.cc'; fi`
-
-libleveldb_a-merger.o: leveldb/table/merger.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-merger.o -MD -MP -MF $(DEPDIR)/libleveldb_a-merger.Tpo -c -o libleveldb_a-merger.o `test -f 'leveldb/table/merger.cc' || echo '$(srcdir)/'`leveldb/table/merger.cc
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-merger.Tpo $(DEPDIR)/libleveldb_a-merger.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/table/merger.cc' object='libleveldb_a-merger.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-merger.o `test -f 'leveldb/table/merger.cc' || echo '$(srcdir)/'`leveldb/table/merger.cc
-
-libleveldb_a-merger.obj: leveldb/table/merger.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-merger.obj -MD -MP -MF $(DEPDIR)/libleveldb_a-merger.Tpo -c -o libleveldb_a-merger.obj `if test -f 'leveldb/table/merger.cc'; then $(CYGPATH_W) 'leveldb/table/merger.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/table/merger.cc'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-merger.Tpo $(DEPDIR)/libleveldb_a-merger.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/table/merger.cc' object='libleveldb_a-merger.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-merger.obj `if test -f 'leveldb/table/merger.cc'; then $(CYGPATH_W) 'leveldb/table/merger.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/table/merger.cc'; fi`
-
-libleveldb_a-table_builder.o: leveldb/table/table_builder.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-table_builder.o -MD -MP -MF $(DEPDIR)/libleveldb_a-table_builder.Tpo -c -o libleveldb_a-table_builder.o `test -f 'leveldb/table/table_builder.cc' || echo '$(srcdir)/'`leveldb/table/table_builder.cc
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-table_builder.Tpo $(DEPDIR)/libleveldb_a-table_builder.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/table/table_builder.cc' object='libleveldb_a-table_builder.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-table_builder.o `test -f 'leveldb/table/table_builder.cc' || echo '$(srcdir)/'`leveldb/table/table_builder.cc
-
-libleveldb_a-table_builder.obj: leveldb/table/table_builder.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-table_builder.obj -MD -MP -MF $(DEPDIR)/libleveldb_a-table_builder.Tpo -c -o libleveldb_a-table_builder.obj `if test -f 'leveldb/table/table_builder.cc'; then $(CYGPATH_W) 'leveldb/table/table_builder.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/table/table_builder.cc'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-table_builder.Tpo $(DEPDIR)/libleveldb_a-table_builder.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/table/table_builder.cc' object='libleveldb_a-table_builder.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-table_builder.obj `if test -f 'leveldb/table/table_builder.cc'; then $(CYGPATH_W) 'leveldb/table/table_builder.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/table/table_builder.cc'; fi`
-
-libleveldb_a-table.o: leveldb/table/table.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-table.o -MD -MP -MF $(DEPDIR)/libleveldb_a-table.Tpo -c -o libleveldb_a-table.o `test -f 'leveldb/table/table.cc' || echo '$(srcdir)/'`leveldb/table/table.cc
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-table.Tpo $(DEPDIR)/libleveldb_a-table.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/table/table.cc' object='libleveldb_a-table.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-table.o `test -f 'leveldb/table/table.cc' || echo '$(srcdir)/'`leveldb/table/table.cc
-
-libleveldb_a-table.obj: leveldb/table/table.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-table.obj -MD -MP -MF $(DEPDIR)/libleveldb_a-table.Tpo -c -o libleveldb_a-table.obj `if test -f 'leveldb/table/table.cc'; then $(CYGPATH_W) 'leveldb/table/table.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/table/table.cc'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-table.Tpo $(DEPDIR)/libleveldb_a-table.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/table/table.cc' object='libleveldb_a-table.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-table.obj `if test -f 'leveldb/table/table.cc'; then $(CYGPATH_W) 'leveldb/table/table.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/table/table.cc'; fi`
-
-libleveldb_a-two_level_iterator.o: leveldb/table/two_level_iterator.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-two_level_iterator.o -MD -MP -MF $(DEPDIR)/libleveldb_a-two_level_iterator.Tpo -c -o libleveldb_a-two_level_iterator.o `test -f 'leveldb/table/two_level_iterator.cc' || echo '$(srcdir)/'`leveldb/table/two_level_iterator.cc
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-two_level_iterator.Tpo $(DEPDIR)/libleveldb_a-two_level_iterator.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/table/two_level_iterator.cc' object='libleveldb_a-two_level_iterator.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-two_level_iterator.o `test -f 'leveldb/table/two_level_iterator.cc' || echo '$(srcdir)/'`leveldb/table/two_level_iterator.cc
-
-libleveldb_a-two_level_iterator.obj: leveldb/table/two_level_iterator.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-two_level_iterator.obj -MD -MP -MF $(DEPDIR)/libleveldb_a-two_level_iterator.Tpo -c -o libleveldb_a-two_level_iterator.obj `if test -f 'leveldb/table/two_level_iterator.cc'; then $(CYGPATH_W) 'leveldb/table/two_level_iterator.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/table/two_level_iterator.cc'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-two_level_iterator.Tpo $(DEPDIR)/libleveldb_a-two_level_iterator.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/table/two_level_iterator.cc' object='libleveldb_a-two_level_iterator.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-two_level_iterator.obj `if test -f 'leveldb/table/two_level_iterator.cc'; then $(CYGPATH_W) 'leveldb/table/two_level_iterator.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/table/two_level_iterator.cc'; fi`
-
-libleveldb_a-arena.o: leveldb/util/arena.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-arena.o -MD -MP -MF $(DEPDIR)/libleveldb_a-arena.Tpo -c -o libleveldb_a-arena.o `test -f 'leveldb/util/arena.cc' || echo '$(srcdir)/'`leveldb/util/arena.cc
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-arena.Tpo $(DEPDIR)/libleveldb_a-arena.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/util/arena.cc' object='libleveldb_a-arena.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-arena.o `test -f 'leveldb/util/arena.cc' || echo '$(srcdir)/'`leveldb/util/arena.cc
-
-libleveldb_a-arena.obj: leveldb/util/arena.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-arena.obj -MD -MP -MF $(DEPDIR)/libleveldb_a-arena.Tpo -c -o libleveldb_a-arena.obj `if test -f 'leveldb/util/arena.cc'; then $(CYGPATH_W) 'leveldb/util/arena.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/util/arena.cc'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-arena.Tpo $(DEPDIR)/libleveldb_a-arena.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/util/arena.cc' object='libleveldb_a-arena.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-arena.obj `if test -f 'leveldb/util/arena.cc'; then $(CYGPATH_W) 'leveldb/util/arena.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/util/arena.cc'; fi`
-
-libleveldb_a-bloom.o: leveldb/util/bloom.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-bloom.o -MD -MP -MF $(DEPDIR)/libleveldb_a-bloom.Tpo -c -o libleveldb_a-bloom.o `test -f 'leveldb/util/bloom.cc' || echo '$(srcdir)/'`leveldb/util/bloom.cc
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-bloom.Tpo $(DEPDIR)/libleveldb_a-bloom.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/util/bloom.cc' object='libleveldb_a-bloom.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-bloom.o `test -f 'leveldb/util/bloom.cc' || echo '$(srcdir)/'`leveldb/util/bloom.cc
-
-libleveldb_a-bloom.obj: leveldb/util/bloom.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-bloom.obj -MD -MP -MF $(DEPDIR)/libleveldb_a-bloom.Tpo -c -o libleveldb_a-bloom.obj `if test -f 'leveldb/util/bloom.cc'; then $(CYGPATH_W) 'leveldb/util/bloom.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/util/bloom.cc'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-bloom.Tpo $(DEPDIR)/libleveldb_a-bloom.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/util/bloom.cc' object='libleveldb_a-bloom.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-bloom.obj `if test -f 'leveldb/util/bloom.cc'; then $(CYGPATH_W) 'leveldb/util/bloom.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/util/bloom.cc'; fi`
-
-libleveldb_a-cache.o: leveldb/util/cache.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-cache.o -MD -MP -MF $(DEPDIR)/libleveldb_a-cache.Tpo -c -o libleveldb_a-cache.o `test -f 'leveldb/util/cache.cc' || echo '$(srcdir)/'`leveldb/util/cache.cc
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-cache.Tpo $(DEPDIR)/libleveldb_a-cache.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/util/cache.cc' object='libleveldb_a-cache.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-cache.o `test -f 'leveldb/util/cache.cc' || echo '$(srcdir)/'`leveldb/util/cache.cc
-
-libleveldb_a-cache.obj: leveldb/util/cache.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-cache.obj -MD -MP -MF $(DEPDIR)/libleveldb_a-cache.Tpo -c -o libleveldb_a-cache.obj `if test -f 'leveldb/util/cache.cc'; then $(CYGPATH_W) 'leveldb/util/cache.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/util/cache.cc'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-cache.Tpo $(DEPDIR)/libleveldb_a-cache.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/util/cache.cc' object='libleveldb_a-cache.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-cache.obj `if test -f 'leveldb/util/cache.cc'; then $(CYGPATH_W) 'leveldb/util/cache.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/util/cache.cc'; fi`
-
-libleveldb_a-coding.o: leveldb/util/coding.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-coding.o -MD -MP -MF $(DEPDIR)/libleveldb_a-coding.Tpo -c -o libleveldb_a-coding.o `test -f 'leveldb/util/coding.cc' || echo '$(srcdir)/'`leveldb/util/coding.cc
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-coding.Tpo $(DEPDIR)/libleveldb_a-coding.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/util/coding.cc' object='libleveldb_a-coding.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-coding.o `test -f 'leveldb/util/coding.cc' || echo '$(srcdir)/'`leveldb/util/coding.cc
-
-libleveldb_a-coding.obj: leveldb/util/coding.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-coding.obj -MD -MP -MF $(DEPDIR)/libleveldb_a-coding.Tpo -c -o libleveldb_a-coding.obj `if test -f 'leveldb/util/coding.cc'; then $(CYGPATH_W) 'leveldb/util/coding.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/util/coding.cc'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-coding.Tpo $(DEPDIR)/libleveldb_a-coding.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/util/coding.cc' object='libleveldb_a-coding.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-coding.obj `if test -f 'leveldb/util/coding.cc'; then $(CYGPATH_W) 'leveldb/util/coding.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/util/coding.cc'; fi`
-
-libleveldb_a-comparator.o: leveldb/util/comparator.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-comparator.o -MD -MP -MF $(DEPDIR)/libleveldb_a-comparator.Tpo -c -o libleveldb_a-comparator.o `test -f 'leveldb/util/comparator.cc' || echo '$(srcdir)/'`leveldb/util/comparator.cc
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-comparator.Tpo $(DEPDIR)/libleveldb_a-comparator.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/util/comparator.cc' object='libleveldb_a-comparator.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-comparator.o `test -f 'leveldb/util/comparator.cc' || echo '$(srcdir)/'`leveldb/util/comparator.cc
-
-libleveldb_a-comparator.obj: leveldb/util/comparator.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-comparator.obj -MD -MP -MF $(DEPDIR)/libleveldb_a-comparator.Tpo -c -o libleveldb_a-comparator.obj `if test -f 'leveldb/util/comparator.cc'; then $(CYGPATH_W) 'leveldb/util/comparator.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/util/comparator.cc'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-comparator.Tpo $(DEPDIR)/libleveldb_a-comparator.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/util/comparator.cc' object='libleveldb_a-comparator.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-comparator.obj `if test -f 'leveldb/util/comparator.cc'; then $(CYGPATH_W) 'leveldb/util/comparator.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/util/comparator.cc'; fi`
-
-libleveldb_a-crc32c.o: leveldb/util/crc32c.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-crc32c.o -MD -MP -MF $(DEPDIR)/libleveldb_a-crc32c.Tpo -c -o libleveldb_a-crc32c.o `test -f 'leveldb/util/crc32c.cc' || echo '$(srcdir)/'`leveldb/util/crc32c.cc
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-crc32c.Tpo $(DEPDIR)/libleveldb_a-crc32c.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/util/crc32c.cc' object='libleveldb_a-crc32c.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-crc32c.o `test -f 'leveldb/util/crc32c.cc' || echo '$(srcdir)/'`leveldb/util/crc32c.cc
-
-libleveldb_a-crc32c.obj: leveldb/util/crc32c.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-crc32c.obj -MD -MP -MF $(DEPDIR)/libleveldb_a-crc32c.Tpo -c -o libleveldb_a-crc32c.obj `if test -f 'leveldb/util/crc32c.cc'; then $(CYGPATH_W) 'leveldb/util/crc32c.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/util/crc32c.cc'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-crc32c.Tpo $(DEPDIR)/libleveldb_a-crc32c.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/util/crc32c.cc' object='libleveldb_a-crc32c.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-crc32c.obj `if test -f 'leveldb/util/crc32c.cc'; then $(CYGPATH_W) 'leveldb/util/crc32c.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/util/crc32c.cc'; fi`
-
-libleveldb_a-env.o: leveldb/util/env.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-env.o -MD -MP -MF $(DEPDIR)/libleveldb_a-env.Tpo -c -o libleveldb_a-env.o `test -f 'leveldb/util/env.cc' || echo '$(srcdir)/'`leveldb/util/env.cc
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-env.Tpo $(DEPDIR)/libleveldb_a-env.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/util/env.cc' object='libleveldb_a-env.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-env.o `test -f 'leveldb/util/env.cc' || echo '$(srcdir)/'`leveldb/util/env.cc
-
-libleveldb_a-env.obj: leveldb/util/env.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-env.obj -MD -MP -MF $(DEPDIR)/libleveldb_a-env.Tpo -c -o libleveldb_a-env.obj `if test -f 'leveldb/util/env.cc'; then $(CYGPATH_W) 'leveldb/util/env.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/util/env.cc'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-env.Tpo $(DEPDIR)/libleveldb_a-env.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/util/env.cc' object='libleveldb_a-env.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-env.obj `if test -f 'leveldb/util/env.cc'; then $(CYGPATH_W) 'leveldb/util/env.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/util/env.cc'; fi`
-
-libleveldb_a-env_posix.o: leveldb/util/env_posix.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-env_posix.o -MD -MP -MF $(DEPDIR)/libleveldb_a-env_posix.Tpo -c -o libleveldb_a-env_posix.o `test -f 'leveldb/util/env_posix.cc' || echo '$(srcdir)/'`leveldb/util/env_posix.cc
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-env_posix.Tpo $(DEPDIR)/libleveldb_a-env_posix.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/util/env_posix.cc' object='libleveldb_a-env_posix.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-env_posix.o `test -f 'leveldb/util/env_posix.cc' || echo '$(srcdir)/'`leveldb/util/env_posix.cc
-
-libleveldb_a-env_posix.obj: leveldb/util/env_posix.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-env_posix.obj -MD -MP -MF $(DEPDIR)/libleveldb_a-env_posix.Tpo -c -o libleveldb_a-env_posix.obj `if test -f 'leveldb/util/env_posix.cc'; then $(CYGPATH_W) 'leveldb/util/env_posix.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/util/env_posix.cc'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-env_posix.Tpo $(DEPDIR)/libleveldb_a-env_posix.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/util/env_posix.cc' object='libleveldb_a-env_posix.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-env_posix.obj `if test -f 'leveldb/util/env_posix.cc'; then $(CYGPATH_W) 'leveldb/util/env_posix.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/util/env_posix.cc'; fi`
-
-libleveldb_a-env_win.o: leveldb/util/env_win.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-env_win.o -MD -MP -MF $(DEPDIR)/libleveldb_a-env_win.Tpo -c -o libleveldb_a-env_win.o `test -f 'leveldb/util/env_win.cc' || echo '$(srcdir)/'`leveldb/util/env_win.cc
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-env_win.Tpo $(DEPDIR)/libleveldb_a-env_win.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/util/env_win.cc' object='libleveldb_a-env_win.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-env_win.o `test -f 'leveldb/util/env_win.cc' || echo '$(srcdir)/'`leveldb/util/env_win.cc
-
-libleveldb_a-env_win.obj: leveldb/util/env_win.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-env_win.obj -MD -MP -MF $(DEPDIR)/libleveldb_a-env_win.Tpo -c -o libleveldb_a-env_win.obj `if test -f 'leveldb/util/env_win.cc'; then $(CYGPATH_W) 'leveldb/util/env_win.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/util/env_win.cc'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-env_win.Tpo $(DEPDIR)/libleveldb_a-env_win.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/util/env_win.cc' object='libleveldb_a-env_win.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-env_win.obj `if test -f 'leveldb/util/env_win.cc'; then $(CYGPATH_W) 'leveldb/util/env_win.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/util/env_win.cc'; fi`
-
-libleveldb_a-filter_policy.o: leveldb/util/filter_policy.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-filter_policy.o -MD -MP -MF $(DEPDIR)/libleveldb_a-filter_policy.Tpo -c -o libleveldb_a-filter_policy.o `test -f 'leveldb/util/filter_policy.cc' || echo '$(srcdir)/'`leveldb/util/filter_policy.cc
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-filter_policy.Tpo $(DEPDIR)/libleveldb_a-filter_policy.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/util/filter_policy.cc' object='libleveldb_a-filter_policy.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-filter_policy.o `test -f 'leveldb/util/filter_policy.cc' || echo '$(srcdir)/'`leveldb/util/filter_policy.cc
-
-libleveldb_a-filter_policy.obj: leveldb/util/filter_policy.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-filter_policy.obj -MD -MP -MF $(DEPDIR)/libleveldb_a-filter_policy.Tpo -c -o libleveldb_a-filter_policy.obj `if test -f 'leveldb/util/filter_policy.cc'; then $(CYGPATH_W) 'leveldb/util/filter_policy.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/util/filter_policy.cc'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-filter_policy.Tpo $(DEPDIR)/libleveldb_a-filter_policy.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/util/filter_policy.cc' object='libleveldb_a-filter_policy.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-filter_policy.obj `if test -f 'leveldb/util/filter_policy.cc'; then $(CYGPATH_W) 'leveldb/util/filter_policy.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/util/filter_policy.cc'; fi`
-
-libleveldb_a-hash.o: leveldb/util/hash.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-hash.o -MD -MP -MF $(DEPDIR)/libleveldb_a-hash.Tpo -c -o libleveldb_a-hash.o `test -f 'leveldb/util/hash.cc' || echo '$(srcdir)/'`leveldb/util/hash.cc
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-hash.Tpo $(DEPDIR)/libleveldb_a-hash.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/util/hash.cc' object='libleveldb_a-hash.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-hash.o `test -f 'leveldb/util/hash.cc' || echo '$(srcdir)/'`leveldb/util/hash.cc
-
-libleveldb_a-hash.obj: leveldb/util/hash.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-hash.obj -MD -MP -MF $(DEPDIR)/libleveldb_a-hash.Tpo -c -o libleveldb_a-hash.obj `if test -f 'leveldb/util/hash.cc'; then $(CYGPATH_W) 'leveldb/util/hash.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/util/hash.cc'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-hash.Tpo $(DEPDIR)/libleveldb_a-hash.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/util/hash.cc' object='libleveldb_a-hash.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-hash.obj `if test -f 'leveldb/util/hash.cc'; then $(CYGPATH_W) 'leveldb/util/hash.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/util/hash.cc'; fi`
-
-libleveldb_a-histogram.o: leveldb/util/histogram.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-histogram.o -MD -MP -MF $(DEPDIR)/libleveldb_a-histogram.Tpo -c -o libleveldb_a-histogram.o `test -f 'leveldb/util/histogram.cc' || echo '$(srcdir)/'`leveldb/util/histogram.cc
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-histogram.Tpo $(DEPDIR)/libleveldb_a-histogram.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/util/histogram.cc' object='libleveldb_a-histogram.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-histogram.o `test -f 'leveldb/util/histogram.cc' || echo '$(srcdir)/'`leveldb/util/histogram.cc
-
-libleveldb_a-histogram.obj: leveldb/util/histogram.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-histogram.obj -MD -MP -MF $(DEPDIR)/libleveldb_a-histogram.Tpo -c -o libleveldb_a-histogram.obj `if test -f 'leveldb/util/histogram.cc'; then $(CYGPATH_W) 'leveldb/util/histogram.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/util/histogram.cc'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-histogram.Tpo $(DEPDIR)/libleveldb_a-histogram.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/util/histogram.cc' object='libleveldb_a-histogram.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-histogram.obj `if test -f 'leveldb/util/histogram.cc'; then $(CYGPATH_W) 'leveldb/util/histogram.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/util/histogram.cc'; fi`
-
-libleveldb_a-logging.o: leveldb/util/logging.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-logging.o -MD -MP -MF $(DEPDIR)/libleveldb_a-logging.Tpo -c -o libleveldb_a-logging.o `test -f 'leveldb/util/logging.cc' || echo '$(srcdir)/'`leveldb/util/logging.cc
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-logging.Tpo $(DEPDIR)/libleveldb_a-logging.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/util/logging.cc' object='libleveldb_a-logging.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-logging.o `test -f 'leveldb/util/logging.cc' || echo '$(srcdir)/'`leveldb/util/logging.cc
-
-libleveldb_a-logging.obj: leveldb/util/logging.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-logging.obj -MD -MP -MF $(DEPDIR)/libleveldb_a-logging.Tpo -c -o libleveldb_a-logging.obj `if test -f 'leveldb/util/logging.cc'; then $(CYGPATH_W) 'leveldb/util/logging.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/util/logging.cc'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-logging.Tpo $(DEPDIR)/libleveldb_a-logging.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/util/logging.cc' object='libleveldb_a-logging.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-logging.obj `if test -f 'leveldb/util/logging.cc'; then $(CYGPATH_W) 'leveldb/util/logging.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/util/logging.cc'; fi`
-
-libleveldb_a-options.o: leveldb/util/options.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-options.o -MD -MP -MF $(DEPDIR)/libleveldb_a-options.Tpo -c -o libleveldb_a-options.o `test -f 'leveldb/util/options.cc' || echo '$(srcdir)/'`leveldb/util/options.cc
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-options.Tpo $(DEPDIR)/libleveldb_a-options.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/util/options.cc' object='libleveldb_a-options.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-options.o `test -f 'leveldb/util/options.cc' || echo '$(srcdir)/'`leveldb/util/options.cc
-
-libleveldb_a-options.obj: leveldb/util/options.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-options.obj -MD -MP -MF $(DEPDIR)/libleveldb_a-options.Tpo -c -o libleveldb_a-options.obj `if test -f 'leveldb/util/options.cc'; then $(CYGPATH_W) 'leveldb/util/options.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/util/options.cc'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-options.Tpo $(DEPDIR)/libleveldb_a-options.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/util/options.cc' object='libleveldb_a-options.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-options.obj `if test -f 'leveldb/util/options.cc'; then $(CYGPATH_W) 'leveldb/util/options.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/util/options.cc'; fi`
-
-libleveldb_a-status.o: leveldb/util/status.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-status.o -MD -MP -MF $(DEPDIR)/libleveldb_a-status.Tpo -c -o libleveldb_a-status.o `test -f 'leveldb/util/status.cc' || echo '$(srcdir)/'`leveldb/util/status.cc
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-status.Tpo $(DEPDIR)/libleveldb_a-status.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/util/status.cc' object='libleveldb_a-status.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-status.o `test -f 'leveldb/util/status.cc' || echo '$(srcdir)/'`leveldb/util/status.cc
-
-libleveldb_a-status.obj: leveldb/util/status.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-status.obj -MD -MP -MF $(DEPDIR)/libleveldb_a-status.Tpo -c -o libleveldb_a-status.obj `if test -f 'leveldb/util/status.cc'; then $(CYGPATH_W) 'leveldb/util/status.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/util/status.cc'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-status.Tpo $(DEPDIR)/libleveldb_a-status.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/util/status.cc' object='libleveldb_a-status.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-status.obj `if test -f 'leveldb/util/status.cc'; then $(CYGPATH_W) 'leveldb/util/status.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/util/status.cc'; fi`
-
-libleveldb_a-port_posix.o: leveldb/port/port_posix.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-port_posix.o -MD -MP -MF $(DEPDIR)/libleveldb_a-port_posix.Tpo -c -o libleveldb_a-port_posix.o `test -f 'leveldb/port/port_posix.cc' || echo '$(srcdir)/'`leveldb/port/port_posix.cc
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-port_posix.Tpo $(DEPDIR)/libleveldb_a-port_posix.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/port/port_posix.cc' object='libleveldb_a-port_posix.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-port_posix.o `test -f 'leveldb/port/port_posix.cc' || echo '$(srcdir)/'`leveldb/port/port_posix.cc
-
-libleveldb_a-port_posix.obj: leveldb/port/port_posix.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-port_posix.obj -MD -MP -MF $(DEPDIR)/libleveldb_a-port_posix.Tpo -c -o libleveldb_a-port_posix.obj `if test -f 'leveldb/port/port_posix.cc'; then $(CYGPATH_W) 'leveldb/port/port_posix.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/port/port_posix.cc'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-port_posix.Tpo $(DEPDIR)/libleveldb_a-port_posix.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/port/port_posix.cc' object='libleveldb_a-port_posix.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-port_posix.obj `if test -f 'leveldb/port/port_posix.cc'; then $(CYGPATH_W) 'leveldb/port/port_posix.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/port/port_posix.cc'; fi`
-
-libleveldb_a-memenv.o: leveldb/helpers/memenv/memenv.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-memenv.o -MD -MP -MF $(DEPDIR)/libleveldb_a-memenv.Tpo -c -o libleveldb_a-memenv.o `test -f 'leveldb/helpers/memenv/memenv.cc' || echo '$(srcdir)/'`leveldb/helpers/memenv/memenv.cc
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-memenv.Tpo $(DEPDIR)/libleveldb_a-memenv.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/helpers/memenv/memenv.cc' object='libleveldb_a-memenv.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-memenv.o `test -f 'leveldb/helpers/memenv/memenv.cc' || echo '$(srcdir)/'`leveldb/helpers/memenv/memenv.cc
-
-libleveldb_a-memenv.obj: leveldb/helpers/memenv/memenv.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -MT libleveldb_a-memenv.obj -MD -MP -MF $(DEPDIR)/libleveldb_a-memenv.Tpo -c -o libleveldb_a-memenv.obj `if test -f 'leveldb/helpers/memenv/memenv.cc'; then $(CYGPATH_W) 'leveldb/helpers/memenv/memenv.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/helpers/memenv/memenv.cc'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libleveldb_a-memenv.Tpo $(DEPDIR)/libleveldb_a-memenv.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='leveldb/helpers/memenv/memenv.cc' object='libleveldb_a-memenv.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libleveldb_a_CXXFLAGS) $(CXXFLAGS) -c -o libleveldb_a-memenv.obj `if test -f 'leveldb/helpers/memenv/memenv.cc'; then $(CYGPATH_W) 'leveldb/helpers/memenv/memenv.cc'; else $(CYGPATH_W) '$(srcdir)/leveldb/helpers/memenv/memenv.cc'; fi`
 
 shcoin-protocol.o: server/protocol.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoin_CXXFLAGS) $(CXXFLAGS) -MT shcoin-protocol.o -MD -MP -MF $(DEPDIR)/shcoin-protocol.Tpo -c -o shcoin-protocol.o `test -f 'server/protocol.cpp' || echo '$(srcdir)/'`server/protocol.cpp
@@ -2848,6 +2307,76 @@ shcoind-util.obj: server/util.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-util.obj `if test -f 'server/util.cpp'; then $(CYGPATH_W) 'server/util.cpp'; else $(CYGPATH_W) '$(srcdir)/server/util.cpp'; fi`
 
+shcoind-usde_proto.o: $(srcdir)/proto/usde_proto.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-usde_proto.o -MD -MP -MF $(DEPDIR)/shcoind-usde_proto.Tpo -c -o shcoind-usde_proto.o `test -f '$(srcdir)/proto/usde_proto.cpp' || echo '$(srcdir)/'`$(srcdir)/proto/usde_proto.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-usde_proto.Tpo $(DEPDIR)/shcoind-usde_proto.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$(srcdir)/proto/usde_proto.cpp' object='shcoind-usde_proto.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-usde_proto.o `test -f '$(srcdir)/proto/usde_proto.cpp' || echo '$(srcdir)/'`$(srcdir)/proto/usde_proto.cpp
+
+shcoind-usde_proto.obj: $(srcdir)/proto/usde_proto.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-usde_proto.obj -MD -MP -MF $(DEPDIR)/shcoind-usde_proto.Tpo -c -o shcoind-usde_proto.obj `if test -f '$(srcdir)/proto/usde_proto.cpp'; then $(CYGPATH_W) '$(srcdir)/proto/usde_proto.cpp'; else $(CYGPATH_W) '$(srcdir)/$(srcdir)/proto/usde_proto.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-usde_proto.Tpo $(DEPDIR)/shcoind-usde_proto.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$(srcdir)/proto/usde_proto.cpp' object='shcoind-usde_proto.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-usde_proto.obj `if test -f '$(srcdir)/proto/usde_proto.cpp'; then $(CYGPATH_W) '$(srcdir)/proto/usde_proto.cpp'; else $(CYGPATH_W) '$(srcdir)/$(srcdir)/proto/usde_proto.cpp'; fi`
+
+shcoind-shc_proto.o: $(srcdir)/proto/shc_proto.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-shc_proto.o -MD -MP -MF $(DEPDIR)/shcoind-shc_proto.Tpo -c -o shcoind-shc_proto.o `test -f '$(srcdir)/proto/shc_proto.cpp' || echo '$(srcdir)/'`$(srcdir)/proto/shc_proto.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-shc_proto.Tpo $(DEPDIR)/shcoind-shc_proto.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$(srcdir)/proto/shc_proto.cpp' object='shcoind-shc_proto.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-shc_proto.o `test -f '$(srcdir)/proto/shc_proto.cpp' || echo '$(srcdir)/'`$(srcdir)/proto/shc_proto.cpp
+
+shcoind-shc_proto.obj: $(srcdir)/proto/shc_proto.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-shc_proto.obj -MD -MP -MF $(DEPDIR)/shcoind-shc_proto.Tpo -c -o shcoind-shc_proto.obj `if test -f '$(srcdir)/proto/shc_proto.cpp'; then $(CYGPATH_W) '$(srcdir)/proto/shc_proto.cpp'; else $(CYGPATH_W) '$(srcdir)/$(srcdir)/proto/shc_proto.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-shc_proto.Tpo $(DEPDIR)/shcoind-shc_proto.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$(srcdir)/proto/shc_proto.cpp' object='shcoind-shc_proto.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-shc_proto.obj `if test -f '$(srcdir)/proto/shc_proto.cpp'; then $(CYGPATH_W) '$(srcdir)/proto/shc_proto.cpp'; else $(CYGPATH_W) '$(srcdir)/$(srcdir)/proto/shc_proto.cpp'; fi`
+
+shcoind-usde_netmsg.o: server/usde/usde_netmsg.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-usde_netmsg.o -MD -MP -MF $(DEPDIR)/shcoind-usde_netmsg.Tpo -c -o shcoind-usde_netmsg.o `test -f 'server/usde/usde_netmsg.cpp' || echo '$(srcdir)/'`server/usde/usde_netmsg.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-usde_netmsg.Tpo $(DEPDIR)/shcoind-usde_netmsg.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/usde/usde_netmsg.cpp' object='shcoind-usde_netmsg.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-usde_netmsg.o `test -f 'server/usde/usde_netmsg.cpp' || echo '$(srcdir)/'`server/usde/usde_netmsg.cpp
+
+shcoind-usde_netmsg.obj: server/usde/usde_netmsg.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-usde_netmsg.obj -MD -MP -MF $(DEPDIR)/shcoind-usde_netmsg.Tpo -c -o shcoind-usde_netmsg.obj `if test -f 'server/usde/usde_netmsg.cpp'; then $(CYGPATH_W) 'server/usde/usde_netmsg.cpp'; else $(CYGPATH_W) '$(srcdir)/server/usde/usde_netmsg.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-usde_netmsg.Tpo $(DEPDIR)/shcoind-usde_netmsg.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/usde/usde_netmsg.cpp' object='shcoind-usde_netmsg.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-usde_netmsg.obj `if test -f 'server/usde/usde_netmsg.cpp'; then $(CYGPATH_W) 'server/usde/usde_netmsg.cpp'; else $(CYGPATH_W) '$(srcdir)/server/usde/usde_netmsg.cpp'; fi`
+
+shcoind-shc_netmsg.o: server/shc/shc_netmsg.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-shc_netmsg.o -MD -MP -MF $(DEPDIR)/shcoind-shc_netmsg.Tpo -c -o shcoind-shc_netmsg.o `test -f 'server/shc/shc_netmsg.cpp' || echo '$(srcdir)/'`server/shc/shc_netmsg.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-shc_netmsg.Tpo $(DEPDIR)/shcoind-shc_netmsg.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/shc/shc_netmsg.cpp' object='shcoind-shc_netmsg.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-shc_netmsg.o `test -f 'server/shc/shc_netmsg.cpp' || echo '$(srcdir)/'`server/shc/shc_netmsg.cpp
+
+shcoind-shc_netmsg.obj: server/shc/shc_netmsg.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-shc_netmsg.obj -MD -MP -MF $(DEPDIR)/shcoind-shc_netmsg.Tpo -c -o shcoind-shc_netmsg.obj `if test -f 'server/shc/shc_netmsg.cpp'; then $(CYGPATH_W) 'server/shc/shc_netmsg.cpp'; else $(CYGPATH_W) '$(srcdir)/server/shc/shc_netmsg.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-shc_netmsg.Tpo $(DEPDIR)/shcoind-shc_netmsg.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/shc/shc_netmsg.cpp' object='shcoind-shc_netmsg.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-shc_netmsg.obj `if test -f 'server/shc/shc_netmsg.cpp'; then $(CYGPATH_W) 'server/shc/shc_netmsg.cpp'; else $(CYGPATH_W) '$(srcdir)/server/shc/shc_netmsg.cpp'; fi`
+
+shcoind-block.o: server/block.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-block.o -MD -MP -MF $(DEPDIR)/shcoind-block.Tpo -c -o shcoind-block.o `test -f 'server/block.cpp' || echo '$(srcdir)/'`server/block.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-block.Tpo $(DEPDIR)/shcoind-block.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/block.cpp' object='shcoind-block.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-block.o `test -f 'server/block.cpp' || echo '$(srcdir)/'`server/block.cpp
+
+shcoind-block.obj: server/block.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-block.obj -MD -MP -MF $(DEPDIR)/shcoind-block.Tpo -c -o shcoind-block.obj `if test -f 'server/block.cpp'; then $(CYGPATH_W) 'server/block.cpp'; else $(CYGPATH_W) '$(srcdir)/server/block.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-block.Tpo $(DEPDIR)/shcoind-block.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/block.cpp' object='shcoind-block.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-block.obj `if test -f 'server/block.cpp'; then $(CYGPATH_W) 'server/block.cpp'; else $(CYGPATH_W) '$(srcdir)/server/block.cpp'; fi`
+
 shcoind-rpc_proto.o: server/rpc_proto.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-rpc_proto.o -MD -MP -MF $(DEPDIR)/shcoind-rpc_proto.Tpo -c -o shcoind-rpc_proto.o `test -f 'server/rpc_proto.cpp' || echo '$(srcdir)/'`server/rpc_proto.cpp
 @am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-rpc_proto.Tpo $(DEPDIR)/shcoind-rpc_proto.Po
@@ -2946,20 +2475,6 @@ shcoind-keystore.obj: server/keystore.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-keystore.obj `if test -f 'server/keystore.cpp'; then $(CYGPATH_W) 'server/keystore.cpp'; else $(CYGPATH_W) '$(srcdir)/server/keystore.cpp'; fi`
 
-shcoind-leveldb.o: server/leveldb.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-leveldb.o -MD -MP -MF $(DEPDIR)/shcoind-leveldb.Tpo -c -o shcoind-leveldb.o `test -f 'server/leveldb.cpp' || echo '$(srcdir)/'`server/leveldb.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-leveldb.Tpo $(DEPDIR)/shcoind-leveldb.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/leveldb.cpp' object='shcoind-leveldb.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-leveldb.o `test -f 'server/leveldb.cpp' || echo '$(srcdir)/'`server/leveldb.cpp
-
-shcoind-leveldb.obj: server/leveldb.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-leveldb.obj -MD -MP -MF $(DEPDIR)/shcoind-leveldb.Tpo -c -o shcoind-leveldb.obj `if test -f 'server/leveldb.cpp'; then $(CYGPATH_W) 'server/leveldb.cpp'; else $(CYGPATH_W) '$(srcdir)/server/leveldb.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-leveldb.Tpo $(DEPDIR)/shcoind-leveldb.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/leveldb.cpp' object='shcoind-leveldb.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-leveldb.obj `if test -f 'server/leveldb.cpp'; then $(CYGPATH_W) 'server/leveldb.cpp'; else $(CYGPATH_W) '$(srcdir)/server/leveldb.cpp'; fi`
-
 shcoind-main.o: server/main.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-main.o -MD -MP -MF $(DEPDIR)/shcoind-main.Tpo -c -o shcoind-main.o `test -f 'server/main.cpp' || echo '$(srcdir)/'`server/main.cpp
 @am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-main.Tpo $(DEPDIR)/shcoind-main.Po
@@ -2973,34 +2488,6 @@ shcoind-main.obj: server/main.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/main.cpp' object='shcoind-main.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-main.obj `if test -f 'server/main.cpp'; then $(CYGPATH_W) 'server/main.cpp'; else $(CYGPATH_W) '$(srcdir)/server/main.cpp'; fi`
-
-shcoind-reward.o: server/reward.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-reward.o -MD -MP -MF $(DEPDIR)/shcoind-reward.Tpo -c -o shcoind-reward.o `test -f 'server/reward.cpp' || echo '$(srcdir)/'`server/reward.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-reward.Tpo $(DEPDIR)/shcoind-reward.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/reward.cpp' object='shcoind-reward.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-reward.o `test -f 'server/reward.cpp' || echo '$(srcdir)/'`server/reward.cpp
-
-shcoind-reward.obj: server/reward.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-reward.obj -MD -MP -MF $(DEPDIR)/shcoind-reward.Tpo -c -o shcoind-reward.obj `if test -f 'server/reward.cpp'; then $(CYGPATH_W) 'server/reward.cpp'; else $(CYGPATH_W) '$(srcdir)/server/reward.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-reward.Tpo $(DEPDIR)/shcoind-reward.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/reward.cpp' object='shcoind-reward.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-reward.obj `if test -f 'server/reward.cpp'; then $(CYGPATH_W) 'server/reward.cpp'; else $(CYGPATH_W) '$(srcdir)/server/reward.cpp'; fi`
-
-shcoind-cmd_msg.o: server/cmd_msg.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-cmd_msg.o -MD -MP -MF $(DEPDIR)/shcoind-cmd_msg.Tpo -c -o shcoind-cmd_msg.o `test -f 'server/cmd_msg.cpp' || echo '$(srcdir)/'`server/cmd_msg.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-cmd_msg.Tpo $(DEPDIR)/shcoind-cmd_msg.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/cmd_msg.cpp' object='shcoind-cmd_msg.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-cmd_msg.o `test -f 'server/cmd_msg.cpp' || echo '$(srcdir)/'`server/cmd_msg.cpp
-
-shcoind-cmd_msg.obj: server/cmd_msg.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-cmd_msg.obj -MD -MP -MF $(DEPDIR)/shcoind-cmd_msg.Tpo -c -o shcoind-cmd_msg.obj `if test -f 'server/cmd_msg.cpp'; then $(CYGPATH_W) 'server/cmd_msg.cpp'; else $(CYGPATH_W) '$(srcdir)/server/cmd_msg.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-cmd_msg.Tpo $(DEPDIR)/shcoind-cmd_msg.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/cmd_msg.cpp' object='shcoind-cmd_msg.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-cmd_msg.obj `if test -f 'server/cmd_msg.cpp'; then $(CYGPATH_W) 'server/cmd_msg.cpp'; else $(CYGPATH_W) '$(srcdir)/server/cmd_msg.cpp'; fi`
 
 shcoind-noui.o: server/noui.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-noui.o -MD -MP -MF $(DEPDIR)/shcoind-noui.Tpo -c -o shcoind-noui.o `test -f 'server/noui.cpp' || echo '$(srcdir)/'`server/noui.cpp
@@ -3156,27 +2643,6 @@ shcoind-server_iface.obj: server_iface.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-server_iface.obj `if test -f 'server_iface.cpp'; then $(CYGPATH_W) 'server_iface.cpp'; else $(CYGPATH_W) '$(srcdir)/server_iface.cpp'; fi`
 
-.cpp.o:
-@am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXXCOMPILE) -c -o $@ $<
-
-.cpp.obj:
-@am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
-
-.cpp.lo:
-@am__fastdepCXX_TRUE@	$(LTCXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LTCXXCOMPILE) -c -o $@ $<
-
 mostlyclean-libtool:
 	-rm -f *.lo
 
@@ -3267,7 +2733,7 @@ distdir: $(DISTFILES)
 	done
 check-am: all-am
 check: check-am
-all-am: Makefile $(LIBRARIES) $(PROGRAMS)
+all-am: Makefile $(PROGRAMS)
 installdirs:
 	for dir in "$(DESTDIR)$(bindir)" "$(DESTDIR)$(sbindir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
@@ -3301,7 +2767,7 @@ maintainer-clean-generic:
 clean: clean-am
 
 clean-am: clean-binPROGRAMS clean-generic clean-libtool \
-	clean-noinstLIBRARIES clean-sbinPROGRAMS mostlyclean-am
+	clean-sbinPROGRAMS mostlyclean-am
 
 distclean: distclean-am
 	-rm -rf ./$(DEPDIR)
@@ -3374,20 +2840,19 @@ uninstall-am: uninstall-binPROGRAMS uninstall-sbinPROGRAMS
 .MAKE: install-am install-exec-am install-strip uninstall-am
 
 .PHONY: CTAGS GTAGS all all-am check check-am clean clean-binPROGRAMS \
-	clean-generic clean-libtool clean-noinstLIBRARIES \
-	clean-sbinPROGRAMS ctags distclean distclean-compile \
-	distclean-generic distclean-libtool distclean-tags distdir dvi \
-	dvi-am html html-am info info-am install install-am \
-	install-binPROGRAMS install-data install-data-am install-dvi \
-	install-dvi-am install-exec install-exec-am install-exec-hook \
-	install-html install-html-am install-info install-info-am \
-	install-man install-pdf install-pdf-am install-ps \
-	install-ps-am install-sbinPROGRAMS install-strip installcheck \
-	installcheck-am installdirs maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-compile \
-	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
-	tags uninstall uninstall-am uninstall-binPROGRAMS \
-	uninstall-hook uninstall-sbinPROGRAMS
+	clean-generic clean-libtool clean-sbinPROGRAMS ctags distclean \
+	distclean-compile distclean-generic distclean-libtool \
+	distclean-tags distdir dvi dvi-am html html-am info info-am \
+	install install-am install-binPROGRAMS install-data \
+	install-data-am install-dvi install-dvi-am install-exec \
+	install-exec-am install-exec-hook install-html install-html-am \
+	install-info install-info-am install-man install-pdf \
+	install-pdf-am install-ps install-ps-am install-sbinPROGRAMS \
+	install-strip installcheck installcheck-am installdirs \
+	maintainer-clean maintainer-clean-generic mostlyclean \
+	mostlyclean-compile mostlyclean-generic mostlyclean-libtool \
+	pdf pdf-am ps ps-am tags uninstall uninstall-am \
+	uninstall-binPROGRAMS uninstall-hook uninstall-sbinPROGRAMS
 
 
 @HAVE_INITD_DIR_TRUE@install-exec-hook:

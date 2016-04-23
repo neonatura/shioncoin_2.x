@@ -7,6 +7,7 @@
 
 
 #undef GNULIB_NAMESPACE
+#include "block.h"
 #include "main.h"
 #undef fcntl
 #include "wallet.h"
@@ -16,7 +17,6 @@
 #include "init.h"
 #include "ui_interface.h"
 #include "base58.h"
-#include "cmd_msg.h"
 #include "rpc_proto.h"
 #include "../server_iface.h" /* BLKERR_XXX */
 #include "util.h"
@@ -50,6 +50,7 @@ using namespace json_spirit;
 void ThreadRPCServer2(void* parg);
 
 static std::string strRPCUserColonPass;
+static CCriticalSection cs_THREAD_RPCHANDLER;
 
 static int64 nWalletUnlockTime;
 static CCriticalSection cs_nWalletUnlockTime;
@@ -68,7 +69,18 @@ extern bool OpenNetworkConnection(const CAddress& addrConnect, const char *strDe
 
 const Object emptyobj;
 
-void ThreadRPCServer3(void* parg);
+
+class JSONRequest
+{
+public:
+    Value id;
+    string strMethod;
+    Array params;
+    CIface *iface;
+
+    JSONRequest() { id = Value::null; }
+    void parse(const Value& valRequest);
+};
 
 Object JSONRPCError(int code, const string& message)
 {
@@ -296,6 +308,7 @@ Value addpeer(const Array& params, bool fHelp)
         "addpeer <host>[:<port>]\n"
         "Attempt to connect to a remote usde server.");
 
+  CIface *iface = GetCoinByIndex(USDE_COIN_IFACE); 
   string strHost;
   CService vserv;
   char buf[256];
@@ -315,14 +328,27 @@ Value addpeer(const Array& params, bool fHelp)
     *ptr = '\000';
   }
   if (port == 0)
-    port = GetDefaultPort();
+    port = USDE_COIN_DAEMON_PORT;
 
   if (Lookup(strHost.c_str(), vserv, port, false)) {
+      shpeer_t *peer;
+      char buf2[1024];
+      char buf[1024];
+
+      sprintf(buf, "%s %d", strHost.c_str(), port);
+      peer = shpeer_init(iface->name, buf);
+      uevent_new_peer(GetCoinIndex(iface), peer); /* keep alloc'd */
+
+      sprintf(buf2, "addpeer: initiating peer connection to '%s'.\n",
+          shpeer_print(peer));
+      unet_log(GetCoinIndex(iface), buf2);
+
 #if 0
     CSemaphoreGrant grant(*semOutbound);
     OpenNetworkConnection(CAddress(vserv), &grant);
 #endif
-    OpenNetworkConnection(CAddress(vserv));
+
+//    OpenNetworkConnection(CAddress(vserv));
   }
 
   return "initiated new peer connection.";
@@ -2268,6 +2294,8 @@ Value getrawmempool(const Array& params, bool fHelp)
     return a;
 }
 
+extern bc_t *GetBlockChain(char *name);
+
 Value getblockhash(const Array& params, bool fHelp)
 {
     if (fHelp || params.size() != 1)
@@ -2278,6 +2306,18 @@ Value getblockhash(const Array& params, bool fHelp)
     int nHeight = params[0].get_int();
     if (nHeight < 0 || nHeight > nBestHeight)
         throw runtime_error("Block number out of range.");
+{
+bc_t *bc = GetBlockChain("usde_block");
+bc_hash_t ret_hash;
+int err;
+
+err = bc_get_hash(bc, nHeight, ret_hash);
+if (!err) {
+uint256 hash;
+hash.SetRaw((unsigned int *)ret_hash);
+fprintf(stderr, "DEBUG: RPC: getblockhash: blockchain pos %d has hash '%s'\n", nHeight, hash.GetHex().c_str());
+}
+}
 
     CBlock block;
     CBlockIndex* pblockindex = mapBlockIndex[hashBestChain];
@@ -2687,6 +2727,135 @@ static void RPCListen(boost::shared_ptr< basic_socket_acceptor<Protocol, SocketA
                 boost::asio::placeholders::error));
 }
 
+static Object JSONRPCExecOne(const Value& req)
+{
+    Object rpc_result;
+
+    JSONRequest jreq;
+    try {
+        jreq.parse(req);
+
+        Value result = tableRPC.execute(jreq.iface, jreq.strMethod, jreq.params);
+        rpc_result = JSONRPCReplyObj(result, Value::null, jreq.id);
+    }
+    catch (Object& objError)
+    {
+        rpc_result = JSONRPCReplyObj(Value::null, objError, jreq.id);
+    }
+    catch (std::exception& e)
+    {
+        rpc_result = JSONRPCReplyObj(Value::null,
+                                     JSONRPCError(-32700, e.what()), jreq.id);
+    }
+
+    return rpc_result;
+}
+
+static string JSONRPCExecBatch(const Array& vReq)
+{
+    Array ret;
+    for (unsigned int reqIdx = 0; reqIdx < vReq.size(); reqIdx++)
+        ret.push_back(JSONRPCExecOne(vReq[reqIdx]));
+
+    return write_string(Value(ret), false) + "\n";
+}
+
+void ThreadRPCServer3(void* parg)
+{
+    IMPLEMENT_RANDOMIZE_STACK(ThreadRPCServer3(parg));
+
+    // Make this thread recognisable as the RPC handler
+    RenameThread("bitcoin-rpchand");
+
+    {
+        LOCK(cs_THREAD_RPCHANDLER);
+        vnThreadsRunning[THREAD_RPCHANDLER]++;
+    }
+    AcceptedConnection *conn = (AcceptedConnection *) parg;
+
+    bool fRun = true;
+    loop {
+        if (fShutdown || !fRun)
+        {
+            conn->close();
+            delete conn;
+            {
+                LOCK(cs_THREAD_RPCHANDLER);
+                --vnThreadsRunning[THREAD_RPCHANDLER];
+            }
+            return;
+        }
+        map<string, string> mapHeaders;
+        string strRequest;
+
+        ReadHTTP(conn->stream(), mapHeaders, strRequest);
+
+        // Check authorization
+        if (mapHeaders.count("authorization") == 0)
+        {
+            conn->stream() << HTTPReply(401, "", false) << std::flush;
+            break;
+        }
+        if (!HTTPAuthorized(mapHeaders))
+        {
+            Debug("ThreadRPCServer incorrect password attempt from %s\n", conn->peer_address_to_string().c_str());
+            /* Deter brute-forcing short passwords.
+               If this results in a DOS the user really
+               shouldn't have their RPC port exposed.*/
+            if (mapArgs["-rpcpassword"].size() < 20)
+                Sleep(250);
+
+            conn->stream() << HTTPReply(401, "", false) << std::flush;
+            break;
+        }
+        if (mapHeaders["connection"] == "close")
+            fRun = false;
+
+        JSONRequest jreq;
+        try
+        {
+            // Parse request
+            Value valRequest;
+            if (!read_string(strRequest, valRequest))
+                throw JSONRPCError(-32700, "Parse error");
+
+            string strReply;
+
+            // singleton request
+            if (valRequest.type() == obj_type) {
+                jreq.parse(valRequest);
+
+                Value result = tableRPC.execute(jreq.iface, jreq.strMethod, jreq.params);
+
+                // Send reply
+                strReply = JSONRPCReply(result, Value::null, jreq.id);
+
+            // array of requests
+            } else if (valRequest.type() == array_type)
+                strReply = JSONRPCExecBatch(valRequest.get_array());
+            else
+                throw JSONRPCError(-32700, "Top-level object parse error");
+                
+            conn->stream() << HTTPReply(200, strReply, fRun) << std::flush;
+        }
+        catch (Object& objError)
+        {
+            ErrorReply(conn->stream(), objError, jreq.id);
+            break;
+        }
+        catch (std::exception& e)
+        {
+            ErrorReply(conn->stream(), JSONRPCError(-32700, e.what()), jreq.id);
+            break;
+        }
+    }
+
+    delete conn;
+    {
+        LOCK(cs_THREAD_RPCHANDLER);
+        vnThreadsRunning[THREAD_RPCHANDLER]--;
+    }
+}
 /**
  * Accept and handle incoming connection.
  */
@@ -2849,181 +3018,55 @@ void ThreadRPCServer2(void* parg)
     StopRequests();
 }
 
-class JSONRequest
-{
-public:
-    Value id;
-    string strMethod;
-    Array params;
-
-    JSONRequest() { id = Value::null; }
-    void parse(const Value& valRequest);
-};
 
 void JSONRequest::parse(const Value& valRequest)
 {
-    // Parse request
-    if (valRequest.type() != obj_type)
-        throw JSONRPCError(-32600, "Invalid Request object");
-    const Object& request = valRequest.get_obj();
 
-    // Parse id now so errors from here on will have the id
-    id = find_value(request, "id");
+  // Parse request
+  if (valRequest.type() != obj_type)
+    throw JSONRPCError(-32600, "Invalid Request object");
+  const Object& request = valRequest.get_obj();
 
-    // Parse method
-    Value valMethod = find_value(request, "method");
-    if (valMethod.type() == null_type)
-        throw JSONRPCError(-32600, "Missing method");
-    if (valMethod.type() != str_type)
-        throw JSONRPCError(-32600, "Method must be a string");
-    strMethod = valMethod.get_str();
-    if (strMethod != "getwork" && strMethod != "getblocktemplate") {
-      Debug("ThreadRPCServer method=%s\n", strMethod.c_str());
-    }
+  // Parse id now so errors from here on will have the id
+  id = find_value(request, "id");
 
-    // Parse params
-    Value valParams = find_value(request, "params");
-    if (valParams.type() == array_type)
-        params = valParams.get_array();
-    else if (valParams.type() == null_type)
-        params = Array();
-    else
-        throw JSONRPCError(-32600, "Params must be an array");
+  /* determine coin iface */
+  Value ifaceVal = find_value(request, "iface");
+  if (ifaceVal.type() == str_type) {
+    string iface_str = ifaceVal.get_str();
+    iface = GetCoin(iface_str.c_str());
+  }
+  if (!iface) {
+    /* default */
+    iface = GetCoinByIndex(USDE_COIN_IFACE);
+  }
+
+  // Parse method
+  Value valMethod = find_value(request, "method");
+  if (valMethod.type() == null_type)
+    throw JSONRPCError(-32600, "Missing method");
+  if (valMethod.type() != str_type)
+    throw JSONRPCError(-32600, "Method must be a string");
+  strMethod = valMethod.get_str();
+  if (strMethod != "getwork" && strMethod != "getblocktemplate") {
+    Debug("ThreadRPCServer method=%s\n", strMethod.c_str());
+  }
+
+  // Parse params
+  Value valParams = find_value(request, "params");
+  if (valParams.type() == array_type)
+    params = valParams.get_array();
+  else if (valParams.type() == null_type)
+    params = Array();
+  else
+    throw JSONRPCError(-32600, "Params must be an array");
 }
 
-static Object JSONRPCExecOne(const Value& req)
-{
-    Object rpc_result;
 
-    JSONRequest jreq;
-    try {
-        jreq.parse(req);
 
-        Value result = tableRPC.execute(jreq.strMethod, jreq.params);
-        rpc_result = JSONRPCReplyObj(result, Value::null, jreq.id);
-    }
-    catch (Object& objError)
-    {
-        rpc_result = JSONRPCReplyObj(Value::null, objError, jreq.id);
-    }
-    catch (std::exception& e)
-    {
-        rpc_result = JSONRPCReplyObj(Value::null,
-                                     JSONRPCError(-32700, e.what()), jreq.id);
-    }
 
-    return rpc_result;
-}
 
-static string JSONRPCExecBatch(const Array& vReq)
-{
-    Array ret;
-    for (unsigned int reqIdx = 0; reqIdx < vReq.size(); reqIdx++)
-        ret.push_back(JSONRPCExecOne(vReq[reqIdx]));
-
-    return write_string(Value(ret), false) + "\n";
-}
-
-static CCriticalSection cs_THREAD_RPCHANDLER;
-
-void ThreadRPCServer3(void* parg)
-{
-    IMPLEMENT_RANDOMIZE_STACK(ThreadRPCServer3(parg));
-
-    // Make this thread recognisable as the RPC handler
-    RenameThread("bitcoin-rpchand");
-
-    {
-        LOCK(cs_THREAD_RPCHANDLER);
-        vnThreadsRunning[THREAD_RPCHANDLER]++;
-    }
-    AcceptedConnection *conn = (AcceptedConnection *) parg;
-
-    bool fRun = true;
-    loop {
-        if (fShutdown || !fRun)
-        {
-            conn->close();
-            delete conn;
-            {
-                LOCK(cs_THREAD_RPCHANDLER);
-                --vnThreadsRunning[THREAD_RPCHANDLER];
-            }
-            return;
-        }
-        map<string, string> mapHeaders;
-        string strRequest;
-
-        ReadHTTP(conn->stream(), mapHeaders, strRequest);
-
-        // Check authorization
-        if (mapHeaders.count("authorization") == 0)
-        {
-            conn->stream() << HTTPReply(401, "", false) << std::flush;
-            break;
-        }
-        if (!HTTPAuthorized(mapHeaders))
-        {
-            Debug("ThreadRPCServer incorrect password attempt from %s\n", conn->peer_address_to_string().c_str());
-            /* Deter brute-forcing short passwords.
-               If this results in a DOS the user really
-               shouldn't have their RPC port exposed.*/
-            if (mapArgs["-rpcpassword"].size() < 20)
-                Sleep(250);
-
-            conn->stream() << HTTPReply(401, "", false) << std::flush;
-            break;
-        }
-        if (mapHeaders["connection"] == "close")
-            fRun = false;
-
-        JSONRequest jreq;
-        try
-        {
-            // Parse request
-            Value valRequest;
-            if (!read_string(strRequest, valRequest))
-                throw JSONRPCError(-32700, "Parse error");
-
-            string strReply;
-
-            // singleton request
-            if (valRequest.type() == obj_type) {
-                jreq.parse(valRequest);
-
-                Value result = tableRPC.execute(jreq.strMethod, jreq.params);
-
-                // Send reply
-                strReply = JSONRPCReply(result, Value::null, jreq.id);
-
-            // array of requests
-            } else if (valRequest.type() == array_type)
-                strReply = JSONRPCExecBatch(valRequest.get_array());
-            else
-                throw JSONRPCError(-32700, "Top-level object parse error");
-                
-            conn->stream() << HTTPReply(200, strReply, fRun) << std::flush;
-        }
-        catch (Object& objError)
-        {
-            ErrorReply(conn->stream(), objError, jreq.id);
-            break;
-        }
-        catch (std::exception& e)
-        {
-            ErrorReply(conn->stream(), JSONRPCError(-32700, e.what()), jreq.id);
-            break;
-        }
-    }
-
-    delete conn;
-    {
-        LOCK(cs_THREAD_RPCHANDLER);
-        vnThreadsRunning[THREAD_RPCHANDLER]--;
-    }
-}
-
-json_spirit::Value CRPCTable::execute(const std::string &strMethod, const json_spirit::Array &params) const
+json_spirit::Value CRPCTable::execute(CIface *iface, const std::string &strMethod, const json_spirit::Array &params) const
 {
     // Find method
     const CRPCCommand *pcmd = tableRPC[strMethod];

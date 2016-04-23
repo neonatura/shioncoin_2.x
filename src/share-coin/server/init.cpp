@@ -11,6 +11,7 @@
 #include "init.h"
 #include "util.h"
 #include "ui_interface.h"
+#include "block.h"
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <boost/filesystem/convenience.hpp>
@@ -294,6 +295,22 @@ std::string HelpMessage()
         "  -rpcsslciphers=<ciphers>                 " + _("Acceptable ciphers (default: TLSv1+HIGH:!SSLv2:!aNULL:!eNULL:!AH:!3DES:@STRENGTH)") + "\n";
 
     return strUsage;
+}
+
+void RegisterWallet(CWallet* pwalletIn)
+{
+    {
+        LOCK(cs_setpwalletRegistered);
+        setpwalletRegistered.insert(pwalletIn);
+    }
+}
+
+void UnregisterWallet(CWallet* pwalletIn)
+{
+    {
+        LOCK(cs_setpwalletRegistered);
+        setpwalletRegistered.erase(pwalletIn);
+    }
 }
 
 #if 0
@@ -688,6 +705,7 @@ bool AppInit2()
 
     RegisterWallet(pwalletMain);
 
+/* DEBUG: TODO: move to rpc_proto */
     CBlockIndex *pindexRescan = pindexBest;
     if (GetBoolArg("-rescan"))
         pindexRescan = pindexGenesisBlock;
@@ -858,12 +876,6 @@ fprintf(stderr, "error: unable to open load block index.\n");
 extern "C" {
 #endif
 
-#if 0
-int load_wallet(void)
-{
-  return (c_LoadWallet());
-}
-#endif
 void server_shutdown(void)
 {
 
@@ -883,6 +895,7 @@ void server_shutdown(void)
   UnregisterWallet(pwalletMain);
   delete pwalletMain;
 
+  CloseBlockChains();
 //  Shutdown2();
 }
 

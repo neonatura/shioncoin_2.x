@@ -1,9 +1,24 @@
 AUTOMAKE_OPTIONS = foreign
 
 INCLUDES = -I$(top_srcdir)/src/share-ssl-lib/$(OPENSSL_DIR)/include \
-	-I$(top_srcdir)/src/share-lib \
-	-I$(top_srcdir)/src/share-coin/leveldb \
-	-I$(top_srcdir)/src/share-coin/leveldb
+	-I$(top_srcdir)/src/share-lib
+
+blockchain_sources = \
+	$(srcdir)/blockchain/bc_block.c \
+	$(srcdir)/blockchain/bc_index.c \
+	$(srcdir)/blockchain/bc_fmap.c \
+	$(srcdir)/blockchain/bc.h \
+	$(srcdir)/blockchain/bc_block.h \
+	$(srcdir)/blockchain/bc_index.h \
+	$(srcdir)/blockchain/bc_fmap.h
+
+proto_sources = \
+	$(srcdir)/proto/coin_proto.c \
+	$(srcdir)/proto/usde_proto.cpp \
+	$(srcdir)/proto/shc_proto.cpp \
+	$(srcdir)/proto/coin_proto.h \
+	$(srcdir)/proto/usde_proto.h \
+	$(srcdir)/proto/shc_proto.h
 
 common_includes = \
 	$(top_builddir)/config.h \
@@ -20,6 +35,7 @@ common_includes = \
 	$(top_srcdir)/src/share-lib/delta/xdelta3.h \
 	$(top_srcdir)/src/share-lib/net/shnet.h \
 	unet/unet.h \
+	server/block.h \
 	server/allocators.h \
 	server/base58.h \
 	server/bignum.h \
@@ -31,9 +47,6 @@ common_includes = \
 	server/init.h \
 	server/key.h \
 	server/keystore.h \
-	server/leveldb.h \
-	server/main.h \
-	server/reward.h \
 	server/mruset.h \
 	server/netbase.h \
 	server/net.h \
@@ -58,12 +71,13 @@ common_includes = \
 	stratum/stratum_user.h \
 	stratum/stratum_task.h \
 	stratum/stratum.h \
-	shcoind_block.h \
 	shcoind_rpc.h \
 	shcoind_log.h \
 	shcoind_opt.h \
 	shcoind.h
+
 common_sources = \
+	$(blockchain_sources) \
 	unet/unet_accept.c \
 	unet/unet_bind.c \
 	unet/unet_buff.c \
@@ -79,11 +93,16 @@ common_sources = \
 	server/netbase.cpp \
 	server/version.cpp \
 	server/util.cpp \
-	shcoind_block.c \
 	shcoind_rpc.c \
 	shcoind_log.c \
 	shcoind_opt.c
 server_sources = \
+	$(proto_sources) \
+	server/usde/usde_netmsg.cpp \
+	server/usde/usde_netmsg.h \
+	server/shc/shc_netmsg.cpp \
+	server/shc/shc_netmsg.h \
+	server/block.cpp \
 	server/rpc_proto.cpp \
 	server/checkpoints.cpp \
 	server/crypter.cpp \
@@ -91,10 +110,7 @@ server_sources = \
 	server/init.cpp \
 	server/key.cpp \
 	server/keystore.cpp \
-	server/leveldb.cpp \
 	server/main.cpp \
-	server/reward.cpp \
-	server/cmd_msg.cpp \
 	server/noui.cpp \
 	server/rpcdump.cpp \
 	server/rpcnet.cpp \
@@ -131,11 +147,9 @@ shcoind_SOURCES = \
 	shcoind_daemon.h
 
 shcoind_LDADD = \
-	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
-	libleveldb.a
-shcoind_CFLAGS = -I$(srcdir)/server 
-shcoind_CXXFLAGS = \
-	-I$(srcdir)/leveldb/include -I$(srcdir)/leveldb/helpers -I$(srcdir)/leveldb -I$(srcdir)/server -DOS_LINUX
+	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a
+shcoind_CFLAGS = -I$(srcdir)/server -I$(srcdir)/blockchain -I$(srcdir)/proto -DSHCOIN_SERVER
+shcoind_CXXFLAGS = -I$(srcdir)/server -I$(srcdir)/blockchain -I$(srcdir)/proto -DOS_LINUX -DSHCOIN_SERVER
 if STATIC_LIBSHARE
 shcoind_LDADD += $(LIBSHARE)/src/share-lib/libshare.a
 shcoind_CFLAGS += -I$(LIBSHARE)/include
@@ -146,11 +160,10 @@ shcoind_LDADD += -lboost_system -lboost_filesystem -lboost_thread -ldb_cxx -ldl
 shcoin_SOURCES = $(common_includes) $(common_sources) \
 	shcoind_tool.cpp clientrpc_iface.cpp $(tool_sources)
 shcoin_LDADD = \
-	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
-	libleveldb.a
-shcoin_CFLAGS = -DSHCOIN_CLIENT -I$(srcdir)/server 
+	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a 
+shcoin_CFLAGS = -DSHCOIN_CLIENT -I$(srcdir)/server -I$(top_srcdir)/src/share-coin/blockchain -I$(srcdir)/proto
 shcoin_CXXFLAGS = -DSHCOIN_CLIENT \
-	-I$(srcdir)/leveldb/include -I$(srcdir)/leveldb/helpers -I$(srcdir)/leveldb -I$(srcdir)/server -DOS_LINUX
+	-I$(srcdir)/server -I$(top_srcdir)/src/share-coin/blockchain -I$(srcdir)/proto -DOS_LINUX
 if STATIC_LIBSHARE
 shcoin_LDADD += $(LIBSHARE)/src/share-lib/libshare.a
 shcoin_CFLAGS += -I$(LIBSHARE)/include
@@ -158,19 +171,19 @@ shcoin_CXXFLAGS += -I$(LIBSHARE)/include
 endif
 shcoin_LDADD += -lboost_system -lboost_filesystem -lboost_thread -ldb_cxx -ldl
 
-noinst_LIBRARIES = libleveldb.a
-libleveldb_a_CXXFLAGS = \
-	-I$(srcdir)/leveldb/include -I$(srcdir)/leveldb/helpers -I$(srcdir)/leveldb \
-	-DOS_LINUX -DLEVELDB_PLATFORM_POSIX
-libleveldb_a_SOURCES = \
-	leveldb/db/builder.cc leveldb/db/c.cc leveldb/db/dbformat.cc leveldb/db/db_impl.cc leveldb/db/db_iter.cc leveldb/db/filename.cc leveldb/db/log_reader.cc leveldb/db/log_writer.cc leveldb/db/memtable.cc leveldb/db/repair.cc leveldb/db/table_cache.cc leveldb/db/version_edit.cc leveldb/db/version_set.cc leveldb/db/write_batch.cc leveldb/table/block_builder.cc leveldb/table/block.cc leveldb/table/filter_block.cc leveldb/table/format.cc leveldb/table/iterator.cc leveldb/table/merger.cc leveldb/table/table_builder.cc leveldb/table/table.cc leveldb/table/two_level_iterator.cc leveldb/util/arena.cc leveldb/util/bloom.cc leveldb/util/cache.cc leveldb/util/coding.cc leveldb/util/comparator.cc leveldb/util/crc32c.cc leveldb/util/env.cc leveldb/util/env_posix.cc leveldb/util/env_win.cc leveldb/util/filter_policy.cc leveldb/util/hash.cc leveldb/util/histogram.cc leveldb/util/logging.cc leveldb/util/options.cc leveldb/util/status.cc leveldb/port/port_posix.cc leveldb/helpers/memenv/memenv.cc
-
-if HAVE_CSTDATOMIC
-libleveldb_a_CXXFLAGS += -std=c++0x
-endif
-if HAVE_ATOMIC
-libleveldb_a_CXXFLAGS += -std=c++11
-endif
+#noinst_LIBRARIES = libleveldb.a
+#libleveldb_a_CXXFLAGS = \
+#	-I$(srcdir)/leveldb/include -I$(srcdir)/leveldb/helpers -I$(srcdir)/leveldb \
+#	-DOS_LINUX -DLEVELDB_PLATFORM_POSIX
+#libleveldb_a_SOURCES = \
+#	leveldb/db/builder.cc leveldb/db/c.cc leveldb/db/dbformat.cc leveldb/db/db_impl.cc leveldb/db/db_iter.cc leveldb/db/filename.cc leveldb/db/log_reader.cc leveldb/db/log_writer.cc leveldb/db/memtable.cc leveldb/db/repair.cc leveldb/db/table_cache.cc leveldb/db/version_edit.cc leveldb/db/version_set.cc leveldb/db/write_batch.cc leveldb/table/block_builder.cc leveldb/table/block.cc leveldb/table/filter_block.cc leveldb/table/format.cc leveldb/table/iterator.cc leveldb/table/merger.cc leveldb/table/table_builder.cc leveldb/table/table.cc leveldb/table/two_level_iterator.cc leveldb/util/arena.cc leveldb/util/bloom.cc leveldb/util/cache.cc leveldb/util/coding.cc leveldb/util/comparator.cc leveldb/util/crc32c.cc leveldb/util/env.cc leveldb/util/env_posix.cc leveldb/util/env_win.cc leveldb/util/filter_policy.cc leveldb/util/hash.cc leveldb/util/histogram.cc leveldb/util/logging.cc leveldb/util/options.cc leveldb/util/status.cc leveldb/port/port_posix.cc leveldb/helpers/memenv/memenv.cc
+#
+#if HAVE_CSTDATOMIC
+#libleveldb_a_CXXFLAGS += -std=c++0x
+#endif
+#if HAVE_ATOMIC
+#libleveldb_a_CXXFLAGS += -std=c++11
+#endif
 
 if HAVE_INITD_DIR
 EXTRA_DIST = $(top_builddir)/scripts/initd/shcoind

@@ -8,6 +8,7 @@
 #include <boost/test/unit_test.hpp>
 #include <boost/foreach.hpp>
 
+#include "block.h"
 #include "main.h"
 #include "wallet.h"
 #include "net.h"
@@ -16,8 +17,8 @@
 #include <stdint.h>
 
 // Tests this internal-to-main.cpp method:
-extern bool AddOrphanTx(const CDataStream& vMsg);
-extern unsigned int LimitOrphanTxSize(unsigned int nMaxOrphans);
+extern bool usde_AddOrphanTx(const CDataStream& vMsg);
+extern unsigned int usde_LimitOrphanTxSize(unsigned int nMaxOrphans);
 extern std::map<uint256, CDataStream*> mapOrphanTransactions;
 extern std::map<uint256, std::map<uint256, CDataStream*> > mapOrphanTransactionsByPrev;
 
@@ -25,7 +26,7 @@ CService ip(uint32_t i)
 {
     struct in_addr s;
     s.s_addr = i;
-    return CService(CNetAddr(s), GetDefaultPort());
+    return CService(CNetAddr(s), USDE_COIN_DAEMON_PORT);
 }
 
 BOOST_AUTO_TEST_SUITE(DoS_tests)
@@ -165,7 +166,7 @@ BOOST_AUTO_TEST_CASE(DoS_mapOrphans)
 
         CDataStream ds(SER_DISK, CLIENT_VERSION);
         ds << tx;
-        AddOrphanTx(ds);
+        usde_AddOrphanTx(ds);
     }
 
     // ... and 50 that depend on other orphans:
@@ -184,7 +185,7 @@ BOOST_AUTO_TEST_CASE(DoS_mapOrphans)
 
         CDataStream ds(SER_DISK, CLIENT_VERSION);
         ds << tx;
-        AddOrphanTx(ds);
+        usde_AddOrphanTx(ds);
     }
 
     // This really-big orphan should be ignored:
@@ -210,15 +211,15 @@ BOOST_AUTO_TEST_CASE(DoS_mapOrphans)
 
         CDataStream ds(SER_DISK, CLIENT_VERSION);
         ds << tx;
-        BOOST_CHECK(!AddOrphanTx(ds));
+        BOOST_CHECK(!usde_AddOrphanTx(ds));
     }
 
     // Test LimitOrphanTxSize() function:
-    LimitOrphanTxSize(40);
+    usde_LimitOrphanTxSize(40);
     BOOST_CHECK(mapOrphanTransactions.size() <= 40);
-    LimitOrphanTxSize(10);
+    usde_LimitOrphanTxSize(10);
     BOOST_CHECK(mapOrphanTransactions.size() <= 10);
-    LimitOrphanTxSize(0);
+    usde_LimitOrphanTxSize(0);
     BOOST_CHECK(mapOrphanTransactions.empty());
     BOOST_CHECK(mapOrphanTransactionsByPrev.empty());
 }
@@ -248,7 +249,7 @@ BOOST_AUTO_TEST_CASE(DoS_checkSig)
 
         CDataStream ds(SER_DISK, CLIENT_VERSION);
         ds << tx;
-        AddOrphanTx(ds);
+        usde_AddOrphanTx(ds);
     }
 
     // Create a transaction that depends on orphans:
@@ -308,7 +309,7 @@ BOOST_AUTO_TEST_CASE(DoS_checkSig)
         BOOST_CHECK(VerifySignature(orphans[j], tx, j, true, SIGHASH_ALL));
     mapArgs.erase("-maxsigcachesize");
 
-    LimitOrphanTxSize(0);
+    usde_LimitOrphanTxSize(0);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

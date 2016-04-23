@@ -32,6 +32,18 @@ protected:
     unsigned int pn[WIDTH];
 public:
 
+    unsigned int *GetRaw()
+    {
+      return ((unsigned int *)pn);
+    }
+
+    void SetRaw(unsigned int *val)
+    {
+      int i;
+      for (i = 0; i < WIDTH; i++)
+        pn[i] = val[i];
+    }
+
     bool operator!() const
     {
         for (int i = 0; i < WIDTH; i++)

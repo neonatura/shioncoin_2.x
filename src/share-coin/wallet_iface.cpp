@@ -23,6 +23,7 @@
  *  @endcopyright
  */
 
+#include "block.h"
 #include "db.h"
 #include "walletdb.h"
 #include "server/rpc_proto.h"

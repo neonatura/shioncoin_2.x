@@ -23,6 +23,7 @@
  *  @endcopyright
  */
 
+#include "block.h"
 #include "main.h"
 #include "wallet.h"
 #include "db.h"
@@ -1026,6 +1027,7 @@ const char *c_getminingtransactions(unsigned int workId)
   return (miningtransactioninfo_json.c_str());
 }
 
+#if 0
 string block_save_json;
 bool WriteToShareNet(CBlock* pBlock, int nHeight)
 {
@@ -1062,6 +1064,7 @@ bool WriteToShareNet(CBlock* pBlock, int nHeight)
 
   return true;
 }
+#endif
 
 extern bool LoadExternalBlockFile(FILE* fileIn);
 const int cxx_reloadblockfile(const char *path)

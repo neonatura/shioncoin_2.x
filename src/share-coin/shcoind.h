@@ -50,6 +50,9 @@ extern int server_msgq;
  */ 
 extern shbuf_t *server_msg_buff;
 
+/* blockchain database */
+#include "blockchain/bc.h"
+
 /* shcoind network engine */
 #include "unet/unet.h"
 
@@ -66,6 +69,8 @@ extern shbuf_t *server_msg_buff;
 /**
  * @}
  */
+
+
 
 
 /**

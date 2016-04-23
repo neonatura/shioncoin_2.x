@@ -3,15 +3,13 @@ AUTOMAKE_OPTIONS = foreign
 noinst_PROGRAMS = test_shcoind
 
 test_shcoind_CFLAGS = \
-	-I$(top_srcdir)/src/share-coin
+	-I$(top_srcdir)/src/share-coin -I$(top_srcdir)/src/share-coin/proto
 test_shcoind_CXXFLAGS = \
-	-I$(top_srcdir)/src/share-coin/leveldb/include \
-	-I$(top_srcdir)/src/share-coin/leveldb/helpers \
 	-I$(top_srcdir)/src/share-coin/server \
-	-I$(top_srcdir)/src/share-coin
+	-I$(top_srcdir)/src/share-coin \
+	-I$(top_srcdir)/src/share-coin/proto
 test_shcoind_LDADD = \
-	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
-	$(top_builddir)/src/share-coin/libleveldb.a
+	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a
 if STATIC_LIBSHARE
 test_shcoind_LDADD += $(LIBSHARE)/src/share-lib/libshare.a
 test_shcoind_CFLAGS += -I$(LIBSHARE)/include
@@ -42,6 +40,9 @@ testcase_sources = \
 	wallet_tests.cpp
 
 common_sources = \
+	$(top_srcdir)/src/share-coin/proto/coin_proto.c \
+	$(top_srcdir)/src/share-coin/proto/usde_proto.cpp \
+	$(top_srcdir)/src/share-coin/proto/shc_proto.cpp \
 	$(top_srcdir)/src/share-coin/shcoind_opt.c \
 	$(top_srcdir)/src/share-coin/shcoind_log.c \
 	$(top_srcdir)/src/share-coin/unet/unet_accept.c \
@@ -55,7 +56,10 @@ common_sources = \
 	$(top_srcdir)/src/share-coin/unet/unet_timer.c \
 	$(top_srcdir)/src/share-coin/unet/unet_peer.c \
 	$(top_srcdir)/src/share-coin/unet/unet_event.c \
+	$(top_srcdir)/src/share-coin/server/usde/usde_netmsg.cpp \
+	$(top_srcdir)/src/share-coin/server/shc/shc_netmsg.cpp \
 	$(top_srcdir)/src/share-coin/server/addrman.cpp \
+	$(top_srcdir)/src/share-coin/server/block.cpp \
 	$(top_srcdir)/src/share-coin/server/rpc_proto.cpp \
 	$(top_srcdir)/src/share-coin/server/checkpoints.cpp \
 	$(top_srcdir)/src/share-coin/server/crypter.cpp \
@@ -63,9 +67,7 @@ common_sources = \
 	$(top_srcdir)/src/share-coin/server/init.cpp \
 	$(top_srcdir)/src/share-coin/server/key.cpp \
 	$(top_srcdir)/src/share-coin/server/keystore.cpp \
-	$(top_srcdir)/src/share-coin/server/leveldb.cpp \
 	$(top_srcdir)/src/share-coin/server/main.cpp \
-	$(top_srcdir)/src/share-coin/server/cmd_msg.cpp \
 	$(top_srcdir)/src/share-coin/server/netbase.cpp \
 	$(top_srcdir)/src/share-coin/server/noui.cpp \
 	$(top_srcdir)/src/share-coin/server/protocol.cpp \
@@ -83,4 +85,7 @@ common_sources = \
 	$(top_srcdir)/src/share-coin/block_iface.cpp \
 	$(top_srcdir)/src/share-coin/server_iface.cpp \
 	$(top_srcdir)/src/share-coin/shcoind_block.c \
-	$(top_srcdir)/src/share-coin/shcoind_rpc.c
+	$(top_srcdir)/src/share-coin/shcoind_rpc.c \
+	$(top_srcdir)/src/share-coin/blockchain/bc_block.c \
+	$(top_srcdir)/src/share-coin/blockchain/bc_fmap.c \
+	$(top_srcdir)/src/share-coin/blockchain/bc_index.c

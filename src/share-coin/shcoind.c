@@ -44,8 +44,10 @@ void shcoind_term(void)
   /* terminate usde server */
   usde_server_term();
 
+#if 0
   /* close sharefs partition */
   block_close();
+#endif
 
   shpeer_free(&server_peer);
   shbuf_free(&server_msg_buff);
@@ -54,7 +56,9 @@ void shcoind_term(void)
     /* terminate usde server */
     server_shutdown();
   }
+
 }
+
 void daemon_signal(int sig_num)
 {
   signal(sig_num, SIG_DFL);
@@ -185,8 +189,10 @@ int main(int argc, char *argv[])
 sprintf(buf, "info: initialized stratum server on port %d.", get_stratum_daemon_port());
 shcoind_log(buf);
 
+#if 0
   /* open app's sharefs partition */
   block_init();
+#endif
 
   /* open 'wallet.dat' */
   load_wallet();

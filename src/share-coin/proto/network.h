@@ -32,7 +32,7 @@ extern "C" {
 
 
 #define STRATUM_DAEMON_PORT 9448 /* stratum */
-#define COIN_DAEMON_PORT 54449
+//#define COIN_DAEMON_PORT 54449
 
 
 #ifdef __cplusplus

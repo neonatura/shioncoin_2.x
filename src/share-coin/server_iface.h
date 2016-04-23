@@ -26,6 +26,8 @@
 #ifndef __SERVER_IFACE_H__
 #define __SERVER_IFACE_H__
 
+
+
 #define BLKERR_BAD_SESSION 61
 #define BLKERR_INVALID_JOB 62
 #define BLKERR_DUPLICATE_BLOCK 63
@@ -127,7 +129,6 @@ void AddAddress(const char *hostname, int port);
 
 int GetRandomAddress(char *hostname, int *port_p);
 
-void MessageHandler(void);
 
 void set_shutdown_timer(void);
 

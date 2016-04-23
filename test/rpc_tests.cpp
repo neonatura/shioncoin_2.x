@@ -1,8 +1,11 @@
 #include <boost/test/unit_test.hpp>
 #include <boost/foreach.hpp>
 
+#define SHCOIN_SERVER
+
 #include "base58.h"
 #include "util.h"
+#include "coin_proto.h"
 #include "rpc_proto.h"
 
 using namespace std;

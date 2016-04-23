@@ -11,12 +11,14 @@
 // Reward: 20 coins per block, halved every 3 years (4,730,400 blocks)
 // 200 million total coins
 
+#include "shcoind.h"
 #include "checkpoints.h"
 #include "db.h"
 #include "net.h"
 #include "init.h"
 #include "ui_interface.h"
-#include "reward.h"
+#include "block.h"
+#include "usde/usde_netmsg.h"
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
@@ -703,18 +705,128 @@ bool GetTransaction(const uint256 &hash, CTransaction &tx, uint256 &hashBlock)
 // CBlock and CBlockIndex
 //
 
+
+
+bool CBlock::ReadBlock(unsigned int nHeight)
+{
+  CDataStream sBlock(SER_DISK, CLIENT_VERSION);
+  size_t sBlockLen;
+  unsigned char *sBlockData;
+  bc_t *bc;
+  int err;
+
+  bc = GetBlockChain("usde_block");
+  if (!bc)
+    return (false);
+
+  err = bc_get(bc, nHeight, &sBlockData, &sBlockLen);
+  if (err) {
+fprintf(stderr, "DEBUG: CBlock::ReadFromDisk: bc_get error (pos %d): %s\n", nHeight, sherrstr(err)); 
+    return (false);
+  }
+
+  /* serialize binary data into block */
+  sBlock.write((const char *)sBlockData, sBlockLen);
+  sBlock >> *this;
+  free(sBlockData);
+
+    uint256 cur_hash = GetHash();
+{
+uint256 t_hash;
+bc_hash_t b_hash;
+memcpy(b_hash, cur_hash.GetRaw(), sizeof(bc_hash_t));
+t_hash.SetRaw(b_hash);
+if (!bc_hash_cmp(t_hash.GetRaw(), cur_hash.GetRaw())) {
+fprintf(stderr, "DEBUG: ReadBlock: error comparing self-hash ('%s' / '%s')\n", cur_hash.GetHex().c_str(), t_hash.GetHex().c_str());
+}
+}
+  {
+    uint256 db_hash;
+    bc_hash_t ret_hash;
+    err = bc_get_hash(bc, nHeight, ret_hash);
+    if (err) {
+fprintf(stderr, "DEBUG: CBlock::ReadBlock: bc_get_hash err %d\n", err); 
+      return (false);
+    }
+    db_hash.SetRaw((unsigned int *)ret_hash);
+
+    if (!bc_hash_cmp(db_hash.GetRaw(), cur_hash.GetRaw())) {
+fprintf(stderr, "DEBUG: CBlock::ReadBlock: hash '%s' from loaded block at pos %d has invalid hash of '%s'\n", db_hash.GetHex().c_str(), nHeight, cur_hash.GetHex().c_str());
+print();
+        SetNull();
+
+  return (false);
+    }
+  }
+
+fprintf(stderr, "DEBUG: CBlock::ReadBlock: GET retrieved pos (%d): hash '%s'\n", nHeight, GetHash().GetHex().c_str());
+
+  return (true);
+}
+
+bool CBlock::ReadFromDisk(unsigned int nFile, unsigned int nBlockPos, bool fReadTransactions)
+{
+  SetNull();
+  
+
+fprintf(stderr, "DEBUG: WARNING: using C++ db\n");
+  // Open history file to read
+  CAutoFile filein = CAutoFile(OpenBlockFile(nFile, nBlockPos, "rb"), SER_DISK, CLIENT_VERSION);
+  if (!filein)
+    return error(SHERR_IO, "CBlock::ReadFromDisk() : OpenBlockFile failed");
+  if (!fReadTransactions)
+    filein.nType |= SER_BLOCKHEADERONLY;
+
+  // Read block
+  try {
+    filein >> *this;
+  }
+  catch (std::exception &e) {
+    return error(SHERR_IO, "%s() : deserialize or I/O error", __PRETTY_FUNCTION__);
+  }
+
+  // Check the header
+  // if (!CheckProofOfWork(GetPoWHash(), nBits)) return error("CBlock::ReadFromDisk() : errors in block header");
+
+  /* test sharenet */
+  //        fprintf(stderr, "DEBUG: loaded block #%d: %s\n", nBlockPos, block_load(nBlockPos));
+
+
+
+  return true;
+}
+
 bool CBlock::ReadFromDisk(const CBlockIndex* pindex, bool fReadTransactions)
 {
-    if (!fReadTransactions)
-    {
-        *this = pindex->GetBlockHeader();
-        return true;
-    }
-    if (!ReadFromDisk(pindex->nFile, pindex->nBlockPos, fReadTransactions))
-        return false;
-    if (GetHash() != pindex->GetBlockHash())
-        return error(SHERR_INVAL, "CBlock::ReadFromDisk() : GetHash() doesn't match index");
+  bool ok;
+
+  if (!fReadTransactions)
+  {
+    *this = pindex->GetBlockHeader();
     return true;
+  }
+
+  ok = ReadBlock(pindex->nHeight);
+  if (ok) {
+    if (GetHash() != pindex->GetBlockHash())
+      ok = false;
+    else
+      ok = CheckBlock();
+    if (!ok) fprintf(stderr, "DEBUG: ReadBlock: CheckBlock failure\n");
+  }
+
+  if (!ok) {
+    if (!ReadFromDisk(pindex->nFile, pindex->nBlockPos, true))
+      return false;
+
+/* update blockchain */
+    WriteBlock(pindex->nHeight);
+  }
+
+  if (GetHash() != pindex->GetBlockHash())
+    return error(SHERR_INVAL, "CBlock::ReadFromDisk() : GetHash() doesn't match index");
+
+  return true;
 }
 
 uint256 GetOrphanRoot(const CBlock* pblock)
@@ -1406,8 +1518,10 @@ bool CBlock::DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex)
 bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)
 {
     // Check it again in case a previous version let a bad block in
-    if (!CheckBlock())
+    if (!CheckBlock()) {
+fprintf(stderr, "DEBUG: ConnectBlock: CheckBlock failure\n");
         return false;
+}
 
     // Do not allow blocks that contain transactions which 'overwrite' older transactions,
     // unless those are already completely spent.
@@ -1439,8 +1553,10 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)
             CTxIndex txindexOld;
             if (txdb.ReadTxIndex(hashTx, txindexOld)) {
                 BOOST_FOREACH(CDiskTxPos &pos, txindexOld.vSpent)
-                    if (pos.IsNull())
+                    if (pos.IsNull()) {
+fprintf(stderr, "DEBUG: ConnectBlock: vtx spent mismatch\n");
                         return false;
+}
             }
         }
 
@@ -1455,8 +1571,10 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)
         if (!tx.IsCoinBase())
         {
             bool fInvalid;
-            if (!tx.FetchInputs(txdb, mapQueuedChanges, true, false, mapInputs, fInvalid))
+            if (!tx.FetchInputs(txdb, mapQueuedChanges, true, false, mapInputs, fInvalid)) {
+fprintf(stderr, "DEBUG: ConnectBlock: unable to fetch tx inputs\n");
                 return false;
+            }
 
             if (fStrictPayToScriptHash)
             {
@@ -1470,8 +1588,10 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)
 
             nFees += tx.GetValueIn(mapInputs)-tx.GetValueOut();
 
-            if (!tx.ConnectInputs(mapInputs, mapQueuedChanges, posThisTx, pindex, true, false, fStrictPayToScriptHash))
+            if (!tx.ConnectInputs(mapInputs, mapQueuedChanges, posThisTx, pindex, true, false, fStrictPayToScriptHash)) {
+fprintf(stderr, "DEBUG: ConnectBlock: unable to connect tx input\n");
                 return false;
+}
         }
 
         mapQueuedChanges[hashTx] = CTxIndex(posThisTx, tx.vout.size());
@@ -1485,8 +1605,10 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)
     }
 
     /* Ensure that the expected coinbase amount dose not exceed expectations. */
-    if (vtx[0].GetValueOut() > GetBlockValue(pindex->nHeight, nFees))
+    if (vtx[0].GetValueOut() > GetBlockValue(pindex->nHeight, nFees)) {
+fprintf(stderr, "DEBUG: ConnectBlock: expected coinbase value exceeded expectations (%d > %d).\n", vtx[0].GetValueOut(), GetBlockValue(pindex->nHeight, nFees));
         return false;
+    }
 
     // Update block index on disk without changing it in memory.
     // The memory index structure will be changed after the db commits.
@@ -1500,7 +1622,7 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)
 
     // Watch for transactions paying to me
     BOOST_FOREACH(CTransaction& tx, vtx)
-        SyncWithWallets(tx, this, true);
+        usde_SyncWithWallets(tx, this, true);
 
     return true;
 }
@@ -1717,12 +1839,12 @@ bool CBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
         const CBlockIndex* pindex = pindexBest;
         for (int i = 0; i < 100 && pindex != NULL; i++)
         {
-            if (pindex->nVersion > CBlock::CURRENT_VERSION)
+            if (pindex->nVersion > USDEBlock::CURRENT_VERSION)
                 ++nUpgraded;
             pindex = pindex->pprev;
         }
         if (nUpgraded > 0)
-          Debug("SetBestChain: %d of last 100 blocks above version %d\n", nUpgraded, CBlock::CURRENT_VERSION);
+          Debug("SetBestChain: %d of last 100 blocks above version %d\n", nUpgraded, USDEBlock::CURRENT_VERSION);
 	//        if (nUpgraded > 100/2)
             // strMiscWarning is read by GetWarnings(), called by Qt and the JSON-RPC code to warn the user:
 	//            strMiscWarning = _("Warning: this version is obsolete, upgrade required");
@@ -1856,12 +1978,81 @@ bool CBlock::CheckBlock() const
     return true;
 }
 
+
+
+bool CBlock::WriteBlock(int nHeight)
+{
+  CDataStream sBlock(SER_DISK, CLIENT_VERSION);
+  bc_t *bc = GetBlockChain("usde_block");
+  long sBlockLen;
+  char *sBlockData;
+  int n_height;
+
+#if 0
+  if (bc_idx_next(bc) != nHeight) {
+fprintf(stderr, "DEBUG: CBlock::WriteBlock: SKIP: next index is %d, block write is for pos %d\n", bc_idx_next(bc), nHeight);
+  return (false);
+  }
+#endif
+
+  uint256 hash = GetHash();
+
+  /* serialize block into binary data */
+  sBlock << *this;
+  sBlockLen = sBlock.size();
+  sBlockData = (char *)calloc(sBlockLen, sizeof(char));
+  if (!sBlockData) {
+    fprintf(stderr, "DEBUG: error allocating %d bytes for block data\n", sBlockLen);
+    return (false);
+  }
+  sBlock.read(sBlockData, sBlockLen);
+  n_height = bc_write(bc, nHeight, hash.GetRaw(), sBlockData, sBlockLen);
+  if (n_height < 0) {
+fprintf(stderr, "DEBUG: CBlock::WriteBlock: bc_append err %d\n", n_height);
+    return (false);
+  }
+  free(sBlockData);
+
+fprintf(stderr, "DEBUG: WriteBlock: ACCEPT: nHeight(%d) hash(%s)\n", nHeight, hash.GetHex().c_str());
+
+{
+int err;
+  bc_hash_t ret_hash;
+  err = bc_get_hash(bc, nHeight, ret_hash);
+  if (err) {
+    fprintf(stderr, "DEBUG: CBlock::WriteBlock: bc_get_hash err %d @ pos %d\n", err, nHeight); 
+  } else {
+    uint256 t_hash;
+    t_hash.SetRaw((unsigned int *)ret_hash);
+    if (!bc_hash_cmp(hash.GetRaw(), t_hash.GetRaw())) {
+    fprintf(stderr, "DEBUG: CBlock::WriteBlock: hash mismatch (sys: '%s', disk: '%s')\n", hash.GetHex().c_str(), t_hash.GetHex().c_str());
+    }
+  }
+
+}
+
+  return (true);
+}
+
 bool CBlock::AcceptBlock()
 {
-shtime_t ts;
-  // Check for duplicate
+  bc_t *bc = GetBlockChain("usde_block");
+  shtime_t ts;
+  int bi_dup;
+  int b_dup;
+
+  bi_dup = b_dup = FALSE;
+
   uint256 hash = GetHash();
+fprintf(stderr, "DEBUG: ACCEPT_BLOCK: '%s'\n", GetHash().GetHex().c_str());
   if (mapBlockIndex.count(hash)) {
+    bi_dup = TRUE;
+  }
+  if (0 == bc_find(bc, hash.GetRaw(), NULL)) {
+    b_dup = TRUE;
+  }
+
+  if (bi_dup && b_dup) {
     return error(SHERR_INVAL, "AcceptBlock() : block already in mapBlockIndex");
   }
 
@@ -1876,6 +2067,12 @@ shtime_t ts;
   if (nBits != GetNextWorkRequired(pindexPrev, this)) {
     return DoS(100, error(SHERR_INVAL, "AcceptBlock() : incorrect proof of work"));
   }
+
+  if (!CheckDiskSpace(::GetSerializeSize(*this, SER_DISK, CLIENT_VERSION))) {
+    return error(SHERR_IO, "AcceptBlock() : out of disk space");
+  }
+
+
 
   // Check timestamp against prev
   if (GetBlockTime() <= pindexPrev->GetMedianTimePast()) {
@@ -1895,6 +2092,16 @@ shtime_t ts;
   }
   timing_term("Checkpoints::CheckBlock", &ts);
 
+  // Check for duplicate
+  {
+    if (!b_dup) {
+      WriteBlock(nHeight);
+    }
+  }
+  if (bi_dup) {
+    return error(SHERR_INVAL, "AcceptBlock() : block already in mapBlockIndex");
+  }
+
 #if 0
 {
 CDataStream sBlock(SER_DISK, CLIENT_VERSION);
@@ -1910,9 +2117,6 @@ free(sBlockData);
 
 
   // Write block to history file
-  if (!CheckDiskSpace(::GetSerializeSize(*this, SER_DISK, CLIENT_VERSION))) {
-    return error(SHERR_IO, "AcceptBlock() : out of disk space");
-  }
   unsigned int nFile = -1;
   unsigned int nBlockPos = 0;
   timing_init("Block::WriteToDisk", &ts);
@@ -3801,6 +4005,55 @@ bool CheckWork(CBlock* pblock, CWallet& wallet, CReserveKey& reservekey)
 }
 
 
+#if 0
+void test_bin_write(CBlock block)
+{
+/*
+  int nVersion;
+  uint256 hashPrevBlock;
+  uint256 hashMerkleRoot;
+  unsigned int nTime;
+  unsigned int nBits;
+  unsigned int nNonce;
+  std::vector<CTransaction> vtx;
+*/
+
+fprintf(stderr, "DEBUG: test_bin_write\n");
+uint256 hash = Hash(BEGIN(block.nVersion), END(block.nNonce));
+FILE *fl;
+void *h_data = (void *)&hash;
+void *b_data = (void *)&block.nVersion;
+fl = fopen("test.bin", "wb");
+fwrite(h_data, 1, 32, fl); 
+fwrite(b_data, 1, 84, fl);
+
+  BOOST_FOREACH(CTransaction& tx, block.vtx) {
+    void *tx_data = (void *)&tx.nVersion;
+fwrite(tx_data, 1, 4, fl);
+/*
+    static const int CURRENT_VERSION=1;
+    int nVersion;
+    std::vector<CTxIn> vin;
+    std::vector<CTxOut> vout;
+*/
+  }
+
+  
+fclose(fl);
+
+uint256 t_hash;
+char t_buf[256];
+int t_ver;
+fl = fopen("test.bin", "rb");
+fread((void *)&t_hash, 1, 32, fl);
+fread(&t_ver, 1, 4, fl);
+fclose(fl);
+printf ("hash '%s'\n", hash.GetHex().c_str());
+printf ("t_hash '%s'\n", t_hash.GetHex().c_str());
+printf ("ver %d\n", block.nVersion);
+printf ("t_ver %d\n", t_ver);
+}
+#endif
 
 
 

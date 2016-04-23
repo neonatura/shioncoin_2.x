@@ -23,12 +23,14 @@
  *  @endcopyright
  */  
 
+#include "server/block.h"
 #include "server/main.h"
 #include "server/util.h"
 #include "server/rpc_proto.h"
 #include "server/ui_interface.h"
 #include "clientrpc_iface.h"
 #include "server/netbase.h"
+#include "proto/coin_proto.h"
 
 #include <boost/asio.hpp>
 #include <boost/asio/ip/v6_only.hpp>
@@ -215,16 +217,20 @@ string HTTPPost(const string& strMsg, const map<string,string>& mapRequestHeader
   return s.str();
 }
 
-string JSONRPCRequest(const string& strMethod, const Array& params, const Value& id)
+string JSONRPCRequest(const char *iface, const string& strMethod, const Array& params, const Value& id)
 {
   Object request;
+  string iface_name(iface);
+
   request.push_back(Pair("method", strMethod));
   request.push_back(Pair("params", params));
   request.push_back(Pair("id", id));
+  request.push_back(Pair("iface", iface_name));
+
   return write_string(Value(request), false) + "\n";
 }
 
-Object CallRPC(const string& strMethod, const Array& params)
+Object CallRPC(const char *iface, const string& strMethod, const Array& params)
 {
   if (mapArgs["-rpcuser"] == "" && mapArgs["-rpcpassword"] == "")
     throw runtime_error(strprintf(
@@ -249,7 +255,7 @@ Object CallRPC(const string& strMethod, const Array& params)
   mapRequestHeaders["Authorization"] = string("Basic ") + strUserPass64;
 
   // Send request
-  string strRequest = JSONRPCRequest(strMethod, params, 1);
+  string strRequest = JSONRPCRequest(iface, strMethod, params, 1);
   string strPost = HTTPPost(strRequest, mapRequestHeaders);
   stream << strPost << std::flush;
 
@@ -345,7 +351,23 @@ Array RPCConvertValues(const std::string &strMethod, const std::vector<std::stri
 int CommandLineRPC(int argc, char *argv[])
 {
   string strPrint;
+  const char *iface;
+  char prog_name[4096];
+  char *ptr;
   int nRet = 0;
+
+  iface = NULL;
+  memset(prog_name, 0, sizeof(prog_name));
+  strncpy(prog_name, argv[0], sizeof(prog_name));
+  ptr = strstr(prog_name, ".");
+  if (ptr) {
+    ptr++;
+    strtok(ptr, ".");
+    iface = ptr;
+  }
+  if (!iface)
+    iface = "usde";
+
   try
   {
     // Skip switches
@@ -365,7 +387,7 @@ int CommandLineRPC(int argc, char *argv[])
     Array params = RPCConvertValues(strMethod, strParams);
 
     // Execute
-    Object reply = CallRPC(strMethod, params);
+    Object reply = CallRPC(iface, strMethod, params);
 
     // Parse reply
     const Value& result = find_value(reply, "result");

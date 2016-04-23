@@ -32,6 +32,7 @@
 #include "server/rpc_proto.h"
 //#include "shcoind_rpc.h"
 #include "shcoind.h"
+#include "usde/usde_netmsg.h"
 
 #ifdef WIN32
 #include <string.h>
@@ -79,9 +80,9 @@ static bool vfLimited[NET_MAX] = {};
 static CNode* pnodeLocalHost = NULL;
 uint64 nLocalHostNonce = 0;
 static std::vector<SOCKET> vhListenSocket;
-#if 0
-CAddrMan addrman;
-#endif
+
+
+vector<CNode*> vServerNodes[MAX_COIN_IFACE];
 
 vector<CNode*> vNodes;
 CCriticalSection cs_vNodes;
@@ -107,7 +108,7 @@ void AddOneShot(string strDest)
 
 unsigned short GetListenPort()
 {
-    return (unsigned short)(GetArg("-port", GetDefaultPort()));
+    return (unsigned short)(GetArg("-port", USDE_COIN_DAEMON_PORT));
 }
 
 void CNode::PushGetBlocks(CBlockIndex* pindexBegin, uint256 hashEnd)
@@ -537,7 +538,7 @@ CNode* ConnectNode(CAddress addrConnect, const char *pszDest, int64 nTimeout)
       memset(&in, 0, sizeof(sockaddr_in));
       in.sin_family = AF_INET;
       memcpy(&in.sin_addr, h->h_addr, sizeof(struct in_addr));
-      in.sin_port = htons(GetDefaultPort());
+      in.sin_port = htons(USDE_COIN_DAEMON_PORT);
       ok = true;
     }
   } else {
@@ -551,7 +552,7 @@ CNode* ConnectNode(CAddress addrConnect, const char *pszDest, int64 nTimeout)
   if (!ok)
     return (NULL);
 
-  int err = unet_connect(UNET_COIN, (struct sockaddr *)&in, &hSocket);
+  int err = unet_connect(UNET_USDE, (struct sockaddr *)&in, &hSocket);
   if (err) {
     fprintf(stderr, "failed connection %s lastseen=%.1fhrs\n",
         pszDest ? pszDest : addrConnect.ToString().c_str(),
@@ -635,7 +636,7 @@ void CNode::PushVersion()
   {
     char buf[256];
     sprintf(buf, "PushVersion: version %d, blocks=%d, us=%s, them=%s, peer=%s", PROTOCOL_VERSION, nBestHeight, addrMe.ToString().c_str(), addrYou.ToString().c_str(), addr.ToString().c_str());
-    unet_log(UNET_COIN, buf);
+    unet_log(UNET_USDE, buf);
   }
 
   PushMessage("version", PROTOCOL_VERSION, nLocalServices, nTime, addrYou, addrMe,
@@ -1226,6 +1227,51 @@ void usde_server_accept(int hSocket, struct sockaddr *net_addr)
   shared_addr_submit(shaddr_print(net_addr));
 }
 
+void MessageHandler(CIface *iface)
+{
+
+  vector<CNode*> vNodesCopy;
+  {
+    LOCK(cs_vNodes);
+    vNodesCopy = vNodes;
+    BOOST_FOREACH(CNode* pnode, vNodesCopy)
+      pnode->AddRef();
+  }
+
+  // Poll the connected nodes for messages
+  CNode* pnodeTrickle = NULL;
+  if (!vNodesCopy.empty())
+    pnodeTrickle = vNodesCopy[GetRand(vNodesCopy.size())];
+  BOOST_FOREACH(CNode* pnode, vNodesCopy)
+  {
+    // Receive messages
+    {
+      TRY_LOCK(pnode->cs_vRecv, lockRecv);
+      if (lockRecv)
+        usde_ProcessMessages(iface, pnode);
+    }
+    if (fShutdown)
+      return;
+
+    // Send messages
+    {
+      TRY_LOCK(pnode->cs_vSend, lockSend);
+      if (lockSend)
+        usde_SendMessages(iface, pnode, pnode == pnodeTrickle);
+    }
+    if (fShutdown)
+      return;
+  }
+
+  {
+    LOCK(cs_vNodes);
+    BOOST_FOREACH(CNode* pnode, vNodesCopy)
+      pnode->Release();
+  }
+
+
+}
+
 void usde_server_timer(void)
 {
 
@@ -1287,37 +1333,32 @@ void usde_server_timer(void)
     }
   }
 
-  MessageHandler();
+  MessageHandler(NULL);
 
 }
 
-int get_usde_server_port(void)
-{
-/* todo: config */
-  return (COIN_DAEMON_PORT);
-}
 
 int usde_server_init(void)
 {
   int err;
 
-  err = unet_bind(UNET_COIN, get_usde_server_port());
+  err = unet_bind(UNET_USDE, USDE_COIN_DAEMON_PORT);
   if (err)
     return (err);
 
-  unet_timer_set(UNET_COIN, usde_server_timer); /* x10/s */
-  unet_connop_set(UNET_COIN, usde_server_accept);
-  unet_disconnop_set(UNET_COIN, usde_server_close);
+  unet_timer_set(UNET_USDE, usde_server_timer); /* x10/s */
+  unet_connop_set(UNET_USDE, usde_server_accept);
+  unet_disconnop_set(UNET_USDE, usde_server_close);
 
   /* automatically connect to peers of 'usde' service. */
-  unet_bind_flag_set(UNET_COIN, UNETF_PEER_SCAN); 
+  unet_bind_flag_set(UNET_USDE, UNETF_PEER_SCAN); 
 
   return (0);
 }
 
 void usde_server_term(void)
 {
-  unet_unbind(UNET_COIN);
+  unet_unbind(UNET_USDE);
 }
 
 
@@ -1678,50 +1719,6 @@ void ThreadMessageHandler2(void* parg)
 }
 #endif
 
-void MessageHandler(void)
-{
-
-  vector<CNode*> vNodesCopy;
-  {
-    LOCK(cs_vNodes);
-    vNodesCopy = vNodes;
-    BOOST_FOREACH(CNode* pnode, vNodesCopy)
-      pnode->AddRef();
-  }
-
-  // Poll the connected nodes for messages
-  CNode* pnodeTrickle = NULL;
-  if (!vNodesCopy.empty())
-    pnodeTrickle = vNodesCopy[GetRand(vNodesCopy.size())];
-  BOOST_FOREACH(CNode* pnode, vNodesCopy)
-  {
-    // Receive messages
-    {
-      TRY_LOCK(pnode->cs_vRecv, lockRecv);
-      if (lockRecv)
-        ProcessMessages(pnode);
-    }
-    if (fShutdown)
-      return;
-
-    // Send messages
-    {
-      TRY_LOCK(pnode->cs_vSend, lockSend);
-      if (lockSend)
-        SendMessages(pnode, pnode == pnodeTrickle);
-    }
-    if (fShutdown)
-      return;
-  }
-
-  {
-    LOCK(cs_vNodes);
-    BOOST_FOREACH(CNode* pnode, vNodesCopy)
-      pnode->Release();
-  }
-
-
-}
 
 
 
@@ -2040,7 +2037,7 @@ void start_node_peer(const char *host, int port)
     return; /* already known */
 
   if (!port)
-    port = GetDefaultPort();
+    port = USDE_COIN_DAEMON_PORT;
 
   if (Lookup(host, vserv, port, false)) {
     OpenNetworkConnection(CAddress(vserv));
@@ -2084,7 +2081,7 @@ void AddAddress(const char *hostname, int port)
 
   sprintf(addr_str, "%s %d", hostname, port); 
   peer = shpeer_init("usde", addr_str);
-  uevent_new_peer(UNET_COIN, peer);
+  uevent_new_peer(UNET_USDE, peer);
 }
 
 int GetRandomAddress(char *hostname, int *port_p)
@@ -2094,7 +2091,7 @@ int GetRandomAddress(char *hostname, int *port_p)
   char buf[256];
   int err;
 
-  sprintf(buf, "127.0.0.1 %d", GetDefaultPort());
+  sprintf(buf, "127.0.0.1 %d", USDE_COIN_DAEMON_PORT);
   self_peer = shpeer_init("usde", buf);
   err = shnet_track_scan(self_peer, &peer);
   shpeer_free(&self_peer);
@@ -2124,7 +2121,7 @@ vector <CAddress> GetAddresses(void)
   int port;
   int idx;
 
-  sprintf(buf, "127.0.0.1 %d", GetDefaultPort());
+  sprintf(buf, "127.0.0.1 %d", USDE_COIN_DAEMON_PORT);
   peer = shpeer_init("usde", buf);
   addr_list = shnet_track_list(peer, 640);
   shpeer_free(&peer);

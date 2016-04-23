@@ -18,11 +18,6 @@
 #include "../proto.h"
 #include "uint256.h"
 
-extern bool fTestNet;
-static inline unsigned short GetDefaultPort(const bool testnet = fTestNet)
-{
-    return testnet ? 44449 : COIN_DAEMON_PORT;
-}
 
 
 extern unsigned char pchMessageStart[4];

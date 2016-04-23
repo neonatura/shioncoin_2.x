@@ -6,13 +6,13 @@
 // Copyright (c) 2011-2012 Litecoin Developers
 // Copyright (c) 2013 usde Developers
 
+#include "block.h"
 #include "main.h"
 #include "util.h"
 #include "sync.h"
 #include "strlcpy.h"
 #include "version.h"
 #include "ui_interface.h"
-//#include "shcoind.h"
 
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
