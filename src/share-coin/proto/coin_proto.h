@@ -88,6 +88,9 @@ typedef struct coin_iface_t
   coin_f op_account_new;
   coin_f op_account_move;
   coin_f op_account_info;
+
+  bc_t *bc_block;
+  bc_t *bc_tx;
 } coin_iface_t;
 
 typedef struct coin_iface_t CIface;

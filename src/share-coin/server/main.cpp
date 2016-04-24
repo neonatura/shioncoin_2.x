@@ -268,7 +268,7 @@ int CMerkleTx::SetMerkleBranch(const CBlock* pblock)
     }
     else
     {
-      CBlock blockTmp;
+      USDEBlock blockTmp;
       if (pblock == NULL)
       {
         // Load the block this tx is in
@@ -652,7 +652,7 @@ bool CWalletTx::AcceptWalletTransaction()
 int CTxIndex::GetDepthInMainChain() const
 {
     // Read block header
-    CBlock block;
+    USDEBlock block;
     if (!block.ReadFromDisk(pos.nFile, pos.nBlockPos, false))
         return 0;
     // Find the block in the index
@@ -682,7 +682,7 @@ bool GetTransaction(const uint256 &hash, CTransaction &tx, uint256 &hashBlock)
         CTxIndex txindex;
         if (tx.ReadFromDisk(txdb, COutPoint(hash, 0), txindex))
         {
-            CBlock block;
+            USDEBlock block;
             if (block.ReadFromDisk(txindex.pos.nFile, txindex.pos.nBlockPos, false))
                 hashBlock = block.GetHash();
             txdb.Close();
@@ -715,7 +715,7 @@ bool CBlock::ReadBlock(unsigned int nHeight)
   bc_t *bc;
   int err;
 
-  bc = GetBlockChain("usde_block");
+  bc = GetBlockChain(GetCoinByIndex(ifaceIndex));
   if (!bc)
     return (false);
 
@@ -1663,7 +1663,7 @@ bool static Reorganize(CTxDB& txdb, CBlockIndex* pindexNew)
     vector<CTransaction> vResurrect;
     BOOST_FOREACH(CBlockIndex* pindex, vDisconnect)
     {
-        CBlock block;
+        USDEBlock block;
         if (!block.ReadFromDisk(pindex))
             return error(SHERR_INVAL, "Reorganize() : ReadFromDisk for disconnect failed");
         if (!block.DisconnectBlock(txdb, pindex))
@@ -1680,7 +1680,7 @@ bool static Reorganize(CTxDB& txdb, CBlockIndex* pindexNew)
     for (unsigned int i = 0; i < vConnect.size(); i++)
     {
         CBlockIndex* pindex = vConnect[i];
-        CBlock block;
+        USDEBlock block;
         if (!block.ReadFromDisk(pindex))
             return error(SHERR_INVAL, "Reorganize() : ReadFromDisk for connect failed");
         if (!block.ConnectBlock(txdb, pindex))
@@ -1798,7 +1798,7 @@ bool CBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
         // Connect futher blocks
         BOOST_REVERSE_FOREACH(CBlockIndex *pindex, vpindexSecondary)
         {
-            CBlock block;
+            USDEBlock block;
             if (!block.ReadFromDisk(pindex))
             {
                 error(SHERR_IO, "SetBestChain() : ReadFromDisk failed\n");
@@ -1983,7 +1983,7 @@ bool CBlock::CheckBlock() const
 bool CBlock::WriteBlock(int nHeight)
 {
   CDataStream sBlock(SER_DISK, CLIENT_VERSION);
-  bc_t *bc = GetBlockChain("usde_block");
+  bc_t *bc = GetBlockChain(GetCoinByIndex(ifaceIndex));
   long sBlockLen;
   char *sBlockData;
   int n_height;
@@ -2036,7 +2036,7 @@ int err;
 
 bool CBlock::AcceptBlock()
 {
-  bc_t *bc = GetBlockChain("usde_block");
+  bc_t *bc = GetBlockChain(GetCoinByIndex(ifaceIndex));
   shtime_t ts;
   int bi_dup;
   int b_dup;
@@ -2189,7 +2189,8 @@ bool ProcessBlock(CNode* pfrom, CBlock* pblock)
   if (!mapBlockIndex.count(pblock->hashPrevBlock))
   {
     Debug("ProcessBlock: ORPHAN BLOCK, prev=%s\n", pblock->hashPrevBlock.ToString().substr(0,20).c_str());
-    CBlock* pblock2 = new CBlock(*pblock);
+    //CBlock* pblock2 = new CBlock(*pblock);
+    USDEBlock* pblock2 = new USDEBlock(*pblock);
     mapOrphanBlocks.insert(make_pair(hash, pblock2));
     mapOrphanBlocksByPrev.insert(make_pair(pblock2->hashPrevBlock, pblock2));
 
@@ -2330,7 +2331,7 @@ bool LoadBlockIndex(bool fAllowNew)
         txNew.vin[0].scriptSig = CScript() << 486604799 << CBigNum(4) << vector<unsigned char>((const unsigned char*)pszTimestamp, (const unsigned char*)pszTimestamp + strlen(pszTimestamp));
         txNew.vout[0].nValue = 50 * COIN;
         txNew.vout[0].scriptPubKey = CScript() << ParseHex("04a5814813115273a109cff99907ba4a05d951873dae7acb6c973d0c9e7c88911a3dbc9aa600deac241b91707e7b4ffb30ad91c8e56e695a1ddf318592988afe0a") << OP_CHECKSIG;
-        CBlock block;
+        USDEBlock block;
         block.vtx.push_back(txNew);
         block.hashPrevBlock = 0;
         block.hashMerkleRoot = block.BuildMerkleTree();
@@ -2443,7 +2444,7 @@ void PrintBlockTree()
             printf("| ");
 
         // print item
-        CBlock block;
+        USDEBlock block;
         block.ReadFromDisk(pindex);
         printf("%d (%u,%u) %s  %s  tx %d",
             pindex->nHeight,
@@ -2511,7 +2512,7 @@ bool LoadExternalBlockFile(FILE* fileIn)
                 blkdat >> nSize;
                 if (nSize > 0 && nSize <= MAX_BLOCK_SIZE)
                 {
-                    CBlock block;
+                    USDEBlock block;
                     blkdat >> block;
                     if (ProcessBlock(NULL,&block))
                     {
@@ -3008,7 +3009,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
                 map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(inv.hash);
                 if (mi != mapBlockIndex.end())
                 {
-                    CBlock block;
+                    USDEBlock block;
                     block.ReadFromDisk((*mi).second);
                     pfrom->PushMessage("block", block);
 
@@ -3183,7 +3184,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
 
     else if (strCommand == "block")
     {
-        CBlock block;
+        USDEBlock block;
         vRecv >> block;
 
         printf("received block %s\n", block.GetHash().ToString().substr(0,20).c_str());
@@ -3723,7 +3724,8 @@ CBlock* CreateNewBlock(CReserveKey& reservekey)
     CBlockIndex* pindexPrev = pindexBest;
 
     // Create new block
-    auto_ptr<CBlock> pblock(new CBlock());
+    //auto_ptr<CBlock> pblock(new CBlock());
+    auto_ptr<CBlock> pblock(new USDEBlock());
     if (!pblock.get())
         return NULL;
 

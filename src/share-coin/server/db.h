@@ -321,7 +321,7 @@ public:
     bool LoadBlockIndex();
 private:
     bool LoadBlockIndexGuts();
-    bool InitBlockChainIndex();
+    bool InitBlockChainIndex(CIface *iface);
 };
 
 

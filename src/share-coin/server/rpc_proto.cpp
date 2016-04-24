@@ -427,6 +427,309 @@ Value getnetworkhashps(const Array& params, bool fHelp)
     return GetNetworkHashPS(params.size() > 0 ? params[0].get_int() : 120);
 }
 
+
+
+int64 GetAccountBalance(CWalletDB& walletdb, const string& strAccount, int nMinDepth)
+{
+  int64 nBalance = 0;
+
+  /* wallet transactions */
+  for (map<uint256, CWalletTx>::iterator it = pwalletMain->mapWallet.begin(); it != pwalletMain->mapWallet.end(); ++it)
+  {
+    const CWalletTx& wtx = (*it).second;
+    if (!wtx.IsFinal())
+      continue;
+
+    int64 nGenerated, nReceived, nSent, nFee;
+    wtx.GetAccountAmounts(strAccount, nGenerated, nReceived, nSent, nFee);
+
+    if (nReceived != 0 && wtx.GetDepthInMainChain() >= nMinDepth)
+      nBalance += nReceived;
+    nBalance += nGenerated - nSent - nFee;
+  }
+
+  /* internal accounting entries */
+  nBalance += walletdb.GetAccountCreditDebit(strAccount);
+
+  return nBalance;
+}
+
+static int64 GetAccountBalance(CIface *iface, const string& strAccount, int nMinDepth)
+{
+  CWallet *wallet;
+
+  wallet = GetWallet(iface);
+  if (!wallet) {
+    char errbuf[1024];
+    unet_log(GetCoinIndex(iface), 
+        "GetAccountBalance: error retriving master wallet.");
+    return (0);
+  }
+
+  CWalletDB walletdb(wallet->strWalletFile);
+  return GetAccountBalance(walletdb, strAccount, nMinDepth);
+}
+
+
+
+
+
+Value rpc_help(CIface *iface, const Array& params, bool fHelp)
+{
+  if (fHelp || params.size() > 1)
+    throw runtime_error(
+        "help [command]\n"
+        "List all available commands.");
+
+  string strCommand;
+  if (params.size() > 0)
+    strCommand = params[0].get_str();
+
+  return tableRPC.help(strCommand);
+}
+
+Value rpc_stop(CIface *iface, const Array& params, bool fHelp)
+{
+
+  if (fHelp || params.size() != 0)
+    throw runtime_error(
+        "shutdown\n"
+        "Stop shcoind server.");
+
+  set_shutdown_timer();
+
+  return "The shcoind daemon has been shutdown.";
+}
+
+Value rpc_net_info(CIface *iface, const Array& params, bool fHelp)
+{
+  if (fHelp || params.size() != 0)
+    throw runtime_error(
+        "net.info\n"
+        "Statistical and runtime information on network operations.");
+
+  Object obj;
+
+  obj.push_back(Pair("version",         (int)CLIENT_VERSION));
+  obj.push_back(Pair("protocolversion", (int)PROTOCOL_VERSION));
+  obj.push_back(Pair("socketport",      (int)iface->port));
+  obj.push_back(Pair("connections",     (int)vNodes.size()));
+  obj.push_back(Pair("errors",          GetWarnings("statusbar")));
+
+  return obj;
+}
+
+Value rpc_block_info(CIface *iface, const Array& params, bool fHelp)
+{
+  if (fHelp || params.size() != 0)
+    throw runtime_error(
+        "block.info\n"
+        "Statistical and runtime information on block operations.");
+
+
+  Object obj;
+
+  obj.push_back(Pair("version",       (int)iface->proto_ver));
+  obj.push_back(Pair("blockversion",  (int)iface->block_ver));
+  obj.push_back(Pair("walletversion", pwalletMain->GetVersion()));
+
+  obj.push_back(Pair("blocks",        (int)nBestHeight));
+  obj.push_back(Pair("difficulty",    (double)GetDifficulty()));
+  obj.push_back(Pair("blockhash",     pindexBest->GetBlockHash().GetHex()));
+
+  obj.push_back(Pair("paytxfee",      ValueFromAmount(nTransactionFee)));
+  obj.push_back(Pair("mininput",      ValueFromAmount(nMinimumInputValue)));
+  obj.push_back(Pair("maxblocksize",  (int)iface->max_block_size));
+  obj.push_back(Pair("mintxfee",      ValueFromAmount(iface->min_tx_fee)));
+  obj.push_back(Pair("maxmoney",      ValueFromAmount(iface->max_money)));
+  obj.push_back(Pair("maturity",      (int)iface->coinbase_maturity));
+
+  obj.push_back(Pair("errors",        GetWarnings("statusbar")));
+
+  return obj;
+}
+
+Value rpc_block_count(CIface *iface, const Array& params, bool fHelp)
+{
+  if (fHelp || params.size() != 0)
+    throw runtime_error(
+        "getblockcount\n"
+        "Returns the number of blocks in the longest block chain.");
+
+  return nBestHeight;
+}
+
+Value rpc_wallet_balance(CIface *iface, const Array& params, bool fHelp)
+{
+
+  if (fHelp || params.size() > 2)
+    throw runtime_error(
+        "getbalance [account] [minconf=1]\n"
+        "If [account] is not specified, returns the server's total available balance.\n"
+        "If [account] is specified, returns the balance in the account.");
+
+  if (params.size() == 0)
+    return  ValueFromAmount(pwalletMain->GetBalance());
+
+  int nMinDepth = 1;
+  if (params.size() > 1)
+    nMinDepth = params[1].get_int();
+
+  if (params[0].get_str() == "*") {
+    // Calculate total balance a different way from GetBalance()
+    // (GetBalance() sums up all unspent TxOuts)
+    // getbalance and getbalance '*' should always return the same number.
+    int64 nBalance = 0;
+    for (map<uint256, CWalletTx>::iterator it = pwalletMain->mapWallet.begin(); it != pwalletMain->mapWallet.end(); ++it)
+    {
+      const CWalletTx& wtx = (*it).second;
+      if (!wtx.IsFinal())
+        continue;
+
+      int64 allGeneratedImmature, allGeneratedMature, allFee;
+      allGeneratedImmature = allGeneratedMature = allFee = 0;
+      string strSentAccount;
+      list<pair<CTxDestination, int64> > listReceived;
+      list<pair<CTxDestination, int64> > listSent;
+      wtx.GetAmounts(allGeneratedImmature, allGeneratedMature, listReceived, listSent, allFee, strSentAccount);
+      if (wtx.GetDepthInMainChain() >= nMinDepth)
+      {
+        BOOST_FOREACH(const PAIRTYPE(CTxDestination,int64)& r, listReceived)
+          nBalance += r.second;
+      }
+      BOOST_FOREACH(const PAIRTYPE(CTxDestination,int64)& r, listSent)
+        nBalance -= r.second;
+      nBalance -= allFee;
+      nBalance += allGeneratedMature;
+    }
+    return  ValueFromAmount(nBalance);
+  }
+
+  string strAccount = AccountFromValue(params[0]);
+
+  int64 nBalance = GetAccountBalance(iface, strAccount, nMinDepth);
+
+  return ValueFromAmount(nBalance);
+}
+
+Value rpc_wallet_info(CIface *iface, const Array& params, bool fHelp)
+{
+
+  if (fHelp || params.size() != 0)
+    throw runtime_error(
+        "wallet.info\n"
+        "Statistical and runtime information on wallet operations.");
+
+
+  Object obj;
+  obj.push_back(Pair("version",       (int)CLIENT_VERSION));
+  obj.push_back(Pair("walletversion", pwalletMain->GetVersion()));
+
+  obj.push_back(Pair("balance",       ValueFromAmount(pwalletMain->GetBalance())));
+
+  obj.push_back(Pair("keypoololdest", (boost::int64_t)pwalletMain->GetOldestKeyPoolTime()));
+  obj.push_back(Pair("keypoolsize",   pwalletMain->GetKeyPoolSize()));
+
+  obj.push_back(Pair("errors",        GetWarnings("statusbar")));
+
+  return obj;
+}
+
+Value rpc_peer_add(CIface *iface, const Array& params, bool fHelp)
+{
+
+  if (fHelp || params.size() != 1)
+    throw runtime_error(
+        "addpeer <host>[:<port>]\n"
+        "Submit a new peer connection for the coin server.\n");
+
+  string strHost;
+  CService vserv;
+  char buf[256];
+  char *ptr;
+  int port;
+
+  strHost = params[0].get_str();
+
+  port = 0;
+  memset(buf, 0, sizeof(buf));
+  strncpy(buf, strHost.c_str(), sizeof(buf)-1);
+  ptr = strchr(buf, ':');
+  if (!ptr)
+    ptr = strchr(buf, ' '); /* ipv6 */
+  if (ptr) {
+    port = atoi(ptr+1);
+    *ptr = '\000';
+  }
+  if (port == 0)
+    port = iface->port;
+
+  if (Lookup(strHost.c_str(), vserv, port, false)) {
+    shpeer_t *peer;
+    char buf2[1024];
+    char buf[1024];
+
+    sprintf(buf, "%s %d", strHost.c_str(), port);
+    peer = shpeer_init(iface->name, buf);
+    uevent_new_peer(GetCoinIndex(iface), peer); /* keep alloc'd */
+
+    sprintf(buf2, "addpeer: initiating peer connection to '%s'.\n",
+        shpeer_print(peer));
+    unet_log(GetCoinIndex(iface), buf2);
+  }
+
+  return "initiated new peer connection.";
+}
+
+static void CopyNodeStats(std::vector<CNodeStats>& vstats)
+{
+    vstats.clear();
+
+    LOCK(cs_vNodes);
+    vstats.reserve(vNodes.size());
+    BOOST_FOREACH(CNode* pnode, vNodes) {
+        CNodeStats stats;
+        pnode->copyStats(stats);
+        vstats.push_back(stats);
+    }
+}
+Value rpc_peer_info(CIface *iface, const Array& params, bool fHelp)
+{
+
+  if (fHelp || params.size() != 0)
+    throw runtime_error(
+        "getpeerinfo\n"
+        "Statistical and runtime information on network peers.");
+
+  vector<CNodeStats> vstats;
+  CopyNodeStats(vstats);
+
+  Array ret;
+
+  BOOST_FOREACH(const CNodeStats& stats, vstats) {
+    Object obj;
+
+    obj.push_back(Pair("addr", stats.addrName));
+    obj.push_back(Pair("services", strprintf("%08"PRI64x, stats.nServices)));
+    obj.push_back(Pair("lastsend", (boost::int64_t)stats.nLastSend));
+    obj.push_back(Pair("lastrecv", (boost::int64_t)stats.nLastRecv));
+    obj.push_back(Pair("conntime", (boost::int64_t)stats.nTimeConnected));
+    obj.push_back(Pair("version", stats.nVersion));
+    obj.push_back(Pair("subver", stats.strSubVer));
+    obj.push_back(Pair("inbound", stats.fInbound));
+    obj.push_back(Pair("releasetime", (boost::int64_t)stats.nReleaseTime));
+    obj.push_back(Pair("startingheight", stats.nStartingHeight));
+    obj.push_back(Pair("banscore", stats.nMisbehavior));
+
+    ret.push_back(obj);
+  }
+
+  return ret;
+}
+
+
+
+
 Value getinfo(const Array& params, bool fHelp)
 {
     if (fHelp || params.size() != 0)
@@ -858,30 +1161,6 @@ Value getreceivedbyaccount(const Array& params, bool fHelp)
 }
 
 
-int64 GetAccountBalance(CWalletDB& walletdb, const string& strAccount, int nMinDepth)
-{
-    int64 nBalance = 0;
-
-    // Tally wallet transactions
-    for (map<uint256, CWalletTx>::iterator it = pwalletMain->mapWallet.begin(); it != pwalletMain->mapWallet.end(); ++it)
-    {
-        const CWalletTx& wtx = (*it).second;
-        if (!wtx.IsFinal())
-            continue;
-
-        int64 nGenerated, nReceived, nSent, nFee;
-        wtx.GetAccountAmounts(strAccount, nGenerated, nReceived, nSent, nFee);
-
-        if (nReceived != 0 && wtx.GetDepthInMainChain() >= nMinDepth)
-            nBalance += nReceived;
-        nBalance += nGenerated - nSent - nFee;
-    }
-
-    // Tally internal accounting entries
-    nBalance += walletdb.GetAccountCreditDebit(strAccount);
-
-    return nBalance;
-}
 
 int64 GetAccountBalance(const string& strAccount, int nMinDepth)
 {
@@ -2294,36 +2573,33 @@ Value getrawmempool(const Array& params, bool fHelp)
     return a;
 }
 
-extern bc_t *GetBlockChain(char *name);
-
 Value getblockhash(const Array& params, bool fHelp)
 {
-    if (fHelp || params.size() != 1)
-        throw runtime_error(
-            "getblockhash <index>\n"
-            "Returns hash of block in best-block-chain at <index>.");
+  if (fHelp || params.size() != 1)
+    throw runtime_error(
+        "getblockhash <index>\n"
+        "Returns hash of block in best-block-chain at <index>.");
 
-    int nHeight = params[0].get_int();
-    if (nHeight < 0 || nHeight > nBestHeight)
-        throw runtime_error("Block number out of range.");
-{
-bc_t *bc = GetBlockChain("usde_block");
-bc_hash_t ret_hash;
-int err;
+  int nHeight = params[0].get_int();
+  if (nHeight < 0 || nHeight > nBestHeight)
+    throw runtime_error("Block number out of range.");
+  {
+    bc_t *bc = GetBlockChain(GetCoinByIndex(USDE_COIN_IFACE));
+    bc_hash_t ret_hash;
+    int err;
 
-err = bc_get_hash(bc, nHeight, ret_hash);
-if (!err) {
-uint256 hash;
-hash.SetRaw((unsigned int *)ret_hash);
-fprintf(stderr, "DEBUG: RPC: getblockhash: blockchain pos %d has hash '%s'\n", nHeight, hash.GetHex().c_str());
-}
-}
+    err = bc_get_hash(bc, nHeight, ret_hash);
+    if (!err) {
+      uint256 hash;
+      hash.SetRaw((unsigned int *)ret_hash);
+      fprintf(stderr, "DEBUG: RPC: getblockhash: blockchain pos %d has hash '%s'\n", nHeight, hash.GetHex().c_str());
+    }
+  }
 
-    CBlock block;
-    CBlockIndex* pblockindex = mapBlockIndex[hashBestChain];
-    while (pblockindex->nHeight > nHeight)
-        pblockindex = pblockindex->pprev;
-    return pblockindex->phashBlock->GetHex();
+  CBlockIndex* pblockindex = mapBlockIndex[hashBestChain];
+  while (pblockindex->nHeight > nHeight)
+    pblockindex = pblockindex->pprev;
+  return pblockindex->phashBlock->GetHex();
 }
 
 Value getblock(const Array& params, bool fHelp)
@@ -2339,7 +2615,7 @@ Value getblock(const Array& params, bool fHelp)
     if (mapBlockIndex.count(hash) == 0)
         throw JSONRPCError(-5, "Block not found");
 
-    CBlock block;
+    USDEBlock block;
     CBlockIndex* pblockindex = mapBlockIndex[hash];
     block.ReadFromDisk(pblockindex, true);
 
@@ -2356,6 +2632,19 @@ Value getblock(const Array& params, bool fHelp)
 // Call Table
 //
 
+
+static const CRPCCmd vRPCCmds[] =
+{
+    { "help",                 &rpc_help},
+    { "shutdown",             &rpc_stop},
+    { "net.info",             &rpc_net_info},
+    { "block.info",           &rpc_block_info},
+    { "block.count",          &rpc_block_count},
+    { "wallet.balance",       &rpc_wallet_balance},
+    { "wallet.info",          &rpc_wallet_info},
+    { "peer.add",             &rpc_peer_add},
+    { "peer.info",            &rpc_peer_info},
+};
 
 static const CRPCCommand vRPCCommands[] =
 { //  name                      function                 safe mode?

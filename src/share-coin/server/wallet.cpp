@@ -8,11 +8,43 @@
 
 using namespace std;
 
+CWallet* pwalletMaster[MAX_COIN_IFACE];
 
-//////////////////////////////////////////////////////////////////////////////
-//
-// mapWallet
-//
+
+
+CWallet *GetWallet(int iface_idx)
+{
+  int idx;
+
+  if (idx < 1 || idx >= MAX_COIN_IFACE)
+    return (NULL);
+
+  return (pwalletMaster[idx]); 
+}
+
+CWallet *GetWallet(CIface *iface)
+{
+  return (GetWallet(GetCoinIndex(iface)));
+}
+
+void SetWallet(int iface_idx, CWallet *wallet)
+{
+  int idx;
+
+  if (idx < 1 || idx >= MAX_COIN_IFACE)
+    return;
+
+  pwalletMaster[idx] = wallet;
+}
+
+void SetWallet(CIface *iface, CWallet *wallet)
+{
+  return (SetWallet(GetCoinIndex(iface), wallet));
+}
+
+
+
+
 
 struct CompareValueOnly
 {
@@ -689,7 +721,7 @@ int CWallet::ScanForWalletTransactions(CBlockIndex* pindexStart, bool fUpdate)
         LOCK(cs_wallet);
         while (pindex)
         {
-            CBlock block;
+            USDEBlock block;
             block.ReadFromDisk(pindex, true);
             BOOST_FOREACH(CTransaction& tx, block.vtx)
             {

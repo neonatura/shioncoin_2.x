@@ -42,6 +42,8 @@
 #include <signal.h>
 #endif
 
+#define WALLET_FILENAME_SUFFIX "wallet"
+
 using namespace std;
 using namespace boost;
 using namespace json_spirit;
@@ -201,6 +203,7 @@ int c_LoadWallet(void)
 
   bool fFirstRun = true;
   pwalletMain = new CWallet("wallet.dat");
+  SetWallet(USDE_COIN_IFACE, pwalletMain);
   pwalletMain->LoadWallet(fFirstRun);
 
   if (fFirstRun)

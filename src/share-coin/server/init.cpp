@@ -27,12 +27,16 @@ using namespace boost;
 
 CWallet* pwalletMain;
 
+
+
+
 extern CSemaphore *semOutbound;
 
 //////////////////////////////////////////////////////////////////////////////
 //
 // Shutdown
 //
+
 
 void ExitTimeout(void* parg)
 {
@@ -635,7 +639,7 @@ bool AppInit2()
             if (strncmp(hash.ToString().c_str(), strMatch.c_str(), strMatch.size()) == 0)
             {
                 CBlockIndex* pindex = (*mi).second;
-                CBlock block;
+                USDEBlock block;
                 block.ReadFromDisk(pindex);
                 block.BuildMerkleTree();
                 block.print();

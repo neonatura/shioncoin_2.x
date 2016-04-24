@@ -589,7 +589,7 @@ double c_getdifficulty(void)
 string blockinfo_json;
 const char *c_getblockindexinfo(CBlockIndex *pblockindex)
 {
-  CBlock block;
+  USDEBlock block;
   Object result;
 
   block.ReadFromDisk(pblockindex, true);
@@ -641,7 +641,6 @@ const char *c_getblockinfo(const char *hash_addr)
       return (NULL);
     }
 
-    CBlock block;
     CBlockIndex* pblockindex = mapBlockIndex[hashBestChain];
     while (pblockindex->nHeight > nHeight)
       pblockindex = pblockindex->pprev;
@@ -691,7 +690,7 @@ const char *c_getblockinfo(const char *hash_addr)
 
 int findBlockTransaction(CBlockIndex *pblockindex, const char *tx_id, CTransaction& ret_tx, time_t dur)
 {
-  CBlock block;
+  USDEBlock block;
   uint256 hashTx;
   int64 nOut;
   int confirms;
@@ -755,7 +754,7 @@ CBlockIndex *findTransaction(uint256 hashTx, CTransaction& ret_tx, time_t dur)
 
   /* find block (slow disk crawl) */
   for (pblockindex = pindexBest; pblockindex; pblockindex = pblockindex->pprev)  {
-    CBlock block;
+    USDEBlock block;
     CTransaction tx;
 
     block.ReadFromDisk(pblockindex, true);

@@ -738,4 +738,13 @@ public:
 
 bool GetWalletFile(CWallet* pwallet, std::string &strWalletFileOut);
 
+CWallet *GetWallet(int iface_idx);
+
+CWallet *GetWallet(CIface *iface);
+
+void SetWallet(int iface_idx, CWallet *wallet);
+
+void SetWallet(CIface *iface, CWallet *wallet);
+
+
 #endif

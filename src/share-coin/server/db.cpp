@@ -478,20 +478,20 @@ CBlockIndex static * InsertBlockIndex(uint256 hash)
     return pindexNew;
 }
 
-bool CTxDB::InitBlockChainIndex()
+bool CTxDB::InitBlockChainIndex(CIface *iface)
 {
   bc_t *bc;
   uint256 l_hash; /* = 0 */
   int height;
   int max;
 
-  bc = GetBlockChain("usde_block");
+  bc = GetBlockChain(iface);
   if (!bc)
     return (false);
 
   max = bc_idx_next(bc);
   for (height = (max - 1); height >= 0; height--) {
-    CBlock block;
+    USDEBlock block;
     uint256 hash;
 
     /* read in entire block */
@@ -531,7 +531,6 @@ bool CTxDB::InitBlockChainIndex()
   return true;
 }
 
-extern bc_t *GetBlockChain(char *name);
 bool CTxDB::LoadBlockIndex()
 {
 
@@ -603,7 +602,7 @@ bool CTxDB::LoadBlockIndex()
   {
     if (fRequestShutdown || pindex->nHeight < nBestHeight-nCheckDepth)
       break;
-    CBlock block;
+    USDEBlock block;
     if (!block.ReadFromDisk(pindex))
       return error(SHERR_IO, "LoadBlockIndex() : block.ReadFromDisk failed");
 
@@ -721,7 +720,7 @@ bool CTxDB::LoadBlockIndex()
   {
     // Reorg back to the fork
     printf("LoadBlockIndex() : *** moving best chain pointer back to block %d\n", pindexFork->nHeight);
-    CBlock block;
+    USDEBlock block;
     if (!block.ReadFromDisk(pindexFork))
       return error(SHERR_IO, "LoadBlockIndex() : block.ReadFromDisk failed");
 

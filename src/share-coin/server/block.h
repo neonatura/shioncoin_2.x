@@ -41,8 +41,10 @@ class CTxDB;
 class CBlockIndex;
 class CTxIndex;
 
-bc_t *GetBlockChain(char *name);
+bc_t *GetBlockChain(CIface *iface);
+
 void CloseBlockChains(void);
+
 int64 GetBlockValue(int nHeight, int64 nFees);
 
 
@@ -738,6 +740,7 @@ class CBlock : public CBlockHeader
   public:
     std::vector<CTransaction> vtx;
     mutable std::vector<uint256> vMerkleTree; /* mem only */
+    mutable int ifaceIndex;
 
     CBlock()
     {
@@ -907,7 +910,14 @@ public:
 
     USDEBlock()
     {
+        ifaceIndex = USDE_COIN_IFACE;
         SetNull();
+    }
+    USDEBlock(const CBlock &block)
+    {
+        ifaceIndex = USDE_COIN_IFACE;
+        SetNull();
+        *((CBlock*)this) = block;
     }
 
     void SetNull()
@@ -926,12 +936,32 @@ public:
 
     GMCBlock()
     {
+//        ifaceIndex = GMC_COIN_IFACE;
         SetNull();
     }
 
     void SetNull()
     {
       nVersion = GMCBlock::CURRENT_VERSION;
+      CBlock::SetNull();
+    }
+};
+
+class SHCBlock : public CBlock
+{
+public:
+    // header
+    static const int CURRENT_VERSION=2;
+
+    SHCBlock()
+    {
+        ifaceIndex = SHC_COIN_IFACE;
+        SetNull();
+    }
+
+    void SetNull()
+    {
+      nVersion = SHCBlock::CURRENT_VERSION;
       CBlock::SetNull();
     }
 };

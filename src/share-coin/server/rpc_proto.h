@@ -50,6 +50,14 @@ public:
     bool okSafeMode;
 };
 
+typedef json_spirit::Value(*rpc_f)(CIface *iface, const json_spirit::Array& params, bool fHelp);
+class CRPCCmd
+{
+public:
+    std::string name;
+    rpc_f actor;
+};
+
 /**
  * Bitcoin RPC command dispatcher.
  */

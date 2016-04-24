@@ -30,11 +30,50 @@
 using namespace std;
 
 
-vector <bc_t *> vBlockChain;
+//vector <bc_t *> vBlockChain;
 
 /**
  * Opens a specific database of block records.
  */
+bc_t *GetBlockChain(CIface *iface)
+{
+
+  if (!iface->bc_block) {
+    char name[4096];
+
+    sprintf(name, "%s_block", iface->name);
+    bc_open(name, &iface->bc_block);
+  }
+
+  return (iface->bc_block);
+}
+
+/**
+ * Closes all open block record databases.
+ */
+void CloseBlockChains(void)
+{
+  CIface *iface;
+  int idx;
+
+  for (idx = 1; idx < MAX_COIN_IFACE; idx++) {
+    iface = GetCoinByIndex(idx);
+    if (!iface)
+      continue;
+
+    if (iface->bc_block) {
+      bc_close(iface->bc_block);
+      iface->bc_block = NULL;
+    }
+    if (iface->bc_tx) {
+      bc_close(iface->bc_tx);
+      iface->bc_tx = NULL;
+    }
+  }
+
+}
+
+#if 0
 bc_t *GetBlockChain(char *name)
 {
   bc_t *bc;
@@ -65,23 +104,8 @@ void CloseBlockChains(void)
   vBlockChain.clear();
 
 }
+#endif
 
-typedef struct coin_t
-{
-  char name[MAX_SHARE_NAME_LENGTH];
-} coin_t;
-
-/**
- * Open the primary block chain for a given coin interface. 
- */
-void OpenBlockChain(coin_t *iface)
-{
-  char path[PATH_MAX+1];
-
-  memset(path, 0, sizeof(path));
-  sprintf(path, "%s_block", iface->name);
-
-}
 
 int64 GetInitialBlockValue(int nHeight, int64 nFees)
 {

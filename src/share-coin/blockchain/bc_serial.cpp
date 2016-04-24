@@ -30,6 +30,7 @@ using namespace std;
 using namespace boost;
 
 
+#if 0
 /*
    int nVersion;
    uint256 hashPrevBlock;
@@ -73,5 +74,6 @@ void bc_stream_read(bc_t *bc, CBlock block)
 {
 
 }
+#endif
 
 
