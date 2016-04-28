@@ -72,8 +72,6 @@ int load_peers(void);
 void flush_addrman_db(void);
 void server_shutdown(void);
 
-const char *getblocktemplate(void);
-
 
 const char *getblocktransactions(void);
 
@@ -92,8 +90,8 @@ int wallet_account_transfer(const char *sourceAccountName, const char *accountNa
 
 const char *getmininginfo(void);
 
-const char *getblockinfo(const char *hash);
-const char *gettransactioninfo(const char *hash);
+const char *getblockinfo(int ifaceIndex, const char *hash);
+const char *gettransactioninfo(int ifaceIndex, const char *hash);
 const char *getlastblockinfo(int height);
 
 const char *getaccounttransactioninfo(const char *account, const char *pkey_str, int duration);
@@ -137,6 +135,24 @@ void GetMyExternalIP(void);
 int submitblock(unsigned int workId, unsigned int nTime, unsigned int nNonce, char *xn_hex, char *ret_hash, double *ret_diff);
 
 double getdifficulty(void);
+
+const char *getblocktemplate(int ifaceIndex);
+
+void SetNextDifficulty(int ifaceIndex, unsigned int nBits);
+
+double GetNextDifficulty(int ifaceIndex);
+
+void usde_server_timer(void);
+
+void usde_server_accept(int hSocket, struct sockaddr *net_addr);
+
+void usde_server_close(int fd, struct sockaddr *addr);
+
+void shc_server_timer(void);
+
+void shc_server_accept(int hSocket, struct sockaddr *net_addr);
+
+void shc_server_close(int fd, struct sockaddr *addr);
 
 
 #ifdef __cplusplus

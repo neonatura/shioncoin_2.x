@@ -2,7 +2,7 @@
 
 #define __PROTO__PROTOCOL_C__
 #include "shcoind.h"
-
+#include "coin_proto.h"
 
 
 
@@ -397,6 +397,57 @@ static int stratum_request_account_info(user_t *user, int idx, char *account, ch
 }
 
 /**
+ * @returns The coin interface with the specified name.
+ */
+int stratum_get_iface(char *iface_str)
+{
+  CIface *iface;
+  double t_diff;
+  double diff;
+  int ifaceIndex;
+  int idx;
+
+  if (!*iface_str)
+    return (0); /* not specified */
+
+  diff = 0;
+  ifaceIndex = 0;
+  for (idx = 1; idx < MAX_COIN_IFACE; idx++) {
+    iface = GetCoinByIndex(idx); 
+    if (!iface) continue;
+
+    if (0 == strcasecmp(iface->name, iface_str))
+      return (idx);
+  }
+  
+  return (-1); /* invalid */
+}
+
+/**
+ * @returns The coin interface with the hardest mining difficulty.
+ */
+int stratum_default_iface(void)
+{
+  CIface *iface;
+  double t_diff;
+  double diff;
+  int ifaceIndex;
+  int idx;
+
+  diff = 0;
+  ifaceIndex = 0;
+  for (idx = 1; idx < MAX_COIN_IFACE; idx++) {
+    t_diff = GetNextDifficulty(idx);
+    if (t_diff >= diff) {
+      ifaceIndex = idx;
+      diff = t_diff;
+    }
+  }
+  
+  return (ifaceIndex);
+}
+
+/**
  * @todo: leave stale worker users (without open fd) until next round reset. current behavior does not payout if connection is severed.
  */ 
 int stratum_request_message(user_t *user, shjson_t *json)
@@ -404,11 +455,13 @@ int stratum_request_message(user_t *user, shjson_t *json)
   shjson_t *reply;
   user_t *t_user;
   shtime_t ts;
+  char iface_str[256];
   char buf[256];
   char uname[256];
   char *method;
   double block_avg;
   long idx;
+  int ifaceIndex;
   int err;
   int i;
 
@@ -419,11 +472,23 @@ int stratum_request_message(user_t *user, shjson_t *json)
     return (0);
   }
 
+  memset(iface_str, 0, sizeof(iface_str));
+  strncpy(iface_str, shjson_astr(json, "iface", ""), sizeof(iface_str)-1); 
+  ifaceIndex = stratum_get_iface(iface_str);
+  if (!ifaceIndex)
+    ifaceIndex = stratum_default_iface();
+  if (ifaceIndex < 1 || ifaceIndex >= MAX_COIN_IFACE) {
+fprintf(stderr, "DEBUG: stratum_request_message: error obtaining coin iface\n"); 
+    return (SHERR_INVAL);
+  }
+    
+
   method = shjson_astr(json, "method", NULL);
   if (!method) {
     /* no operation method specified. */
     return (SHERR_INVAL);
   }
+
 
 /* DEBUG: */
 sprintf(buf, "STRATUM REQUEST '%s' [idx %d].\n", method, idx);
@@ -446,7 +511,7 @@ shcoind_log(buf);
     if (!err)
       stratum_set_difficulty(user, 128);
 
-    reset_task_work_time();
+    //reset_task_work_time();
 
     return (err);
   } 
@@ -635,14 +700,14 @@ shcoind_log(buf);
       case 1: /* block by hash */
         if (hash) {
           timing_init("getblockinfo", &ts2);
-          json_data = getblockinfo(hash);
+          json_data = getblockinfo(ifaceIndex, hash);
           timing_term("getblockinfo", &ts2);
         }
         break;
       case 2: /* tx */
         if (hash) {
           timing_init("gettransactioninfo", &ts2);
-          json_data = gettransactioninfo(hash);
+          json_data = gettransactioninfo(ifaceIndex, hash);
           timing_term("gettransactioninfo", &ts2);
         }
         break;

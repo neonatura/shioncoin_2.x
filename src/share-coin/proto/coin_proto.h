@@ -73,7 +73,10 @@ typedef struct coin_iface_t
   uint64_t locktime_threshold;
 
   /* coin operations */
+  coin_f op_init;
+  coin_f op_term;
   coin_f op_msg_recv;
+  coin_f op_msg_send;
   coin_f op_peer_add;
   coin_f op_peer_recv;
   coin_f op_block_new;
@@ -91,6 +94,7 @@ typedef struct coin_iface_t
 
   bc_t *bc_block;
   bc_t *bc_tx;
+  double blk_diff; /* next block difficulty */
 } coin_iface_t;
 
 typedef struct coin_iface_t CIface;
@@ -107,7 +111,7 @@ coin_iface_t *GetCoin(const char *name);
 /* currency interfaces */
 #include "usde_proto.h"
 #include "shc_proto.h"
-//#include "gmc_proto.h"
+#include "gmc_proto.h"
 
 #ifdef __cplusplus
 }

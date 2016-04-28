@@ -165,6 +165,7 @@ Object JSONAddressInfo(CBitcoinAddress address, bool show_priv)
   return (result);
 }
 
+#if 0
 int cxx_UpgradeWallet(void)
 {
   int nMaxVersion = 0;//GetArg("-upgradewallet", 0);
@@ -182,9 +183,9 @@ int cxx_UpgradeWallet(void)
   }
 
 }
-
 int c_LoadWallet(void)
 {
+  CIface *iface = GetCoinByIndex(USDE_COIN_IFACE);
   std::ostringstream strErrors;
 
   const char* pszP2SH = "/P2SH/";
@@ -196,7 +197,7 @@ int c_LoadWallet(void)
     return (-1);
   }
 
-  if (!LoadBlockIndex()) {
+  if (!LoadBlockIndex(iface)) {
     fprintf(stderr, "error: unable to open load block index.\n");
     return (-1);
   }
@@ -230,7 +231,7 @@ int c_LoadWallet(void)
   else
   {
     CWalletDB walletdb("wallet.dat");
-    CBlockLocator locator;
+    CBlockLocator locator(GetCoinIndex(iface));
     if (walletdb.ReadBestBlock(locator))
       pindexRescan = locator.GetBlockIndex();
   }
@@ -245,6 +246,7 @@ int c_LoadWallet(void)
   }
 
 }
+#endif
 
 /** load peers */
 int c_LoadPeers(void)
@@ -925,6 +927,7 @@ const char *c_stratum_error_get(int req_id)
 extern "C" {
 #endif
 
+#if 0
 int load_wallet(void)
 {
   return (c_LoadWallet());
@@ -934,6 +937,7 @@ int upgrade_wallet(void)
 {
   return (cxx_UpgradeWallet());
 }
+#endif
 
 int load_peers(void)
 {

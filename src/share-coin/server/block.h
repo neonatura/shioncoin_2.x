@@ -37,15 +37,25 @@
 #include "coin_proto.h"
 #include <boost/foreach.hpp>
 
+
+
+
 class CTxDB;
 class CBlockIndex;
 class CTxIndex;
 
+typedef std::map<uint256, CBlockIndex*> blkidx_t;
+
 bc_t *GetBlockChain(CIface *iface);
+
+bc_t *GetBlockTxChain(CIface *iface);;
 
 void CloseBlockChains(void);
 
 int64 GetBlockValue(int nHeight, int64 nFees);
+
+blkidx_t *GetBlockTable(int ifaceIndex);
+
 
 
 extern FILE* AppendBlockFile(unsigned int& nFileRet);
@@ -375,6 +385,14 @@ public:
         READWRITE(nLockTime);
     )
 
+    void Init(CTransaction tx)
+    {
+      nVersion = tx.nVersion;
+      vin = tx.vin;
+      vout = tx.vout;
+      nLockTime = tx.nLockTime;
+    }
+
     void SetNull()
     {
         nVersion = CTransaction::CURRENT_VERSION;
@@ -575,6 +593,12 @@ public:
         return true;
     }
 
+    bool ReadTx(int ifaceIndex, uint256 txHash);
+
+    bool ReadTx(int ifaceIndex, uint256 txHash, uint256 &hashBlock);
+
+    bool WriteTx(int ifaceIndex, uint64_t blockHeight);
+
     friend bool operator==(const CTransaction& a, const CTransaction& b)
     {
         return (a.nVersion  == b.nVersion &&
@@ -687,6 +711,7 @@ public:
 
     CBlockHeader()
     {
+      nVersion = 1;
       SetNull();
     }
 
@@ -744,8 +769,6 @@ class CBlock : public CBlockHeader
 
     CBlock()
     {
-      if (nVersion == 0)
-        nVersion = 1; /* default */
       SetNull();
     }
 
@@ -864,7 +887,6 @@ class CBlock : public CBlockHeader
 
 
 
-
     void print() const
     {
       fprintf(stderr, "CBlock(hash=%s, PoW=%s, ver=%d, hashPrevBlock=%s, hashMerkleRoot=%s, nTime=%u, nBits=%08x, nNonce=%u, vtx=%lu)\n",
@@ -889,14 +911,15 @@ class CBlock : public CBlockHeader
     void UpdateTime(const CBlockIndex* pindexPrev);
     bool DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex);
     bool ConnectBlock(CTxDB& txdb, CBlockIndex* pindex);
-    bool WriteBlock(int nHeight);
-    bool ReadBlock(unsigned int nHeight);
+    bool WriteBlock(uint64_t nHeight);
+    bool ReadBlock(uint64_t nHeight);
     bool ReadFromDisk(unsigned int nFile, unsigned int nBlockPos, bool fReadTransactions=true);
     bool ReadFromDisk(const CBlockIndex* pindex, bool fReadTransactions=true);
     bool SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew);
     bool AddToBlockIndex(unsigned int nFile, unsigned int nBlockPos);
     bool CheckBlock() const;
     bool AcceptBlock();
+    const CTransaction *GetTx(uint256 hash);
 
   private:
     bool SetBestChainInner(CTxDB& txdb, CBlockIndex *pindexNew);
@@ -965,6 +988,7 @@ public:
       CBlock::SetNull();
     }
 };
+
 
 
 

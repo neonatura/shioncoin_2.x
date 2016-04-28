@@ -57,7 +57,9 @@ common_sources = \
 	$(top_srcdir)/src/share-coin/unet/unet_peer.c \
 	$(top_srcdir)/src/share-coin/unet/unet_event.c \
 	$(top_srcdir)/src/share-coin/server/usde/usde_netmsg.cpp \
+	$(top_srcdir)/src/share-coin/server/usde/usde_block.cpp \
 	$(top_srcdir)/src/share-coin/server/shc/shc_netmsg.cpp \
+	$(top_srcdir)/src/share-coin/server/shc/shc_block.cpp \
 	$(top_srcdir)/src/share-coin/server/addrman.cpp \
 	$(top_srcdir)/src/share-coin/server/block.cpp \
 	$(top_srcdir)/src/share-coin/server/rpc_proto.cpp \

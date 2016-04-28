@@ -34,6 +34,7 @@
 
 #define USDE_COIN_DAEMON_PORT 54449
 
+#define USDE_MAX_GETADDR 2500
 
 #define USDE_COIN (uint64_t)100000000
 static const unsigned int USDE_MAX_BLOCK_SIZE = 1000000;

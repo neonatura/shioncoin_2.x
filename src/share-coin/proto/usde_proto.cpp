@@ -26,8 +26,45 @@
 #include "shcoind.h"
 #include "block.h"
 #include "main.h"
+#include "wallet.h"
 #include "coin_proto.h"
 #include "usde/usde_netmsg.h"
+#include "usde/usde_block.h"
+#include "usde/usde_wallet.h"
+
+static int usde_init(CIface *iface, void *_unused_)
+{
+  int err;
+
+  if (!bitdb.Open(GetDataDir())) /* DEBUG: */
+  {
+    fprintf(stderr, "error: unable to open data directory.\n");
+    return (SHERR_INVAL);
+  }
+
+  if (!LoadBlockIndex(iface)) {
+    fprintf(stderr, "error: unable to open load block index.\n");
+    return (SHERR_INVAL);
+  }
+
+  usde_LoadWallet();
+
+  err = unet_bind(UNET_USDE, USDE_COIN_DAEMON_PORT);
+  if (err)
+    return (err);
+
+  unet_timer_set(UNET_USDE, usde_server_timer); /* x10/s */
+  unet_connop_set(UNET_USDE, usde_server_accept);
+  unet_disconnop_set(UNET_USDE, usde_server_close);
+
+  /* automatically connect to peers of 'usde' service. */
+  unet_bind_flag_set(UNET_USDE, UNETF_PEER_SCAN);
+
+  return (0);
+}
+static int usde_term(CIface *iface, void *_unused_)
+{
+}
 
 static int usde_msg_recv(CIface *iface, CNode *pnode)
 {
@@ -41,6 +78,18 @@ static int usde_msg_recv(CIface *iface, CNode *pnode)
 
 return (0);
 }
+static int usde_msg_send(CIface *iface, CNode *pnode)
+{
+
+  if (!pnode)
+    return (0);
+
+  if (!usde_SendMessages(iface, pnode, false)) {
+    /* log */
+  }
+
+return (0);
+}
 static int usde_peer_add(CIface *iface, void *arg)
 {
 return (0);
@@ -49,21 +98,53 @@ static int usde_peer_recv(CIface *iface, void *arg)
 {
 return (0);
 }
-static int usde_block_new(CIface *iface, void *arg)
+static int usde_block_new(CIface *iface, CBlock **block_p)
 {
+  *block_p = new USDEBlock();
 return (0);
 }
-static int usde_block_templ(CIface *iface, void *arg)
+
+static int usde_block_templ(CIface *iface, CBlock **block_p)
 {
-return (0);
+  CWallet *wallet = GetWallet(iface);
+  int ifaceIndex = GetCoinIndex(iface);
+  CBlock* pblock;
+  unsigned int median;
+  int reset;
+    
+  if (!wallet) {
+    unet_log(ifaceIndex, "GetBlocKTemplate: Wallet not initialized.");
+    return (NULL);
+  }
+
+  median = pindexBest->GetMedianTimePast() + 1;
+
+  CReserveKey reservekey(wallet);
+  pblock = usde_CreateNewBlock(reservekey);
+  if (!pblock)
+    return (NULL);
+
+  pblock->nTime = MAX(median, GetAdjustedTime());
+  pblock->nNonce = 0;
+
+  *block_p = pblock;
+
+  return (0);
 }
 
 static int usde_block_submit(CIface *iface, CBlock *block)
 {
+  blkidx_t *blockIndex;
+
+  blockIndex = GetBlockTable(USDE_COIN_IFACE);
+  if (!blockIndex) {
+fprintf(stderr, "DEBUG: usde_block_submit: error obtaining tableBlockIndex[USDE}\n"); 
+    return (STERR_INVAL);
+}
 
   // Check for duplicate
   uint256 hash = block->GetHash();
-  if (mapBlockIndex.count(hash))// || mapOrphanBlocks.count(hash))
+  if (blockIndex->count(hash))// || mapOrphanBlocks.count(hash))
     return (BLKERR_DUPLICATE_BLOCK);
 
   // Preliminary checks
@@ -143,7 +224,10 @@ coin_iface_t usde_coin_iface = {
   USDE_MAX_MONEY,
   USDE_COINBASE_MATURITY, 
   USDE_LOCKTIME_THRESHOLD,
+  COINF(usde_init),
+  COINF(usde_term),
   COINF(usde_msg_recv),
+  COINF(usde_msg_send),
   COINF(usde_peer_add),
   COINF(usde_peer_recv),
   COINF(usde_block_new),

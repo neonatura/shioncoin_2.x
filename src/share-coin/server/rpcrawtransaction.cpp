@@ -47,95 +47,98 @@ ScriptPubKeyToJSON(const CScript& scriptPubKey, Object& out)
     out.push_back(Pair("addresses", a));
 }
 
-void TxToJSON(const CTransaction& tx, const uint256 hashBlock, Object& entry)
+static void TxToJSON(CIface *iface, const CTransaction& tx, const uint256 hashBlock, Object& entry)
 {
-    entry.push_back(Pair("txid", tx.GetHash().GetHex()));
-    entry.push_back(Pair("version", tx.nVersion));
-    entry.push_back(Pair("locktime", (boost::int64_t)tx.nLockTime));
-    Array vin;
-    BOOST_FOREACH(const CTxIn& txin, tx.vin)
-    {
-        Object in;
-        if (tx.IsCoinBase())
-            in.push_back(Pair("coinbase", HexStr(txin.scriptSig.begin(), txin.scriptSig.end())));
-        else
-        {
-            in.push_back(Pair("txid", txin.prevout.hash.GetHex()));
-            in.push_back(Pair("vout", (boost::int64_t)txin.prevout.n));
-            Object o;
-            o.push_back(Pair("asm", txin.scriptSig.ToString()));
-            o.push_back(Pair("hex", HexStr(txin.scriptSig.begin(), txin.scriptSig.end())));
-            in.push_back(Pair("scriptSig", o));
-        }
-        in.push_back(Pair("sequence", (boost::int64_t)txin.nSequence));
-        vin.push_back(in);
-    }
-    entry.push_back(Pair("vin", vin));
-    Array vout;
-    for (unsigned int i = 0; i < tx.vout.size(); i++)
-    {
-        const CTxOut& txout = tx.vout[i];
-        Object out;
-        out.push_back(Pair("value", ValueFromAmount(txout.nValue)));
-        out.push_back(Pair("n", (boost::int64_t)i));
-        Object o;
-        ScriptPubKeyToJSON(txout.scriptPubKey, o);
-        out.push_back(Pair("scriptPubKey", o));
-        vout.push_back(out);
-    }
-    entry.push_back(Pair("vout", vout));
+  int ifaceIndex = GetCoinIndex(iface);
+  blkidx_t *blockIndex = GetBlockTable(ifaceIndex);
 
-    if (hashBlock != 0)
+  entry.push_back(Pair("txid", tx.GetHash().GetHex()));
+  entry.push_back(Pair("version", tx.nVersion));
+  entry.push_back(Pair("locktime", (boost::int64_t)tx.nLockTime));
+  Array vin;
+  BOOST_FOREACH(const CTxIn& txin, tx.vin)
+  {
+    Object in;
+    if (tx.IsCoinBase())
+      in.push_back(Pair("coinbase", HexStr(txin.scriptSig.begin(), txin.scriptSig.end())));
+    else
     {
-        entry.push_back(Pair("blockhash", hashBlock.GetHex()));
-        map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(hashBlock);
-        if (mi != mapBlockIndex.end() && (*mi).second)
-        {
-            CBlockIndex* pindex = (*mi).second;
-            if (pindex->IsInMainChain())
-            {
-                entry.push_back(Pair("confirmations", 1 + nBestHeight - pindex->nHeight));
-                entry.push_back(Pair("time", (boost::int64_t)pindex->nTime));
-            }
-            else
-                entry.push_back(Pair("confirmations", 0));
-        }
+      in.push_back(Pair("txid", txin.prevout.hash.GetHex()));
+      in.push_back(Pair("vout", (boost::int64_t)txin.prevout.n));
+      Object o;
+      o.push_back(Pair("asm", txin.scriptSig.ToString()));
+      o.push_back(Pair("hex", HexStr(txin.scriptSig.begin(), txin.scriptSig.end())));
+      in.push_back(Pair("scriptSig", o));
     }
+    in.push_back(Pair("sequence", (boost::int64_t)txin.nSequence));
+    vin.push_back(in);
+  }
+  entry.push_back(Pair("vin", vin));
+  Array vout;
+  for (unsigned int i = 0; i < tx.vout.size(); i++)
+  {
+    const CTxOut& txout = tx.vout[i];
+    Object out;
+    out.push_back(Pair("value", ValueFromAmount(txout.nValue)));
+    out.push_back(Pair("n", (boost::int64_t)i));
+    Object o;
+    ScriptPubKeyToJSON(txout.scriptPubKey, o);
+    out.push_back(Pair("scriptPubKey", o));
+    vout.push_back(out);
+  }
+  entry.push_back(Pair("vout", vout));
+
+  if (hashBlock != 0)
+  {
+    entry.push_back(Pair("blockhash", hashBlock.GetHex()));
+    map<uint256, CBlockIndex*>::iterator mi = blockIndex->find(hashBlock);
+    if (mi != blockIndex->end() && (*mi).second)
+    {
+      CBlockIndex* pindex = (*mi).second;
+      if (pindex->IsInMainChain())
+      {
+        entry.push_back(Pair("confirmations", 1 + nBestHeight - pindex->nHeight));
+        entry.push_back(Pair("time", (boost::int64_t)pindex->nTime));
+      }
+      else
+        entry.push_back(Pair("confirmations", 0));
+    }
+  }
 }
 
-Value getrawtransaction(const Array& params, bool fHelp)
+Value rpc_getrawtransaction(CIface *iface, const Array& params, bool fHelp)
 {
-    if (fHelp || params.size() < 1 || params.size() > 2)
-        throw runtime_error(
-            "getrawtransaction <txid> [verbose=0]\n"
-            "If verbose=0, returns a string that is\n"
-            "serialized, hex-encoded data for <txid>.\n"
-            "If verbose is non-zero, returns an Object\n"
-            "with information about <txid>.");
+  if (fHelp || params.size() < 1 || params.size() > 2)
+    throw runtime_error(
+        "tx.getraw <txid> [verbose=0]\n"
+        "If verbose=0, returns a string that is\n"
+        "serialized, hex-encoded data for <txid>.\n"
+        "If verbose is non-zero, returns an Object\n"
+        "with information about <txid>.");
 
-    uint256 hash;
-    hash.SetHex(params[0].get_str());
+  uint256 hash;
+  hash.SetHex(params[0].get_str());
 
-    bool fVerbose = false;
-    if (params.size() > 1)
-        fVerbose = (params[1].get_int() != 0);
+  bool fVerbose = false;
+  if (params.size() > 1)
+    fVerbose = (params[1].get_int() != 0);
 
-    CTransaction tx;
-    uint256 hashBlock = 0;
-    if (!GetTransaction(hash, tx, hashBlock))
-        throw JSONRPCError(-5, "No information available about transaction");
+  CTransaction tx;
+  uint256 hashBlock = 0;
+  if (!GetTransaction(iface, hash, tx, hashBlock))
+    throw JSONRPCError(-5, "No information available about transaction");
 
-    CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION);
-    ssTx << tx;
-    string strHex = HexStr(ssTx.begin(), ssTx.end());
+  CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION);
+  ssTx << tx;
+  string strHex = HexStr(ssTx.begin(), ssTx.end());
 
-    if (!fVerbose)
-        return strHex;
+  if (!fVerbose)
+    return strHex;
 
-    Object result;
-    result.push_back(Pair("hex", strHex));
-    TxToJSON(tx, hashBlock, result);
-    return result;
+  Object result;
+  result.push_back(Pair("hex", strHex));
+  TxToJSON(iface, tx, hashBlock, result);
+  return result;
 }
 
 Value listunspent(const Array& params, bool fHelp)
@@ -247,27 +250,29 @@ Value createrawtransaction(const Array& params, bool fHelp)
 
 Value decoderawtransaction(const Array& params, bool fHelp)
 {
-    if (fHelp || params.size() != 1)
-        throw runtime_error(
-            "decoderawtransaction <hex string>\n"
-            "Return a JSON object representing the serialized, hex-encoded transaction.");
+  CIface *iface = GetCoinByIndex(USDE_COIN_IFACE);
 
-    RPCTypeCheck(params, list_of(str_type));
+  if (fHelp || params.size() != 1)
+    throw runtime_error(
+        "decoderawtransaction <hex string>\n"
+        "Return a JSON object representing the serialized, hex-encoded transaction.");
 
-    vector<unsigned char> txData(ParseHex(params[0].get_str()));
-    CDataStream ssData(txData, SER_NETWORK, PROTOCOL_VERSION);
-    CTransaction tx;
-    try {
-        ssData >> tx;
-    }
-    catch (std::exception &e) {
-        throw JSONRPCError(-22, "TX decode failed");
-    }
+  RPCTypeCheck(params, list_of(str_type));
 
-    Object result;
-    TxToJSON(tx, 0, result);
+  vector<unsigned char> txData(ParseHex(params[0].get_str()));
+  CDataStream ssData(txData, SER_NETWORK, PROTOCOL_VERSION);
+  CTransaction tx;
+  try {
+    ssData >> tx;
+  }
+  catch (std::exception &e) {
+    throw JSONRPCError(-22, "TX decode failed");
+  }
 
-    return result;
+  Object result;
+  TxToJSON(iface, tx, 0, result);
+
+  return result;
 }
 
 Value signrawtransaction(const Array& params, bool fHelp)
@@ -452,51 +457,53 @@ Value signrawtransaction(const Array& params, bool fHelp)
     return result;
 }
 
-Value sendrawtransaction(const Array& params, bool fHelp)
+Value rpc_sendrawtransaction(CIface *iface, const Array& params, bool fHelp)
 {
-    if (fHelp || params.size() < 1 || params.size() > 1)
-        throw runtime_error(
-            "sendrawtransaction <hex string>\n"
-            "Submits raw transaction (serialized, hex-encoded) to local node and network.");
+  if (fHelp || params.size() < 1 || params.size() > 1)
+    throw runtime_error(
+        "tx.sendraw <hex string>\n"
+        "Submits raw transaction (serialized, hex-encoded) to local node and network.");
 
-    RPCTypeCheck(params, list_of(str_type));
+  RPCTypeCheck(params, list_of(str_type));
 
-    // parse hex string from parameter
-    vector<unsigned char> txData(ParseHex(params[0].get_str()));
-    CDataStream ssData(txData, SER_NETWORK, PROTOCOL_VERSION);
-    CTransaction tx;
+  // parse hex string from parameter
+  vector<unsigned char> txData(ParseHex(params[0].get_str()));
+  CDataStream ssData(txData, SER_NETWORK, PROTOCOL_VERSION);
+  CTransaction tx;
 
-    // deserialize binary data stream
-    try {
-        ssData >> tx;
-    }
-    catch (std::exception &e) {
-        throw JSONRPCError(-22, "TX decode failed");
-    }
-    uint256 hashTx = tx.GetHash();
+  // deserialize binary data stream
+  try {
+    ssData >> tx;
+  }
+  catch (std::exception &e) {
+    throw JSONRPCError(-22, "TX decode failed");
+  }
+  uint256 hashTx = tx.GetHash();
 
-    // See if the transaction is already in a block
-    // or in the memory pool:
-    CTransaction existingTx;
-    uint256 hashBlock = 0;
-    if (GetTransaction(hashTx, existingTx, hashBlock))
-    {
-        if (hashBlock != 0)
-            throw JSONRPCError(-5, string("transaction already in block ")+hashBlock.GetHex());
-        // Not in block, but already in the memory pool; will drop
-        // through to re-relay it.
-    }
-    else
-    {
-        // push to local node
-        CTxDB txdb("r");
-        if (!tx.AcceptToMemoryPool(txdb))
-            throw JSONRPCError(-22, "TX rejected");
-        txdb.Close();
+  // See if the transaction is already in a block
+  // or in the memory pool:
+  CTransaction existingTx;
+  uint256 hashBlock = 0;
+  if (GetTransaction(iface, hashTx, existingTx, hashBlock))
+  {
+    if (hashBlock != 0)
+      throw JSONRPCError(-5, string("transaction already in block ")+hashBlock.GetHex());
+    // Not in block, but already in the memory pool; will drop
+    // through to re-relay it.
+  }
+  else
+  {
+    // push to local node
+    CTxDB txdb("r");
+    if (!tx.AcceptToMemoryPool(txdb))
+      throw JSONRPCError(-22, "TX rejected");
+    txdb.Close();
 
-        usde_SyncWithWallets(tx, NULL, true);
-    }
-    RelayMessage(CInv(MSG_TX, hashTx), tx);
+    usde_SyncWithWallets(tx, NULL, true);
+  }
+  RelayMessage(CInv(MSG_TX, hashTx), tx);
 
-    return hashTx.GetHex();
+  return hashTx.GetHex();
 }
+
+

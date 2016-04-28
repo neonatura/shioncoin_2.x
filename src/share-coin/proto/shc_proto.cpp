@@ -26,11 +26,47 @@
 #include "shcoind.h"
 #include "block.h"
 #include "main.h"
+#include "wallet.h"
 #include "coin_proto.h"
 #include "shc/shc_netmsg.h"
+#include "shc/shc_block.h"
+#include "shc/shc_wallet.h"
 
 
+static int shc_init(CIface *iface, void *_unused_)
+{
+int err;
 
+  if (!bitdb.Open(GetDataDir())) /* DEBUG: */
+  {
+    fprintf(stderr, "error: unable to open data directory.\n");
+    return (SHERR_INVAL);
+  }
+
+  if (!LoadBlockIndex(iface)) {
+    fprintf(stderr, "error: unable to open load block index.\n");
+    return (SHERR_INVAL);
+  }
+
+  shc_LoadWallet();
+
+  err = unet_bind(SHC_COIN_IFACE, SHC_COIN_DAEMON_PORT);
+  if (err)
+    return (err);
+
+  unet_timer_set(SHC_COIN_IFACE, shc_server_timer); /* x10/s */
+  unet_connop_set(SHC_COIN_IFACE, shc_server_accept);
+  unet_disconnop_set(SHC_COIN_IFACE, shc_server_close);
+
+  /* automatically connect to peers of 'shc' service. */
+  unet_bind_flag_set(SHC_COIN_IFACE, UNETF_PEER_SCAN);
+
+return (0);
+}
+
+static int shc_term(CIface *iface, void *_unused_)
+{
+}
 static int shc_msg_recv(CIface *iface, CNode *pnode)
 {
 
@@ -38,6 +74,18 @@ static int shc_msg_recv(CIface *iface, CNode *pnode)
     return (0);
 
   if (!shc_ProcessMessages(iface, pnode)) {
+    /* log */
+  }
+
+return (0);
+}
+static int shc_msg_send(CIface *iface, CNode *pnode)
+{
+
+  if (!pnode)
+    return (0);
+
+  if (!shc_SendMessages(iface, pnode, false)) {
     /* log */
   }
 
@@ -51,21 +99,52 @@ static int shc_peer_recv(CIface *iface, void *arg)
 {
 return (0);
 }
-static int shc_block_new(CIface *iface, void *arg)
+
+static int shc_block_new(CIface *iface, CBlock **block_p)
 {
-return (0);
+  *block_p = new SHCBlock();
+  return (0);
 }
-static int shc_block_templ(CIface *iface, void *arg)
+
+static int shc_block_templ(CIface *iface, CBlock **block_p)
 {
-return (0);
+  CWallet *wallet = GetWallet(iface);
+  int ifaceIndex = GetCoinIndex(iface);
+  CBlock* pblock;
+  unsigned int median;
+  int reset;
+    
+  if (!wallet) {
+    unet_log(ifaceIndex, "GetBlocKTemplate: Wallet not initialized.");
+    return (NULL);
+  }
+
+  median = pindexBest->GetMedianTimePast() + 1;
+
+  CReserveKey reservekey(wallet);
+  pblock = shc_CreateNewBlock(reservekey);
+  if (!pblock)
+    return (NULL);
+
+  pblock->nTime = MAX(median, GetAdjustedTime());
+  pblock->nNonce = 0;
+
+  *block_p = pblock;
+
+  return (0);
 }
 
 static int shc_block_submit(CIface *iface, CBlock *block)
 {
+  blkidx_t *blockIndex;
+
+  blockIndex = GetBlockTable(SHC_COIN_IFACE);
+  if (!blockIndex)
+    return (STERR_INVAL);
 
   // Check for duplicate
   uint256 hash = block->GetHash();
-  if (mapBlockIndex.count(hash))// || mapOrphanBlocks.count(hash))
+  if (blockIndex->count(hash))// || mapOrphanBlocks.count(hash))
     return (BLKERR_DUPLICATE_BLOCK);
 
   // Preliminary checks
@@ -150,7 +229,10 @@ coin_iface_t shc_coin_iface = {
   SHC_MAX_MONEY,
   SHC_COINBASE_MATURITY, 
   SHC_LOCKTIME_THRESHOLD,
+  COINF(shc_init),
+  COINF(shc_term),
   COINF(shc_msg_recv),
+  COINF(shc_msg_send),
   COINF(shc_peer_add),
   COINF(shc_peer_recv),
   COINF(shc_block_new),

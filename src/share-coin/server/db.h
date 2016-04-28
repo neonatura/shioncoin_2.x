@@ -318,9 +318,9 @@ public:
     bool WriteHashBestChain(uint256 hashBestChain);
     bool ReadBestInvalidWork(CBigNum& bnBestInvalidWork);
     bool WriteBestInvalidWork(CBigNum bnBestInvalidWork);
-    bool LoadBlockIndex();
+    bool LoadBlockIndex(CIface *iface);
 private:
-    bool LoadBlockIndexGuts();
+    bool LoadBlockIndexGuts(CIface *iface);
     bool InitBlockChainIndex(CIface *iface);
 };
 

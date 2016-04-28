@@ -29,8 +29,17 @@
 
 using namespace std;
 
-
+//map<uint256, CBlockIndex*> tableBlockIndex[MAX_COIN_IFACE];
+blkidx_t tableBlockIndex[MAX_COIN_IFACE];
 //vector <bc_t *> vBlockChain;
+
+blkidx_t *GetBlockTable(int ifaceIndex)
+{
+  if (ifaceIndex < 1 || ifaceIndex >= MAX_COIN_IFACE)
+    return (NULL);
+  return (&tableBlockIndex[ifaceIndex]);
+}
+
 
 /**
  * Opens a specific database of block records.
@@ -46,6 +55,22 @@ bc_t *GetBlockChain(CIface *iface)
   }
 
   return (iface->bc_block);
+}
+
+/**
+ * Opens a specific database of block references. 
+ */
+bc_t *GetBlockTxChain(CIface *iface)
+{
+
+  if (!iface->bc_tx) {
+    char name[4096];
+
+    sprintf(name, "%s_tx", iface->name);
+    bc_open(name, &iface->bc_tx);
+  }
+
+  return (iface->bc_tx);
 }
 
 /**
@@ -173,3 +198,151 @@ int64 GetBlockValue(int nHeight, int64 nFees)
   return nSubsidy + nFees;
 }
 
+const CTransaction *CBlock::GetTx(uint256 hash)
+{
+  BOOST_FOREACH(const CTransaction& tx, vtx)
+    if (tx.GetHash() == hash)
+      return (&tx);
+  return (NULL);
+}
+
+
+bool CTransaction::WriteTx(int ifaceIndex, uint64_t blockHeight)
+{
+  bc_t *bc = GetBlockTxChain(GetCoinByIndex(ifaceIndex));
+  uint256 hash = GetHash();
+  char errbuf[1024];
+  int txPos;
+  int nHeight;
+  int err;
+
+  if (!bc) {
+    unet_log(ifaceIndex, "CTransaction::WriteTx: error opening tx chain.");
+    return (false);
+  }
+
+  if (0 == bc_idx_find(bc, hash.GetRaw(), NULL, NULL)) {
+    /* transaction reference exists */
+    return (true);
+  }
+
+  /* reference block height */
+  err = bc_append(bc, hash.GetRaw(), &blockHeight, sizeof(blockHeight));
+  if (err < 0) {
+    sprintf(errbuf, "CTransaction::WriteTx: error writing block reference: %s.", sherrstr(err));
+    unet_log(ifaceIndex, errbuf);
+    return (false);
+  }
+
+fprintf(stderr, "DEBUG: CTransaction::WriteTx: wrote tx '%s' for block #%d\n", hash.GetHex().c_str(), (int)blockHeight);
+  return (true);
+}
+
+bool CTransaction::ReadTx(int ifaceIndex, uint256 txHash)
+{
+  uint256 hashBlock; /* dummy var */
+  return (ReadTx(ifaceIndex, txHash, hashBlock));
+}
+
+bool CTransaction::ReadTx(int ifaceIndex, uint256 txHash, uint256 &hashBlock)
+{
+  CIface *iface;
+  bc_t *bc;
+  char errbuf[1024];
+  unsigned char *data;
+  uint64_t blockHeight;
+  size_t data_len;
+  int txPos;
+  int err;
+
+  SetNull();
+
+  iface = GetCoinByIndex(ifaceIndex);
+  if (!iface) {
+    sprintf(errbuf, "CTransaction::ReadTx: unable to obtain iface #%d.", ifaceIndex); 
+    unet_log(ifaceIndex, errbuf);
+    return (false);
+  }
+
+  bc = GetBlockTxChain(iface);
+  if (!bc) { 
+    unet_log(ifaceIndex, "CTransaction::ReadTx: unable to open block tx database."); 
+    return (false);
+  }
+
+  err = bc_idx_find(bc, txHash.GetRaw(), NULL, &txPos); 
+  if (err) {
+fprintf(stderr, "DEBUG: CTransaction::ReadTx: tx hash '%s' not found.\n", txHash.GetHex().c_str());
+    return (false); /* not an error condition */
+}
+
+  err = bc_get(bc, txPos, &data, &data_len);
+  if (data_len != sizeof(uint64_t)) {
+    sprintf(errbuf, "CTransaction::ReadTx: tx position %d not found.", txPos);
+    unet_log(ifaceIndex, errbuf);
+    return (false);
+  }
+  if (data_len != sizeof(uint64_t)) {
+    sprintf(errbuf, "CTransaction::ReadTx: block reference has invalid size (%d).", data_len);
+    unet_log(ifaceIndex, errbuf);
+    return (false);
+  }
+  memcpy(&blockHeight, data, sizeof(blockHeight));
+  free(data);
+
+  CBlock *block;
+  err = iface->op_block_new(iface, &block);
+  if (err) {
+    sprintf(errbuf, "CTransaction::ReadTx: error allocating block: %s.", sherrstr(err));
+    unet_log(ifaceIndex, errbuf);
+    return (false);
+  }
+  if (!block) return (false);
+  block->ReadBlock(blockHeight);
+
+  const CTransaction *tx = block->GetTx(txHash);
+  if (!tx) {
+    sprintf(errbuf, "CTransaction::ReadTx: block '%s' does not contain tx '%s'.", block->GetHash().GetHex().c_str(), txHash.GetHex().c_str());
+    unet_log(ifaceIndex, errbuf);
+    return (false);
+  }
+
+  Init(*tx);
+  hashBlock = block->GetHash();
+
+fprintf(stderr, "DEBUG: CTransaction::ReadTx: read tx '%s' for block #%d\n", GetHash().GetHex().c_str(), (int)blockHeight); 
+  return (true);
+}
+
+
+#if 0
+CBlock *GetBlockTemplate(int ifaceIndex)
+{
+  static CBlockIndex* pindexPrev;
+  static unsigned int work_id;
+  static time_t last_reset_t;
+  CWallet *wallet = GetWallet(ifaceIndex);
+  CBlock* pblock;
+  int reset;
+
+  if (!wallet) {
+    unet_log(ifaceIndex, "GetBlocKTemplate: Wallet not initialized.");
+    return (NULL);
+  }
+
+  CReserveKey reservekey(wallet);
+
+  // Store the pindexBest used before CreateNewBlock, to avoid races
+  CBlockIndex* pindexPrevNew = pindexBest;
+
+  pblock = CreateNewBlock(reservekey);
+ 
+  // Need to update only after we know CreateNewBlock succeeded
+  pindexPrev = pindexPrevNew;
+
+  pblock->UpdateTime(pindexPrev);
+  pblock->nNonce = 0;
+
+  return (pblock);
+}
+#endif

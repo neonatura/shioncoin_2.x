@@ -458,21 +458,21 @@ bool CTxDB::WriteBestInvalidWork(CBigNum bnBestInvalidWork)
     return Write(string("bnBestInvalidWork"), bnBestInvalidWork);
 }
 
-CBlockIndex static * InsertBlockIndex(uint256 hash)
+static CBlockIndex *InsertBlockIndex(blkidx_t *blockIndex, uint256 hash)
 {
     if (hash == 0)
         return NULL;
 
     // Return existing
-    map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(hash);
-    if (mi != mapBlockIndex.end())
+    map<uint256, CBlockIndex*>::iterator mi = blockIndex->find(hash);
+    if (mi != blockIndex->end())
         return (*mi).second;
 
     // Create new
     CBlockIndex* pindexNew = new CBlockIndex();
     if (!pindexNew)
         throw runtime_error("LoadBlockIndex() : new CBlockIndex failed");
-    mi = mapBlockIndex.insert(make_pair(hash, pindexNew)).first;
+    mi = blockIndex->insert(make_pair(hash, pindexNew)).first;
     pindexNew->phashBlock = &((*mi).first);
 
     return pindexNew;
@@ -480,6 +480,8 @@ CBlockIndex static * InsertBlockIndex(uint256 hash)
 
 bool CTxDB::InitBlockChainIndex(CIface *iface)
 {
+  int ifaceIndex = GetCoinIndex(iface);
+  blkidx_t *blockIndex;
   bc_t *bc;
   uint256 l_hash; /* = 0 */
   int height;
@@ -488,6 +490,8 @@ bool CTxDB::InitBlockChainIndex(CIface *iface)
   bc = GetBlockChain(iface);
   if (!bc)
     return (false);
+
+  blockIndex = GetBlockTable(ifaceIndex);
 
   max = bc_idx_next(bc);
   for (height = (max - 1); height >= 0; height--) {
@@ -503,9 +507,9 @@ bool CTxDB::InitBlockChainIndex(CIface *iface)
     hash = block.GetHash();
 
     // Construct block index object
-    CBlockIndex* pindexNew = InsertBlockIndex(hash);
-    pindexNew->pprev          = InsertBlockIndex(block.hashPrevBlock);
-    pindexNew->pnext          = InsertBlockIndex(l_hash);
+    CBlockIndex* pindexNew = InsertBlockIndex(blockIndex, hash);
+    pindexNew->pprev          = InsertBlockIndex(blockIndex, block.hashPrevBlock);
+    pindexNew->pnext          = InsertBlockIndex(blockIndex, l_hash);
     pindexNew->nHeight        = height;
     pindexNew->nVersion       = block.nVersion;
     pindexNew->hashMerkleRoot = block.hashMerkleRoot;
@@ -531,12 +535,20 @@ bool CTxDB::InitBlockChainIndex(CIface *iface)
   return true;
 }
 
-bool CTxDB::LoadBlockIndex()
+bool CTxDB::LoadBlockIndex(CIface *iface)
 {
+  int ifaceIndex = GetCoinIndex(iface);
+  blkidx_t *blockIndex;
+
+  blockIndex = GetBlockTable(ifaceIndex);
+  if (!blockIndex) {
+    unet_log(ifaceIndex, "error loading block table.");
+    return (false);
+  }
 
 /* DEBUG: height < 1, no nFilePos avail (anexorcate block.ReadFromDisk()) */
-//  if (!InitBlockChainIndex()) {
-    if (!LoadBlockIndexGuts())
+//  if (!InitBlockChainIndex(iface)) {
+    if (!LoadBlockIndexGuts(iface))
       return false;
 //  }
 
@@ -546,8 +558,8 @@ bool CTxDB::LoadBlockIndex()
 
   // Calculate bnChainWork
   vector<pair<int, CBlockIndex*> > vSortedByHeight;
-  vSortedByHeight.reserve(mapBlockIndex.size());
-  BOOST_FOREACH(const PAIRTYPE(uint256, CBlockIndex*)& item, mapBlockIndex)
+  vSortedByHeight.reserve(blockIndex->size());
+  BOOST_FOREACH(const PAIRTYPE(uint256, CBlockIndex*)& item, (*blockIndex))
   {
     CBlockIndex* pindex = item.second;
     vSortedByHeight.push_back(make_pair(pindex->nHeight, pindex));
@@ -566,9 +578,9 @@ bool CTxDB::LoadBlockIndex()
       return true;
     return error(SHERR_IO, "CTxDB::LoadBlockIndex() : hashBestChain not loaded");
   }
-  if (!mapBlockIndex.count(hashBestChain))
+  if (!blockIndex->count(hashBestChain))
     return error(SHERR_IO, "CTxDB::LoadBlockIndex() : hashBestChain not found in the block index");
-  pindexBest = mapBlockIndex[hashBestChain];
+  pindexBest = (*blockIndex)[hashBestChain];
   nBestHeight = pindexBest->nHeight;
   bnBestChainWork = pindexBest->bnChainWork;
 
@@ -736,14 +748,17 @@ bool CTxDB::LoadBlockIndex()
 
 
 
-bool CTxDB::LoadBlockIndexGuts()
+bool CTxDB::LoadBlockIndexGuts(CIface *iface)
 {
+  int ifaceIndex = GetCoinIndex(iface);
+  blkidx_t *blockIndex = GetBlockTable(ifaceIndex);
+
   // Get database cursor
   Dbc* pcursor = GetCursor();
   if (!pcursor)
     return false;
 
-  // Load mapBlockIndex
+  // Load block index table
   unsigned int fFlags = DB_SET_RANGE;
   loop
   {
@@ -770,9 +785,9 @@ bool CTxDB::LoadBlockIndexGuts()
         ssValue >> diskindex;
 
         // Construct block index object
-        CBlockIndex* pindexNew = InsertBlockIndex(diskindex.GetBlockHash());
-        pindexNew->pprev          = InsertBlockIndex(diskindex.hashPrev);
-        pindexNew->pnext          = InsertBlockIndex(diskindex.hashNext);
+        CBlockIndex* pindexNew = InsertBlockIndex(blockIndex, diskindex.GetBlockHash());
+        pindexNew->pprev          = InsertBlockIndex(blockIndex, diskindex.hashPrev);
+        pindexNew->pnext          = InsertBlockIndex(blockIndex, diskindex.hashNext);
         pindexNew->nFile          = diskindex.nFile;
         pindexNew->nBlockPos      = diskindex.nBlockPos;
         pindexNew->nHeight        = diskindex.nHeight;

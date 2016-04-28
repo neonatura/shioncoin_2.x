@@ -24,32 +24,32 @@
  *  @endcopyright
  */
 
-#ifndef __SHC_PROTO_H__
-#define __SHC_PROTO_H__
+#ifndef __GMC_PROTO_H__
+#define __GMC_PROTO_H__
 
-#define SHC_VERSION_MAJOR  2 
-#define SHC_VERSION_MINOR  27
-#define SHC_VERSION_REVISION 0
-#define SHC_VERSION_BUILD 0
+#define GMC_VERSION_MAJOR       0
+#define GMC_VERSION_MINOR       9
+#define GMC_VERSION_REVISION    4
+#define GMC_VERSION_BUILD       3
 
-#define SHC_COIN_DAEMON_PORT 24104
+#define GMC_COIN_DAEMON_PORT 40002
 
-#define SHC_MAX_GETADDR 2500
+#define GMC_MAX_GETADDR 2500
 
-#define SHC_COIN (uint64_t)100000000
-static const unsigned int SHC_MAX_BLOCK_SIZE = 4096000;
-static const unsigned int SHC_MAX_BLOCK_SIZE_GEN = 2048000;
-static const unsigned int SHC_MAX_BLOCK_SIGOPS = 81920;
-static const unsigned int SHC_MAX_ORPHAN_TRANSACTIONS = 4096;
-static const int64 SHC_MIN_TX_FEE = 10000;
-static const int64 SHC_MIN_RELAY_TX_FEE = 10000;
-static const int64 SHC_MAX_MONEY = 320000000000 * SHC_COIN; /* 320bil max */
-static const int SHC_COINBASE_MATURITY = 60;
-static const unsigned int SHC_LOCKTIME_THRESHOLD = 500000000; // Tue Nov  5 00:53:20 1985 UTC
+#define GMC_COIN (uint64_t)100000000
+static const unsigned int GMC_MAX_BLOCK_SIZE = 1000000;
+static const unsigned int GMC_MAX_BLOCK_SIZE_GEN = 500000;
+static const unsigned int GMC_MAX_BLOCK_SIGOPS = 20000;
+static const unsigned int GMC_MAX_ORPHAN_TRANSACTIONS = 100;
+static const int64 GMC_MIN_TX_FEE = 10000;
+static const int64 GMC_MIN_RELAY_TX_FEE = 1000;
+static const int64 GMC_MAX_MONEY = 84000000 * GMC_COIN;
+static const int GMC_COINBASE_MATURITY = 100;
+static const unsigned int GMC_LOCKTIME_THRESHOLD = 500000000; // Tue Nov  5 00:53:20 1985 UTC
 
 
 
-#endif /* __SHC_PROTO_H__ */
+#endif /* __GMC_PROTO_H__ */
 
 
 

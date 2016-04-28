@@ -183,7 +183,9 @@ am__objects_6 = $(am__objects_5) shcoind-unet_accept.$(OBJEXT) \
 am__objects_7 = shcoind-coin_proto.$(OBJEXT) \
 	shcoind-usde_proto.$(OBJEXT) shcoind-shc_proto.$(OBJEXT)
 am__objects_8 = $(am__objects_7) shcoind-usde_netmsg.$(OBJEXT) \
-	shcoind-shc_netmsg.$(OBJEXT) shcoind-block.$(OBJEXT) \
+	shcoind-usde_block.$(OBJEXT) shcoind-usde_wallet.$(OBJEXT) \
+	shcoind-shc_netmsg.$(OBJEXT) shcoind-shc_block.$(OBJEXT) \
+	shcoind-shc_wallet.$(OBJEXT) shcoind-block.$(OBJEXT) \
 	shcoind-rpc_proto.$(OBJEXT) shcoind-checkpoints.$(OBJEXT) \
 	shcoind-crypter.$(OBJEXT) shcoind-db.$(OBJEXT) \
 	shcoind-init.$(OBJEXT) shcoind-key.$(OBJEXT) \
@@ -1219,8 +1221,16 @@ server_sources = \
 	$(proto_sources) \
 	server/usde/usde_netmsg.cpp \
 	server/usde/usde_netmsg.h \
+	server/usde/usde_block.cpp \
+	server/usde/usde_block.h \
+	server/usde/usde_wallet.cpp \
+	server/usde/usde_wallet.h \
 	server/shc/shc_netmsg.cpp \
 	server/shc/shc_netmsg.h \
+	server/shc/shc_block.cpp \
+	server/shc/shc_block.h \
+	server/shc/shc_wallet.cpp \
+	server/shc/shc_wallet.h \
 	server/block.cpp \
 	server/rpc_proto.cpp \
 	server/checkpoints.cpp \
@@ -1477,8 +1487,10 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-script.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-scrypt.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-server_iface.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-shc_block.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-shc_netmsg.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-shc_proto.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-shc_wallet.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-shcoind.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-shcoind_daemon.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-shcoind_log.Po@am__quote@
@@ -1501,8 +1513,10 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-unet_io.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-unet_peer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-unet_timer.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-usde_block.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-usde_netmsg.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-usde_proto.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-usde_wallet.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-util.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-version.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-wallet.Po@am__quote@
@@ -2349,6 +2363,34 @@ shcoind-usde_netmsg.obj: server/usde/usde_netmsg.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-usde_netmsg.obj `if test -f 'server/usde/usde_netmsg.cpp'; then $(CYGPATH_W) 'server/usde/usde_netmsg.cpp'; else $(CYGPATH_W) '$(srcdir)/server/usde/usde_netmsg.cpp'; fi`
 
+shcoind-usde_block.o: server/usde/usde_block.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-usde_block.o -MD -MP -MF $(DEPDIR)/shcoind-usde_block.Tpo -c -o shcoind-usde_block.o `test -f 'server/usde/usde_block.cpp' || echo '$(srcdir)/'`server/usde/usde_block.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-usde_block.Tpo $(DEPDIR)/shcoind-usde_block.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/usde/usde_block.cpp' object='shcoind-usde_block.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-usde_block.o `test -f 'server/usde/usde_block.cpp' || echo '$(srcdir)/'`server/usde/usde_block.cpp
+
+shcoind-usde_block.obj: server/usde/usde_block.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-usde_block.obj -MD -MP -MF $(DEPDIR)/shcoind-usde_block.Tpo -c -o shcoind-usde_block.obj `if test -f 'server/usde/usde_block.cpp'; then $(CYGPATH_W) 'server/usde/usde_block.cpp'; else $(CYGPATH_W) '$(srcdir)/server/usde/usde_block.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-usde_block.Tpo $(DEPDIR)/shcoind-usde_block.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/usde/usde_block.cpp' object='shcoind-usde_block.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-usde_block.obj `if test -f 'server/usde/usde_block.cpp'; then $(CYGPATH_W) 'server/usde/usde_block.cpp'; else $(CYGPATH_W) '$(srcdir)/server/usde/usde_block.cpp'; fi`
+
+shcoind-usde_wallet.o: server/usde/usde_wallet.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-usde_wallet.o -MD -MP -MF $(DEPDIR)/shcoind-usde_wallet.Tpo -c -o shcoind-usde_wallet.o `test -f 'server/usde/usde_wallet.cpp' || echo '$(srcdir)/'`server/usde/usde_wallet.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-usde_wallet.Tpo $(DEPDIR)/shcoind-usde_wallet.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/usde/usde_wallet.cpp' object='shcoind-usde_wallet.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-usde_wallet.o `test -f 'server/usde/usde_wallet.cpp' || echo '$(srcdir)/'`server/usde/usde_wallet.cpp
+
+shcoind-usde_wallet.obj: server/usde/usde_wallet.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-usde_wallet.obj -MD -MP -MF $(DEPDIR)/shcoind-usde_wallet.Tpo -c -o shcoind-usde_wallet.obj `if test -f 'server/usde/usde_wallet.cpp'; then $(CYGPATH_W) 'server/usde/usde_wallet.cpp'; else $(CYGPATH_W) '$(srcdir)/server/usde/usde_wallet.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-usde_wallet.Tpo $(DEPDIR)/shcoind-usde_wallet.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/usde/usde_wallet.cpp' object='shcoind-usde_wallet.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-usde_wallet.obj `if test -f 'server/usde/usde_wallet.cpp'; then $(CYGPATH_W) 'server/usde/usde_wallet.cpp'; else $(CYGPATH_W) '$(srcdir)/server/usde/usde_wallet.cpp'; fi`
+
 shcoind-shc_netmsg.o: server/shc/shc_netmsg.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-shc_netmsg.o -MD -MP -MF $(DEPDIR)/shcoind-shc_netmsg.Tpo -c -o shcoind-shc_netmsg.o `test -f 'server/shc/shc_netmsg.cpp' || echo '$(srcdir)/'`server/shc/shc_netmsg.cpp
 @am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-shc_netmsg.Tpo $(DEPDIR)/shcoind-shc_netmsg.Po
@@ -2362,6 +2404,34 @@ shcoind-shc_netmsg.obj: server/shc/shc_netmsg.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/shc/shc_netmsg.cpp' object='shcoind-shc_netmsg.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-shc_netmsg.obj `if test -f 'server/shc/shc_netmsg.cpp'; then $(CYGPATH_W) 'server/shc/shc_netmsg.cpp'; else $(CYGPATH_W) '$(srcdir)/server/shc/shc_netmsg.cpp'; fi`
+
+shcoind-shc_block.o: server/shc/shc_block.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-shc_block.o -MD -MP -MF $(DEPDIR)/shcoind-shc_block.Tpo -c -o shcoind-shc_block.o `test -f 'server/shc/shc_block.cpp' || echo '$(srcdir)/'`server/shc/shc_block.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-shc_block.Tpo $(DEPDIR)/shcoind-shc_block.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/shc/shc_block.cpp' object='shcoind-shc_block.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-shc_block.o `test -f 'server/shc/shc_block.cpp' || echo '$(srcdir)/'`server/shc/shc_block.cpp
+
+shcoind-shc_block.obj: server/shc/shc_block.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-shc_block.obj -MD -MP -MF $(DEPDIR)/shcoind-shc_block.Tpo -c -o shcoind-shc_block.obj `if test -f 'server/shc/shc_block.cpp'; then $(CYGPATH_W) 'server/shc/shc_block.cpp'; else $(CYGPATH_W) '$(srcdir)/server/shc/shc_block.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-shc_block.Tpo $(DEPDIR)/shcoind-shc_block.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/shc/shc_block.cpp' object='shcoind-shc_block.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-shc_block.obj `if test -f 'server/shc/shc_block.cpp'; then $(CYGPATH_W) 'server/shc/shc_block.cpp'; else $(CYGPATH_W) '$(srcdir)/server/shc/shc_block.cpp'; fi`
+
+shcoind-shc_wallet.o: server/shc/shc_wallet.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-shc_wallet.o -MD -MP -MF $(DEPDIR)/shcoind-shc_wallet.Tpo -c -o shcoind-shc_wallet.o `test -f 'server/shc/shc_wallet.cpp' || echo '$(srcdir)/'`server/shc/shc_wallet.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-shc_wallet.Tpo $(DEPDIR)/shcoind-shc_wallet.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/shc/shc_wallet.cpp' object='shcoind-shc_wallet.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-shc_wallet.o `test -f 'server/shc/shc_wallet.cpp' || echo '$(srcdir)/'`server/shc/shc_wallet.cpp
+
+shcoind-shc_wallet.obj: server/shc/shc_wallet.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-shc_wallet.obj -MD -MP -MF $(DEPDIR)/shcoind-shc_wallet.Tpo -c -o shcoind-shc_wallet.obj `if test -f 'server/shc/shc_wallet.cpp'; then $(CYGPATH_W) 'server/shc/shc_wallet.cpp'; else $(CYGPATH_W) '$(srcdir)/server/shc/shc_wallet.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-shc_wallet.Tpo $(DEPDIR)/shcoind-shc_wallet.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/shc/shc_wallet.cpp' object='shcoind-shc_wallet.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-shc_wallet.obj `if test -f 'server/shc/shc_wallet.cpp'; then $(CYGPATH_W) 'server/shc/shc_wallet.cpp'; else $(CYGPATH_W) '$(srcdir)/server/shc/shc_wallet.cpp'; fi`
 
 shcoind-block.o: server/block.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-block.o -MD -MP -MF $(DEPDIR)/shcoind-block.Tpo -c -o shcoind-block.o `test -f 'server/block.cpp' || echo '$(srcdir)/'`server/block.cpp

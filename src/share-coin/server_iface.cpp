@@ -1361,7 +1361,218 @@ void usde_server_term(void)
   unet_unbind(UNET_USDE);
 }
 
+list<CNode*> shc_vNodesDisconnected;
+static void shc_close_free(void)
+{
 
+  LOCK(cs_vNodes);
+  vector<CNode*> vNodesCopy = vNodes;
+
+  // Disconnect unused nodes
+  BOOST_FOREACH(CNode* pnode, vNodesCopy)
+  {
+    if (pnode->fDisconnect ||
+        (pnode->GetRefCount() <= 0 && pnode->vRecv.empty() && pnode->vSend.empty()))
+    {
+      // remove from vNodes
+      vNodes.erase(remove(vNodes.begin(), vNodes.end(), pnode), vNodes.end());
+
+      // release outbound grant (if any)
+      pnode->grantOutbound.Release();
+
+/* socket is closed by underlying 'unet' network engine 
+              pnode->CloseSocketDisconnect();
+*/
+      pnode->Cleanup();
+
+      // hold in disconnected pool until all refs are released
+      pnode->nReleaseTime = max(pnode->nReleaseTime, GetTime() + 15 * 60);
+      if (pnode->fNetworkNode || pnode->fInbound)
+        pnode->Release();
+      shc_vNodesDisconnected.push_back(pnode);
+    }
+  }
+
+  // Delete disconnected nodes
+  list<CNode*> shc_vNodesDisconnectedCopy = shc_vNodesDisconnected;
+  BOOST_FOREACH(CNode* pnode, shc_vNodesDisconnectedCopy)
+  {
+#if 0
+    // wait until threads are done using it
+    if (pnode->GetRefCount() <= 0)
+    {
+#endif
+      bool fDelete = false;
+      {
+        TRY_LOCK(pnode->cs_vSend, lockSend);
+        if (lockSend)
+        {
+          TRY_LOCK(pnode->cs_vRecv, lockRecv);
+          if (lockRecv)
+          {
+            TRY_LOCK(pnode->cs_mapRequests, lockReq);
+            if (lockReq)
+            {
+              TRY_LOCK(pnode->cs_inventory, lockInv);
+              if (lockInv)
+                fDelete = true;
+            }
+          }
+        }
+      }
+      if (fDelete)
+      {
+        shc_vNodesDisconnected.remove(pnode);
+        delete pnode;
+      }
+#if 0
+    }
+#endif
+  }
+}
+
+void shc_server_timer(void)
+{
+
+  if (fShutdown)
+    return;
+
+  shc_close_free();
+
+  //
+  // Service each socket
+  {
+    vector<CNode*> vNodesCopy;
+    {
+      LOCK(cs_vNodes);
+      vNodesCopy = vNodes;
+      BOOST_FOREACH(CNode* pnode, vNodesCopy)
+        pnode->AddRef();
+    }
+
+    char pchBuf[65536];
+    BOOST_FOREACH(CNode* pnode, vNodesCopy)
+    {
+      if (fShutdown)
+        return;
+
+      memset(pchBuf, '\000', 65536);
+
+      /* incoming data */
+      CDataStream& vRecv = pnode->vRecv;
+      unsigned int nPos = vRecv.size();
+      size_t nBytes = sizeof(pchBuf);
+      int err = unet_read(pnode->hSocket, pchBuf, &nBytes);
+      if (!err && nBytes > 0) { 
+        vRecv.resize(nPos + nBytes);
+        memcpy(&vRecv[nPos], pchBuf, nBytes);
+        pnode->nLastRecv = GetTime();
+      }
+
+      {
+        LOCK(pnode->cs_vSend);
+        /* transmit pending outgoing data */
+        CDataStream& vSend = pnode->vSend;
+        if (!vSend.empty())
+        {
+          size_t nBytes = vSend.size();
+          int err = unet_write(pnode->hSocket, &vSend[0], nBytes);
+          if (!err) {
+            vSend.erase(vSend.begin(), vSend.begin() + nBytes);
+            pnode->nLastSend = GetTime();
+          }
+        }
+      }
+    }
+
+    {
+      LOCK(cs_vNodes);
+      BOOST_FOREACH(CNode* pnode, vNodesCopy)
+        pnode->Release();
+    }
+  }
+
+  MessageHandler(NULL);
+}
+
+void shc_server_accept(int hSocket, struct sockaddr *net_addr)
+{
+#ifdef USE_IPV6
+  struct sockaddr_storage sockaddr;
+#else
+  struct sockaddr sockaddr;
+#endif
+  CAddress addr;
+  int nInbound = 0;
+  bool inBound = false;
+  unet_table_t *t = get_unet_table(hSocket);
+
+  if (t && (t->flag & UNETF_INBOUND))
+    inBound = true;
+
+  if (!addr.SetSockAddr(net_addr))
+    fprintf(stderr, "warning: unknown socket family\n");
+
+  if (inBound) {
+    {
+      LOCK(cs_vNodes);
+      BOOST_FOREACH(CNode* pnode, vNodes)
+        if (pnode->fInbound)
+          nInbound++;
+    }
+
+    if (nInbound >= opt_max_conn - MAX_OUTBOUND_CONNECTIONS)
+    {
+      {
+        LOCK(cs_setservAddNodeAddresses);
+        if (!setservAddNodeAddresses.count(addr)) {
+      fprintf(stderr, "connection from %s dropped (inbound limit %d exceeded)\n", addr.ToString().c_str(), (opt_max_conn - MAX_OUTBOUND_CONNECTIONS));
+          unet_close(hSocket, "inbound limit");
+#if 0
+          closesocket(hSocket);
+#endif
+        }
+      }
+    }
+
+    if (CNode::IsBanned(addr))
+    {
+      fprintf(stderr, "connection from %s dropped (banned)\n", addr.ToString().c_str());
+      unet_close(hSocket, "banned");
+      //    closesocket(hSocket);
+      return;
+    }
+  }
+
+  if (inBound) {
+    fprintf(stderr, "shc: accepted connection %s\n", addr.ToString().c_str());
+  } else {
+    fprintf(stderr, "shc: initialized connection %s\n", addr.ToString().c_str());
+  }
+
+
+  CNode* pnode = new CNode(hSocket, addr, 
+      shaddr_print(shaddr(hSocket)), inBound);
+
+  //if (inBound)
+    pnode->AddRef();
+
+  if (!inBound)
+    pnode->fNetworkNode = true;
+
+  {
+    LOCK(cs_vNodes);
+    vNodes.push_back(pnode);
+  }
+
+  /* submit address to shared daemon */
+  shared_addr_submit(shaddr_print(net_addr));
+}
+
+void shc_server_close(int fd, struct sockaddr *addr)
+{
+  unet_unbind(SHC_COIN_IFACE);
+}
 
 
 
@@ -2111,7 +2322,7 @@ int GetRandomAddress(char *hostname, int *port_p)
 }
 #endif
 
-vector <CAddress> GetAddresses(void)
+vector <CAddress> GetAddresses(CIface *iface, int max_peer)
 {
   vector<CAddress> vAddr;
   shpeer_t **addr_list;
@@ -2122,8 +2333,8 @@ vector <CAddress> GetAddresses(void)
   int idx;
 
   sprintf(buf, "127.0.0.1 %d", USDE_COIN_DAEMON_PORT);
-  peer = shpeer_init("usde", buf);
-  addr_list = shnet_track_list(peer, 640);
+  peer = shpeer_init(iface->name, buf);
+  addr_list = shnet_track_list(peer, max_peer);
   shpeer_free(&peer);
   if (!addr_list)
     return (vAddr);

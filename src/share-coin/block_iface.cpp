@@ -98,16 +98,12 @@ double GetBitsDifficulty(unsigned int nBits)
   return (dDiff);
 }
 
-void SetNextDifficulty(unsigned int nBits)
-{
-  nextDifficulty = GetBitsDifficulty(nBits);
-}
 
 /**
  * Generate a block to work on.
  * @returns JSON encoded block state information
  */
-const char *c_getblocktemplate(void)
+const char *c_getblocktemplate(int ifaceIndex)
 {
   static CReserveKey reservekey(pwalletMain);
   static unsigned int nTransactionsUpdatedLast;
@@ -169,7 +165,7 @@ const char *c_getblocktemplate(void)
   pblock->UpdateTime(pindexPrev);
   pblock->nNonce = 0;
 
-  SetNextDifficulty(pblock->nBits);
+  SetNextDifficulty(ifaceIndex, pblock->nBits);
 
   Array transactions;
   //map<uint256, int64_t> setTxIndex;
@@ -226,11 +222,12 @@ const char *c_getblocktemplate(void)
 
 int c_processblock(CBlock* pblock)
 {
+  blkidx_t *blockIndex = GetBlockTable(pblock->ifaceIndex);
   CNode *pfrom = NULL;
 
   // Check for duplicate
   uint256 hash = pblock->GetHash();
-  if (mapBlockIndex.count(hash))// || mapOrphanBlocks.count(hash))
+  if (blockIndex->count(hash))// || mapOrphanBlocks.count(hash))
     return (BLKERR_DUPLICATE_BLOCK);
 
   // Preliminary checks
@@ -625,8 +622,9 @@ const char *c_getblockindexinfo(CBlockIndex *pblockindex)
   blockinfo_json = JSONRPCReply(result, Value::null, Value::null);
   return (blockinfo_json.c_str());
 }
-const char *c_getblockinfo(const char *hash_addr)
+const char *c_getblockinfo(int ifaceIndex, const char *hash_addr)
 {
+  blkidx_t *blockIndex = GetBlockTable(ifaceIndex);
   long nHeight;
 
   if (!hash_addr)
@@ -641,19 +639,19 @@ const char *c_getblockinfo(const char *hash_addr)
       return (NULL);
     }
 
-    CBlockIndex* pblockindex = mapBlockIndex[hashBestChain];
+    CBlockIndex* pblockindex = (*blockIndex)[hashBestChain];
     while (pblockindex->nHeight > nHeight)
       pblockindex = pblockindex->pprev;
     strHash = pblockindex->phashBlock->GetHex();
   }
 
   uint256 hash(strHash);
-  if (mapBlockIndex.count(hash) == 0) {
+  if (blockIndex->count(hash) == 0) {
 //    throw JSONRPCError(-5, "Block not found");
     return (NULL);
   }
 
-  CBlockIndex* pblockindex = mapBlockIndex[hash];
+  CBlockIndex* pblockindex = (*blockIndex)[hash];
   return (c_getblockindexinfo(pblockindex));
 }
 #if 0
@@ -819,8 +817,9 @@ int64 GetTxFee(CTransaction tx)
 }
 
 #define MAX_HISTORY_TIME 10454400 /* 1/3 year */
-const char *c_gettransactioninfo(const char *tx_id)
+const char *c_gettransactioninfo(int ifaceIndex, const char *tx_id)
 {
+  blkidx_t *blockIndex = GetBlockTable(ifaceIndex);
   CTransaction tx;
   CBlockIndex *pblockindex;
   Object result;
@@ -862,8 +861,8 @@ const char *c_gettransactioninfo(const char *tx_id)
     result.push_back(Pair("blockhash", hashBlock.GetHex()));
 
     if (!pblockindex) { /* redundant secondary lookup */
-      map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(hashBlock);
-      if (mi != mapBlockIndex.end() && (*mi).second) {
+      map<uint256, CBlockIndex*>::iterator mi = blockIndex->find(hashBlock);
+      if (mi != blockIndex->end() && (*mi).second) {
         pblockindex = (*mi).second;
       }
     }
@@ -1084,9 +1083,9 @@ const int cxx_reloadblockfile(const char *path)
 extern "C" {
 #endif
 
-const char *getblocktemplate(void)
+const char *getblocktemplate(int ifaceIndex)
 {
-  return (c_getblocktemplate());
+  return (c_getblocktemplate(ifaceIndex));
 }
 
 int submitblock(unsigned int workId, unsigned int nTime, unsigned int nNonce, char *xn_hex, char *ret_hash, double *ret_diff)
@@ -1109,14 +1108,14 @@ double getdifficulty(void)
   return (c_getdifficulty());
 }
 
-const char *getblockinfo(const char *hash)
+const char *getblockinfo(int ifaceIndex, const char *hash)
 {
-  return (c_getblockinfo(hash));
+  return (c_getblockinfo(ifaceIndex, hash));
 }
 
-const char *gettransactioninfo(const char *hash)
+const char *gettransactioninfo(int ifaceIndex, const char *hash)
 {
-  return (c_gettransactioninfo(hash));
+  return (c_gettransactioninfo(ifaceIndex, hash));
 }
 
 const char *getlastblockinfo(int height)
@@ -1137,6 +1136,22 @@ const int reloadblockfile(const char *path)
 {
   return (cxx_reloadblockfile(path));
 }
+
+/** Set by stratum server when block changes via getblocktemplate(). */
+void SetNextDifficulty(int ifaceIndex, unsigned int nBits)
+{
+  CIface *iface = GetCoinByIndex(ifaceIndex);
+  if (iface != NULL)
+    iface->blk_diff = GetBitsDifficulty(nBits);
+}
+double GetNextDifficulty(int ifaceIndex)
+{
+  CIface *iface = GetCoinByIndex(ifaceIndex);
+  if (iface == NULL)
+    return (0.0);
+  return (iface->blk_diff);
+}
+
 
 #ifdef __cplusplus
 }

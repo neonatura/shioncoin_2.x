@@ -27,7 +27,8 @@ createArgs(int nRequired, const char* address1=NULL, const char* address2=NULL)
 
 BOOST_AUTO_TEST_CASE(rpc_addmultisig)
 {
-    rpcfn_type addmultisig = tableRPC["addmultisigaddress"]->actor;
+    rpcfn_type addmultisig = tableRPC["rpc_addmultisigaddress"]->actor;
+    CIface *iface = GetCoinByIndex(USDE_COIN_IFACE);
 
     // old, 65-byte-long:
     const char address1Hex[] = "0434e3e09f49ea168c5bbf53f877ff4206923858aab7c7e1df25bc263978107c95e35065a27ef6f1b27222db0ec97e0e895eaca603d3ee0d4c060ce3d8a00286c8";
@@ -36,30 +37,30 @@ BOOST_AUTO_TEST_CASE(rpc_addmultisig)
 
     Value v;
     CBitcoinAddress address;
-    BOOST_CHECK_NO_THROW(v = addmultisig(createArgs(1, address1Hex), false));
+    BOOST_CHECK_NO_THROW(v = addmultisig(iface, createArgs(1, address1Hex), false));
     address.SetString(v.get_str());
     BOOST_CHECK(address.IsValid() && address.IsScript());
 
-    BOOST_CHECK_NO_THROW(v = addmultisig(createArgs(1, address1Hex, address2Hex), false));
+    BOOST_CHECK_NO_THROW(v = addmultisig(iface, createArgs(1, address1Hex, address2Hex), false));
     address.SetString(v.get_str());
     BOOST_CHECK(address.IsValid() && address.IsScript());
 
-    BOOST_CHECK_NO_THROW(v = addmultisig(createArgs(2, address1Hex, address2Hex), false));
+    BOOST_CHECK_NO_THROW(v = addmultisig(iface, createArgs(2, address1Hex, address2Hex), false));
     address.SetString(v.get_str());
     BOOST_CHECK(address.IsValid() && address.IsScript());
 
-    BOOST_CHECK_THROW(addmultisig(createArgs(0), false), runtime_error);
-    BOOST_CHECK_THROW(addmultisig(createArgs(1), false), runtime_error);
-    BOOST_CHECK_THROW(addmultisig(createArgs(2, address1Hex), false), runtime_error);
+    BOOST_CHECK_THROW(addmultisig(iface, createArgs(0), false), runtime_error);
+    BOOST_CHECK_THROW(addmultisig(iface, createArgs(1), false), runtime_error);
+    BOOST_CHECK_THROW(addmultisig(iface, createArgs(2, address1Hex), false), runtime_error);
 
-    BOOST_CHECK_THROW(addmultisig(createArgs(1, ""), false), runtime_error);
-    BOOST_CHECK_THROW(addmultisig(createArgs(1, "NotAValidPubkey"), false), runtime_error);
+    BOOST_CHECK_THROW(addmultisig(iface, createArgs(1, ""), false), runtime_error);
+    BOOST_CHECK_THROW(addmultisig(iface, createArgs(1, "NotAValidPubkey"), false), runtime_error);
 
     string short1(address1Hex, address1Hex+sizeof(address1Hex)-2); // last byte missing
-    BOOST_CHECK_THROW(addmultisig(createArgs(2, short1.c_str()), false), runtime_error);
+    BOOST_CHECK_THROW(addmultisig(iface, createArgs(2, short1.c_str()), false), runtime_error);
 
     string short2(address1Hex+1, address1Hex+sizeof(address1Hex)); // first byte missing
-    BOOST_CHECK_THROW(addmultisig(createArgs(2, short2.c_str()), false), runtime_error);
+    BOOST_CHECK_THROW(addmultisig(iface, createArgs(2, short2.c_str()), false), runtime_error);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

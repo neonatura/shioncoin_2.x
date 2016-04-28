@@ -25,6 +25,7 @@
 
 #include "shcoind.h"
 #include <signal.h>
+#include "coin_proto.h"
 
 shpeer_t *server_peer;
 int server_msgq;
@@ -102,6 +103,7 @@ void usage_version(void)
 
 int main(int argc, char *argv[])
 {
+  CIface *iface;
   char blockfile_path[PATH_MAX];
   char buf[1024];
   int fd;
@@ -194,30 +196,41 @@ shcoind_log(buf);
   block_init();
 #endif
 
+#if 0
   /* open 'wallet.dat' */
   load_wallet();
+#endif
 
+#if 0
   /* debug: cmdline option */
   if (*blockfile_path)
     reloadblockfile(blockfile_path);
+#endif
 
+#if 0
   /* debug: performed auto. in original required manual 'upgrade'. */
   upgrade_wallet();
+#endif
 
-  /* debug; replace with shnet_track */
+  /* initialize coin interfaces */  
+  iface = GetCoinByIndex(USDE_COIN_IFACE);
+  iface->op_init(iface, NULL);
+
   load_peers();
 
+#if 0
   err = usde_server_init();
   if (err) {
     fprintf(stderr, "critical: init usde server: %s. [sherr %d]", sherrstr(err), err);
     return (-1);
   }
+#endif
 
-  /* debug: usde_server_init() */
+  /* RPC */
   _usde_thread_running = TRUE;
   start_node();
 
-  /* debug: invokes unet_cycle() loop */
+  /* unet_cycle() */
   daemon_server();
 
 /*

@@ -1,5 +1,4 @@
 
-
 /*
  * @copyright
  *
@@ -22,34 +21,23 @@
  *  along with The Share Library.  If not, see <http://www.gnu.org/licenses/>.
  *
  *  @endcopyright
- */
+ */  
 
-#ifndef __SHC_PROTO_H__
-#define __SHC_PROTO_H__
+// Copyright (c) 2009-2010 Satoshi Nakamoto
+// Copyright (c) 2009-2012 The Bitcoin developers
+// Copyright (c) 2011-2013 shc Developers
+// Distributed under the MIT/X11 software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#define SHC_VERSION_MAJOR  2 
-#define SHC_VERSION_MINOR  27
-#define SHC_VERSION_REVISION 0
-#define SHC_VERSION_BUILD 0
 
-#define SHC_COIN_DAEMON_PORT 24104
-
-#define SHC_MAX_GETADDR 2500
-
-#define SHC_COIN (uint64_t)100000000
-static const unsigned int SHC_MAX_BLOCK_SIZE = 4096000;
-static const unsigned int SHC_MAX_BLOCK_SIZE_GEN = 2048000;
-static const unsigned int SHC_MAX_BLOCK_SIGOPS = 81920;
-static const unsigned int SHC_MAX_ORPHAN_TRANSACTIONS = 4096;
-static const int64 SHC_MIN_TX_FEE = 10000;
-static const int64 SHC_MIN_RELAY_TX_FEE = 10000;
-static const int64 SHC_MAX_MONEY = 320000000000 * SHC_COIN; /* 320bil max */
-static const int SHC_COINBASE_MATURITY = 60;
-static const unsigned int SHC_LOCKTIME_THRESHOLD = 500000000; // Tue Nov  5 00:53:20 1985 UTC
+#ifndef __SHC_BLOCK_H__
+#define __SHC_BLOCK_H__
 
 
 
-#endif /* __SHC_PROTO_H__ */
+
+CBlock* shc_CreateNewBlock(CReserveKey& reservekey);
 
 
 
+#endif /* ndef __SHC_BLOCK_H__ */

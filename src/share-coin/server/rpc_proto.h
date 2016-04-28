@@ -40,6 +40,7 @@ void RPCTypeCheck(const json_spirit::Array& params,
 void RPCTypeCheck(const json_spirit::Object& o,
                   const std::map<std::string, json_spirit::Value_type>& typesExpected);
 
+#if 0
 typedef json_spirit::Value(*rpcfn_type)(const json_spirit::Array& params, bool fHelp);
 
 class CRPCCommand
@@ -49,13 +50,14 @@ public:
     rpcfn_type actor;
     bool okSafeMode;
 };
+#endif
 
-typedef json_spirit::Value(*rpc_f)(CIface *iface, const json_spirit::Array& params, bool fHelp);
-class CRPCCmd
+typedef json_spirit::Value(*rpcfn_type)(CIface *iface, const json_spirit::Array& params, bool fHelp);
+class CRPCCommand
 {
 public:
     std::string name;
-    rpc_f actor;
+    rpcfn_type actor;
 };
 
 /**
@@ -68,7 +70,7 @@ private:
 public:
     CRPCTable();
     const CRPCCommand* operator[](std::string name) const;
-    std::string help(std::string name) const;
+    std::string help(CIface *iface, std::string name) const;
 
     /**
      * Execute a method.

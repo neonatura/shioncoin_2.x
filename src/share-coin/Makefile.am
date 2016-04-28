@@ -100,8 +100,16 @@ server_sources = \
 	$(proto_sources) \
 	server/usde/usde_netmsg.cpp \
 	server/usde/usde_netmsg.h \
+	server/usde/usde_block.cpp \
+	server/usde/usde_block.h \
+	server/usde/usde_wallet.cpp \
+	server/usde/usde_wallet.h \
 	server/shc/shc_netmsg.cpp \
 	server/shc/shc_netmsg.h \
+	server/shc/shc_block.cpp \
+	server/shc/shc_block.h \
+	server/shc/shc_wallet.cpp \
+	server/shc/shc_wallet.h \
 	server/block.cpp \
 	server/rpc_proto.cpp \
 	server/checkpoints.cpp \

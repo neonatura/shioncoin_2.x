@@ -40,7 +40,6 @@ unsigned int nTransactionsUpdated = 0;
 
 extern bool WriteToShareNet(CBlock* pBlock, int nHeight);
 
-map<uint256, CBlockIndex*> mapBlockIndex;
 uint256 hashGenesisBlock("0x33abc26f9a026f1279cb49600efdd63f42e7c2d3a15463ad8090505d3e967752");
 static CBigNum bnProofOfWorkLimit(~uint256(0) >> 20); // usde: starting difficulty is 1 / 2^12
 CBlockIndex* pindexGenesisBlock = NULL;
@@ -261,59 +260,68 @@ CTransaction::GetLegacySigOpCount() const
 
 int CMerkleTx::SetMerkleBranch(const CBlock* pblock)
 {
-    if (fClient)
+  blkidx_t *blockIndex;
+
+  if (fClient)
+  {
+    if (hashBlock == 0)
+      return 0;
+  }
+  else
+  {
+    USDEBlock blockTmp;
+    if (pblock == NULL)
     {
-        if (hashBlock == 0)
-            return 0;
-    }
-    else
-    {
-      USDEBlock blockTmp;
-      if (pblock == NULL)
-      {
-        // Load the block this tx is in
-        CTxIndex txindex;
-        CTxDB txdb("r");
-        if (!txdb.ReadTxIndex(GetHash(), txindex)) {
-          txdb.Close();
-          return 0;
-        }
-        if (!blockTmp.ReadFromDisk(txindex.pos.nFile, txindex.pos.nBlockPos)) {
-          txdb.Close();
-          return 0;
-        }
+      // Load the block this tx is in
+      CTxIndex txindex;
+      CTxDB txdb("r");
+      if (!txdb.ReadTxIndex(GetHash(), txindex)) {
         txdb.Close();
-        pblock = &blockTmp;
-      }
-
-      // Update the tx's hashBlock
-      hashBlock = pblock->GetHash();
-
-      // Locate the transaction
-      for (nIndex = 0; nIndex < (int)pblock->vtx.size(); nIndex++)
-        if (pblock->vtx[nIndex] == *(CTransaction*)this)
-          break;
-      if (nIndex == (int)pblock->vtx.size())
-      {
-        vMerkleBranch.clear();
-        nIndex = -1;
-        error(SHERR_INVAL, "SetMerkleBranch() : couldn't find tx in block");
         return 0;
       }
-
-      // Fill in merkle branch
-      vMerkleBranch = pblock->GetMerkleBranch(nIndex);
+      if (!blockTmp.ReadFromDisk(txindex.pos.nFile, txindex.pos.nBlockPos)) {
+        txdb.Close();
+        return 0;
+      }
+      txdb.Close();
+      pblock = &blockTmp;
     }
 
-    // Is the tx in a block that's in the main chain
-    map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(hashBlock);
-    if (mi == mapBlockIndex.end())
-        return 0;
-    CBlockIndex* pindex = (*mi).second;
-    if (!pindex || !pindex->IsInMainChain())
-        return 0;
+    // Update the tx's hashBlock
+    hashBlock = pblock->GetHash();
 
-    return pindexBest->nHeight - pindex->nHeight + 1;
+    // Locate the transaction
+    for (nIndex = 0; nIndex < (int)pblock->vtx.size(); nIndex++)
+      if (pblock->vtx[nIndex] == *(CTransaction*)this)
+        break;
+    if (nIndex == (int)pblock->vtx.size())
+    {
+      vMerkleBranch.clear();
+      nIndex = -1;
+      error(SHERR_INVAL, "SetMerkleBranch() : couldn't find tx in block");
+      return 0;
+    }
+
+    // Fill in merkle branch
+    vMerkleBranch = pblock->GetMerkleBranch(nIndex);
+  }
+
+  blockIndex = GetBlockTable(pblock->ifaceIndex);
+  if (!blockIndex) {
+    unet_log(pblock->ifaceIndex, 
+        "SetMerkleBranch(): error opening block table.");
+    return (0);
+  }
+
+  // Is the tx in a block that's in the main chain
+  map<uint256, CBlockIndex*>::iterator mi = blockIndex->find(hashBlock);
+  if (mi == blockIndex->end())
+    return 0;
+  CBlockIndex* pindex = (*mi).second;
+  if (!pindex || !pindex->IsInMainChain())
+    return 0;
+
+  return pindexBest->nHeight - pindex->nHeight + 1;
 }
 
 
@@ -564,27 +572,29 @@ void CTxMemPool::queryHashes(std::vector<uint256>& vtxid)
 
 int CMerkleTx::GetDepthInMainChain(CBlockIndex* &pindexRet) const
 {
-    if (hashBlock == 0 || nIndex == -1)
-        return 0;
+  blkidx_t *blockIndex = GetBlockTable(USDE_COIN_IFACE); /* DEBUG: */
 
-    // Find the block it claims to be in
-    map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(hashBlock);
-    if (mi == mapBlockIndex.end())
-        return 0;
-    CBlockIndex* pindex = (*mi).second;
-    if (!pindex || !pindex->IsInMainChain())
-        return 0;
+  if (hashBlock == 0 || nIndex == -1)
+    return 0;
 
-    // Make sure the merkle branch connects to this block
-    if (!fMerkleVerified)
-    {
-        if (CBlock::CheckMerkleBranch(GetHash(), vMerkleBranch, nIndex) != pindex->hashMerkleRoot)
-            return 0;
-        fMerkleVerified = true;
-    }
+  // Find the block it claims to be in
+  map<uint256, CBlockIndex*>::iterator mi = blockIndex->find(hashBlock);
+  if (mi == blockIndex->end())
+    return 0;
+  CBlockIndex* pindex = (*mi).second;
+  if (!pindex || !pindex->IsInMainChain())
+    return 0;
 
-    pindexRet = pindex;
-    return pindexBest->nHeight - pindex->nHeight + 1;
+  // Make sure the merkle branch connects to this block
+  if (!fMerkleVerified)
+  {
+    if (CBlock::CheckMerkleBranch(GetHash(), vMerkleBranch, nIndex) != pindex->hashMerkleRoot)
+      return 0;
+    fMerkleVerified = true;
+  }
+
+  pindexRet = pindex;
+  return pindexBest->nHeight - pindex->nHeight + 1;
 }
 
 
@@ -649,24 +659,27 @@ bool CWalletTx::AcceptWalletTransaction()
   return (ret);
 }
 
+/* DEBUG: */
 int CTxIndex::GetDepthInMainChain() const
 {
-    // Read block header
-    USDEBlock block;
-    if (!block.ReadFromDisk(pos.nFile, pos.nBlockPos, false))
-        return 0;
-    // Find the block in the index
-    map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(block.GetHash());
-    if (mi == mapBlockIndex.end())
-        return 0;
-    CBlockIndex* pindex = (*mi).second;
-    if (!pindex || !pindex->IsInMainChain())
-        return 0;
-    return 1 + nBestHeight - pindex->nHeight;
+  blkidx_t *blockIndex = GetBlockTable(USDE_COIN_IFACE);
+
+  // Read block header
+  USDEBlock block;
+  if (!block.ReadFromDisk(pos.nFile, pos.nBlockPos, false))
+    return 0;
+  // Find the block in the index
+  map<uint256, CBlockIndex*>::iterator mi = blockIndex->find(block.GetHash());
+  if (mi == blockIndex->end())
+    return 0;
+  CBlockIndex* pindex = (*mi).second;
+  if (!pindex || !pindex->IsInMainChain())
+    return 0;
+  return 1 + nBestHeight - pindex->nHeight;
 }
 
 // Return transaction in tx, and if it was found inside a block, its hash is placed in hashBlock
-bool GetTransaction(const uint256 &hash, CTransaction &tx, uint256 &hashBlock)
+bool GetTransaction(CIface *iface, const uint256 &hash, CTransaction &tx, uint256 &hashBlock)
 {
     {
         LOCK(cs_main);
@@ -678,6 +691,13 @@ bool GetTransaction(const uint256 &hash, CTransaction &tx, uint256 &hashBlock)
                 return true;
             }
         }
+
+        if (tx.ReadTx(GetCoinIndex(iface), hash, hashBlock)) {
+fprintf(stderr, "DEBUG: GetTransaction: OK: read tx chain '%s'\n", tx.GetHash().GetHex().c_str());
+          return (true);
+        }
+fprintf(stderr, "DEBUG: GetTransaction: WARNING: using C++ CTxIndex\n");
+
         CTxDB txdb("r");
         CTxIndex txindex;
         if (tx.ReadFromDisk(txdb, COutPoint(hash, 0), txindex))
@@ -707,7 +727,7 @@ bool GetTransaction(const uint256 &hash, CTransaction &tx, uint256 &hashBlock)
 
 
 
-bool CBlock::ReadBlock(unsigned int nHeight)
+bool CBlock::ReadBlock(uint64_t nHeight)
 {
   CDataStream sBlock(SER_DISK, CLIENT_VERSION);
   size_t sBlockLen;
@@ -766,6 +786,7 @@ fprintf(stderr, "DEBUG: CBlock::ReadBlock: GET retrieved pos (%d): hash '%s'\n",
 
 bool CBlock::ReadFromDisk(unsigned int nFile, unsigned int nBlockPos, bool fReadTransactions)
 {
+
   SetNull();
   
 
@@ -774,8 +795,10 @@ fprintf(stderr, "DEBUG: WARNING: using C++ db\n");
   CAutoFile filein = CAutoFile(OpenBlockFile(nFile, nBlockPos, "rb"), SER_DISK, CLIENT_VERSION);
   if (!filein)
     return error(SHERR_IO, "CBlock::ReadFromDisk() : OpenBlockFile failed");
+#if 0
   if (!fReadTransactions)
     filein.nType |= SER_BLOCKHEADERONLY;
+#endif
 
   // Read block
   try {
@@ -989,132 +1012,132 @@ unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBl
 {
   int nHeight = pindexLast->nHeight + 1;
 
-        int64 nInterval;
-        int64 nActualTimespanMax;
-        int64 nActualTimespanMin;
-        int64 nTargetTimespanCurrent;
+  int64 nInterval;
+  int64 nActualTimespanMax;
+  int64 nActualTimespanMin;
+  int64 nTargetTimespanCurrent;
 
-	
-		if (nHeight > 91000)
-	{
-		static const int64	BlocksTargetSpacing	= 1.0 * 60; // 1.0 minutes
-		unsigned int	TimeDaySeconds	= 60 * 60 * 24;
-		int64	PastSecondsMin	= TimeDaySeconds * 0.10;
-		int64	PastSecondsMax	= TimeDaySeconds * 2.8;
-		uint64	PastBlocksMin	= PastSecondsMin / BlocksTargetSpacing;
-		uint64	PastBlocksMax	= PastSecondsMax / BlocksTargetSpacing;	
 
-		return KimotoGravityWell(pindexLast, pblock, BlocksTargetSpacing, PastBlocksMin, PastBlocksMax);
-	}
-		 
-        if (nHeight > 27000)
-        {   //Fixed
-                nTargetTimespan = 2 * 60 * 60; // Retarget every 120 blocks (10 minutes)
-                nTargetSpacing = 1 * 60; // 60 seconds
-                nInterval = nTargetTimespan / nTargetSpacing;
-                
-				nActualTimespanMax = nTargetTimespan * 100/125; //25% Up
-                nActualTimespanMin = nTargetTimespan * 2; //50% down
-        }   
-        else
-        {   //Old Protocol
-                nTargetTimespan = 2 * 60 * 60; // Retarget every 120 blocks (2 hour).. Since digitalcoin used inflation it was actually 1200 blocks
-                nTargetSpacing = 1 * 60; // 60 seconds
-                nTargetTimespanCurrent =  (nTargetTimespan*5);
-				nInterval = (nTargetTimespanCurrent / (nTargetSpacing / 2));
-   
+  if (nHeight > 91000)
+  {
+    static const int64	BlocksTargetSpacing	= 1.0 * 60; // 1.0 minutes
+    unsigned int	TimeDaySeconds	= 60 * 60 * 24;
+    int64	PastSecondsMin	= TimeDaySeconds * 0.10;
+    int64	PastSecondsMax	= TimeDaySeconds * 2.8;
+    uint64	PastBlocksMin	= PastSecondsMin / BlocksTargetSpacing;
+    uint64	PastBlocksMax	= PastSecondsMax / BlocksTargetSpacing;	
 
-        }
+    return KimotoGravityWell(pindexLast, pblock, BlocksTargetSpacing, PastBlocksMin, PastBlocksMax);
+  }
 
-    unsigned int nProofOfWorkLimit = bnProofOfWorkLimit.GetCompact();
+  if (nHeight > 27000)
+  {   //Fixed
+    nTargetTimespan = 2 * 60 * 60; // Retarget every 120 blocks (10 minutes)
+    nTargetSpacing = 1 * 60; // 60 seconds
+    nInterval = nTargetTimespan / nTargetSpacing;
 
-    // Genesis block
-    if (pindexLast == NULL)
-        return nProofOfWorkLimit;
+    nActualTimespanMax = nTargetTimespan * 100/125; //25% Up
+    nActualTimespanMin = nTargetTimespan * 2; //50% down
+  }   
+  else
+  {   //Old Protocol
+    nTargetTimespan = 2 * 60 * 60; // Retarget every 120 blocks (2 hour).. Since digitalcoin used inflation it was actually 1200 blocks
+    nTargetSpacing = 1 * 60; // 60 seconds
+    nTargetTimespanCurrent =  (nTargetTimespan*5);
+    nInterval = (nTargetTimespanCurrent / (nTargetSpacing / 2));
 
-    // Only change once per interval
-    if ((pindexLast->nHeight+1) % nInterval != 0)
+
+  }
+
+  unsigned int nProofOfWorkLimit = bnProofOfWorkLimit.GetCompact();
+
+  // Genesis block
+  if (pindexLast == NULL)
+    return nProofOfWorkLimit;
+
+  // Only change once per interval
+  if ((pindexLast->nHeight+1) % nInterval != 0)
+  {
+    // Special difficulty rule for testnet:
+    if (fTestNet)
     {
-        // Special difficulty rule for testnet:
-        if (fTestNet)
-        {
-            // If the new block's timestamp is more than 2* 10 minutes
-            // then allow mining of a min-difficulty block.
-            if (pblock->nTime > pindexLast->nTime + nTargetSpacing*2)
-                return nProofOfWorkLimit;
-            else
-            {
-                // Return the last non-special-min-difficulty-rules-block
-                const CBlockIndex* pindex = pindexLast;
-                while (pindex->pprev && pindex->nHeight % nInterval != 0 && pindex->nBits == nProofOfWorkLimit)
-                    pindex = pindex->pprev;
-                return pindex->nBits;
-            }
-        }
-
-        return pindexLast->nBits;
+      // If the new block's timestamp is more than 2* 10 minutes
+      // then allow mining of a min-difficulty block.
+      if (pblock->nTime > pindexLast->nTime + nTargetSpacing*2)
+        return nProofOfWorkLimit;
+      else
+      {
+        // Return the last non-special-min-difficulty-rules-block
+        const CBlockIndex* pindex = pindexLast;
+        while (pindex->pprev && pindex->nHeight % nInterval != 0 && pindex->nBits == nProofOfWorkLimit)
+          pindex = pindex->pprev;
+        return pindex->nBits;
+      }
     }
 
-    // StableCoin: This fixes an issue where a 51% attack can change difficulty at will.
-    // Go back the full period unless it's the first retarget after genesis. Code courtesy of Art Forz
-    int blockstogoback = nInterval-1;
-    if ((pindexLast->nHeight+1) != nInterval)
-        blockstogoback = nInterval;
+    return pindexLast->nBits;
+  }
 
-    // Go back by what we want to be 14 days worth of blocks
-    const CBlockIndex* pindexFirst = pindexLast;
-    for (int i = 0; pindexFirst && i < blockstogoback; i++)
-        pindexFirst = pindexFirst->pprev;
-    assert(pindexFirst);
+  // StableCoin: This fixes an issue where a 51% attack can change difficulty at will.
+  // Go back the full period unless it's the first retarget after genesis. Code courtesy of Art Forz
+  int blockstogoback = nInterval-1;
+  if ((pindexLast->nHeight+1) != nInterval)
+    blockstogoback = nInterval;
 
-	 int64 nActualTimespan = pindexLast->GetBlockTime() - pindexFirst->GetBlockTime();
-	 
-	 if (nHeight > 27000)
-        {   //Fixed
-            //printf("  nActualTimespan = %"PRI64d"  before bounds\n", nActualTimespan);
-			if (nActualTimespan < nActualTimespanMax)
-				nActualTimespan = nActualTimespanMax;
-			if (nActualTimespan > nActualTimespanMin)
-				nActualTimespan = nActualTimespanMin;
-        }   
-        else
-        {   
-			//old protocol
-            nActualTimespanMax =  (nTargetTimespanCurrent*4);
-			nActualTimespanMin =  (nTargetTimespanCurrent/4);
-	
-			
-			if (nActualTimespan > nActualTimespanMax)
-				nActualTimespan = nActualTimespanMax;	
-			if (nActualTimespan < nActualTimespanMin)
-				nActualTimespan = nActualTimespanMin;
-			
-				
-			nTargetTimespan = nTargetTimespanCurrent;
-        }
-	
-	
-    // Limit adjustment step
+  // Go back by what we want to be 14 days worth of blocks
+  const CBlockIndex* pindexFirst = pindexLast;
+  for (int i = 0; pindexFirst && i < blockstogoback; i++)
+    pindexFirst = pindexFirst->pprev;
+  assert(pindexFirst);
+
+  int64 nActualTimespan = pindexLast->GetBlockTime() - pindexFirst->GetBlockTime();
+
+  if (nHeight > 27000)
+  {   //Fixed
+    //printf("  nActualTimespan = %"PRI64d"  before bounds\n", nActualTimespan);
+    if (nActualTimespan < nActualTimespanMax)
+      nActualTimespan = nActualTimespanMax;
+    if (nActualTimespan > nActualTimespanMin)
+      nActualTimespan = nActualTimespanMin;
+  }   
+  else
+  {   
+    //old protocol
+    nActualTimespanMax =  (nTargetTimespanCurrent*4);
+    nActualTimespanMin =  (nTargetTimespanCurrent/4);
 
 
-    // Retarget
-    CBigNum bnNew;
-    bnNew.SetCompact(pindexLast->nBits);
-    bnNew *= nActualTimespan;
-    bnNew /= nTargetTimespan;
+    if (nActualTimespan > nActualTimespanMax)
+      nActualTimespan = nActualTimespanMax;	
+    if (nActualTimespan < nActualTimespanMin)
+      nActualTimespan = nActualTimespanMin;
 
-    if (bnNew > bnProofOfWorkLimit)
-        bnNew = bnProofOfWorkLimit;
+
+    nTargetTimespan = nTargetTimespanCurrent;
+  }
+
+
+  // Limit adjustment step
+
+
+  // Retarget
+  CBigNum bnNew;
+  bnNew.SetCompact(pindexLast->nBits);
+  bnNew *= nActualTimespan;
+  bnNew /= nTargetTimespan;
+
+  if (bnNew > bnProofOfWorkLimit)
+    bnNew = bnProofOfWorkLimit;
 
 #if 0
-    /// debug print
-    printf("GetNextWorkRequired RETARGET\n");
-    printf("nTargetTimespan = %"PRI64d"    nActualTimespan = %"PRI64d"\n", nTargetTimespan, nActualTimespan);
-    printf("Before: %08x  %s\n", pindexLast->nBits, CBigNum().SetCompact(pindexLast->nBits).getuint256().ToString().c_str());
-    printf("After:  %08x  %s\n", bnNew.GetCompact(), bnNew.getuint256().ToString().c_str());
+  /// debug print
+  printf("GetNextWorkRequired RETARGET\n");
+  printf("nTargetTimespan = %"PRI64d"    nActualTimespan = %"PRI64d"\n", nTargetTimespan, nActualTimespan);
+  printf("Before: %08x  %s\n", pindexLast->nBits, CBigNum().SetCompact(pindexLast->nBits).getuint256().ToString().c_str());
+  printf("After:  %08x  %s\n", bnNew.GetCompact(), bnNew.getuint256().ToString().c_str());
 #endif
 
-    return bnNew.GetCompact();
+  return bnNew.GetCompact();
 }
 
 bool CheckProofOfWork(uint256 hash, unsigned int nBits)
@@ -1864,52 +1887,56 @@ bool CBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
 
 bool CBlock::AddToBlockIndex(unsigned int nFile, unsigned int nBlockPos)
 {
-shtime_t ts;
-    // Check for duplicate
-    uint256 hash = GetHash();
-    if (mapBlockIndex.count(hash))
-        return error(SHERR_INVAL, "AddToBlockIndex() : %s already exists", hash.ToString().substr(0,20).c_str());
+  blkidx_t *blockIndex;
+  shtime_t ts;
 
-    // Construct new block index object
-    CBlockIndex* pindexNew = new CBlockIndex(nFile, nBlockPos, *this);
-    if (!pindexNew)
-        return error(SHERR_INVAL, "AddToBlockIndex() : new CBlockIndex failed");
-    map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.insert(make_pair(hash, pindexNew)).first;
-    pindexNew->phashBlock = &((*mi).first);
-    map<uint256, CBlockIndex*>::iterator miPrev = mapBlockIndex.find(hashPrevBlock);
-    if (miPrev != mapBlockIndex.end())
-    {
-        pindexNew->pprev = (*miPrev).second;
-        pindexNew->nHeight = pindexNew->pprev->nHeight + 1;
-    }
-    pindexNew->bnChainWork = (pindexNew->pprev ? pindexNew->pprev->bnChainWork : 0) + pindexNew->GetBlockWork();
+  blockIndex = GetBlockTable(ifaceIndex);
 
-    CTxDB txdb;
-    if (!txdb.TxnBegin())
-        return false;
-    txdb.WriteBlockIndex(CDiskBlockIndex(pindexNew));
-    if (!txdb.TxnCommit())
-        return false;
+  // Check for duplicate
+  uint256 hash = GetHash();
+  if (blockIndex->count(hash))
+    return error(SHERR_INVAL, "AddToBlockIndex() : %s already exists", hash.ToString().substr(0,20).c_str());
 
-    // New best
-    if (pindexNew->bnChainWork > bnBestChainWork) {
-      timing_init("SetBestChain", &ts);
-        if (!SetBestChain(txdb, pindexNew))
-            return false;
-      timing_term("SetBestChain", &ts);
-    }
+  // Construct new block index object
+  CBlockIndex* pindexNew = new CBlockIndex(nFile, nBlockPos, *this);
+  if (!pindexNew)
+    return error(SHERR_INVAL, "AddToBlockIndex() : new CBlockIndex failed");
+  map<uint256, CBlockIndex*>::iterator mi = blockIndex->insert(make_pair(hash, pindexNew)).first;
+  pindexNew->phashBlock = &((*mi).first);
+  map<uint256, CBlockIndex*>::iterator miPrev = blockIndex->find(hashPrevBlock);
+  if (miPrev != blockIndex->end())
+  {
+    pindexNew->pprev = (*miPrev).second;
+    pindexNew->nHeight = pindexNew->pprev->nHeight + 1;
+  }
+  pindexNew->bnChainWork = (pindexNew->pprev ? pindexNew->pprev->bnChainWork : 0) + pindexNew->GetBlockWork();
 
-    txdb.Close();
+  CTxDB txdb;
+  if (!txdb.TxnBegin())
+    return false;
+  txdb.WriteBlockIndex(CDiskBlockIndex(pindexNew));
+  if (!txdb.TxnCommit())
+    return false;
 
-    if (pindexNew == pindexBest)
-    {
-        // Notify UI to display prev block's coinbase if it was ours
-        static uint256 hashPrevBestCoinBase;
-        UpdatedTransaction(hashPrevBestCoinBase);
-        hashPrevBestCoinBase = vtx[0].GetHash();
-    }
+  // New best
+  if (pindexNew->bnChainWork > bnBestChainWork) {
+    timing_init("SetBestChain", &ts);
+    if (!SetBestChain(txdb, pindexNew))
+      return false;
+    timing_term("SetBestChain", &ts);
+  }
 
-    return true;
+  txdb.Close();
+
+  if (pindexNew == pindexBest)
+  {
+    // Notify UI to display prev block's coinbase if it was ours
+    static uint256 hashPrevBestCoinBase;
+    UpdatedTransaction(hashPrevBestCoinBase);
+    hashPrevBestCoinBase = vtx[0].GetHash();
+  }
+
+  return true;
 }
 
 
@@ -1980,7 +2007,7 @@ bool CBlock::CheckBlock() const
 
 
 
-bool CBlock::WriteBlock(int nHeight)
+bool CBlock::WriteBlock(uint64_t nHeight)
 {
   CDataStream sBlock(SER_DISK, CLIENT_VERSION);
   bc_t *bc = GetBlockChain(GetCoinByIndex(ifaceIndex));
@@ -1988,10 +2015,13 @@ bool CBlock::WriteBlock(int nHeight)
   char *sBlockData;
   int n_height;
 
+  if (!bc)
+    return (false);
+
 #if 0
   if (bc_idx_next(bc) != nHeight) {
-fprintf(stderr, "DEBUG: CBlock::WriteBlock: SKIP: next index is %d, block write is for pos %d\n", bc_idx_next(bc), nHeight);
-  return (false);
+    fprintf(stderr, "DEBUG: CBlock::WriteBlock: SKIP: next index is %d, block write is for pos %d\n", bc_idx_next(bc), nHeight);
+    return (false);
   }
 #endif
 
@@ -2008,28 +2038,35 @@ fprintf(stderr, "DEBUG: CBlock::WriteBlock: SKIP: next index is %d, block write 
   sBlock.read(sBlockData, sBlockLen);
   n_height = bc_write(bc, nHeight, hash.GetRaw(), sBlockData, sBlockLen);
   if (n_height < 0) {
-fprintf(stderr, "DEBUG: CBlock::WriteBlock: bc_append err %d\n", n_height);
+    fprintf(stderr, "DEBUG: CBlock::WriteBlock: bc_append err %d\n", n_height);
     return (false);
   }
   free(sBlockData);
 
-fprintf(stderr, "DEBUG: WriteBlock: ACCEPT: nHeight(%d) hash(%s)\n", nHeight, hash.GetHex().c_str());
+  fprintf(stderr, "DEBUG: WriteBlock: ACCEPT: nHeight(%d) hash(%s)\n", nHeight, hash.GetHex().c_str());
 
-{
-int err;
-  bc_hash_t ret_hash;
-  err = bc_get_hash(bc, nHeight, ret_hash);
-  if (err) {
-    fprintf(stderr, "DEBUG: CBlock::WriteBlock: bc_get_hash err %d @ pos %d\n", err, nHeight); 
-  } else {
-    uint256 t_hash;
-    t_hash.SetRaw((unsigned int *)ret_hash);
-    if (!bc_hash_cmp(hash.GetRaw(), t_hash.GetRaw())) {
-    fprintf(stderr, "DEBUG: CBlock::WriteBlock: hash mismatch (sys: '%s', disk: '%s')\n", hash.GetHex().c_str(), t_hash.GetHex().c_str());
+#if 0 
+  {
+    int err;
+    bc_hash_t ret_hash;
+    err = bc_get_hash(bc, nHeight, ret_hash);
+    if (err) {
+      fprintf(stderr, "DEBUG: CBlock::WriteBlock: bc_get_hash err %d @ pos %d\n", err, nHeight); 
+    } else {
+      uint256 t_hash;
+      t_hash.SetRaw((unsigned int *)ret_hash);
+      if (!bc_hash_cmp(hash.GetRaw(), t_hash.GetRaw())) {
+        fprintf(stderr, "DEBUG: CBlock::WriteBlock: hash mismatch (sys: '%s', disk: '%s')\n", hash.GetHex().c_str(), t_hash.GetHex().c_str());
+      }
     }
-  }
 
-}
+  }
+#endif
+
+  /* write tx ref's */
+  BOOST_FOREACH(CTransaction& tx, vtx) {
+    tx.WriteTx(ifaceIndex, nHeight); 
+  }
 
   return (true);
 }
@@ -2037,6 +2074,7 @@ int err;
 bool CBlock::AcceptBlock()
 {
   bc_t *bc = GetBlockChain(GetCoinByIndex(ifaceIndex));
+  blkidx_t *blockIndex = GetBlockTable(ifaceIndex);
   shtime_t ts;
   int bi_dup;
   int b_dup;
@@ -2045,7 +2083,7 @@ bool CBlock::AcceptBlock()
 
   uint256 hash = GetHash();
 fprintf(stderr, "DEBUG: ACCEPT_BLOCK: '%s'\n", GetHash().GetHex().c_str());
-  if (mapBlockIndex.count(hash)) {
+  if (blockIndex->count(hash)) {
     bi_dup = TRUE;
   }
   if (0 == bc_find(bc, hash.GetRaw(), NULL)) {
@@ -2053,12 +2091,12 @@ fprintf(stderr, "DEBUG: ACCEPT_BLOCK: '%s'\n", GetHash().GetHex().c_str());
   }
 
   if (bi_dup && b_dup) {
-    return error(SHERR_INVAL, "AcceptBlock() : block already in mapBlockIndex");
+    return error(SHERR_INVAL, "AcceptBlock() : block already in block table.");
   }
 
   // Get prev block index
-  map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(hashPrevBlock);
-  if (mi == mapBlockIndex.end())
+  map<uint256, CBlockIndex*>::iterator mi = blockIndex->find(hashPrevBlock);
+  if (mi == blockIndex->end())
     return DoS(10, error(SHERR_INVAL, "AcceptBlock() : prev block not found"));
   CBlockIndex* pindexPrev = (*mi).second;
   int nHeight = pindexPrev->nHeight+1;
@@ -2099,7 +2137,7 @@ fprintf(stderr, "DEBUG: ACCEPT_BLOCK: '%s'\n", GetHash().GetHex().c_str());
     }
   }
   if (bi_dup) {
-    return error(SHERR_INVAL, "AcceptBlock() : block already in mapBlockIndex");
+    return error(SHERR_INVAL, "AcceptBlock() : block already in block table.");
   }
 
 #if 0
@@ -2148,11 +2186,13 @@ free(sBlockData);
 
 bool ProcessBlock(CNode* pfrom, CBlock* pblock)
 {
+  blkidx_t *blockIndex = GetBlockTable(pblock->ifaceIndex); 
   shtime_t ts;
+
   // Check for duplicate
   uint256 hash = pblock->GetHash();
-  if (mapBlockIndex.count(hash))
-    return Debug("ProcessBlock() : already have block %d %s", mapBlockIndex[hash]->nHeight, hash.ToString().substr(0,20).c_str());
+  if (blockIndex->count(hash))
+    return Debug("ProcessBlock() : already have block %d %s", (*blockIndex)[hash]->nHeight, hash.ToString().substr(0,20).c_str());
   if (mapOrphanBlocks.count(hash))
     return Debug("ProcessBlock() : already have block (orphan) %s", hash.ToString().substr(0,20).c_str());
 
@@ -2161,7 +2201,7 @@ bool ProcessBlock(CNode* pfrom, CBlock* pblock)
     return error(SHERR_INVAL, "ProcessBlock() : CheckBlock FAILED");
   }
 
-  CBlockIndex* pcheckpoint = Checkpoints::GetLastCheckpoint(mapBlockIndex);
+  CBlockIndex* pcheckpoint = Checkpoints::GetLastCheckpoint(*blockIndex);
   if (pcheckpoint && pblock->hashPrevBlock != hashBestChain)
   {
     // Extra checks to prevent "fill up memory by spamming with bogus blocks"
@@ -2186,7 +2226,7 @@ bool ProcessBlock(CNode* pfrom, CBlock* pblock)
 
 
   // If don't already have its previous block, shunt it off to holding area until we get it
-  if (!mapBlockIndex.count(pblock->hashPrevBlock))
+  if (!blockIndex->count(pblock->hashPrevBlock))
   {
     Debug("ProcessBlock: ORPHAN BLOCK, prev=%s\n", pblock->hashPrevBlock.ToString().substr(0,20).c_str());
     //CBlock* pblock2 = new CBlock(*pblock);
@@ -2294,183 +2334,198 @@ FILE* AppendBlockFile(unsigned int& nFileRet)
     }
 }
 
-bool LoadBlockIndex(bool fAllowNew)
+bool usde_LoadBlockIndex(bool fAllowNew)
 {
+  CIface *iface = GetCoinByIndex(USDE_COIN_IFACE);
+
+  if (fTestNet)
+  {
+    pchMessageStart[0] = 0xfc;
+    pchMessageStart[1] = 0xc1;
+    pchMessageStart[2] = 0xb7;
+    pchMessageStart[3] = 0xdc;
+    hashGenesisBlock = uint256("0x");
+  }
+
+  //
+  // Load block index
+  //
+  CTxDB txdb("cr");
+  if (!txdb.LoadBlockIndex(iface))
+    return false;
+  txdb.Close();
+
+  //
+  // Init with genesis block
+  //
+  blkidx_t *blockIndex = GetBlockTable(USDE_COIN_IFACE);
+  if (blockIndex->empty())
+  {
+    if (!fAllowNew)
+      return false;
+
+    // Genesis Block:
+
+    // Genesis block
+    const char* pszTimestamp = "USDE founded 1/1/2014";
+    CTransaction txNew;
+    txNew.vin.resize(1);
+    txNew.vout.resize(1);
+    txNew.vin[0].scriptSig = CScript() << 486604799 << CBigNum(4) << vector<unsigned char>((const unsigned char*)pszTimestamp, (const unsigned char*)pszTimestamp + strlen(pszTimestamp));
+    txNew.vout[0].nValue = 50 * COIN;
+    txNew.vout[0].scriptPubKey = CScript() << ParseHex("04a5814813115273a109cff99907ba4a05d951873dae7acb6c973d0c9e7c88911a3dbc9aa600deac241b91707e7b4ffb30ad91c8e56e695a1ddf318592988afe0a") << OP_CHECKSIG;
+    USDEBlock block;
+    block.vtx.push_back(txNew);
+    block.hashPrevBlock = 0;
+    block.hashMerkleRoot = block.BuildMerkleTree();
+    block.nVersion = 1;
+    block.nTime    = 1365048244;
+    block.nBits    = 0x1e0ffff0;
+    block.nNonce   = 134453;
+
     if (fTestNet)
     {
-        pchMessageStart[0] = 0xfc;
-        pchMessageStart[1] = 0xc1;
-        pchMessageStart[2] = 0xb7;
-        pchMessageStart[3] = 0xdc;
-        hashGenesisBlock = uint256("0x");
+      block.nTime    = 0;             //test net not supported
+      block.nNonce   = 0;
     }
 
-    //
-    // Load block index
-    //
-    CTxDB txdb("cr");
-    if (!txdb.LoadBlockIndex())
-        return false;
-    txdb.Close();
+    //// debug print
+    printf("%s\n", block.GetHash().ToString().c_str());
+    printf("%s\n", hashGenesisBlock.ToString().c_str());
+    printf("%s\n", block.hashMerkleRoot.ToString().c_str());
 
-    //
-    // Init with genesis block
-    //
-    if (mapBlockIndex.empty())
+    assert(block.hashMerkleRoot == uint256("0x1f42509b6d35a6aa60af4ec9b98d8ce4ffbe46c076d4c2da933e87550ab775f2"));
+
+    // If genesis block hash does not match, then generate new genesis hash.
+    if (false && block.GetHash() != hashGenesisBlock)
     {
-        if (!fAllowNew)
-            return false;
+      printf("Searching for genesis block...\n");
+      // This will figure out a valid hash and Nonce if you're
+      // creating a different genesis block:
+      uint256 hashTarget = CBigNum().SetCompact(block.nBits).getuint256();
+      uint256 thash;
+      char scratchpad[SCRYPT_SCRATCHPAD_SIZE];
 
-        // Genesis Block:
-
-        // Genesis block
-        const char* pszTimestamp = "USDE founded 1/1/2014";
-        CTransaction txNew;
-        txNew.vin.resize(1);
-        txNew.vout.resize(1);
-        txNew.vin[0].scriptSig = CScript() << 486604799 << CBigNum(4) << vector<unsigned char>((const unsigned char*)pszTimestamp, (const unsigned char*)pszTimestamp + strlen(pszTimestamp));
-        txNew.vout[0].nValue = 50 * COIN;
-        txNew.vout[0].scriptPubKey = CScript() << ParseHex("04a5814813115273a109cff99907ba4a05d951873dae7acb6c973d0c9e7c88911a3dbc9aa600deac241b91707e7b4ffb30ad91c8e56e695a1ddf318592988afe0a") << OP_CHECKSIG;
-        USDEBlock block;
-        block.vtx.push_back(txNew);
-        block.hashPrevBlock = 0;
-        block.hashMerkleRoot = block.BuildMerkleTree();
-        block.nVersion = 1;
-        block.nTime    = 1365048244;
-        block.nBits    = 0x1e0ffff0;
-        block.nNonce   = 134453;
-
-        if (fTestNet)
+      loop
+      {
+        scrypt_1024_1_1_256_sp(BEGIN(block.nVersion), BEGIN(thash), scratchpad);
+        if (thash <= hashTarget)
+          break;
+        if ((block.nNonce & 0xFFF) == 0)
         {
-            block.nTime    = 0;             //test net not supported
-            block.nNonce   = 0;
+          printf("nonce %08X: hash = %s (target = %s)\n", block.nNonce, thash.ToString().c_str(), hashTarget.ToString().c_str());
         }
-
-        //// debug print
-        printf("%s\n", block.GetHash().ToString().c_str());
-        printf("%s\n", hashGenesisBlock.ToString().c_str());
-        printf("%s\n", block.hashMerkleRoot.ToString().c_str());
-        
-		assert(block.hashMerkleRoot == uint256("0x1f42509b6d35a6aa60af4ec9b98d8ce4ffbe46c076d4c2da933e87550ab775f2"));
-
-        // If genesis block hash does not match, then generate new genesis hash.
-        if (false && block.GetHash() != hashGenesisBlock)
+        ++block.nNonce;
+        if (block.nNonce == 0)
         {
-            printf("Searching for genesis block...\n");
-            // This will figure out a valid hash and Nonce if you're
-            // creating a different genesis block:
-            uint256 hashTarget = CBigNum().SetCompact(block.nBits).getuint256();
-            uint256 thash;
-            char scratchpad[SCRYPT_SCRATCHPAD_SIZE];
-
-            loop
-            {
-                scrypt_1024_1_1_256_sp(BEGIN(block.nVersion), BEGIN(thash), scratchpad);
-                if (thash <= hashTarget)
-                    break;
-                if ((block.nNonce & 0xFFF) == 0)
-                {
-                    printf("nonce %08X: hash = %s (target = %s)\n", block.nNonce, thash.ToString().c_str(), hashTarget.ToString().c_str());
-                }
-                ++block.nNonce;
-                if (block.nNonce == 0)
-                {
-                    printf("NONCE WRAPPED, incrementing time\n");
-                    ++block.nTime;
-                }
-            }
-            printf("block.nTime = %u \n", block.nTime);
-            printf("block.nNonce = %u \n", block.nNonce);
-            printf("block.GetHash = %s\n", block.GetHash().ToString().c_str());
+          printf("NONCE WRAPPED, incrementing time\n");
+          ++block.nTime;
         }
-
-        //block.print();
-        assert(block.GetHash() == hashGenesisBlock);
-
-        // Start new block file
-        unsigned int nFile;
-        unsigned int nBlockPos;
-        if (!block.WriteToDisk(nFile, nBlockPos))
-            return error(SHERR_INVAL, "LoadBlockIndex() : writing genesis block to disk failed");
-        if (!block.AddToBlockIndex(nFile, nBlockPos))
-            return error(SHERR_INVAL, "LoadBlockIndex() : genesis block not accepted");
+      }
+      printf("block.nTime = %u \n", block.nTime);
+      printf("block.nNonce = %u \n", block.nNonce);
+      printf("block.GetHash = %s\n", block.GetHash().ToString().c_str());
     }
 
-    return true;
+    //block.print();
+    assert(block.GetHash() == hashGenesisBlock);
+
+    // Start new block file
+    unsigned int nFile;
+    unsigned int nBlockPos;
+    if (!block.WriteToDisk(nFile, nBlockPos))
+      return error(SHERR_INVAL, "LoadBlockIndex() : writing genesis block to disk failed");
+    if (!block.AddToBlockIndex(nFile, nBlockPos))
+      return error(SHERR_INVAL, "LoadBlockIndex() : genesis block not accepted");
+  }
+
+  return true;
+}
+
+bool LoadBlockIndex(bool fAllowNew)
+{
+  return (usde_LoadBlockIndex(fAllowNew));
 }
 
 
 
+void PrintBlockTree(CIface *iface)
+{
+  int ifaceIndex = GetCoinIndex(iface);
+  blkidx_t *blockIndex = GetBlockTable(ifaceIndex);
+
+  // precompute tree structure
+  map<CBlockIndex*, vector<CBlockIndex*> > mapNext;
+  for (map<uint256, CBlockIndex*>::iterator mi = blockIndex->begin(); mi != blockIndex->end(); ++mi)
+  {
+    CBlockIndex* pindex = (*mi).second;
+    mapNext[pindex->pprev].push_back(pindex);
+    // test
+    //while (rand() % 3 == 0)
+    //    mapNext[pindex->pprev].push_back(pindex);
+  }
+
+  vector<pair<int, CBlockIndex*> > vStack;
+  vStack.push_back(make_pair(0, pindexGenesisBlock));
+
+  int nPrevCol = 0;
+  while (!vStack.empty())
+  {
+    int nCol = vStack.back().first;
+    CBlockIndex* pindex = vStack.back().second;
+    vStack.pop_back();
+
+    // print split or gap
+    if (nCol > nPrevCol)
+    {
+      for (int i = 0; i < nCol-1; i++)
+        printf("| ");
+      printf("|\\\n");
+    }
+    else if (nCol < nPrevCol)
+    {
+      for (int i = 0; i < nCol; i++)
+        printf("| ");
+      printf("|\n");
+    }
+    nPrevCol = nCol;
+
+    // print columns
+    for (int i = 0; i < nCol; i++)
+      printf("| ");
+
+    // print item
+    USDEBlock block;
+    block.ReadFromDisk(pindex);
+    printf("%d (%u,%u) %s  %s  tx %d",
+        pindex->nHeight,
+        pindex->nFile,
+        pindex->nBlockPos,
+        block.GetHash().ToString().substr(0,20).c_str(),
+        DateTimeStrFormat("%x %H:%M:%S", block.GetBlockTime()).c_str(),
+        block.vtx.size());
+
+    PrintWallets(block);
+
+    // put the main timechain first
+    vector<CBlockIndex*>& vNext = mapNext[pindex];
+    for (unsigned int i = 0; i < vNext.size(); i++)
+    {
+      if (vNext[i]->pnext)
+      {
+        swap(vNext[0], vNext[i]);
+        break;
+      }
+    }
+
+    // iterate children
+    for (unsigned int i = 0; i < vNext.size(); i++)
+      vStack.push_back(make_pair(nCol+i, vNext[i]));
+  }
+}
 void PrintBlockTree()
 {
-    // precompute tree structure
-    map<CBlockIndex*, vector<CBlockIndex*> > mapNext;
-    for (map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.begin(); mi != mapBlockIndex.end(); ++mi)
-    {
-        CBlockIndex* pindex = (*mi).second;
-        mapNext[pindex->pprev].push_back(pindex);
-        // test
-        //while (rand() % 3 == 0)
-        //    mapNext[pindex->pprev].push_back(pindex);
-    }
-
-    vector<pair<int, CBlockIndex*> > vStack;
-    vStack.push_back(make_pair(0, pindexGenesisBlock));
-
-    int nPrevCol = 0;
-    while (!vStack.empty())
-    {
-        int nCol = vStack.back().first;
-        CBlockIndex* pindex = vStack.back().second;
-        vStack.pop_back();
-
-        // print split or gap
-        if (nCol > nPrevCol)
-        {
-            for (int i = 0; i < nCol-1; i++)
-                printf("| ");
-            printf("|\\\n");
-        }
-        else if (nCol < nPrevCol)
-        {
-            for (int i = 0; i < nCol; i++)
-                printf("| ");
-            printf("|\n");
-       }
-        nPrevCol = nCol;
-
-        // print columns
-        for (int i = 0; i < nCol; i++)
-            printf("| ");
-
-        // print item
-        USDEBlock block;
-        block.ReadFromDisk(pindex);
-        printf("%d (%u,%u) %s  %s  tx %d",
-            pindex->nHeight,
-            pindex->nFile,
-            pindex->nBlockPos,
-            block.GetHash().ToString().substr(0,20).c_str(),
-            DateTimeStrFormat("%x %H:%M:%S", block.GetBlockTime()).c_str(),
-            block.vtx.size());
-
-        PrintWallets(block);
-
-        // put the main timechain first
-        vector<CBlockIndex*>& vNext = mapNext[pindex];
-        for (unsigned int i = 0; i < vNext.size(); i++)
-        {
-            if (vNext[i]->pnext)
-            {
-                swap(vNext[0], vNext[i]);
-                break;
-            }
-        }
-
-        // iterate children
-        for (unsigned int i = 0; i < vNext.size(); i++)
-            vStack.push_back(make_pair(nCol+i, vNext[i]));
-    }
+  PrintBlockTree(GetCoinByIndex(USDE_COIN_IFACE));
 }
 
 bool LoadExternalBlockFile(FILE* fileIn)

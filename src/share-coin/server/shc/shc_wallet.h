@@ -1,5 +1,4 @@
 
-
 /*
  * @copyright
  *
@@ -22,34 +21,17 @@
  *  along with The Share Library.  If not, see <http://www.gnu.org/licenses/>.
  *
  *  @endcopyright
- */
-
-#ifndef __SHC_PROTO_H__
-#define __SHC_PROTO_H__
-
-#define SHC_VERSION_MAJOR  2 
-#define SHC_VERSION_MINOR  27
-#define SHC_VERSION_REVISION 0
-#define SHC_VERSION_BUILD 0
-
-#define SHC_COIN_DAEMON_PORT 24104
-
-#define SHC_MAX_GETADDR 2500
-
-#define SHC_COIN (uint64_t)100000000
-static const unsigned int SHC_MAX_BLOCK_SIZE = 4096000;
-static const unsigned int SHC_MAX_BLOCK_SIZE_GEN = 2048000;
-static const unsigned int SHC_MAX_BLOCK_SIGOPS = 81920;
-static const unsigned int SHC_MAX_ORPHAN_TRANSACTIONS = 4096;
-static const int64 SHC_MIN_TX_FEE = 10000;
-static const int64 SHC_MIN_RELAY_TX_FEE = 10000;
-static const int64 SHC_MAX_MONEY = 320000000000 * SHC_COIN; /* 320bil max */
-static const int SHC_COINBASE_MATURITY = 60;
-static const unsigned int SHC_LOCKTIME_THRESHOLD = 500000000; // Tue Nov  5 00:53:20 1985 UTC
+ */  
 
 
 
-#endif /* __SHC_PROTO_H__ */
+#ifndef __SHC_WALLET_H__
+#define __SHC_WALLET_H__
 
 
 
+int shc_LoadWallet(void);
+
+
+
+#endif /* ndef __SHC_WALLET_H__ */

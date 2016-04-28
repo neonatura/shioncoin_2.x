@@ -1,7 +1,7 @@
 
 #define __STRATUM__TASK_C__
 #include "shcoind.h"
-
+#include "coin_proto.h"
 
 #define BLOCK_VERSION 1
 #define MAX_SERVER_NONCE 128
@@ -49,6 +49,8 @@ void free_task(task_t **task_p)
 }
 #endif
 
+
+#if 0
 int task_work_t = 2;
 
 void reset_task_work_time(void)
@@ -63,10 +65,10 @@ void incr_task_work_time(void)
     task_work_t++;
     
 }
+#endif
 
 static int work_idx = 0;
 
-static int work_reset;
 
 /**
  * Monitors when a new accepted block becomes confirmed.
@@ -174,12 +176,14 @@ static void check_payout(void)
 
 }
 
-static int task_verify(void)
+static int task_verify(int ifaceIndex, int *work_reset_p)
 {
   static uint64_t last_block_height;
   static time_t last_block_time;
   uint64_t block_height;
   time_t now;
+
+  *work_reset_p = FALSE;
 
   now = time(NULL);
 
@@ -190,9 +194,9 @@ static int task_verify(void)
 
   check_payout();
 
-  reset_task_work_time();
-  work_idx = -1;
-  work_reset = TRUE;
+  //reset_task_work_time();
+  //work_idx = -1;
+  *work_reset_p = TRUE;
 
 //  free_tasks();
   last_block_height = block_height;
@@ -203,6 +207,7 @@ static int task_verify(void)
 
 task_t *task_init(void)
 {
+  CIface *iface;
   shjson_t *block;
   unsigned char hash_swap[32];
   shjson_t *tree;
@@ -217,19 +222,25 @@ task_t *task_init(void)
   uint64_t block_height;
   unsigned long cb1;
   unsigned long cb2;
+  int work_reset;
+  int ifaceIndex;
   int i;
 
-  task_verify();
-
   work_idx++;
-  if (0 != (work_idx % task_work_t)) {
+  ifaceIndex = (work_idx % MAX_COIN_IFACE);
+  if (ifaceIndex == 0)
+    return (NULL);
+
+  iface = GetCoinByIndex(ifaceIndex);
+  if (!iface)
+    return (NULL);
+
+  task_verify(ifaceIndex, &work_reset);
+
+  tree = stratum_json(getblocktemplate(ifaceIndex));
+  if (!tree) {
     return (NULL);
   }
-  /* reset work index */
-  work_idx = 0;
-  incr_task_work_time();
-
-  tree = stratum_json(getblocktemplate());
 
   block = shjson_obj(tree, "result");
   if (!block) {

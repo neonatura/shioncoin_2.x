@@ -86,7 +86,7 @@ extern CCriticalSection cs_mapAlerts;
 
 
 extern CCriticalSection cs_main;
-extern std::map<uint256, CBlockIndex*> mapBlockIndex;
+//extern std::map<uint256, CBlockIndex*> mapBlockIndex;
 extern uint256 hashGenesisBlock;
 extern CBlockIndex* pindexGenesisBlock;
 extern int nBestHeight;
@@ -140,7 +140,8 @@ unsigned int ComputeMinWork(unsigned int nBase, int64 nTime);
 int GetNumBlocksOfPeers();
 bool IsInitialBlockDownload();
 std::string GetWarnings(std::string strFor);
-bool GetTransaction(const uint256 &hash, CTransaction &tx, uint256 &hashBlock);
+//bool GetTransaction(const uint256 &hash, CTransaction &tx, uint256 &hashBlock);
+bool GetTransaction(CIface *iface, const uint256 &hash, CTransaction &tx, uint256 &hashBlock);
 uint256 GetOrphanRoot(const CBlock* pblock);
 
 
@@ -707,131 +708,138 @@ public:
 
 
 
-
 /** Describes a place in the block chain to another node such that if the
  * other node doesn't have the same branch, it can find a recent common trunk.
  * The further back it is, the further before the fork it may be.
  */
 class CBlockLocator
 {
-protected:
+  protected:
     std::vector<uint256> vHave;
-public:
+    int ifaceIndex;
+  public:
 
-    CBlockLocator()
+    CBlockLocator(int index)
     {
+      ifaceIndex = index;
     }
 
     explicit CBlockLocator(const CBlockIndex* pindex)
     {
-        Set(pindex);
+      Set(pindex);
     }
 
     explicit CBlockLocator(uint256 hashBlock)
     {
-        std::map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(hashBlock);
-        if (mi != mapBlockIndex.end())
-            Set((*mi).second);
+      blkidx_t *blockIndex = GetBlockTable(ifaceIndex); 
+      std::map<uint256, CBlockIndex*>::iterator mi = blockIndex->find(hashBlock);
+      if (mi != blockIndex->end())
+        Set((*mi).second);
     }
 
     CBlockLocator(const std::vector<uint256>& vHaveIn)
     {
-        vHave = vHaveIn;
+      vHave = vHaveIn;
     }
 
     IMPLEMENT_SERIALIZE
-    (
-        if (!(nType & SER_GETHASH))
-            READWRITE(nVersion);
-        READWRITE(vHave);
-    )
+      (
+       if (!(nType & SER_GETHASH))
+       READWRITE(nVersion);
+       READWRITE(vHave);
+      )
 
-    void SetNull()
-    {
+      void SetNull()
+      {
         vHave.clear();
-    }
+      }
 
     bool IsNull()
     {
-        return vHave.empty();
+      return vHave.empty();
     }
 
     void Set(const CBlockIndex* pindex)
     {
-        vHave.clear();
-        int nStep = 1;
-        while (pindex)
-        {
-            vHave.push_back(pindex->GetBlockHash());
+      vHave.clear();
+      int nStep = 1;
+      while (pindex)
+      {
+        vHave.push_back(pindex->GetBlockHash());
 
-            // Exponentially larger steps back
-            for (int i = 0; pindex && i < nStep; i++)
-                pindex = pindex->pprev;
-            if (vHave.size() > 10)
-                nStep *= 2;
-        }
-        vHave.push_back(hashGenesisBlock);
+        // Exponentially larger steps back
+        for (int i = 0; pindex && i < nStep; i++)
+          pindex = pindex->pprev;
+        if (vHave.size() > 10)
+          nStep *= 2;
+      }
+      vHave.push_back(hashGenesisBlock);
     }
 
     int GetDistanceBack()
     {
-        // Retrace how far back it was in the sender's branch
-        int nDistance = 0;
-        int nStep = 1;
-        BOOST_FOREACH(const uint256& hash, vHave)
+      // Retrace how far back it was in the sender's branch
+      blkidx_t *blockIndex = GetBlockTable(ifaceIndex);
+      int nDistance = 0;
+      int nStep = 1;
+      BOOST_FOREACH(const uint256& hash, vHave)
+      {
+        std::map<uint256, CBlockIndex*>::iterator mi = blockIndex->find(hash);
+        if (mi != blockIndex->end())
         {
-            std::map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(hash);
-            if (mi != mapBlockIndex.end())
-            {
-                CBlockIndex* pindex = (*mi).second;
-                if (pindex->IsInMainChain())
-                    return nDistance;
-            }
-            nDistance += nStep;
-            if (nDistance > 10)
-                nStep *= 2;
+          CBlockIndex* pindex = (*mi).second;
+          if (pindex->IsInMainChain())
+            return nDistance;
         }
-        return nDistance;
+        nDistance += nStep;
+        if (nDistance > 10)
+          nStep *= 2;
+      }
+      return nDistance;
     }
 
     CBlockIndex* GetBlockIndex()
     {
-        // Find the first block the caller has in the main chain
-        BOOST_FOREACH(const uint256& hash, vHave)
+      blkidx_t *blockIndex = GetBlockTable(ifaceIndex); 
+
+      // Find the first block the caller has in the main chain
+      BOOST_FOREACH(const uint256& hash, vHave)
+      {
+        std::map<uint256, CBlockIndex*>::iterator mi = blockIndex->find(hash);
+        if (mi != blockIndex->end())
         {
-            std::map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(hash);
-            if (mi != mapBlockIndex.end())
-            {
-                CBlockIndex* pindex = (*mi).second;
-                if (pindex->IsInMainChain())
-                    return pindex;
-            }
+          CBlockIndex* pindex = (*mi).second;
+          if (pindex->IsInMainChain())
+            return pindex;
         }
-        return pindexGenesisBlock;
+      }
+      return pindexGenesisBlock;
     }
 
     uint256 GetBlockHash()
     {
-        // Find the first block the caller has in the main chain
-        BOOST_FOREACH(const uint256& hash, vHave)
+      blkidx_t *blockIndex = GetBlockTable(ifaceIndex); 
+
+      // Find the first block the caller has in the main chain
+      BOOST_FOREACH(const uint256& hash, vHave)
+      {
+        std::map<uint256, CBlockIndex*>::iterator mi = blockIndex->find(hash);
+        if (mi != blockIndex->end())
         {
-            std::map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(hash);
-            if (mi != mapBlockIndex.end())
-            {
-                CBlockIndex* pindex = (*mi).second;
-                if (pindex->IsInMainChain())
-                    return hash;
-            }
+          CBlockIndex* pindex = (*mi).second;
+          if (pindex->IsInMainChain())
+            return hash;
         }
-        return hashGenesisBlock;
+      }
+      return hashGenesisBlock;
     }
 
     int GetHeight()
     {
-        CBlockIndex* pindex = GetBlockIndex();
-        if (!pindex)
-            return 0;
-        return pindex->nHeight;
+      CBlockIndex* pindex = GetBlockIndex();
+      if (!pindex)
+        return 0;
+      return pindex->nHeight;
     }
 };
 

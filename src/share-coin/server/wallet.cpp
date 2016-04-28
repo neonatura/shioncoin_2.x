@@ -14,12 +14,11 @@ CWallet* pwalletMaster[MAX_COIN_IFACE];
 
 CWallet *GetWallet(int iface_idx)
 {
-  int idx;
 
-  if (idx < 1 || idx >= MAX_COIN_IFACE)
+  if (iface_idx < 1 || iface_idx >= MAX_COIN_IFACE)
     return (NULL);
 
-  return (pwalletMaster[idx]); 
+  return (pwalletMaster[iface_idx]); 
 }
 
 CWallet *GetWallet(CIface *iface)
@@ -29,12 +28,12 @@ CWallet *GetWallet(CIface *iface)
 
 void SetWallet(int iface_idx, CWallet *wallet)
 {
-  int idx;
 
-  if (idx < 1 || idx >= MAX_COIN_IFACE)
+  if (iface_idx < 1 || iface_idx >= MAX_COIN_IFACE)
     return;
+fprintf(stderr, "DEBUG: SetWallet: iface_idx[%d] wallet set\n", iface_idx);
 
-  pwalletMaster[idx] = wallet;
+  pwalletMaster[iface_idx] = wallet;
 }
 
 void SetWallet(CIface *iface, CWallet *wallet)
