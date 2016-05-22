@@ -11,13 +11,16 @@
 extern void noui_connect();
 
 struct TestingSetup {
+    CWallet *pwalletMain;
     TestingSetup() {
+        CIface *iface = GetCoinByIndex(USDE_COIN_IFACE);
         //fPrintToDebugger = true; // don't want to write to debug.log file
         noui_connect();
         //bitdb.MakeMock();
         LoadBlockIndex(true);
         bool fFirstRun;
-        pwalletMain = new CWallet("wallet.dat");
+        pwalletMain = new CWallet(USDE_COIN_IFACE, "wallet.dat");
+        SetWallet(USDE_COIN_IFACE, pwalletMain);
         pwalletMain->LoadWallet(fFirstRun);
         RegisterWallet(pwalletMain);
     }

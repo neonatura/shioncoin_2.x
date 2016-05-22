@@ -1,6 +1,6 @@
 AUTOMAKE_OPTIONS = foreign
 
-noinst_PROGRAMS = test_shcoind
+#noinst_PROGRAMS = test_shcoind
 
 test_shcoind_CFLAGS = \
 	-I$(top_srcdir)/src/share-coin -I$(top_srcdir)/src/share-coin/proto
@@ -27,7 +27,6 @@ testcase_sources = \
 	base32_tests.cpp \
 	base64_tests.cpp \
 	bignum_tests.cpp \
-	DoS_tests.cpp \
 	getarg_tests.cpp \
 	mruset_tests.cpp \
 	multisig_tests.cpp \

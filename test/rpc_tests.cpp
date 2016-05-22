@@ -5,6 +5,7 @@
 
 #include "base58.h"
 #include "util.h"
+#include "block.h"
 #include "coin_proto.h"
 #include "rpc_proto.h"
 
