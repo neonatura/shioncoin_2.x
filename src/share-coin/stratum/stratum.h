@@ -78,8 +78,14 @@ typedef struct user_t
 
 double speed[MAX_SPEED_STEP];
 
+  double balance[MAX_COIN_IFACE];
+
   /** the timestamp when the current round started. */
   time_t round_stamp;
+
+  double reward_val;
+  time_t reward_time;
+  uint64_t reward_height;
 
   struct user_t *next;
 } user_t;

@@ -23,7 +23,7 @@
  *  @endcopyright
  */
 
-#include "block.h"
+#include "shcoind.h"
 #include "main.h"
 #include "wallet.h"
 #include "db.h"
@@ -57,6 +57,7 @@ using namespace boost;
 using namespace boost::asio;
 using namespace json_spirit;
 
+
 //std::map<uint256, CBlockIndex*> transactionMap;
 map<int, CBlock*>mapWork;
 string blocktemplate_json; 
@@ -67,11 +68,10 @@ extern std::string HexBits(unsigned int nBits);
 extern string JSONRPCReply(const Value& result, const Value& error, const Value& id);
 extern void ScriptPubKeyToJSON(const CScript& scriptPubKey, Object& out);
 extern Value ValueFromAmount(int64 amount);
-extern void WalletTxToJSON(const CWalletTx& wtx, Object& entry);
+extern void WalletTxToJSON(int ifaceIndex, const CWalletTx& wtx, Object& entry);
 
-extern double GetDifficulty(const CBlockIndex* blockindex = NULL);
-
-extern void ListTransactions(const CWalletTx& wtx, const string& strAccount, int nMinDepth, bool fLong, Array& ret);
+//extern void ListTransactions(int ifaceIndex, const CWalletTx& wtx, const string& strAccount, int nMinDepth, bool fLong, Array& ret);
+extern double GetDifficulty(int ifaceIndex, const CBlockIndex* blockindex = NULL);
 
 static double nextDifficulty;
 double GetBitsDifficulty(unsigned int nBits)
@@ -98,6 +98,7 @@ double GetBitsDifficulty(unsigned int nBits)
   return (dDiff);
 }
 
+static CBlock *altBlock[MAX_COIN_IFACE];
 
 /**
  * Generate a block to work on.
@@ -105,24 +106,40 @@ double GetBitsDifficulty(unsigned int nBits)
  */
 const char *c_getblocktemplate(int ifaceIndex)
 {
-  static CReserveKey reservekey(pwalletMain);
+  NodeList &vNodes = GetNodeList(ifaceIndex);
+  //static CReserveKey reservekey(pwalletMain);
   static unsigned int nTransactionsUpdatedLast;
   static CBlockIndex* pindexPrev;
   static unsigned int work_id;
   static time_t last_reset_t;
+  CIface *iface;
   CBlock* pblock;
   int reset;
 
-     if (vNodes.empty())
-     return (NULL);
 
-   if (IsInitialBlockDownload())
-     return (NULL);
+  iface = GetCoinByIndex(ifaceIndex);
+  if (!iface)
+    return (NULL);
 
+  if (!GetWallet(iface))
+    return (NULL); /* coin service disabled. */
+
+#if 0
+  if (vNodes.empty())
+    return (NULL);
+#endif
+
+#if 0
+  if (IsInitialBlockDownload(ifaceIndex))
+    return (NULL);
+#endif
+
+#if 0
   if (!pwalletMain) {
     shcoind_log("c_getblocktemplate: Wallet not initialized.");
     return (NULL);
   }
+#endif
 
   // Update block
 
@@ -130,7 +147,7 @@ const char *c_getblocktemplate(int ifaceIndex)
 
   /* clear work after new block and every ten minutes. */
   reset = 0;
-  if (pindexPrev != NULL && pindexPrev->nHeight != pindexBest->nHeight) {
+  if (pindexPrev != NULL && pindexPrev->nHeight != GetBestHeight(ifaceIndex)) {
     reset = 1;
     last_reset_t = time(NULL);
   } else if ((last_reset_t + 600) < time(NULL)) {
@@ -144,13 +161,19 @@ const char *c_getblocktemplate(int ifaceIndex)
       delete tblock;
     }
     mapWork.clear();
+    altBlock[ifaceIndex] = NULL;
   }
 
   // Store the pindexBest used before CreateNewBlock, to avoid races
-  nTransactionsUpdatedLast = nTransactionsUpdated;
-  CBlockIndex* pindexPrevNew = pindexBest;
+  nTransactionsUpdatedLast = iface->tx_tot;
+  CBlockIndex* pindexPrevNew = GetBestBlockIndex(ifaceIndex);
 
+#if 0
   pblock = CreateNewBlock(reservekey);
+  if (!pblock)
+    return (NULL);
+#endif
+  pblock = CreateBlockTemplate(iface);
   if (!pblock)
     return (NULL);
 
@@ -160,6 +183,7 @@ const char *c_getblocktemplate(int ifaceIndex)
   /* store "worker" block for until height increment. */
   work_id++;
   mapWork[work_id] = pblock; 
+  altBlock[ifaceIndex] = pblock;
 
   // Update nTime
   pblock->UpdateTime(pindexPrev);
@@ -170,7 +194,6 @@ const char *c_getblocktemplate(int ifaceIndex)
   Array transactions;
   //map<uint256, int64_t> setTxIndex;
   int i = 0;
-  CTxDB txdb("r");
   BOOST_FOREACH (CTransaction& tx, pblock->vtx)
   {
     uint256 txHash = tx.GetHash();
@@ -194,7 +217,7 @@ const char *c_getblocktemplate(int ifaceIndex)
   result.push_back(Pair("transactions", transactions));
   result.push_back(Pair("coinbasevalue", (int64_t)pblock->vtx[0].vout[0].nValue));
   result.push_back(Pair("target", hashTarget.GetHex()));
-  result.push_back(Pair("sizelimit", (int64_t)MAX_BLOCK_SIZE));
+  result.push_back(Pair("sizelimit", (int64_t)iface->max_block_size));
   result.push_back(Pair("curtime", (int64_t)pblock->nTime));
   result.push_back(Pair("bits", HexBits(pblock->nBits)));
 
@@ -210,14 +233,66 @@ const char *c_getblocktemplate(int ifaceIndex)
 
   /* coinbase */
   CTransaction coinbaseTx = pblock->vtx[0];
-  CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION);
+  CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION(iface));
   ssTx << coinbaseTx;
   result.push_back(Pair("coinbase", HexStr(ssTx.begin(), ssTx.end())));
   //  result.push_back(Pair("sigScript", HexStr(pblock->vtx[0].vin[0].scriptSig.begin(), pblock->vtx[0].vin[0].scriptSig.end())));
+  CScript COINBASE_FLAGS = pblock->GetCoinbaseFlags();
   result.push_back(Pair("coinbaseflags", HexStr(COINBASE_FLAGS.begin(), COINBASE_FLAGS.end())));
 
   blocktemplate_json = JSONRPCReply(result, Value::null, Value::null);
   return (blocktemplate_json.c_str());
+}
+
+void c_processaltblock(CBlock* pblock)
+{
+  int ifaceIndex;
+
+  for (ifaceIndex = 1; ifaceIndex < MAX_COIN_IFACE; ifaceIndex++) {
+    if (pblock->ifaceIndex == ifaceIndex)
+      continue; /* already processed block */
+    if (GetWallet(ifaceIndex) == NULL)
+      continue; /* disabled */
+
+    CBlock *alt_block = altBlock[ifaceIndex];
+    if (!alt_block)
+      continue; /* no block avail for mining */
+
+    CNode *pfrom = NULL;
+    CIface *iface = GetCoinByIndex(ifaceIndex);
+
+    /* insert nonce */
+    alt_block->nNonce = pblock->nNonce;
+
+    {
+      uint256 hash = alt_block->GetPoWHash();
+      uint256 hashTarget = CBigNum().SetCompact(alt_block->nBits).getuint256();
+      if (hash > hashTarget)
+        continue; // BLKERR_TARGET_LOW
+    }
+
+    // Check for duplicate
+    uint256 hash = alt_block->GetHash();
+    blkidx_t *blockIndex = GetBlockTable(ifaceIndex);
+    if (blockIndex->count(hash) || alt_block->IsOrphan())
+      continue;  // BLKERR_DUPLICATE_BLOCK
+
+    /* verify integrity */
+    if (!alt_block->CheckBlock()) {
+      shcoind_log("c_processblock: !CheckBlock()");
+      continue; // BLKERR_CHECKPOINT
+    }
+
+    // Store to disk
+    if (!alt_block->AcceptBlock()) {
+      continue; // BLKERR_INVALID_BLOCK
+    }
+
+    /* success */
+fprintf(stderr, "DEBUG: ALT-COIN: c_processblock[iface #%d]: found coin via merged mining:\n", ifaceIndex);
+    alt_block->print();
+  }
+
 }
 
 int c_processblock(CBlock* pblock)
@@ -225,9 +300,18 @@ int c_processblock(CBlock* pblock)
   blkidx_t *blockIndex = GetBlockTable(pblock->ifaceIndex);
   CNode *pfrom = NULL;
 
+/*
+  if (vNodes.empty())
+    return (0); // silent
+  if (IsInitialBlockDownload(ifaceIndex))
+    return (0); // silent
+*/
+
+
+
   // Check for duplicate
   uint256 hash = pblock->GetHash();
-  if (blockIndex->count(hash))// || mapOrphanBlocks.count(hash))
+  if (blockIndex->count(hash) || pblock->IsOrphan())
     return (BLKERR_DUPLICATE_BLOCK);
 
   // Preliminary checks
@@ -236,13 +320,18 @@ int c_processblock(CBlock* pblock)
     return (BLKERR_CHECKPOINT);
   }
 
+  if (IsInitialBlockDownload(pblock->ifaceIndex)) {
+    /* let's not and pretend we did */
+    return (0);
+  }
+
   // Store to disk
   if (!pblock->AcceptBlock()) {
     shcoind_log("c_processblock: !AcceptBlock()");
     return (BLKERR_INVALID_BLOCK);
   }
 
-  pblock->print();
+//  pblock->print();
 
   return (0);
 }
@@ -316,6 +405,7 @@ int c_submitblock(unsigned int workId, unsigned int nTime, unsigned int nNonce, 
   }
 
   if (hash > hashTarget) {
+    c_processaltblock(pblock); /* try nonce on alt coins */ 
     return (0); /* share was submitted successfully */
   }
 
@@ -328,16 +418,16 @@ int c_submitblock(unsigned int workId, unsigned int nTime, unsigned int nNonce, 
     if (ret_hash)
       strcpy(ret_hash, submit_block_hash.c_str());
 
- fprintf(stderr, "proof-of-work found: hash(%s) target(%s)\n", hash.GetHex().c_str(), hashTarget.GetHex().c_str());
-    pblock->print();
+// fprintf(stderr, "proof-of-work found: hash(%s) target(%s)\n", hash.GetHex().c_str(), hashTarget.GetHex().c_str());
 
-
-    sprintf(errbuf, "submitblock: mined block (%s) generated %s coins.\n", submit_block_hash.c_str(), FormatMoney(pblock->vtx[0].vout[0].nValue).c_str());
+    sprintf(errbuf, "submitblock[iface #%d]: mined block (%s) generated %s coins.\n", pblock->ifaceIndex, submit_block_hash.c_str(), FormatMoney(pblock->vtx[0].vout[0].nValue).c_str());
     shcoind_log(errbuf);
+    pblock->print();
   } else {
 fprintf(stderr, "DEBUG: submitblock: processblock error %d\n", err); 
 pblock->print();
-}
+  }
+
 
   return (0);
 }
@@ -385,7 +475,7 @@ bool c_ListGenerateTransactions(const CWalletTx& wtx, Object entry)
   return (false);
 }
 #endif
-void c_ListTransactions(const CWalletTx& wtx, const string& strAccount, int nMinDepth, bool fLong, Array& ret)
+void c_ListTransactions(int ifaceIndex, const CWalletTx& wtx, const string& strAccount, int nMinDepth, bool fLong, Array& ret)
 {
   int64 nGeneratedImmature, nGeneratedMature, nFee;
   string strSentAccount;
@@ -403,7 +493,7 @@ void c_ListTransactions(const CWalletTx& wtx, const string& strAccount, int nMin
     entry.push_back(Pair("account", string("")));
     if (nGeneratedImmature)
     {
-      entry.push_back(Pair("category", wtx.GetDepthInMainChain() ? "immature" : "orphan"));
+      entry.push_back(Pair("category", wtx.GetDepthInMainChain(ifaceIndex) ? "immature" : "orphan"));
       entry.push_back(Pair("amount", ValueFromAmount(nGeneratedImmature)));
     }
     else
@@ -412,20 +502,24 @@ void c_ListTransactions(const CWalletTx& wtx, const string& strAccount, int nMin
       entry.push_back(Pair("amount", ValueFromAmount(nGeneratedMature)));
     }
     if (fLong)
-      WalletTxToJSON(wtx, entry);
+      WalletTxToJSON(ifaceIndex, wtx, entry);
     ret.push_back(entry);
   }
 
 }
 
-const char *c_getblocktransactions(void)
+const char *c_getblocktransactions(int ifaceIndex)
 {
+  NodeList &vNodes = GetNodeList(ifaceIndex);
+  CWallet *pwalletMain = GetWallet(ifaceIndex);
+  if (!pwalletMain)
+    return (NULL);
+
+  CWalletDB walletdb(pwalletMain->strWalletFile);
   string strAccount = "";
   int nCount = 1;
   int nFrom = 0;
   Array ret;
-  CWalletDB walletdb(pwalletMain->strWalletFile);
-
 
   // First: get all CWalletTx and CAccountingEntry into a sorted-by-time multimap.
   typedef pair<CWalletTx*, CAccountingEntry*> TxPair;
@@ -455,7 +549,7 @@ const char *c_getblocktransactions(void)
     {
       CWalletTx *const pwtx = (*it).second.first;
       if (pwtx != 0)
-        c_ListTransactions(*pwtx, strAccount, 0, true, ret);
+        c_ListTransactions(ifaceIndex, *pwtx, strAccount, 0, true, ret);
       /*
          CAccountingEntry *const pacentry = (*it).second.second;
          if (pacentry != 0)
@@ -536,8 +630,9 @@ const char *c_getblocktransactions(void)
 }
 #endif
 
-double c_GetNetworkHashRate(void)
+double c_GetNetworkHashRate(int ifaceIndex)
 {
+  CBlockIndex *pindexBest = GetBestBlockIndex(ifaceIndex);
   int lookup = 120;
 
   if (pindexBest == NULL)
@@ -558,61 +653,62 @@ double c_GetNetworkHashRate(void)
   double timeDiff = pindexBest->GetBlockTime() - pindexPrev->GetBlockTime();
   double timePerBlock = timeDiff / lookup;
 
-  return ((double)GetDifficulty() * pow(2.0, 32)) / (double)timePerBlock;
+  return ((double)GetDifficulty(ifaceIndex) * pow(2.0, 32)) / (double)timePerBlock;
 }
 
-const char *c_getmininginfo(void)
+const char *c_getmininginfo(int ifaceIndex)
 {
   Array result;
 
-  result.push_back((int)nBestHeight);
+  result.push_back((int)GetBestHeight(ifaceIndex));
 
   if (nextDifficulty > 0.00000000)
     result.push_back((double)nextDifficulty);
   else
-    result.push_back((double)GetDifficulty());
+    result.push_back((double)GetDifficulty(ifaceIndex));
 
-  result.push_back((double)c_GetNetworkHashRate());
+  result.push_back((double)c_GetNetworkHashRate(ifaceIndex));
 
   mininginfo_json = JSONRPCReply(result, Value::null, Value::null);
   return (mininginfo_json.c_str());
 }
 
-double c_getdifficulty(void)
+double c_getdifficulty(int ifaceIndex)
 {
-  return ((double)GetDifficulty());
+  return ((double)GetDifficulty(ifaceIndex));
 }
 
 string blockinfo_json;
-const char *c_getblockindexinfo(CBlockIndex *pblockindex)
+const char *c_getblockindexinfo(int ifaceIndex, CBlockIndex *pblockindex)
 {
-  USDEBlock block;
+  CIface *iface = GetCoinByIndex(ifaceIndex);
+  CBlock *block;
   Object result;
 
-  block.ReadFromDisk(pblockindex, true);
+  block = GetBlockByHash(iface, pblockindex->GetBlockHash());
 
-  result.push_back(Pair("hash", block.GetHash().GetHex()));
-  CMerkleTx txGen(block.vtx[0]);
-  txGen.SetMerkleBranch(&block);
-  result.push_back(Pair("confirmations", (int)txGen.GetDepthInMainChain()));
-  result.push_back(Pair("size", (int)::GetSerializeSize(block, SER_NETWORK, PROTOCOL_VERSION)));
+  result.push_back(Pair("hash", block->GetHash().GetHex()));
+  CMerkleTx txGen(block->vtx[0]);
+  txGen.SetMerkleBranch(block);
+  result.push_back(Pair("confirmations", (int)txGen.GetDepthInMainChain(ifaceIndex)));
+  result.push_back(Pair("size", (int)::GetSerializeSize(*block, SER_NETWORK, PROTOCOL_VERSION(iface))));
   result.push_back(Pair("height", pblockindex->nHeight));
-  result.push_back(Pair("version", block.nVersion));
-  result.push_back(Pair("merkleroot", block.hashMerkleRoot.GetHex()));
+  result.push_back(Pair("version", block->nVersion));
+  result.push_back(Pair("merkleroot", block->hashMerkleRoot.GetHex()));
 
   Array txs;
   int64 nAmount = 0;
-  BOOST_FOREACH(const CTransaction&tx, block.vtx) {
+  BOOST_FOREACH(const CTransaction&tx, block->vtx) {
     txs.push_back(tx.GetHash().GetHex());
     nAmount += tx.GetValueOut();
   }
   result.push_back(Pair("tx", txs));
   result.push_back(Pair("amount", ValueFromAmount(nAmount)));
 
-  result.push_back(Pair("time", (boost::int64_t)block.GetBlockTime()));
-  result.push_back(Pair("nonce", (boost::uint64_t)block.nNonce));
-  result.push_back(Pair("bits", HexBits(block.nBits)));
-  result.push_back(Pair("difficulty", GetDifficulty(pblockindex)));
+  result.push_back(Pair("time", (boost::int64_t)block->GetBlockTime()));
+  result.push_back(Pair("nonce", (boost::uint64_t)block->nNonce));
+  result.push_back(Pair("bits", HexBits(block->nBits)));
+  result.push_back(Pair("difficulty", GetDifficulty(ifaceIndex, pblockindex)));
 
   if (pblockindex->pprev)
     result.push_back(Pair("previousblockhash", pblockindex->pprev->GetBlockHash().GetHex()));
@@ -620,10 +716,14 @@ const char *c_getblockindexinfo(CBlockIndex *pblockindex)
     result.push_back(Pair("nextblockhash", pblockindex->pnext->GetBlockHash().GetHex()));
 
   blockinfo_json = JSONRPCReply(result, Value::null, Value::null);
+  delete block;
+
   return (blockinfo_json.c_str());
 }
+
 const char *c_getblockinfo(int ifaceIndex, const char *hash_addr)
 {
+  CIface *iface = GetCoinByIndex(ifaceIndex);
   blkidx_t *blockIndex = GetBlockTable(ifaceIndex);
   long nHeight;
 
@@ -634,15 +734,31 @@ const char *c_getblockinfo(int ifaceIndex, const char *hash_addr)
 
   if (strlen(hash_addr) <= 12 && (nHeight = atol(hash_addr))) {
     /* convert block index to block hash */
-    if (nHeight < 0 || nHeight > nBestHeight) {
+    if (nHeight < 0 || nHeight > GetBestHeight(ifaceIndex)) {
       shcoind_log("c_getblockinfo: block number out of range.");
       return (NULL);
     }
 
+    CBlock *block = GetBlockByHeight(iface, nHeight);
+    if (!block) {
+      shcoind_log("c_getblockinfo: block not found.");
+      return (NULL);
+    }
+
+#if 0
+    uint256 hashBestChain = GetBestBlockChain(iface);
     CBlockIndex* pblockindex = (*blockIndex)[hashBestChain];
+    if (!pblockindex) {
+      shcoind_log("c_getblockinfo: block index not found.");
+      return (NULL);
+    }
     while (pblockindex->nHeight > nHeight)
       pblockindex = pblockindex->pprev;
     strHash = pblockindex->phashBlock->GetHex();
+#endif
+
+    strHash = block->GetHash().GetHex();
+    delete block;
   }
 
   uint256 hash(strHash);
@@ -652,7 +768,7 @@ const char *c_getblockinfo(int ifaceIndex, const char *hash_addr)
   }
 
   CBlockIndex* pblockindex = (*blockIndex)[hash];
-  return (c_getblockindexinfo(pblockindex));
+  return (c_getblockindexinfo(ifaceIndex, pblockindex));
 }
 #if 0
   CBlock block;
@@ -686,6 +802,7 @@ const char *c_getblockinfo(int ifaceIndex, const char *hash_addr)
 }
 #endif
 
+#if 0
 int findBlockTransaction(CBlockIndex *pblockindex, const char *tx_id, CTransaction& ret_tx, time_t dur)
 {
   USDEBlock block;
@@ -725,10 +842,26 @@ int findBlockTransaction(CBlockIndex *pblockindex, const char *tx_id, CTransacti
 
   return (-1);
 }
+#endif
 
-CBlockIndex *findTransaction(uint256 hashTx, CTransaction& ret_tx, time_t dur)
+static CBlockIndex *findTransaction(int ifaceIndex, uint256 hashTx, CTransaction& ret_tx)
 {
-  CTxDB txdb("r");
+  blkidx_t *blockIndex;
+  uint256 hashBlock;
+  
+  blockIndex = GetBlockTable(ifaceIndex);
+  if (!blockIndex)
+    return (NULL);
+
+  if (!ret_tx.ReadTx(ifaceIndex, hashTx, hashBlock))
+    return (NULL);
+  
+  return ((*blockIndex)[hashBlock]);
+}
+#if 0
+static CBlockIndex *findTransaction(int ifaceIndex, uint256 hashTx, CTransaction& ret_tx, time_t dur)
+{
+  CTxDB txdb(ifaceIndex, "r");
   CBlockIndex *pblockindex;
   CTxIndex txindex;
   time_t min_t;
@@ -772,6 +905,7 @@ CBlockIndex *findTransaction(uint256 hashTx, CTransaction& ret_tx, time_t dur)
 
   return (NULL);
 }
+#endif
 
 
 #if 0
@@ -794,7 +928,8 @@ CBlockIndex *findBlockByTransaction(const char *tx_id)
 }
 #endif
 
-int64 GetTxFee(CTransaction tx)
+#if 0
+static int64 GetTxFee(int ifaceIndex, CTransaction tx)
 {
   map<uint256, CTxIndex> mapQueuedChanges;
   MapPrevTx inputs;
@@ -804,7 +939,7 @@ int64 GetTxFee(CTransaction tx)
   if (tx.IsCoinBase())
     return (0);
 
-  CTxDB txdb;
+  CTxDB txdb(ifaceIndex, "r+");
 
   nFees = 0;
   bool fInvalid = false;
@@ -815,6 +950,7 @@ int64 GetTxFee(CTransaction tx)
 
   return (nFees);
 }
+#endif
 
 #define MAX_HISTORY_TIME 10454400 /* 1/3 year */
 const char *c_gettransactioninfo(int ifaceIndex, const char *tx_id)
@@ -835,22 +971,25 @@ const char *c_gettransactioninfo(int ifaceIndex, const char *tx_id)
 
 
   hashTx.SetHex(tx_id);
+  pblockindex = findTransaction(ifaceIndex, hashTx, tx);
+  if (!pblockindex)
+    return (NULL);
+
+  hashTx = tx.GetHash();
+#if 0
 //  pblockindex = transactionMap[hashTx]; /* check tx map */
   if (!pblockindex) {
-    timing_init("findTransaction", &ts);
-    pblockindex = findTransaction(hashTx, tx, MAX_HISTORY_TIME);
-    timing_term("findTransaction", &ts);
+    pblockindex = findTransaction(ifaceIndex, hashTx, tx);
     if (!pblockindex)
       return (NULL);
 
     hashTx = tx.GetHash();
   } else {
-    timing_init("findBlockTransaction", &ts);
     err = findBlockTransaction(pblockindex, tx_id, tx, MAX_HISTORY_TIME);
-    timing_term("findBlockTransaction", &ts);
     if (err)
       return (NULL);
   }
+#endif
 
   hashBlock = 0;
   if (pblockindex)
@@ -867,9 +1006,9 @@ const char *c_gettransactioninfo(int ifaceIndex, const char *tx_id)
       }
     }
 
-    if (pblockindex && pblockindex->IsInMainChain())
+    if (pblockindex && pblockindex->IsInMainChain(ifaceIndex))
     {
-      result.push_back(Pair("confirmations", 1 + nBestHeight - pblockindex->nHeight));
+      result.push_back(Pair("confirmations", (int)(1 + GetBestHeight(ifaceIndex) - pblockindex->nHeight)));
       result.push_back(Pair("time", (boost::int64_t)pblockindex->nTime));
     }
     else {
@@ -878,10 +1017,11 @@ const char *c_gettransactioninfo(int ifaceIndex, const char *tx_id)
   }
 
   result.push_back(Pair("txid", tx.GetHash().GetHex()));
-  result.push_back(Pair("version", tx.nVersion));
+  result.push_back(Pair("version", tx.isFlag(CTransaction::TX_VERSION) ? 1 : 0));
+  result.push_back(Pair("flag", tx.nFlag));
   result.push_back(Pair("locktime", (boost::int64_t)tx.nLockTime));
   result.push_back(Pair("amount", ValueFromAmount(tx.GetValueOut())));
-  result.push_back(Pair("fee", ValueFromAmount(GetTxFee(tx))));
+  result.push_back(Pair("fee", ValueFromAmount(GetTxFee(ifaceIndex, tx))));
 
   Array vin;
   BOOST_FOREACH(const CTxIn& txin, tx.vin)
@@ -964,22 +1104,24 @@ const char *c_gettransactioninfo(const char *tx_id)
 }
 #endif
 
-const char *c_getlastblockinfo(int target_height)
+const char *c_getlastblockinfo(int ifaceIndex, int target_height)
 {
+  CBlockIndex *pindexBest = GetBestBlockIndex(ifaceIndex);
   CBlockIndex *block;
   uint256 blockId;
   int blockHeight;
 
   for (block = pindexBest; block; block = block->pprev)  {
     if (target_height == 0 || block->nHeight == target_height)
-      return (c_getblockindexinfo(block));
+      return (c_getblockindexinfo(ifaceIndex, block));
   }
 
   return (NULL);
 }
 
-uint64_t c_getblockheight(void)
+uint64_t c_getblockheight(int ifaceIndex)
 {
+  CBlockIndex *pindexBest = GetBestBlockIndex(ifaceIndex);
   
   if (!pindexBest) {
     /* mining is defunct when "height < 2" */
@@ -990,8 +1132,9 @@ uint64_t c_getblockheight(void)
 }
 
 string miningtransactioninfo_json;
-const char *c_getminingtransactions(unsigned int workId)
+const char *c_getminingtransactions(int ifaceIndex, unsigned int workId)
 {
+  CIface *iface = GetCoinByIndex(ifaceIndex);
   Array result;
 //  map<uint256, int64_t> setTxIndex;
   int i = 0;
@@ -1003,7 +1146,7 @@ const char *c_getminingtransactions(unsigned int workId)
   if (pblock == NULL)
     return (NULL);
 
-  CTxDB txdb("r");
+//  CTxDB txdb(ifaceIndex, "r");
   BOOST_FOREACH (CTransaction& tx, pblock->vtx)
   {
 //    uint256 txHash = tx.GetHash();
@@ -1015,7 +1158,7 @@ const char *c_getminingtransactions(unsigned int workId)
       continue;
 */
 
-    CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION);
+    CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION(iface));
     ssTx << tx;
 
     result.push_back(HexStr(ssTx.begin(), ssTx.end()));
@@ -1064,6 +1207,7 @@ bool WriteToShareNet(CBlock* pBlock, int nHeight)
 }
 #endif
 
+#if 0
 extern bool LoadExternalBlockFile(FILE* fileIn);
 const int cxx_reloadblockfile(const char *path)
 {
@@ -1076,6 +1220,36 @@ const int cxx_reloadblockfile(const char *path)
 
   LoadExternalBlockFile(file);
   return (0);
+}
+#endif
+
+int GetBlockDepthInMainChain(CIface *iface, uint256 blockHash)
+{
+  int ifaceIndex = GetCoinIndex(iface);
+  blkidx_t *blockIndex;
+
+  blockIndex = GetBlockTable(ifaceIndex);
+  if (!blockIndex)
+    return (0);
+
+  CBlockIndex *pindex = (*blockIndex)[blockHash];
+  if (!pindex || !pindex->IsInMainChain(ifaceIndex))
+    return (0);
+
+  return 1 + GetBestHeight(ifaceIndex) - pindex->nHeight;
+}
+
+int GetTxDepthInMainChain(CIface *iface, uint256 txHash)
+{
+  CTransaction tx;
+  uint256 blockHash;
+  bool ret;
+
+  ret = GetTransaction(iface, txHash, tx, blockHash);
+  if (!ret)
+    return (0);
+
+  return (GetBlockDepthInMainChain(iface, blockHash));
 }
 
 
@@ -1093,19 +1267,19 @@ int submitblock(unsigned int workId, unsigned int nTime, unsigned int nNonce, ch
   return (c_submitblock(workId, nTime, nNonce, xn_hex, ret_hash, ret_diff));
 }
 
-const char *getblocktransactions(void)
+const char *getblocktransactions(int ifaceIndex)
 {
-  return (c_getblocktransactions());
+  return (c_getblocktransactions(ifaceIndex));
 }
 
-const char *getmininginfo(void)
+const char *getmininginfo(int ifaceIndex)
 {
-  return (c_getmininginfo());
+  return (c_getmininginfo(ifaceIndex));
 }
 
-double getdifficulty(void)
+double getdifficulty(int ifaceIndex)
 {
-  return (c_getdifficulty());
+  return (c_getdifficulty(ifaceIndex));
 }
 
 const char *getblockinfo(int ifaceIndex, const char *hash)
@@ -1118,24 +1292,26 @@ const char *gettransactioninfo(int ifaceIndex, const char *hash)
   return (c_gettransactioninfo(ifaceIndex, hash));
 }
 
-const char *getlastblockinfo(int height)
+const char *getlastblockinfo(int ifaceIndex, int height)
 {
-  return (c_getlastblockinfo(height));
+  return (c_getlastblockinfo(ifaceIndex, height));
 }
 
-uint64_t getblockheight(void)
+uint64_t getblockheight(int ifaceIndex)
 {
-  return (c_getblockheight());
+  return (c_getblockheight(ifaceIndex));
 }
 
-const char *getminingtransactioninfo(unsigned int workId)
+const char *getminingtransactioninfo(int ifaceIndex, unsigned int workId)
 {
-  return (c_getminingtransactions(workId));
+  return (c_getminingtransactions(ifaceIndex, workId));
 }
+#if 0
 const int reloadblockfile(const char *path)
 {
   return (cxx_reloadblockfile(path));
 }
+#endif
 
 /** Set by stratum server when block changes via getblocktemplate(). */
 void SetNextDifficulty(int ifaceIndex, unsigned int nBits)

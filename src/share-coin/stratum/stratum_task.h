@@ -25,5 +25,6 @@ task_t *stratum_task(unsigned int task_id);
 task_t *task_init(void);
 
 
+
 #endif /* __STRATUM__TASK_H__ */
 

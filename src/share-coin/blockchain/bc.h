@@ -38,6 +38,8 @@ extern "C" {
 
 #define BC_MAX_NAME_LENGTH MAX_SHARE_NAME_LENGTH
 
+typedef uint64_t bc_pos_t;
+
 typedef uint32_t bc_hash_t[8];
 
 typedef struct bc_idx_t

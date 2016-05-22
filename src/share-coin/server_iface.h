@@ -62,6 +62,7 @@ extern "C" {
 extern int _shutdown_timer;
 
 
+
 /* net.cpp */
 void start_node(void);
 void start_node_peer(const char *host, int port);
@@ -73,47 +74,48 @@ void flush_addrman_db(void);
 void server_shutdown(void);
 
 
-const char *getblocktransactions(void);
+const char *getblocktransactions(int ifaceIndex);
 
-const char *getaddressbyaccount(const char *accountName);
+const char *getaddressbyaccount(int ifaceIndex, const char *accountName);
 
-double getaccountbalance(const char *accountName);
+double getaccountbalance(int ifaceIndex, const char *accountName);
 
 int block_save(int block_height, const char *json_str);
 
 char *block_load(int block_height);
 
-int setblockreward(const char *accountName, double amount);
+int setblockreward(int ifaceIndex, const char *accountName, double amount);
 
-int wallet_account_transfer(const char *sourceAccountName, const char *accountName, const char *comment, double amount);
+int wallet_account_transfer(int ifaceIndex, const char *sourceAccountName, const char *accountName, const char *comment, double amount);
 
 
-const char *getmininginfo(void);
+const char *getmininginfo(int ifaceIndex);
 
 const char *getblockinfo(int ifaceIndex, const char *hash);
 const char *gettransactioninfo(int ifaceIndex, const char *hash);
-const char *getlastblockinfo(int height);
+//const char *getlastblockinfo(int height);
+const char *getlastblockinfo(int ifaceIndex, int height);
 
-const char *getaccounttransactioninfo(const char *account, const char *pkey_str, int duration);
+const char *getaccounttransactioninfo(int ifaceIndex, const char *account, const char *pkey_str, int duration);
 
-const char *stratum_getaddressinfo(const char *addr_hash);
+const char *stratum_getaddressinfo(int ifaceIndex, const char *addr_hash);
 
-const char *stratum_getaddresssecret(const char *addr_hash, const char *pkey_str);
+const char *stratum_getaddresssecret(int ifaceIndex, const char *addr_hash, const char *pkey_str);
 
 
-const char *getminingtransactioninfo(unsigned int workId);
+const char *getminingtransactioninfo(int ifaceIndex, unsigned int workId);
 
-const char *stratum_create_account(const char *acc_name);
+const char *stratum_create_account(int ifaceIndex, const char *acc_name);
 
-const char *stratum_create_transaction(char *account, char *pkey_str, char *dest, double amount);
+const char *stratum_create_transaction(int ifaceIndex, char *account, char *pkey_str, char *dest, double amount);
 
-const char *stratum_getaccountinfo(const char *acc_name, const char *pkey_str);
+const char *stratum_getaccountinfo(int ifaceIndex, const char *account, const char *pkey_str);
 
 const char *stratum_error_get(int req_id);
 
-const char *stratum_importaddress(const char *account, const char *privaddr_str);
+const char *stratum_importaddress(int ifaceIndex, const char *account, const char *privaddr_str);
 
-const char *getnewaddress(const char *account);
+const char *getnewaddress(int ifaceIndex, const char *account);
 
 const int reloadblockfile(const char *path);
 
@@ -122,6 +124,8 @@ void shared_addr_submit(const char *net_addr);
 int usde_server_init(void);
 
 void usde_server_term(void);
+
+void shc_server_term(void);
 
 void AddAddress(const char *hostname, int port);
 
@@ -134,7 +138,7 @@ void GetMyExternalIP(void);
 
 int submitblock(unsigned int workId, unsigned int nTime, unsigned int nNonce, char *xn_hex, char *ret_hash, double *ret_diff);
 
-double getdifficulty(void);
+double getdifficulty(int ifaceIndex);
 
 const char *getblocktemplate(int ifaceIndex);
 
@@ -153,6 +157,10 @@ void shc_server_timer(void);
 void shc_server_accept(int hSocket, struct sockaddr *net_addr);
 
 void shc_server_close(int fd, struct sockaddr *addr);
+
+uint64_t getblockheight(int ifaceIndex);
+
+
 
 
 #ifdef __cplusplus

@@ -229,7 +229,7 @@ void unet_peer_fill_seed(int mode)
   if (mode == UNET_USDE) {
     for (i = 0; i < USDE_SEED_LIST_SIZE; i++) {
       sprintf(hostname, "%s %d", usde_seed_list[i], bind->port);
-      peer = shpeer_init("usde", hostname); 
+      peer = shpeer_init(unet_mode_label(mode), hostname); 
       uevent_new_peer(mode, peer);
 
       sprintf(buf, "unet_peer_fill_seed: seeding peer '%s'.", shpeer_print(peer));

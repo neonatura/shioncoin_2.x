@@ -277,6 +277,7 @@ int bc_get(bc_t *bc, int pos, unsigned char **data_p, size_t *data_len_p)
 {
   bc_idx_t idx;
   unsigned char *data;
+  char errbuf[1024];
   int err;
 
   if (!data_p) {
@@ -288,9 +289,9 @@ fprintf(stderr, "DEBUG: bc_get: no data pointer specified.\n");
   memset(&idx, 0, sizeof(idx));
   err = bc_idx_get(bc, pos, &idx);
   if (err) {
-fprintf(stderr, "DEBUG: bc_get: bc_idx_get err %d\n", err);
+fprintf(stderr, "DEBUG: bc_get[pos %d]: bc_idx_get error '%s'\n", pos, sherrstr(err));
     return (err);
-}
+  }
 
 /* .. deal with idx.size == 0, i.e. prevent write of 0 */
 
@@ -300,8 +301,10 @@ fprintf(stderr, "DEBUG: bc_get: bc_idx_get err %d\n", err);
 
   /* read in serialized binary data */
   err = bc_read(bc, pos, data, idx.size);
-  if (err)
+  if (err) {
+fprintf(stderr, "DEBUG: bc_get[pos %d]: bc_read <%d bytes> error '%s'\n", pos, idx.size, sherrstr(err));
     return (err); 
+  }
 
   *data_p = data;
   if (data_len_p)
@@ -340,6 +343,47 @@ int bc_find(bc_t *bc, bc_hash_t hash, int *pos_p)
 }
 
 
+/**
+ * @bug this does not handle jrnls alloc'd past one being targeted.
+ */
+int bc_purge(bc_t *bc, int pos)
+{
+  bc_map_t *map;
+  bc_idx_t idx;
+  int err;
+  int i;
+
+  if (pos < 0)
+    return (SHERR_INVAL);
+
+  /* obtain index for record position */
+  memset(&idx, 0, sizeof(idx));
+  err = bc_idx_get(bc, pos, &idx);
+  if (err)
+    return (err);
+
+  /* ensure journal is allocated */
+  err = bc_alloc(bc, idx.jrnl);
+  if (err)
+    return (err);
+
+  map = bc->data_map + idx.jrnl;
+
+  if (shcrc32(map->raw + idx.of, idx.size) != idx.crc) {
+fprintf(stderr, "DEBUG: bc_read; invalid crc {map: %x, idx: %x} mismatch at pos %d\n", shcrc32(map->raw + idx.of, idx.size), idx.crc, pos);
+    return (SHERR_ILSEQ);
+  }
+
+  /* clear index of remaining entries */
+  for (i = (bc_idx_next(bc)-1); i >= pos; i--) {
+    bc_idx_clear(bc, i);
+  }
+
+  /* truncate journal at offset */
+  bc_map_trunc(bc, map, idx.of);
+
+  return (0);
+}
 
 
 /**

@@ -1,10 +1,29 @@
-// Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2012 The Bitcoin developers
-// Copyright (c) 2011-2012 Litecoin Developers
-// Copyright (c) 2013 usde Developers
-// Distributed under the MIT/X11 software license, see the accompanying
-// file COPYING or http://www.opensource.org/licenses/mit-license.php.
-#include "db.h"
+
+/*
+ * @copyright
+ *
+ *  Copyright 2014 Neo Natura
+ *
+ *  This file is part of the Share Library.
+ *  (https://github.com/neonatura/share)
+ *        
+ *  The Share Library is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version. 
+ *
+ *  The Share Library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with The Share Library.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  @endcopyright
+ */  
+
+#include "shcoind.h"
 #include "walletdb.h"
 #include "rpc_proto.h"
 #include "net.h"
@@ -25,7 +44,7 @@
 using namespace std;
 using namespace boost;
 
-CWallet* pwalletMain;
+//CWallet* pwalletMain;
 
 
 
@@ -73,13 +92,15 @@ void Shutdown2(void)
     if (fFirstThread)
     {
         fShutdown = true;
-        nTransactionsUpdated++;
+        //nTransactionsUpdated++;
         bitdb.Flush(false);
         StopNode();
         bitdb.Flush(true);
         boost::filesystem::remove(GetPidFile());
+#if 0
         UnregisterWallet(pwalletMain);
         delete pwalletMain;
+#endif
         CreateThread(ExitTimeout, NULL);
         Sleep(50);
         printf("usde exited\n\n");
@@ -886,7 +907,7 @@ void server_shutdown(void)
   printf("info: shcoind daemon terminating.\n");
 
   fShutdown = true;
-  nTransactionsUpdated++;
+  //nTransactionsUpdated++;
   bitdb.Flush(false);
 
   if (semOutbound)
@@ -896,8 +917,8 @@ void server_shutdown(void)
 
   bitdb.Flush(true);
   boost::filesystem::remove(GetPidFile());
-  UnregisterWallet(pwalletMain);
-  delete pwalletMain;
+//  UnregisterWallet(pwalletMain);
+//  delete pwalletMain;
 
   CloseBlockChains();
 //  Shutdown2();

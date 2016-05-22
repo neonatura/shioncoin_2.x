@@ -31,23 +31,47 @@
 #include "usde/usde_netmsg.h"
 #include "usde/usde_block.h"
 #include "usde/usde_wallet.h"
+#include "usde/usde_txidx.h"
+
+USDE_CTxMemPool USDEBlock::mempool;
+uint256 USDEBlock::hashBestChain;
+CBlockIndex *USDEBlock::pindexGenesisBlock = NULL;
+int64 USDEBlock::nTimeBestReceived;
+CBigNum USDEBlock::bnBestChainWork;
+CBigNum USDEBlock::bnBestInvalidWork;
+
+int64 USDEBlock::nTargetTimespan = 7200; /* two hours */
+int64 USDEBlock::nTargetSpacing = 60; /* one minute */
+
 
 static int usde_init(CIface *iface, void *_unused_)
 {
+  int ifaceIndex = GetCoinIndex(iface);
   int err;
 
+ usdeWallet = new USDEWallet();
+  SetWallet(USDE_COIN_IFACE, usdeWallet);
+
+
+  iface->block_max = -1;
+
+#if 0
   if (!bitdb.Open(GetDataDir())) /* DEBUG: */
   {
     fprintf(stderr, "error: unable to open data directory.\n");
     return (SHERR_INVAL);
   }
+#endif
 
-  if (!LoadBlockIndex(iface)) {
-    fprintf(stderr, "error: unable to open load block index.\n");
+  if (!usde_InitBlockIndex()) {
+    fprintf(stderr, "error: usde_proto: unable to initialize block index table.\n");
     return (SHERR_INVAL);
   }
 
-  usde_LoadWallet();
+  if (!usde_LoadWallet()) {
+    fprintf(stderr, "error: usde_proto: unable to load wallet.\n");
+    return (SHERR_INVAL);
+  }
 
   err = unet_bind(UNET_USDE, USDE_COIN_DAEMON_PORT);
   if (err)
@@ -64,6 +88,10 @@ static int usde_init(CIface *iface, void *_unused_)
 }
 static int usde_term(CIface *iface, void *_unused_)
 {
+  CWallet *wallet = GetWallet(iface);
+  if (wallet)
+    UnregisterWallet(wallet);
+  SetWallet(iface, NULL);
 }
 
 static int usde_msg_recv(CIface *iface, CNode *pnode)
@@ -104,6 +132,15 @@ static int usde_block_new(CIface *iface, CBlock **block_p)
 return (0);
 }
 
+static int usde_block_process(CIface *iface, CBlock *block)
+{
+
+  if (!usde_ProcessBlock(block->originPeer, block))
+    return (SHERR_INVAL);
+
+  return (0);
+}
+
 static int usde_block_templ(CIface *iface, CBlock **block_p)
 {
   CWallet *wallet = GetWallet(iface);
@@ -117,6 +154,7 @@ static int usde_block_templ(CIface *iface, CBlock **block_p)
     return (NULL);
   }
 
+  CBlockIndex *pindexBest = GetBestBlockIndex(USDE_COIN_IFACE);
   median = pindexBest->GetMedianTimePast() + 1;
 
   CReserveKey reservekey(wallet);
@@ -132,6 +170,7 @@ static int usde_block_templ(CIface *iface, CBlock **block_p)
   return (0);
 }
 
+#if 0
 static int usde_block_submit(CIface *iface, CBlock *block)
 {
   blkidx_t *blockIndex;
@@ -163,10 +202,12 @@ fprintf(stderr, "DEBUG: usde_block_submit: error obtaining tableBlockIndex[USDE}
 
 return (0);
 }
+#endif
 
-static int usde_block_info(CIface *iface, void *arg)
+static int usde_block_bestchain(CIface *iface, uint256 *hash_p)
 {
-return (0);
+  *hash_p = USDEBlock::hashBestChain;
+  return (0);
 }
 
 static int usde_tx_new(CIface *iface, void *arg)
@@ -174,33 +215,10 @@ static int usde_tx_new(CIface *iface, void *arg)
 return (0);
 }
 
-static int usde_tx_info(CIface *iface, void *arg)
+static int usde_tx_pool(CIface *iface, CTxMemPool **pool_p)
 {
-return (0);
-}
-static int usde_addr_new(CIface *iface, void *arg)
-{
-return (0);
-}
-static int usde_addr_import(CIface *iface, void *arg)
-{
-return (0);
-}
-static int usde_addr_info(CIface *iface, void *arg)
-{
-return (0);
-}
-static int usde_account_new(CIface *iface, void *arg)
-{
-return (0);
-}
-static int usde_account_move(CIface *iface, void *arg)
-{
-return (0);
-}
-static int usde_account_info(CIface *iface, void *arg)
-{
-return (0);
+  *pool_p = &USDEBlock::mempool;
+  return (0);
 }
 
 #ifdef __cplusplus
@@ -212,18 +230,15 @@ extern "C" {
 coin_iface_t usde_coin_iface = {
   "usde",
   COIN_IFACE_VERSION(USDE_VERSION_MAJOR, USDE_VERSION_MINOR,
-      USDE_VERSION_REVISION, USDE_VERSION_BUILD),
+      USDE_VERSION_REVISION, USDE_VERSION_BUILD), /* cli ver */
   1, /* block version */
+  USDE_PROTOCOL_VERSION, /* network protocol version */ 
   USDE_COIN_DAEMON_PORT,
   USDE_MAX_BLOCK_SIZE,
-  USDE_MAX_BLOCK_SIZE_GEN,
-  USDE_MAX_BLOCK_SIGOPS,
-  USDE_MAX_ORPHAN_TRANSACTIONS,
   USDE_MIN_TX_FEE,
   USDE_MIN_RELAY_TX_FEE,
   USDE_MAX_MONEY,
   USDE_COINBASE_MATURITY, 
-  USDE_LOCKTIME_THRESHOLD,
   COINF(usde_init),
   COINF(usde_term),
   COINF(usde_msg_recv),
@@ -231,17 +246,11 @@ coin_iface_t usde_coin_iface = {
   COINF(usde_peer_add),
   COINF(usde_peer_recv),
   COINF(usde_block_new),
+  COINF(usde_block_process),
   COINF(usde_block_templ),
-  COINF(usde_block_submit),
-  COINF(usde_block_info),
+  COINF(usde_block_bestchain),
   COINF(usde_tx_new),
-  COINF(usde_tx_info),
-  COINF(usde_addr_new),
-  COINF(usde_addr_import),
-  COINF(usde_addr_info),
-  COINF(usde_account_new),
-  COINF(usde_account_move),
-  COINF(usde_account_info),
+  COINF(usde_tx_pool)
 };
 
 

@@ -26,21 +26,28 @@ static const int CLIENT_VERSION =
                          +     100 * CLIENT_VERSION_REVISION
                          +       1 * CLIENT_VERSION_BUILD;
 #endif
-#define CLIENT_VERSION_MAJOR       USDE_VERSION_MAJOR
-#define CLIENT_VERSION_MINOR       USDE_VERSION_MINOR
-#define CLIENT_VERSION_REVISION    USDE_VERSION_REVISION
-#define CLIENT_VERSION_BUILD       USDE_VERSION_BUILD
 
-#define CLIENT_VERSION \
-    COIN_IFACE_VERSION(USDE_VERSION_MAJOR, USDE_VERSION_MINOR, \
-      USDE_VERSION_REVISION, USDE_VERSION_BUILD)
 
+
+
+#define DISK_VERSION_MAJOR       SHC_VERSION_MAJOR
+#define DISK_VERSION_MINOR       SHC_VERSION_MINOR
+#define DISK_VERSION_REVISION    SHC_VERSION_REVISION
+#define DISK_VERSION_BUILD       SHC_VERSION_BUILD
+
+#define DISK_VERSION \
+    COIN_IFACE_VERSION(SHC_VERSION_MAJOR, SHC_VERSION_MINOR, \
+      SHC_VERSION_REVISION, SHC_VERSION_BUILD)
+
+#define CLIENT_VERSION DISK_VERSION
 
 //
 // network protocol versioning
 //
 
-static const int PROTOCOL_VERSION = 1000400;
+#define PROTOCOL_VERSION(_iface) \
+  ((_iface)->proto_ver)
+//static const int PROTOCOL_VERSION = 1000400;
 
 // earlier versions not supported as of Feb 2012, and are disconnected
 static const int MIN_PROTO_VERSION = 209;

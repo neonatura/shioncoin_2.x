@@ -23,14 +23,13 @@
  *  @endcopyright
  */  
 
-#include "server/block.h"
+#include "shcoind.h"
 #include "server/main.h"
 #include "server/util.h"
 #include "server/rpc_proto.h"
 #include "server/ui_interface.h"
 #include "clientrpc_iface.h"
 #include "server/netbase.h"
-#include "proto/coin_proto.h"
 
 #include <boost/asio.hpp>
 #include <boost/asio/ip/v6_only.hpp>
@@ -299,6 +298,8 @@ void ConvertTo(Value& value)
   }
 }
 
+
+// Convert strings to command-specific RPC representation
 Array RPCConvertValues(const std::string &strMethod, const std::vector<std::string> &strParams)
 {
   Array params;
@@ -310,40 +311,75 @@ Array RPCConvertValues(const std::string &strMethod, const std::vector<std::stri
   //
   // Special case non-string parameter types
   //
-  if (strMethod == "setgenerate"            && n > 0) ConvertTo<bool>(params[0]);
-  if (strMethod == "setgenerate"            && n > 1) ConvertTo<boost::int64_t>(params[1]);
   if (strMethod == "sendtoaddress"          && n > 1) ConvertTo<double>(params[1]);
   if (strMethod == "settxfee"               && n > 0) ConvertTo<double>(params[0]);
   if (strMethod == "setmininput"            && n > 0) ConvertTo<double>(params[0]);
   if (strMethod == "getreceivedbyaddress"   && n > 1) ConvertTo<boost::int64_t>(params[1]);
+  if (strMethod == "wallet.recvbyaddr"   && n > 1) ConvertTo<boost::int64_t>(params[1]);
   if (strMethod == "getreceivedbyaccount"   && n > 1) ConvertTo<boost::int64_t>(params[1]);
+  if (strMethod == "wallet.recvbyaccount"   && n > 1) ConvertTo<boost::int64_t>(params[1]);
+
   if (strMethod == "listreceivedbyaddress"  && n > 0) ConvertTo<boost::int64_t>(params[0]);
   if (strMethod == "listreceivedbyaddress"  && n > 1) ConvertTo<bool>(params[1]);
   if (strMethod == "listreceivedbyaccount"  && n > 0) ConvertTo<boost::int64_t>(params[0]);
   if (strMethod == "listreceivedbyaccount"  && n > 1) ConvertTo<bool>(params[1]);
+  if (strMethod == "wallet.listbyaddr"  && n > 0) ConvertTo<boost::int64_t>(params[0]);
+  if (strMethod == "wallet.listbyaddr"  && n > 1) ConvertTo<bool>(params[1]);
+  if (strMethod == "wallet.listbyaccount"  && n > 0) ConvertTo<boost::int64_t>(params[0]);
+  if (strMethod == "wallet.listbyaccount"  && n > 1) ConvertTo<bool>(params[1]);
+
   if (strMethod == "getbalance"             && n > 1) ConvertTo<boost::int64_t>(params[1]);
+  if (strMethod == "wallet.balance"             && n > 1) ConvertTo<boost::int64_t>(params[1]);
+
   if (strMethod == "getblockhash"           && n > 0) ConvertTo<boost::int64_t>(params[0]);
+  if (strMethod == "block.hash"           && n > 0) ConvertTo<boost::int64_t>(params[0]);
+
+  if (strMethod == "block.import"           && n > 1) ConvertTo<boost::int64_t>(params[1]);
+  if (strMethod == "block.export"           && n > 1) ConvertTo<boost::int64_t>(params[1]);
+
   if (strMethod == "move"                   && n > 2) ConvertTo<double>(params[2]);
   if (strMethod == "move"                   && n > 3) ConvertTo<boost::int64_t>(params[3]);
+
   if (strMethod == "sendfrom"               && n > 2) ConvertTo<double>(params[2]);
   if (strMethod == "sendfrom"               && n > 3) ConvertTo<boost::int64_t>(params[3]);
+  if (strMethod == "wallet.send"               && n > 2) ConvertTo<double>(params[2]);
+  if (strMethod == "wallet.send"               && n > 3) ConvertTo<boost::int64_t>(params[3]);
+
   if (strMethod == "listtransactions"       && n > 1) ConvertTo<boost::int64_t>(params[1]);
   if (strMethod == "listtransactions"       && n > 2) ConvertTo<boost::int64_t>(params[2]);
+
+  if (strMethod == "tx.list"       && n > 1) ConvertTo<boost::int64_t>(params[1]);
+  if (strMethod == "tx.list"       && n > 2) ConvertTo<boost::int64_t>(params[2]);
+
   if (strMethod == "listaccounts"           && n > 0) ConvertTo<boost::int64_t>(params[0]);
+  if (strMethod == "wallet.accounts"           && n > 0) ConvertTo<boost::int64_t>(params[0]);
   if (strMethod == "walletpassphrase"       && n > 1) ConvertTo<boost::int64_t>(params[1]);
   if (strMethod == "getblocktemplate"       && n > 0) ConvertTo<Object>(params[0]);
+  if (strMethod == "block.template"       && n > 0) ConvertTo<Object>(params[0]);
   if (strMethod == "listsinceblock"         && n > 1) ConvertTo<boost::int64_t>(params[1]);
+  if (strMethod == "block.listsince"         && n > 1) ConvertTo<boost::int64_t>(params[1]);
+
   if (strMethod == "sendmany"               && n > 1) ConvertTo<Object>(params[1]);
   if (strMethod == "sendmany"               && n > 2) ConvertTo<boost::int64_t>(params[2]);
+  if (strMethod == "wallet.multisend"               && n > 1) ConvertTo<Object>(params[1]);
+  if (strMethod == "wallet.multisend"               && n > 2) ConvertTo<boost::int64_t>(params[2]);
+
   if (strMethod == "addmultisigaddress"     && n > 0) ConvertTo<boost::int64_t>(params[0]);
   if (strMethod == "addmultisigaddress"     && n > 1) ConvertTo<Array>(params[1]);
+
   if (strMethod == "listunspent"            && n > 0) ConvertTo<boost::int64_t>(params[0]);
   if (strMethod == "listunspent"            && n > 1) ConvertTo<boost::int64_t>(params[1]);
+  if (strMethod == "wallet.unspent"            && n > 0) ConvertTo<boost::int64_t>(params[0]);
+  if (strMethod == "wallet.unspent"            && n > 1) ConvertTo<boost::int64_t>(params[1]);
+
   if (strMethod == "getrawtransaction"      && n > 1) ConvertTo<boost::int64_t>(params[1]);
+  if (strMethod == "tx.getraw"      && n > 1) ConvertTo<boost::int64_t>(params[1]);
   if (strMethod == "createrawtransaction"   && n > 0) ConvertTo<Array>(params[0]);
   if (strMethod == "createrawtransaction"   && n > 1) ConvertTo<Object>(params[1]);
   if (strMethod == "signrawtransaction"     && n > 1) ConvertTo<Array>(params[1]);
   if (strMethod == "signrawtransaction"     && n > 2) ConvertTo<Array>(params[2]);
+  if (strMethod == "tx.signraw"     && n > 1) ConvertTo<Array>(params[1]);
+  if (strMethod == "tx.signraw"     && n > 2) ConvertTo<Array>(params[2]);
 
   return params;
 }
@@ -359,14 +395,19 @@ int CommandLineRPC(int argc, char *argv[])
   iface = NULL;
   memset(prog_name, 0, sizeof(prog_name));
   strncpy(prog_name, argv[0], sizeof(prog_name));
-  ptr = strstr(prog_name, ".");
+  ptr = strrchr(prog_name, '.'); /* from end */
+  if (ptr && 0 == strcasecmp(ptr, ".exe"))
+    ptr = strchr(prog_name, '.'); /* from begin */
   if (ptr) {
     ptr++;
-    strtok(ptr, ".");
-    iface = ptr;
+  } else {
+    ptr = prog_name;
   }
-  if (!iface)
-    iface = "usde";
+  if (*ptr == '/' || *ptr == '\\')
+    ptr++; 
+  strtok(ptr, "./\\");
+  if (!*ptr) ptr = "shc"; /* default */
+  iface = (const char *)ptr;
 
   try
   {

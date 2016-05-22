@@ -1,17 +1,33 @@
-// Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2012 The Bitcoin developers
-// Copyright (c) 2011-2012 Litecoin Developers
-// Copyright (c) 2013 usde Developers
-// Distributed under the MIT/X11 software license, see the accompanying
-// file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include "db.h"
+/*
+ * @copyright
+ *
+ *  Copyright 2014 Neo Natura
+ *
+ *  This file is part of the Share Library.
+ *  (https://github.com/neonatura/share)
+ *        
+ *  The Share Library is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version. 
+ *
+ *  The Share Library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with The Share Library.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  @endcopyright
+ */  
+
+#include "share.h"
+#include "shcoind.h"
 #include "util.h"
 #include "main.h"
 #include "block.h"
-#include <boost/version.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/filesystem/fstream.hpp>
 
 #ifndef WIN32
 #include "sys/stat.h"
@@ -414,7 +430,8 @@ bool CTxDB::ContainsTx(uint256 hash)
 
 bool CTxDB::ReadDiskTx(uint256 hash, CTransaction& tx)
 {
-  return (tx.ReadTx(ifaceIndex, hash));
+uint256 blockHash;
+return (tx.ReadTx(ifaceIndex, hash, blockHash));
 }
 
 #if 0
@@ -453,7 +470,30 @@ bool CTxDB::ReadDiskTx(COutPoint outpoint, CTransaction& tx)
 #endif
 }
 
+bool CTxDB::WriteBlockIndex(const CDiskBlockIndex& blockindex)
+{
+    return Write(make_pair(string("blockindex"), blockindex.GetBlockHash()), blockindex);
+}
 
+bool CTxDB::ReadHashBestChain(uint256& hashBestChain)
+{
+    return Read(string("hashBestChain"), hashBestChain);
+}
+
+bool CTxDB::WriteHashBestChain(uint256 hashBestChain)
+{
+    return Write(string("hashBestChain"), hashBestChain);
+}
+
+bool CTxDB::ReadBestInvalidWork(CBigNum& bnBestInvalidWork)
+{
+    return Read(string("bnBestInvalidWork"), bnBestInvalidWork);
+}
+
+bool CTxDB::WriteBestInvalidWork(CBigNum bnBestInvalidWork)
+{
+    return Write(string("bnBestInvalidWork"), bnBestInvalidWork);
+}
 
 CBlockIndex *InsertBlockIndex(blkidx_t *blockIndex, uint256 hash)
 {
@@ -816,5 +856,175 @@ bool CTxDB::LoadBlockIndexGuts(CIface *iface)
 }
 #endif
 
+/** FOLLOWING NOT USED YET **/
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#define TXIDX_TABLE "txidx"
+
+shdb_t *txdb_open(CIface *iface)
+{
+  shdb_t *db;
+
+  db = shdb_open(iface->name);
+  if (!db)
+    return (NULL);
+
+  if (0 == shdb_table_new(db, TXIDX_TABLE)) {
+    shdb_col_new(db, TXIDX_TABLE, "origin");
+    shdb_col_new(db, TXIDX_TABLE, "spent");
+  }
+
+  return (db);
+}
+
+void txdb_close(shdb_t **db_p)
+{
+  shdb_t *db;
+
+  if (!db_p)
+    return;
+
+  db = *db_p;
+  *db_p = NULL;
+
+  shdb_close(db);
+}
+
+bool WriteTxIndex(CIface *iface, uint256 txOrigin, uint256 txSpent)
+{
+  shdb_t *db;
+  shdb_idx_t rowid;
+  char sql_str[1024];
+  char hash[512];
+  char *ret_val;
+  int err;
+
+  db = txdb_open(iface);
+  if (!db)
+    return (false);
+
+  ret_val = NULL;
+  sprintf(sql_str, "select origin from %s where origin = '%s' and spent = '%s'", TXIDX_TABLE, txOrigin.GetHex().c_str(), txSpent.GetHex().c_str());
+  err = shdb_exec_cb(db, sql_str, shdb_col_value_cb, &ret_val);
+  if (!err) {
+    /* entry already exists */
+    free(ret_val);
+    return (0);
+  }
+
+  err = shdb_row_new(db, TXIDX_TABLE, &rowid);
+  if (err) goto error;
+  strcpy(hash, txOrigin.GetHex().c_str());
+  err = shdb_row_set(db, TXIDX_TABLE, rowid, "origin", hash);
+  if (err) goto error;
+  strcpy(hash, txSpent.GetHex().c_str()); 
+  err = shdb_row_set(db, TXIDX_TABLE, rowid, "spent", hash);
+  if (err) goto error;
+
+  err = 0;
+
+error:
+  txdb_close(&db);
+  return (err);
+}
+
+#ifdef __cplusplus
+}
+#endif
 
 
+int txdb_hashlist_cb(void *p, int arg_nr, char **args, char **cols)
+{
+  HashList *list = (HashList *)p;
+  uint256 hash;
+
+  if (arg_nr > 0 && *args) {
+    hash.SetHex(*args);
+    list->push_back(hash);
+fprintf(stderr, "DEBUG: txdb_hashlist_cb: inserted hash '%s'\n", hash.GetHex().c_str());
+  }
+
+  return (0);
+}
+
+
+bool ReadTxIndexOrigin(CIface *iface, uint256 txSpent, HashList& txOrigin)
+{
+  vector<uint256> origin; 
+  shdb_t *db;
+  shdb_idx_t rowid;
+  char sql_str[1024];
+  char *ret_val;
+  int err;
+
+  db = txdb_open(iface);
+  if (!db)
+    return (false);
+
+  ret_val = NULL;
+  sprintf(sql_str, "select origin from %s where spent = '%s'", TXIDX_TABLE, txSpent.GetHex().c_str());
+  shdb_exec_cb(db, sql_str, txdb_hashlist_cb, &origin);
+
+  txOrigin = origin;
+
+  txdb_close(&db);
+  
+  return (true);
+}
+
+bool ReadTxIndexSpent(CIface *iface, uint256 txOrigin, HashList& txSpent)
+{
+  vector<uint256> spent;
+  shdb_t *db;
+  shdb_idx_t rowid;
+  char sql_str[1024];
+  char *ret_val;
+  int err;
+
+  db = txdb_open(iface);
+  if (!db)
+    return (false);
+
+  ret_val = NULL;
+  sprintf(sql_str, "select spent from %s where origin = '%s'", TXIDX_TABLE, txOrigin.GetHex().c_str());
+  shdb_exec_cb(db, sql_str, txdb_hashlist_cb, &spent);
+
+  txSpent = spent;
+
+  txdb_close(&db);
+  
+  return (true);
+}
+
+
+#if 0
+bool CTxDB::ReadHashBestChain(uint256& hashBestChain)
+{
+  CIface *iface = GetCoinByIndex(ifaceIndex);
+  hashBestChain = ReadBestChain(iface);
+  return (true);
+}
+
+bool CTxDB::WriteHashBestChain(uint256 hashBestChain)
+{
+  CIface *iface = GetCoinByIndex(ifaceIndex);
+  WriteBestChain(iface, hashBestChain);
+  return (true);
+}
+bool CTxDB::ReadBestInvalidWork(CBigNum& bnBestInvalidWork)
+{
+  CIface *iface = GetCoinByIndex(ifaceIndex);
+  bnBestInvalidWork = ReadBestInvalid(iface);
+  return (true);
+}
+
+bool CTxDB::WriteBestInvalidWork(CBigNum bnBestInvalidWork)
+{
+  CIface *iface = GetCoinByIndex(ifaceIndex);
+  WriteBestInvalid(iface, bnBestInvalidWork);
+  return (true);
+}
+#endif

@@ -24,6 +24,7 @@
  */  
 
 #include "shcoind.h"
+#include "coin_proto.h"
 
 static const char *_stratum_user_html_template = 
 "\r\n"
@@ -43,6 +44,7 @@ static const char *_stratum_html_template =
 char *stratum_http_response(SOCKET sk, char *url)
 {
   static char ret_html[10240];
+  int ifaceIndex = USDE_COIN_IFACE;
   char uname[512];
 
   if (0 == strncmp(url, "/user/", strlen("/user/"))) {
@@ -60,7 +62,7 @@ char *stratum_http_response(SOCKET sk, char *url)
         user->worker, stratum_user_speed(user), 
         (unsigned long)user->block_tot, (unsigned int)user->block_cnt);
   } else {
-    shjson_t *json = shjson_init(getmininginfo());
+    shjson_t *json = shjson_init(getmininginfo(ifaceIndex));
     sprintf(ret_html, _stratum_html_template, 
         (unsigned long)shjson_array_num(json, "result", 0),
         shjson_array_num(json, "result", 1),

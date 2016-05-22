@@ -158,6 +158,30 @@ memset(&st, 0, sizeof(st));
   return (0);
 }
 
+/**
+ * Truncates the data-content layer of a map to a given size.
+ */
+int bc_map_trunc(bc_t *bc, bc_map_t *map, size_t len)
+{
+  int err;
+
+  /* ensure file map is open */
+  err = bc_map_open(bc, map);
+  if (err)
+    return (err);
+
+  err = bc_map_alloc(bc, map, 0);
+  if (err) {
+    return (err);
+  }
+
+  if (len < map->hdr->of) {
+    map->hdr->of = len;
+  }
+
+  return (0);
+}
+
 void bc_map_free(bc_map_t *map)
 {
 

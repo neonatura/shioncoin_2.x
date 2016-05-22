@@ -104,7 +104,7 @@ int unet_connect(int mode, struct sockaddr *net_addr, SOCKET *sk_p)
 
   if (bind->flag & UNETF_PEER_SCAN) {
     /* record successfull connection */
-    shpeer_t *peer = shpeer_init("usde", shaddr_print(net_addr));
+    shpeer_t *peer = shpeer_init(unet_mode_label(mode), shaddr_print(net_addr));
     shnet_track_mark(peer, 1);
     shpeer_free(&peer);
   }

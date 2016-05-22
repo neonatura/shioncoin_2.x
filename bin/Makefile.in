@@ -33,7 +33,8 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-noinst_PROGRAMS = shcoin$(EXEEXT) shcoind$(EXEEXT) .notice$(EXEEXT)
+noinst_PROGRAMS = usde$(EXEEXT) shc$(EXEEXT) shcoind$(EXEEXT) \
+	.notice$(EXEEXT)
 subdir = bin
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -132,12 +133,15 @@ PROGRAMS = $(noinst_PROGRAMS)
 _notice_SOURCES = .c
 _notice_OBJECTS = .$(OBJEXT)
 _notice_LDADD = $(LDADD)
-shcoin_SOURCES = shcoin.c
-shcoin_OBJECTS = shcoin.$(OBJEXT)
-shcoin_LDADD = $(LDADD)
+shc_SOURCES = shc.c
+shc_OBJECTS = shc.$(OBJEXT)
+shc_LDADD = $(LDADD)
 shcoind_SOURCES = shcoind.c
 shcoind_OBJECTS = shcoind.$(OBJEXT)
 shcoind_LDADD = $(LDADD)
+usde_SOURCES = usde.c
+usde_OBJECTS = usde.$(OBJEXT)
+usde_LDADD = $(LDADD)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/build-aux/depcomp
 am__depfiles_maybe = depfiles
@@ -151,8 +155,8 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = .c shcoin.c shcoind.c
-DIST_SOURCES = .c shcoin.c shcoind.c
+SOURCES = .c shc.c shcoind.c usde.c
+DIST_SOURCES = .c shc.c shcoind.c usde.c
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -1088,8 +1092,9 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoin.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/usde.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -1319,8 +1324,11 @@ uninstall-am:
 shcoind:
 	ln -sf $(top_builddir)/src/share-coin/shcoind
 
-shcoin:
-	ln -sf $(top_builddir)/src/share-coin/shcoin
+shc:
+	ln -sf $(top_builddir)/src/share-coin/shc
+
+usde:
+	ln -sf $(top_builddir)/src/share-coin/usde
 
 .notice:
 	@echo > .notice

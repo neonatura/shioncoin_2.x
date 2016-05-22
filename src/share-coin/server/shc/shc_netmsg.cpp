@@ -23,11 +23,13 @@
  *  @endcopyright
  */
 
-#include "db.h"
+#include "shcoind.h"
 #include "net.h"
 #include "init.h"
 #include "strlcpy.h"
 #include "ui_interface.h"
+#include "shc_block.h"
+#include "shc_txidx.h"
 
 #ifdef WIN32
 #include <string.h>
@@ -47,12 +49,8 @@ using namespace std;
 using namespace boost;
 
 
-extern map<uint256, CDataStream*> mapOrphanTransactions;
-extern map<uint256, CBlock*> mapOrphanBlocks;
 extern CMedianFilter<int> cPeerBlockCounts;
 extern map<uint256, CAlert> mapAlerts;
-extern multimap<uint256, CBlock*> mapOrphanBlocksByPrev;
-extern map<uint256, map<uint256, CDataStream*> > mapOrphanTransactionsByPrev;
 extern vector <CAddress> GetAddresses(CIface *iface, int max_peer);
 
 
@@ -74,12 +72,6 @@ bool static GetTransaction(const uint256& hashTx, CWalletTx& wtx)
     return false;
 }
 
-// make sure all wallets know about the given transaction, in the given block
-void shc_SyncWithWallets(const CTransaction& tx, const CBlock* pblock, bool fUpdate)
-{
-    BOOST_FOREACH(CWallet* pwallet, setpwalletRegistered)
-        pwallet->AddToWalletIfInvolvingMe(tx, pblock, fUpdate);
-}
 
 // notify wallets about an incoming inventory (for request counts)
 void static Inventory(const uint256& hash)
@@ -100,7 +92,7 @@ void static ResendWalletTransactions()
 
 //////////////////////////////////////////////////////////////////////////////
 //
-// mapOrphanTransactions
+// SHC_mapOrphanTransactions
 //
 
 bool shc_AddOrphanTx(const CDataStream& vMsg)
@@ -108,7 +100,7 @@ bool shc_AddOrphanTx(const CDataStream& vMsg)
     CTransaction tx;
     CDataStream(vMsg) >> tx;
     uint256 hash = tx.GetHash();
-    if (mapOrphanTransactions.count(hash))
+    if (SHC_mapOrphanTransactions.count(hash))
         return false;
 
     CDataStream* pvMsg = new CDataStream(vMsg);
@@ -127,42 +119,42 @@ bool shc_AddOrphanTx(const CDataStream& vMsg)
         return false;
     }
 
-    mapOrphanTransactions[hash] = pvMsg;
+    SHC_mapOrphanTransactions[hash] = pvMsg;
     BOOST_FOREACH(const CTxIn& txin, tx.vin)
-        mapOrphanTransactionsByPrev[txin.prevout.hash].insert(make_pair(hash, pvMsg));
+        SHC_mapOrphanTransactionsByPrev[txin.prevout.hash].insert(make_pair(hash, pvMsg));
 
     printf("stored orphan tx %s (mapsz %u)\n", hash.ToString().substr(0,10).c_str(),
-        mapOrphanTransactions.size());
+        SHC_mapOrphanTransactions.size());
     return true;
 }
 
 void static EraseOrphanTx(uint256 hash)
 {
-    if (!mapOrphanTransactions.count(hash))
+    if (!SHC_mapOrphanTransactions.count(hash))
         return;
-    const CDataStream* pvMsg = mapOrphanTransactions[hash];
+    const CDataStream* pvMsg = SHC_mapOrphanTransactions[hash];
     CTransaction tx;
     CDataStream(*pvMsg) >> tx;
     BOOST_FOREACH(const CTxIn& txin, tx.vin)
     {
-        mapOrphanTransactionsByPrev[txin.prevout.hash].erase(hash);
-        if (mapOrphanTransactionsByPrev[txin.prevout.hash].empty())
-            mapOrphanTransactionsByPrev.erase(txin.prevout.hash);
+        SHC_mapOrphanTransactionsByPrev[txin.prevout.hash].erase(hash);
+        if (SHC_mapOrphanTransactionsByPrev[txin.prevout.hash].empty())
+            SHC_mapOrphanTransactionsByPrev.erase(txin.prevout.hash);
     }
     delete pvMsg;
-    mapOrphanTransactions.erase(hash);
+    SHC_mapOrphanTransactions.erase(hash);
 }
 
 unsigned int shc_LimitOrphanTxSize(unsigned int nMaxOrphans)
 {
     unsigned int nEvicted = 0;
-    while (mapOrphanTransactions.size() > nMaxOrphans)
+    while (SHC_mapOrphanTransactions.size() > nMaxOrphans)
     {
         // Evict a random orphan:
         uint256 randomhash = GetRandHash();
-        map<uint256, CDataStream*>::iterator it = mapOrphanTransactions.lower_bound(randomhash);
-        if (it == mapOrphanTransactions.end())
-            it = mapOrphanTransactions.begin();
+        map<uint256, CDataStream*>::iterator it = SHC_mapOrphanTransactions.lower_bound(randomhash);
+        if (it == SHC_mapOrphanTransactions.end())
+            it = SHC_mapOrphanTransactions.begin();
         EraseOrphanTx(it->first);
         ++nEvicted;
     }
@@ -178,7 +170,7 @@ unsigned int shc_LimitOrphanTxSize(unsigned int nMaxOrphans)
 //
 
 
-static bool AlreadyHave(CIface *iface, CTxDB& txdb, const CInv& inv)
+static bool AlreadyHave(CIface *iface, SHCTxDB& txdb, const CInv& inv)
 {
   int ifaceIndex = GetCoinIndex(iface);
 
@@ -188,18 +180,18 @@ static bool AlreadyHave(CIface *iface, CTxDB& txdb, const CInv& inv)
       {
         bool txInMap = false;
         {
-          LOCK(mempool.cs);
-          txInMap = (mempool.exists(inv.hash));
+          LOCK(SHCBlock::mempool.cs);
+          txInMap = (SHCBlock::mempool.exists(inv.hash));
         }
         return txInMap ||
-          mapOrphanTransactions.count(inv.hash) ||
+          SHC_mapOrphanTransactions.count(inv.hash) ||
           txdb.ContainsTx(inv.hash);
       }
 
     case MSG_BLOCK:
       blkidx_t *blockIndex = GetBlockTable(ifaceIndex);
       return blockIndex->count(inv.hash) ||
-        mapOrphanBlocks.count(inv.hash);
+        SHC_mapOrphanBlocks.count(inv.hash);
   }
   // Don't know what it is, just say we already got one
   return true;
@@ -216,7 +208,9 @@ static bool AlreadyHave(CIface *iface, CTxDB& txdb, const CInv& inv)
 
 bool static ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataStream& vRecv)
 {
+  NodeList &vNodes = GetNodeList(iface);
   static map<CService, CPubKey> mapReuseKey;
+  CWallet *pwalletMain = GetWallet(iface);
   int ifaceIndex = GetCoinIndex(iface);
   blkidx_t *blockIndex;
   shtime_t ts;
@@ -271,7 +265,7 @@ bool static ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CData
     if (pfrom->fInbound && addrMe.IsRoutable())
     {
       pfrom->addrLocal = addrMe;
-      SeenLocal(addrMe);
+      SeenLocal(ifaceIndex, addrMe);
     }
 
     // Disconnect if we connected to ourself
@@ -292,12 +286,12 @@ bool static ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CData
 
     // Change version
     pfrom->PushMessage("verack");
-    pfrom->vSend.SetVersion(min(pfrom->nVersion, PROTOCOL_VERSION));
+    pfrom->vSend.SetVersion(min(pfrom->nVersion, SHC_PROTOCOL_VERSION));
 
     if (!pfrom->fInbound)
     {
       // Advertise our address
-      if (!fNoListen && !IsInitialBlockDownload())
+      if (!fNoListen && !IsInitialBlockDownload(SHC_COIN_IFACE))
       {
         CAddress addr = GetLocalAddress(&pfrom->addr);
         if (addr.IsRoutable())
@@ -336,7 +330,7 @@ bool static ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CData
         (nAskedForBlocks < 1 || vNodes.size() <= 1))
     {
       nAskedForBlocks++;
-      pfrom->PushGetBlocks(pindexBest, uint256(0));
+      pfrom->PushGetBlocks(GetBestBlockIndex(SHC_COIN_IFACE), uint256(0));
     }
 
     // Relay alerts
@@ -364,7 +358,7 @@ bool static ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CData
 
   else if (strCommand == "verack")
   {
-    pfrom->vRecv.SetVersion(min(pfrom->nVersion, PROTOCOL_VERSION));
+    pfrom->vRecv.SetVersion(min(pfrom->nVersion, SHC_PROTOCOL_VERSION));
   }
 
 
@@ -472,7 +466,7 @@ bool static ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CData
         break;
       }
     }
-    CTxDB txdb("r");
+    SHCTxDB txdb;
     for (unsigned int nInv = 0; nInv < vInv.size(); nInv++)
     {
       const CInv &inv = vInv[nInv];
@@ -487,8 +481,8 @@ bool static ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CData
 
       if (!fAlreadyHave)
         pfrom->AskFor(inv);
-      else if (inv.type == MSG_BLOCK && mapOrphanBlocks.count(inv.hash)) {
-        pfrom->PushGetBlocks(pindexBest, GetOrphanRoot(mapOrphanBlocks[inv.hash]));
+      else if (inv.type == MSG_BLOCK && SHC_mapOrphanBlocks.count(inv.hash)) {
+        pfrom->PushGetBlocks(GetBestBlockIndex(SHC_COIN_IFACE), shc_GetOrphanRoot(SHC_mapOrphanBlocks[inv.hash]));
       } else if (nInv == nLastBlock) {
         // In case we are on a very long side-chain, it is possible that we already have
         // the last block in an inv bundle sent in response to getblocks. Try to detect
@@ -532,7 +526,7 @@ bool static ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CData
         map<uint256, CBlockIndex*>::iterator mi = blockIndex->find(inv.hash);
         if (mi != blockIndex->end())
         {
-          CBlock block;
+          SHCBlock block;
           block.ReadFromDisk((*mi).second);
           pfrom->PushMessage("block", block);
 
@@ -543,7 +537,7 @@ bool static ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CData
             // and we want it right after the last block so they don't
             // wait for other stuff first.
             vector<CInv> vInv;
-            vInv.push_back(CInv(MSG_BLOCK, hashBestChain));
+            vInv.push_back(CInv(ifaceIndex, MSG_BLOCK, SHCBlock::hashBestChain));
             pfrom->PushMessage("inv", vInv);
             pfrom->hashContinue = 0;
           }
@@ -587,7 +581,7 @@ bool static ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CData
         printf("  getblocks stopping at %d %s\n", pindex->nHeight, pindex->GetBlockHash().ToString().substr(0,20).c_str());
         break;
       }
-      pfrom->PushInventory(CInv(MSG_BLOCK, pindex->GetBlockHash()));
+      pfrom->PushInventory(CInv(ifaceIndex, MSG_BLOCK, pindex->GetBlockHash()));
       if (--nLimit <= 0)
       {
         // When this block is requested, we'll send an inv that'll make them
@@ -623,9 +617,9 @@ bool static ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CData
         pindex = pindex->pnext;
     }
 
-    vector<CBlock> vHeaders;
+    vector<CBlockHeader> vHeaders;
     int nLimit = 2000;
-    printf("getheaders %d to %s\n", (pindex ? pindex->nHeight : -1), hashStop.ToString().substr(0,20).c_str());
+fprintf(stderr, "DEBUG: getheaders %d to %s\n", (pindex ? pindex->nHeight : -1), hashStop.ToString().substr(0,20).c_str());
     for (; pindex; pindex = pindex->pnext)
     {
       vHeaders.push_back(pindex->GetBlockHeader());
@@ -641,17 +635,17 @@ bool static ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CData
     vector<uint256> vWorkQueue;
     vector<uint256> vEraseQueue;
     CDataStream vMsg(vRecv);
-    CTxDB txdb("r");
+    SHCTxDB txdb;
     CTransaction tx;
     vRecv >> tx;
 
-    CInv inv(MSG_TX, tx.GetHash());
+    CInv inv(ifaceIndex, MSG_TX, tx.GetHash());
     pfrom->AddInventoryKnown(inv);
 
     bool fMissingInputs = false;
     if (tx.AcceptToMemoryPool(txdb, true, &fMissingInputs))
     {
-      shc_SyncWithWallets(tx, NULL, true);
+      SyncWithWallets(iface, tx);
       RelayMessage(inv, vMsg);
       mapAlreadyAskedFor.erase(inv);
       vWorkQueue.push_back(inv.hash);
@@ -661,20 +655,20 @@ bool static ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CData
       for (unsigned int i = 0; i < vWorkQueue.size(); i++)
       {
         uint256 hashPrev = vWorkQueue[i];
-        for (map<uint256, CDataStream*>::iterator mi = mapOrphanTransactionsByPrev[hashPrev].begin();
-            mi != mapOrphanTransactionsByPrev[hashPrev].end();
+        for (map<uint256, CDataStream*>::iterator mi = SHC_mapOrphanTransactionsByPrev[hashPrev].begin();
+            mi != SHC_mapOrphanTransactionsByPrev[hashPrev].end();
             ++mi)
         {
           const CDataStream& vMsg = *((*mi).second);
           CTransaction tx;
           CDataStream(vMsg) >> tx;
-          CInv inv(MSG_TX, tx.GetHash());
+          CInv inv(ifaceIndex, MSG_TX, tx.GetHash());
           bool fMissingInputs2 = false;
 
           if (tx.AcceptToMemoryPool(txdb, true, &fMissingInputs2))
           {
             printf("   accepted orphan tx %s\n", inv.hash.ToString().substr(0,10).c_str());
-            shc_SyncWithWallets(tx, NULL, true);
+            SyncWithWallets(iface, tx);
             RelayMessage(inv, vMsg);
             mapAlreadyAskedFor.erase(inv);
             vWorkQueue.push_back(inv.hash);
@@ -696,10 +690,10 @@ bool static ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CData
     {
       shc_AddOrphanTx(vMsg);
 
-      // DoS prevention: do not allow mapOrphanTransactions to grow unbounded
+      // DoS prevention: do not allow SHC_mapOrphanTransactions to grow unbounded
       unsigned int nEvicted = shc_LimitOrphanTxSize(MAX_ORPHAN_TRANSACTIONS);
       if (nEvicted > 0)
-        printf("mapOrphan overflow, removed %u tx\n", nEvicted);
+        printf("SHC_mapOrphan overflow, removed %u tx\n", nEvicted);
     }
     if (tx.nDoS) pfrom->Misbehaving(tx.nDoS);
   }
@@ -707,12 +701,12 @@ bool static ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CData
 
   else if (strCommand == "block")
   {
-    CBlock block;
+    SHCBlock block;
     vRecv >> block;
 
 
     timing_init("AddInventoryKnown", &ts);
-    CInv inv(MSG_BLOCK, block.GetHash());
+    CInv inv(ifaceIndex, MSG_BLOCK, block.GetHash());
     pfrom->AddInventoryKnown(inv);
     timing_term("AddInventoryKnown", &ts);
 
@@ -817,7 +811,7 @@ bool static ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CData
     CAlert alert;
     vRecv >> alert;
 
-    if (alert.ProcessAlert())
+    if (alert.ProcessAlert(ifaceIndex))
     {
       // Relay
       pfrom->setKnown.insert(alert.GetHash());
@@ -975,162 +969,165 @@ shtime_t ts;
 
 bool shc_SendMessages(CIface *iface, CNode* pto, bool fSendTrickle)
 {
-    TRY_LOCK(cs_main, lockMain);
-    if (lockMain) {
-        // Don't send anything until we get their version message
-        if (pto->nVersion == 0)
-            return true;
+  NodeList &vNodes = GetNodeList(iface);
+  int ifaceIndex = GetCoinIndex(iface);
 
-        // Keep-alive ping. We send a nonce of zero because we don't use it anywhere
-        // right now.
-        if (pto->nLastSend && GetTime() - pto->nLastSend > 30 * 60 && pto->vSend.empty()) {
-            uint64 nonce = 0;
-            if (pto->nVersion > BIP0031_VERSION)
-                pto->PushMessage("ping", nonce);
-            else
-                pto->PushMessage("ping");
-        }
+  TRY_LOCK(cs_main, lockMain);
+  if (lockMain) {
+    // Don't send anything until we get their version message
+    if (pto->nVersion == 0)
+      return true;
 
-        // Resend wallet transactions that haven't gotten in a block yet
-        ResendWalletTransactions();
-
-        // Address refresh broadcast
-        static int64 nLastRebroadcast;
-        if (!IsInitialBlockDownload() && (GetTime() - nLastRebroadcast > 24 * 60 * 60))
-        {
-            {
-                LOCK(cs_vNodes);
-                BOOST_FOREACH(CNode* pnode, vNodes)
-                {
-                    // Periodically clear setAddrKnown to allow refresh broadcasts
-                    if (nLastRebroadcast)
-                        pnode->setAddrKnown.clear();
-
-                    // Rebroadcast our address
-                    if (!fNoListen)
-                    {
-                        CAddress addr = GetLocalAddress(&pnode->addr);
-                        if (addr.IsRoutable())
-                            pnode->PushAddress(addr);
-                    }
-                }
-            }
-            nLastRebroadcast = GetTime();
-        }
-
-        //
-        // Message: addr
-        //
-        if (fSendTrickle)
-        {
-            vector<CAddress> vAddr;
-            vAddr.reserve(pto->vAddrToSend.size());
-            BOOST_FOREACH(const CAddress& addr, pto->vAddrToSend)
-            {
-                // returns true if wasn't already contained in the set
-                if (pto->setAddrKnown.insert(addr).second)
-                {
-                    vAddr.push_back(addr);
-                    // receiver rejects addr messages larger than 1000
-                    if (vAddr.size() >= 1000)
-                    {
-                        pto->PushMessage("addr", vAddr);
-                        vAddr.clear();
-                    }
-                }
-            }
-            pto->vAddrToSend.clear();
-            if (!vAddr.empty())
-                pto->PushMessage("addr", vAddr);
-        }
-
-
-        //
-        // Message: inventory
-        //
-        vector<CInv> vInv;
-        vector<CInv> vInvWait;
-        {
-            LOCK(pto->cs_inventory);
-            vInv.reserve(pto->vInventoryToSend.size());
-            vInvWait.reserve(pto->vInventoryToSend.size());
-            BOOST_FOREACH(const CInv& inv, pto->vInventoryToSend)
-            {
-                if (pto->setInventoryKnown.count(inv))
-                    continue;
-
-                // trickle out tx inv to protect privacy
-                if (inv.type == MSG_TX && !fSendTrickle)
-                {
-                    // 1/4 of tx invs blast to all immediately
-                    static uint256 hashSalt;
-                    if (hashSalt == 0)
-                        hashSalt = GetRandHash();
-                    uint256 hashRand = inv.hash ^ hashSalt;
-                    hashRand = Hash(BEGIN(hashRand), END(hashRand));
-                    bool fTrickleWait = ((hashRand & 3) != 0);
-
-                    // always trickle our own transactions
-                    if (!fTrickleWait)
-                    {
-                        CWalletTx wtx;
-                        if (GetTransaction(inv.hash, wtx))
-                            if (wtx.fFromMe)
-                                fTrickleWait = true;
-                    }
-
-                    if (fTrickleWait)
-                    {
-                        vInvWait.push_back(inv);
-                        continue;
-                    }
-                }
-
-                // returns true if wasn't already contained in the set
-                if (pto->setInventoryKnown.insert(inv).second)
-                {
-                    vInv.push_back(inv);
-                    if (vInv.size() >= 1000)
-                    {
-                        pto->PushMessage("inv", vInv);
-                        vInv.clear();
-                    }
-                }
-            }
-            pto->vInventoryToSend = vInvWait;
-        }
-        if (!vInv.empty())
-            pto->PushMessage("inv", vInv);
-
-
-        //
-        // Message: getdata
-        //
-        vector<CInv> vGetData;
-        int64 nNow = GetTime() * 1000000;
-        CTxDB txdb("r");
-        while (!pto->mapAskFor.empty() && (*pto->mapAskFor.begin()).first <= nNow)
-        {
-            const CInv& inv = (*pto->mapAskFor.begin()).second;
-            if (!AlreadyHave(iface, txdb, inv))
-            {
-                if (fDebugNet)
-                    printf("sending getdata: %s\n", inv.ToString().c_str());
-                vGetData.push_back(inv);
-                if (vGetData.size() >= 1000)
-                {
-                    pto->PushMessage("getdata", vGetData);
-                    vGetData.clear();
-                }
-                mapAlreadyAskedFor[inv] = nNow;
-            }
-            pto->mapAskFor.erase(pto->mapAskFor.begin());
-        }
-        if (!vGetData.empty())
-            pto->PushMessage("getdata", vGetData);
-
+    // Keep-alive ping. We send a nonce of zero because we don't use it anywhere
+    // right now.
+    if (pto->nLastSend && GetTime() - pto->nLastSend > 30 * 60 && pto->vSend.empty()) {
+      uint64 nonce = 0;
+      if (pto->nVersion > BIP0031_VERSION)
+        pto->PushMessage("ping", nonce);
+      else
+        pto->PushMessage("ping");
     }
-    return true;
+
+    // Resend wallet transactions that haven't gotten in a block yet
+    ResendWalletTransactions();
+
+    // Address refresh broadcast
+    static int64 nLastRebroadcast;
+    if (!IsInitialBlockDownload(SHC_COIN_IFACE) && (GetTime() - nLastRebroadcast > 24 * 60 * 60))
+    {
+      {
+        LOCK(cs_vNodes);
+        BOOST_FOREACH(CNode* pnode, vNodes)
+        {
+          // Periodically clear setAddrKnown to allow refresh broadcasts
+          if (nLastRebroadcast)
+            pnode->setAddrKnown.clear();
+
+          // Rebroadcast our address
+          if (!fNoListen)
+          {
+            CAddress addr = GetLocalAddress(&pnode->addr);
+            if (addr.IsRoutable())
+              pnode->PushAddress(addr);
+          }
+        }
+      }
+      nLastRebroadcast = GetTime();
+    }
+
+    //
+    // Message: addr
+    //
+    if (fSendTrickle)
+    {
+      vector<CAddress> vAddr;
+      vAddr.reserve(pto->vAddrToSend.size());
+      BOOST_FOREACH(const CAddress& addr, pto->vAddrToSend)
+      {
+        // returns true if wasn't already contained in the set
+        if (pto->setAddrKnown.insert(addr).second)
+        {
+          vAddr.push_back(addr);
+          // receiver rejects addr messages larger than 1000
+          if (vAddr.size() >= 1000)
+          {
+            pto->PushMessage("addr", vAddr);
+            vAddr.clear();
+          }
+        }
+      }
+      pto->vAddrToSend.clear();
+      if (!vAddr.empty())
+        pto->PushMessage("addr", vAddr);
+    }
+
+
+    //
+    // Message: inventory
+    //
+    vector<CInv> vInv;
+    vector<CInv> vInvWait;
+    {
+      LOCK(pto->cs_inventory);
+      vInv.reserve(pto->vInventoryToSend.size());
+      vInvWait.reserve(pto->vInventoryToSend.size());
+      BOOST_FOREACH(const CInv& inv, pto->vInventoryToSend)
+      {
+        if (pto->setInventoryKnown.count(inv))
+          continue;
+
+        // trickle out tx inv to protect privacy
+        if (inv.type == MSG_TX && !fSendTrickle)
+        {
+          // 1/4 of tx invs blast to all immediately
+          static uint256 hashSalt;
+          if (hashSalt == 0)
+            hashSalt = GetRandHash();
+          uint256 hashRand = inv.hash ^ hashSalt;
+          hashRand = Hash(BEGIN(hashRand), END(hashRand));
+          bool fTrickleWait = ((hashRand & 3) != 0);
+
+          // always trickle our own transactions
+          if (!fTrickleWait)
+          {
+            CWalletTx wtx;
+            if (GetTransaction(inv.hash, wtx))
+              if (wtx.fFromMe)
+                fTrickleWait = true;
+          }
+
+          if (fTrickleWait)
+          {
+            vInvWait.push_back(inv);
+            continue;
+          }
+        }
+
+        // returns true if wasn't already contained in the set
+        if (pto->setInventoryKnown.insert(inv).second)
+        {
+          vInv.push_back(inv);
+          if (vInv.size() >= 1000)
+          {
+            pto->PushMessage("inv", vInv);
+            vInv.clear();
+          }
+        }
+      }
+      pto->vInventoryToSend = vInvWait;
+    }
+    if (!vInv.empty())
+      pto->PushMessage("inv", vInv);
+
+
+    //
+    // Message: getdata
+    //
+    vector<CInv> vGetData;
+    int64 nNow = GetTime() * 1000000;
+    SHCTxDB txdb;
+    while (!pto->mapAskFor.empty() && (*pto->mapAskFor.begin()).first <= nNow)
+    {
+      const CInv& inv = (*pto->mapAskFor.begin()).second;
+      if (!AlreadyHave(iface, txdb, inv))
+      {
+        if (fDebugNet)
+          printf("sending getdata: %s\n", inv.ToString().c_str());
+        vGetData.push_back(inv);
+        if (vGetData.size() >= 1000)
+        {
+          pto->PushMessage("getdata", vGetData);
+          vGetData.clear();
+        }
+        mapAlreadyAskedFor[inv] = nNow;
+      }
+      pto->mapAskFor.erase(pto->mapAskFor.begin());
+    }
+    if (!vGetData.empty())
+      pto->PushMessage("getdata", vGetData);
+
+  }
+  return true;
 }
 
 

@@ -44,6 +44,26 @@ public:
         pn[i] = val[i];
     }
 
+    bool IsNull()
+    {
+      int i;
+
+      for (i = 0; i < WIDTH; i++) {
+        if (pn[i] != 0)
+          return (false);
+      }
+
+      return (true);
+    }
+
+    void SetNull()
+    {
+      int i;
+
+      for (i = 0; i < WIDTH; i++)
+        pn[i] = 0;
+    }
+
     bool operator!() const
     {
         for (int i = 0; i < WIDTH; i++)

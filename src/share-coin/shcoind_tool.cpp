@@ -1,6 +1,29 @@
 
+/*
+ * @copyright
+ *
+ *  Copyright 2014 Neo Natura
+ *
+ *  This file is part of the Share Library.
+ *  (https://github.com/neonatura/share)
+ *        
+ *  The Share Library is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version. 
+ *
+ *  The Share Library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with The Share Library.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  @endcopyright
+ */  
 
-#include "server/block.h"
+#include "shcoind.h"
 #include "server/main.h"
 #include "server/net.h"
 #include "server/rpc_proto.h"
@@ -8,6 +31,7 @@
 #include "server/addrman.h"
 #include "shcoind_rpc.h"
 #include <share.h>
+#include "proto/coin_proto.h"
 
 #ifndef WIN32
 #include <signal.h>
@@ -18,16 +42,40 @@ using namespace std;
 using namespace boost;
 
 extern void IRCDiscover(void);
-extern void ImportPeers(void);
 extern void PrintPeers(void);
 extern void ListPeers(void);
 
+void shcoind_tool_version(void)
+{
+  fprintf(stdout,
+      "shcoin version %s\n"
+      "\n"
+      "Copyright 2013 Neo Natura\n" 
+      "Licensed under the GNU GENERAL PUBLIC LICENSE Version 3\n"
+      "This product includes software developed by the OpenSSL Project for use in the OpenSSL Toolkit. (http://www.openssl.org/)\n",
+      get_libshare_version());
+}
+
+void shcoind_tool_usage(void)
+{
+  fprintf(stdout,
+      "Usage: shcoin [COMMAND] [PARAMS]\n"
+      "Perform RPC operations on the share-coin daemon.\n"
+      "\n"
+      "Commands:\n"
+      "\tUse the \"help\" command in order to list all available RPC operations.\n"
+      "\n"
+      "Visit 'http://docs.sharelib.net/' for libshare API documentation."
+      "Report bugs to <support@neo-natura.com>.\n"
+      );
+}
 
 int main(int argc, char *argv[])
 {
   char username[256];
   char password[256];
   int ret;
+  int i;
 
   /* load rpc credentials */
   get_rpc_cred(username, password);
@@ -36,29 +84,15 @@ int main(int argc, char *argv[])
   mapArgs["-rpcuser"] = strUser;
   mapArgs["-rpcpassword"] = strPass; 
 
-  if (argc >= 2) {
-    string param = argv[1];
-    if (0 == strcmp(param.c_str(), "--help")) {
-      fprintf(stdout,
-          "Usage: shcoin [COMMAND] [PARAMS]\n"
-          "Perform RPC operations on the share-coin daemon.\n"
-          "\n"
-          "Commands:\n"
-          "\tUse the \"help\" command in order to list all available RPC operations.\n"
-          "\n"
-          "Visit 'http://docs.sharelib.net/' for libshare API documentation."
-          "Report bugs to <support@neo-natura.com>.\n"
-          );
+  for (i = 1; i < argc; i++) {
+    if (0 == strcmp(argv[i], "-h") ||
+        0 == strcmp(argv[i], "--help")) {
+      shcoind_tool_usage();
       return (0);
     }
-    if (0 == strcmp(param.c_str(), "--version")) {
-      fprintf(stdout,
-          "shcoin version %s\n"
-          "\n"
-          "Copyright 2013 Neo Natura\n" 
-          "Licensed under the GNU GENERAL PUBLIC LICENSE Version 3\n"
-          "This product includes software developed by the OpenSSL Project for use in the OpenSSL Toolkit. (http://www.openssl.org/)\n",
-          get_libshare_version());
+    if (0 == strcmp(argv[i], "-v") ||
+        0 == strcmp(argv[i], "--version")) {
+      shcoind_tool_version();
       return (0);
     }
   }
@@ -67,18 +101,18 @@ int main(int argc, char *argv[])
     IRCDiscover();
     return (0);
   }
+#if 0
   if (argc >= 2 && 0 == strcasecmp(argv[1], "importpeers")) {
     /* load 'peers.dat' into sharefs peer db */
     ImportPeers();
     return (0);
   }
+#endif
   if (argc >= 2 && 0 == strcasecmp(argv[1], "printpeers")) {
-    /* load 'peers.dat' into sharefs peer db */
     PrintPeers();
     return (0);
   }
   if (argc >= 2 && 0 == strcasecmp(argv[1], "listpeers")) {
-    /* load 'peers.dat' into sharefs peer db */
     ListPeers();
     return (0);
   }
@@ -110,13 +144,18 @@ void shcoind_tool_LoadPeers(void)
 */
 }
 
-void ImportPeers(void)
+#if 0
+void ImportPeers(int ifaceIndex)
 {
+  CIface *iface = GetCoinByIndex(ifaceIndex);
   char addr_str[256];
   shpeer_t *peer;
   shpeer_t *serv_peer;
 
-  serv_peer = shapp_init("usde", NULL, SHAPP_LOCAL);
+  if (!iface)
+    return;
+
+  serv_peer = shapp_init("shcoind", NULL, SHAPP_LOCAL);
 
   shcoind_tool_LoadPeers();
 
@@ -125,7 +164,7 @@ void ImportPeers(void)
   fprintf(stdout, "Import Peers:\n");
   BOOST_FOREACH(const CAddress &addr, vAddr) {
     sprintf(addr_str, "%s %d", addr.ToStringIP().c_str(), addr.GetPort());
-    peer = shpeer_init("usde", addr_str);
+    peer = shpeer_init(iface->name, addr_str);
     shnet_track_add(peer);
     shpeer_free(&peer);
     fprintf(stdout, "\t%s\n", addr_str);
@@ -134,6 +173,7 @@ void ImportPeers(void)
   shpeer_free(&serv_peer);
 
 }
+#endif
 void PrintPeers(void)
 {
   shdb_t *db;
@@ -141,7 +181,7 @@ void PrintPeers(void)
   shpeer_t *serv_peer;
   char *text;
 
-  serv_peer = shapp_init("usde", NULL, SHAPP_LOCAL);
+  serv_peer = shapp_init("shcoind", NULL, SHAPP_LOCAL);
 
   db = shdb_open("net");
   json = shdb_json(db, "track", 0, 0);
@@ -162,7 +202,7 @@ void ListPeers(void)
   shpeer_t *serv_peer;
   int i;
 
-  serv_peer = shapp_init("usde", NULL, SHAPP_LOCAL);
+  serv_peer = shapp_init("shcoind", NULL, SHAPP_LOCAL);
 
   db = shdb_open("net");
   peer_list = shnet_track_list(serv_peer, 16);

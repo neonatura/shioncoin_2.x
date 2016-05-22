@@ -28,9 +28,30 @@
 #ifndef __SHC_WALLET_H__
 #define __SHC_WALLET_H__
 
+extern CScript SHC_COINBASE_FLAGS;
+
+class SHCWallet : public CWallet
+{
+  public:
+    SHCWallet() : CWallet(SHC_COIN_IFACE, "shc_wallet.dat") { };  
+
+    void RelayWalletTransaction(CWalletTx& wtx);
+    void ResendWalletTransactions();
+    void ReacceptWalletTransactions();
+    int ScanForWalletTransactions(CBlockIndex* pindexStart, bool fUpdate = false);
+    int64 GetTxFee(CTransaction tx);
+    bool CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey);
+
+    bool CreateTransaction(const std::vector<std::pair<CScript, int64> >& vecSend, CWalletTx& wtxNew, CReserveKey& reservekey, int64& nFeeRet);
+    bool CreateTransaction(CScript scriptPubKey, int64 nValue, CWalletTx& wtxNew, CReserveKey& reservekey, int64& nFeeRet);
+
+};
 
 
-int shc_LoadWallet(void);
+extern SHCWallet *shcWallet;
+
+
+bool shc_LoadWallet(void);
 
 
 

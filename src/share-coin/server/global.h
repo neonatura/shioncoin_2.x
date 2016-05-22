@@ -1,5 +1,4 @@
 
-
 /*
  * @copyright
  *
@@ -22,33 +21,38 @@
  *  along with The Share Library.  If not, see <http://www.gnu.org/licenses/>.
  *
  *  @endcopyright
- */
+ */  
 
-#ifndef __USDE_PROTO_H__
-#define __USDE_PROTO_H__
-
-#define USDE_VERSION_MAJOR       1
-#define USDE_VERSION_MINOR       0
-#define USDE_VERSION_REVISION    4
-#define USDE_VERSION_BUILD       0
-
-#define USDE_COIN_DAEMON_PORT 54449
-
-#define USDE_MAX_GETADDR 2500
-
-static const int USDE_PROTOCOL_VERSION = 1000400;
-
-#define USDE_COIN (uint64_t)100000000
-static const unsigned int USDE_MAX_BLOCK_SIZE = 1000000;
-static const int64 USDE_MIN_TX_FEE = 10000000;
-static const int64 USDE_MIN_RELAY_TX_FEE = 10000000;
-static const int64 USDE_MAX_MONEY = 1600000000 * USDE_COIN;
-//static const int USDE_COINBASE_MATURITY = 100;
-static const int USDE_COINBASE_MATURITY = 120;
+#ifndef __SERVER__GLOBAL_H__
+#define __SERVER__GLOBAL_H__
 
 
 
-#endif /* __USDE_PROTO_H__ */
 
+
+
+
+
+
+
+
+#endif /* ndef __SERVER__GLOBAL_H__ */
+
+
+const char *ReadGlobalVar(char *tag, char *var);
+
+void WriteGlobalVar(char *tag, char *var, char *value);
+
+int ReadVersion(CIface *iface);
+
+void WriteVersion(CIface *iface, int nVersion);
+
+uint256 ReadBestChain(CIface *iface);
+
+void WriteBestChain(CIface *iface, uint256 hash);
+
+CBigNum ReadBestInvalid(CIface *iface);
+
+void WriteBestInvalid(CIface *iface, CBigNum bn);
 
 

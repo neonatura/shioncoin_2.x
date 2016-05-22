@@ -33,7 +33,7 @@ shbuf_t *server_msg_buff;
 
 static int opt_no_fork;
 
-static int _usde_thread_running;
+static int _rpc_thread_running;
 
 
 
@@ -45,6 +45,8 @@ void shcoind_term(void)
   /* terminate usde server */
   usde_server_term();
 
+  shc_server_term();
+
 #if 0
   /* close sharefs partition */
   block_close();
@@ -53,7 +55,7 @@ void shcoind_term(void)
   shpeer_free(&server_peer);
   shbuf_free(&server_msg_buff);
 
-  if (_usde_thread_running) {
+  if (_rpc_thread_running) {
     /* terminate usde server */
     server_shutdown();
   }
@@ -153,7 +155,7 @@ int main(int argc, char *argv[])
   signal(SIGINT, daemon_signal);
 
   /* initialize libshare */
-  server_peer = shapp_init("usde", "127.0.0.1:54449", 0);
+  server_peer = shapp_init("usde", "127.0.0.1:9448", 0);
   server_msgq = shmsgget(NULL); /* shared server msg-queue */
   server_msg_buff = shbuf_init();
 
@@ -182,24 +184,7 @@ int main(int argc, char *argv[])
   server_fd = fd;
 #endif
 
-  /* initialize stratum server */
-  err = stratum_init();
-  if (err) {
-    fprintf(stderr, "critical: init stratum: %s. [sherr %d]", sherrstr(err), err);
-    return (-1);
-  }
-sprintf(buf, "info: initialized stratum server on port %d.", get_stratum_daemon_port());
-shcoind_log(buf);
 
-#if 0
-  /* open app's sharefs partition */
-  block_init();
-#endif
-
-#if 0
-  /* open 'wallet.dat' */
-  load_wallet();
-#endif
 
 #if 0
   /* debug: cmdline option */
@@ -207,37 +192,30 @@ shcoind_log(buf);
     reloadblockfile(blockfile_path);
 #endif
 
-#if 0
-  /* debug: performed auto. in original required manual 'upgrade'. */
-  upgrade_wallet();
-#endif
+
+fprintf(stderr, "DEBUG: initializing SHC_COIN_IFACE: '%s'\n", iface->name);
+  iface = GetCoinByIndex(SHC_COIN_IFACE);
+  iface->op_init(iface, NULL);
+//shcoind_term();
 
   /* initialize coin interfaces */  
+fprintf(stderr, "DEBUG: initializing USDE_COIN_IFACE\n");
   iface = GetCoinByIndex(USDE_COIN_IFACE);
   iface->op_init(iface, NULL);
 
-  load_peers();
-
-#if 0
-  err = usde_server_init();
+  /* initialize stratum server */
+  err = stratum_init();
   if (err) {
-    fprintf(stderr, "critical: init usde server: %s. [sherr %d]", sherrstr(err), err);
-    return (-1);
+    fprintf(stderr, "critical: init stratum: %s. [sherr %d]", sherrstr(err), err);
+    raise(SIGTERM);
   }
-#endif
 
   /* RPC */
-  _usde_thread_running = TRUE;
+  _rpc_thread_running = TRUE;
   start_node();
 
   /* unet_cycle() */
   daemon_server();
-
-/*
- * main 'tx fee' account is ""
-  if (!getaddressbyaccount("bank"))
-    getnewaddress("bank"); 
-*/
 
 
   return (0);

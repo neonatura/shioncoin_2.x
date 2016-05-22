@@ -31,24 +31,37 @@
 #include "shc/shc_netmsg.h"
 #include "shc/shc_block.h"
 #include "shc/shc_wallet.h"
+#include "shc/shc_txidx.h"
+
+
+SHC_CTxMemPool SHCBlock::mempool;
+uint256 SHCBlock::hashBestChain;
+CBlockIndex *SHCBlock::pindexGenesisBlock = NULL;
+int64 SHCBlock::nTimeBestReceived;
+CBigNum SHCBlock::bnBestChainWork;
+CBigNum SHCBlock::bnBestInvalidWork;
 
 
 static int shc_init(CIface *iface, void *_unused_)
 {
+int ifaceIndex = GetCoinIndex(iface);
 int err;
 
-  if (!bitdb.Open(GetDataDir())) /* DEBUG: */
-  {
-    fprintf(stderr, "error: unable to open data directory.\n");
+shcWallet = new SHCWallet();
+  SetWallet(SHC_COIN_IFACE, shcWallet);
+
+
+  iface->block_max = -1;
+
+  if (!shc_InitBlockIndex()) {
+    fprintf(stderr, "error: shc_proto: unable to initialize block index table.\n");
     return (SHERR_INVAL);
   }
 
-  if (!LoadBlockIndex(iface)) {
-    fprintf(stderr, "error: unable to open load block index.\n");
+  if (!shc_LoadWallet()) {
+    fprintf(stderr, "error: shc_proto: unable to open load wallet.\n");
     return (SHERR_INVAL);
-  }
-
-  shc_LoadWallet();
+}
 
   err = unet_bind(SHC_COIN_IFACE, SHC_COIN_DAEMON_PORT);
   if (err)
@@ -66,6 +79,12 @@ return (0);
 
 static int shc_term(CIface *iface, void *_unused_)
 {
+  CWallet *wallet = GetWallet(iface);
+  if (wallet) {
+    UnregisterWallet(wallet);
+//  delete pwalletMain;
+   }
+  SetWallet(iface, NULL);
 }
 static int shc_msg_recv(CIface *iface, CNode *pnode)
 {
@@ -106,6 +125,15 @@ static int shc_block_new(CIface *iface, CBlock **block_p)
   return (0);
 }
 
+static int shc_block_process(CIface *iface, CBlock *block)
+{
+
+  if (!shc_ProcessBlock(block->originPeer, block))
+    return (SHERR_INVAL);
+
+  return (0);
+}
+
 static int shc_block_templ(CIface *iface, CBlock **block_p)
 {
   CWallet *wallet = GetWallet(iface);
@@ -119,6 +147,7 @@ static int shc_block_templ(CIface *iface, CBlock **block_p)
     return (NULL);
   }
 
+  CBlockIndex *pindexBest = GetBestBlockIndex(SHC_COIN_IFACE);
   median = pindexBest->GetMedianTimePast() + 1;
 
   CReserveKey reservekey(wallet);
@@ -134,6 +163,7 @@ static int shc_block_templ(CIface *iface, CBlock **block_p)
   return (0);
 }
 
+#if 0
 static int shc_block_submit(CIface *iface, CBlock *block)
 {
   blkidx_t *blockIndex;
@@ -163,10 +193,12 @@ static int shc_block_submit(CIface *iface, CBlock *block)
 
 return (0);
 }
+#endif
 
-static int shc_block_info(CIface *iface, void *arg)
+static int shc_block_bestchain(CIface *iface, uint256 *hash_p)
 {
-return (0);
+  *hash_p = SHCBlock::hashBestChain;
+  return (0);
 }
 
 static int shc_tx_new(CIface *iface, void *arg)
@@ -174,33 +206,10 @@ static int shc_tx_new(CIface *iface, void *arg)
 return (0);
 }
 
-static int shc_tx_info(CIface *iface, void *arg)
+static int shc_tx_pool(CIface *iface, CTxMemPool **pool_p)
 {
-return (0);
-}
-static int shc_addr_new(CIface *iface, void *arg)
-{
-return (0);
-}
-static int shc_addr_import(CIface *iface, void *arg)
-{
-return (0);
-}
-static int shc_addr_info(CIface *iface, void *arg)
-{
-return (0);
-}
-static int shc_account_new(CIface *iface, void *arg)
-{
-return (0);
-}
-static int shc_account_move(CIface *iface, void *arg)
-{
-return (0);
-}
-static int shc_account_info(CIface *iface, void *arg)
-{
-return (0);
+  *pool_p = &SHCBlock::mempool;
+  return (0);
 }
 
 
@@ -215,20 +224,17 @@ extern "C" {
 #endif
 
 coin_iface_t shc_coin_iface = {
-  "usde",
+  "shc",
   COIN_IFACE_VERSION(SHC_VERSION_MAJOR, SHC_VERSION_MINOR,
-      SHC_VERSION_REVISION, SHC_VERSION_BUILD),
-  1, /* block version */
+      SHC_VERSION_REVISION, SHC_VERSION_BUILD), /* cli ver */
+  2, /* block version */
+  SHC_PROTOCOL_VERSION, /* network proto ver */
   SHC_COIN_DAEMON_PORT,
   SHC_MAX_BLOCK_SIZE,
-  SHC_MAX_BLOCK_SIZE_GEN,
-  SHC_MAX_BLOCK_SIGOPS,
-  SHC_MAX_ORPHAN_TRANSACTIONS,
   SHC_MIN_TX_FEE,
   SHC_MIN_RELAY_TX_FEE,
   SHC_MAX_MONEY,
   SHC_COINBASE_MATURITY, 
-  SHC_LOCKTIME_THRESHOLD,
   COINF(shc_init),
   COINF(shc_term),
   COINF(shc_msg_recv),
@@ -236,17 +242,11 @@ coin_iface_t shc_coin_iface = {
   COINF(shc_peer_add),
   COINF(shc_peer_recv),
   COINF(shc_block_new),
+  COINF(shc_block_process),
   COINF(shc_block_templ),
-  COINF(shc_block_submit),
-  COINF(shc_block_info),
+  COINF(shc_block_bestchain),
   COINF(shc_tx_new),
-  COINF(shc_tx_info),
-  COINF(shc_addr_new),
-  COINF(shc_addr_import),
-  COINF(shc_addr_info),
-  COINF(shc_account_new),
-  COINF(shc_account_move),
-  COINF(shc_account_info),
+  COINF(shc_tx_pool)
 };
 
 

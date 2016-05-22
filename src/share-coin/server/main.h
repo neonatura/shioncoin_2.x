@@ -53,7 +53,6 @@ extern "C"
 #include "net.h"
 #include "key.h"
 #include "script.h"
-#include "db.h"
 #include "scrypt.h"
 //#include "../server_iface.h"
 #include "shcoind.h"
@@ -80,21 +79,21 @@ static const int fHaveUPnP = false;
 #endif
 
 
-extern CScript COINBASE_FLAGS;
+//extern CScript COINBASE_FLAGS;
 extern CCriticalSection cs_mapAlerts;
 
 
 
 extern CCriticalSection cs_main;
 //extern std::map<uint256, CBlockIndex*> mapBlockIndex;
-extern uint256 hashGenesisBlock;
-extern CBlockIndex* pindexGenesisBlock;
-extern int nBestHeight;
-extern CBigNum bnBestChainWork;
-extern CBigNum bnBestInvalidWork;
-extern uint256 hashBestChain;
-extern CBlockIndex* pindexBest;
-extern unsigned int nTransactionsUpdated;
+//extern uint256 hashGenesisBlock;
+//extern CBlockIndex* pindexGenesisBlock;
+//extern int nBestHeight;
+//extern CBigNum bnBestChainWork;
+//extern CBigNum bnBestInvalidWork;
+//extern uint256 hashBestChain;
+//extern CBlockIndex* pindexBest;
+//extern unsigned int nTransactionsUpdated;
 extern uint64 nLastBlockTx;
 extern uint64 nLastBlockSize;
 extern const std::string strMessageMagic;
@@ -119,11 +118,10 @@ class CTxIndex;
 
 void RegisterWallet(CWallet* pwalletIn);
 void UnregisterWallet(CWallet* pwalletIn);
-void SyncWithWallets(const CTransaction& tx, const CBlock* pblock = NULL, bool fUpdate = false);
 bool ProcessBlock(CNode* pfrom, CBlock* pblock);
 bool CheckDiskSpace(uint64 nAdditionalBytes=0);
-FILE* OpenBlockFile(unsigned int nFile, unsigned int nBlockPos, const char* pszMode="rb");
-FILE* AppendBlockFile(unsigned int& nFileRet);
+//FILE* OpenBlockFile(unsigned int nFile, unsigned int nBlockPos, const char* pszMode="rb");
+//FILE* AppendBlockFile(unsigned int& nFileRet);
 bool LoadBlockIndex(bool fAllowNew=true);
 void PrintBlockTree();
 bool ProcessMessages(CNode* pfrom);
@@ -139,9 +137,7 @@ bool CheckProofOfWork(uint256 hash, unsigned int nBits);
 unsigned int ComputeMinWork(unsigned int nBase, int64 nTime);
 int GetNumBlocksOfPeers();
 bool IsInitialBlockDownload();
-std::string GetWarnings(std::string strFor);
-//bool GetTransaction(const uint256 &hash, CTransaction &tx, uint256 &hashBlock);
-bool GetTransaction(CIface *iface, const uint256 &hash, CTransaction &tx, uint256 &hashBlock);
+std::string GetWarnings(int ifaceIndex, std::string strFor);
 uint256 GetOrphanRoot(const CBlock* pblock);
 
 
@@ -200,25 +196,27 @@ public:
     IMPLEMENT_SERIALIZE
     (
         nSerSize += SerReadWrite(s, *(CTransaction*)this, nType, nVersion, ser_action);
-        nVersion = this->nVersion;
+        nVersion = 1;//this->nFlag;
         READWRITE(hashBlock);
         READWRITE(vMerkleBranch);
         READWRITE(nIndex);
     )
 
 
-    int SetMerkleBranch(const CBlock* pblock=NULL);
-    int GetDepthInMainChain(CBlockIndex* &pindexRet) const;
-    int GetDepthInMainChain() const { CBlockIndex *pindexRet; return GetDepthInMainChain(pindexRet); }
-    bool IsInMainChain() const { return GetDepthInMainChain() > 0; }
-    int GetBlocksToMaturity() const;
+    int GetDepthInMainChain(int ifaceIndex, CBlockIndex* &pindexRet) const;
+    int GetDepthInMainChain(int ifaceIndex) const { CBlockIndex *pindexRet; return GetDepthInMainChain(ifaceIndex, pindexRet); }
+    bool IsInMainChain(int ifaceIndex) const { return GetDepthInMainChain(ifaceIndex) > 0; }
     bool AcceptToMemoryPool(CTxDB& txdb, bool fCheckInputs=true);
-    bool AcceptToMemoryPool();
+//    bool AcceptToMemoryPool();
+    bool AcceptToMemoryPool(int ifaceIndex);
+    int GetBlocksToMaturity(int ifaceIndex) const;
+    int SetMerkleBranch(const CBlock* pblock);
+    int SetMerkleBranch(int ifaceIndex);
 };
 
 
 
-
+#if 0
 /**  A txdb record that contains the disk location of a transaction and the
  * locations of transactions that spend its outputs.  vSpent is really only
  * used as a flag, but having the location is very helpful for debugging.
@@ -227,7 +225,7 @@ class CTxIndex
 {
 public:
     CDiskTxPos pos;
-    std::vector<CDiskTxPos> vSpent;
+    std::vector<uint256> vSpent;
 
     CTxIndex()
     {
@@ -269,9 +267,10 @@ public:
     {
         return !(a == b);
     }
-    int GetDepthInMainChain() const;
+//    int GetDepthInMainChain() const;
  
 };
+#endif
 
 
 
@@ -414,6 +413,7 @@ public:
     }
 
 
+#if 0
     bool WriteToDisk(unsigned int& nFileRet, unsigned int& nBlockPosRet)
     {
         // Open history file to append
@@ -439,6 +439,7 @@ public:
 
         return true;
     }
+#endif
 
 
 
@@ -469,10 +470,10 @@ public:
     bool ConnectBlock(CTxDB& txdb, CBlockIndex* pindex);
     bool WriteBlock(int nHeight);
     bool ReadBlock(unsigned int nHeight);
-    bool ReadFromDisk(unsigned int nFile, unsigned int nBlockPos, bool fReadTransactions=true);
+//    bool ReadFromDisk(unsigned int nFile, unsigned int nBlockPos, bool fReadTransactions=true);
     bool ReadFromDisk(const CBlockIndex* pindex, bool fReadTransactions=true);
-    bool SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew);
-    bool AddToBlockIndex(unsigned int nFile, unsigned int nBlockPos);
+//    bool SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew);
+ //   bool AddToBlockIndex(unsigned int nFile, unsigned int nBlockPos);
     bool CheckBlock() const;
     bool AcceptBlock();
 
@@ -486,151 +487,6 @@ private:
 
 
 
-/** The block chain is a tree shaped structure starting with the
- * genesis block at the root, with each block potentially having multiple
- * candidates to be the next block.  pprev and pnext link a path through the
- * main/longest chain.  A blockindex may have multiple pprev pointing back
- * to it, but pnext will only point forward to the longest branch, or will
- * be null if the block is not part of the longest chain.
- */
-class CBlockIndex
-{
-public:
-    const uint256* phashBlock;
-    CBlockIndex* pprev;
-    CBlockIndex* pnext;
-    unsigned int nFile;
-    unsigned int nBlockPos;
-    int nHeight;
-    CBigNum bnChainWork;
-
-    // block header
-    int nVersion;
-    uint256 hashMerkleRoot;
-    unsigned int nTime;
-    unsigned int nBits;
-    unsigned int nNonce;
-
-
-    CBlockIndex()
-    {
-        phashBlock = NULL;
-        pprev = NULL;
-        pnext = NULL;
-        nFile = 0;
-        nBlockPos = 0;
-        nHeight = 0;
-        bnChainWork = 0;
-
-        nVersion       = 0;
-        hashMerkleRoot = 0;
-        nTime          = 0;
-        nBits          = 0;
-        nNonce         = 0;
-    }
-
-    CBlockIndex(unsigned int nFileIn, unsigned int nBlockPosIn, CBlock& block)
-    {
-        phashBlock = NULL;
-        pprev = NULL;
-        pnext = NULL;
-        nFile = nFileIn;
-        nBlockPos = nBlockPosIn;
-        nHeight = 0;
-        bnChainWork = 0;
-
-        nVersion       = block.nVersion;
-        hashMerkleRoot = block.hashMerkleRoot;
-        nTime          = block.nTime;
-        nBits          = block.nBits;
-        nNonce         = block.nNonce;
-    }
-
-    CBlock GetBlockHeader() const
-    {
-        CBlock block;
-        block.nVersion       = nVersion;
-        if (pprev)
-            block.hashPrevBlock = pprev->GetBlockHash();
-        block.hashMerkleRoot = hashMerkleRoot;
-        block.nTime          = nTime;
-        block.nBits          = nBits;
-        block.nNonce         = nNonce;
-        return block;
-    }
-
-    uint256 GetBlockHash() const
-    {
-        return *phashBlock;
-    }
-
-    int64 GetBlockTime() const
-    {
-        return (int64)nTime;
-    }
-
-    CBigNum GetBlockWork() const
-    {
-        CBigNum bnTarget;
-        bnTarget.SetCompact(nBits);
-        if (bnTarget <= 0)
-            return 0;
-        return (CBigNum(1)<<256) / (bnTarget+1);
-    }
-
-    bool IsInMainChain() const
-    {
-        return (pnext || this == pindexBest);
-    }
-
-    bool CheckIndex() const
-    {
-        return true; // CheckProofOfWork(GetBlockHash(), nBits);
-    }
-
-    enum { nMedianTimeSpan=11 };
-
-    int64 GetMedianTimePast() const
-    {
-        int64 pmedian[nMedianTimeSpan];
-        int64* pbegin = &pmedian[nMedianTimeSpan];
-        int64* pend = &pmedian[nMedianTimeSpan];
-
-        const CBlockIndex* pindex = this;
-        for (int i = 0; i < nMedianTimeSpan && pindex; i++, pindex = pindex->pprev)
-            *(--pbegin) = pindex->GetBlockTime();
-
-        std::sort(pbegin, pend);
-        return pbegin[(pend - pbegin)/2];
-    }
-
-    int64 GetMedianTime() const
-    {
-        const CBlockIndex* pindex = this;
-        for (int i = 0; i < nMedianTimeSpan/2; i++)
-        {
-            if (!pindex->pnext)
-                return GetBlockTime();
-            pindex = pindex->pnext;
-        }
-        return pindex->GetMedianTimePast();
-    }
-
-
-
-    std::string ToString() const
-    {
-        return strprintf("CBlockIndex(nprev=%08x, pnext=%08x, nFile=%d, nBlockPos=%-6d nHeight=%d, merkle=%s, hashBlock=%s)",
-            pprev, pnext, nFile, nBlockPos, nHeight,
-            hashMerkleRoot.ToString().substr(0,10).c_str(),
-            GetBlockHash().ToString().substr(0,20).c_str());
-    }
-
-    void print() const
-    {
-        printf("%s\n", ToString().c_str());
-    }
-};
 
 
 
@@ -659,8 +515,10 @@ public:
             READWRITE(nVersion);
 
         READWRITE(hashNext);
+/*
         READWRITE(nFile);
         READWRITE(nBlockPos);
+*/
         READWRITE(nHeight);
 
         // block header
@@ -674,7 +532,7 @@ public:
 
     uint256 GetBlockHash() const
     {
-        CBlock block;
+        CBlockHeader block;
         block.nVersion        = nVersion;
         block.hashPrevBlock   = hashPrev;
         block.hashMerkleRoot  = hashMerkleRoot;
@@ -707,141 +565,6 @@ public:
 
 
 
-
-/** Describes a place in the block chain to another node such that if the
- * other node doesn't have the same branch, it can find a recent common trunk.
- * The further back it is, the further before the fork it may be.
- */
-class CBlockLocator
-{
-  protected:
-    std::vector<uint256> vHave;
-    int ifaceIndex;
-  public:
-
-    CBlockLocator(int index)
-    {
-      ifaceIndex = index;
-    }
-
-    explicit CBlockLocator(const CBlockIndex* pindex)
-    {
-      Set(pindex);
-    }
-
-    explicit CBlockLocator(uint256 hashBlock)
-    {
-      blkidx_t *blockIndex = GetBlockTable(ifaceIndex); 
-      std::map<uint256, CBlockIndex*>::iterator mi = blockIndex->find(hashBlock);
-      if (mi != blockIndex->end())
-        Set((*mi).second);
-    }
-
-    CBlockLocator(const std::vector<uint256>& vHaveIn)
-    {
-      vHave = vHaveIn;
-    }
-
-    IMPLEMENT_SERIALIZE
-      (
-       if (!(nType & SER_GETHASH))
-       READWRITE(nVersion);
-       READWRITE(vHave);
-      )
-
-      void SetNull()
-      {
-        vHave.clear();
-      }
-
-    bool IsNull()
-    {
-      return vHave.empty();
-    }
-
-    void Set(const CBlockIndex* pindex)
-    {
-      vHave.clear();
-      int nStep = 1;
-      while (pindex)
-      {
-        vHave.push_back(pindex->GetBlockHash());
-
-        // Exponentially larger steps back
-        for (int i = 0; pindex && i < nStep; i++)
-          pindex = pindex->pprev;
-        if (vHave.size() > 10)
-          nStep *= 2;
-      }
-      vHave.push_back(hashGenesisBlock);
-    }
-
-    int GetDistanceBack()
-    {
-      // Retrace how far back it was in the sender's branch
-      blkidx_t *blockIndex = GetBlockTable(ifaceIndex);
-      int nDistance = 0;
-      int nStep = 1;
-      BOOST_FOREACH(const uint256& hash, vHave)
-      {
-        std::map<uint256, CBlockIndex*>::iterator mi = blockIndex->find(hash);
-        if (mi != blockIndex->end())
-        {
-          CBlockIndex* pindex = (*mi).second;
-          if (pindex->IsInMainChain())
-            return nDistance;
-        }
-        nDistance += nStep;
-        if (nDistance > 10)
-          nStep *= 2;
-      }
-      return nDistance;
-    }
-
-    CBlockIndex* GetBlockIndex()
-    {
-      blkidx_t *blockIndex = GetBlockTable(ifaceIndex); 
-
-      // Find the first block the caller has in the main chain
-      BOOST_FOREACH(const uint256& hash, vHave)
-      {
-        std::map<uint256, CBlockIndex*>::iterator mi = blockIndex->find(hash);
-        if (mi != blockIndex->end())
-        {
-          CBlockIndex* pindex = (*mi).second;
-          if (pindex->IsInMainChain())
-            return pindex;
-        }
-      }
-      return pindexGenesisBlock;
-    }
-
-    uint256 GetBlockHash()
-    {
-      blkidx_t *blockIndex = GetBlockTable(ifaceIndex); 
-
-      // Find the first block the caller has in the main chain
-      BOOST_FOREACH(const uint256& hash, vHave)
-      {
-        std::map<uint256, CBlockIndex*>::iterator mi = blockIndex->find(hash);
-        if (mi != blockIndex->end())
-        {
-          CBlockIndex* pindex = (*mi).second;
-          if (pindex->IsInMainChain())
-            return hash;
-        }
-      }
-      return hashGenesisBlock;
-    }
-
-    int GetHeight()
-    {
-      CBlockIndex* pindex = GetBlockIndex();
-      if (!pindex)
-        return 0;
-      return pindex->nHeight;
-    }
-};
 
 
 
@@ -988,7 +711,7 @@ public:
 
     uint256 GetHash() const
     {
-        return SerializeHash(*this);
+      return SerializeHash(*this);
     }
 
     bool IsInEffect() const
@@ -1003,17 +726,19 @@ public:
         return (alert.nID <= nCancel || setCancel.count(alert.nID));
     }
 
-    bool AppliesTo(int nVersion, std::string strSubVerIn) const
+    bool AppliesTo(int ifaceIndex, std::string strSubVerIn) const
     {
+      CIface *iface = GetCoinByIndex(ifaceIndex);
+      int nVersion = PROTOCOL_VERSION(iface);
         // TODO: rework for client-version-embedded-in-strSubVer ?
         return (IsInEffect() &&
                 nMinVer <= nVersion && nVersion <= nMaxVer &&
                 (setSubVer.empty() || setSubVer.count(strSubVerIn)));
     }
 
-    bool AppliesToMe() const
+    bool AppliesToMe(int ifaceIndex) const
     {
-        return AppliesTo(PROTOCOL_VERSION, FormatSubVersion(CLIENT_NAME, CLIENT_VERSION, std::vector<std::string>()));
+        return AppliesTo(ifaceIndex, FormatSubVersion(CLIENT_NAME, CLIENT_VERSION, std::vector<std::string>()));
     }
 
     bool RelayTo(CNode* pnode) const
@@ -1023,8 +748,8 @@ public:
         // returns true if wasn't already contained in the set
         if (pnode->setKnown.insert(GetHash()).second)
         {
-            if (AppliesTo(pnode->nVersion, pnode->strSubVer) ||
-                AppliesToMe() ||
+            if (AppliesTo(pnode->ifaceIndex, pnode->strSubVer) ||
+                AppliesToMe(pnode->ifaceIndex) ||
                 GetAdjustedTime() < nRelayUntil)
             {
                 pnode->PushMessage("alert", *this);
@@ -1034,8 +759,9 @@ public:
         return false;
     }
 
-    bool CheckSignature()
+    bool CheckSignature(int ifaceIndex)
     {
+        CIface *iface = GetCoinByIndex(ifaceIndex);
         CKey key;
         if (!key.SetPubKey(ParseHex("04A9CFD81AF5D53310BE45E6326E706A542B1028DF85D2819D5DE496D8816C83129CE874FE5E3A23B03544BFF35458833779DAB7A6FF687525A4E23CA59F1E2B94")))
             return error(SHERR_INVAL, "CAlert::CheckSignature() : SetPubKey failed");
@@ -1043,12 +769,12 @@ public:
             return error(SHERR_INVAL, "CAlert::CheckSignature() : verify signature failed");
 
         // Now unserialize the data
-        CDataStream sMsg(vchMsg, SER_NETWORK, PROTOCOL_VERSION);
+        CDataStream sMsg(vchMsg, SER_NETWORK, PROTOCOL_VERSION(iface));
         sMsg >> *(CUnsignedAlert*)this;
         return true;
     }
 
-    bool ProcessAlert();
+    bool ProcessAlert(int ifaceIndex);
 
     /*
      * Get copy of (active) alert object by hash. Returns a null alert if it is not found.
@@ -1056,6 +782,7 @@ public:
     static CAlert getAlertByHash(const uint256 &hash);
 };
 
+#if 0
 class CTxMemPool
 {
 public:
@@ -1085,8 +812,11 @@ public:
         return mapTx[hash];
     }
 };
+#endif
 
+#if 0
 extern CTxMemPool mempool;
+#endif
 
 
 /**

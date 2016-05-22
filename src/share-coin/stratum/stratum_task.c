@@ -4,11 +4,14 @@
 #include "coin_proto.h"
 
 #define BLOCK_VERSION 1
-#define MAX_SERVER_NONCE 128
+//#define MAX_SERVER_NONCE 128
+#define MAX_SERVER_NONCE 4 
 #define MAX_ROUND_TIME 600
 
 //static task_t *task_list;
 static user_t *sys_user;
+static int work_reset[MAX_COIN_IFACE];
+static uint64_t last_block_height[MAX_COIN_IFACE];
 
 
 #if 0
@@ -74,7 +77,7 @@ static int work_idx = 0;
  * Monitors when a new accepted block becomes confirmed.
  * @note format: ["height"=<block height>, "category"=<'generate'>, "amount"=<block reward>, "time":<block time>, "confirmations":<block confirmations>]
  */
-static void check_payout(void)
+static void check_payout(int ifaceIndex)
 {
   static char last_payout_hash[1024];
   shjson_t *tree;
@@ -89,7 +92,7 @@ static void check_payout(void)
   double reward;
   int i;
 
-  templ_json = (char *)getblocktransactions();
+  templ_json = (char *)getblocktransactions(ifaceIndex);
   if (!templ_json) {
     return;
   }
@@ -159,7 +162,7 @@ static void check_payout(void)
       for (i = 0; i < MAX_ROUNDS_PER_HOUR; i++)
         reward += weight * user->block_avg[i];
       if (reward >= 1)
-        setblockreward(uname, reward);  
+        user->balance[ifaceIndex] += reward;
     }
 
 /*
@@ -176,10 +179,35 @@ static void check_payout(void)
 
 }
 
+/**
+ * @param block_height the min block height the mining reward will be available.
+ */
+static void commit_payout(int ifaceIndex, int block_height)
+{
+  user_t *user;
+  char uname[256];
+
+  for (user = client_list; user; user = user->next) {
+    if (user->balance[ifaceIndex] < 1.0)
+      continue;
+
+    memset(uname, 0, sizeof(uname));
+    strncpy(uname, user->worker, sizeof(uname) - 1);
+    strtok(uname, ".");
+    if (!*uname)
+      continue;
+
+    if (0 == setblockreward(ifaceIndex, uname, user->balance[ifaceIndex])) {
+      user->reward_val = user->balance[ifaceIndex];
+      user->reward_time = time(NULL);
+      user->reward_height = block_height;
+      user->balance[ifaceIndex] = 0;
+    }
+  }
+}
+
 static int task_verify(int ifaceIndex, int *work_reset_p)
 {
-  static uint64_t last_block_height;
-  static time_t last_block_time;
   uint64_t block_height;
   time_t now;
 
@@ -187,23 +215,24 @@ static int task_verify(int ifaceIndex, int *work_reset_p)
 
   now = time(NULL);
 
-  block_height = getblockheight();
-  if (block_height == last_block_height) {
+  block_height = getblockheight(ifaceIndex);
+  if (block_height == last_block_height[ifaceIndex]) {
     return (SHERR_AGAIN);
   } 
 
-  check_payout();
+  check_payout(ifaceIndex);
+  commit_payout(ifaceIndex, block_height-1);
 
   //reset_task_work_time();
   //work_idx = -1;
   *work_reset_p = TRUE;
 
 //  free_tasks();
-  last_block_height = block_height;
-  last_block_time = now;
+  last_block_height[ifaceIndex] = block_height;
 
   return (0);
 }
+
 
 task_t *task_init(void)
 {
@@ -222,9 +251,12 @@ task_t *task_init(void)
   uint64_t block_height;
   unsigned long cb1;
   unsigned long cb2;
-  int work_reset;
   int ifaceIndex;
   int i;
+
+  for (ifaceIndex = 1; ifaceIndex < MAX_COIN_IFACE; ifaceIndex++) {
+    task_verify(ifaceIndex, &work_reset[ifaceIndex]);
+  }
 
   work_idx++;
   ifaceIndex = (work_idx % MAX_COIN_IFACE);
@@ -234,8 +266,6 @@ task_t *task_init(void)
   iface = GetCoinByIndex(ifaceIndex);
   if (!iface)
     return (NULL);
-
-  task_verify(ifaceIndex, &work_reset);
 
   tree = stratum_json(getblocktemplate(ifaceIndex));
   if (!tree) {
@@ -254,7 +284,7 @@ task_t *task_init(void)
     return (NULL);
   }
 
-  task->work_reset = work_reset;
+  task->work_reset = work_reset[ifaceIndex];
 
   memset(target, 0, sizeof(target));
   strncpy(target, shjson_astr(block, "target", "ffff"), 12);
@@ -314,7 +344,7 @@ task_t *task_init(void)
 
   strncpy(task->nbits, shjson_astr(block, "bits", "00000000"), sizeof(task->nbits) - 1);
   task->curtime = (time_t)shjson_num(block, "curtime", time(NULL));
-  task->height = getblockheight();
+  task->height = getblockheight(ifaceIndex);
 
   /* generate unique job id from user and coinbase */
   task->task_id = (unsigned int)shjson_num(block, "task", shcrc(task, sizeof(task_t)));

@@ -1,12 +1,16 @@
 
 
-noinst_PROGRAMS = shcoin shcoind .notice
+noinst_PROGRAMS = usde shc shcoind .notice
 
 shcoind:
 	ln -sf $(top_builddir)/src/share-coin/shcoind
 
-shcoin:
-	ln -sf $(top_builddir)/src/share-coin/shcoin
+shc:
+	ln -sf $(top_builddir)/src/share-coin/shc
+
+usde:
+	ln -sf $(top_builddir)/src/share-coin/usde
+
 
 .notice:
 	@echo > .notice

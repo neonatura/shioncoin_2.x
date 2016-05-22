@@ -45,7 +45,6 @@ static const int64 GMC_MIN_TX_FEE = 10000;
 static const int64 GMC_MIN_RELAY_TX_FEE = 1000;
 static const int64 GMC_MAX_MONEY = 84000000 * GMC_COIN;
 static const int GMC_COINBASE_MATURITY = 100;
-static const unsigned int GMC_LOCKTIME_THRESHOLD = 500000000; // Tue Nov  5 00:53:20 1985 UTC
 
 
 

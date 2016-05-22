@@ -7,19 +7,11 @@
 #ifndef BITCOIN_DB_H
 #define BITCOIN_DB_H
 
-#include "main.h"
 
-#include <map>
-#include <string>
-#include <vector>
-
-#include <db_cxx.h>
 
 class CAddress;
 class CAddrMan;
 class CBlockLocator;
-//class CDiskBlockIndex;
-//class CDiskTxPos;
 class CMasterKey;
 class COutPoint;
 class CTxIndex;
@@ -315,7 +307,7 @@ class CTxDB : public CDB
     bool ReadDiskTx(uint256 hash, CTransaction& tx);
     //bool ReadDiskTx(COutPoint outpoint, CTransaction& tx, CTxIndex& txindex);
     bool ReadDiskTx(COutPoint outpoint, CTransaction& tx);
-    //bool WriteBlockIndex(const CDiskBlockIndex& blockindex);
+    bool WriteBlockIndex(const CDiskBlockIndex& blockindex);
 
     bool ReadHashBestChain(uint256& hashBestChain);
     bool WriteHashBestChain(uint256 hashBestChain);
@@ -331,6 +323,9 @@ class CTxDB : public CDB
 
 CBlockIndex *InsertBlockIndex(blkidx_t *blockIndex, uint256 hash);
 
+bool ReadTxIndexOrigin(CIface *iface, uint256 txSpent, HashList& txOrigin);
+
+bool ReadTxIndexSpent(CIface *iface, uint256 txOrigin, HashList& txSpent);
 
 
 

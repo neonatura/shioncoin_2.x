@@ -108,28 +108,27 @@ class CAddress : public CService
 /** inv message data */
 class CInv
 {
-    public:
-        CInv();
-        CInv(int typeIn, const uint256& hashIn);
-        CInv(const std::string& strType, const uint256& hashIn);
+  public:
+    int type;
+    uint256 hash;
+    mutable int ifaceIndex;
 
-        IMPLEMENT_SERIALIZE
-        (
-            READWRITE(type);
-            READWRITE(hash);
-        )
+    CInv();
+    CInv(int ifaceIndex, int typeIn, const uint256& hashIn);
+    CInv(int ifaceIndex, const std::string& strType, const uint256& hashIn);
 
-        friend bool operator<(const CInv& a, const CInv& b);
+    IMPLEMENT_SERIALIZE
+      (
+       READWRITE(type);
+       READWRITE(hash);
+      )
 
-        bool IsKnownType() const;
-        const char* GetCommand() const;
-        std::string ToString() const;
-        void print() const;
+    friend bool operator<(const CInv& a, const CInv& b);
 
-    // TODO: make private (improves encapsulation)
-    public:
-        int type;
-        uint256 hash;
+    bool IsKnownType() const;
+    const char* GetCommand() const;
+    std::string ToString() const;
+    void print() const;
 };
 
 #endif // __INCLUDED_PROTOCOL_H__

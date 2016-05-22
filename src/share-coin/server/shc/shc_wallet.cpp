@@ -23,7 +23,7 @@
  *  @endcopyright
  */
 
-#include "db.h"
+#include "shcoind.h"
 #include "net.h"
 #include "init.h"
 #include "strlcpy.h"
@@ -43,11 +43,15 @@
 #include <boost/array.hpp>
 #include <share.h>
 #include "walletdb.h"
+#include "shc/shc_wallet.h"
+#include "shc/shc_txidx.h"
 
 using namespace std;
 using namespace boost;
 
-static CWallet *shcWallet;
+SHCWallet *shcWallet;
+CScript SHC_COINBASE_FLAGS;
+
 
 int shc_UpgradeWallet(void)
 {
@@ -67,14 +71,15 @@ int shc_UpgradeWallet(void)
 
 }
 
-int shc_LoadWallet(void)
+bool shc_LoadWallet(void)
 {
   CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);
   std::ostringstream strErrors;
 
   const char* pszP2SH = "/P2SH/";
-  COINBASE_FLAGS << std::vector<unsigned char>(pszP2SH, pszP2SH+strlen(pszP2SH));
+  SHC_COINBASE_FLAGS << std::vector<unsigned char>(pszP2SH, pszP2SH+strlen(pszP2SH));
 
+#if 0
   if (!bitdb.Open(GetDataDir()))
   {
     fprintf(stderr, "error: unable to open data directory.\n");
@@ -85,10 +90,9 @@ int shc_LoadWallet(void)
     fprintf(stderr, "error: unable to open load block index.\n");
     return (-1);
   }
+#endif
 
   bool fFirstRun = true;
-  shcWallet = new CWallet("shc_wallet.dat");
-  SetWallet(SHC_COIN_IFACE, shcWallet);
   shcWallet->LoadWallet(fFirstRun);
 
   if (fFirstRun)
@@ -109,9 +113,9 @@ int shc_LoadWallet(void)
 
   RegisterWallet(shcWallet);
 
-  CBlockIndex *pindexRescan = pindexBest;
+  CBlockIndex *pindexRescan = GetBestBlockIndex(SHC_COIN_IFACE);
   if (GetBoolArg("-rescan"))
-    pindexRescan = pindexGenesisBlock;
+    pindexRescan = SHCBlock::pindexGenesisBlock;
   else
   {
     CWalletDB walletdb("shc_wallet.dat");
@@ -119,6 +123,7 @@ int shc_LoadWallet(void)
     if (walletdb.ReadBestBlock(locator))
       pindexRescan = locator.GetBlockIndex();
   }
+  CBlockIndex *pindexBest = GetBestBlockIndex(SHC_COIN_IFACE);
   if (pindexBest != pindexRescan && pindexBest && pindexRescan && pindexBest->nHeight > pindexRescan->nHeight)
   {
     int64 nStart;
@@ -131,8 +136,348 @@ int shc_LoadWallet(void)
 
   shc_UpgradeWallet();
 
-/* DEBUG: */
-//pwalletMain = shcWallet;
+  // Add wallet transactions that aren't already in a block to mapTransactions
+  shcWallet->ReacceptWalletTransactions();
+
+  return (true);
 }
 
 
+void SHCWallet::RelayWalletTransaction(CWalletTx& wtx)
+{
+  SHCTxDB txdb;
+  wtx.RelayWalletTransaction(txdb);
+  txdb.Close(); 
+}
+
+
+void SHCWallet::ResendWalletTransactions()
+{
+  // Do this infrequently and randomly to avoid giving away
+  // that these are our transactions.
+  static int64 nNextTime;
+  if (GetTime() < nNextTime)
+    return;
+  bool fFirst = (nNextTime == 0);
+  nNextTime = GetTime() + GetRand(30 * 60);
+  if (fFirst)
+    return;
+
+  // Only do it if there's been a new block since last time
+  static int64 nLastTime;
+  if (SHCBlock::nTimeBestReceived < nLastTime)
+    return;
+  nLastTime = GetTime();
+
+  // Rebroadcast any of our txes that aren't in a block yet
+  SHCTxDB txdb;
+  {
+    LOCK(cs_wallet);
+    // Sort them in chronological order
+    multimap<unsigned int, CWalletTx*> mapSorted;
+    BOOST_FOREACH(PAIRTYPE(const uint256, CWalletTx)& item, mapWallet)
+    {
+      CWalletTx& wtx = item.second;
+      // Don't rebroadcast until it's had plenty of time that
+      // it should have gotten in already by now.
+      if (SHCBlock::nTimeBestReceived - (int64)wtx.nTimeReceived > 5 * 60)
+        mapSorted.insert(make_pair(wtx.nTimeReceived, &wtx));
+    }
+    BOOST_FOREACH(PAIRTYPE(const unsigned int, CWalletTx*)& item, mapSorted)
+    {
+      CWalletTx& wtx = *item.second;
+      wtx.RelayWalletTransaction(txdb);
+    }
+  }
+  txdb.Close();
+}
+
+void SHCWallet::ReacceptWalletTransactions()
+{
+  SHCTxDB txdb;
+  bool fRepeat = true;
+
+fprintf(stderr, "DEBUG: SHCWallet::ReacceptWalletTransactions()\n");
+
+  while (fRepeat)
+  {
+    LOCK(cs_wallet);
+    fRepeat = false;
+    vector<CDiskTxPos> vMissingTx;
+    BOOST_FOREACH(PAIRTYPE(const uint256, CWalletTx)& item, mapWallet)
+    {
+      CWalletTx& wtx = item.second;
+      if (wtx.IsCoinBase() && wtx.IsSpent(0))
+        continue;
+
+      CTxIndex txindex;
+      bool fUpdated = false;
+      if (txdb.ReadTxIndex(wtx.GetHash(), txindex))
+      {
+        // Update fSpent if a tx got spent somewhere else by a copy of wallet.dat
+        if (txindex.vSpent.size() != wtx.vout.size())
+        {
+          printf("ERROR: ReacceptWalletTransactions() : txindex.vSpent.size() %d != wtx.vout.size() %d\n", txindex.vSpent.size(), wtx.vout.size());
+          continue;
+        }
+        for (unsigned int i = 0; i < txindex.vSpent.size(); i++)
+        {
+          if (wtx.IsSpent(i))
+            continue;
+          if (!txindex.vSpent[i].IsNull() && IsMine(wtx.vout[i]))
+          {
+            wtx.MarkSpent(i);
+            fUpdated = true;
+            vMissingTx.push_back(txindex.vSpent[i]);
+          }
+        }
+        if (fUpdated)
+        {
+          printf("ReacceptWalletTransactions found spent coin %sbc %s\n", FormatMoney(wtx.GetCredit()).c_str(), wtx.GetHash().ToString().c_str());
+          wtx.MarkDirty();
+          wtx.WriteToDisk();
+        }
+      }
+      else
+      {
+        // Reaccept any txes of ours that aren't already in a block
+        if (!wtx.IsCoinBase())
+          wtx.AcceptWalletTransaction(txdb, false);
+      }
+    }
+    if (!vMissingTx.empty())
+    {
+      // TODO: optimize this to scan just part of the block chain?
+      if (ScanForWalletTransactions(SHCBlock::pindexGenesisBlock))
+        fRepeat = true;  // Found missing transactions: re-do Reaccept.
+    }
+  }
+}
+
+int SHCWallet::ScanForWalletTransactions(CBlockIndex* pindexStart, bool fUpdate)
+{
+  int ret = 0;
+
+  CBlockIndex* pindex = pindexStart;
+  {
+    LOCK(cs_wallet);
+    while (pindex)
+    {
+      SHCBlock block;
+      block.ReadFromDisk(pindex, true);
+      BOOST_FOREACH(CTransaction& tx, block.vtx)
+      {
+        if (AddToWalletIfInvolvingMe(tx, &block, fUpdate))
+          ret++;
+      }
+      pindex = pindex->pnext;
+    }
+  }
+  return ret;
+}
+
+int64 SHCWallet::GetTxFee(CTransaction tx)
+{
+  map<uint256, CTxIndex> mapQueuedChanges;
+  MapPrevTx inputs;
+  int64 nFees;
+  int i;
+
+  if (tx.IsCoinBase())
+    return (0);
+
+  SHCTxDB txdb;
+
+  nFees = 0;
+  bool fInvalid = false;
+  if (tx.FetchInputs(txdb, mapQueuedChanges, true, false, inputs, fInvalid))
+    nFees += tx.GetValueIn(inputs) - tx.GetValueOut();
+
+  txdb.Close();
+
+  return (nFees);
+}
+
+bool SHCWallet::CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey)
+{
+  {
+    LOCK2(cs_main, cs_wallet);
+    Debug("CommitTransaction:\n%s", wtxNew.ToString().c_str());
+    {
+      // This is only to keep the database open to defeat the auto-flush for the
+      // duration of this scope.  This is the only place where this optimization
+      // maybe makes sense; please don't do it anywhere else.
+      CWalletDB* pwalletdb = fFileBacked ? new CWalletDB(strWalletFile,"r") : NULL;
+
+      // Take key pair from key pool so it won't be used again
+      reservekey.KeepKey();
+
+      // Add tx to wallet, because if it has change it's also ours,
+      // otherwise just for transaction history.
+      AddToWallet(wtxNew);
+
+      // Mark old coins as spent
+      set<CWalletTx*> setCoins;
+      BOOST_FOREACH(const CTxIn& txin, wtxNew.vin)
+      {
+        CWalletTx &coin = mapWallet[txin.prevout.hash];
+        coin.BindWallet(this);
+        coin.MarkSpent(txin.prevout.n);
+        coin.WriteToDisk();
+        NotifyTransactionChanged(this, coin.GetHash(), CT_UPDATED);
+      }
+
+      if (fFileBacked)
+        delete pwalletdb;
+    }
+
+    // Track how many getdata requests our transaction gets
+    mapRequestCount[wtxNew.GetHash()] = 0;
+
+    // Broadcast
+       
+    SHCTxDB txdb;
+    bool ret = wtxNew.AcceptToMemoryPool(txdb);
+    if (ret)
+      wtxNew.RelayWalletTransaction(txdb);
+    txdb.Close();
+    if (!ret) {
+      // This must not fail. The transaction has already been signed and recorded.
+      printf("CommitTransaction() : Error: Transaction not valid");
+      return false;
+    }
+  }
+  return true;
+}
+
+
+
+bool SHCWallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend, CWalletTx& wtxNew, CReserveKey& reservekey, int64& nFeeRet)
+{
+  CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);
+  int64 nValue = 0;
+  BOOST_FOREACH (const PAIRTYPE(CScript, int64)& s, vecSend)
+  {
+    if (nValue < 0)
+      return false;
+    nValue += s.second;
+  }
+  if (vecSend.empty() || nValue < 0)
+    return false;
+
+  wtxNew.BindWallet(this);
+
+  {
+    LOCK2(cs_main, cs_wallet);
+    // txdb must be opened before the mapWallet lock
+    SHCTxDB txdb;
+    {
+      nFeeRet = nTransactionFee;
+      loop
+      {
+        wtxNew.vin.clear();
+        wtxNew.vout.clear();
+        wtxNew.fFromMe = true;
+
+        int64 nTotalValue = nValue + nFeeRet;
+        double dPriority = 0;
+        // vouts to the payees
+        BOOST_FOREACH (const PAIRTYPE(CScript, int64)& s, vecSend)
+          wtxNew.vout.push_back(CTxOut(s.second, s.first));
+
+        // Choose coins to use
+        set<pair<const CWalletTx*,unsigned int> > setCoins;
+        int64 nValueIn = 0;
+        if (!SelectCoins(nTotalValue, setCoins, nValueIn))
+          return false;
+        BOOST_FOREACH(PAIRTYPE(const CWalletTx*, unsigned int) pcoin, setCoins)
+        {
+          int64 nCredit = pcoin.first->vout[pcoin.second].nValue;
+          dPriority += (double)nCredit * pcoin.first->GetDepthInMainChain(ifaceIndex);
+        }
+
+        int64 nChange = nValueIn - nValue - nFeeRet;
+        // if sub-cent change is required, the fee must be raised to at least SHC_MIN_TX_FEE
+        // or until nChange becomes zero
+        // NOTE: this depends on the exact behaviour of GetMinFee
+        if (nFeeRet < SHC_MIN_TX_FEE && nChange > 0 && nChange < CENT)
+        {
+          int64 nMoveToFee = min(nChange, SHC_MIN_TX_FEE - nFeeRet);
+          nChange -= nMoveToFee;
+          nFeeRet += nMoveToFee;
+        }
+
+        if (nChange > 0)
+        {
+          // Note: We use a new key here to keep it from being obvious which side is the change.
+          //  The drawback is that by not reusing a previous key, the change may be lost if a
+          //  backup is restored, if the backup doesn't have the new private key for the change.
+          //  If we reused the old key, it would be possible to add code to look for and
+          //  rediscover unknown transactions that were written with keys of ours to recover
+          //  post-backup change.
+
+          // Reserve a new key pair from key pool
+          CPubKey vchPubKey = reservekey.GetReservedKey();
+          // assert(mapKeys.count(vchPubKey));
+
+          // Fill a vout to ourself
+          // TODO: pass in scriptChange instead of reservekey so
+          // change transaction isn't always pay-to-bitcoin-address
+          CScript scriptChange;
+          scriptChange.SetDestination(vchPubKey.GetID());
+
+          // Insert change txn at random position:
+          vector<CTxOut>::iterator position = wtxNew.vout.begin()+GetRandInt(wtxNew.vout.size());
+          wtxNew.vout.insert(position, CTxOut(nChange, scriptChange));
+        }
+        else
+          reservekey.ReturnKey();
+
+        // Fill vin
+        BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setCoins)
+          wtxNew.vin.push_back(CTxIn(coin.first->GetHash(),coin.second));
+
+        // Sign
+        int nIn = 0;
+        BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setCoins)
+          if (!SignSignature(*this, *coin.first, wtxNew, nIn++)) {
+            txdb.Close();
+            return false;
+          }
+
+        // Limit size
+        unsigned int nBytes = ::GetSerializeSize(*(CTransaction*)&wtxNew, SER_NETWORK, SHC_PROTOCOL_VERSION);
+        if (nBytes >= MAX_BLOCK_SIZE_GEN(iface)/5) {
+          txdb.Close();
+          return false;
+        }
+        dPriority /= nBytes;
+
+        // Check that enough fee is included
+        int64 nPayFee = nTransactionFee * (1 + (int64)nBytes / 1000);
+        bool fAllowFree = CTransaction::AllowFree(dPriority);
+        int64 nMinFee = wtxNew.GetMinFee(SHC_COIN_IFACE, 1, fAllowFree, GMF_SEND);
+        if (nFeeRet < max(nPayFee, nMinFee))
+        {
+          nFeeRet = max(nPayFee, nMinFee);
+          continue;
+        }
+
+        // Fill vtxPrev by copying from previous transactions vtxPrev
+        wtxNew.AddSupportingTransactions(txdb);
+        wtxNew.fTimeReceivedIsTxTime = true;
+
+        break;
+      }
+    }
+    txdb.Close();
+  }
+  return true;
+}
+
+bool SHCWallet::CreateTransaction(CScript scriptPubKey, int64 nValue, CWalletTx& wtxNew, CReserveKey& reservekey, int64& nFeeRet)
+{
+    vector< pair<CScript, int64> > vecSend;
+    vecSend.push_back(make_pair(scriptPubKey, nValue));
+    return CreateTransaction(vecSend, wtxNew, reservekey, nFeeRet);
+}

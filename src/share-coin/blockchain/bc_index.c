@@ -224,10 +224,14 @@ fprintf(stderr, "DEBUG: bc_idx_set: bc_map_alloc <%d bytes> err %d\n", f_len, er
   return (0);
 }
 
+/**
+ * @note (odd) only reduces index count when "pos" is last record in db.
+ */
 int bc_idx_clear(bc_t *bc, size_t pos)
 {
   bc_idx_t *f_idx;
   bc_idx_t blank_idx;
+  size_t n_pos;
   size_t of;
   int err;
 
@@ -239,16 +243,25 @@ int bc_idx_clear(bc_t *bc, size_t pos)
   if (err)
     return (err);
 
+  n_pos = MAX(0, (bc->idx_map.hdr->of / sizeof(bc_idx_t)));
+fprintf(stderr, "DEBUG: bc_idx_clear: n_pos = %d\n", n_pos);
+
   of = (pos * sizeof(bc_idx_t));
   if (pos >= (bc->idx_map.hdr->of / sizeof(bc_idx_t)) &&
-      (of + sizeof(bc_idx_t)) > bc->idx_map.size)
-    return (0); /* no content - does not exist */
+      (of + sizeof(bc_idx_t)) > bc->idx_map.size) {
+    /* no content - does not exist */
+  } else {
+    /* write to file map */
+    memset(&blank_idx, 0, sizeof(blank_idx));
+    err = bc_map_write(bc, &bc->idx_map, of, &blank_idx, sizeof(bc_idx_t)); 
+    if (err)
+      return (err);
+  }
 
-  /* write to file map */
-  memset(&blank_idx, 0, sizeof(blank_idx));
-  err = bc_map_write(bc, &bc->idx_map, of, &blank_idx, sizeof(bc_idx_t)); 
-  if (err)
-    return (err);
+  if ((pos + 1) == n_pos && bc->idx_map.hdr->of >= sizeof(bc_idx_t)) {
+    bc->idx_map.hdr->of -= sizeof(bc_idx_t);
+fprintf(stderr, "DEBUG: bc_idx_clear: (last rec) bc->idx_map.hdr->of = %d\n", bc->idx_map.hdr->of);
+  }
 
   return (0);
 }

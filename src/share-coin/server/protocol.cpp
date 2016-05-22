@@ -5,7 +5,7 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include "block.h"
+#include "shcoind.h"
 #include "main.h"
 #include "protocol.h"
 #include "util.h"
@@ -100,30 +100,34 @@ void CAddress::Init()
 
 CInv::CInv()
 {
-    type = 0;
-    hash = 0;
+  ifaceIndex = -1;
+  type = 0;
+  hash = 0;
 }
 
-CInv::CInv(int typeIn, const uint256& hashIn)
+CInv::CInv(int ifaceIndexIn, int typeIn, const uint256& hashIn)
 {
-    type = typeIn;
-    hash = hashIn;
+  ifaceIndex = ifaceIndexIn;
+  type = typeIn;
+  hash = hashIn;
 }
 
-CInv::CInv(const std::string& strType, const uint256& hashIn)
+CInv::CInv(int ifaceIndexIn, const std::string& strType, const uint256& hashIn)
 {
-    unsigned int i;
-    for (i = 1; i < ARRAYLEN(ppszTypeName); i++)
+  ifaceIndex = ifaceIndexIn;
+
+  unsigned int i;
+  for (i = 1; i < ARRAYLEN(ppszTypeName); i++)
+  {
+    if (strType == ppszTypeName[i])
     {
-        if (strType == ppszTypeName[i])
-        {
-            type = i;
-            break;
-        }
+      type = i;
+      break;
     }
-    if (i == ARRAYLEN(ppszTypeName))
-        throw std::out_of_range(strprintf("CInv::CInv(string, uint256) : unknown type '%s'", strType.c_str()));
-    hash = hashIn;
+  }
+  if (i == ARRAYLEN(ppszTypeName))
+    throw std::out_of_range(strprintf("CInv::CInv(string, uint256) : unknown type '%s'", strType.c_str()));
+  hash = hashIn;
 }
 
 bool operator<(const CInv& a, const CInv& b)

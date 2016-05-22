@@ -60,11 +60,36 @@ extern shbuf_t *server_msg_buff;
 #include "server_iface.h"
 #include "shcoind_version.h"
 #include "shcoind_opt.h"
-#include "stratum/stratum.h"
 #include "shcoind_log.h"
-#include "shcoind_daemon.h"
 #include "shcoind_block.h"
 #include "shcoind_rpc.h"
+
+#include "proto/coin_proto.h"
+#include "proto/shc_proto.h"
+#include "proto/usde_proto.h"
+
+#include "stratum/stratum.h"
+#include "shcoind_daemon.h"
+
+#ifdef __cplusplus
+#include <map>
+#include <vector>
+#include <string>
+#include <db_cxx.h>
+
+#include <boost/version.hpp>
+#include <boost/foreach.hpp>
+#include <boost/filesystem.hpp>
+#include <boost/filesystem/fstream.hpp>
+
+#include "server/bignum.h"
+#include "server/sync.h"
+#include "server/uint256.h"
+#include "server/serialize.h"
+#include "server/block.h"
+#include "server/txidx.h"
+#include "server/global.h"
+#endif
 
 /**
  * @}

@@ -1,5 +1,29 @@
 
-#include "block.h"
+/*
+ * @copyright
+ *
+ *  Copyright 2014 Neo Natura
+ *
+ *  This file is part of the Share Library.
+ *  (https://github.com/neonatura/share)
+ *        
+ *  The Share Library is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version. 
+ *
+ *  The Share Library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with The Share Library.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  @endcopyright
+ */  
+
+#include "shcoind.h"
 #include "main.h"
 #include <boost/assign/list_of.hpp>
 #include "base58.h"
@@ -47,13 +71,14 @@ ScriptPubKeyToJSON(const CScript& scriptPubKey, Object& out)
     out.push_back(Pair("addresses", a));
 }
 
-static void TxToJSON(CIface *iface, const CTransaction& tx, const uint256 hashBlock, Object& entry)
+void TxToJSON(CIface *iface, const CTransaction& tx, const uint256 hashBlock, Object& entry)
 {
   int ifaceIndex = GetCoinIndex(iface);
   blkidx_t *blockIndex = GetBlockTable(ifaceIndex);
 
   entry.push_back(Pair("txid", tx.GetHash().GetHex()));
-  entry.push_back(Pair("version", tx.nVersion));
+  entry.push_back(Pair("version", tx.isFlag(CTransaction::TX_VERSION) ? 1 : 0));
+  entry.push_back(Pair("flag", tx.nFlag));
   entry.push_back(Pair("locktime", (boost::int64_t)tx.nLockTime));
   Array vin;
   BOOST_FOREACH(const CTxIn& txin, tx.vin)
@@ -95,9 +120,9 @@ static void TxToJSON(CIface *iface, const CTransaction& tx, const uint256 hashBl
     if (mi != blockIndex->end() && (*mi).second)
     {
       CBlockIndex* pindex = (*mi).second;
-      if (pindex->IsInMainChain())
+      if (pindex->IsInMainChain(ifaceIndex))
       {
-        entry.push_back(Pair("confirmations", 1 + nBestHeight - pindex->nHeight));
+        entry.push_back(Pair("confirmations", (int)(1 + GetBestHeight(iface) - pindex->nHeight)));
         entry.push_back(Pair("time", (boost::int64_t)pindex->nTime));
       }
       else
@@ -128,7 +153,7 @@ Value rpc_getrawtransaction(CIface *iface, const Array& params, bool fHelp)
   if (!GetTransaction(iface, hash, tx, hashBlock))
     throw JSONRPCError(-5, "No information available about transaction");
 
-  CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION);
+  CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION(iface));
   ssTx << tx;
   string strHex = HexStr(ssTx.begin(), ssTx.end());
 
@@ -141,6 +166,7 @@ Value rpc_getrawtransaction(CIface *iface, const Array& params, bool fHelp)
   return result;
 }
 
+#if 0
 Value listunspent(const Array& params, bool fHelp)
 {
     if (fHelp || params.size() > 2)
@@ -182,7 +208,9 @@ Value listunspent(const Array& params, bool fHelp)
 
     return results;
 }
+#endif
 
+#if 0
 Value createrawtransaction(const Array& params, bool fHelp)
 {
     if (fHelp || params.size() != 2)
@@ -243,11 +271,10 @@ Value createrawtransaction(const Array& params, bool fHelp)
         rawTx.vout.push_back(out);
     }
 
-    CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
+    CDataStream ss(SER_NETWORK, PROTOCOL_VERSION(iface));
     ss << rawTx;
     return HexStr(ss.begin(), ss.end());
 }
-
 Value decoderawtransaction(const Array& params, bool fHelp)
 {
   CIface *iface = GetCoinByIndex(USDE_COIN_IFACE);
@@ -260,7 +287,7 @@ Value decoderawtransaction(const Array& params, bool fHelp)
   RPCTypeCheck(params, list_of(str_type));
 
   vector<unsigned char> txData(ParseHex(params[0].get_str()));
-  CDataStream ssData(txData, SER_NETWORK, PROTOCOL_VERSION);
+  CDataStream ssData(txData, SER_NETWORK, PROTOCOL_VERSION(iface));
   CTransaction tx;
   try {
     ssData >> tx;
@@ -274,7 +301,9 @@ Value decoderawtransaction(const Array& params, bool fHelp)
 
   return result;
 }
+#endif
 
+#if 0
 Value signrawtransaction(const Array& params, bool fHelp)
 {
     if (fHelp || params.size() < 1 || params.size() > 4)
@@ -449,16 +478,206 @@ Value signrawtransaction(const Array& params, bool fHelp)
     }
 
     Object result;
-    CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION);
+    CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION(iface));
     ssTx << mergedTx;
     result.push_back(Pair("hex", HexStr(ssTx.begin(), ssTx.end())));
     result.push_back(Pair("complete", fComplete));
 
     return result;
 }
+#endif
 
+#if 0
+Value rpc_tx_signraw(CIface *iface, const Array& params, bool fHelp)
+{
+  int ifaceIndex = GetCoinIndex(iface);
+
+  if (fHelp || params.size() < 1 || params.size() > 4)
+    throw runtime_error(
+        "tx.signraw <hex string> [{\"txid\":txid,\"vout\":n,\"scriptPubKey\":hex},...] [<privatekey1>,...] [sighashtype=\"ALL\"]\n"
+        "Sign inputs for raw transaction (serialized, hex-encoded).\n"
+        "Second optional argument is an array of previous transaction outputs that\n"
+        "this transaction depends on but may not yet be in the blockchain.\n"
+        "Third optional argument is an array of base58-encoded private\n"
+        "keys that, if given, will be the only keys used to sign the transaction.\n"
+        "Fourth option is a string that is one of six values; ALL, NONE, SINGLE or\n"
+        "ALL|ANYONECANPAY, NONE|ANYONECANPAY, SINGLE|ANYONECANPAY.\n"
+        "Returns json object with keys:\n"
+        "  hex : raw transaction with signature(s) (hex-encoded string)\n"
+        "  complete : 1 if transaction has a complete set of signature (0 if not)"
+        + HelpRequiringPassphrase());
+
+  if (params.size() < 3)
+    EnsureWalletIsUnlocked();
+
+  RPCTypeCheck(params, list_of(str_type)(array_type)(array_type));
+
+  vector<unsigned char> txData(ParseHex(params[0].get_str()));
+  CDataStream ssData(txData, SER_NETWORK, PROTOCOL_VERSION);
+  vector<CTransaction> txVariants;
+  while (!ssData.empty())
+  {
+    try {
+      CTransaction tx;
+      ssData >> tx;
+      txVariants.push_back(tx);
+    }
+    catch (std::exception &e) {
+      throw JSONRPCError(-22, "TX decode failed");
+    }
+  }
+
+  if (txVariants.empty())
+    throw JSONRPCError(-22, "Missing transaction");
+
+  // mergedTx will end up with all the signatures; it
+  // starts as a clone of the rawtx:
+  CTransaction mergedTx(txVariants[0]);
+  bool fComplete = true;
+
+  // Fetch previous transactions (inputs):
+  map<COutPoint, CScript> mapPrevOut;
+  {
+    MapPrevTx mapPrevTx;
+    CTxDB txdb(ifaceIndex, "r");
+    map<uint256, CTxIndex> unused;
+    bool fInvalid;
+    mergedTx.FetchInputs(txdb, unused, false, false, mapPrevTx, fInvalid);
+
+    // Copy results into mapPrevOut:
+    BOOST_FOREACH(const CTxIn& txin, mergedTx.vin)
+    {
+      const uint256& prevHash = txin.prevout.hash;
+      if (mapPrevTx.count(prevHash))
+        mapPrevOut[txin.prevout] = mapPrevTx[prevHash].second.vout[txin.prevout.n].scriptPubKey;
+    }
+    txdb.Close();
+  }
+
+  // Add previous txouts given in the RPC call:
+  if (params.size() > 1)
+  {
+    Array prevTxs = params[1].get_array();
+    BOOST_FOREACH(Value& p, prevTxs)
+    {
+      if (p.type() != obj_type)
+        throw JSONRPCError(-22, "expected object with {\"txid'\",\"vout\",\"scriptPubKey\"}");
+
+      Object prevOut = p.get_obj();
+
+      RPCTypeCheck(prevOut, map_list_of("txid", str_type)("vout", int_type)("scriptPubKey", str_type));
+
+      string txidHex = find_value(prevOut, "txid").get_str();
+      if (!IsHex(txidHex))
+        throw JSONRPCError(-22, "txid must be hexadecimal");
+      uint256 txid;
+      txid.SetHex(txidHex);
+
+      int nOut = find_value(prevOut, "vout").get_int();
+      if (nOut < 0)
+        throw JSONRPCError(-22, "vout must be positive");
+
+      string pkHex = find_value(prevOut, "scriptPubKey").get_str();
+      if (!IsHex(pkHex))
+        throw JSONRPCError(-22, "scriptPubKey must be hexadecimal");
+      vector<unsigned char> pkData(ParseHex(pkHex));
+      CScript scriptPubKey(pkData.begin(), pkData.end());
+
+      COutPoint outpoint(txid, nOut);
+      if (mapPrevOut.count(outpoint))
+      {
+        // Complain if scriptPubKey doesn't match
+        if (mapPrevOut[outpoint] != scriptPubKey)
+        {
+          string err("Previous output scriptPubKey mismatch:\n");
+          err = err + mapPrevOut[outpoint].ToString() + "\nvs:\n"+
+            scriptPubKey.ToString();
+          throw JSONRPCError(-22, err);
+        }
+      }
+      else
+        mapPrevOut[outpoint] = scriptPubKey;
+    }
+  }
+
+  bool fGivenKeys = false;
+  CBasicKeyStore tempKeystore;
+  if (params.size() > 2)
+  {
+    fGivenKeys = true;
+    Array keys = params[2].get_array();
+    BOOST_FOREACH(Value k, keys)
+    {
+      CBitcoinSecret vchSecret;
+      bool fGood = vchSecret.SetString(k.get_str());
+      if (!fGood)
+        throw JSONRPCError(-5,"Invalid private key");
+      CKey key;
+      bool fCompressed;
+      CSecret secret = vchSecret.GetSecret(fCompressed);
+      key.SetSecret(secret, fCompressed);
+      tempKeystore.AddKey(key);
+    }
+  }
+  const CKeyStore& keystore = (fGivenKeys ? tempKeystore : *pwalletMain);
+
+  int nHashType = SIGHASH_ALL;
+  if (params.size() > 3)
+  {
+    static map<string, int> mapSigHashValues =
+      boost::assign::map_list_of
+      (string("ALL"), int(SIGHASH_ALL))
+      (string("ALL|ANYONECANPAY"), int(SIGHASH_ALL|SIGHASH_ANYONECANPAY))
+      (string("NONE"), int(SIGHASH_NONE))
+      (string("NONE|ANYONECANPAY"), int(SIGHASH_NONE|SIGHASH_ANYONECANPAY))
+      (string("SINGLE"), int(SIGHASH_SINGLE))
+      (string("SINGLE|ANYONECANPAY"), int(SIGHASH_SINGLE|SIGHASH_ANYONECANPAY))
+      ;
+    string strHashType = params[3].get_str();
+    if (mapSigHashValues.count(strHashType))
+      nHashType = mapSigHashValues[strHashType];
+    else
+      throw JSONRPCError(-8, "Invalid sighash param");
+  }
+
+  // Sign what we can:
+  for (unsigned int i = 0; i < mergedTx.vin.size(); i++)
+  {
+    CTxIn& txin = mergedTx.vin[i];
+    if (mapPrevOut.count(txin.prevout) == 0)
+    {
+      fComplete = false;
+      continue;
+    }
+    const CScript& prevPubKey = mapPrevOut[txin.prevout];
+
+    txin.scriptSig.clear();
+    SignSignature(keystore, prevPubKey, mergedTx, i, nHashType);
+
+    // ... and merge in other signatures:
+    BOOST_FOREACH(const CTransaction& txv, txVariants)
+    {
+      txin.scriptSig = CombineSignatures(prevPubKey, mergedTx, i, txin.scriptSig, txv.vin[i].scriptSig);
+    }
+    if (!VerifyScript(txin.scriptSig, prevPubKey, mergedTx, i, true, 0))
+      fComplete = false;
+  }
+
+  Object result;
+  CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION(iface));
+  ssTx << mergedTx;
+  result.push_back(Pair("hex", HexStr(ssTx.begin(), ssTx.end())));
+  result.push_back(Pair("complete", fComplete));
+
+  return result;
+}
+#endif
+
+#if 0
 Value rpc_sendrawtransaction(CIface *iface, const Array& params, bool fHelp)
 {
+  int ifaceIndex = GetCoinIndex(iface);
+
   if (fHelp || params.size() < 1 || params.size() > 1)
     throw runtime_error(
         "tx.sendraw <hex string>\n"
@@ -494,7 +713,7 @@ Value rpc_sendrawtransaction(CIface *iface, const Array& params, bool fHelp)
   else
   {
     // push to local node
-    CTxDB txdb("r");
+    CTxDB txdb(ifaceIndex, "r");
     if (!tx.AcceptToMemoryPool(txdb))
       throw JSONRPCError(-22, "TX rejected");
     txdb.Close();
@@ -505,5 +724,6 @@ Value rpc_sendrawtransaction(CIface *iface, const Array& params, bool fHelp)
 
   return hashTx.GetHex();
 }
+#endif
 
 

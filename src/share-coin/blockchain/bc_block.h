@@ -54,5 +54,7 @@ int bc_write(bc_t *bc, int pos, bc_hash_t hash, void *raw_data, int data_len);
 
 void bc_close(bc_t *bc);
 
+int bc_purge(bc_t *bc, int pos);
+
 
 #endif /* ndef __BLOCKCHAIN__BC_BLOCK_H__ */

@@ -32,6 +32,8 @@
 extern "C" {
 #endif
 
+int MAX_ORPHAN_TRANSACTIONS = DEFAULT_MAX_ORPHAN_TRANSACTIONS;
+int MAX_ORPHAN_BLOCKS = DEFAULT_MAX_ORPHAN_BLOCKS;
 
 
 extern coin_iface_t usde_coin_iface;
@@ -50,6 +52,11 @@ static coin_iface_t *_iface_table[MAX_COIN_IFACE] = {
 int GetCoinIndex(coin_iface_t *iface)
 {
   int idx;
+
+  if (!iface) {
+fprintf(stderr, "DEBUG: error: GetCoinIndex(NULL)\n");
+    return (-1);
+}
 
   for (idx = 0; idx < MAX_COIN_IFACE; idx++) {
     if (0 == strcmp(iface->name, _iface_table[idx]->name))
@@ -92,10 +99,6 @@ int GetCoinAttr(const char *name, char *attr)
 
   if (0 == strcasecmp(attr, "max-block-size"))
     return (iface->max_block_size);
-  if (0 == strcasecmp(attr, "max-block-size-gen"))
-    return (iface->max_block_size_gen);
-  if (0 == strcasecmp(attr, "max-orphan-transactions"))
-    return (iface->max_orphan_transactions);
   if (0 == strcasecmp(attr, "min-tx-fee"))
     return (iface->min_tx_fee);
   if (0 == strcasecmp(attr, "min-relay-tx-fee"))
@@ -104,8 +107,6 @@ int GetCoinAttr(const char *name, char *attr)
     return (iface->max_money);
   if (0 == strcasecmp(attr, "coinbase-maturity"))
     return (iface->coinbase_maturity);
-  if (0 == strcasecmp(attr, "locktime-threshold"))
-    return (iface->locktime_threshold);
   return (0);
 }
 

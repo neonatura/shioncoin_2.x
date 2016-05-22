@@ -23,7 +23,7 @@
  *  @endcopyright
  */
 
-#include "db.h"
+#include "shcoind.h"
 #include "net.h"
 #include "init.h"
 #include "strlcpy.h"
@@ -31,8 +31,8 @@
 #include "ui_interface.h"
 #include "server/rpc_proto.h"
 //#include "shcoind_rpc.h"
-#include "shcoind.h"
 #include "usde/usde_netmsg.h"
+#include "chain.h"
 
 #ifdef WIN32
 #include <string.h>
@@ -55,7 +55,7 @@ using namespace boost;
 void ThreadMessageHandler2(void* parg);
 void ThreadSocketHandler2(void* parg);
 void ThreadDNSAddressSeed2(void* parg);
-bool OpenNetworkConnection(const CAddress& addrConnect, const char *strDest = NULL);
+bool OpenNetworkConnection(int ifaceIndex, const CAddress& addrConnect, const char *strDest = NULL);
 
 CSemaphore *semOutbound = NULL;
 
@@ -77,12 +77,13 @@ static CCriticalSection cs_mapLocalHost;
 static map<CNetAddr, LocalServiceInfo> mapLocalHost;
 static bool vfReachable[NET_MAX] = {};
 static bool vfLimited[NET_MAX] = {};
-static CNode* pnodeLocalHost = NULL;
+//static CNode* pnodeLocalHost = NULL;
 uint64 nLocalHostNonce = 0;
 static std::vector<SOCKET> vhListenSocket;
 
 
-vector<CNode*> vServerNodes[MAX_COIN_IFACE];
+
+NodeList vServerNodes[MAX_COIN_IFACE];
 
 vector<CNode*> vNodes;
 CCriticalSection cs_vNodes;
@@ -100,15 +101,31 @@ CCriticalSection cs_setservAddNodeAddresses;
 boost::array<int, THREAD_MAX> vnThreadsRunning;
 
 
+NodeList& GetNodeList(int ifaceIndex)
+{
+  if (ifaceIndex < 0 || ifaceIndex >= MAX_COIN_IFACE) {
+    NodeList blankList;
+    return (blankList);
+  }
+  return (vServerNodes[ifaceIndex]);
+}
+NodeList& GetNodeList(CIface *iface)
+{
+  return (GetNodeList(GetCoinIndex(iface)));
+}
+
+
 void AddOneShot(string strDest)
 {
     LOCK(cs_vOneShots);
     vOneShots.push_back(strDest);
 }
 
-unsigned short GetListenPort()
+unsigned short GetListenPort(CIface *iface)
 {
-    return (unsigned short)(GetArg("-port", USDE_COIN_DAEMON_PORT));
+  if (!iface)
+    return (0);
+  return (iface->port);
 }
 
 void CNode::PushGetBlocks(CBlockIndex* pindexBegin, uint256 hashEnd)
@@ -119,7 +136,7 @@ void CNode::PushGetBlocks(CBlockIndex* pindexBegin, uint256 hashEnd)
     pindexLastGetBlocksBegin = pindexBegin;
     hashLastGetBlocksEnd = hashEnd;
 
-    PushMessage("getblocks", CBlockLocator(pindexBegin), hashEnd);
+    PushMessage("getblocks", CBlockLocator(ifaceIndex, pindexBegin), hashEnd);
 }
 
 // find 'best' local address for a particular peer
@@ -214,8 +231,10 @@ bool RecvLine(SOCKET hSocket, string& strLine)
 
 // used when scores of local addresses may have changed
 // pushes better local address to peers
-void static AdvertizeLocal()
+void static AdvertizeLocal(int ifaceIndex)
 {
+  NodeList &vNodes = GetNodeList(ifaceIndex);
+
     LOCK(cs_vNodes);
     BOOST_FOREACH(CNode* pnode, vNodes)
     {
@@ -240,38 +259,39 @@ void SetReachable(enum Network net, bool fFlag)
 }
 
 // learn a new local address
-bool AddLocal(const CService& addr, int nScore)
+bool AddLocal(int ifaceIndex, const CService& addr, int nScore)
 {
-    if (!addr.IsRoutable())
-        return false;
+  if (!addr.IsRoutable())
+    return false;
 
-    if (!fDiscover && nScore < LOCAL_MANUAL)
-        return false;
+  if (!fDiscover && nScore < LOCAL_MANUAL)
+    return false;
 
-    if (IsLimited(addr))
-        return false;
+  if (IsLimited(addr))
+    return false;
 
-    fprintf(stderr, "AddLocal(%s,%i)\n", addr.ToString().c_str(), nScore);
+  fprintf(stderr, "AddLocal(%s,%i)\n", addr.ToString().c_str(), nScore);
 
-    {
-        LOCK(cs_mapLocalHost);
-        bool fAlready = mapLocalHost.count(addr) > 0;
-        LocalServiceInfo &info = mapLocalHost[addr];
-        if (!fAlready || nScore >= info.nScore) {
-            info.nScore = nScore;
-            info.nPort = addr.GetPort() + (fAlready ? 1 : 0);
-        }
-        SetReachable(addr.GetNetwork());
+  {
+    LOCK(cs_mapLocalHost);
+    bool fAlready = mapLocalHost.count(addr) > 0;
+    LocalServiceInfo &info = mapLocalHost[addr];
+    if (!fAlready || nScore >= info.nScore) {
+      info.nScore = nScore;
+      info.nPort = addr.GetPort() + (fAlready ? 1 : 0);
     }
+    SetReachable(addr.GetNetwork());
+  }
 
-    AdvertizeLocal();
+  AdvertizeLocal(ifaceIndex);
 
-    return true;
+  return true;
 }
 
-bool AddLocal(const CNetAddr &addr, int nScore)
+bool AddLocal(int ifaceIndex, const CNetAddr &addr, int nScore)
 {
-    return AddLocal(CService(addr, GetListenPort()), nScore);
+  CIface *iface = GetCoinByIndex(ifaceIndex);
+  return AddLocal(ifaceIndex, CService(addr, GetListenPort(iface)), nScore);
 }
 
 /** Make a particular network entirely off-limits (no automatic connects to it) */
@@ -295,7 +315,7 @@ bool IsLimited(const CNetAddr &addr)
 }
 
 /** vote for a local address */
-bool SeenLocal(const CService& addr)
+bool SeenLocal(int ifaceIndex, const CService& addr)
 {
     {
         LOCK(cs_mapLocalHost);
@@ -304,7 +324,7 @@ bool SeenLocal(const CService& addr)
         mapLocalHost[addr].nScore++;
     }
 
-    AdvertizeLocal();
+    AdvertizeLocal(ifaceIndex);
 
     return true;
 }
@@ -433,12 +453,14 @@ bool GetMyExternalIP(CNetAddr& ipRet)
 
 void GetMyExternalIP(void)
 {
+int idx;
 
     CNetAddr addrLocalHost;
     if (GetMyExternalIP(addrLocalHost))
     {
         fprintf(stderr, "GetMyExternalIP() returned %s\n", addrLocalHost.ToStringIP().c_str());
-        AddLocal(addrLocalHost, LOCAL_HTTP);
+for (idx = 0; idx < MAX_COIN_IFACE; idx++)
+        AddLocal(idx, addrLocalHost, LOCAL_HTTP);
     }
 }
 void ThreadGetMyExternalIP(void* parg)
@@ -466,8 +488,10 @@ void AddressCurrentlyConnected(const CService& addr)
 
 
 
-CNode* FindNode(const CNetAddr& ip)
+CNode* FindNode(int ifaceIndex, const CNetAddr& ip)
 {
+  NodeList &vNodes = GetNodeList(ifaceIndex);
+
     {
         LOCK(cs_vNodes);
         BOOST_FOREACH(CNode* pnode, vNodes)
@@ -477,8 +501,10 @@ CNode* FindNode(const CNetAddr& ip)
     return NULL;
 }
 
-CNode* FindNode(std::string addrName)
+CNode* FindNode(int ifaceIndex, std::string addrName)
 {
+  NodeList &vNodes = GetNodeList(ifaceIndex);
+
     LOCK(cs_vNodes);
     BOOST_FOREACH(CNode* pnode, vNodes)
         if (pnode->addrName == addrName)
@@ -486,8 +512,10 @@ CNode* FindNode(std::string addrName)
     return NULL;
 }
 
-CNode* FindNode(const CService& addr)
+CNode* FindNode(int ifaceIndex, const CService& addr)
 {
+  NodeList &vNodes = GetNodeList(ifaceIndex);
+
     {
         LOCK(cs_vNodes);
         BOOST_FOREACH(CNode* pnode, vNodes)
@@ -497,8 +525,10 @@ CNode* FindNode(const CService& addr)
     return NULL;
 }
 
-CNode* FindNode(SOCKET sk)
+CNode* FindNode(int ifaceIndex, SOCKET sk)
 {
+  NodeList &vNodes = GetNodeList(ifaceIndex);
+
   {
     LOCK(cs_vNodes);
     BOOST_FOREACH(CNode* pnode, vNodes)
@@ -508,14 +538,14 @@ CNode* FindNode(SOCKET sk)
   return NULL;
 }
 
-CNode* ConnectNode(CAddress addrConnect, const char *pszDest, int64 nTimeout)
+CNode* ConnectNode(int ifaceIndex, CAddress addrConnect, const char *pszDest, int64 nTimeout)
 {
   if (pszDest == NULL) {
     if (IsLocal(addrConnect))
       return NULL;
 
     // Look for an existing connection
-    CNode* pnode = FindNode((CService)addrConnect);
+    CNode* pnode = FindNode(ifaceIndex, (CService)addrConnect);
     if (pnode)
     {
       if (nTimeout != 0)
@@ -560,7 +590,7 @@ CNode* ConnectNode(CAddress addrConnect, const char *pszDest, int64 nTimeout)
     return (NULL);
   }
 
-  CNode* pnode = FindNode(hSocket);
+  CNode* pnode = FindNode(ifaceIndex, hSocket);
   if (pnode)
     pnode->nTimeConnected = GetTime();
   return pnode;
@@ -626,6 +656,7 @@ void CNode::Cleanup()
 
 void CNode::PushVersion()
 {
+  CIface *iface = GetCoinByIndex(ifaceIndex);
 
   /// when NTP implemented, change to just nTime = GetAdjustedTime()
   int64 nTime = (fInbound ? GetAdjustedTime() : GetTime());
@@ -635,12 +666,12 @@ void CNode::PushVersion()
 
   {
     char buf[256];
-    sprintf(buf, "PushVersion: version %d, blocks=%d, us=%s, them=%s, peer=%s", PROTOCOL_VERSION, nBestHeight, addrMe.ToString().c_str(), addrYou.ToString().c_str(), addr.ToString().c_str());
+    sprintf(buf, "PushVersion: version %d, blocks=%d, us=%s, them=%s, peer=%s", PROTOCOL_VERSION(iface), GetBestHeight(ifaceIndex), addrMe.ToString().c_str(), addrYou.ToString().c_str(), addr.ToString().c_str());
     unet_log(UNET_USDE, buf);
   }
 
-  PushMessage("version", PROTOCOL_VERSION, nLocalServices, nTime, addrYou, addrMe,
-      nLocalHostNonce, FormatSubVersion(CLIENT_NAME, CLIENT_VERSION, std::vector<string>()), nBestHeight);
+  PushMessage("version", PROTOCOL_VERSION(iface), nLocalServices, nTime, addrYou, addrMe,
+      nLocalHostNonce, FormatSubVersion(CLIENT_NAME, CLIENT_VERSION, std::vector<string>()), GetBestHeight(ifaceIndex));
 }
 
 
@@ -1071,6 +1102,7 @@ void ThreadSocketHandler2(void* parg)
 
 void usde_server_close(int fd, struct sockaddr *addr)
 {
+  NodeList &vNodes = GetNodeList(USDE_COIN_IFACE);
 
   LOCK(cs_vNodes);
   vector<CNode*> vNodesCopy = vNodes;
@@ -1086,6 +1118,8 @@ void usde_server_close(int fd, struct sockaddr *addr)
 list<CNode*> vNodesDisconnected;
 void usde_close_free(void)
 {
+  NodeList &vNodes = GetNodeList(USDE_COIN_IFACE);
+
 
   LOCK(cs_vNodes);
   vector<CNode*> vNodesCopy = vNodes;
@@ -1155,6 +1189,7 @@ void usde_close_free(void)
 
 void usde_server_accept(int hSocket, struct sockaddr *net_addr)
 {
+  NodeList &vNodes = GetNodeList(USDE_COIN_IFACE);
 #ifdef USE_IPV6
   struct sockaddr_storage sockaddr;
 #else
@@ -1209,7 +1244,7 @@ void usde_server_accept(int hSocket, struct sockaddr *net_addr)
   }
 
 
-  CNode* pnode = new CNode(hSocket, addr, 
+  CNode* pnode = new CNode(USDE_COIN_IFACE, hSocket, addr, 
       shaddr_print(shaddr(hSocket)), inBound);
 
   //if (inBound)
@@ -1229,6 +1264,8 @@ void usde_server_accept(int hSocket, struct sockaddr *net_addr)
 
 void MessageHandler(CIface *iface)
 {
+  NodeList &vNodes = GetNodeList(iface);
+
 
   vector<CNode*> vNodesCopy;
   {
@@ -1274,6 +1311,9 @@ void MessageHandler(CIface *iface)
 
 void usde_server_timer(void)
 {
+  CIface *iface = GetCoinByIndex(USDE_COIN_IFACE);
+  NodeList &vNodes = GetNodeList(USDE_COIN_IFACE);
+
 
   if (fShutdown)
     return;
@@ -1333,8 +1373,9 @@ void usde_server_timer(void)
     }
   }
 
-  MessageHandler(NULL);
+  MessageHandler(iface);
 
+event_cycle_chain(USDE_COIN_IFACE); /* DEBUG: */
 }
 
 
@@ -1360,10 +1401,15 @@ void usde_server_term(void)
 {
   unet_unbind(UNET_USDE);
 }
+void shc_server_term(void)
+{
+  unet_unbind(UNET_SHC);
+}
 
 list<CNode*> shc_vNodesDisconnected;
 static void shc_close_free(void)
 {
+  NodeList &vNodes = GetNodeList(SHC_COIN_IFACE);
 
   LOCK(cs_vNodes);
   vector<CNode*> vNodesCopy = vNodes;
@@ -1433,6 +1479,8 @@ static void shc_close_free(void)
 
 void shc_server_timer(void)
 {
+  CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);
+  NodeList &vNodes = GetNodeList(SHC_COIN_IFACE);
 
   if (fShutdown)
     return;
@@ -1492,11 +1540,14 @@ void shc_server_timer(void)
     }
   }
 
-  MessageHandler(NULL);
+  MessageHandler(iface);
+
+event_cycle_chain(SHC_COIN_IFACE); /* DEBUG: TODO: uevent */
 }
 
 void shc_server_accept(int hSocket, struct sockaddr *net_addr)
 {
+  NodeList &vNodes = GetNodeList(SHC_COIN_IFACE);
 #ifdef USE_IPV6
   struct sockaddr_storage sockaddr;
 #else
@@ -1551,7 +1602,7 @@ void shc_server_accept(int hSocket, struct sockaddr *net_addr)
   }
 
 
-  CNode* pnode = new CNode(hSocket, addr, 
+  CNode* pnode = new CNode(SHC_COIN_IFACE, hSocket, addr, 
       shaddr_print(shaddr(hSocket)), inBound);
 
   //if (inBound)
@@ -1653,7 +1704,7 @@ void ThreadOpenConnections(void* parg)
 }
 #endif
 
-void static ProcessOneShot()
+void static ProcessOneShot(int ifaceIndex)
 {
     string strDest;
     {
@@ -1671,7 +1722,7 @@ void static ProcessOneShot()
             AddOneShot(strDest);
     }
 #endif
-    OpenNetworkConnection(addr, strDest.c_str());
+    OpenNetworkConnection(ifaceIndex, addr, strDest.c_str());
 }
 
 #if 0
@@ -1795,7 +1846,7 @@ void ThreadOpenConnections2(void* parg)
 
 
 // if succesful, this moves the passed grant to the constructed node
-bool OpenNetworkConnection(const CAddress& addrConnect, const char *strDest)
+bool OpenNetworkConnection(int ifaceIndex, const CAddress& addrConnect, const char *strDest)
 {
     //
     // Initiate outbound network connection
@@ -1804,14 +1855,14 @@ bool OpenNetworkConnection(const CAddress& addrConnect, const char *strDest)
         return false;
     if (!strDest)
         if (IsLocal(addrConnect) ||
-            FindNode((CNetAddr)addrConnect) || CNode::IsBanned(addrConnect) ||
-            FindNode(addrConnect.ToStringIPPort().c_str()))
+            FindNode(ifaceIndex, (CNetAddr)addrConnect) || CNode::IsBanned(addrConnect) ||
+            FindNode(ifaceIndex, addrConnect.ToStringIPPort().c_str()))
             return false;
-    if (strDest && FindNode(strDest))
+    if (strDest && FindNode(ifaceIndex, strDest))
         return false;
 
     vnThreadsRunning[THREAD_OPENCONNECTIONS]--;
-    CNode* pnode = ConnectNode(addrConnect, strDest);
+    CNode* pnode = ConnectNode(ifaceIndex, addrConnect, strDest);
     vnThreadsRunning[THREAD_OPENCONNECTIONS]++;
     if (fShutdown)
         return false;
@@ -1936,7 +1987,7 @@ void ThreadMessageHandler2(void* parg)
 
 
 
-bool BindListenPort(const CService &addrBind, string& strError)
+bool BindListenPort(int ifaceIndex, const CService &addrBind, string& strError)
 {
     strError = "";
     int nOne = 1;
@@ -2038,13 +2089,14 @@ bool BindListenPort(const CService &addrBind, string& strError)
     vhListenSocket.push_back(hListenSocket);
 
     if (addrBind.IsRoutable() && fDiscover)
-        AddLocal(addrBind, LOCAL_BIND);
+        AddLocal(ifaceIndex, addrBind, LOCAL_BIND);
 
     return true;
 }
 
 void static Discover()
 {
+int idx;
     if (!fDiscover)
         return;
 
@@ -2058,7 +2110,8 @@ void static Discover()
         {
             BOOST_FOREACH (const CNetAddr &addr, vaddr)
             {
-                AddLocal(addr, LOCAL_IF);
+for (idx = 0; idx < MAX_COIN_IFACE; idx++)
+                AddLocal(ifaceIndex, addr, LOCAL_IF);
             }
         }
     }
@@ -2077,7 +2130,8 @@ void static Discover()
             {
                 struct sockaddr_in* s4 = (struct sockaddr_in*)(ifa->ifa_addr);
                 CNetAddr addr(s4->sin_addr);
-                if (AddLocal(addr, LOCAL_IF))
+for (idx = 0; idx < MAX_COIN_IFACE; idx++) 
+                if (AddLocal(idx, addr, LOCAL_IF))
                     fprintf(stderr, "IPv4 %s: %s\n", ifa->ifa_name, addr.ToString().c_str());
             }
 #ifdef USE_IPV6
@@ -2085,7 +2139,8 @@ void static Discover()
             {
                 struct sockaddr_in6* s6 = (struct sockaddr_in6*)(ifa->ifa_addr);
                 CNetAddr addr(s6->sin6_addr);
-                if (AddLocal(addr, LOCAL_IF))
+for (idx = 0; idx < MAX_COIN_IFACE; idx++) 
+                if (AddLocal(idx, addr, LOCAL_IF))
                     fprintf(stderr, "IPv6 %s: %s\n", ifa->ifa_name, addr.ToString().c_str());
             }
 #endif
@@ -2098,28 +2153,29 @@ void static Discover()
     GetMyExternalIP();
 }
 
-bool static Bind(const CService &addr, bool fError = true) {
+bool static Bind(int ifaceIndex, const CService &addr, bool fError = true) {
     if (IsLimited(addr))
         return false;
     std::string strError;
-    if (!BindListenPort(addr, strError)) {
+    if (!BindListenPort(ifaceIndex, addr, strError)) {
         return false;
     }
     return true;
 }
 
-void BindServer(void)
+void BindServer(int ifaceIndex)
 {
+  CIface *iface = GetCoinByIndex(ifaceIndex);
   struct in_addr inaddr_any;
   inaddr_any.s_addr = INADDR_ANY;
   bool fBound = false;
 
 #ifdef USE_IPV6
   if (!IsLimited(NET_IPV6))
-    fBound |= Bind(CService(in6addr_any, GetListenPort()), false);
+    fBound |= Bind(ifaceIndex, CService(in6addr_any, GetListenPort(iface)), false);
 #endif
   if (!IsLimited(NET_IPV4))
-    fBound |= Bind(CService(inaddr_any, GetListenPort()), !fBound);
+    fBound |= Bind(ifaceIndex, CService(inaddr_any, GetListenPort(iface)), !fBound);
 
   fprintf(stderr, "Coin server has been started.\n");
 }
@@ -2138,8 +2194,10 @@ void StartCoinServer(void)
     semOutbound = new CSemaphore(nMaxOutbound);
   }
 
+#if 0
   if (pnodeLocalHost == NULL)
     pnodeLocalHost = new CNode(INVALID_SOCKET, CAddress(CService("127.0.0.1", 0), nLocalServices));
+#endif
 
   Discover();
 
@@ -2150,7 +2208,7 @@ bool StopNode()
 {
     fprintf(stderr, "StopNode()\n");
     fShutdown = true;
-    nTransactionsUpdated++;
+   // nTransactionsUpdated++;
     int64 nStart = GetTime();
     if (semOutbound)
         for (int i=0; i<MAX_OUTBOUND_CONNECTIONS; i++)
@@ -2194,6 +2252,7 @@ bool StopNode()
     return true;
 }
 
+#if 0
 class CNetCleanup
 {
 public:
@@ -2218,6 +2277,7 @@ public:
     }
 }
 instance_of_cnetcleanup;
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -2248,10 +2308,24 @@ void start_node_peer(const char *host, int port)
     return; /* already known */
 
   if (!port)
-    port = USDE_COIN_DAEMON_PORT;
+    return;
 
-  if (Lookup(host, vserv, port, false)) {
-    OpenNetworkConnection(CAddress(vserv));
+/* DEBUG: sloppie */
+int ifaceIndex = -1;
+int i;
+  for (i = 0; i < MAX_COIN_IFACE; i++) {
+CIface *iface = GetCoinByIndex(i);
+if (iface->port == port)
+  break;
+} 
+if (i != MAX_COIN_IFACE)
+  ifaceIndex = i;
+//    port = USDE_COIN_DAEMON_PORT;
+
+  if (ifaceIndex != -1) {
+    if (Lookup(host, vserv, port, false)) {
+      OpenNetworkConnection(ifaceIndex, CAddress(vserv));
+    }
   }
 
 }
@@ -2427,6 +2501,7 @@ void GetMyExternalIP(void)
 {
   struct in_addr addr;
   char buf[256];
+  int idx;
   int err;
 
   err = check_ip("91.198.22.70", &addr);
@@ -2437,7 +2512,8 @@ void GetMyExternalIP(void)
   if (!addrLocalHost.IsValid() || !addrLocalHost.IsRoutable())
     return;
 
-  AddLocal(addrLocalHost, LOCAL_HTTP);
+  for (idx = 0; idx < MAX_COIN_IFACE; idx++)
+    AddLocal(idx, addrLocalHost, LOCAL_HTTP);
 
   sprintf(buf, "GetMyExternalIP: listening on IP addr '%s'.", inet_ntoa(addr));
   shcoind_log(buf);

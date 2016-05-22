@@ -40,9 +40,6 @@ void AddOneShot(std::string strDest);
 bool RecvLine(SOCKET hSocket, std::string& strLine);
 bool GetMyExternalIP(CNetAddr& ipRet);
 void AddressCurrentlyConnected(const CService& addr);
-CNode* FindNode(const CNetAddr& ip);
-CNode* FindNode(const CService& ip);
-CNode* ConnectNode(CAddress addrConnect, const char *strDest = NULL, int64 nTimeout=0);
 void MapPort();
 unsigned short GetListenPort();
 bool BindListenPort(const CService &bindAddr, std::string& strError=REF(std::string()));
@@ -67,12 +64,15 @@ bool IsLimited(enum Network net);
 bool IsLimited(const CNetAddr& addr);
 bool AddLocal(const CService& addr, int nScore = LOCAL_NONE);
 bool AddLocal(const CNetAddr& addr, int nScore = LOCAL_NONE);
-bool SeenLocal(const CService& addr);
 bool IsLocal(const CService& addr);
 bool GetLocal(CService &addr, const CNetAddr *paddrPeer = NULL);
 bool IsReachable(const CNetAddr &addr);
 void SetReachable(enum Network net, bool fFlag = true);
 CAddress GetLocalAddress(const CNetAddr *paddrPeer = NULL);
+
+
+CNode* ConnectNode(int ifaceIndex, CAddress addrConnect, const char *strDest = NULL, int64 nTimeout=0);
+bool SeenLocal(int ifaceIndex, const CService& addr);
 
 
 enum
@@ -123,9 +123,7 @@ extern bool fUseUPnP;
 extern uint64 nLocalServices;
 extern uint64 nLocalHostNonce;
 extern boost::array<int, THREAD_MAX> vnThreadsRunning;
-//extern CAddrMan addrman;
 
-extern std::vector<CNode*> vNodes;
 extern CCriticalSection cs_vNodes;
 extern std::map<CInv, CDataStream> mapRelay;
 extern std::deque<std::pair<int64, CInv> > vRelayExpiration;
@@ -207,6 +205,7 @@ public:
     std::set<CAddress> setAddrKnown;
     bool fGetAddr;
     std::set<uint256> setKnown;
+    mutable int ifaceIndex;
 
     // inventory based relay
     mruset<CInv> setInventoryKnown;
@@ -214,8 +213,9 @@ public:
     CCriticalSection cs_inventory;
     std::multimap<int64, CInv> mapAskFor;
 
-    CNode(SOCKET hSocketIn, CAddress addrIn, std::string addrNameIn = "", bool fInboundIn=false) : vSend(SER_NETWORK, MIN_PROTO_VERSION), vRecv(SER_NETWORK, MIN_PROTO_VERSION)
+    CNode(int ifaceIndexIn, SOCKET hSocketIn, CAddress addrIn, std::string addrNameIn = "", bool fInboundIn=false) : vSend(SER_NETWORK, MIN_PROTO_VERSION), vRecv(SER_NETWORK, MIN_PROTO_VERSION)
     {
+        ifaceIndex = ifaceIndexIn;
         nServices = 0;
         hSocket = hSocketIn;
         nLastSend = 0;
@@ -654,23 +654,25 @@ public:
 
 
 
+/** Put on lists to offer to the other nodes */
 inline void RelayInventory(const CInv& inv)
 {
-    // Put on lists to offer to the other nodes
-    {
-        LOCK(cs_vNodes);
-        BOOST_FOREACH(CNode* pnode, vNodes)
-            pnode->PushInventory(inv);
-    }
+  NodeList &vNodes = GetNodeList(inv.ifaceIndex);
+  {
+    LOCK(cs_vNodes);
+    BOOST_FOREACH(CNode* pnode, vNodes)
+      pnode->PushInventory(inv);
+  }
 }
 
-template<typename T>
+  template<typename T>
 void RelayMessage(const CInv& inv, const T& a)
 {
-    CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
-    ss.reserve(10000);
-    ss << a;
-    RelayMessage(inv, ss);
+  CIface *iface = GetCoinByIndex(inv.ifaceIndex);
+  CDataStream ss(SER_NETWORK, PROTOCOL_VERSION(iface));
+  ss.reserve(10000);
+  ss << a;
+  RelayMessage(inv, ss);
 }
 
 template<>

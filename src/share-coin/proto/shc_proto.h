@@ -36,16 +36,14 @@
 
 #define SHC_MAX_GETADDR 2500
 
+static const int SHC_PROTOCOL_VERSION = 2000000;
+
 #define SHC_COIN (uint64_t)100000000
 static const unsigned int SHC_MAX_BLOCK_SIZE = 4096000;
-static const unsigned int SHC_MAX_BLOCK_SIZE_GEN = 2048000;
-static const unsigned int SHC_MAX_BLOCK_SIGOPS = 81920;
-static const unsigned int SHC_MAX_ORPHAN_TRANSACTIONS = 4096;
 static const int64 SHC_MIN_TX_FEE = 10000;
 static const int64 SHC_MIN_RELAY_TX_FEE = 10000;
-static const int64 SHC_MAX_MONEY = 320000000000 * SHC_COIN; /* 320bil max */
+static const int64 SHC_MAX_MONEY = 80000000000 * SHC_COIN; /* 80bil max */
 static const int SHC_COINBASE_MATURITY = 60;
-static const unsigned int SHC_LOCKTIME_THRESHOLD = 500000000; // Tue Nov  5 00:53:20 1985 UTC
 
 
 

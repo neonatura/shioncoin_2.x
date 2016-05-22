@@ -34,10 +34,55 @@
 #define __SHC_BLOCK_H__
 
 
+#include <boost/assign/list_of.hpp>
+#include <boost/array.hpp>
+#include <boost/algorithm/string/replace.hpp>
+#include <share.h>
+
+
+class SHC_CTxMemPool : public CTxMemPool
+{
+
+  public:
+    bool accept(CTxDB& txdb, CTransaction &tx, bool fCheckInputs, bool* pfMissingInputs);
+    bool addUnchecked(const uint256& hash, CTransaction &tx);
+    bool remove(CTransaction &tx);
+    void queryHashes(std::vector<uint256>& vtxid);
+
+};
+
+
+
+
+extern SHC_CTxMemPool SHC_mempool;
+
+extern CBlockIndex* SHC_pindexGenesisBlock;
+extern int SHC_nBestHeight;
+extern CBigNum SHC_bnBestChainWork;
+extern CBigNum SHC_bnBestInvalidWork;
+extern uint256 SHC_hashBestChain;
+extern CBlockIndex* SHC_pindexBest;
+extern int64 SHC_nTimeBestReceived;
+
+extern std::map<uint256, SHCBlock*> SHC_mapOrphanBlocks;
+extern std::multimap<uint256, SHCBlock*> SHC_mapOrphanBlocksByPrev;
+extern std::map<uint256, std::map<uint256, CDataStream*> > SHC_mapOrphanTransactionsByPrev;
+extern std::map<uint256, CDataStream*> SHC_mapOrphanTransactions;
+extern uint256 shc_hashGenesisBlock;
+
 
 
 CBlock* shc_CreateNewBlock(CReserveKey& reservekey);
 
+bool shc_CreateGenesisBlock();
+
+bool shc_SetBestChain(CBlock *block);
+
+
+bool shc_ProcessBlock(CNode* pfrom, CBlock* pblock);
+
+
+uint256 shc_GetOrphanRoot(const CBlock* pblock);
 
 
 #endif /* ndef __SHC_BLOCK_H__ */

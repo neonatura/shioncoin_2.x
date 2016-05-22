@@ -36,14 +36,15 @@ common_includes = \
 	$(top_srcdir)/src/share-lib/net/shnet.h \
 	unet/unet.h \
 	server/block.h \
+	server/chain.h \
+	server/global.h \
 	server/allocators.h \
 	server/base58.h \
 	server/bignum.h \
 	server/rpc_proto.h \
-	server/checkpoints.h \
 	server/compat.h \
 	server/crypter.h \
-	server/db.h \
+	server/txidx.h \
 	server/init.h \
 	server/key.h \
 	server/keystore.h \
@@ -104,22 +105,27 @@ server_sources = \
 	server/usde/usde_block.h \
 	server/usde/usde_wallet.cpp \
 	server/usde/usde_wallet.h \
+	server/usde/usde_txidx.cpp \
+	server/usde/usde_txidx.h \
 	server/shc/shc_netmsg.cpp \
 	server/shc/shc_netmsg.h \
 	server/shc/shc_block.cpp \
 	server/shc/shc_block.h \
 	server/shc/shc_wallet.cpp \
 	server/shc/shc_wallet.h \
+	server/shc/shc_txidx.cpp \
+	server/shc/shc_txidx.h \
 	server/block.cpp \
+	server/chain.cpp \
+	server/global.cpp \
+	server/block_merkle.cpp \
 	server/rpc_proto.cpp \
-	server/checkpoints.cpp \
 	server/crypter.cpp \
-	server/db.cpp \
+	server/txidx.cpp \
 	server/init.cpp \
 	server/key.cpp \
 	server/keystore.cpp \
 	server/main.cpp \
-	server/noui.cpp \
 	server/rpcdump.cpp \
 	server/rpcnet.cpp \
 	server/rpcrawtransaction.cpp \
@@ -144,8 +150,15 @@ tool_sources = \
 	server/addrman.cpp \
 	tool/tool_irc.cpp
 
-bin_PROGRAMS = shcoin
+bin_PROGRAMS = shcointool
 sbin_PROGRAMS = shcoind
+bin_SCRIPTS = usde shc
+
+usde: shcointool
+	ln -sf shcointool usde
+
+shc: shcointool
+	ln -sf shcointool shc
 
 shcoind_SOURCES = \
 	$(common_includes) $(common_sources) \
@@ -165,19 +178,19 @@ shcoind_CXXFLAGS += -I$(LIBSHARE)/include
 endif
 shcoind_LDADD += -lboost_system -lboost_filesystem -lboost_thread -ldb_cxx -ldl
 
-shcoin_SOURCES = $(common_includes) $(common_sources) \
+shcointool_SOURCES = $(common_includes) $(common_sources) \
 	shcoind_tool.cpp clientrpc_iface.cpp $(tool_sources)
-shcoin_LDADD = \
+shcointool_LDADD = \
 	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a 
-shcoin_CFLAGS = -DSHCOIN_CLIENT -I$(srcdir)/server -I$(top_srcdir)/src/share-coin/blockchain -I$(srcdir)/proto
-shcoin_CXXFLAGS = -DSHCOIN_CLIENT \
+shcointool_CFLAGS = -DSHCOIN_CLIENT -I$(srcdir)/server -I$(top_srcdir)/src/share-coin/blockchain -I$(srcdir)/proto
+shcointool_CXXFLAGS = -DSHCOIN_CLIENT \
 	-I$(srcdir)/server -I$(top_srcdir)/src/share-coin/blockchain -I$(srcdir)/proto -DOS_LINUX
 if STATIC_LIBSHARE
-shcoin_LDADD += $(LIBSHARE)/src/share-lib/libshare.a
-shcoin_CFLAGS += -I$(LIBSHARE)/include
-shcoin_CXXFLAGS += -I$(LIBSHARE)/include
+shcointool_LDADD += $(LIBSHARE)/src/share-lib/libshare.a
+shcointool_CFLAGS += -I$(LIBSHARE)/include
+shcointool_CXXFLAGS += -I$(LIBSHARE)/include
 endif
-shcoin_LDADD += -lboost_system -lboost_filesystem -lboost_thread -ldb_cxx -ldl
+shcointool_LDADD += -lboost_system -lboost_filesystem -lboost_thread -ldb_cxx -ldl
 
 #noinst_LIBRARIES = libleveldb.a
 #libleveldb_a_CXXFLAGS = \

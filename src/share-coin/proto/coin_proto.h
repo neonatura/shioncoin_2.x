@@ -30,6 +30,7 @@
 
 
 #ifdef __cplusplus
+#include <vector>
 extern "C" {
 #endif
 
@@ -39,6 +40,13 @@ extern "C" {
 #define SHC_COIN_IFACE 2
 #define MAX_COIN_IFACE 3
 
+
+#define DEFAULT_MAX_ORPHAN_TRANSACTIONS 100
+#define DEFAULT_MAX_ORPHAN_BLOCKS 750
+extern int MAX_ORPHAN_TRANSACTIONS;
+extern int MAX_ORPHAN_BLOCKS;
+
+
 #define COIN_IFACE_VERSION(_maj, _min, _rev, _bui) \
   ( \
    (1000000 * (_maj)) + \
@@ -46,6 +54,14 @@ extern "C" {
    (100 * (_rev)) + \
    (1 * (_bui)) \
   )
+
+
+#define MAX_BLOCK_SIGOPS(_iface) \
+  ((_iface)->max_block_size / 50)
+
+#define MAX_BLOCK_SIZE_GEN(_iface) \
+  ((_iface)->max_block_size / 2)
+
 
 struct coin_iface_t;
 typedef int (*coin_f)(struct coin_iface_t * /*iface*/, void * /* arg */);
@@ -56,21 +72,18 @@ typedef struct coin_iface_t
 {
   /* lowercase 'common' name of currency */
   char name[MAX_SHARE_NAME_LENGTH];
-  int proto_ver;
+  int client_ver;
   int block_ver;
+  int proto_ver;
 
   /* socket */
   int port;
 
   uint64_t max_block_size;
-  uint64_t max_block_size_gen;
-  uint64_t max_block_sigops;
-  uint64_t max_orphan_transactions;
   uint64_t min_tx_fee;
   uint64_t min_relay_tx_fee;
   uint64_t max_money;
   uint64_t coinbase_maturity;
-  uint64_t locktime_threshold;
 
   /* coin operations */
   coin_f op_init;
@@ -80,21 +93,18 @@ typedef struct coin_iface_t
   coin_f op_peer_add;
   coin_f op_peer_recv;
   coin_f op_block_new;
+  coin_f op_block_process;
   coin_f op_block_templ;
-  coin_f op_block_submit;
-  coin_f op_block_info;
+  coin_f op_block_bestchain;
   coin_f op_tx_new;
-  coin_f op_tx_info;
-  coin_f op_addr_new;
-  coin_f op_addr_import;
-  coin_f op_addr_info;
-  coin_f op_account_new;
-  coin_f op_account_move;
-  coin_f op_account_info;
+  coin_f op_tx_pool;
 
   bc_t *bc_block;
   bc_t *bc_tx;
   double blk_diff; /* next block difficulty */
+  uint64_t block_max; /* best block height */
+  uint64_t tx_tot; /* nTransactionsUpdated */
+  bc_hash_t block_besthash; /* best block hash */
 } coin_iface_t;
 
 typedef struct coin_iface_t CIface;
@@ -108,6 +118,7 @@ coin_iface_t *GetCoinByIndex(int index);
 coin_iface_t *GetCoin(const char *name);
 
 
+
 /* currency interfaces */
 #include "usde_proto.h"
 #include "shc_proto.h"
@@ -115,6 +126,12 @@ coin_iface_t *GetCoin(const char *name);
 
 #ifdef __cplusplus
 }
+
+class CNode;
+typedef std::vector<CNode *> NodeList;
+NodeList& GetNodeList(int ifaceIndex);
+NodeList& GetNodeList(CIface *iface);
 #endif
+
 
 #endif /* ndef __COIN_PROTO_H__ */

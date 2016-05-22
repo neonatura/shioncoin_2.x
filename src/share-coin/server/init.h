@@ -5,7 +5,7 @@
 
 #include "wallet.h"
 
-extern CWallet* pwalletMain;
+//extern CWallet* pwalletMain;
 //std::string HelpMessage();
 
 void StartServerShutdown();
