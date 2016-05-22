@@ -320,10 +320,13 @@ int c_processblock(CBlock* pblock)
     return (BLKERR_CHECKPOINT);
   }
 
-  if (IsInitialBlockDownload(pblock->ifaceIndex)) {
-    /* let's not and pretend we did */
-    return (0);
+  CBlockIndex *pindexBest = GetBestBlockIndex(pblock->ifaceIndex);
+  if (pindexBest && pindexBest->GetBlockHash() != pblock->hashPrevBlock) {
+    /* wrong chain */
+fprintf(stderr, "DEBUG: c_processblock: skipping submitted block '%s'\n", pblock->GetHash().GetHex().c_str());
+    return (BLKERR_INVALID_JOB);
   }
+
 
   // Store to disk
   if (!pblock->AcceptBlock()) {
@@ -543,7 +546,7 @@ const char *c_getblocktransactions(int ifaceIndex)
   }
 */
 
-  if ((int)vNodes.size() > 1) { /* if more than one usde server connection */
+  if ((int)vNodes.size() >= 1) { /* if more than one coin connection */
     // iterate backwards until we have nCount items to return:
     for (TxItems::reverse_iterator it = txByTime.rbegin(); it != txByTime.rend(); ++it)
     {

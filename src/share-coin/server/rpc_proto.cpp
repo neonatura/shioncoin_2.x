@@ -227,6 +227,8 @@ void WalletTxToJSON(int ifaceIndex, const CWalletTx& wtx, Object& entry)
     {
         entry.push_back(Pair("blockhash", wtx.hashBlock.GetHex()));
         entry.push_back(Pair("blockindex", wtx.nIndex));
+    } else {
+      fprintf(stderr, "DEBUG: WalletTxToJSON: ifaceIndex(%d) wtx(%s): !confirmed; depth = %d\n", ifaceIndex, wtx.GetHash().GetHex().c_str(), confirms);
     }
     entry.push_back(Pair("txid", wtx.GetHash().GetHex()));
     entry.push_back(Pair("time", (boost::int64_t)wtx.GetTxTime()));
@@ -1615,14 +1617,15 @@ Value rpc_wallet_import(CIface *iface, const Array& params, bool fHelp)
   CWallet *pwalletMain = GetWallet(iface);
   int ifaceIndex = GetCoinIndex(iface);
 
-  if (fHelp || params.size() < 1 || params.size() > 2)
+  if (fHelp || params.size() != 2) {
     throw runtime_error(
-        "wallet.import <privkey> [label]\n"
+        "wallet.import <priv-key> <account>\n"
         "Adds a private key (as returned by wallet.key) to your wallet.");
+  }
 
   string strSecret = params[0].get_str();
   string strLabel = "";
-  if (params.size() > 1)
+//  if (params.size() > 1)
     strLabel = params[1].get_str();
   CBitcoinSecret vchSecret;
   bool fGood = vchSecret.SetString(strSecret);

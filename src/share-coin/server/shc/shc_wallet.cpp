@@ -259,6 +259,7 @@ int SHCWallet::ScanForWalletTransactions(CBlockIndex* pindexStart, bool fUpdate)
   int ret = 0;
 
   CBlockIndex* pindex = pindexStart;
+fprintf(stderr, "DEBUG: ScanForWalletTransactions: pindexStart '%s'\n", pindexStart->GetBlockHash().GetHex().c_str());
   {
     LOCK(cs_wallet);
     while (pindex)

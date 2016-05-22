@@ -32,6 +32,7 @@
 #include "server/rpc_proto.h"
 //#include "shcoind_rpc.h"
 #include "usde/usde_netmsg.h"
+#include "shc/shc_netmsg.h"
 #include "chain.h"
 
 #ifdef WIN32
@@ -1114,6 +1115,20 @@ void usde_server_close(int fd, struct sockaddr *addr)
   }
 
 }
+void shc_server_close(int fd, struct sockaddr *addr)
+{
+  NodeList &vNodes = GetNodeList(SHC_COIN_IFACE);
+
+  LOCK(cs_vNodes);
+  vector<CNode*> vNodesCopy = vNodes;
+  BOOST_FOREACH(CNode* pnode, vNodesCopy)
+  {
+    if (pnode->hSocket == fd) {
+      pnode->fDisconnect = true;
+    }
+  }
+
+}
 
 list<CNode*> vNodesDisconnected;
 void usde_close_free(void)
@@ -1262,7 +1277,7 @@ void usde_server_accept(int hSocket, struct sockaddr *net_addr)
   shared_addr_submit(shaddr_print(net_addr));
 }
 
-void MessageHandler(CIface *iface)
+void usde_MessageHandler(CIface *iface)
 {
   NodeList &vNodes = GetNodeList(iface);
 
@@ -1295,6 +1310,52 @@ void MessageHandler(CIface *iface)
       TRY_LOCK(pnode->cs_vSend, lockSend);
       if (lockSend)
         usde_SendMessages(iface, pnode, pnode == pnodeTrickle);
+    }
+    if (fShutdown)
+      return;
+  }
+
+  {
+    LOCK(cs_vNodes);
+    BOOST_FOREACH(CNode* pnode, vNodesCopy)
+      pnode->Release();
+  }
+
+
+}
+
+void shc_MessageHandler(CIface *iface)
+{
+  NodeList &vNodes = GetNodeList(iface);
+
+  vector<CNode*> vNodesCopy;
+  {
+    LOCK(cs_vNodes);
+    vNodesCopy = vNodes;
+    BOOST_FOREACH(CNode* pnode, vNodesCopy)
+      pnode->AddRef();
+  }
+
+  // Poll the connected nodes for messages
+  CNode* pnodeTrickle = NULL;
+  if (!vNodesCopy.empty())
+    pnodeTrickle = vNodesCopy[GetRand(vNodesCopy.size())];
+  BOOST_FOREACH(CNode* pnode, vNodesCopy)
+  {
+    // Receive messages
+    {
+      TRY_LOCK(pnode->cs_vRecv, lockRecv);
+      if (lockRecv)
+        shc_ProcessMessages(iface, pnode);
+    }
+    if (fShutdown)
+      return;
+
+    // Send messages
+    {
+      TRY_LOCK(pnode->cs_vSend, lockSend);
+      if (lockSend)
+        shc_SendMessages(iface, pnode, pnode == pnodeTrickle);
     }
     if (fShutdown)
       return;
@@ -1373,7 +1434,7 @@ void usde_server_timer(void)
     }
   }
 
-  MessageHandler(iface);
+  usde_MessageHandler(iface);
 
 event_cycle_chain(USDE_COIN_IFACE); /* DEBUG: */
 }
@@ -1540,7 +1601,7 @@ void shc_server_timer(void)
     }
   }
 
-  MessageHandler(iface);
+  shc_MessageHandler(iface);
 
 event_cycle_chain(SHC_COIN_IFACE); /* DEBUG: TODO: uevent */
 }
@@ -1620,10 +1681,6 @@ void shc_server_accept(int hSocket, struct sockaddr *net_addr)
   shared_addr_submit(shaddr_print(net_addr));
 }
 
-void shc_server_close(int fd, struct sockaddr *addr)
-{
-  unet_unbind(SHC_COIN_IFACE);
-}
 
 
 

@@ -71,7 +71,7 @@ void incr_task_work_time(void)
 #endif
 
 static int work_idx = 0;
-
+static char last_payout_crc[MAX_COIN_IFACE];
 
 /**
  * Monitors when a new accepted block becomes confirmed.
@@ -79,7 +79,6 @@ static int work_idx = 0;
  */
 static void check_payout(int ifaceIndex)
 {
-  static char last_payout_hash[1024];
   shjson_t *tree;
   shjson_t *block;
   user_t *user;
@@ -94,6 +93,7 @@ static void check_payout(int ifaceIndex)
 
   templ_json = (char *)getblocktransactions(ifaceIndex);
   if (!templ_json) {
+fprintf(stderr, "DEBUG: check_payout: cannot get block transactions\n");
     return;
   }
 
@@ -118,9 +118,9 @@ static void check_payout(int ifaceIndex)
     return;
   }
 
-  if (0 == strcmp(last_payout_hash, ""))
-    strcpy(last_payout_hash, block_hash);
-  if (0 == strcmp(last_payout_hash, block_hash)) {
+  if (last_payout_crc[ifaceIndex] == 0)
+    last_payout_crc[ifaceIndex] = shcrc(block_hash, strlen(block_hash));
+  if (last_payout_crc[ifaceIndex] == shcrc(block_hash, strlen(block_hash))) {
     shjson_free(&tree);
     return;
   }
@@ -134,9 +134,13 @@ static void check_payout(int ifaceIndex)
     double fee;
 
     if (amount < 1) {
+fprintf(stderr, "DEBUG: generate amount < 1\n");
       shjson_free(&tree);
       return;
     }
+    if (!client_list)
+      return;
+
     fee = amount * 0.001; /* 0.1% */
     amount -= fee;
 
@@ -144,25 +148,23 @@ static void check_payout(int ifaceIndex)
     for (user = client_list; user; user = user->next) {
       for (i = 0; i < MAX_ROUNDS_PER_HOUR; i++)
         tot_shares += user->block_avg[i];
+      tot_shares += user->block_tot;
     }
+    tot_shares = MAX(1.0, tot_shares);
 
-    if (tot_shares < 1)
-      return; /* wait until users have registered round shares. */
-    
     /* divvy up profit */
     weight = amount / tot_shares;
     for (user = client_list; user; user = user->next) {
-      memset(uname, 0, sizeof(uname));
-      strncpy(uname, user->worker, sizeof(uname) - 1);
-      strtok(uname, "."); 
-      if (!*uname)
+      if (!*user->worker) 
         continue;
 
       reward = 0;
       for (i = 0; i < MAX_ROUNDS_PER_HOUR; i++)
         reward += weight * user->block_avg[i];
-      if (reward >= 1)
+      reward += weight * user->block_tot;
+      if (reward >= 0.0000001) { 
         user->balance[ifaceIndex] += reward;
+      }
     }
 
 /*
@@ -170,12 +172,11 @@ static void check_payout(int ifaceIndex)
     if (fee >= 1.0) 
       setblockreward("bank", fee);
 */
-
   }
 
   shjson_free(&tree);
 
-  strcpy(last_payout_hash, block_hash);
+  last_payout_crc[ifaceIndex] = shcrc(block_hash, strlen(block_hash));
 
 }
 

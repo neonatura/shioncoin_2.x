@@ -457,8 +457,7 @@ bool CWallet::AddToWalletIfInvolvingMe(const CTransaction& tx, const CBlock* pbl
         LOCK(cs_wallet);
         bool fExisted = mapWallet.count(hash);
         if (fExisted && !fUpdate) return false;
-        if (fExisted || IsMine(tx) || IsFromMe(tx))
-        {
+        if (fExisted || IsFromMe(tx) || IsMine(tx)) {
             CWalletTx wtx(this,tx);
             // Get merkle branch if transaction was found in a block
             if (pblock) {
@@ -806,8 +805,6 @@ int CWallet::ScanForWalletTransactions(CBlockIndex* pindexStart, bool fUpdate)
 int CWallet::ScanForWalletTransaction(const uint256& hashTx)
 {
     CTransaction tx;
-
-fprintf(stderr, "DEBUG: CWallet::ScanForWalletTransaction: hashTx '%s'\n", hashTx.GetHex().c_str());
 
     tx.ReadTx(ifaceIndex, hashTx);
 //    tx.ReadFromDisk(COutPoint(hashTx, 0));
@@ -1904,7 +1901,6 @@ int64 GetAccountBalance(int ifaceIndex, CWalletDB& walletdb, const string& strAc
 {
   CWallet *pwalletMain = GetWallet(ifaceIndex);
   int64 nBalance = 0;
-fprintf(stderr, "DEBUG: GetAccountBalance()\n");
 
   /* wallet transactions */
   for (map<uint256, CWalletTx>::iterator it = pwalletMain->mapWallet.begin(); it != pwalletMain->mapWallet.end(); ++it)
@@ -1919,7 +1915,6 @@ fprintf(stderr, "DEBUG: GetAccountBalance()\n");
     if (nReceived != 0 && wtx.GetDepthInMainChain(ifaceIndex) >= nMinDepth)
       nBalance += nReceived;
     nBalance += nGenerated - nSent - nFee;
-fprintf(stderr, "DEBUG: GetAccountBalance() += %llu\n", (unsigned long long)(nGenerated - nSent - nFee)); 
   }
 
   /* internal accounting entries */

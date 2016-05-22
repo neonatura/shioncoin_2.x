@@ -364,16 +364,19 @@ int c_setblockreward(int ifaceIndex, const char *accountName, double dAmount)
   int64 nBalance;
 
   if (pwalletMain->IsLocked()) {
+fprintf(stderr, "DEBUG: c_setblockreward: wallet is locked\n");
     return (-13);
   }
+fprintf(stderr, "DEBUG: c_setblockreward: '%s' f/ %f\n", accountName, dAmount);
 
   const CBitcoinAddress address = GetAddressByAccount(pwalletMain, accountName, found);
   if (!found) {
+fprintf(stderr, "DEBUG: c_setblockreward[iface #%d]: account '%s' not found\n", ifaceIndex, accountName);
     return (-5);
   }
   if (!address.IsValid()) {
     char errbuf[1024];
-    sprintf(errbuf, "setblockreward: account '%s' has invalid usde address.", accountName);
+    sprintf(errbuf, "setblockreward: account '%s' has invalid %s address.", accountName, iface->name);
     shcoind_log(errbuf);
     //throw JSONRPCError(-5, "Invalid usde address");
     return (-5);
