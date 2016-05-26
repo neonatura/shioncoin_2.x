@@ -1229,7 +1229,6 @@ void SetBestBlockIndex(CIface *iface, CBlockIndex *pindex)
   if (!pindex)
     return;
   uint256 hash = pindex->GetBlockHash();
-fprintf(stderr, "DEBUG: info: SetBestBlockIndex[%s]: pindex hash '%s'\n", iface->name, hash.GetHex().c_str());
   memcpy(iface->block_besthash, hash.GetRaw(), sizeof(bc_hash_t));
 }
 void SetBestBlockIndex(int ifaceIndex, CBlockIndex *pindex)
@@ -1771,7 +1770,6 @@ fprintf(stderr, "DEBUG: CBlock::WriteBlock: orphan?: next index is %d, block wri
   }
   free(sBlockData);
 
-  fprintf(stderr, "DEBUG: WriteBlock: ACCEPT: nHeight(%d) hash(%s)\n", nHeight, hash.GetHex().c_str());
 
 #if 0 
   {
@@ -1795,6 +1793,8 @@ fprintf(stderr, "DEBUG: CBlock::WriteBlock: orphan?: next index is %d, block wri
   BOOST_FOREACH(CTransaction& tx, vtx) {
     tx.WriteTx(ifaceIndex, nHeight); 
   }
+
+fprintf(stderr, "DEBUG: WriteBlock: ACCEPT: nHeight(%d) hash(%s)\n", nHeight, hash.GetHex().c_str());
 
   return (true);
 }

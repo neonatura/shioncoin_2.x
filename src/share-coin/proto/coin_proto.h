@@ -103,6 +103,8 @@ typedef struct coin_iface_t
   double blk_diff; /* next block difficulty */
   uint64_t tx_tot; /* nTransactionsUpdated */
   bc_hash_t block_besthash; /* best block hash */
+  time_t net_valid;
+  time_t net_invalid;
 } coin_iface_t;
 
 typedef struct coin_iface_t CIface;

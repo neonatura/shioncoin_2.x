@@ -28,6 +28,7 @@
 #include "init.h"
 #include "strlcpy.h"
 #include "ui_interface.h"
+#include "chain.h"
 #include "shc_block.h"
 #include "shc_txidx.h"
 
@@ -322,6 +323,7 @@ bool static ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CData
 #endif
     }
 
+#if 0
     // Ask the first connected node for block updates
     static int nAskedForBlocks = 0;
     if (!pfrom->fClient && !pfrom->fOneShot &&
@@ -332,6 +334,14 @@ bool static ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CData
       nAskedForBlocks++;
       pfrom->PushGetBlocks(GetBestBlockIndex(SHC_COIN_IFACE), uint256(0));
     }
+#endif
+    CBlockIndex *pindexBest = GetBestBlockIndex(SHC_COIN_IFACE);
+    if (pindexBest) {
+      if (pindexBest->nHeight < pfrom->nStartingHeight) {
+        InitDownloadBlockchain(SHC_COIN_IFACE, pfrom->nStartingHeight);
+      }
+    }
+
 
     // Relay alerts
     {

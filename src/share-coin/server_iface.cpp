@@ -131,9 +131,18 @@ unsigned short GetListenPort(CIface *iface)
 
 void CNode::PushGetBlocks(CBlockIndex* pindexBegin, uint256 hashEnd)
 {
+
+#if 0
+  /* last block may have been orphan */
+  if (pindexBegin->pprev)
+    pindexBegin = pindexBegin->pprev;
+#endif
+
     // Filter out duplicate requests
-    if (pindexBegin == pindexLastGetBlocksBegin && hashEnd == hashLastGetBlocksEnd)
+    if (pindexBegin == pindexLastGetBlocksBegin && hashEnd == hashLastGetBlocksEnd) {
         return;
+}
+fprintf(stderr, "DEBUG: PushGetBlocks: requesting height %d to hash '%s'\n", pindexBegin->nHeight, hashEnd.GetHex().c_str());
     pindexLastGetBlocksBegin = pindexBegin;
     hashLastGetBlocksEnd = hashEnd;
 
@@ -1370,6 +1379,7 @@ void shc_MessageHandler(CIface *iface)
 
 }
 
+#define USDE_READ_BUFFER_SIZE 131072
 void usde_server_timer(void)
 {
 static int _only_once_for_now;
@@ -1394,18 +1404,18 @@ static int _only_once_for_now;
         pnode->AddRef();
     }
 
-    char pchBuf[65536];
+    static char pchBuf[USDE_READ_BUFFER_SIZE];
     BOOST_FOREACH(CNode* pnode, vNodesCopy)
     {
       if (fShutdown)
         return;
 
-      memset(pchBuf, '\000', 65536);
+      memset(pchBuf, '\000', USDE_READ_BUFFER_SIZE);
 
       /* incoming data */
       CDataStream& vRecv = pnode->vRecv;
       unsigned int nPos = vRecv.size();
-      size_t nBytes = sizeof(pchBuf);
+      size_t nBytes = USDE_READ_BUFFER_SIZE;
       int err = unet_read(pnode->hSocket, pchBuf, &nBytes);
       if (!err && nBytes > 0) { 
         vRecv.resize(nPos + nBytes);
@@ -1552,6 +1562,7 @@ static void shc_close_free(void)
   }
 }
 
+#define SHC_READ_BUFFER_SIZE 131072
 void shc_server_timer(void)
 {
   static int _only_once_for_now;
@@ -1575,18 +1586,18 @@ void shc_server_timer(void)
         pnode->AddRef();
     }
 
-    char pchBuf[65536];
+    static char pchBuf[SHC_READ_BUFFER_SIZE];
     BOOST_FOREACH(CNode* pnode, vNodesCopy)
     {
       if (fShutdown)
         return;
 
-      memset(pchBuf, '\000', 65536);
+      memset(pchBuf, '\000', SHC_READ_BUFFER_SIZE);
 
       /* incoming data */
       CDataStream& vRecv = pnode->vRecv;
       unsigned int nPos = vRecv.size();
-      size_t nBytes = sizeof(pchBuf);
+      size_t nBytes = SHC_READ_BUFFER_SIZE;
       int err = unet_read(pnode->hSocket, pchBuf, &nBytes);
       if (!err && nBytes > 0) { 
         vRecv.resize(nPos + nBytes);

@@ -156,6 +156,40 @@ bool SaveExternalBlockchainFile()
   return (false);
 }
 
+bool DownloadBlockchain()
+{
+  NodeList &vNodes = GetNodeList(chain.ifaceIndex);
+  CIface *iface;
+  CNode *pfrom;
+  time_t expire_t;
+
+  iface = GetCoinByIndex(chain.ifaceIndex);
+  if (!iface)
+    return (false);
+
+  if (vNodes.size() == 0)
+    return (false); 
+
+  CBlockIndex *pindexBest = GetBestBlockIndex(chain.ifaceIndex);
+  if (!pindexBest)
+    return (false);
+
+  if ((pindexBest->nHeight+1) >= chain.max)
+    return (false);
+
+  expire_t = time(NULL) - 120;
+  if (iface->net_valid < expire_t) { /* done w/ last round */
+if (iface->net_valid) fprintf(stderr, "DEBUG: DownloadBlockChain: last valid block received %ds ago\n", (time(NULL) - iface->net_valid)); 
+    if (iface->net_valid < iface->net_invalid)
+      return (false); /* give up */
+
+    pfrom = vNodes.front(); 
+    pfrom->PushGetBlocks(pindexBest, uint256(0));
+  }
+
+  return (true);
+}
+
 void PerformBlockChainOperation(int ifaceIndex)
 {
   char buf[1024];
@@ -178,6 +212,14 @@ void PerformBlockChainOperation(int ifaceIndex)
       ret = SaveExternalBlockchainFile();
       if (!ret) {
         sprintf(buf, "PerformBlockChainOperation: saved %u blocks to path \"%s\".", chain.total, chain.path);
+        unet_log(chain.ifaceIndex, buf);
+        memset(&chain, 0, sizeof(chain));
+      }
+      break;
+    case BCOP_DOWNLOAD:
+      ret = DownloadBlockchain();
+      if (!ret) {
+        sprintf(buf, "PerformBlockChainOperation: completed block-chain download.");
         unet_log(chain.ifaceIndex, buf);
         memset(&chain, 0, sizeof(chain));
       }
@@ -231,6 +273,32 @@ int InitChainExport(int ifaceIndex, const char *path, int max)
 
   return (0);
 } 
+
+int InitDownloadBlockchain(int ifaceIndex, int maxHeight)
+{
+
+  if (chain.mode != BCOP_DOWNLOAD) {
+    if (chain.mode != BCOP_NONE)
+      return (SHERR_AGAIN);
+
+    CBlockIndex *pindexBest = GetBestBlockIndex(ifaceIndex);
+    if (!pindexBest)
+      return (0);
+
+    if (pindexBest->nHeight >= maxHeight) {
+fprintf(stderr, "DEBUG: InitDownloadBlockchain: already at best height %d\n", pindexBest->nHeight);
+      return (0);
+    }
+
+    memset(&chain, 0, sizeof(chain));
+    chain.ifaceIndex = ifaceIndex;
+    chain.mode = BCOP_DOWNLOAD;
+  }
+  chain.max = MAX(chain.max, maxHeight);
+fprintf(stderr, "DEBUG: InitDownloadBlockchain: iface(%d) max(%d)\n", ifaceIndex, chain.max);
+  
+  return (0);
+}
 
 void event_cycle_chain(int ifaceIndex)
 {

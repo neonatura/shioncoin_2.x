@@ -1175,6 +1175,7 @@ bool usde_ProcessBlock(CNode* pfrom, CBlock* pblock)
 
   // Preliminary checks
   if (!pblock->CheckBlock()) {
+    iface->net_invalid = time(NULL);
     return error(SHERR_INVAL, "ProcessBlock() : CheckBlock FAILED");
   }
 
@@ -1205,24 +1206,30 @@ bool usde_ProcessBlock(CNode* pfrom, CBlock* pblock)
   // If don't already have its previous block, shunt it off to holding area until we get it
   if (!blockIndex->count(pblock->hashPrevBlock))
   {
-    Debug("ProcessBlock: ORPHAN BLOCK, prev=%s\n", pblock->hashPrevBlock.ToString().substr(0,20).c_str());
+    Debug("ProcessBlock: ORPHAN BLOCK, prev=%s\n", pblock->hashPrevBlock.GetHex().c_str());
     //CBlock* pblock2 = new CBlock(*pblock);
     USDEBlock* pblock2 = new USDEBlock(*pblock);
     USDE_mapOrphanBlocks.insert(make_pair(hash, pblock2));
     USDE_mapOrphanBlocksByPrev.insert(make_pair(pblock2->hashPrevBlock, pblock2));
 
     // Ask this guy to fill in what we're missing
-    if (pfrom)
+    if (pfrom) {
       pfrom->PushGetBlocks(GetBestBlockIndex(USDE_COIN_IFACE), usde_GetOrphanRoot(pblock2));
+}
+
+    iface->net_invalid = time(NULL);
     return true;
   }
 
   // Store to disk
 
   timing_init("AcceptBlock", &ts);
-  if (!pblock->AcceptBlock())
+  if (!pblock->AcceptBlock()) {
+    iface->net_invalid = time(NULL);
     return error(SHERR_INVAL, "ProcessBlock() : AcceptBlock FAILED");
+  }
   timing_term("AcceptBlock", &ts);
+  iface->net_valid = time(NULL);
 
   // Recursively process any orphan blocks that depended on this one
   vector<uint256> vWorkQueue;
@@ -1339,7 +1346,7 @@ bool USDEBlock::CheckBlock()
 bool static USDE_Reorganize(CTxDB& txdb, CBlockIndex* pindexNew, USDE_CTxMemPool *mempool)
 {
 
-fprintf(stderr, "DEBUG: USDE_Reorganize()/start\n");
+fprintf(stderr, "DEBUG: USDE_Reorganize()\n");
 
   // Find the fork
   CBlockIndex* pindexBest = GetBestBlockIndex(USDE_COIN_IFACE);
@@ -1429,8 +1436,6 @@ fprintf(stderr, "DEBUG: REORGANIZE: Connect %i blocks; %s..%s\n", vConnect.size(
   // Delete redundant memory transactions that are in the connected branch
   BOOST_FOREACH(CTransaction& tx, vDelete)
     mempool->remove(tx);
-
-fprintf(stderr, "DEBUG: USDE_Reorganize()/done\n");
 
   return true;
 }
@@ -1806,9 +1811,6 @@ bool USDEBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)
   bc_hash_t b_hash;
   int err;
 
-fprintf(stderr, "DEBUG: USDEBlock::ConnectBlock: nHeight(%d) hash(%s)\n", pindex->nHeight, pindex->GetBlockHash().GetHex().c_str());
-
-
   // Do not allow blocks that contain transactions which 'overwrite' older transactions,
   // unless those are already completely spent.
   // If such overwrites are allowed, coinbases and transactions depending upon those
@@ -1824,8 +1826,6 @@ fprintf(stderr, "DEBUG: USDEBlock::ConnectBlock: nHeight(%d) hash(%s)\n", pindex
   // BIP16 didn't become active until October 1 2012
   int64 nBIP16SwitchTime = 1349049600;
   bool fStrictPayToScriptHash = (pindex->nTime >= nBIP16SwitchTime);
-
-fprintf(stderr, "DEBUG: ConnectBlock: vtx.size() = %d\n", vtx.size()); 
 
   map<uint256, CTxIndex> mapQueuedChanges;
   int64 nFees = 0;

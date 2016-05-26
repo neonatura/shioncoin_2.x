@@ -1062,15 +1062,18 @@ bool shc_ProcessBlock(CNode* pfrom, CBlock* pblock)
     /* request missing blocks */
     if (pfrom)
       pfrom->PushGetBlocks(GetBestBlockIndex(SHC_COIN_IFACE), shc_GetOrphanRoot(pblock2));
+    iface->net_invalid = time(NULL);
     return true;
   }
 
   // Store to disk
 
   timing_init("AcceptBlock", &ts);
-  if (!pblock->AcceptBlock())
+  if (!pblock->AcceptBlock()) {
     return error(SHERR_INVAL, "ProcessBlock() : AcceptBlock FAILED");
+  }
   timing_term("AcceptBlock", &ts);
+  iface->net_valid = time(NULL);
 
   // Recursively process any orphan blocks that depended on this one
   vector<uint256> vWorkQueue;

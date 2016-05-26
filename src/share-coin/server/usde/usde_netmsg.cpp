@@ -28,6 +28,7 @@
 #include "init.h"
 #include "strlcpy.h"
 #include "ui_interface.h"
+#include "chain.h"
 #include "usde_block.h"
 #include "usde_txidx.h"
 
@@ -309,7 +310,7 @@ bool static ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CData
       addrman.Good(pfrom->addr);
 #endif
 
-      if (pfrom->fOneShot || pfrom->nVersion >= CADDR_TIME_VERSION || (int)vNodes.size() < 2) {
+      if (pfrom->fOneShot || pfrom->nVersion >= CADDR_TIME_VERSION || (int)vNodes.size() == 1) {
         pfrom->PushMessage("getaddr");
         pfrom->fGetAddr = true;
       }
@@ -323,6 +324,7 @@ bool static ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CData
 #endif
     }
 
+#if 0
     // Ask the first connected node for block updates
     static int nAskedForBlocks = 0;
     if (!pfrom->fClient && !pfrom->fOneShot &&
@@ -333,6 +335,15 @@ bool static ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CData
       nAskedForBlocks++;
       pfrom->PushGetBlocks(GetBestBlockIndex(USDE_COIN_IFACE), uint256(0));
     }
+#endif
+
+    CBlockIndex *pindexBest = GetBestBlockIndex(USDE_COIN_IFACE);
+    if (pindexBest) {
+      if (pindexBest->nHeight < pfrom->nStartingHeight) {
+        InitDownloadBlockchain(USDE_COIN_IFACE, pfrom->nStartingHeight);
+      }
+    }
+
 
     // Relay alerts
     {
@@ -491,8 +502,7 @@ bool static ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CData
         std::vector<CInv> vGetData(1,inv);
         blkidx_t blkidx = *blockIndex;
         pfrom->PushGetBlocks(blkidx[inv.hash], uint256(0));
-        if (fDebug)
-          printf("force request: %s\n", inv.ToString().c_str());
+fprintf(stderr, "DEBUG: force request: %s\n", inv.ToString().c_str());
       }
 
       // Track requests for our stuff
@@ -842,6 +852,8 @@ fprintf(stderr, "DEBUG: getheaders %d to %s\n", (pindex ? pindex->nHeight : -1),
 
 bool usde_ProcessMessages(CIface *iface, CNode* pfrom)
 {
+static unsigned char USDE_pchMessageStart[4] = { 0xd9, 0xd9, 0xf9, 0xbd };
+
 shtime_t ts;
     CDataStream& vRecv = pfrom->vRecv;
     if (vRecv.empty())
@@ -863,19 +875,19 @@ shtime_t ts;
             break;
 
         // Scan for message start
-        CDataStream::iterator pstart = search(vRecv.begin(), vRecv.end(), BEGIN(pchMessageStart), END(pchMessageStart));
+        CDataStream::iterator pstart = search(vRecv.begin(), vRecv.end(), BEGIN(USDE_pchMessageStart), END(USDE_pchMessageStart));
         int nHeaderSize = vRecv.GetSerializeSize(CMessageHeader());
         if (vRecv.end() - pstart < nHeaderSize)
         {
             if ((int)vRecv.size() > nHeaderSize)
             {
-                printf("\n\nPROCESSMESSAGE MESSAGESTART NOT FOUND\n\n");
+                fprintf(stderr, "DEBUG: USDE_PROCESSMESSAGE MESSAGESTART NOT FOUND\n");
                 vRecv.erase(vRecv.begin(), vRecv.end() - nHeaderSize);
             }
             break;
         }
         if (pstart - vRecv.begin() > 0)
-            printf("\n\nPROCESSMESSAGE SKIPPED %d BYTES\n\n", pstart - vRecv.begin());
+            fprintf(stderr, "DEBUG: PROCESSMESSAGE SKIPPED %d BYTES\n\n", pstart - vRecv.begin());
         vRecv.erase(vRecv.begin(), pstart);
 
         // Read header
@@ -884,7 +896,7 @@ shtime_t ts;
         vRecv >> hdr;
         if (!hdr.IsValid())
         {
-            printf("\n\nPROCESSMESSAGE: ERRORS IN HEADER %s\n\n\n", hdr.GetCommand().c_str());
+            fprintf(stderr, "DEBUG: PROCESSMESSAGE: ERRORS IN HEADER %s\n", hdr.GetCommand().c_str());
             continue;
         }
         string strCommand = hdr.GetCommand();
@@ -893,11 +905,12 @@ shtime_t ts;
         unsigned int nMessageSize = hdr.nMessageSize;
         if (nMessageSize > MAX_SIZE)
         {
-            printf("ProcessMessages(%s, %u bytes) : nMessageSize > MAX_SIZE\n", strCommand.c_str(), nMessageSize);
+            fprintf(stderr, "usde_ProcessMessages(%s, %u bytes) : nMessageSize > MAX_SIZE\n", strCommand.c_str(), nMessageSize);
             continue;
         }
         if (nMessageSize > vRecv.size())
         {
+            fprintf(stderr, "DEBUG: info: usde_ProcessMessages(%s, %u bytes) : nMessageSize > vRecv.size()n", strCommand.c_str(), nMessageSize);
             // Rewind and wait for rest of message
             vRecv.insert(vRecv.begin(), vHeaderSave.begin(), vHeaderSave.end());
             break;
@@ -909,8 +922,7 @@ shtime_t ts;
         memcpy(&nChecksum, &hash, sizeof(nChecksum));
         if (nChecksum != hdr.nChecksum)
         {
-            printf("ProcessMessages(%s, %u bytes) : CHECKSUM ERROR nChecksum=%08x hdr.nChecksum=%08x\n",
-               strCommand.c_str(), nMessageSize, nChecksum, hdr.nChecksum);
+            fprintf(stderr, "DEBUG: usde_ProcessMessages(%s, msg is %u bytes, buff is %u bytes) : CHECKSUM ERROR nChecksum=%08x hdr.nChecksum=%08x buff nVersion=%u\n", strCommand.c_str(), nMessageSize, (unsigned int)vRecv.size(), nChecksum, hdr.nChecksum, (unsigned int)vRecv.nVersion);
             continue;
         }
 
