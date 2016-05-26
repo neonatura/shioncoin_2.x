@@ -260,7 +260,7 @@ void bc_map_idle(bc_t *bc, bc_map_t *map)
   time_t now;
 
   now = time(NULL);
-  if ((map->stamp + 120) < now)
+  if ((map->stamp + 30) < now)
     bc_map_close(map);
 
 }

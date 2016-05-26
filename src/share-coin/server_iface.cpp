@@ -1372,6 +1372,7 @@ void shc_MessageHandler(CIface *iface)
 
 void usde_server_timer(void)
 {
+static int _only_once_for_now;
   CIface *iface = GetCoinByIndex(USDE_COIN_IFACE);
   NodeList &vNodes = GetNodeList(USDE_COIN_IFACE);
   bc_t *bc;
@@ -1437,15 +1438,18 @@ void usde_server_timer(void)
 
   usde_MessageHandler(iface);
 
-event_cycle_chain(USDE_COIN_IFACE); /* DEBUG: */
+  event_cycle_chain(USDE_COIN_IFACE); /* DEBUG: */
 
-  bc = GetBlockTxChain(iface);
-  if (bc)
-    bc_idle(bc);
+  if (!_only_once_for_now) {
+    bc = GetBlockTxChain(iface);
+    if (bc)
+      bc_idle(bc);
 
-  bc = GetBlockChain(iface);
-  if (bc)
-    bc_idle(bc);
+    bc = GetBlockChain(iface);
+    if (bc)
+      bc_idle(bc);
+    _only_once_for_now = TRUE;
+  }
 
 }
 
@@ -1550,6 +1554,7 @@ static void shc_close_free(void)
 
 void shc_server_timer(void)
 {
+  static int _only_once_for_now;
   CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);
   NodeList &vNodes = GetNodeList(SHC_COIN_IFACE);
   bc_t *bc;
@@ -1614,15 +1619,18 @@ void shc_server_timer(void)
 
   shc_MessageHandler(iface);
 
-event_cycle_chain(SHC_COIN_IFACE); /* DEBUG: TODO: uevent */
+  event_cycle_chain(SHC_COIN_IFACE); /* DEBUG: TODO: uevent */
 
-  bc = GetBlockTxChain(iface);
-  if (bc)
-    bc_idle(bc);
+  if (!_only_once_for_now) {
+    bc = GetBlockTxChain(iface);
+    if (bc)
+      bc_idle(bc);
 
-  bc = GetBlockChain(iface);
-  if (bc)
-    bc_idle(bc);
+    bc = GetBlockChain(iface);
+    if (bc)
+      bc_idle(bc);
+    _only_once_for_now = TRUE;
+  }
 }
 
 void shc_server_accept(int hSocket, struct sockaddr *net_addr)
