@@ -86,6 +86,7 @@ double speed[MAX_SPEED_STEP];
   double reward_val;
   time_t reward_time;
   uint64_t reward_height;
+  int ifaceIndex;
 
   struct user_t *next;
 } user_t;
@@ -106,6 +107,7 @@ typedef struct task_t
   long height;
   /** whether new cycle of work tasks has occurred. */
   int work_reset;
+  int ifaceIndex;
 
   /** transactions */
   char **merkle;

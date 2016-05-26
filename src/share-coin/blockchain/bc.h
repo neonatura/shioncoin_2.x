@@ -38,15 +38,15 @@ extern "C" {
 
 #define BC_MAX_NAME_LENGTH MAX_SHARE_NAME_LENGTH
 
-typedef uint64_t bc_pos_t;
+typedef uint32_t bcsize_t;
 
 typedef uint32_t bc_hash_t[8];
 
 typedef struct bc_idx_t
 {
   uint32_t jrnl;
-  uint32_t of;
-  uint32_t size;
+  bcsize_t of;
+  bcsize_t size;
   uint32_t crc;
   uint64_t __reserved_0__;
   uint64_t __reserved_1__;
@@ -60,13 +60,14 @@ typedef struct bc_hdr_t
   /** An arbritrary number verifying this is a file-map. */
   uint32_t magic;
   /** The offset of data written by the user. */
-  uint32_t of; 
+  bcsize_t of; 
 } bc_hdr_t; /* 16b */
 
 typedef struct bc_map_t
 {
   int fd;
   size_t size;
+  time_t stamp; 
   char ext[64];
   bc_hdr_t *hdr;
   uint8_t *raw;

@@ -537,7 +537,7 @@ bool static ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CData
             // and we want it right after the last block so they don't
             // wait for other stuff first.
             vector<CInv> vInv;
-            vInv.push_back(CInv(ifaceIndex, MSG_BLOCK, SHCBlock::hashBestChain));
+            vInv.push_back(CInv(ifaceIndex, MSG_BLOCK, GetBestBlockChain(iface)));
             pfrom->PushMessage("inv", vInv);
             pfrom->hashContinue = 0;
           }
@@ -691,7 +691,7 @@ fprintf(stderr, "DEBUG: getheaders %d to %s\n", (pindex ? pindex->nHeight : -1),
       shc_AddOrphanTx(vMsg);
 
       // DoS prevention: do not allow SHC_mapOrphanTransactions to grow unbounded
-      unsigned int nEvicted = shc_LimitOrphanTxSize(MAX_ORPHAN_TRANSACTIONS);
+      unsigned int nEvicted = shc_LimitOrphanTxSize(MAX_ORPHAN_TRANSACTIONS(iface));
       if (nEvicted > 0)
         printf("SHC_mapOrphan overflow, removed %u tx\n", nEvicted);
     }

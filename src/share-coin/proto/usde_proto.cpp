@@ -34,7 +34,6 @@
 #include "usde/usde_txidx.h"
 
 USDE_CTxMemPool USDEBlock::mempool;
-uint256 USDEBlock::hashBestChain;
 CBlockIndex *USDEBlock::pindexGenesisBlock = NULL;
 int64 USDEBlock::nTimeBestReceived;
 CBigNum USDEBlock::bnBestChainWork;
@@ -53,7 +52,6 @@ static int usde_init(CIface *iface, void *_unused_)
   SetWallet(USDE_COIN_IFACE, usdeWallet);
 
 
-  iface->block_max = -1;
 
 #if 0
   if (!bitdb.Open(GetDataDir())) /* DEBUG: */
@@ -204,12 +202,6 @@ return (0);
 }
 #endif
 
-static int usde_block_bestchain(CIface *iface, uint256 *hash_p)
-{
-  *hash_p = USDEBlock::hashBestChain;
-  return (0);
-}
-
 static int usde_tx_new(CIface *iface, void *arg)
 {
 return (0);
@@ -235,6 +227,7 @@ coin_iface_t usde_coin_iface = {
   USDE_PROTOCOL_VERSION, /* network protocol version */ 
   USDE_COIN_DAEMON_PORT,
   USDE_MAX_BLOCK_SIZE,
+  USDE_MAX_ORPHAN_TRANSACTIONS,
   USDE_MIN_TX_FEE,
   USDE_MIN_RELAY_TX_FEE,
   USDE_MAX_MONEY,
@@ -248,7 +241,6 @@ coin_iface_t usde_coin_iface = {
   COINF(usde_block_new),
   COINF(usde_block_process),
   COINF(usde_block_templ),
-  COINF(usde_block_bestchain),
   COINF(usde_tx_new),
   COINF(usde_tx_pool)
 };

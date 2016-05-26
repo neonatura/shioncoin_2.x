@@ -32,8 +32,6 @@
 extern "C" {
 #endif
 
-int MAX_ORPHAN_TRANSACTIONS = DEFAULT_MAX_ORPHAN_TRANSACTIONS;
-int MAX_ORPHAN_BLOCKS = DEFAULT_MAX_ORPHAN_BLOCKS;
 
 
 extern coin_iface_t usde_coin_iface;

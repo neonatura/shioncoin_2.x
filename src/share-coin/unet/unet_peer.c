@@ -261,7 +261,9 @@ void unet_peer_fill(int mode)
     sprintf(buf, "unet_peer_fill: fresh peer database [%s].", shpeer_print(&bind->peer)); 
     unet_log(mode, buf);
 
+#if 0 /* DEBUG: */
     unet_peer_fill_seed(mode);
+#endif
   }
 
   free(peer_list);

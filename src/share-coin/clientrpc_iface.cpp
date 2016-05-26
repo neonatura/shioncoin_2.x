@@ -271,8 +271,10 @@ Object CallRPC(const char *iface, const string& strMethod, const Array& params)
 
   // Parse reply
   Value valReply;
-  if (!read_string(strReply, valReply))
+  if (!read_string(strReply, valReply)) {
+fprintf(stderr, "DEBUG: strReply: %s\n", strReply.c_str());
     throw runtime_error("couldn't parse reply from server");
+}
   const Object& reply = valReply.get_obj();
   if (reply.empty())
     throw runtime_error("expected reply to have result, error and id properties");
@@ -336,6 +338,8 @@ Array RPCConvertValues(const std::string &strMethod, const std::vector<std::stri
 
   if (strMethod == "block.import"           && n > 1) ConvertTo<boost::int64_t>(params[1]);
   if (strMethod == "block.export"           && n > 1) ConvertTo<boost::int64_t>(params[1]);
+
+  if (strMethod == "block.purge"           && n > 0) ConvertTo<boost::int64_t>(params[0]);
 
   if (strMethod == "move"                   && n > 2) ConvertTo<double>(params[2]);
   if (strMethod == "move"                   && n > 3) ConvertTo<boost::int64_t>(params[3]);

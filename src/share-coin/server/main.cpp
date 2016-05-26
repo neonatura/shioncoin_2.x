@@ -1015,6 +1015,7 @@ const CTxOut& CTransaction::GetOutputFor(const CTxIn& input, const MapPrevTx& in
 
     const CTransaction& txPrev = (mi->second).second;
     if (input.prevout.n >= txPrev.vout.size()) {
+fprintf(stderr, "DEBUG: input.revout.n(%d) txprev.vout.size(%d) input.prevout.hash '%s'\n", (int)input.prevout.n, (int)txPrev.vout.size(), input.prevout.hash.GetHex().c_str()); 
 /* DEBUG: todo: check how critical this is */
       throw std::runtime_error("CTransaction::GetOutputFor() : prevout.n out of range");
     }
@@ -1054,27 +1055,7 @@ unsigned int CTransaction::GetP2SHSigOpCount(const MapPrevTx& inputs) const
 
 
 
-bool CBlock::DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex)
-{
-    // Disconnect in reverse order
-    for (int i = vtx.size()-1; i >= 0; i--)
-        if (!vtx[i].DisconnectInputs(txdb))
-            return false;
 
-#if 0 /* DEBUG: */
-    // Update block index on disk without changing it in memory.
-    // The memory index structure will be changed after the db commits.
-    if (pindex->pprev)
-    {
-        CDiskBlockIndex blockindexPrev(pindex->pprev);
-        blockindexPrev.hashNext = 0;
-        if (!txdb.WriteBlockIndex(blockindexPrev))
-            return error(SHERR_INVAL, "DisconnectBlock() : WriteBlockIndex failed");
-    }
-#endif
-
-    return true;
-}
 
 #if 0
 bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)
@@ -1613,70 +1594,6 @@ bool CBlock::CheckBlock() const
 
 
 
-bool CBlock::WriteBlock(uint64_t nHeight)
-{
-  CDataStream sBlock(SER_DISK, CLIENT_VERSION);
-  CIface *iface = GetCoinByIndex(ifaceIndex);
-  bc_t *bc = GetBlockChain(iface);
-  long sBlockLen;
-  char *sBlockData;
-  int n_height;
-
-  if (!bc)
-    return (false);
-
-/* debug : start */
-  if (bc_idx_next(bc) != nHeight) {
-    fprintf(stderr, "DEBUG: CBlock::WriteBlock: SKIP: next index is %d, block write is for pos %d\n", bc_idx_next(bc), nHeight);
-    return (false);
-  }
-/* debug : end */
-
-  uint256 hash = GetHash();
-
-  /* serialize block into binary data */
-  sBlock << *this;
-  sBlockLen = sBlock.size();
-  sBlockData = (char *)calloc(sBlockLen, sizeof(char));
-  if (!sBlockData) {
-    fprintf(stderr, "DEBUG: error allocating %d bytes for block data\n", sBlockLen);
-    return (false);
-  }
-  sBlock.read(sBlockData, sBlockLen);
-  n_height = bc_write(bc, nHeight, hash.GetRaw(), sBlockData, sBlockLen);
-  if (n_height < 0) {
-    fprintf(stderr, "DEBUG: CBlock::WriteBlock: bc_append err %d\n", n_height);
-    return (false);
-  }
-  free(sBlockData);
-
-  fprintf(stderr, "DEBUG: WriteBlock: ACCEPT: nHeight(%d) hash(%s)\n", nHeight, hash.GetHex().c_str());
-
-#if 0 
-  {
-    int err;
-    bc_hash_t ret_hash;
-    err = bc_get_hash(bc, nHeight, ret_hash);
-    if (err) {
-      fprintf(stderr, "DEBUG: CBlock::WriteBlock: bc_get_hash err %d @ pos %d\n", err, nHeight); 
-    } else {
-      uint256 t_hash;
-      t_hash.SetRaw((unsigned int *)ret_hash);
-      if (!bc_hash_cmp(hash.GetRaw(), t_hash.GetRaw())) {
-        fprintf(stderr, "DEBUG: CBlock::WriteBlock: hash mismatch (sys: '%s', disk: '%s')\n", hash.GetHex().c_str(), t_hash.GetHex().c_str());
-      }
-    }
-
-  }
-#endif
-
-  /* write tx ref's */
-  BOOST_FOREACH(CTransaction& tx, vtx) {
-    tx.WriteTx(ifaceIndex, nHeight); 
-  }
-
-  return (true);
-}
 
 #if 0
 bool CBlock::AcceptBlock()

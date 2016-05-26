@@ -82,6 +82,7 @@ void bc_close(bc_t *bc)
   bc->data_map = NULL;
   bc->data_map_len = 0;
 
+  free(bc);
 }
 
 /**
@@ -146,7 +147,7 @@ int bc_write(bc_t *bc, unsigned int jrnl, unsigned char *data, int data_len)
 }
 #endif
 
-int bc_write(bc_t *bc, int pos, bc_hash_t hash, void *raw_data, int data_len)
+int bc_write(bc_t *bc, bcsize_t pos, bc_hash_t hash, void *raw_data, int data_len)
 {
   unsigned char *data = (unsigned char *)raw_data;
   bc_idx_t idx;
@@ -238,7 +239,7 @@ bc_map_t *map;
 /**
  * Fills a pre-allocated binary segment with a specified size from a specified record position.
  */
-int bc_read(bc_t *bc, int pos, void *data, size_t data_len)
+int bc_read(bc_t *bc, int pos, void *data, bcsize_t data_len)
 {
   bc_map_t *map;
   bc_idx_t idx;
@@ -273,7 +274,7 @@ fprintf(stderr, "DEBUG: bc_read; invalid crc {map: %x, idx: %x} mismatch at pos 
 /**
  * Obtains an allocated binary segment stored at the specified record position. 
  */
-int bc_get(bc_t *bc, int pos, unsigned char **data_p, size_t *data_len_p)
+int bc_get(bc_t *bc, bcsize_t pos, unsigned char **data_p, size_t *data_len_p)
 {
   bc_idx_t idx;
   unsigned char *data;
@@ -313,7 +314,7 @@ fprintf(stderr, "DEBUG: bc_get[pos %d]: bc_read <%d bytes> error '%s'\n", pos, i
   return (0);
 }
 
-int bc_get_hash(bc_t *bc, int pos, bc_hash_t ret_hash)
+int bc_get_hash(bc_t *bc, bcsize_t pos, bc_hash_t ret_hash)
 {
   bc_idx_t idx;
   int err;
@@ -346,7 +347,7 @@ int bc_find(bc_t *bc, bc_hash_t hash, int *pos_p)
 /**
  * @bug this does not handle jrnls alloc'd past one being targeted.
  */
-int bc_purge(bc_t *bc, int pos)
+int bc_purge(bc_t *bc, bcsize_t pos)
 {
   bc_map_t *map;
   bc_idx_t idx;
@@ -419,3 +420,15 @@ const char *bc_path_base(void)
   return ((const char *)ret_path);
 }
 
+void bc_idle(bc_t *bc)
+{
+  bc_map_t *map;
+  int i;
+
+  for (i = 0; i < bc->data_map_len; i++) {
+    map = bc->data_map + i;
+    if (map->fd != 0)
+      bc_map_idle(bc, map);
+  }
+
+}

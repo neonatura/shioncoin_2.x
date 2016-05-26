@@ -35,7 +35,6 @@
 
 
 SHC_CTxMemPool SHCBlock::mempool;
-uint256 SHCBlock::hashBestChain;
 CBlockIndex *SHCBlock::pindexGenesisBlock = NULL;
 int64 SHCBlock::nTimeBestReceived;
 CBigNum SHCBlock::bnBestChainWork;
@@ -50,8 +49,6 @@ int err;
 shcWallet = new SHCWallet();
   SetWallet(SHC_COIN_IFACE, shcWallet);
 
-
-  iface->block_max = -1;
 
   if (!shc_InitBlockIndex()) {
     fprintf(stderr, "error: shc_proto: unable to initialize block index table.\n");
@@ -195,12 +192,6 @@ return (0);
 }
 #endif
 
-static int shc_block_bestchain(CIface *iface, uint256 *hash_p)
-{
-  *hash_p = SHCBlock::hashBestChain;
-  return (0);
-}
-
 static int shc_tx_new(CIface *iface, void *arg)
 {
 return (0);
@@ -231,6 +222,7 @@ coin_iface_t shc_coin_iface = {
   SHC_PROTOCOL_VERSION, /* network proto ver */
   SHC_COIN_DAEMON_PORT,
   SHC_MAX_BLOCK_SIZE,
+  SHC_MAX_ORPHAN_TRANSACTIONS,
   SHC_MIN_TX_FEE,
   SHC_MIN_RELAY_TX_FEE,
   SHC_MAX_MONEY,
@@ -244,7 +236,6 @@ coin_iface_t shc_coin_iface = {
   COINF(shc_block_new),
   COINF(shc_block_process),
   COINF(shc_block_templ),
-  COINF(shc_block_bestchain),
   COINF(shc_tx_new),
   COINF(shc_tx_pool)
 };

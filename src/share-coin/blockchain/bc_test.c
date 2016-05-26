@@ -15,8 +15,8 @@ int main(int argc, char **argv)
   unsigned char *t_data;
   size_t t_data_len;
   int idx;
-  size_t n_pos;
-  size_t pos;
+  bcsize_t n_pos;
+  bcsize_t pos;
   int err;
 
   err = bc_open("test", &bc);

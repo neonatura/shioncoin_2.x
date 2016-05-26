@@ -41,10 +41,6 @@ extern "C" {
 #define MAX_COIN_IFACE 3
 
 
-#define DEFAULT_MAX_ORPHAN_TRANSACTIONS 100
-#define DEFAULT_MAX_ORPHAN_BLOCKS 750
-extern int MAX_ORPHAN_TRANSACTIONS;
-extern int MAX_ORPHAN_BLOCKS;
 
 
 #define COIN_IFACE_VERSION(_maj, _min, _rev, _bui) \
@@ -61,6 +57,9 @@ extern int MAX_ORPHAN_BLOCKS;
 
 #define MAX_BLOCK_SIZE_GEN(_iface) \
   ((_iface)->max_block_size / 2)
+
+#define MAX_ORPHAN_TRANSACTIONS(_iface) \
+  ((_iface)->max_orphan_tx)
 
 
 struct coin_iface_t;
@@ -80,6 +79,7 @@ typedef struct coin_iface_t
   int port;
 
   uint64_t max_block_size;
+  uint64_t max_orphan_tx;
   uint64_t min_tx_fee;
   uint64_t min_relay_tx_fee;
   uint64_t max_money;
@@ -95,14 +95,12 @@ typedef struct coin_iface_t
   coin_f op_block_new;
   coin_f op_block_process;
   coin_f op_block_templ;
-  coin_f op_block_bestchain;
   coin_f op_tx_new;
   coin_f op_tx_pool;
 
   bc_t *bc_block;
   bc_t *bc_tx;
   double blk_diff; /* next block difficulty */
-  uint64_t block_max; /* best block height */
   uint64_t tx_tot; /* nTransactionsUpdated */
   bc_hash_t block_besthash; /* best block hash */
 } coin_iface_t;

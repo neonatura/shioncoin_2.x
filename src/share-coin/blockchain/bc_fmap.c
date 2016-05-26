@@ -42,7 +42,7 @@ int bc_map_open(bc_t *bc, bc_map_t *map)
   bc_hdr_t ini_hdr;
   struct stat st;
   char path[PATH_MAX+1];
-  size_t size;
+  bcsize_t size;
   int err;
   int fd;
 
@@ -96,13 +96,13 @@ int bc_map_open(bc_t *bc, bc_map_t *map)
 /**
  * @param The amount to incrase the allocated size by.
  */
-int bc_map_alloc(bc_t *bc, bc_map_t *map, size_t len)
+int bc_map_alloc(bc_t *bc, bc_map_t *map, bcsize_t len)
 {
   struct stat st;
   unsigned char *raw;
-  size_t size;
-  size_t map_alloc;
-  size_t map_of;
+  bcsize_t size;
+  bcsize_t map_alloc;
+  bcsize_t map_of;
   int err;
 
   /* ensure file map is open */
@@ -161,7 +161,7 @@ memset(&st, 0, sizeof(st));
 /**
  * Truncates the data-content layer of a map to a given size.
  */
-int bc_map_trunc(bc_t *bc, bc_map_t *map, size_t len)
+int bc_map_trunc(bc_t *bc, bc_map_t *map, bcsize_t len)
 {
   int err;
 
@@ -207,7 +207,7 @@ void bc_map_close(bc_map_t *map)
 
 }
 
-int bc_map_write(bc_t *bc, bc_map_t *map, size_t of, void *raw_data, size_t data_len)
+int bc_map_write(bc_t *bc, bc_map_t *map, bcsize_t of, void *raw_data, bcsize_t data_len)
 {
   unsigned char *data = (unsigned char *)raw_data;
   int err;
@@ -220,6 +220,7 @@ fprintf(stderr, "DEBUG: bc_map_write: bc_map_alloc %d\n", err);
 
   memcpy(map->raw + of, data, data_len);
   map->hdr->of = MAX(map->hdr->of, (of + data_len));
+  map->stamp = time(NULL);
 
   return (0);
 } 
@@ -227,7 +228,7 @@ fprintf(stderr, "DEBUG: bc_map_write: bc_map_alloc %d\n", err);
 /**
  * Write some data to a specific filemap. 
  */
-int bc_map_append(bc_t *bc, bc_map_t *map, void *raw_data, size_t data_len)
+int bc_map_append(bc_t *bc, bc_map_t *map, void *raw_data, bcsize_t data_len)
 {
   unsigned char *data = (unsigned char *)raw_data;
   int err;
@@ -242,14 +243,26 @@ int bc_map_append(bc_t *bc, bc_map_t *map, void *raw_data, size_t data_len)
 /**
  * Read a segment data from a file-map
  */
-int bc_map_read(bc_t *bc, bc_map_t *map, unsigned char *data, size_t data_of, size_t data_len)
+int bc_map_read(bc_t *bc, bc_map_t *map, unsigned char *data, bcsize_t data_of, bcsize_t data_len)
 {
 
   if ((data_of + data_len) >= map->hdr->of)
     return (SHERR_INVAL);
 
   memcpy(data, map->raw + data_of, data_len);
+  map->stamp = time(NULL);
 
   return (0);
 }
+
+void bc_map_idle(bc_t *bc, bc_map_t *map)
+{
+  time_t now;
+
+  now = time(NULL);
+  if ((map->stamp + 120) < now)
+    bc_map_close(map);
+
+}
+
 

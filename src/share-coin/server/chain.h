@@ -22,7 +22,7 @@ typedef struct ChainOp
   unsigned int total;
 } ChainOp;
 
-int InitChainImport(int ifaceIndex, const char *path, int max);
+int InitChainImport(int ifaceIndex, const char *path, int offset);
 int InitChainExport(int ifaceIndex, const char *path, int max);
 void event_cycle_chain(int ifaceIndex);
 

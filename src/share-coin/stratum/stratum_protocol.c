@@ -205,7 +205,7 @@ fprintf(stderr, "DEBUG: stratum_validate_submit: be_nonce (%x) is lower hash tha
   return (0);
 }
 
-int stratum_subscribe(user_t *user, int req_id)
+static int stratum_subscribe(user_t *user, int req_id)
 {
   int err;
 
@@ -508,8 +508,10 @@ shcoind_log(buf);
 
   if (0 == strcmp(method, "mining.subscribe")) {
     err = stratum_subscribe(user, idx);
-    if (!err)
+    if (!err) {
+      user->ifaceIndex = ifaceIndex;
       stratum_set_difficulty(user, 128);
+    }
 
     //reset_task_work_time();
 

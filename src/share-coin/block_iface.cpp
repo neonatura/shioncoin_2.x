@@ -168,6 +168,10 @@ const char *c_getblocktemplate(int ifaceIndex)
   nTransactionsUpdatedLast = iface->tx_tot;
   CBlockIndex* pindexPrevNew = GetBestBlockIndex(ifaceIndex);
 
+  if (!pindexPrevNew) {
+fprintf(stderr, "DEBUG: c_getblocktemplate: not ready yet\n");
+    return (NULL);
+  }
 #if 0
   pblock = CreateNewBlock(reservekey);
   if (!pblock)

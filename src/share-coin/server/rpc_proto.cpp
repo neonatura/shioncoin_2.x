@@ -814,7 +814,7 @@ Value rpc_block_info(CIface *iface, const Array& params, bool fHelp)
   obj.push_back(Pair("walletversion", pwalletMain->GetVersion()));
 
   obj.push_back(Pair("blocks",        (int)GetBestHeight(iface)));
-  obj.push_back(Pair("difficulty",    (double)GetDifficulty(ifaceIndex)));
+//  obj.push_back(Pair("difficulty",    (double)GetDifficulty(ifaceIndex)));
 
   CTxMemPool *pool = GetTxMemPool(iface);
   obj.push_back(Pair("pooledtx",      (uint64_t)pool->size()));
@@ -849,7 +849,11 @@ Value rpc_block_count(CIface *iface, const Array& params, bool fHelp)
 
 Value rpc_block_hash(CIface *iface, const Array& params, bool fHelp)
 {
+  bc_t *bc = GetBlockChain(iface);
   int ifaceIndex = GetCoinIndex(iface);
+  bc_hash_t ret_hash;
+  uint256 hash;
+  int err;
 
   if (fHelp || params.size() != 1)
     throw runtime_error(
@@ -859,28 +863,13 @@ Value rpc_block_hash(CIface *iface, const Array& params, bool fHelp)
   int nHeight = params[0].get_int();
   if (nHeight < 0 || nHeight > GetBestHeight(iface))
     throw runtime_error("Block number out of range.");
-  {
-    bc_t *bc = GetBlockChain(GetCoinByIndex(USDE_COIN_IFACE));
-    bc_hash_t ret_hash;
-    int err;
 
-    err = bc_get_hash(bc, nHeight, ret_hash);
-    if (!err) {
-      uint256 hash;
-      hash.SetRaw((unsigned int *)ret_hash);
-      fprintf(stderr, "DEBUG: RPC: rpc_block_hash: blockchain pos %d has hash '%s'\n", nHeight, hash.GetHex().c_str());
-    }
-  }
+  err = bc_get_hash(bc, nHeight, ret_hash);
+  if (err) 
+    throw runtime_error("Error reading from block-chain.");
 
-  blkidx_t *blockIndex = GetBlockTable(ifaceIndex);
-  if (!blockIndex)
-    throw runtime_error("Error loading block table.");
-
-  uint256 hashBestChain = GetBestBlockChain(iface);
-  CBlockIndex* pblockindex = (*blockIndex)[hashBestChain];
-  while (pblockindex->nHeight > nHeight)
-    pblockindex = pblockindex->pprev;
-  return pblockindex->phashBlock->GetHex();
+  hash.SetRaw((unsigned int *)ret_hash);
+  return (hash.GetHex());
 }
 
 Value rpc_block_difficulty(CIface *iface, const Array& params, bool fHelp)
@@ -927,29 +916,41 @@ Value rpc_block_import(CIface *iface, const Array& params, bool fHelp)
 {
   blkidx_t *blockIndex;
   int ifaceIndex = GetCoinIndex(iface);
-  unsigned int maxHeight = 0;
+  unsigned int posFile = 0;
   int err;
 
-  if (fHelp || params.size() != 1)
+  if (fHelp || params.size() == 0 || params.size() > 2)
     throw runtime_error(
-        "block.import <path> [<height>]\n"
+        "block.import <path> [<offset>]\n"
         "Imports a blockchain from an external file.");
 
   std::string strPath = params[0].get_str();
   if (params.size() > 1)
-    maxHeight = params[1].get_int();
+    posFile = params[1].get_int();
 
-  err = InitChainImport(ifaceIndex, strPath.c_str(), maxHeight);
+  err = InitChainImport(ifaceIndex, strPath.c_str(), posFile);
   if (err)
     throw JSONRPCError(-5, sherrstr(err));
 
   Object result;
   result.push_back(Pair("mode", "import-block"));
-  result.push_back(Pair("height", (int)maxHeight));
   result.push_back(Pair("path", strPath.c_str()));
   result.push_back(Pair("state", "init"));
 
   return (result);
+}
+
+Value rpc_block_free(CIface *iface, const Array& params, bool fHelp)
+{
+
+  if (fHelp || params.size() != 0)
+    throw runtime_error(
+        "block.free\n"
+        "Deallocate cached resources used to map the block-chain.");
+
+  CloseBlockChain(iface);
+
+  return (true);
 }
 
 Value rpc_block_get(CIface *iface, const Array& params, bool fHelp)
@@ -1605,6 +1606,7 @@ Value rpc_wallet_info(CIface *iface, const Array& params, bool fHelp)
 
   obj.push_back(Pair("keypoololdest", (boost::int64_t)pwalletMain->GetOldestKeyPoolTime()));
   obj.push_back(Pair("keypoolsize",   pwalletMain->GetKeyPoolSize()));
+  obj.push_back(Pair("txcachecount",   pwalletMain->mapWallet.size()));
 
   obj.push_back(Pair("errors",        GetWarnings(ifaceIndex, "statusbar")));
 
@@ -1992,6 +1994,31 @@ Value rpc_wallet_listbyaddr(CIface *iface, const Array& params, bool fHelp)
         "  \"confirmations\" : number of confirmations of the most recent transaction included");
 
   return ListReceived(GetWallet(iface), params, false);
+}
+
+Value rpc_block_purge(CIface *iface, const Array& params, bool fHelp)
+{
+  uint256 hash;
+  int err;
+
+  if (fHelp || params.size() != 1)
+    throw runtime_error(
+        "block.purge <index>\n"
+        "Truncate the block-chain to contain <index> block records.");
+
+  int nHeight = params[0].get_int();
+  if (nHeight < 0 || nHeight > GetBestHeight(iface))
+    throw runtime_error("Block number out of range.");
+
+  CBlock *block = GetBlockByHeight(iface, nHeight);
+  if (!block)
+    throw runtime_error("Block not found in block-chain.");
+
+  hash = block->GetHash();
+  block->Truncate();
+  delete block;
+
+  return (hash.GetHex());
 }
 
 Value rpc_block_listsince(CIface *iface, const Array& params, bool fHelp)
@@ -4113,9 +4140,11 @@ static const CRPCCommand vRPCCommands[] =
     { "block.hash",           &rpc_block_hash},
     { "block.difficulty",     &rpc_block_difficulty},
     { "block.export",         &rpc_block_export},
+    { "block.free",           &rpc_block_free},
     { "block.get",            &rpc_block_get},
     { "block.import",         &rpc_block_import},
     { "block.listsince",      &rpc_block_listsince},
+    { "block.purge",          &rpc_block_purge},
 //    { "block.template",       &rpc_block_template},
     { "block.work",           &rpc_block_work},
     { "block.workex",         &rpc_block_workex},

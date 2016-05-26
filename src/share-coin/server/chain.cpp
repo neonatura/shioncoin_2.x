@@ -190,7 +190,7 @@ void PerformBlockChainOperation(int ifaceIndex)
 extern "C" {
 #endif
 
-int InitChainImport(int ifaceIndex, const char *path, int max)
+int InitChainImport(int ifaceIndex, const char *path, int offset)
 {
   if (*chain.path)
     return (SHERR_AGAIN);
@@ -204,7 +204,7 @@ int InitChainImport(int ifaceIndex, const char *path, int max)
   chain.mode = BCOP_IMPORT;
   chain.ifaceIndex = ifaceIndex;
   strncpy(chain.path, path, sizeof(chain.path)-1);
-  chain.max = max;
+  chain.pos = offset;
 
 fprintf(stderr, "DEBUG: InitChainImport: importing (iface #%d) from path '%s'.\n", chain.ifaceIndex, chain.path);
 

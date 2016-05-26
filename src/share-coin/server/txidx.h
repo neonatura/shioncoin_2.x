@@ -307,7 +307,6 @@ class CTxDB : public CDB
     bool ReadDiskTx(uint256 hash, CTransaction& tx);
     //bool ReadDiskTx(COutPoint outpoint, CTransaction& tx, CTxIndex& txindex);
     bool ReadDiskTx(COutPoint outpoint, CTransaction& tx);
-    bool WriteBlockIndex(const CDiskBlockIndex& blockindex);
 
     bool ReadHashBestChain(uint256& hashBestChain);
     bool WriteHashBestChain(uint256 hashBestChain);
@@ -318,6 +317,7 @@ class CTxDB : public CDB
 //    bool InitBlockChainIndex(CIface *iface);
 //  private:
 //    bool LoadBlockIndexGuts(CIface *iface);
+
 };
 
 

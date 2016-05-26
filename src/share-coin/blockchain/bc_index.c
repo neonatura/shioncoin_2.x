@@ -75,7 +75,7 @@ int bc_idx_find(bc_t *bc, bc_hash_t hash, bc_idx_t *ret_idx, int *ret_pos)
 {
   bc_hash_t t_hash;
   bc_idx_t *idx;
-  size_t len;
+  bcsize_t len;
   int crc;
   int err;
   int i;
@@ -125,7 +125,7 @@ int bc_idx_find(bc_t *bc, bc_hash_t hash, bc_idx_t *ret_idx, int *ret_pos)
   return (SHERR_NOENT);
 }
 
-int bc_idx_get(bc_t *bc, size_t pos, bc_idx_t *ret_idx)
+int bc_idx_get(bc_t *bc, bcsize_t pos, bc_idx_t *ret_idx)
 {
   bc_idx_t *idx;
   int err;
@@ -157,7 +157,7 @@ int bc_idx_get(bc_t *bc, size_t pos, bc_idx_t *ret_idx)
 /**
  * @returns The next record index.
  */
-int bc_idx_next(bc_t *bc)
+bcsize_t bc_idx_next(bc_t *bc)
 {
   bc_idx_t *idx;
   int err;
@@ -172,10 +172,10 @@ int bc_idx_next(bc_t *bc)
   return MAX(0, (bc->idx_map.hdr->of / sizeof(bc_idx_t)));
 }
 
-int bc_idx_set(bc_t *bc, size_t pos, bc_idx_t *idx)
+int bc_idx_set(bc_t *bc, bcsize_t pos, bc_idx_t *idx)
 {
   bc_idx_t *f_idx;
-  size_t of;
+  bcsize_t of;
   int err;
 
   if (!bc || pos < 0) {
@@ -207,7 +207,7 @@ int bc_idx_set(bc_t *bc, size_t pos, bc_idx_t *idx)
   of = (pos * sizeof(bc_idx_t));
   if (pos >= (bc->idx_map.hdr->of / sizeof(bc_idx_t)) &&
       (of + sizeof(bc_idx_t)) > bc->idx_map.size) {
-    size_t f_len = (of + sizeof(bc_idx_t)) - bc->idx_map.size;
+    bcsize_t f_len = (of + sizeof(bc_idx_t)) - bc->idx_map.size;
 
     err = bc_map_alloc(bc, &bc->idx_map, f_len);
     if (err) {
@@ -227,12 +227,12 @@ fprintf(stderr, "DEBUG: bc_idx_set: bc_map_alloc <%d bytes> err %d\n", f_len, er
 /**
  * @note (odd) only reduces index count when "pos" is last record in db.
  */
-int bc_idx_clear(bc_t *bc, size_t pos)
+int bc_idx_clear(bc_t *bc, bcsize_t pos)
 {
   bc_idx_t *f_idx;
   bc_idx_t blank_idx;
-  size_t n_pos;
-  size_t of;
+  bcsize_t n_pos;
+  bcsize_t of;
   int err;
 
   if (!bc || pos < 0) {

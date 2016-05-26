@@ -50,7 +50,7 @@ using namespace boost;
 
 uint256 shc_hashGenesisBlock("0xf4319e4e89b35b5f26ec0363a09d29703402f120cf1bf8e6f535548d5ec3c5cc");
 static uint256 shc_hashGenesisMerkle("0xd3f4bbe7fe61bda819369b4cd3a828f3ad98d971dda0c20a466a9ce64846c321");
-static CBigNum SHC_bnProofOfWorkLimit(~uint256(0) >> 20); // usde: starting difficulty is 1 / 2^12
+static CBigNum SHC_bnProofOfWorkLimit(~uint256(0) >> 20); // starting difficulty is 1 / 2^12
 
 map<uint256, SHCBlock*> SHC_mapOrphanBlocks;
 multimap<uint256, SHCBlock*> SHC_mapOrphanBlocksByPrev;
@@ -426,7 +426,7 @@ return (NULL);
 
   // Create new block
   //auto_ptr<CBlock> pblock(new CBlock());
-  auto_ptr<CBlock> pblock(new SHCBlock());
+  auto_ptr<SHCBlock> pblock(new SHCBlock());
   if (!pblock.get())
     return NULL;
 
@@ -479,6 +479,7 @@ fprintf(stderr, "DEBUG: shc_CreateNewBlock: txPrev.vout.size() %d <= txin.prevou
  txPrev.vout.size(),
  txin.prevout.n,
 txPrev.GetHash().GetHex().c_str());
+continue;
 }
         int64 nValueIn = txPrev.vout[txin.prevout.n].nValue;
 
@@ -1027,7 +1028,7 @@ bool shc_ProcessBlock(CNode* pfrom, CBlock* pblock)
   }
 
   CBlockIndex* pcheckpoint = SHC_Checkpoints::GetLastCheckpoint(*blockIndex);
-  if (pcheckpoint && pblock->hashPrevBlock != SHCBlock::hashBestChain) {
+  if (pcheckpoint && pblock->hashPrevBlock != GetBestBlockChain(iface)) {
     // Extra checks to prevent "fill up memory by spamming with bogus blocks"
     int64 deltaTime = pblock->GetBlockTime() - pcheckpoint->nTime;
     if (deltaTime < 0)
@@ -1131,9 +1132,8 @@ bool SHCBlock::CheckBlock()
     return error(SHERR_INVAL, "CheckBlock() : size limits failed");
   }
 #endif
-  if (vtx.empty()) {
-    return error(SHERR_INVAL, "CheckBlock(): missing coinbase tx.");
-  } 
+  if (vtx.empty() || !vtx[0].IsCoinBase())
+    return error(SHERR_INVAL, "CheckBlock() : first tx is not coinbase");
 
   // Check proof of work matches claimed amount
   if (!shc_CheckProofOfWork(GetPoWHash(), nBits)) {
@@ -1145,10 +1145,6 @@ bool SHCBlock::CheckBlock()
     return error(SHERR_INVAL, "CheckBlock() : block timestamp too far in the future");
   }
 
-  // First transaction must be coinbase, the rest must not be
-  if (vtx.empty() || !vtx[0].IsCoinBase()) {
-    return error(SHERR_INVAL, "CheckBlock() : first tx is not coinbase");
-  }
   for (unsigned int i = 1; i < vtx.size(); i++)
     if (vtx[i].IsCoinBase()) {
       return error(SHERR_INVAL, "CheckBlock() : more than one coinbase");
@@ -1293,6 +1289,7 @@ bool static SHC_Reorganize(CTxDB& txdb, CBlockIndex* pindexNew, SHC_CTxMemPool *
 
 void SHCBlock::InvalidChainFound(CBlockIndex* pindexNew)
 {
+  CIface *iface = GetCoinByIndex(USDE_COIN_IFACE);
   char errbuf[1024];
 
   if (pindexNew->bnChainWork > bnBestInvalidWork)
@@ -1310,7 +1307,7 @@ void SHCBlock::InvalidChainFound(CBlockIndex* pindexNew)
 
   CBlockIndex *pindexBest = GetBestBlockIndex(SHC_COIN_IFACE);
 
-  fprintf(stderr, "critical: InvalidChainFound:  current best=%s  height=%d  work=%s  date=%s\n", SHCBlock::hashBestChain.ToString().substr(0,20).c_str(), GetBestHeight(SHC_COIN_IFACE), bnBestChainWork.ToString().c_str(), DateTimeStrFormat("%x %H:%M:%S", pindexBest->GetBlockTime()).c_str());
+  fprintf(stderr, "critical: InvalidChainFound:  current best=%s  height=%d  work=%s  date=%s\n", GetBestBlockChain(iface).ToString().substr(0,20).c_str(), GetBestHeight(SHC_COIN_IFACE), bnBestChainWork.ToString().c_str(), DateTimeStrFormat("%x %H:%M:%S", pindexBest->GetBlockTime()).c_str());
   if (pindexBest && bnBestInvalidWork > bnBestChainWork + pindexBest->GetBlockWork() * 6)
     unet_log(SHC_COIN_IFACE, "InvalidChainFound: WARNING: Displayed transactions may not be correct!  You may need to upgrade, or other nodes may need to upgrade.\n");
 }
@@ -1370,7 +1367,7 @@ bool SHCBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
       return error(SHERR_INVAL, "SetBestChain() : TxnCommit failed");
     SHCBlock::pindexGenesisBlock = pindexNew;
   }
-  else if (hashPrevBlock == SHCBlock::hashBestChain)
+  else if (hashPrevBlock == GetBestBlockChain(iface))
   {
     if (!SetBestChainInner(txdb, pindexNew))
       return error(SHERR_INVAL, "SetBestChain() : SetBestChainInner failed");
@@ -1432,9 +1429,9 @@ fprintf(stderr, "DEBUG: SHC_Reorganize(): error reorganizing.\n");
   }
 
   // New best block
-  SHCBlock::hashBestChain = hash;
+//  SHCBlock::hashBestChain = hash;
   SetBestBlockIndex(SHC_COIN_IFACE, pindexNew);
-  SetBestHeight(iface, pindexNew->nHeight);
+ // SetBestHeight(iface, pindexNew->nHeight);
   bnBestChainWork = pindexNew->bnChainWork;
   nTimeBestReceived = GetTime();
   iface->tx_tot++;
@@ -1463,7 +1460,7 @@ fprintf(stderr, "DEBUG: SHC_Reorganize(): error reorganizing.\n");
 
   if (!fIsInitialDownload && !strCmd.empty())
   {
-    boost::replace_all(strCmd, "%s", SHCBlock::hashBestChain.GetHex());
+    boost::replace_all(strCmd, "%s", GetBestBlockChain(iface).GetHex());
     boost::thread t(runCommand, strCmd); // thread runs free
   }
 
@@ -1479,6 +1476,7 @@ bool SHCBlock::IsBestChain()
 
 bool shc_AcceptBlock(SHCBlock *pblock)
 {
+  CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);
   int ifaceIndex = SHC_COIN_IFACE;
   NodeList &vNodes = GetNodeList(ifaceIndex);
   bc_t *bc = GetBlockChain(GetCoinByIndex(ifaceIndex));
@@ -1537,7 +1535,7 @@ bool shc_AcceptBlock(SHCBlock *pblock)
 
   /* Relay inventory, but don't relay old inventory during initial block download */
   int nBlockEstimate = SHC_Checkpoints::GetTotalBlocksEstimate();
-  if (SHCBlock::hashBestChain == hash)
+  if (GetBestBlockChain(iface) == hash)
   {
     LOCK(cs_vNodes);
     BOOST_FOREACH(CNode* pnode, vNodes)
@@ -1613,11 +1611,13 @@ bool SHCBlock::AddToBlockIndex()
   pindexNew->bnChainWork = (pindexNew->pprev ? pindexNew->pprev->bnChainWork : 0) + pindexNew->GetBlockWork();
 
   SHCTxDB txdb;
+#if 0
   if (!txdb.TxnBegin())
     return false;
   txdb.WriteBlockIndex(CDiskBlockIndex(pindexNew));
   if (!txdb.TxnCommit())
     return false;
+#endif
 
   // New best
   if (pindexNew->bnChainWork > bnBestChainWork) {
@@ -1742,20 +1742,28 @@ fprintf(stderr, "DEBUG: shc_ConnectInputs failure\n");
       return error(SHERR_INVAL, "ConnectBlock() : UpdateTxIndex failed");
     }
   }
+if (vtx.size() == 0) {
+fprintf(stderr, "DEBUG: ConnectBlock: vtx.size() == 0\n");
+return false;
+}
 
   if (vtx[0].GetValueOut() > shc_GetBlockValue(pindex->nHeight, nFees)) {
 fprintf(stderr, "DEBUG: SHCBlock::ConnectBlock: critical: coinbaseValueOut(%llu) > BlockValue(%llu) @ height %d [fee %llu]\n", (unsigned long long)vtx[0].GetValueOut(), (unsigned long long)shc_GetBlockValue(pindex->nHeight, nFees), pindex->nHeight, (unsigned long long)nFees); 
     return false;
   }
 
-  // Update block index on disk without changing it in memory.
-  // The memory index structure will be changed after the db commits.
   if (pindex->pprev)
   {
+    /* DEBUG: */
+    pindex->pprev->pnext = pindex;
+#if 0
+    // Update block index on disk without changing it in memory.
+    // The memory index structure will be changed after the db commits.
     CDiskBlockIndex blockindexPrev(pindex->pprev);
     blockindexPrev.hashNext = pindex->GetBlockHash();
     if (!txdb.WriteBlockIndex(blockindexPrev))
       return error(SHERR_INVAL, "ConnectBlock() : WriteBlockIndex failed");
+#endif
   }
 
   // Watch for transactions paying to me
@@ -1849,3 +1857,56 @@ bool SHCBlock::IsOrphan()
   return (true);
 }
 
+
+bool SHCBlock::Truncate()
+{
+  blkidx_t *blockIndex = GetBlockTable(SHC_COIN_IFACE);
+  CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);
+  bc_t *bc = GetBlockChain(iface);
+  CBlockIndex *cur_index;
+  int err;
+
+  cur_index = (*blockIndex)[GetHash()];
+  if (!cur_index)
+    return error(SHERR_INVAL, "Erase: block not found in block-index.");
+
+#if 0
+  CBlockIndex *pindex;
+  pindex = GetBestBlockIndex(iface);
+  if (!pindex)
+    return error(SHERR_INVAL, "Erase: no established tail of block-chain.");
+
+  SHCTxDB txdb;
+  while (pindex && pindex->nHeight >= cur_index->nHeight) {
+    SHCBlock block;
+    if (block.ReadBlock(pindex->nHeight)) {
+      block.DisconnectBlock(txdb, pindex);
+    }
+    pindex = pindex->pprev;
+  }
+  if (pindex) {
+    SHCBlock block;
+    if (block.ReadBlock(pindex->nHeight)) {
+      pindex->pnext = NULL;
+      block.SetBestChain(txdb, pindex);
+    }
+  }
+
+  txdb.Close();
+#endif
+  CBlockIndex *pindex = cur_index->pprev;
+  if (pindex) {
+    SHCBlock block;
+    if (block.ReadFromDisk(pindex)) {
+      SHCTxDB txdb;
+      block.SetBestChain(txdb, pindex);
+      txdb.Close();
+    }
+  }
+
+  err = BlockChainErase(iface, cur_index->nHeight);
+  if (err)
+    return error(err, "BlockChainErase[SHC]");
+
+  return (true);
+}

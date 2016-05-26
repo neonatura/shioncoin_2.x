@@ -170,11 +170,13 @@ int stratum_user_broadcast_task(task_t *task)
       continue;
     }
 
+    if (user->ifaceIndex != task->ifaceIndex)
+      continue;
+
     clear = (user->height < task->height);
     err = stratum_send_task(user, task, clear);
     if (!err)
       user->height = MAX(user->height, task->height);
-
 
   }
 

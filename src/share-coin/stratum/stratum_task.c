@@ -285,6 +285,7 @@ task_t *task_init(void)
     return (NULL);
   }
 
+  task->ifaceIndex = ifaceIndex;
   task->work_reset = work_reset[ifaceIndex];
 
   memset(target, 0, sizeof(target));

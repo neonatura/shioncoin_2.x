@@ -77,10 +77,6 @@ bool SHCTxDB::ReadDiskTx(COutPoint outpoint, CTransaction& tx)
   return ReadDiskTx(outpoint.hash, tx, txindex);
 }
 
-bool SHCTxDB::WriteBlockIndex(const CDiskBlockIndex& blockindex)
-{
-  return Write(make_pair(string("blockindex"), blockindex.GetBlockHash()), blockindex);
-}
 
 
 CBlockIndex static * InsertBlockIndex(uint256 hash)
@@ -105,15 +101,68 @@ CBlockIndex static * InsertBlockIndex(uint256 hash)
   return pindexNew;
 }
 
+bool shc_FillBlockIndex()
+{
+  CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);
+  blkidx_t *blockIndex = GetBlockTable(SHC_COIN_IFACE);
+  bc_t *bc = GetBlockChain(iface);
+  CBlockIndex *pindexBest;
+  CBlockIndex *lastIndex;
+  SHCBlock block;
+  uint256 hash;
+  int nBestIndex;
+  int nHeight;
+
+  lastIndex = NULL;
+  pindexBest = NULL;
+  nBestIndex = bc_idx_next(bc) - 1;
+  for (nHeight = nBestIndex; nHeight >= 0; nHeight--) {
+    if (!block.ReadBlock(nHeight))
+      continue;
+    hash = block.GetHash();
+
+    CBlockIndex* pindexNew = InsertBlockIndex(blockIndex, hash);
+    pindexNew->pprev = InsertBlockIndex(blockIndex, block.hashPrevBlock);
+    if (lastIndex && lastIndex->pprev == pindexNew)
+      pindexNew->pnext = InsertBlockIndex(blockIndex, lastIndex->GetBlockHash());
+    pindexNew->nHeight        = nHeight;
+    pindexNew->nVersion       = block.nVersion;
+    pindexNew->hashMerkleRoot = block.hashMerkleRoot;
+    pindexNew->nTime          = block.nTime;
+    pindexNew->nBits          = block.nBits;
+    pindexNew->nNonce         = block.nNonce;
+
+    if (!pindexNew->CheckIndex())
+      return error(SHERR_INVAL, "LoadBlockIndex() : CheckIndex failed at height %d", pindexNew->nHeight);
+
+    if (nHeight == 0)
+      SHCBlock::pindexGenesisBlock = pindexNew;
+
+    if (!pindexBest && lastIndex) {
+      if (lastIndex->pprev == pindexNew)
+        pindexBest = lastIndex;
+    }
+
+    lastIndex = pindexNew;
+  }
+  SetBestBlockIndex(iface, pindexBest);
+
+  return true;
+}
+
 bool SHCTxDB::LoadBlockIndex()
 {
   CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);
   blkidx_t *mapBlockIndex = GetBlockTable(SHC_COIN_IFACE);
+  char errbuf[1024];
 
-fprintf(stderr, "DEBUG: SHCTxDB: LoadBlockIndex (%s)\n", iface->name);
 
+#if 0
   if (!LoadBlockIndexGuts())
     return false;
+#endif
+  if (!shc_FillBlockIndex())
+    return (false);
 
   if (fRequestShutdown)
     return true;
@@ -134,44 +183,75 @@ fprintf(stderr, "DEBUG: SHCTxDB: LoadBlockIndex (%s)\n", iface->name);
   }
 
   // Load SHCBlock::hashBestChain pointer to end of best chain
-
-  if (!ReadHashBestChain(SHCBlock::hashBestChain))
+  uint256 hashBestChain;
+  if (!ReadHashBestChain(hashBestChain))
   {
     if (SHCBlock::pindexGenesisBlock == NULL) {
-fprintf(stderr, "DEBUG: SHCTxDB::LoadBlockIndex() : SHCBlock::hashBestChain not loaded, but pindexGenesisBlock == NULL");
+      fprintf(stderr, "DEBUG: SHCTxDB::LoadBlockIndex() : SHCBlock::hashBestChain not loaded, but pindexGenesisBlock == NULL");
       return true;
     }
-    return error(SHERR_INVAL, "SHCTxDB::LoadBlockIndex() : SHCBlock::hashBestChain not loaded");
+    //    return error(SHERR_INVAL, "SHCTxDB::LoadBlockIndex() : SHCBlock::hashBestChain not loaded");
   }
-  if (!mapBlockIndex->count(SHCBlock::hashBestChain))
-    return error(SHERR_INVAL, "SHCTxDB::LoadBlockIndex() : SHCBlock::hashBestChain not found in the block index");
+#if 0
+  if (!mapBlockIndex->count(hashBestChain)) {
+    CBlockIndex *pindexBest = GetBestBlockIndex(iface);
+    if (!pindexBest)
+      return error(SHERR_INVAL, "SHCTxDB::LoadBlockIndex() : SHCBlock::hashBestChain not found in the block index");
+    fprintf(stderr, "DEBUG: SHC:LoadBlockIndex: falling back to highest block height %d\n", pindexBest->nHeight);
+    hashBestChain = pindexBest->GetBlockHash();
+  }
+#endif
 
-fprintf(stderr, "DEBUG: SHCTxDB::LoadBlockIndex: info: verifying hashBestChain '%s'\n", (SHCBlock::hashBestChain).GetHex().c_str());
-  CBlockIndex *pindexBest = (*mapBlockIndex)[SHCBlock::hashBestChain];
+  CBlockIndex *pindexBest = (*mapBlockIndex)[hashBestChain];
+  bool ok = true;
+  if (!pindexBest)
+    ok = false;
+  else if (pindexBest->nHeight > 0 && !pindexBest->pprev)
+    ok = false;
+  else if (pindexBest->nHeight == 0 && pindexBest->GetBlockHash() != shc_hashGenesisBlock)
+    ok = false;
+  if (!ok) {
+    pindexBest = GetBestBlockIndex(iface);
+    if (!pindexBest)
+      return error(SHERR_INVAL, "SHCTxDB::LoadBlockIndex() : SHCBlock::hashBestChain not found in the block index");
+    fprintf(stderr, "DEBUG: LoadBlockIndex: falling back to highest block height %d\n", pindexBest->nHeight);
+    hashBestChain = pindexBest->GetBlockHash();
+  }
 
-if (!pindexBest) {
-fprintf(stderr, "DEBUG: SHCTxDB::LoadBlockIndex: error: hashBestChain '%s' not found in block index table\n", (SHCBlock::hashBestChain).GetHex().c_str());
-}
+
+  fprintf(stderr, "DEBUG: SHCTxDB::LoadBlockIndex: info: verifying hashBestChain '%s'\n", (hashBestChain).GetHex().c_str());
+
+  if (!pindexBest) {
+    fprintf(stderr, "DEBUG: SHCTxDB::LoadBlockIndex: error: hashBestChain '%s' not found in block index table\n", (hashBestChain).GetHex().c_str());
+  }
 
   SetBestBlockIndex(SHC_COIN_IFACE, pindexBest);
-  SetBestHeight(iface, pindexBest->nHeight);
+  //  SetBestHeight(iface, pindexBest->nHeight);
 
   SHCBlock::bnBestChainWork = pindexBest->bnChainWork;
   printf("LoadBlockIndex(): SHCBlock::hashBestChain=%s  height=%d  date=%s\n",
-      SHCBlock::hashBestChain.ToString().substr(0,20).c_str(), GetBestHeight(iface),
+      hashBestChain.ToString().substr(0,20).c_str(), GetBestHeight(iface),
       DateTimeStrFormat("%x %H:%M:%S", pindexBest->GetBlockTime()).c_str());
 
   // Load bnBestInvalidWork, OK if it doesn't exist
   ReadBestInvalidWork(SHCBlock::bnBestInvalidWork);
 
+#if 0
   // Verify blocks in the best chain
   int nCheckLevel = GetArg("-checklevel", 1);
-  int nCheckDepth = GetArg( "-checkblocks", 2500);
+  int nCheckDepth = GetArg( "-checkblocks", 10000);
   if (nCheckDepth == 0)
     nCheckDepth = 1000000000; // suffices until the year 19000
   if (nCheckDepth > GetBestHeight(SHC_COIN_IFACE))
     nCheckDepth = GetBestHeight(SHC_COIN_IFACE);
   printf("Verifying last %i blocks at level %i\n", nCheckDepth, nCheckLevel);
+#endif
+
+  int nCheckDepth = (GetBestHeight(SHC_COIN_IFACE) / 100) + 2500;
+  int total = 0;
+  int invalid = 0;
+  int maxHeight = 0;
+
   CBlockIndex* pindexFork = NULL;
   map<pair<unsigned int, unsigned int>, CBlockIndex*> mapBlockPos;
   for (CBlockIndex* pindex = pindexBest; pindex && pindex->pprev; pindex = pindex->pprev)
@@ -184,124 +264,43 @@ fprintf(stderr, "DEBUG: SHCTxDB::LoadBlockIndex: error: hashBestChain '%s' not f
       pindexFork = pindex->pprev;
       continue;
     }
-
+    total++;
     // check level 1: verify block validity
     //if (nCheckLevel>0 && !block.CheckBlock())
     if (!block.CheckBlock())
     {
-      printf("LoadBlockIndex() : *** found bad block at %d, hash=%s\n", pindex->nHeight, pindex->GetBlockHash().ToString().c_str());
+      fprintf(stderr, "DEBUG: LoadBlockIndex() : *** found bad block at %d, hash=%s\n", pindex->nHeight, pindex->GetBlockHash().ToString().c_str());
       pindexFork = pindex->pprev;
+      invalid++;
       continue;
     }
-#if 0
-    // check level 2: verify transaction index validity
-    if (nCheckLevel>1)
-    {
-      pair<unsigned int, unsigned int> pos = make_pair(pindex->nFile, pindex->nBlockPos);
-      mapBlockPos[pos] = pindex;
-      BOOST_FOREACH(const CTransaction &tx, block.vtx)
-      {
-        uint256 hashTx = tx.GetHash();
-        CTxIndex txindex;
-        if (ReadTxIndex(hashTx, txindex))
-        {
-          // check level 3: checker transaction hashes
-          if (nCheckLevel>2 || pindex->nFile != txindex.pos.nFile || pindex->nBlockPos != txindex.pos.nBlockPos)
-          {
-            // either an error or a duplicate transaction
-            CTransaction txFound;
-            if (!txFound.ReadFromDisk(txindex.pos))
-            {
-              printf("LoadBlockIndex() : *** cannot read mislocated transaction %s\n", hashTx.ToString().c_str());
-              pindexFork = pindex->pprev;
-            }
-            else
-              if (txFound.GetHash() != hashTx) // not a duplicate tx
-              {
-                printf("LoadBlockIndex(): *** invalid tx position for %s\n", hashTx.ToString().c_str());
-                pindexFork = pindex->pprev;
-              }
-          }
-          // check level 4: check whether spent txouts were spent within the main chain
-          unsigned int nOutput = 0;
-          if (nCheckLevel>3)
-          {
-            BOOST_FOREACH(const CDiskTxPos &txpos, txindex.vSpent)
-            {
-              if (!txpos.IsNull())
-              {
-                pair<unsigned int, unsigned int> posFind = make_pair(txpos.nFile, txpos.nBlockPos);
-                if (!mapBlockPos.count(posFind))
-                {
-                  printf("LoadBlockIndex(): *** found bad spend at %d, hashBlock=%s, hashTx=%s\n", pindex->nHeight, pindex->GetBlockHash().ToString().c_str(), hashTx.ToString().c_str());
-                  pindexFork = pindex->pprev;
-                }
-                // check level 6: check whether spent txouts were spent by a valid transaction that consume them
-                if (nCheckLevel>5)
-                {
-                  CTransaction txSpend;
-                  if (!txSpend.ReadFromDisk(txpos))
-                  {
-                    printf("LoadBlockIndex(): *** cannot read spending transaction of %s:%i from disk\n", hashTx.ToString().c_str(), nOutput);
-                    pindexFork = pindex->pprev;
-                  }
-                  else if (!txSpend.CheckTransaction())
-                  {
-                    printf("LoadBlockIndex(): *** spending transaction of %s:%i is invalid\n", hashTx.ToString().c_str(), nOutput);
-                    pindexFork = pindex->pprev;
-                  }
-                  else
-                  {
-                    bool fFound = false;
-                    BOOST_FOREACH(const CTxIn &txin, txSpend.vin)
-                      if (txin.prevout.hash == hashTx && txin.prevout.n == nOutput)
-                        fFound = true;
-                    if (!fFound)
-                    {
-                      printf("LoadBlockIndex(): *** spending transaction of %s:%i does not spend it\n", hashTx.ToString().c_str(), nOutput);
-                      pindexFork = pindex->pprev;
-                    }
-                  }
-                }
-              }
-              nOutput++;
-            }
-          }
-        }
-        // check level 5: check whether all prevouts are marked spent
-        if (nCheckLevel>4)
-        {
-          BOOST_FOREACH(const CTxIn &txin, tx.vin)
-          {
-            CTxIndex txindex;
-            if (ReadTxIndex(txin.prevout.hash, txindex))
-              if (txindex.vSpent.size()-1 < txin.prevout.n || txindex.vSpent[txin.prevout.n].IsNull())
-              {
-                printf("LoadBlockIndex(): *** found unspent prevout %s:%i in %s\n", txin.prevout.hash.ToString().c_str(), txin.prevout.n, hashTx.ToString().c_str());
-                pindexFork = pindex->pprev;
-              }
-          }
-        }
-      }
-    }
-#endif
+    if (pindex->nHeight > maxHeight)
+      maxHeight = pindex->nHeight;
   }
   if (pindexFork && !fRequestShutdown)
   {
     // Reorg back to the fork
-fprintf(stderr, "DEBUG: LoadBlockIndex() : *** moving best chain pointer back to block %d\n", pindexFork->nHeight);
+    fprintf(stderr, "DEBUG: LoadBlockIndex() : *** moving best chain pointer back to block %d '%s'\n", pindexFork->nHeight, pindexFork->GetBlockHash().GetHex().c_str());
     SHCBlock block;
     if (!block.ReadFromDisk(pindexFork))
       return error(SHERR_INVAL, "LoadBlockIndex() : block.ReadFromDisk failed");
     SHCTxDB txdb;
     block.SetBestChain(txdb, pindexFork);
+    txdb.Close();
+
+    pindexBest = pindexFork;
   }
+
+  maxHeight++;
+  sprintf(errbuf, "SHC::LoadBlockIndex: Verified %-2.2f%% of %d total blocks: %d total invalid blocks found.", (double)(100 / (double)maxHeight * (double)total), maxHeight, invalid);
+  unet_log(SHC_COIN_IFACE, errbuf);
+
 
   return true;
 }
 
 
-
+#if 0
 bool SHCTxDB::LoadBlockIndexGuts()
 {
   blkidx_t *mapBlockIndex = GetBlockTable(SHC_COIN_IFACE);
@@ -374,6 +373,7 @@ fprintf(stderr, "DEBUG: initialized SHCBlock::pindexGenesisBlock (%s)\n", (SHCBl
 
   return true;
 }
+#endif
 
 
 bool shc_InitBlockIndex()

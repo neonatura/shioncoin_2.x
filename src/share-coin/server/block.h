@@ -49,6 +49,8 @@ bc_t *GetBlockChain(CIface *iface);
 
 bc_t *GetBlockTxChain(CIface *iface);;
 
+bool BlockChainErase(CIface *iface, size_t nHeight);
+
 void CloseBlockChains(void);
 
 
@@ -933,23 +935,23 @@ class CBlock : public CBlockHeader
 
     void print() const
     {
-      fprintf(stderr, "CBlock(hash=%s, PoW=%s, ver=%d, hashPrevBlock=%s, hashMerkleRoot=%s, nTime=%u, nBits=%08x, nNonce=%u, vtx=%lu)\n",
-          GetHash().ToString().substr(0,20).c_str(),
+      fprintf(stderr, "CBlock(iface=%d, hash=%s, PoW=%s, ver=%d, hashPrevBlock=%s, hashMerkleRoot=%s, nTime=%u, nBits=%08x, nNonce=%u, vtx=%lu)\n",
+          ifaceIndex, GetHash().GetHex().c_str(),
           GetPoWHash().ToString().substr(0,20).c_str(),
           nVersion,
-          hashPrevBlock.ToString().substr(0,20).c_str(),
-          hashMerkleRoot.ToString().substr(0,10).c_str(),
+          hashPrevBlock.GetHex().c_str(),
+          hashMerkleRoot.GetHex().c_str(),
           nTime, nBits, nNonce,
           vtx.size());
       for (unsigned int i = 0; i < vtx.size(); i++)
       {
-        printf("  ");
+        fprintf(stderr, "\t");
         vtx[i].print();
       }
-      printf("  vMerkleTree: ");
+      fprintf(stderr, "  vMerkleTree:");
       for (unsigned int i = 0; i < vMerkleTree.size(); i++)
-        printf("%s ", vMerkleTree[i].ToString().substr(0,10).c_str());
-      printf("\n");
+        fprintf(stderr, " %s", vMerkleTree[i].GetHex().c_str());
+      fprintf(stderr, "\n");
     }
 
     //bool AddToBlockIndex(unsigned int nFile, unsigned int nBlockPos);
@@ -961,6 +963,7 @@ class CBlock : public CBlockHeader
     bool ReadFromDisk(const CBlockIndex* pindex, bool fReadTransactions=true);
     const CTransaction *GetTx(uint256 hash);
 
+    virtual bool Truncate() = 0;
     virtual bool ReadBlock(uint64_t nHeight) = 0;
     virtual bool CheckBlock() = 0;
     virtual bool SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew) = 0;
@@ -986,7 +989,7 @@ CBlock *GetBlankBlock(CIface *iface);
  * to it, but pnext will only point forward to the longest branch, or will
  * be null if the block is not part of the longest chain.
  */
-class CBlockIndex : public CBlockHeader
+class CBlockIndex
 {
   public:
     const uint256* phashBlock;
@@ -997,14 +1000,12 @@ class CBlockIndex : public CBlockHeader
     int nHeight;
     CBigNum bnChainWork;
 
-#if 0
     // block header
     int nVersion;
     uint256 hashMerkleRoot;
     unsigned int nTime;
     unsigned int nBits;
     unsigned int nNonce;
-#endif
 
 
     CBlockIndex()
@@ -1151,7 +1152,6 @@ public:
     // header
     static const int CURRENT_VERSION=1;
     static USDE_CTxMemPool mempool; 
-    static uint256 hashBestChain;
     static CBlockIndex *pindexBest;
     static CBlockIndex *pindexGenesisBlock;// = NULL;
     static CBigNum bnBestChainWork;// = 0;
@@ -1191,6 +1191,7 @@ public:
     bool CheckBlock();
     bool ReadBlock(uint64_t nHeight);
     bool IsOrphan();
+    bool Truncate();
 
   protected:
     bool SetBestChainInner(CTxDB& txdb, CBlockIndex *pindexNew);
@@ -1224,7 +1225,6 @@ public:
     // header
     static const int CURRENT_VERSION=2;
     static SHC_CTxMemPool mempool; 
-    static uint256 hashBestChain;
     static CBlockIndex *pindexBest;
     static CBlockIndex *pindexGenesisBlock;
     static CBigNum bnBestChainWork;
@@ -1261,6 +1261,7 @@ public:
     bool CheckBlock();
     bool ReadBlock(uint64_t nHeight);
     bool IsOrphan();
+    bool Truncate();
 
   protected:
     bool SetBestChainInner(CTxDB& txdb, CBlockIndex *pindexNew);
@@ -1360,6 +1361,76 @@ class CBlockLocator
     int GetHeight();
 };
 
+/** Used to marshal pointers into hashes for db storage. */
+class CDiskBlockIndex : public CBlockIndex
+{
+public:
+    uint256 hashPrev;
+    uint256 hashNext;
+
+    CDiskBlockIndex()
+    {
+        hashPrev = 0;
+        hashNext = 0;
+    }
+
+    explicit CDiskBlockIndex(CBlockIndex* pindex) : CBlockIndex(*pindex)
+    {
+        hashPrev = (pprev ? pprev->GetBlockHash() : 0);
+        hashNext = (pnext ? pnext->GetBlockHash() : 0);
+    }
+
+    IMPLEMENT_SERIALIZE
+    (
+        if (!(nType & SER_GETHASH))
+            READWRITE(nVersion);
+
+        READWRITE(hashNext);
+/*
+        READWRITE(nFile);
+        READWRITE(nBlockPos);
+*/
+        READWRITE(nHeight);
+
+        // block header
+        READWRITE(this->nVersion);
+        READWRITE(hashPrev);
+        READWRITE(hashMerkleRoot);
+        READWRITE(nTime);
+        READWRITE(nBits);
+        READWRITE(nNonce);
+    )
+
+    uint256 GetBlockHash() const
+    {
+        CBlockHeader block;
+        block.nVersion        = nVersion;
+        block.hashPrevBlock   = hashPrev;
+        block.hashMerkleRoot  = hashMerkleRoot;
+        block.nTime           = nTime;
+        block.nBits           = nBits;
+        block.nNonce          = nNonce;
+        return block.GetHash();
+    }
+
+
+    std::string ToString() const
+    {
+        std::string str = "CDiskBlockIndex(";
+        str += CBlockIndex::ToString();
+        str += strprintf("\n                hashBlock=%s, hashPrev=%s, hashNext=%s)",
+            GetBlockHash().ToString().c_str(),
+            hashPrev.ToString().substr(0,20).c_str(),
+            hashNext.ToString().substr(0,20).c_str());
+        return str;
+    }
+
+    void print() const
+    {
+        printf("%s\n", ToString().c_str());
+    }
+};
+
 
 
 CBlock *GetBlockByHeight(CIface *iface, int nHeight);
@@ -1372,15 +1443,9 @@ CBlock *CreateBlockTemplate(CIface *iface);
 
 CTxMemPool *GetTxMemPool(CIface *iface);
 
-uint256 GetBlockBestChain(CIface *iface);
-
-void SetBlockBestChain(CIface *iface, CBlock *block);
-
 bool ProcessBlock(CNode* pfrom, CBlock* pblock);
 
 int64 GetBestHeight(CIface *iface);
-
-void SetBestHeight(CIface *iface, int nBestHeight);
 
 int64 GetBestHeight(int ifaceIndex);
 
@@ -1400,6 +1465,8 @@ CBlockIndex *GetBestBlockIndex(CIface *iface);
 CBlockIndex *GetBestBlockIndex(int ifaceIndex);
 
 bool BlockTxExists(CIface *iface, uint256 hashTx);
+
+void CloseBlockChain(CIface *iface);
 
 
 #endif /* ndef __SERVER_BLOCK_H__ */
