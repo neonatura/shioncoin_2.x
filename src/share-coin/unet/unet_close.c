@@ -25,7 +25,7 @@
 
 #include "shcoind.h"
 
-#define MAX_SOCKET_BUFFER_SIZE 1024000 /* 10meg */
+#define MAX_SOCKET_BUFFER_SIZE 20480000 /* 20meg */
 
 int unet_close(SOCKET sk, char *tag)
 {
