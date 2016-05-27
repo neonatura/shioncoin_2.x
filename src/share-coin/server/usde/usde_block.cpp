@@ -1888,8 +1888,6 @@ fprintf(stderr, "DEBUG: usde_ConnectInputs failure\n");
     mapQueuedChanges[hashTx] = CTxIndex(posThisTx, tx.vout.size());
   }
 
-fprintf(stderr, "DEBUG: ConnectBlock: vtx.size() = %d\n", vtx.size()); 
-
   // Write queued txindex changes
   for (map<uint256, CTxIndex>::iterator mi = mapQueuedChanges.begin(); mi != mapQueuedChanges.end(); ++mi)
   {

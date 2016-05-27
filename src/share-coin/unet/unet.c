@@ -142,26 +142,35 @@ void unet_cycle(double max_t)
 
     /* write outgoing buffer to socket */
     if (shbuf_size(t->wbuff)) {
-      timing_init("shnet_write", &ts);
-      w_len = MIN(65536, shbuf_size(t->wbuff)); /* chunk it */
-      w_len = shnet_write(fd, shbuf_data(t->wbuff), w_len);
-      timing_term("shnet_write", &ts);
-      if (w_len < 0) {
-        unet_close(fd, "write");
-        continue;
-      }
+      size_t w_tot;
+      size_t w_of;
 
-      shbuf_trim(t->wbuff, w_len);
+      timing_init("shnet_write", &ts);
+      w_tot = shbuf_size(t->wbuff);
+      for (w_of = 0; w_of < w_tot; w_of += w_len) {
+        w_len = shnet_write(fd, shbuf_data(t->wbuff)+w_of, w_tot-w_of);
+        if (w_len < 0)
+          break;
+      }      
+      timing_term("shnet_write", &ts);
+
+      shbuf_trim(t->wbuff, w_of);
       t->stamp = shtime();
     }
 
     /* handle incoming data */
     timing_init("shnet_read", &ts);
+    err = shnet_read(fd, NULL, 65536);
+    if (err < 0) {
+      unet_close(fd, "read");
+      continue;
+    }
+
     buff = shnet_read_buf(fd);
     timing_term("shnet_read", &ts);
     if (!buff) {
       /* connection reset by peer */
-      unet_close(fd, "read");
+      unet_close(fd, "readbuff");
       continue;
     }
     if (shbuf_size(buff)) {
@@ -200,9 +209,6 @@ void unet_cycle(double max_t)
   memset(&to, 0, sizeof(to));
   diff_t = max_t - (shtimef(shtime()) - shtimef(start_t));
   to.tv_usec = MIN(999999, (long)((double)1000000 * MAX(0, diff_t)));
-if ((double)to.tv_usec / 1000000 > max_t) {
-fprintf(stderr, "DEBUG: warning: unet_cycle: max_t %f, to.tv_usec %u\n", max_t, to.tv_usec); 
-}
   err = select(fd_max+1, &r_set, NULL, &x_set, &to);
   if (err > 0) {
     for (fd = 1; fd <= fd_max; fd++) {

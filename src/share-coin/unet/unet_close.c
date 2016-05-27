@@ -113,7 +113,7 @@ void unet_close_idle(void)
     }
     if (shbuf_size(t->wbuff) > MAX_SOCKET_BUFFER_SIZE ||
         shbuf_size(t->rbuff) > MAX_SOCKET_BUFFER_SIZE) {
-      sprintf(buf, "unet_close_idle: closeing peer '%s' for buffer overflow (read %dk, write %dk).", shbuf_size(t->rbuff), shbuf_size(t->wbuff));
+      sprintf(buf, "unet_close_idle: closeing peer '%s' for buffer overflow (read %dk, write %dk).", shaddr_print(&t->net_addr), shbuf_size(t->rbuff), shbuf_size(t->wbuff));
       unet_log(t->mode, buf);
       unet_shutdown(t->fd);
       continue;
