@@ -1379,13 +1379,15 @@ void shc_MessageHandler(CIface *iface)
 
 }
 
-#define USDE_READ_BUFFER_SIZE 131072
+#define USDE_READ_BUFFER_SIZE 262144
 void usde_server_timer(void)
 {
 static int _only_once_for_now;
   CIface *iface = GetCoinByIndex(USDE_COIN_IFACE);
   NodeList &vNodes = GetNodeList(USDE_COIN_IFACE);
   bc_t *bc;
+
+//fprintf(stderr, "DEBUG: usde_server_timer()\n");
 
 
   if (fShutdown)
@@ -1562,7 +1564,7 @@ static void shc_close_free(void)
   }
 }
 
-#define SHC_READ_BUFFER_SIZE 131072
+#define SHC_READ_BUFFER_SIZE 262144
 void shc_server_timer(void)
 {
   static int _only_once_for_now;

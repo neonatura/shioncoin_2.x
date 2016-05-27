@@ -199,6 +199,9 @@ void unet_cycle(double max_t)
   memset(&to, 0, sizeof(to));
   diff_t = max_t - (shtimef(shtime()) - shtimef(start_t));
   to.tv_usec = MIN(999999, (long)((double)1000000 * MAX(0, diff_t)));
+if ((double)to.tv_usec / 1000000 > max_t) {
+fprintf(stderr, "DEBUG: warning: unet_cycle: max_t %f, to.tv_usec %u\n", max_t, to.tv_usec); 
+}
   err = select(fd_max+1, &r_set, NULL, &x_set, &to);
   if (err > 0) {
     for (fd = 1; fd <= fd_max; fd++) {
