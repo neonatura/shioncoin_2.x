@@ -1379,7 +1379,7 @@ void shc_MessageHandler(CIface *iface)
 
 }
 
-#define USDE_READ_BUFFER_SIZE 262144
+#define USDE_READ_BUFFER_SIZE 65536
 void usde_server_timer(void)
 {
 static int _only_once_for_now;
@@ -1564,7 +1564,7 @@ static void shc_close_free(void)
   }
 }
 
-#define SHC_READ_BUFFER_SIZE 262144
+#define SHC_READ_BUFFER_SIZE 65536
 void shc_server_timer(void)
 {
   static int _only_once_for_now;
