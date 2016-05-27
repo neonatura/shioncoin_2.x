@@ -143,7 +143,8 @@ void unet_cycle(double max_t)
     /* write outgoing buffer to socket */
     if (shbuf_size(t->wbuff)) {
       timing_init("shnet_write", &ts);
-      w_len = shnet_write(fd, shbuf_data(t->wbuff), shbuf_size(t->wbuff));
+      w_len = MIN(65536, shbuf_size(t->wbuff)); /* chunk it */
+      w_len = shnet_write(fd, shbuf_data(t->wbuff), w_len);
       timing_term("shnet_write", &ts);
       if (w_len < 0) {
         unet_close(fd, "write");

@@ -910,7 +910,7 @@ shtime_t ts;
         }
         if (nMessageSize > vRecv.size())
         {
-            fprintf(stderr, "DEBUG: info: usde_ProcessMessages(%s, %u bytes) : nMessageSize > vRecv.size()n", strCommand.c_str(), nMessageSize);
+            fprintf(stderr, "DEBUG: info: usde_ProcessMessages(%s, %u bytes) : nMessageSize > vRecv.size(%u)\n", strCommand.c_str(), nMessageSize, (unsigned int)vRecv.size());
             // Rewind and wait for rest of message
             vRecv.insert(vRecv.begin(), vHeaderSave.begin(), vHeaderSave.end());
             break;
