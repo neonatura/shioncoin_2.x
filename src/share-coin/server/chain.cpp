@@ -38,29 +38,34 @@ extern CCriticalSection cs_main;
 
 bool LoadExternalBlockchainFile()
 {
+  static unsigned char pchMessageStart[4] = { 0xd9, 0xd9, 0xf9, 0xbd };
   static int nIndex = 0;
   CIface *iface = GetCoinByIndex(chain.ifaceIndex);
+  int err;
 
   {
     LOCK(cs_main);
     try {
-fprintf(stderr, "DEBUG: LoadExternalBlockchainFile()\n");
       FILE *fl = fopen(chain.path, "rb");
       if (!fl) {
         fprintf(stderr, "DEBUG: error open '%s': %s\n", chain.path, strerror(errno));
         return (false);
       }
       CAutoFile blkdat(fl, SER_DISK, DISK_VERSION);
-      while (chain.pos != (unsigned int)-1 && blkdat.good() && !fRequestShutdown)
-      {
+      while (chain.pos != (unsigned int)-1 && blkdat.good() && !fRequestShutdown) {
         unsigned char pchData[65536];
         do {
-          fseek(blkdat, chain.pos, SEEK_SET);
+          err = fseek(blkdat, chain.pos, SEEK_SET);
+          if (err)
+            return false;
           int nRead = fread(pchData, 1, sizeof(pchData), blkdat);
           if (nRead <= 8)
           {
+#if 0
             chain.pos = (unsigned int)-1;
             break;
+#endif
+            return false;
           }
           void* nFind = memchr(pchData, pchMessageStart[0], nRead+1-sizeof(pchMessageStart));
           if (nFind)
@@ -78,9 +83,9 @@ fprintf(stderr, "DEBUG: LoadExternalBlockchainFile()\n");
         if (chain.pos == (unsigned int)-1)
           return (false);
         fseek(blkdat, chain.pos, SEEK_SET);
-fprintf(stderr, "DEBUG: fseek(blkdat, %d, SEEK_SET)\n", chain.pos);
         unsigned int nSize;
         blkdat >> nSize;
+        chain.pos += 4 + nSize;
         if (nSize > 0 && nSize <= iface->max_block_size)
         {
           CBlock *block = GetBlankBlock(iface);
@@ -89,11 +94,10 @@ fprintf(stderr, "DEBUG: fseek(blkdat, %d, SEEK_SET)\n", chain.pos);
           {
             chain.total++;
             nIndex++;
-            chain.pos += 4 + nSize;
             if (chain.total == chain.max)
               return (false); /* too many puppies. */
           } else {
-            fprintf(stderr, "DEBUG: ProcessBlock failure\n");
+            fprintf(stderr, "DEBUG: ProcessBlock failure: fseek(blkdat, %d, SEEK_SET)\n", chain.pos);
           }
           delete block;
         }
@@ -106,7 +110,7 @@ fprintf(stderr, "DEBUG: fseek(blkdat, %d, SEEK_SET)\n", chain.pos);
       }
     }
     catch (std::exception &e) {
-      printf("%s() : Deserialize or I/O error caught during load\n",
+      fprintf(stderr, "DEBUG: %s() : Deserialize or I/O error caught during load\n",
           __PRETTY_FUNCTION__);
     }
   }

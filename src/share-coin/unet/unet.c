@@ -104,6 +104,7 @@ void unet_cycle(double max_t)
   shtime_t start_t;
   shtime_t ts;
   fd_set r_set;
+  fd_set w_set;
   fd_set x_set;
   SOCKET fd;
   double diff_t;
@@ -127,6 +128,7 @@ void unet_cycle(double max_t)
   /* process I/O for sockets */
   fd_max = 1;
   FD_ZERO(&r_set);
+  FD_ZERO(&w_set);
   FD_ZERO(&x_set);
   for (fd = 1; fd < MAX_UNET_SOCKETS; fd++) {
     t = get_unet_table(fd);
@@ -149,8 +151,13 @@ void unet_cycle(double max_t)
       w_tot = shbuf_size(t->wbuff);
       for (w_of = 0; w_of < w_tot; w_of += w_len) {
         w_len = shnet_write(fd, shbuf_data(t->wbuff)+w_of, w_tot-w_of);
-        if (w_len < 0)
+        if (w_len < 0) {
+          if (errno != EAGAIN) {
+fprintf(stderr, "DEBUG: unet_cycle: shnet_write failure: %s [errno %d]\n", strerror(errno), errno);  
+            unet_close(fd, "write");
+          }
           break;
+        }
       }      
       timing_term("shnet_write", &ts);
 
@@ -162,10 +169,12 @@ void unet_cycle(double max_t)
     timing_init("shnet_read", &ts);
     err = shnet_read(fd, NULL, 65536);
     if (err < 0) {
+fprintf(stderr, "DEBUG: unet_cycle: shnet_read failure: %s [errno %d]\n", strerror(errno), errno);
       unet_close(fd, "read");
       continue;
     }
 
+#if 0
     buff = shnet_read_buf(fd);
     timing_term("shnet_read", &ts);
     if (!buff) {
@@ -178,6 +187,7 @@ void unet_cycle(double max_t)
       shbuf_clear(buff);
       t->stamp = shtime();
     }
+#endif
 
 #if 0
     /* flush pending writes */
@@ -190,6 +200,8 @@ void unet_cycle(double max_t)
 
     FD_SET(fd, &r_set);
     FD_SET(fd, &x_set);
+    if (shbuf_size(t->wbuff))
+      FD_SET(fd, &w_set);
     fd_max = MAX(fd, fd_max);
   }
 
@@ -207,10 +219,12 @@ void unet_cycle(double max_t)
   unet_close_idle(); 
 
   memset(&to, 0, sizeof(to));
-  diff_t = max_t - (shtimef(shtime()) - shtimef(start_t));
-  to.tv_usec = MIN(999999, (long)((double)1000000 * MAX(0, diff_t)));
-  err = select(fd_max+1, &r_set, NULL, &x_set, &to);
+  diff_t = MAX(0.001, max_t - (shtimef(shtime()) - shtimef(start_t))); /* sec */
+  diff_t *= 1000; /* ms */
+  to.tv_usec = MIN(250000, (long)1000 * (long)diff_t); /* usec */
+  err = select(fd_max+1, &r_set, &w_set, &x_set, &to);
   if (err > 0) {
+fprintf(stderr, "DEBUG: INFO: select() found x%d descriptors\n", err);
     for (fd = 1; fd <= fd_max; fd++) {
       if (FD_ISSET(fd, &x_set)) {
         /* socket is in error state */

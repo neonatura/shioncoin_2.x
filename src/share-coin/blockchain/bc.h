@@ -38,6 +38,8 @@ extern "C" {
 
 #define BC_MAX_NAME_LENGTH MAX_SHARE_NAME_LENGTH
 
+#define BCMAP_LOCK "bcmap_lock"
+
 typedef uint32_t bcsize_t;
 
 typedef uint32_t bc_hash_t[8];

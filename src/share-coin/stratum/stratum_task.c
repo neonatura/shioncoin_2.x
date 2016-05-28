@@ -5,7 +5,7 @@
 
 #define BLOCK_VERSION 1
 //#define MAX_SERVER_NONCE 128
-#define MAX_SERVER_NONCE 4 
+#define MAX_SERVER_NONCE 8
 #define MAX_ROUND_TIME 600
 
 //static task_t *task_list;

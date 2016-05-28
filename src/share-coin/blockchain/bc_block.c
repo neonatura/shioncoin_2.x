@@ -147,7 +147,7 @@ int bc_write(bc_t *bc, unsigned int jrnl, unsigned char *data, int data_len)
 }
 #endif
 
-int bc_write(bc_t *bc, bcsize_t pos, bc_hash_t hash, void *raw_data, int data_len)
+static int _bc_write(bc_t *bc, bcsize_t pos, bc_hash_t hash, void *raw_data, int data_len)
 {
   unsigned char *data = (unsigned char *)raw_data;
   bc_idx_t idx;
@@ -187,6 +187,18 @@ int bc_write(bc_t *bc, bcsize_t pos, bc_hash_t hash, void *raw_data, int data_le
   }
 
   return (0);
+}
+
+int bc_write(bc_t *bc, bcsize_t pos, bc_hash_t hash, void *raw_data, int data_len)
+{
+  int err;
+
+  if (!shlock_open_str(BCMAP_LOCK, 0))
+    return (SHERR_NOLCK);
+
+  err = _bc_write(bc, pos, hash, raw_data, data_len);
+  shlock_close_str(BCMAP_LOCK);
+  return (err);
 }
 
 /**
@@ -239,7 +251,7 @@ bc_map_t *map;
 /**
  * Fills a pre-allocated binary segment with a specified size from a specified record position.
  */
-int bc_read(bc_t *bc, int pos, void *data, bcsize_t data_len)
+static int _bc_read(bc_t *bc, int pos, void *data, bcsize_t data_len)
 {
   bc_map_t *map;
   bc_idx_t idx;
@@ -269,6 +281,19 @@ fprintf(stderr, "DEBUG: bc_read; invalid crc {map: %x, idx: %x} mismatch at pos 
   memcpy(data, map->raw + idx.of, data_len);
 
   return (0);
+}
+
+int bc_read(bc_t *bc, int pos, void *data, bcsize_t data_len)
+{
+  int err;
+
+  if (!shlock_open_str(BCMAP_LOCK, 0))
+    return (SHERR_NOLCK);
+
+  err = _bc_read(bc, pos, data, data_len);
+  shlock_close_str(BCMAP_LOCK);
+
+  return (err);
 }
 
 /**
@@ -347,7 +372,7 @@ int bc_find(bc_t *bc, bc_hash_t hash, int *pos_p)
 /**
  * @bug this does not handle jrnls alloc'd past one being targeted.
  */
-int bc_purge(bc_t *bc, bcsize_t pos)
+static int _bc_purge(bc_t *bc, bcsize_t pos)
 {
   bc_map_t *map;
   bc_idx_t idx;
@@ -384,6 +409,18 @@ fprintf(stderr, "DEBUG: bc_read; invalid crc {map: %x, idx: %x} mismatch at pos 
   bc_map_trunc(bc, map, idx.of);
 
   return (0);
+}
+
+int bc_purge(bc_t *bc, bcsize_t pos)
+{
+  int err;
+
+  if (!shlock_open_str(BCMAP_LOCK, 0))
+    return (SHERR_NOLCK);
+
+  err = _bc_purge(bc, pos);
+  shlock_close_str(BCMAP_LOCK);
+  return (err);
 }
 
 

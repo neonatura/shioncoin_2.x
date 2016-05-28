@@ -48,13 +48,13 @@ int unet_connect(int mode, struct sockaddr *net_addr, SOCKET *sk_p)
     unet_log(mode, buf); 
 
     /* exceeds supported limit (hard-coded) */
-    close(cli_fd);
+    shnet_close(cli_fd);
     return (SHERR_AGAIN);
   }
 
   table = get_unet_table(cli_fd);
   if (!table) {
-    close(cli_fd);
+    shnet_close(cli_fd);
     return (SHERR_INVAL);
   }
 
@@ -79,7 +79,7 @@ int unet_connect(int mode, struct sockaddr *net_addr, SOCKET *sk_p)
     }
   }
   if (err) {
-    close(cli_fd);
+    shnet_close(cli_fd);
     return (err);
   }
 

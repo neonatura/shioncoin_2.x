@@ -129,8 +129,10 @@ typedef struct unet_table_t
   /** The last time that I/O was processed on socket. */
   shtime_t stamp;
 
+#if 0
   /** incoming data buffer */
   shbuf_t *rbuff;
+#endif
 
   /** outgoing data buffer */
   shbuf_t *wbuff;

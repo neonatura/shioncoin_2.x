@@ -1379,10 +1379,10 @@ void shc_MessageHandler(CIface *iface)
 
 }
 
-#define USDE_READ_BUFFER_SIZE 65536
+#define USDE_READ_BUFFER_SIZE 131072
 void usde_server_timer(void)
 {
-static int _only_once_for_now;
+  static int verify_idx;
   CIface *iface = GetCoinByIndex(USDE_COIN_IFACE);
   NodeList &vNodes = GetNodeList(USDE_COIN_IFACE);
   bc_t *bc;
@@ -1406,14 +1406,29 @@ static int _only_once_for_now;
         pnode->AddRef();
     }
 
-    static char pchBuf[USDE_READ_BUFFER_SIZE];
     BOOST_FOREACH(CNode* pnode, vNodesCopy)
     {
       if (fShutdown)
         return;
 
-      memset(pchBuf, '\000', USDE_READ_BUFFER_SIZE);
 
+      /* incoming data */
+      CDataStream& vRecv = pnode->vRecv;
+      unsigned int nPos = vRecv.size();
+      shbuf_t *pchBuf = shnet_read_buf(pnode->hSocket);
+      if (pchBuf) {
+        unsigned char *pch = shbuf_data(pchBuf);
+        size_t nBytes = shbuf_size(pchBuf);
+        vRecv.resize(nPos + nBytes);
+        memcpy(&vRecv[nPos], pch, nBytes);
+        shbuf_clear(pchBuf);
+        pnode->nLastRecv = GetTime();
+      } else {
+        unet_shutdown(pnode->hSocket);
+      }
+#if 0
+    char pchBuf[USDE_READ_BUFFER_SIZE];
+      memset(pchBuf, '\000', USDE_READ_BUFFER_SIZE);
       /* incoming data */
       CDataStream& vRecv = pnode->vRecv;
       unsigned int nPos = vRecv.size();
@@ -1423,7 +1438,9 @@ static int _only_once_for_now;
         vRecv.resize(nPos + nBytes);
         memcpy(&vRecv[nPos], pchBuf, nBytes);
         pnode->nLastRecv = GetTime();
+fprintf(stderr, "DEBUG: usde_server_timer: vRecv[%u] += <%d bytes> (buff %u)\n", (unsigned int)nPos, (unsigned int)nBytes, (unsigned int)vRecv.size());
       }
+#endif
 
       {
         LOCK(pnode->cs_vSend);
@@ -1452,7 +1469,7 @@ static int _only_once_for_now;
 
   event_cycle_chain(USDE_COIN_IFACE); /* DEBUG: */
 
-  if (!_only_once_for_now) {
+  if (0 == (verify_idx % 100)) {
     bc = GetBlockTxChain(iface);
     if (bc)
       bc_idle(bc);
@@ -1460,8 +1477,8 @@ static int _only_once_for_now;
     bc = GetBlockChain(iface);
     if (bc)
       bc_idle(bc);
-    _only_once_for_now = TRUE;
   }
+  verify_idx++;
 
 }
 
@@ -1564,10 +1581,10 @@ static void shc_close_free(void)
   }
 }
 
-#define SHC_READ_BUFFER_SIZE 65536
+#define SHC_READ_BUFFER_SIZE 131072
 void shc_server_timer(void)
 {
-  static int _only_once_for_now;
+  static int verify_idx;
   CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);
   NodeList &vNodes = GetNodeList(SHC_COIN_IFACE);
   bc_t *bc;
@@ -1588,17 +1605,29 @@ void shc_server_timer(void)
         pnode->AddRef();
     }
 
-    static char pchBuf[SHC_READ_BUFFER_SIZE];
     BOOST_FOREACH(CNode* pnode, vNodesCopy)
     {
       if (fShutdown)
         return;
 
-      memset(pchBuf, '\000', SHC_READ_BUFFER_SIZE);
 
       /* incoming data */
       CDataStream& vRecv = pnode->vRecv;
       unsigned int nPos = vRecv.size();
+      shbuf_t *pchBuf = shnet_read_buf(pnode->hSocket);
+      if (pchBuf) {
+        unsigned char *pch = shbuf_data(pchBuf);
+        size_t nBytes = shbuf_size(pchBuf);
+        vRecv.resize(nPos + nBytes);
+        memcpy(&vRecv[nPos], pch, nBytes);
+        shbuf_clear(pchBuf);
+        pnode->nLastRecv = GetTime();
+      } else {
+        unet_shutdown(pnode->hSocket);
+      }
+#if 0
+    char pchBuf[SHC_READ_BUFFER_SIZE];
+      memset(pchBuf, '\000', SHC_READ_BUFFER_SIZE);
       size_t nBytes = SHC_READ_BUFFER_SIZE;
       int err = unet_read(pnode->hSocket, pchBuf, &nBytes);
       if (!err && nBytes > 0) { 
@@ -1606,6 +1635,7 @@ void shc_server_timer(void)
         memcpy(&vRecv[nPos], pchBuf, nBytes);
         pnode->nLastRecv = GetTime();
       }
+#endif
 
       {
         LOCK(pnode->cs_vSend);
@@ -1634,7 +1664,7 @@ void shc_server_timer(void)
 
   event_cycle_chain(SHC_COIN_IFACE); /* DEBUG: TODO: uevent */
 
-  if (!_only_once_for_now) {
+  if (0 == (verify_idx % 100)) {
     bc = GetBlockTxChain(iface);
     if (bc)
       bc_idle(bc);
@@ -1642,8 +1672,8 @@ void shc_server_timer(void)
     bc = GetBlockChain(iface);
     if (bc)
       bc_idle(bc);
-    _only_once_for_now = TRUE;
   }
+  verify_idx++;
 }
 
 void shc_server_accept(int hSocket, struct sockaddr *net_addr)

@@ -269,6 +269,7 @@ int USDEWallet::ScanForWalletTransactions(CBlockIndex* pindexStart, bool fUpdate
                     ret++;
             }
             pindex = pindex->pnext;
+// 10k; break
         }
     }
     return ret;

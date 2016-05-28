@@ -44,10 +44,13 @@ int unet_close(SOCKET sk, char *tag)
     (*bind->op_close)(sk, &table->net_addr);
   }
 
+  err = shnet_close(sk);
+#if 0
 #ifdef WIN32
   err = closesocket(sk);
 #else
   err = close(sk);
+#endif
 #endif
 
   sprintf(buf, "closed connection '%s' (%-2.2fh) [%s].",
@@ -111,9 +114,9 @@ void unet_close_idle(void)
       unet_shutdown(t->fd);
       continue;
     }
-    if (shbuf_size(t->wbuff) > MAX_SOCKET_BUFFER_SIZE ||
-        shbuf_size(t->rbuff) > MAX_SOCKET_BUFFER_SIZE) {
-      sprintf(buf, "unet_close_idle: closeing peer '%s' for buffer overflow (read %dk, write %dk).", shaddr_print(&t->net_addr), shbuf_size(t->rbuff), shbuf_size(t->wbuff));
+    if (shbuf_size(t->wbuff) > MAX_SOCKET_BUFFER_SIZE) {
+// || shbuf_size(t->rbuff) > MAX_SOCKET_BUFFER_SIZE) {
+      sprintf(buf, "unet_close_idle: closeing peer '%s' for buffer overflow (write %dk).", shaddr_print(&t->net_addr), shbuf_size(t->wbuff));
       unet_log(t->mode, buf);
       unet_shutdown(t->fd);
       continue;
@@ -135,7 +138,7 @@ void unet_close_free(void)
       continue; /* already cleared */ 
 
     /* free [user-level] socket buffer */
-    shbuf_free(&t->rbuff);
+//    shbuf_free(&t->rbuff);
     shbuf_free(&t->wbuff);
 
     memset(t, '\000', sizeof(unet_table_t));

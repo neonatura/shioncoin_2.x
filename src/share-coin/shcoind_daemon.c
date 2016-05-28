@@ -18,7 +18,7 @@ void daemon_close_clients(void)
   for (user = client_list; user; user = user->next) {
     if (user->fd == -1)
       continue;
-    close(user->fd);
+    shnet_close(user->fd);
     user->fd = -1;
   }
 

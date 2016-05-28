@@ -26,6 +26,7 @@
 #include "shcoind.h"
 
 
+#if 0
 int unet_rbuff_add(int sk, unsigned char *data, size_t data_len)
 {
   unet_table_t *t;
@@ -42,7 +43,9 @@ int unet_rbuff_add(int sk, unsigned char *data, size_t data_len)
 
   return (0);
 }
+#endif
 
+#if 0
 int unet_sbuff_add(int sk, unsigned char *data, size_t data_len)
 {
   unet_table_t *t;
@@ -59,3 +62,4 @@ int unet_sbuff_add(int sk, unsigned char *data, size_t data_len)
 
   return (0);
 }
+#endif

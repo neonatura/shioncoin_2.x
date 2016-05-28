@@ -1346,8 +1346,6 @@ bool USDEBlock::CheckBlock()
 bool static USDE_Reorganize(CTxDB& txdb, CBlockIndex* pindexNew, USDE_CTxMemPool *mempool)
 {
 
-fprintf(stderr, "DEBUG: USDE_Reorganize()\n");
-
   // Find the fork
   CBlockIndex* pindexBest = GetBestBlockIndex(USDE_COIN_IFACE);
   CBlockIndex* pfork = pindexBest;
@@ -1518,6 +1516,8 @@ bool USDEBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
 {
   CIface *iface = GetCoinByIndex(USDE_COIN_IFACE);
   uint256 hash = GetHash();
+  shtime_t ts;
+  bool ret;
 
   if (!txdb.TxnBegin())
     return error(SHERR_INVAL, "SetBestChain() : TxnBegin failed");
@@ -1554,8 +1554,11 @@ bool USDEBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
       Debug("Postponing %i reconnects\n", vpindexSecondary.size());
 
     // Switch to new best branch
-    if (!USDE_Reorganize(txdb, pindexIntermediate, &mempool))
-    {
+    
+    timing_init("USDE:Reorganize/SetBestChain", &ts);
+    ret = USDE_Reorganize(txdb, pindexIntermediate, &mempool);
+    timing_term("USDE:Reorganize/SetBestChain", &ts);
+    if (!ret) {
       txdb.TxnAbort();
       InvalidChainFound(pindexNew);
       return error(SHERR_INVAL, "SetBestChain() : Reorganize failed");
@@ -1683,11 +1686,15 @@ bool usde_AcceptBlock(USDEBlock *pblock)
     return error(SHERR_INVAL, "AcceptBlock() : rejected by checkpoint lockin at %d", nHeight);
   }
 
- if (!pblock->WriteBlock(nHeight)) {
+  timing_init("USDE:WriteBlock/Accept", &ts);
+  ret = pblock->WriteBlock(nHeight);
+  timing_term("USDE:WriteBlock/Accept", &ts);
+  if (!ret)
     return error(SHERR_INVAL, "USDE: AcceptBlock(): error writing block to height %d", nHeight);
-  }
 
+  timing_init("USDE:AddToBlockIndex/Accept", &ts);
   ret = pblock->AddToBlockIndex();
+  timing_term("USDE:AddToBlockIndex/Accept", &ts);
   if (!ret) {
     return error(SHERR_IO, "AcceptBlock() : AddToBlockIndex failed");
   }
@@ -1707,7 +1714,12 @@ bool usde_AcceptBlock(USDEBlock *pblock)
 
 bool USDEBlock::AcceptBlock()
 {
-  bool ret = usde_AcceptBlock(this);
+  shtime_t ts;
+  bool ret;
+
+  timing_init("USDE:AcceptBlock", &ts);
+  ret = usde_AcceptBlock(this);
+  timing_term("USDE:AcceptBlock", &ts);
   if (!ret)
     return (false);
 

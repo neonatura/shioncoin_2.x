@@ -37,7 +37,7 @@
 
 #define BC_MAP_BLOCK_SIZE 16384
 
-int bc_map_open(bc_t *bc, bc_map_t *map)
+static int _bc_map_open(bc_t *bc, bc_map_t *map)
 {
   bc_hdr_t ini_hdr;
   struct stat st;
@@ -93,10 +93,25 @@ int bc_map_open(bc_t *bc, bc_map_t *map)
   return (0);
 }
 
+int bc_map_open(bc_t *bc, bc_map_t *map)
+{
+  int err;
+
+  if (!shlock_open_str(BCMAP_LOCK, 0))
+    return (SHERR_NOLCK);
+
+  err = _bc_map_open(bc, map);
+  shlock_close_str(BCMAP_LOCK);
+  if (err)
+    return (err);
+
+  return (0);
+}
+
 /**
  * @param The amount to incrase the allocated size by.
  */
-int bc_map_alloc(bc_t *bc, bc_map_t *map, bcsize_t len)
+static int _bc_map_alloc(bc_t *bc, bc_map_t *map, bcsize_t len)
 {
   struct stat st;
   unsigned char *raw;
@@ -158,17 +173,34 @@ memset(&st, 0, sizeof(st));
   return (0);
 }
 
-/**
- * Truncates the data-content layer of a map to a given size.
- */
-int bc_map_trunc(bc_t *bc, bc_map_t *map, bcsize_t len)
+int bc_map_alloc(bc_t *bc, bc_map_t *map, bcsize_t len)
 {
   int err;
 
+  if (!shlock_open_str(BCMAP_LOCK, 0))
+    return (SHERR_NOLCK);
+
+  err = _bc_map_alloc(bc, map, len);
+  shlock_close_str(BCMAP_LOCK);
+  if (err)
+    return (err);
+
+  return (0);
+}
+
+/**
+ * Truncates the data-content layer of a map to a given size.
+ */
+static int _bc_map_trunc(bc_t *bc, bc_map_t *map, bcsize_t len)
+{
+  int err;
+
+#if 0
   /* ensure file map is open */
   err = bc_map_open(bc, map);
   if (err)
     return (err);
+#endif
 
   err = bc_map_alloc(bc, map, 0);
   if (err) {
@@ -182,24 +214,45 @@ int bc_map_trunc(bc_t *bc, bc_map_t *map, bcsize_t len)
   return (0);
 }
 
+int bc_map_trunc(bc_t *bc, bc_map_t *map, bcsize_t len)
+{
+  int err;
+
+  if (!shlock_open_str(BCMAP_LOCK, 0))
+    return (SHERR_NOLCK);
+
+  err = _bc_map_trunc(bc, map, len);
+  shlock_close_str(BCMAP_LOCK);
+  if (err)
+    return (err);
+
+  return (0);
+}
+
 void bc_map_free(bc_map_t *map)
 {
+  int err;
 
   if (map->hdr) {
+    err = 0;
+    if (!shlock_open_str(BCMAP_LOCK, 0))
+      err = SHERR_NOLCK;
+
 //    msync((void *)map->hdr, map->size, 0);
     munmap((void *)map->hdr, map->size); 
     map->hdr = NULL;
     map->raw = NULL;
     map->size = 0;
+    if (!err)
+      shlock_close_str(BCMAP_LOCK);
   }
 
 }
 
-void bc_map_close(bc_map_t *map)
+static void _bc_map_close(bc_map_t *map)
 {
 
   bc_map_free(map);
-
   if (map->fd) {
     close(map->fd);
     map->fd = 0;
@@ -207,7 +260,23 @@ void bc_map_close(bc_map_t *map)
 
 }
 
-int bc_map_write(bc_t *bc, bc_map_t *map, bcsize_t of, void *raw_data, bcsize_t data_len)
+void bc_map_close(bc_map_t *map)
+{
+  int err;
+
+  if (!map)
+    return;
+
+  err = 0;
+  if (!shlock_open_str(BCMAP_LOCK, 0))
+    err = SHERR_NOLCK;
+
+  _bc_map_close(map);
+  if (!err)
+    shlock_close_str(BCMAP_LOCK);
+}
+
+static int _bc_map_write(bc_t *bc, bc_map_t *map, bcsize_t of, void *raw_data, bcsize_t data_len)
 {
   unsigned char *data = (unsigned char *)raw_data;
   int err;
@@ -223,12 +292,27 @@ fprintf(stderr, "DEBUG: bc_map_write: bc_map_alloc %d\n", err);
   map->stamp = time(NULL);
 
   return (0);
-} 
+}
+
+int bc_map_write(bc_t *bc, bc_map_t *map, bcsize_t of, void *raw_data, bcsize_t data_len)
+{
+  int err;
+
+  if (!shlock_open_str(BCMAP_LOCK, 0))
+    return (SHERR_NOLCK);
+
+  err = _bc_map_write(bc, map, of, raw_data, data_len);
+  shlock_close_str(BCMAP_LOCK);
+  if (err)
+    return (err);
+
+  return (0);
+}
 
 /**
  * Write some data to a specific filemap. 
  */
-int bc_map_append(bc_t *bc, bc_map_t *map, void *raw_data, bcsize_t data_len)
+static int _bc_map_append(bc_t *bc, bc_map_t *map, void *raw_data, bcsize_t data_len)
 {
   unsigned char *data = (unsigned char *)raw_data;
   int err;
@@ -240,10 +324,22 @@ int bc_map_append(bc_t *bc, bc_map_t *map, void *raw_data, bcsize_t data_len)
   return (bc_map_write(bc, map, map->hdr->of, data, data_len));
 }
 
-/**
- * Read a segment data from a file-map
- */
-int bc_map_read(bc_t *bc, bc_map_t *map, unsigned char *data, bcsize_t data_of, bcsize_t data_len)
+int bc_map_append(bc_t *bc, bc_map_t *map, void *raw_data, bcsize_t data_len)
+{
+  int err;
+
+  if (!shlock_open_str(BCMAP_LOCK, 0))
+    return (SHERR_NOLCK);
+
+  err = _bc_map_append(bc, map, raw_data, data_len);
+  shlock_close_str(BCMAP_LOCK);
+  if (err)
+    return (err);
+
+  return (0);
+}
+
+static int _bc_map_read(bc_t *bc, bc_map_t *map, unsigned char *data, bcsize_t data_of, bcsize_t data_len)
 {
 
   if ((data_of + data_len) >= map->hdr->of)
@@ -255,14 +351,45 @@ int bc_map_read(bc_t *bc, bc_map_t *map, unsigned char *data, bcsize_t data_of, 
   return (0);
 }
 
+/**
+ * Read a segment data from a file-map
+ */
+int bc_map_read(bc_t *bc, bc_map_t *map, unsigned char *data, bcsize_t data_of, bcsize_t data_len)
+{
+  int err;
+
+  if (!shlock_open_str(BCMAP_LOCK, 0))
+    return (SHERR_NOLCK);
+
+  err = _bc_map_read(bc, map, data, data_of, data_len);
+  shlock_close_str(BCMAP_LOCK);
+  if (err)
+    return (err);
+
+  return (0);
+}
+
+#define BCMAP_IDLE_TIME 120
 void bc_map_idle(bc_t *bc, bc_map_t *map)
 {
   time_t now;
+  int err;
+
+  if (!map)
+    return;
 
   now = time(NULL);
-  if ((map->stamp + 30) < now)
-    bc_map_close(map);
+  if ((map->stamp + BCMAP_IDLE_TIME) > now)
+    return;
 
+  err = 0;
+  if (!shlock_open_str(BCMAP_LOCK, 0))
+    err = SHERR_NOLCK;
+
+  bc_map_close(map);
+fprintf(stderr, "DEBUG: bc_map_idle: closing map {%x}\n", (unsigned int)map);
+  if (!err)
+    shlock_close_str(BCMAP_LOCK);
 }
 
 
