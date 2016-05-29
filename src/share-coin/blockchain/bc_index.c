@@ -258,18 +258,15 @@ fprintf(stderr, "DEBUG: bc_idx_clear: n_pos = %d\n", n_pos);
       return (err);
   }
 
+#if 0
   if ((pos + 1) == n_pos && bc->idx_map.hdr->of >= sizeof(bc_idx_t)) {
     bc->idx_map.hdr->of -= sizeof(bc_idx_t);
 fprintf(stderr, "DEBUG: bc_idx_clear: (last rec) bc->idx_map.hdr->of = %d\n", bc->idx_map.hdr->of);
   }
+#endif
 
   return (0);
 }
 
-#define BC_BLOCKS_PER_JOURNAL 65536
-uint32_t bc_idx_journal(int pos)
-{
-  return ( (pos / BC_BLOCKS_PER_JOURNAL) + 1 );
-}
 
 

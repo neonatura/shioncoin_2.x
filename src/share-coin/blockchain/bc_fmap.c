@@ -170,6 +170,8 @@ memset(&st, 0, sizeof(st));
   map->raw = (raw + sizeof(bc_hdr_t));
   map->size = size;
 
+fprintf(stderr, "DEBUG: bc_map_alloc: open map {%x}\n", (unsigned int)map);
+
   return (0);
 }
 
@@ -271,6 +273,7 @@ void bc_map_close(bc_map_t *map)
   if (!shlock_open_str(BCMAP_LOCK, 0))
     err = SHERR_NOLCK;
 
+fprintf(stderr, "DEBUG: bc_map_idle: close map {%x}\n", (unsigned int)map);
   _bc_map_close(map);
   if (!err)
     shlock_close_str(BCMAP_LOCK);
@@ -387,7 +390,6 @@ void bc_map_idle(bc_t *bc, bc_map_t *map)
     err = SHERR_NOLCK;
 
   bc_map_close(map);
-fprintf(stderr, "DEBUG: bc_map_idle: closing map {%x}\n", (unsigned int)map);
   if (!err)
     shlock_close_str(BCMAP_LOCK);
 }

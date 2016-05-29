@@ -77,8 +77,10 @@ bool LoadExternalBlockchainFile()
             }
             chain.pos += ((unsigned char*)nFind - pchData) + 1;
           }
-          else
+          else {
+fprintf(stderr, "DEBUG: pchMessage not found\n");
             chain.pos += sizeof(pchData) - sizeof(pchMessageStart) + 1;
+}
         } while(!fRequestShutdown);
         if (chain.pos == (unsigned int)-1)
           return (false);
@@ -87,22 +89,53 @@ bool LoadExternalBlockchainFile()
         blkdat >> nSize;
         chain.pos += 4 + nSize;
         if (nSize > 0 && nSize <= iface->max_block_size)
-        {
+        { /* does not handle orphans */
           CBlock *block = GetBlankBlock(iface);
           blkdat >> *block;
+
+#if 0
+CBlockIndex *bestBlock = GetBestBlockIndex(iface);
+if (bestBlock->GetBlockHash() != block->hashPrevBlock)
+  continue;
+#endif
+
+          if (!ProcessBlock(NULL,block)) {
+fprintf(stderr, "DEBUG: IMPORT: block '%s' failed.\n", block->GetHash().GetHex().c_str());
+            delete block;
+            continue;
+          }
+#if 0
+          if (!block->CheckBlock()) {
+fprintf(stderr, "DEBUG: IMPORT: block '%s' failed integrity validation.\n", block->GetHash().GetHex().c_str());
+            delete block;
+            continue;
+          }
+          if (!block->AcceptBlock()) {
+fprintf(stderr, "DEBUG: IMPORT: block '%s' was not accepted.\n", block->GetHash().GetHex().c_str());
+            delete block;
+            continue;
+          }
+#endif
+          delete block;
+
+          chain.total++;
+          if (chain.total == chain.max)
+            return (false); /* too many puppies. */
+
+#if 0
           if (ProcessBlock(NULL,block))
           {
             chain.total++;
             nIndex++;
             if (chain.total == chain.max)
               return (false); /* too many puppies. */
-          } else {
-            fprintf(stderr, "DEBUG: ProcessBlock failure: fseek(blkdat, %d, SEEK_SET)\n", chain.pos);
           }
-          delete block;
+#endif
         }
 
-        if (49 == (nIndex % 50)) {
+        nIndex++;
+        if (99 == (nIndex % 100)) {
+fprintf(stderr, "DEBUG: ProcessBlock info: fseek(blkdat, %d, SEEK_SET)\n", chain.pos);
           /* continue later */
           nIndex++;
           return (true);
@@ -110,8 +143,9 @@ bool LoadExternalBlockchainFile()
       }
     }
     catch (std::exception &e) {
-      fprintf(stderr, "DEBUG: %s() : Deserialize or I/O error caught during load\n",
-          __PRETTY_FUNCTION__);
+      fprintf(stderr, "DEBUG: %s() : Deserialize or I/O error caught during load: %s\n", __PRETTY_FUNCTION__, e.what());
+      chain.pos += 4;
+      return (true);
     }
   }
 
@@ -147,7 +181,7 @@ bool SaveExternalBlockchainFile()
         delete pblock;
 
         chain.total++;
-        if (49 == (chain.total % 50))
+        if (99 == (chain.total % 100))
           return (true);
       }
     }
@@ -206,7 +240,7 @@ void PerformBlockChainOperation(int ifaceIndex)
     case BCOP_IMPORT:
       ret = LoadExternalBlockchainFile();
       if (!ret) {
-        sprintf(buf, "PerformBlockChainOperation: loaded %u blocks to path \"%s\".", chain.total, chain.path);
+        sprintf(buf, "PerformBlockChainOperation: loaded %u blocks from path \"%s\" [pos %d].", chain.total, chain.path, chain.pos);
         unet_log(chain.ifaceIndex, buf);
         memset(&chain, 0, sizeof(chain));
       }

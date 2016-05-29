@@ -86,6 +86,7 @@ bc_t *GetBlockTxChain(CIface *iface)
   return (iface->bc_tx);
 }
 
+#if 0
 bool BlockChainErase(CIface *iface, size_t nHeight)
 {
   bc_t *bc = GetBlockChain(iface);
@@ -107,6 +108,7 @@ bool BlockChainErase(CIface *iface, size_t nHeight)
 
   return (true);
 }
+#endif
 
 void FreeBlockTable(CIface *iface)
 {
@@ -299,10 +301,12 @@ bool CTransaction::WriteTx(int ifaceIndex, uint64_t blockHeight)
       }
       free(data);
 
+#if 0
       err = bc_idx_clear(bc, txPos);
       if (err)
         return error(err, "WriteTx; error clearing invalid previous hash tx [tx-idx-size %d] [tx-pos %d].", (int)data_len, (int)txPos);
 fprintf(stderr, "DEBUG: WriteTx; CLEAR: cleared tx pos %u\n", (unsigned int)txPos);
+#endif
     }
   }
 #if 0
@@ -326,11 +330,10 @@ fprintf(stderr, "DEBUG: WriteTx; CLEAR: cleared tx pos %u\n", (unsigned int)txPo
 
 bool CTransaction::ReadTx(int ifaceIndex, uint256 txHash)
 {
-  uint256 hashBlock; /* dummy var */
-  return (ReadTx(ifaceIndex, txHash, hashBlock));
+  return (ReadTx(ifaceIndex, txHash, NULL));
 }
 
-bool CTransaction::ReadTx(int ifaceIndex, uint256 txHash, uint256 &hashBlock)
+bool CTransaction::ReadTx(int ifaceIndex, uint256 txHash, uint256 *hashBlock)
 {
   CIface *iface;
   bc_t *bc;
@@ -390,8 +393,14 @@ return (false);
     return error(SHERR_INVAL, errbuf);
   }
 
+  if (hashBlock) {
+    *hashBlock = block->GetHash();
+    if (*hashBlock == 0) {
+      fprintf(stderr, "DEBUG: ReadTx: invalid hash 0 \n");
+    }
+  }
+
   Init(*tx);
-  hashBlock = block->GetHash();
   delete block;
 
   return (true);
@@ -606,7 +615,7 @@ bool GetTransaction(CIface *iface, const uint256 &hash, CTransaction &tx, uint25
 }
 #endif
 
-bool GetTransaction(CIface *iface, const uint256 &hash, CTransaction &tx, uint256 &hashBlock)
+bool GetTransaction(CIface *iface, const uint256 &hash, CTransaction &tx, uint256 *hashBlock)
 {
   return (tx.ReadTx(GetCoinIndex(iface), hash, hashBlock));
 }
@@ -680,7 +689,7 @@ CBlock *GetBlockByTx(CIface *iface, const uint256 hash)
     return (NULL);
 
   /* figure out block hash */
-  if (!tx.ReadTx(GetCoinIndex(iface), hash, hashBlock))
+  if (!tx.ReadTx(GetCoinIndex(iface), hash, &hashBlock))
     return (NULL);
 
   return (GetBlockByHash(iface, hashBlock));
@@ -1411,33 +1420,22 @@ bool CBlock::ReadFromDisk(const CBlockIndex* pindex, bool fReadTransactions)
     return error(SHERR_INVAL, errbuf);
   }
 
-  if (pindex->pprev && GetHash() != pindex->GetBlockHash()) {
-
-#if 0
-    if (pindex->nHeight > 0) {
-      CIface *iface = GetCoinByIndex(ifaceIndex);
-      bc_t *bc = GetBlockChain(iface);
-      int err = bc_purge(bc, pindex->nHeight);
-      if (err) {
-        fprintf(stderr, "DEBUG: error truncating block-chain to height %d: %s\n", (pindex->nHeight-1), sherrstr(err)); 
-      } else {
-        fprintf(stderr, "DEBUG: truncated block-chain to height %d\n", (pindex->nHeight-1));
-
-  SetBestBlockIndex(SHC_COIN_IFACE, pindex->pprev);
-  SetBestHeight(iface, pindex->pprev->nHeight);
-      }
+//  if (pindex->pprev && GetHash() != pindex->GetBlockHash())
+  if (GetHash() != pindex->GetBlockHash()) {
+    /* search deleted blocks */
+    ok = ReadArchBlock(pindex->GetBlockHash());
+    if (!ok) {
+      sprintf(errbuf, "CBlock::ReadFromDisk: block hash '%s' does not match block index '%s' for height %d:", GetHash().GetHex().c_str(), pindex->GetBlockHash().GetHex().c_str(), pindex->nHeight);
+      return error(SHERR_INVAL, errbuf);
     }
-#endif
-
-    sprintf(errbuf, "CBlock::ReadFromDisk: block hash '%s' does not match block index '%s' for height %d:", GetHash().GetHex().c_str(), pindex->GetBlockHash().GetHex().c_str(), pindex->nHeight);
-    return error(SHERR_INVAL, errbuf);
   }
 
+#if 0 /* DEBUG: */
   if (!CheckBlock()) {
     unet_log(ifaceIndex, "CBlock::ReadFromDisk: block validation failure.");
     return (false);
   }
-
+#endif
   
   return (true);
 }
@@ -1593,9 +1591,14 @@ bool CTransaction::CheckTransaction(int ifaceIndex) const
   }
   else
   {
-    BOOST_FOREACH(const CTxIn& txin, vin)
+    BOOST_FOREACH(const CTxIn& txin, vin) {
       if (txin.prevout.IsNull())
         return error(SHERR_INVAL, "CTransaction::CheckTransaction() : prevout is null");
+#if 0 /* DEBUG: */
+      if (!VerifyTxHash(iface, txin.prevout.hash))
+        return error(SHERR_INVAL, "CTransaction::CheckTransaction(): unknown prevout hash '%s'", txin.prevout.hash.GetHex().c_str());
+#endif
+    }
   }
 
   return true;
@@ -1637,7 +1640,7 @@ bool CTransaction::FetchInputs(CTxDB& txdb, const map<uint256, CTxIndex>& mapTes
     if (!fFound && (fBlock || fMiner)) {
       if (fMiner)
         return (false);
-      sprintf(errbuf, "FetchInputs() : %s prev tx %s index entry not found", GetHash().ToString().substr(0,10).c_str(), prevout.hash.ToString().substr(0,10).c_str());
+      sprintf(errbuf, "FetchInputs() : %s prev tx %s index entry not found", GetHash().GetHex().c_str(), prevout.hash.GetHex().c_str());
       return (error(SHERR_NOENT, errbuf));
     }
 
@@ -1683,22 +1686,6 @@ bool CTransaction::FetchInputs(CTxDB& txdb, const map<uint256, CTxIndex>& mapTes
   return true;
 }
 
-bool BlockTxExists(CIface *iface, uint256 hashTx)
-{
-  bc_t *bc = GetBlockTxChain(iface);
-  bc_hash_t b_hash;
-  int err;
-
-  if (!bc)
-    return (false);
-
-  memcpy(b_hash, hashTx.GetRaw(), sizeof(b_hash));
-  err = bc_find(bc, b_hash, NULL);
-  if (err)
-    return (false);
-
-  return (true);
-}
 
 
 bool CBlock::WriteBlock(uint64_t nHeight)
@@ -1716,85 +1703,39 @@ bool CBlock::WriteBlock(uint64_t nHeight)
   if (!bc)
     return (false);
 
-  /* debug : start */
-  if (nHeight < bc_idx_next(bc) &&
-      (0 == bc_idx_get(bc, (size_t)nHeight, NULL))) {
-    CBlock *tblock = GetBlockByHeight(iface, nHeight);
-    if (tblock) {
-      if (tblock->GetHash() == GetHash()) {
-        delete tblock;
-        return (true);
-      }
-fprintf(stderr, "DEBUG: WriteBlock: over-riding block hash '%s' with '%s' at height %d\n", tblock->GetHash().GetHex().c_str(), GetHash().GetHex().c_str(), (int)nHeight);
-      delete tblock;
-    } else {
-fprintf(stderr, "DEBUG: WriteBlock: over-riding unknown block with hash '%s' at height %d\n", tblock->GetHash().GetHex().c_str(), GetHash().GetHex().c_str(), (int)nHeight);
-    }
-
-    err = bc_idx_clear(bc, nHeight);
-    if (err)
-      return error(err, "WriteBlock: error clearing block position %d.", (int)nHeight);
-fprintf(stderr, "DEBUG: WriteBlock: CLEAR: cleared block position %d.\n", (int)nHeight);
-#if 0
-fprintf(stderr, "DEBUG: CBlock::WriteBlock: orphan?: next index is %d, block write is for pos %d\n", bc_idx_next(bc), nHeight);
-    err = bc_idx_get(bc, (size_t)nHeight, NULL);
-    if (err == 0) { /* record exists */
-      if (nHeight == (bc_idx_next(bc) - 1)) {
-        err = bc_purge(bc, nHeight);
-        if (err)
-          return (error(err, "CBlock::WriteBlock: purge failure."));
-    fprintf(stderr, "DEBUG: WriteBlock[iface %d]: PURGE @ height %d\n", ifaceIndex, nHeight);
-      } else {
-        return (error(SHERR_INVAL, "WriteBlock: dis-allowing attempt to over-write established height %d.", nHeight));
-      }
-    }
-#endif
-  }
-  /* debug : end */
-
   uint256 hash = GetHash();
 
-  /* serialize block into binary data */
+  /* check for existing record saved at height position */
+  bc_hash_t rawhash;
+  err = bc_get_hash(bc, (bcsize_t)nHeight, rawhash); 
+  if (!err) { /* exists */
+    uint256 t_hash;
+    t_hash.SetRaw(rawhash);
+    if (t_hash == hash)
+      return (true); /* same hash as already written block */
+    err = bc_clear(bc, nHeight);
+    if (err)
+      return error(err, "WriteBlock: clear block position %d.", (int)nHeight);
+  }
+
+  /* serialize into binary */
   sBlock << *this;
   sBlockLen = sBlock.size();
   sBlockData = (char *)calloc(sBlockLen, sizeof(char));
-  if (!sBlockData) {
-    fprintf(stderr, "DEBUG: error allocating %d bytes for block data\n", sBlockLen);
-    return (false);
-  }
+  if (!sBlockData)
+    return error(SHERR_NOMEM, "allocating %d bytes for block data\n", (int)sBlockLen);
   sBlock.read(sBlockData, sBlockLen);
   n_height = bc_write(bc, nHeight, hash.GetRaw(), sBlockData, sBlockLen);
-  if (n_height < 0) {
-    fprintf(stderr, "DEBUG: CBlock::WriteBlock: bc_append err %d\n", n_height);
-    return (false);
-  }
+  if (n_height < 0)
+    return error(SHERR_INVAL, "block-chain write: %s", sherrstr(n_height));
   free(sBlockData);
-
-
-#if 0 
-  {
-    int err;
-    bc_hash_t ret_hash;
-    err = bc_get_hash(bc, nHeight, ret_hash);
-    if (err) {
-      fprintf(stderr, "DEBUG: CBlock::WriteBlock: bc_get_hash err %d @ pos %d\n", err, nHeight); 
-    } else {
-      uint256 t_hash;
-      t_hash.SetRaw((unsigned int *)ret_hash);
-      if (!bc_hash_cmp(hash.GetRaw(), t_hash.GetRaw())) {
-        fprintf(stderr, "DEBUG: CBlock::WriteBlock: hash mismatch (sys: '%s', disk: '%s')\n", hash.GetHex().c_str(), t_hash.GetHex().c_str());
-      }
-    }
-
-  }
-#endif
 
   /* write tx ref's */
   BOOST_FOREACH(CTransaction& tx, vtx) {
     tx.WriteTx(ifaceIndex, nHeight); 
   }
 
-fprintf(stderr, "DEBUG: WriteBlock: ACCEPT: nHeight(%d) hash(%s)\n", nHeight, hash.GetHex().c_str());
+  Debug("WriteBlock: %s @ height %u\n", hash.GetHex().c_str(), (unsigned int)nHeight);
 
   return (true);
 }
@@ -1834,4 +1775,16 @@ bool CBlock::DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex)
 #endif
 
   return true;
+}
+
+bool VerifyTxHash(CIface *iface, uint256 hashTx)
+{
+  bc_t *bc = GetBlockTxChain(iface);
+  int err;
+
+  err = bc_idx_find(bc, hashTx.GetRaw(), NULL, NULL);
+  if (err)
+    return (false);
+
+  return (true);
 }

@@ -50,13 +50,21 @@ int bc_idx_new(bc_t *bc, int pos, bc_hash_t hash, bcsize_t data_len);
 
 void bc_close(bc_t *bc);
 
-int bc_purge(bc_t *bc, bcsize_t pos);
+/**
+ * Move an index reference to the archived chain.
+ */
+int bc_clear(bc_t *bc, bcsize_t pos);
 
 int bc_write(bc_t *bc, bcsize_t pos, bc_hash_t hash, void *raw_data, int data_len);
 
 int bc_get(bc_t *bc, bcsize_t pos, unsigned char **data_p, size_t *data_len_p);
 
 void bc_idle(bc_t *bc);
+
+uint32_t bc_journal(int pos);
+
+int bc_arch(bc_t *bc, bcsize_t pos, unsigned char **data_p, size_t *data_len_p);
+
 
 
 #endif /* ndef __BLOCKCHAIN__BC_BLOCK_H__ */

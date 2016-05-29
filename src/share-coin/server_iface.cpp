@@ -1470,9 +1470,11 @@ fprintf(stderr, "DEBUG: usde_server_timer: vRecv[%u] += <%d bytes> (buff %u)\n",
   event_cycle_chain(USDE_COIN_IFACE); /* DEBUG: */
 
   if (0 == (verify_idx % 100)) {
+#if 0
     bc = GetBlockTxChain(iface);
     if (bc)
       bc_idle(bc);
+#endif
 
     bc = GetBlockChain(iface);
     if (bc)
@@ -1665,9 +1667,11 @@ void shc_server_timer(void)
   event_cycle_chain(SHC_COIN_IFACE); /* DEBUG: TODO: uevent */
 
   if (0 == (verify_idx % 100)) {
+#if 0
     bc = GetBlockTxChain(iface);
     if (bc)
       bc_idle(bc);
+#endif
 
     bc = GetBlockChain(iface);
     if (bc)

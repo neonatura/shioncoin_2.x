@@ -221,6 +221,7 @@ unsigned int USDEBlock::GetNextWorkRequired(const CBlockIndex* pindexLast)
       }
     }
 
+fprintf(stderr, "DEBUG: Kimoto: using pindexLast->nBits %x\n", pindexLast->nBits);
     return pindexLast->nBits;
   }
 
@@ -368,7 +369,9 @@ namespace USDE_Checkpoints
     ( 750000, uint256("0xa3b1c4f90225299fef3a43851be960b49ca70e8500d1891612e2836cfbeed188"))
     ( 888888, uint256("0x96d7bf79871c8d6d887e098c444071cfda4548e502d1965e255b1b0e71c93c7a"))
     ( 1000000, uint256("0xd444bebec6a7f1345e6bee094d913bdfff0b7ae833c3e3f17b90c98fdc899aa4"))
-
+    ( 1047382, uint256("0x7489d8515228bc90bf43ca09af944e5b3e13f43f1a15f80ae5f211533a26e791"))
+    ( 1084324, uint256("0x59e7296adef10db8f517c1e05cc10b1d83925ebe53d81608a5f929ca3b98d94b"))
+    ( 1087718, uint256("0xa5c0965a380a1a5f99065472da29f5a3f1fc4c9713072597e63e402f87f1812e"))
     ;
 
 
@@ -528,8 +531,10 @@ static bool usde_ConnectInputs(CTransaction *tx, MapPrevTx inputs, map<uint256, 
     // Check for conflicts (double-spend)
     // This doesn't trigger the DoS code on purpose; if it did, it would make it easier
     // for an attacker to attempt to split the network.
-    if (!txindex.vSpent[prevout.n].IsNull())
-      return fMiner ? false : error(SHERR_INVAL, "ConnectInputs() : %s prev tx already used at %s", tx->GetHash().ToString().substr(0,10).c_str(), txindex.vSpent[prevout.n].ToString().c_str());
+    if (!txindex.vSpent[prevout.n].IsNull()) {
+      if (txindex.vSpent[prevout.n].nBlockPos != pindexBlock->nHeight)
+        return fMiner ? false : error(SHERR_INVAL, "ConnectInputs() : %s prev tx already used at %s", tx->GetHash().ToString().substr(0,10).c_str(), txindex.vSpent[prevout.n].ToString().c_str());
+  }
 
     // Skip ECDSA signature verification when connecting blocks (fBlock=true)
     // before the last blockchain checkpoint. This is safe because block merkle hashes are
@@ -763,9 +768,8 @@ bool usde_CreateGenesisBlock()
   blkidx_t *blockIndex = GetBlockTable(USDE_COIN_IFACE);
   bool ret;
 
-  if (!blockIndex->empty())
-    return (true);
-
+  if (blockIndex->count(usde_hashGenesisBlock) != 0)
+    return (true); /* already created */
 
   // Genesis block
   const char* pszTimestamp = "USDE founded 1/1/2014";
@@ -784,63 +788,11 @@ bool usde_CreateGenesisBlock()
   block.nBits    = 0x1e0ffff0;
   block.nNonce   = 134453;
 
-  if (fTestNet)
-  {
-    block.nTime    = 0;             //test net not supported
-    block.nNonce   = 0;
-  }
-
-  //// debug print
-  printf("%s\n", block.GetHash().ToString().c_str());
-  printf("%s\n", usde_hashGenesisBlock.ToString().c_str());
-  printf("%s\n", block.hashMerkleRoot.ToString().c_str());
-
-  assert(block.hashMerkleRoot == uint256("0x1f42509b6d35a6aa60af4ec9b98d8ce4ffbe46c076d4c2da933e87550ab775f2"));
-
-  // If genesis block hash does not match, then generate new genesis hash.
-  if (false && block.GetHash() != usde_hashGenesisBlock)
-  {
-    printf("Searching for genesis block...\n");
-    // This will figure out a valid hash and Nonce if you're
-    // creating a different genesis block:
-    uint256 hashTarget = CBigNum().SetCompact(block.nBits).getuint256();
-    uint256 thash;
-    char scratchpad[SCRYPT_SCRATCHPAD_SIZE];
-
-    loop
-    {
-      scrypt_1024_1_1_256_sp(BEGIN(block.nVersion), BEGIN(thash), scratchpad);
-      if (thash <= hashTarget)
-        break;
-      if ((block.nNonce & 0xFFF) == 0)
-      {
-        printf("nonce %08X: hash = %s (target = %s)\n", block.nNonce, thash.ToString().c_str(), hashTarget.ToString().c_str());
-      }
-      ++block.nNonce;
-      if (block.nNonce == 0)
-      {
-        printf("NONCE WRAPPED, incrementing time\n");
-        ++block.nTime;
-      }
-    }
-    printf("block.nTime = %u \n", block.nTime);
-    printf("block.nNonce = %u \n", block.nNonce);
-    printf("block.GetHash = %s\n", block.GetHash().ToString().c_str());
-  }
-
-  //block.print();
-  assert(block.GetHash() == usde_hashGenesisBlock);
-
-#if 0
-  // Start new block file
-  unsigned int nFile;
-  unsigned int nBlockPos;
-  if (!block.WriteToDisk(nFile, nBlockPos))
-    return error(SHERR_INVAL, "LoadBlockIndex() : writing genesis block to disk failed");
-  if (!block.AddToBlockIndex(nFile, nBlockPos))
-    return error(SHERR_INVAL, "LoadBlockIndex() : genesis block not accepted");
-#endif
-
+  block.print();
+  if (block.GetHash() != usde_hashGenesisBlock)
+    return (false);
+  if (block.hashMerkleRoot != uint256("0x1f42509b6d35a6aa60af4ec9b98d8ce4ffbe46c076d4c2da933e87550ab775f2"))
+    return (false);
 
   if (!block.WriteBlock(0)) {
     return (false);
@@ -849,6 +801,10 @@ bool usde_CreateGenesisBlock()
   ret = block.AddToBlockIndex();
   if (!ret)
     return (false);
+
+  USDETxDB txdb;
+  block.SetBestChain(txdb, (*blockIndex)[usde_hashGenesisBlock]);
+  txdb.Close();
 
   return (true);
 }
@@ -1168,8 +1124,9 @@ bool usde_ProcessBlock(CNode* pfrom, CBlock* pblock)
 
   // Check for duplicate
   uint256 hash = pblock->GetHash();
+
   if (blockIndex->count(hash))
-    return Debug("ProcessBlock() : already have block %d %s", (*blockIndex)[hash]->nHeight, hash.ToString().substr(0,20).c_str());
+    return Debug("ProcessBlock() : already have block %s", hash.GetHex().c_str());
   if (USDE_mapOrphanBlocks.count(hash))
     return Debug("ProcessBlock() : already have block (orphan) %s", hash.ToString().substr(0,20).c_str());
 
@@ -1278,6 +1235,9 @@ bool USDEBlock::CheckBlock()
 {
   CIface *iface = GetCoinByIndex(USDE_COIN_IFACE);
 
+  if (::GetSerializeSize(*this, SER_NETWORK, PROTOCOL_VERSION(iface)) > iface->max_block_size) {
+    return error(SHERR_INVAL, "CheckBlock() : size limits failed");
+  }
 #if 0 /* DEBUG: */
   // Size limits
   if (vtx.empty() || 
@@ -1345,8 +1305,11 @@ bool USDEBlock::CheckBlock()
 
 bool static USDE_Reorganize(CTxDB& txdb, CBlockIndex* pindexNew, USDE_CTxMemPool *mempool)
 {
+  char errbuf[1024];
 
-  // Find the fork
+fprintf(stderr, "DEBUG: USDE_Reorganize: block height %d\n", pindexNew->nHeight);
+
+ // Find the fork
   CBlockIndex* pindexBest = GetBestBlockIndex(USDE_COIN_IFACE);
   CBlockIndex* pfork = pindexBest;
   CBlockIndex* plonger = pindexNew;
@@ -1357,9 +1320,13 @@ bool static USDE_Reorganize(CTxDB& txdb, CBlockIndex* pindexNew, USDE_CTxMemPool
         return error(SHERR_INVAL, "Reorganize() : plonger->pprev is null");
     if (pfork == plonger)
       break;
-    if (!(pfork = pfork->pprev))
-      return error(SHERR_INVAL, "Reorganize() : pfork->pprev is null");
+    if (!pfork->pprev) {
+      sprintf(errbuf, "USDE_Reorganize: no previous chain for '%s' height %d\n", pfork->GetBlockHash().GetHex().c_str(), pfork->nHeight); 
+      return error(SHERR_INVAL, errbuf);
+    }
+    pfork = pfork->pprev;
   }
+
 
   // List of what to disconnect
   vector<CBlockIndex*> vDisconnect;
@@ -1636,7 +1603,31 @@ bool USDEBlock::IsBestChain()
   return (pindexBest && GetHash() == pindexBest->GetBlockHash());
 }
 
-bool usde_AcceptBlock(USDEBlock *pblock)
+#if 0
+static double calc_difficulty(unsigned int nBits)
+{
+
+    int nShift = (nBits >> 24) & 0xff;
+
+    double dDiff =
+        (double)0x0000ffff / (double)(nBits & 0x00ffffff);
+
+    while (nShift < 29)
+    {
+        dDiff *= 256.0;
+        nShift++;
+    }
+    while (nShift > 29)
+    {
+        dDiff /= 256.0;
+        nShift--;
+    }
+
+    return dDiff;
+}
+#endif
+
+bool usde_AcceptBlock(USDEBlock *pblock, bool bForce)
 {
   CIface *iface = GetCoinByIndex(USDE_COIN_IFACE);
   int ifaceIndex = USDE_COIN_IFACE;
@@ -1644,26 +1635,37 @@ bool usde_AcceptBlock(USDEBlock *pblock)
   bc_t *bc = GetBlockChain(GetCoinByIndex(ifaceIndex));
   blkidx_t *blockIndex = GetBlockTable(ifaceIndex);
   shtime_t ts;
+  char errbuf[1024];
   bool ret;
 
   uint256 hash = pblock->GetHash();
-  if (blockIndex->count(hash)) {
+
+  if (blockIndex->count(hash))
     return error(SHERR_INVAL, "USDEBlock::AcceptBlock() : block already in block table.");
-  }
+#if 0
   if (0 == bc_find(bc, hash.GetRaw(), NULL)) {
     return error(SHERR_INVAL, "AcceptBlock() : block already in block table.");
   }
+#endif
+
 
   // Get prev block index
   map<uint256, CBlockIndex*>::iterator mi = blockIndex->find(pblock->hashPrevBlock);
   if (mi == blockIndex->end())
-    return error(SHERR_INVAL, "AcceptBlock() : prev block not found");
+    return error(SHERR_INVAL, "AcceptBlock() : prev block '%s' not found.", pblock->hashPrevBlock.GetHex().c_str());
   CBlockIndex* pindexPrev = (*mi).second;
+  if (!pindexPrev) {
+    return error(SHERR_INVAL, "AcceptBlock() : prev block '%s' not found: block index has NULL record for hash.", pblock->hashPrevBlock.GetHex().c_str());
+  }
   int nHeight = pindexPrev->nHeight+1;
 
   // Check proof of work
-  if (pblock->nBits != pblock->GetNextWorkRequired(pindexPrev)) {
-    return error(SHERR_INVAL, "AcceptBlock() : incorrect proof of work");
+  unsigned int nBits = pblock->GetNextWorkRequired(pindexPrev);
+//  if (calc_difficulty(pblock->nBits) < calc_difficulty(nBits))
+  if (pblock->nBits != nBits) {
+    pblock->print();
+    sprintf(errbuf, "AcceptBlock: invalid difficulty (%x) specified (next work required is %x) for block height %d [prev '%s']\n", pblock->nBits, nBits, nHeight, pindexPrev->GetBlockHash().GetHex().c_str());
+    return error(SHERR_INVAL, errbuf);
   }
 
   if (!CheckDiskSpace(::GetSerializeSize(*pblock, SER_DISK, CLIENT_VERSION))) {
@@ -1675,11 +1677,29 @@ bool usde_AcceptBlock(USDEBlock *pblock)
     return error(SHERR_INVAL, "AcceptBlock() : block's timestamp is too early");
   }
 
-  // Check that all transactions are finalized
-  BOOST_FOREACH(const CTransaction& tx, pblock->vtx)
+  BOOST_FOREACH(const CTransaction& tx, pblock->vtx) {
+#if 0
+    // Check that all inputs exist
+    if (!tx.IsCoinBase()) {
+      BOOST_FOREACH(const CTxIn& txin, tx.vin) {
+        if (txin.prevout.IsNull())
+          return error(SHERR_INVAL, "AcceptBlock(): prevout is null");
+        if (!VerifyTxHash(iface, txin.prevout.hash))
+          return error(SHERR_INVAL, "AcceptBlock(): unknown prevout hash '%s'", txin.prevout.hash.GetHex().c_str());
+      }
+    }
+#endif
+    // Check that all transactions are finalized 
     if (!tx.IsFinal(USDE_COIN_IFACE, nHeight, pblock->GetBlockTime())) {
       return error(SHERR_INVAL, "AcceptBlock() : contains a non-final transaction");
     }
+  }
+
+#if 0
+  if (!pblock->CheckBlock()) {
+    return error(SHERR_INVAL, "AcceptBlock(): block is invalid.");
+  }
+#endif
 
   // Check that the block chain matches the known block chain up to a checkpoint
   if (!USDE_Checkpoints::CheckBlock(nHeight, hash)) {
@@ -1692,6 +1712,7 @@ bool usde_AcceptBlock(USDEBlock *pblock)
   if (!ret)
     return error(SHERR_INVAL, "USDE: AcceptBlock(): error writing block to height %d", nHeight);
 
+
   timing_init("USDE:AddToBlockIndex/Accept", &ts);
   ret = pblock->AddToBlockIndex();
   timing_term("USDE:AddToBlockIndex/Accept", &ts);
@@ -1700,9 +1721,9 @@ bool usde_AcceptBlock(USDEBlock *pblock)
   }
 
   /* Relay inventory, but don't relay old inventory during initial block download */
-  int nBlockEstimate = USDE_Checkpoints::GetTotalBlocksEstimate();
   if (GetBestBlockChain(iface) == hash)
   {
+    int nBlockEstimate = USDE_Checkpoints::GetTotalBlocksEstimate();
     LOCK(cs_vNodes);
     BOOST_FOREACH(CNode* pnode, vNodes)
       if (GetBestHeight(USDE_COIN_IFACE) > (pnode->nStartingHeight != -1 ? pnode->nStartingHeight - 2000 : nBlockEstimate))
@@ -1718,11 +1739,12 @@ bool USDEBlock::AcceptBlock()
   bool ret;
 
   timing_init("USDE:AcceptBlock", &ts);
-  ret = usde_AcceptBlock(this);
+  ret = usde_AcceptBlock(this, false);
   timing_term("USDE:AcceptBlock", &ts);
   if (!ret)
     return (false);
 
+#if 0
   /* Recursively process any orphan blocks that depended on this one */
   uint256 hash = GetHash();
   vector<uint256> vWorkQueue;
@@ -1735,13 +1757,14 @@ bool USDEBlock::AcceptBlock()
         ++mi)
     {
       USDEBlock* pblockOrphan = (*mi).second;
-      if (usde_AcceptBlock(pblockOrphan))
+      if (usde_AcceptBlock(pblockOrphan, false))
         vWorkQueue.push_back(pblockOrphan->GetHash());
       USDE_mapOrphanBlocks.erase(pblockOrphan->GetHash());
       delete pblockOrphan;
     }
     USDE_mapOrphanBlocksByPrev.erase(hashPrev);
   }
+#endif
 
   return true;
 }
@@ -1758,18 +1781,38 @@ static void usde_UpdatedTransaction(const uint256& hashTx)
 }
 
 
-bool USDEBlock::AddToBlockIndex()
+bool USDEBlock::AddToBlockIndex()//bool bForce)
 {
   blkidx_t *blockIndex = GetBlockTable(USDE_COIN_IFACE);
+  CBlockIndex *pindexNew;
   shtime_t ts;
 
-  // Check for duplicate
   uint256 hash = GetHash();
-  if (blockIndex->count(hash))
-    return error(SHERR_INVAL, "AddToBlockIndex() : %s already exists", hash.ToString().substr(0,20).c_str());
 
-  // Construct new block index object
-  CBlockIndex* pindexNew = new CBlockIndex(*this);
+  // Check for duplicate
+  if (blockIndex->count(hash)) 
+    return error(SHERR_INVAL, "AddToBlockIndex() : %s already exists", hash.GetHex().c_str());
+
+#if 0
+  map<uint256, CBlockIndex*>::iterator dup_mi = blockIndex->find(hash);
+  if (dup_mi != blockIndex->end()) {
+    pindexNew = (*dup_mi).second;
+    if (pindexNew && pindexNew->nTime)
+      return error(SHERR_INVAL, "AddToBlockIndex() : %s already exists", hash.GetHex().c_str());
+    if (pindexNew) {
+fprintf(stderr, "DEBUG: removing pre-existing blank block index at height %d\n", pindexNew->nHeight);
+      if (pindexNew->pprev)
+        pindexNew->pprev->pnext = NULL;
+      if (pindexNew->pnext)
+        pindexNew->pnext->pprev = NULL;
+    }
+    blockIndex->erase(dup_mi);
+    delete pindexNew;
+  }
+#endif
+
+  /* create new index */
+  pindexNew = new CBlockIndex(*this);
   if (!pindexNew)
     return error(SHERR_INVAL, "AddToBlockIndex() : new CBlockIndex failed");
   map<uint256, CBlockIndex*>::iterator mi = blockIndex->insert(make_pair(hash, pindexNew)).first;
@@ -1779,10 +1822,12 @@ bool USDEBlock::AddToBlockIndex()
   {
     pindexNew->pprev = (*miPrev).second;
     pindexNew->nHeight = pindexNew->pprev->nHeight + 1;
+  } else {
+    fprintf(stderr, "DEBUG: USDE:AddToBlockIndex: warning: hashPrevBlock '%s' not found.\n", hashPrevBlock.GetHex().c_str());
   }
   pindexNew->bnChainWork = (pindexNew->pprev ? pindexNew->pprev->bnChainWork : 0) + pindexNew->GetBlockWork();
 
-  USDETxDB txdb;
+
 #if 0
   if (!txdb.TxnBegin())
     return false;
@@ -1790,14 +1835,14 @@ bool USDEBlock::AddToBlockIndex()
   if (!txdb.TxnCommit())
     return false;
 #endif
-
   // New best
   if (pindexNew->bnChainWork > bnBestChainWork) {
-    if (!SetBestChain(txdb, pindexNew))
+    USDETxDB txdb;
+    bool ret = SetBestChain(txdb, pindexNew);
+    txdb.Close();
+    if (!ret)
       return false;
   }
-
-  txdb.Close();
 
   if (pindexNew == GetBestBlockIndex(USDE_COIN_IFACE)) {
     // Notify UI to display prev block's coinbase if it was ours
@@ -1806,15 +1851,18 @@ bool USDEBlock::AddToBlockIndex()
     hashPrevBestCoinBase = vtx[0].GetHash();
   }
 
+fprintf(stderr, "DEBUG: USDEBlock::AddToBlockIndex: height %d\n", pindexNew->nHeight); 
+
   return true;
 }
 
 bool USDEBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)
 {
 
-  /* redundant */
+#if 1 /* DEBUG: */
   if (!CheckBlock())
     return false;
+#endif
 
   CIface *iface = GetCoinByIndex(USDE_COIN_IFACE);
   bc_t *bc = GetBlockTxChain(iface);
@@ -1851,10 +1899,8 @@ bool USDEBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)
       CTxIndex txindexOld;
       if (txdb.ReadTxIndex(hashTx, txindexOld)) {
         BOOST_FOREACH(CDiskTxPos &pos, txindexOld.vSpent)
-          if (pos.IsNull()) {
-fprintf(stderr, "DEBUG: USDEBlock::ConnectBlock: null disk pos, ret false\n");
-            return false;
-          }
+          if (pos.IsNull() && pos.nBlockPos != pindex->nHeight)
+            return error(SHERR_INVAL, "DEBUG: USDEBlock::ConnectBlock: BIP30 enforced at height %d\n", pindex->nHeight);
       }
     }
 
@@ -1917,6 +1963,7 @@ fprintf(stderr, "DEBUG: ConnectBlock: vtx[0].GetValueOut() > usde_GetBlockValue(
     return false;
   }
 
+
   if (pindex->pprev)
   {
 /* DEBUG: */
@@ -1930,6 +1977,11 @@ fprintf(stderr, "DEBUG: ConnectBlock: vtx[0].GetValueOut() > usde_GetBlockValue(
       return error(SHERR_INVAL, "ConnectBlock() : WriteBlockIndex failed");
 #endif
   }
+
+  if (!WriteBlock(pindex->nHeight)) {
+    return (error(SHERR_INVAL, "ConnectBlock: error writing block hash '%s' to height %d\n", GetHash().GetHex().c_str(), pindex->nHeight));
+  }
+fprintf(stderr, "DEBUG: CONNECT: wrote hash '%s' to height %d\n", GetHash().GetHex().c_str(), pindex->nHeight);
 
   // Watch for transactions paying to me
   BOOST_FOREACH(CTransaction& tx, vtx)
@@ -1960,6 +2012,8 @@ int ifaceIndex = USDE_COIN_IFACE;
     unet_log(ifaceIndex, errbuf);
     return (false);
   }
+
+  SetNull();
 
   /* serialize binary data into block */
   sBlock.write((const char *)sBlockData, sBlockLen);
@@ -2007,6 +2061,45 @@ int ifaceIndex = USDE_COIN_IFACE;
   return (true);
 }
 
+bool USDEBlock::ReadArchBlock(uint256 hash)
+{
+  int ifaceIndex = USDE_COIN_IFACE;
+  CIface *iface = GetCoinByIndex(ifaceIndex);
+  CDataStream sBlock(SER_DISK, CLIENT_VERSION);
+  size_t sBlockLen;
+  unsigned char *sBlockData;
+  char errbuf[1024];
+  int nPos;
+  bc_t *bc;
+  int err;
+
+  bc = GetBlockChain(iface);
+  if (!bc)
+    return (false);
+
+  err = bc_arch_find(bc, hash.GetRaw(), NULL, &nPos);
+  if (err)
+    return false;
+
+  err = bc_arch(bc, nPos, &sBlockData, &sBlockLen);
+  if (err) {
+    sprintf(errbuf, "CBlock::ReadBlock[arch-idx %d]: %s (sherr %d).",
+      (int)nPos, sherrstr(err), err);
+    unet_log(ifaceIndex, errbuf);
+    return (false);
+  }
+
+  SetNull();
+
+  /* serialize binary data into block */
+  sBlock.write((const char *)sBlockData, sBlockLen);
+  sBlock >> *this;
+  free(sBlockData);
+fprintf(stderr, "DEBUG: ARCH: loaded block '%s'\n", GetHash().GetHex().c_str());
+
+  return (true);
+}
+
 bool USDEBlock::IsOrphan()
 {
   blkidx_t *blockIndex = GetBlockTable(USDE_COIN_IFACE);
@@ -2028,6 +2121,9 @@ bool USDEBlock::Truncate()
   CIface *iface = GetCoinByIndex(USDE_COIN_IFACE);
   CBlockIndex *cur_index;
   int err;
+
+  if (!blockIndex->count(GetHash()))
+    return error(SHERR_INVAL, "Erase: block not found in block-index.");
 
   cur_index = (*blockIndex)[GetHash()];
   if (!cur_index)
@@ -2056,20 +2152,28 @@ bool USDEBlock::Truncate()
   }
   txdb.Close();
 #endif
-  CBlockIndex *pindex = cur_index->pprev;
   {
     USDEBlock block;
-    if (block.ReadFromDisk(pindex)) {
+    if (block.ReadFromDisk(cur_index)) {
       USDETxDB txdb;
 //      pindex->pnext = NULL;
-      block.SetBestChain(txdb, pindex);
+      block.SetBestChain(txdb, cur_index);
       txdb.Close();
     }
   }
 
+  bc_t *bc = GetBlockChain(GetCoinByIndex(ifaceIndex));
+  int bestHeight = bc_idx_next(bc) - 1;
+  int idx;
+
+  for (idx = bestHeight; idx > cur_index->nHeight; idx--) {
+    bc_clear(bc, idx);
+  }
+#if 0
   err = BlockChainErase(iface, cur_index->nHeight);
   if (err)
     return error(err, "BlockChainErase[USDE]");
+#endif
 
   return (true);
 }

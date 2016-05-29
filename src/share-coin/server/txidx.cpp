@@ -430,8 +430,7 @@ bool CTxDB::ContainsTx(uint256 hash)
 
 bool CTxDB::ReadDiskTx(uint256 hash, CTransaction& tx)
 {
-uint256 blockHash;
-return (tx.ReadTx(ifaceIndex, hash, blockHash));
+  return (tx.ReadTx(ifaceIndex, hash));
 }
 
 #if 0

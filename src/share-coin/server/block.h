@@ -49,13 +49,12 @@ bc_t *GetBlockChain(CIface *iface);
 
 bc_t *GetBlockTxChain(CIface *iface);;
 
-bool BlockChainErase(CIface *iface, size_t nHeight);
 
 void CloseBlockChains(void);
 
 
 
-bool GetTransaction(CIface *iface, const uint256 &hash, CTransaction &tx, uint256 &hashBlock);
+bool GetTransaction(CIface *iface, const uint256 &hash, CTransaction &tx, uint256 *hashBlock);
 
 
 
@@ -696,7 +695,7 @@ public:
 
     bool ReadTx(int ifaceIndex, uint256 txHash);
 
-    bool ReadTx(int ifaceIndex, uint256 txHash, uint256 &hashBlock);
+    bool ReadTx(int ifaceIndex, uint256 txHash, uint256 *hashBlock);
 
     bool WriteTx(int ifaceIndex, uint64_t blockHeight);
 
@@ -965,6 +964,7 @@ class CBlock : public CBlockHeader
 
     virtual bool Truncate() = 0;
     virtual bool ReadBlock(uint64_t nHeight) = 0;
+    virtual bool ReadArchBlock(uint256 hash) = 0;
     virtual bool CheckBlock() = 0;
     virtual bool SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew) = 0;
     virtual bool ConnectBlock(CTxDB& txdb, CBlockIndex* pindex) = 0;
@@ -1190,6 +1190,7 @@ public:
     bool ConnectBlock(CTxDB& txdb, CBlockIndex* pindex);
     bool CheckBlock();
     bool ReadBlock(uint64_t nHeight);
+    bool ReadArchBlock(uint256 hash);
     bool IsOrphan();
     bool Truncate();
 
@@ -1260,6 +1261,7 @@ public:
     bool ConnectBlock(CTxDB& txdb, CBlockIndex* pindex);
     bool CheckBlock();
     bool ReadBlock(uint64_t nHeight);
+    bool ReadArchBlock(uint256 hash);
     bool IsOrphan();
     bool Truncate();
 
@@ -1464,9 +1466,9 @@ CBlockIndex *GetBestBlockIndex(CIface *iface);
 
 CBlockIndex *GetBestBlockIndex(int ifaceIndex);
 
-bool BlockTxExists(CIface *iface, uint256 hashTx);
-
 void CloseBlockChain(CIface *iface);
+
+bool VerifyTxHash(CIface *iface, uint256 hashTx);
 
 
 #endif /* ndef __SERVER_BLOCK_H__ */

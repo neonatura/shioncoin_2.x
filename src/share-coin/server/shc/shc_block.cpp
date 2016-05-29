@@ -606,14 +606,8 @@ bool shc_CreateGenesisBlock()
   blkidx_t *blockIndex = GetBlockTable(SHC_COIN_IFACE);
   bool ret;
 
-
   if (blockIndex->count(shc_hashGenesisBlock) != 0)
     return (true); /* already created */
-
-#if 0
-  if (!fAllowNew)
-    return false;
-#endif
 
   // Genesis block
   const char* pszTimestamp = "Neo Natura (share-coin) 2016";
@@ -633,56 +627,11 @@ bool shc_CreateGenesisBlock()
   block.nNonce   = 3293840;
 
 
-  assert(block.hashMerkleRoot == shc_hashGenesisMerkle);
-
-#if 0
-  // If genesis block hash does not match, then generate new genesis hash.
-  if (block.GetHash() != shc_hashGenesisBlock)
-  {
-    printf("Searching for genesis block...\n");
-    // This will figure out a valid hash and Nonce if you're
-    // creating a different genesis block:
-    uint256 hashTarget = CBigNum().SetCompact(block.nBits).getuint256();
-    uint256 thash;
-    char scratchpad[SCRYPT_SCRATCHPAD_SIZE];
-
-    block.nNonce--;
-    loop
-    {
-      scrypt_1024_1_1_256_sp(BEGIN(block.nVersion), BEGIN(thash), scratchpad);
-      if (thash <= hashTarget)
-        break;
-      if ((block.nNonce & 0xFFF) == 0)
-      {
-        printf("nonce %08X: hash = %s (target = %s)\n", block.nNonce, thash.ToString().c_str(), hashTarget.ToString().c_str());
-      }
-      ++block.nNonce;
-      if (block.nNonce == 0)
-      {
-        printf("NONCE WRAPPED, incrementing time\n");
-        ++block.nTime;
-      }
-    }
-    fprintf(stderr, "block.nTime = %u \n", block.nTime);
-    fprintf(stderr, "block.nNonce = %u \n", block.nNonce);
-    fprintf(stderr, "block.GetHash = %s\n", block.GetHash().ToString().c_str());
-    fprintf(stderr, "block.merkleRoot = %s\n", block.hashMerkleRoot.ToString().c_str());
-  }
-  shc_hashGenesisBlock = block.GetHash(); /* DEBUG: */
-#endif
-
   block.print();
-  assert(block.GetHash() == shc_hashGenesisBlock);
-
-#if 0
-  unsigned int nFile = 0;
-  unsigned int nBlockPos = 0;
-  // Start new block file
-  if (!block.WriteToDisk(nFile, nBlockPos))
-    return error(SHERR_INVAL, "LoadBlockIndex() : writing genesis block to disk failed");
-  if (!block.AddToBlockIndex(nFile, nBlockPos))
-    return error(SHERR_INVAL, "LoadBlockIndex() : genesis block not accepted");
-#endif
+  if (block.GetHash() != shc_hashGenesisBlock)
+    return (false);
+  if (block.hashMerkleRoot != shc_hashGenesisMerkle)
+    return (false);
 
   if (!block.WriteBlock(0)) {
     return (false);
@@ -693,19 +642,9 @@ bool shc_CreateGenesisBlock()
     return (false);
   }
 
-CBlockIndex *pindex = (*blockIndex)[block.GetHash()];
-if (!pindex) {
-fprintf(stderr, "DEBUG: shc_CreateGenesisBlock: hash '%s' not found in block-index.\n", block.GetHash().GetHex().c_str()); 
-  return (false);
-}
-SHCTxDB txdb;
-block.SetBestChain(txdb, pindex);
-txdb.Close();
-/*
-SetBestBlockIndex(iface, pindex); 
-SetBestHeight(iface, 0);
-*/
-
+  SHCTxDB txdb;
+  block.SetBestChain(txdb, (*blockIndex)[shc_hashGenesisBlock]);
+  txdb.Close();
 
   return (true);
 }
@@ -1017,8 +956,9 @@ bool shc_ProcessBlock(CNode* pfrom, CBlock* pblock)
 
   // Check for duplicate
   uint256 hash = pblock->GetHash();
+
   if (blockIndex->count(hash))
-    return Debug("ProcessBlock() : already have block %d %s", (*blockIndex)[hash]->nHeight, hash.ToString().substr(0,20).c_str());
+    return Debug("ProcessBlock() : already have block %s", hash.GetHex().c_str());
   if (SHC_mapOrphanBlocks.count(hash))
     return Debug("ProcessBlock() : already have block (orphan) %s", hash.ToString().substr(0,20).c_str());
 
@@ -1122,6 +1062,9 @@ bool SHCBlock::CheckBlock()
 {
   CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);
 
+  if (::GetSerializeSize(*this, SER_NETWORK, PROTOCOL_VERSION(iface)) > iface->max_block_size) {
+    return error(SHERR_INVAL, "CheckBlock() : size limits failed");
+  }
 #if 0
   if (vtx[0].GetValueOut() > shc_GetBlockValue(nHeight, nFees)) {
     return (false);
@@ -1195,10 +1138,13 @@ bool SHCBlock::CheckBlock()
 
 bool static SHC_Reorganize(CTxDB& txdb, CBlockIndex* pindexNew, SHC_CTxMemPool *mempool)
 {
-  unet_log(txdb.ifaceIndex, "REORGANIZE\n");
+  char errbuf[1024];
 
-  // Find the fork
-  CBlockIndex* pfork = GetBestBlockIndex(SHC_COIN_IFACE);
+fprintf(stderr, "DEBUG: SHC_Reorganize: block height %d\n", pindexNew->nHeight);
+
+ // Find the fork
+  CBlockIndex* pindexBest = GetBestBlockIndex(SHC_COIN_IFACE);
+  CBlockIndex* pfork = pindexBest;
   CBlockIndex* plonger = pindexNew;
   while (pfork != plonger)
   {
@@ -1207,12 +1153,14 @@ bool static SHC_Reorganize(CTxDB& txdb, CBlockIndex* pindexNew, SHC_CTxMemPool *
         return error(SHERR_INVAL, "Reorganize() : plonger->pprev is null");
     if (pfork == plonger)
       break;
-    if (!(pfork = pfork->pprev))
-      return error(SHERR_INVAL, "Reorganize() : pfork->pprev is null");
+    if (!pfork->pprev) {
+      sprintf(errbuf, "SHC_Reorganize: no previous chain for '%s' height %d\n", pfork->GetBlockHash().GetHex().c_str(), pfork->nHeight); 
+      return error(SHERR_INVAL, errbuf);
+    }
+    pfork = pfork->pprev;
   }
 
   // List of what to disconnect
-  CBlockIndex *pindexBest = GetBestBlockIndex(SHC_COIN_IFACE);
   vector<CBlockIndex*> vDisconnect;
   for (CBlockIndex* pindex = pindexBest; pindex != pfork; pindex = pindex->pprev)
     vDisconnect.push_back(pindex);
@@ -1285,14 +1233,12 @@ bool static SHC_Reorganize(CTxDB& txdb, CBlockIndex* pindexNew, SHC_CTxMemPool *
   BOOST_FOREACH(CTransaction& tx, vDelete)
     mempool->remove(tx);
 
-  unet_log(txdb.ifaceIndex, "REORGANIZE: done\n");
-
   return true;
 }
 
 void SHCBlock::InvalidChainFound(CBlockIndex* pindexNew)
 {
-  CIface *iface = GetCoinByIndex(USDE_COIN_IFACE);
+  CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);
   char errbuf[1024];
 
   if (pindexNew->bnChainWork > bnBestInvalidWork)
@@ -1491,14 +1437,16 @@ bool shc_AcceptBlock(SHCBlock *pblock)
   if (blockIndex->count(hash)) {
     return error(SHERR_INVAL, "SHCBlock::AcceptBlock() : block already in block table.");
   }
+#if 0
   if (0 == bc_find(bc, hash.GetRaw(), NULL)) {
     return error(SHERR_INVAL, "AcceptBlock() : block already in block table.");
   }
+#endif
 
-  // Get prev block index
+// Get prev block index
   map<uint256, CBlockIndex*>::iterator mi = blockIndex->find(pblock->hashPrevBlock);
   if (mi == blockIndex->end())
-    return error(SHERR_INVAL, "AcceptBlock() : prev block not found");
+    return error(SHERR_INVAL, "SHC:AcceptBlock: prev block '%s' not found.", pblock->hashPrevBlock.GetHex().c_str());
   CBlockIndex* pindexPrev = (*mi).second;
   int nHeight = pindexPrev->nHeight+1;
 
@@ -1592,17 +1540,19 @@ static void shc_UpdatedTransaction(const uint256& hashTx)
 bool SHCBlock::AddToBlockIndex()
 {
   blkidx_t *blockIndex = GetBlockTable(SHC_COIN_IFACE);
+  CBlockIndex *pindexNew;
   shtime_t ts;
 
-  // Check for duplicate
   uint256 hash = GetHash();
-  if (blockIndex->count(hash))
-    return error(SHERR_INVAL, "AddToBlockIndex() : %s already exists", hash.ToString().substr(0,20).c_str());
 
-  // Construct new block index object
-  CBlockIndex* pindexNew = new CBlockIndex(*this);
+  // Check for duplicate
+  if (blockIndex->count(hash))
+    return error(SHERR_INVAL, "SHC:AddToBlockIndex: block %s already exists", hash.GetHex().c_str());
+
+  /* create new index */
+  pindexNew = new CBlockIndex(*this);
   if (!pindexNew)
-    return error(SHERR_INVAL, "AddToBlockIndex() : new CBlockIndex failed");
+    return error(SHERR_INVAL, "SHC:AddToBlockIndex: new CBlockIndex failed");
   map<uint256, CBlockIndex*>::iterator mi = blockIndex->insert(make_pair(hash, pindexNew)).first;
   pindexNew->phashBlock = &((*mi).first);
   map<uint256, CBlockIndex*>::iterator miPrev = blockIndex->find(hashPrevBlock);
@@ -1613,7 +1563,7 @@ bool SHCBlock::AddToBlockIndex()
   }
   pindexNew->bnChainWork = (pindexNew->pprev ? pindexNew->pprev->bnChainWork : 0) + pindexNew->GetBlockWork();
 
-  SHCTxDB txdb;
+
 #if 0
   if (!txdb.TxnBegin())
     return false;
@@ -1621,17 +1571,15 @@ bool SHCBlock::AddToBlockIndex()
   if (!txdb.TxnCommit())
     return false;
 #endif
-
-  // New best
   if (pindexNew->bnChainWork > bnBestChainWork) {
-    if (!SetBestChain(txdb, pindexNew)) {
-fprintf(stderr, "DEBUG: AddToBlockIndex: SetBestChain failure @ height %d\n", pindexNew->nHeight); 
+    SHCTxDB txdb;
+    bool ret = SetBestChain(txdb, pindexNew);
+    txdb.Close();
+    if (!ret) { 
+      fprintf(stderr, "DEBUG: AddToBlockIndex: SetBestChain failure @ height %d\n", pindexNew->nHeight); 
       return false;
-}
+    }
   }
-
-  txdb.Close();
-fprintf(stderr, "DEBUG: CBlock::AddToBlockIndex: txdb saved @ nHeight(%d)\n", pindexNew->nHeight);
 
   if (pindexNew == GetBestBlockIndex(SHC_COIN_IFACE))
   {
@@ -1846,6 +1794,44 @@ int ifaceIndex = SHC_COIN_IFACE;
   return (true);
 }
 
+bool SHCBlock::ReadArchBlock(uint256 hash)
+{
+  int ifaceIndex = SHC_COIN_IFACE;
+  CIface *iface = GetCoinByIndex(ifaceIndex);
+  CDataStream sBlock(SER_DISK, CLIENT_VERSION);
+  size_t sBlockLen;
+  unsigned char *sBlockData;
+  char errbuf[1024];
+  int nPos;
+  bc_t *bc;
+  int err;
+
+  bc = GetBlockChain(iface);
+  if (!bc)
+    return (false);
+
+  err = bc_arch_find(bc, hash.GetRaw(), NULL, &nPos);
+  if (err)
+    return false;
+
+  err = bc_arch(bc, nPos, &sBlockData, &sBlockLen);
+  if (err) {
+    sprintf(errbuf, "CBlock::ReadBlock[arch-idx %d]: %s (sherr %d).",
+      (int)nPos, sherrstr(err), err);
+    unet_log(ifaceIndex, errbuf);
+    return (false);
+  }
+
+  SetNull();
+
+  /* serialize binary data into block */
+  sBlock.write((const char *)sBlockData, sBlockLen);
+  sBlock >> *this;
+  free(sBlockData);
+
+  return (true);
+}
+
 bool SHCBlock::IsOrphan()
 {
   blkidx_t *blockIndex = GetBlockTable(SHC_COIN_IFACE);
@@ -1868,6 +1854,9 @@ bool SHCBlock::Truncate()
   bc_t *bc = GetBlockChain(iface);
   CBlockIndex *cur_index;
   int err;
+
+if (!blockIndex->count(GetHash()))
+    return error(SHERR_INVAL, "Erase: block not found in block-index.");
 
   cur_index = (*blockIndex)[GetHash()];
   if (!cur_index)
@@ -1907,9 +1896,11 @@ bool SHCBlock::Truncate()
     }
   }
 
+#if 0
   err = BlockChainErase(iface, cur_index->nHeight);
   if (err)
     return error(err, "BlockChainErase[SHC]");
+#endif
 
   return (true);
 }

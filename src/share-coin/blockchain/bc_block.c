@@ -156,7 +156,7 @@ static int _bc_write(bc_t *bc, bcsize_t pos, bc_hash_t hash, void *raw_data, int
   int jrnl;
   int err;
 
-  jrnl = bc_idx_journal(pos);
+  jrnl = bc_journal(pos);
 
   err = bc_alloc(bc, jrnl);
   if (err)
@@ -339,6 +339,46 @@ fprintf(stderr, "DEBUG: bc_get[pos %d]: bc_read <%d bytes> error '%s'\n", pos, i
   return (0);
 }
 
+int bc_arch(bc_t *bc, bcsize_t pos, unsigned char **data_p, size_t *data_len_p)
+{
+  bc_idx_t idx;
+  unsigned char *data;
+  char errbuf[1024];
+  int err;
+
+  if (!data_p) {
+fprintf(stderr, "DEBUG: bc_arch_get: no data pointer specified.\n");
+    return (SHERR_INVAL);
+}
+
+  /* obtain index for record position */
+  memset(&idx, 0, sizeof(idx));
+  err = bc_arch_get(bc, pos, &idx);
+  if (err) {
+fprintf(stderr, "DEBUG: bc_arch_get[pos %d]: bc_idx_get error '%s'\n", pos, sherrstr(err));
+    return (err);
+  }
+
+/* .. deal with idx.size == 0, i.e. prevent write of 0 */
+
+  data = (unsigned char *)calloc(idx.size, sizeof(char)); 
+  if (!data)
+    return (SHERR_NOMEM);
+
+  /* read in serialized binary data */
+  err = bc_read(bc, pos, data, idx.size);
+  if (err) {
+fprintf(stderr, "DEBUG: bc_arch_get[pos %d]: bc_read <%d bytes> error '%s'\n", pos, idx.size, sherrstr(err));
+    return (err); 
+  }
+
+  *data_p = data;
+  if (data_len_p)
+    *data_len_p = idx.size;
+
+  return (0);
+}
+
 int bc_get_hash(bc_t *bc, bcsize_t pos, bc_hash_t ret_hash)
 {
   bc_idx_t idx;
@@ -369,6 +409,7 @@ int bc_find(bc_t *bc, bc_hash_t hash, int *pos_p)
 }
 
 
+#if 0
 /**
  * @bug this does not handle jrnls alloc'd past one being targeted.
  */
@@ -422,6 +463,7 @@ int bc_purge(bc_t *bc, bcsize_t pos)
   shlock_close_str(BCMAP_LOCK);
   return (err);
 }
+#endif
 
 
 /**
@@ -469,3 +511,30 @@ void bc_idle(bc_t *bc)
   }
 
 }
+
+uint32_t bc_journal(int pos)
+{
+  return ( (pos / BC_BLOCKS_PER_JOURNAL) + 1 );
+}
+
+int bc_clear(bc_t *bc, bcsize_t pos)
+{
+  bc_idx_t idx;
+  int err;
+
+  err = bc_idx_get(bc, pos, &idx);
+  if (err)
+    return (err);
+
+  err = bc_arch_add(bc, &idx);
+  if (err)
+    return (err);
+
+  err = bc_idx_clear(bc, pos);
+  if (err)
+    return (err);
+
+  return (0);
+}
+
+

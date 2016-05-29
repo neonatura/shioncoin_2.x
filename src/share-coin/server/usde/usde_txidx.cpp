@@ -112,9 +112,16 @@ bool usde_FillBlockIndex()
   int nBestIndex;
   int nHeight;
 
+  int nMaxIndex = bc_idx_next(bc) - 1;
+  for (nBestIndex = 0; nBestIndex <= nMaxIndex; nBestIndex++) {
+    if (0 != bc_idx_get(bc, nBestIndex, NULL))
+      break;
+  }
+  nBestIndex--;
+fprintf(stderr, "DEBUG: usde max height %d\n", nBestIndex);
+
   lastIndex = NULL;
   pindexBest = NULL;
-  nBestIndex = bc_idx_next(bc) - 1;
   for (nHeight = nBestIndex; nHeight >= 0; nHeight--) {
     if (!block.ReadBlock(nHeight))
       continue;
@@ -148,6 +155,24 @@ bool usde_FillBlockIndex()
   SetBestBlockIndex(iface, pindexBest);
 
   return true;
+}
+
+static bool hasGenesisRoot(CBlockIndex *pindexBest)
+{
+  CBlockIndex *pindex;
+
+  for (pindex = pindexBest; pindex && pindex->pprev; pindex = pindex->pprev) {
+    if (pindex->nHeight == 0)
+      break;
+  }
+  if (!pindex)
+    return (false);
+
+  if (pindex->nHeight != 0 || 
+      pindex->GetBlockHash() != usde_hashGenesisBlock)
+    return (false);
+
+  return (true);
 }
 
 bool USDETxDB::LoadBlockIndex()
@@ -198,7 +223,7 @@ bool USDETxDB::LoadBlockIndex()
     ok = false;
   else if (pindexBest->nHeight > 0 && !pindexBest->pprev)
     ok = false;
-  else if (pindexBest->nHeight == 0 && pindexBest->GetBlockHash() != usde_hashGenesisBlock) 
+  else if (!hasGenesisRoot(pindexBest))
     ok = false;
   if (!ok) {
     pindexBest = GetBestBlockIndex(iface);

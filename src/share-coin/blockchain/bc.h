@@ -36,6 +36,8 @@ extern "C" {
 #define getpagesize() sysconf(_SC_PAGESIZE)
 #endif
 
+#define BC_BLOCKS_PER_JOURNAL 65536
+
 #define BC_MAX_NAME_LENGTH MAX_SHARE_NAME_LENGTH
 
 #define BCMAP_LOCK "bcmap_lock"
@@ -79,6 +81,7 @@ typedef struct bc_t
 {
   char name[BC_MAX_NAME_LENGTH];
   bc_map_t idx_map;
+  bc_map_t arch_map;
   bc_map_t *data_map;
   size_t data_map_len;
 } bc_t;
@@ -87,6 +90,7 @@ typedef struct bc_t CBlockChain;
 
 #include "bc_fmap.h"
 #include "bc_index.h"
+#include "bc_arch.h"
 #include "bc_block.h"
 
 

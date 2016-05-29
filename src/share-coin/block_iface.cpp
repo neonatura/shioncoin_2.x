@@ -177,7 +177,12 @@ fprintf(stderr, "DEBUG: c_getblocktemplate: not ready yet\n");
   if (!pblock)
     return (NULL);
 #endif
-  pblock = CreateBlockTemplate(iface);
+  pblock = NULL;
+  try {
+    pblock = CreateBlockTemplate(iface);
+  } catch (std::exception& e) {
+fprintf(stderr, "DEBUG: c_getblocktemplate: CreateBlockTemplate: %s\n", e.what()); 
+ }
   if (!pblock)
     return (NULL);
 
@@ -860,7 +865,7 @@ static CBlockIndex *findTransaction(int ifaceIndex, uint256 hashTx, CTransaction
   if (!blockIndex)
     return (NULL);
 
-  if (!ret_tx.ReadTx(ifaceIndex, hashTx, hashBlock))
+  if (!ret_tx.ReadTx(ifaceIndex, hashTx, &hashBlock))
     return (NULL);
   
   return ((*blockIndex)[hashBlock]);
@@ -1252,7 +1257,7 @@ int GetTxDepthInMainChain(CIface *iface, uint256 txHash)
   uint256 blockHash;
   bool ret;
 
-  ret = GetTransaction(iface, txHash, tx, blockHash);
+  ret = GetTransaction(iface, txHash, tx, &blockHash);
   if (!ret)
     return (0);
 

@@ -149,8 +149,8 @@ Value rpc_getrawtransaction(CIface *iface, const Array& params, bool fHelp)
     fVerbose = (params[1].get_int() != 0);
 
   CTransaction tx;
-  uint256 hashBlock = 0;
-  if (!GetTransaction(iface, hash, tx, hashBlock))
+  uint256 hashBlock;
+  if (!GetTransaction(iface, hash, tx, &hashBlock))
     throw JSONRPCError(-5, "No information available about transaction");
 
   CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION(iface));
