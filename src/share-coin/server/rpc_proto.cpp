@@ -1545,6 +1545,25 @@ Value rpc_wallet_balance(CIface *iface, const Array& params, bool fHelp)
   return ValueFromAmount(nBalance);
 }
 
+Value rpc_wallet_export(CIface *iface, const Array& params, bool fHelp)
+{
+
+  if (fHelp || params.size() != 1)
+    throw runtime_error(
+        "wallet.export <path>\n"
+        "Exports a wallet.dat to the path (dir or file) specified.");
+
+  CWallet *wallet = GetWallet(iface);
+  if (!wallet)
+    throw runtime_error("Wallet not available.");
+
+  string strDest = params[0].get_str();
+  if (!BackupWallet(*wallet, strDest))
+    throw runtime_error("Failure writing wallet datafile.");
+
+  return Value::null;
+}
+
 Value rpc_wallet_get(CIface *iface, const Array& params, bool fHelp)
 {
   CWallet *pwalletMain = GetWallet(iface);
@@ -4210,7 +4229,7 @@ static const CRPCCommand vRPCCommands[] =
 //    { "getreceivedbyaccount",   &getreceivedbyaccount,   false },
 //    { "listreceivedbyaddress",  &listreceivedbyaddress,  false },
 //    { "listreceivedbyaccount",  &listreceivedbyaccount,  false },
-    { "backupwallet",           &backupwallet,           true },
+//    { "backupwallet",           &backupwallet,           true },
     { "keypoolrefill",          &keypoolrefill,          true },
 //    { "walletpassphrase",       &walletpassphrase,       true },
 //    { "walletpassphrasechange", &walletpassphrasechange, false },

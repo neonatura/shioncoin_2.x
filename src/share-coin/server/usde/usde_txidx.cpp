@@ -267,9 +267,11 @@ bool USDETxDB::LoadBlockIndex()
 
   CBlockIndex* pindexFork = NULL;
   map<pair<unsigned int, unsigned int>, CBlockIndex*> mapBlockPos;
-  for (CBlockIndex* pindex = pindexBest; pindex && pindex->pprev; pindex = pindex->pprev)
+  CBlockIndex *pindex = pindexBest;
+  for (; pindex && pindex->pprev; pindex = pindex->pprev)
   {
-    if (fRequestShutdown || pindex->nHeight < GetBestHeight(USDE_COIN_IFACE) - nCheckDepth)
+    //if (fRequestShutdown || pindex->nHeight < GetBestHeight(USDE_COIN_IFACE) - nCheckDepth)
+    if (pindex->nHeight < GetBestHeight(USDE_COIN_IFACE) - nCheckDepth)
       break;
     USDEBlock block;
     if (!block.ReadFromDisk(pindex))
@@ -287,6 +289,7 @@ bool USDETxDB::LoadBlockIndex()
     if (pindex->nHeight > maxHeight)
       maxHeight = pindex->nHeight;
   }
+if (pindex) fprintf(stderr, "DEBUG: USDE: lowest validated height %d (%s)\n", pindex->nHeight, pindex->GetBlockHash().GetHex().c_str()); 
   if (pindexFork && !fRequestShutdown)
   {
     // Reorg back to the fork

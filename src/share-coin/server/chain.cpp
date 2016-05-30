@@ -70,7 +70,6 @@ static bool ScanWalletTx(int ifaceIndex)
       wallet->nScanHeight = nHeight;
     }
   }
-fprintf(stderr, "DEBUG: ScanWalletTx: scan'd to height %d\n", wallet->nScanHeight);
 
   return (true);
 }
@@ -255,6 +254,7 @@ bool SaveExternalBlockchainFile()
 
 bool DownloadBlockchain()
 {
+  static int nNodeIndex;
   NodeList &vNodes = GetNodeList(chain.ifaceIndex);
   CIface *iface;
   CNode *pfrom;
@@ -280,8 +280,11 @@ if (iface->net_valid) fprintf(stderr, "DEBUG: DownloadBlockChain: last valid blo
     if (iface->net_valid < iface->net_invalid)
       return (false); /* give up */
 
-    pfrom = vNodes.front(); 
+    int idx = (nNodeIndex % vNodes.size());
+    pfrom = vNodes[idx];
+fprintf(stderr, "DEBUG: DownloadBlockChain[iface #%d]: pfrom->PushGetBlocks(%d) from '%s'\n", chain.ifaceIndex, pindexBest->nHeight, pfrom->addr.ToString().c_str());
     pfrom->PushGetBlocks(pindexBest, uint256(0));
+    nNodeIndex++;
   }
 
   return (true);

@@ -216,9 +216,10 @@ bool static ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CData
   blkidx_t *blockIndex;
   shtime_t ts;
 
+fprintf(stderr, "USDE:ProcessMessage: received '%s' (%d bytes from %s)\n", strCommand.c_str(), vRecv.size(), pfrom->addr.ToString().c_str());
+
+
   RandAddSeedPerfmon();
-  if (fDebug)
-    printf("received: %s (%d bytes)\n", strCommand.c_str(), vRecv.size());
   if (mapArgs.count("-dropmessagestest") && GetRand(atoi(mapArgs["-dropmessagestest"])) == 0)
   {
     printf("dropmessagestest DROPPING RECV MESSAGE\n");

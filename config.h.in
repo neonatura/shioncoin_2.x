@@ -1969,6 +1969,9 @@
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
 
+/* Define stratum service. */
+#undef STRATUM_SERVICE
+
 /* Define to 1 if strerror_r returns char *. */
 #undef STRERROR_R_CHAR_P
 
@@ -1991,6 +1994,9 @@
 
 /* Define for UnixWare systems. */
 #undef UNIXWARE
+
+/* Define USDE coin service. */
+#undef USDE_SERVICE
 
 /* Define to nonzero if you want access control list support. */
 #undef USE_ACL

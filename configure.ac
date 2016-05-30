@@ -309,6 +309,20 @@ AS_HELP_STRING([--enable-debug],
 esac], [debug=false])
 AM_CONDITIONAL(DEBUG, test x"$debug" = x"true")
 
+AC_ARG_ENABLE([usde],
+  AS_HELP_STRING([--disable-usde], [Disable USDE coin service.]))
+AM_CONDITIONAL(USDE_SERVICE, [test "x$enable_usde" != "xno"])
+if test "x$enable_usde" != "xno" ; then
+  AC_DEFINE_UNQUOTED([USDE_SERVICE], 1, [Define USDE coin service.])
+fi
+
+AC_ARG_ENABLE([stratum],
+  AS_HELP_STRING([--disable-stratum], [Disable stratum service.]))
+AM_CONDITIONAL(STRATUM_SERVICE, [test "x$enable_stratum" != "xno"])
+if test "x$enable_stratum" != "xno" ; then
+  AC_DEFINE_UNQUOTED([STRATUM_SERVICE], 1, [Define stratum service.])
+fi
+
 
 AC_OUTPUT(Makefile src/gnu/Makefile src/share-ssl-lib/Makefile src/share-coin/Makefile doc/Makefile bin/Makefile test/Makefile)
 
