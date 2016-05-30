@@ -532,8 +532,9 @@ static bool usde_ConnectInputs(CTransaction *tx, MapPrevTx inputs, map<uint256, 
     // This doesn't trigger the DoS code on purpose; if it did, it would make it easier
     // for an attacker to attempt to split the network.
     if (!txindex.vSpent[prevout.n].IsNull()) {
-      if (txindex.vSpent[prevout.n].nBlockPos != pindexBlock->nHeight)
+      if (txindex.vSpent[prevout.n].nBlockPos != pindexBlock->nHeight) {
         return fMiner ? false : error(SHERR_INVAL, "ConnectInputs() : %s prev tx already used at %s", tx->GetHash().ToString().substr(0,10).c_str(), txindex.vSpent[prevout.n].ToString().c_str());
+      }
   }
 
     // Skip ECDSA signature verification when connecting blocks (fBlock=true)
@@ -1905,7 +1906,7 @@ bool USDEBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)
       CTxIndex txindexOld;
       if (txdb.ReadTxIndex(hashTx, txindexOld)) {
         BOOST_FOREACH(CDiskTxPos &pos, txindexOld.vSpent)
-          if (pos.IsNull() && pos.nBlockPos != pindex->nHeight)
+          if (pos.IsNull())
             return error(SHERR_INVAL, "DEBUG: USDEBlock::ConnectBlock: BIP30 enforced at height %d\n", pindex->nHeight);
       }
     }
@@ -2128,60 +2129,40 @@ bool USDEBlock::Truncate()
 {
   blkidx_t *blockIndex = GetBlockTable(USDE_COIN_IFACE);
   CIface *iface = GetCoinByIndex(USDE_COIN_IFACE);
+  uint256 hash = GetHash();
   CBlockIndex *cur_index;
   int err;
 
-  if (!blockIndex->count(GetHash()))
+  if (!blockIndex->count(hash))
     return error(SHERR_INVAL, "Erase: block not found in block-index.");
 
-  cur_index = (*blockIndex)[GetHash()];
+  cur_index = (*blockIndex)[hash];
   if (!cur_index)
     return error(SHERR_INVAL, "Erase: block not found in block-index.");
 
-#if 0
-  CBlockIndex *pindex;
-  pindex = GetBestBlockIndex(iface);
-  if (!pindex)
-    return error(SHERR_INVAL, "Erase: no established tail of block-chain.");
-
-  USDETxDB txdb;
-  while (pindex && pindex->nHeight >= cur_index->nHeight) {
-    USDEBlock block;
-    if (block.ReadBlock(pindex->nHeight)) {
-      block.DisconnectBlock(txdb, pindex);
-    }
-    pindex = pindex->pprev;
-  }
-  if (pindex) {
-    USDEBlock block;
-    if (block.ReadBlock(pindex->nHeight)) {
-      pindex->pnext = NULL;
-      block.SetBestChain(txdb, pindex);
-    }
-  }
-  txdb.Close();
-#endif
   {
     USDEBlock block;
     if (block.ReadFromDisk(cur_index)) {
       USDETxDB txdb;
-//      pindex->pnext = NULL;
       block.SetBestChain(txdb, cur_index);
       txdb.Close();
     }
   }
 
+  SetBestBlockIndex(iface, cur_index);
+  cur_index->pnext = NULL;
+
+  bc_t *bc = GetBlockChain(GetCoinByIndex(ifaceIndex));
+  bc_clear(bc, cur_index->nHeight + 1); /* isolate chain */
+#if 0
   bc_t *bc = GetBlockChain(GetCoinByIndex(ifaceIndex));
   int bestHeight = bc_idx_next(bc) - 1;
   int idx;
 
   for (idx = bestHeight; idx > cur_index->nHeight; idx--) {
+/* todo: remove wallet transactions */
     bc_clear(bc, idx);
   }
-#if 0
-  err = BlockChainErase(iface, cur_index->nHeight);
-  if (err)
-    return error(err, "BlockChainErase[USDE]");
 #endif
 
   return (true);
