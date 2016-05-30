@@ -193,17 +193,26 @@ int main(int argc, char *argv[])
 #endif
 
 
+#if 0
+  /* initialize coin interfaces */  
+  for (idx = 1; idx < MAX_COIN_IFACE; idx++) {
+    CIface *iface = GetCoinByIndex(idx);
+    if (!iface)
+      continue;
+
+    printf("info: initializing %s coin service.", iface->name);
+    if (iface->op_init)
+      iface->op_init(iface, NULL);
+  }
+#endif
+
 fprintf(stderr, "DEBUG: initializing SHC_COIN_IFACE: '%s'\n", iface->name);
   iface = GetCoinByIndex(SHC_COIN_IFACE);
   iface->op_init(iface, NULL);
-//shcoind_term();
 
-  /* initialize coin interfaces */  
-fprintf(stderr, "DEBUG: initializing USDE_COIN_IFACE\n");
-  iface = GetCoinByIndex(USDE_COIN_IFACE);
-  iface->op_init(iface, NULL);
 
   /* initialize stratum server */
+  printf("info: initializing stratum service.", iface->name);
   err = stratum_init();
   if (err) {
     fprintf(stderr, "critical: init stratum: %s. [sherr %d]", sherrstr(err), err);

@@ -105,11 +105,9 @@ int uevent_peer_verify(uevent_t *e)
     shnet_track_mark(peer, 1);
     bind->scan_freq = MAX(0.001, bind->scan_freq * 1.1);
 
-#if 0
     /* initiate service connection. */
     if (!unet_peer_find(shpeer_addr(peer))) /* x2check */
       unet_connect(e->mode, shpeer_addr(peer), NULL);
-#endif
 
     sprintf(buf, "unet_peer_verify: peer '%s' verified.\n", shpeer_print(peer));
     unet_log(e->mode, buf);

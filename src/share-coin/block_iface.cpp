@@ -99,6 +99,7 @@ double GetBitsDifficulty(unsigned int nBits)
 }
 
 static CBlock *altBlock[MAX_COIN_IFACE];
+static unsigned int altHeight[MAX_COIN_IFACE];
 
 /**
  * Generate a block to work on.
@@ -108,10 +109,9 @@ const char *c_getblocktemplate(int ifaceIndex)
 {
   NodeList &vNodes = GetNodeList(ifaceIndex);
   //static CReserveKey reservekey(pwalletMain);
-  static unsigned int nTransactionsUpdatedLast;
-  static CBlockIndex* pindexPrev;
   static unsigned int work_id;
   static time_t last_reset_t;
+  unsigned int nHeight;
   CIface *iface;
   CBlock* pblock;
   int reset;
@@ -147,7 +147,7 @@ const char *c_getblocktemplate(int ifaceIndex)
 
   /* clear work after new block and every ten minutes. */
   reset = 0;
-  if (pindexPrev != NULL && pindexPrev->nHeight != GetBestHeight(ifaceIndex)) {
+  if (altHeight[ifaceIndex] != GetBestHeight(ifaceIndex)) {
     reset = 1;
     last_reset_t = time(NULL);
   } else if ((last_reset_t + 600) < time(NULL)) {
@@ -162,21 +162,15 @@ const char *c_getblocktemplate(int ifaceIndex)
     }
     mapWork.clear();
     altBlock[ifaceIndex] = NULL;
+fprintf(stderr, "DEBUG: c_getblocktemplate: cleared mapWork\n");
   }
 
-  // Store the pindexBest used before CreateNewBlock, to avoid races
-  nTransactionsUpdatedLast = iface->tx_tot;
-  CBlockIndex* pindexPrevNew = GetBestBlockIndex(ifaceIndex);
+  CBlockIndex *pindexPrev = GetBestBlockIndex(iface);
+  if (!pindexPrev)
+    return (NULL);
+  
+  nHeight = pindexPrev->nHeight + 1;
 
-  if (!pindexPrevNew) {
-fprintf(stderr, "DEBUG: c_getblocktemplate: not ready yet\n");
-    return (NULL);
-  }
-#if 0
-  pblock = CreateNewBlock(reservekey);
-  if (!pblock)
-    return (NULL);
-#endif
   pblock = NULL;
   try {
     pblock = CreateBlockTemplate(iface);
@@ -186,13 +180,12 @@ fprintf(stderr, "DEBUG: c_getblocktemplate: CreateBlockTemplate: %s\n", e.what()
   if (!pblock)
     return (NULL);
 
-  // Need to update only after we know CreateNewBlock succeeded
-  pindexPrev = pindexPrevNew;
-
   /* store "worker" block for until height increment. */
   work_id++;
   mapWork[work_id] = pblock; 
   altBlock[ifaceIndex] = pblock;
+  altHeight[ifaceIndex] = nHeight;
+fprintf(stderr, "DEBUG: c_getblocktemplate: added work [id %u] @ height %u for iface #%d\n", work_id, nHeight, ifaceIndex); 
 
   // Update nTime
   pblock->UpdateTime(pindexPrev);
@@ -234,7 +227,7 @@ fprintf(stderr, "DEBUG: c_getblocktemplate: CreateBlockTemplate: %s\n", e.what()
     /* mining is defunct when "height < 2" */
     result.push_back(Pair("height", (int64_t)0));
   } else {
-    result.push_back(Pair("height", (int64_t)(pindexPrev->nHeight+1)));
+    result.push_back(Pair("height", (int64_t)nHeight));
   }
 
   /* dummy nExtraNonce */
@@ -386,12 +379,16 @@ int c_submitblock(unsigned int workId, unsigned int nTime, unsigned int nNonce, 
   if (ret_diff)
     *ret_diff = 0.0;
 
-  pblock = mapWork[workId];
-  if (pblock == NULL)
+  if (mapWork.count(workId) == 0) {
+fprintf(stderr, "DEBUG: c_submitblock: task id '%u' is stale\n", workId);
     return (SHERR_TIME); /* task is stale */
+}
 
-  if (pblock->nNonce == nNonce)
+  pblock = mapWork[workId];
+  if (pblock->nNonce == nNonce) {
+fprintf(stderr, "DEBUG: c_submitblock: nNonce %u is duplicate\n", nNonce);
     return (SHERR_ALREADY);
+}
 
   pblock->nTime = nTime;
   pblock->nNonce = nNonce;
@@ -417,6 +414,7 @@ int c_submitblock(unsigned int workId, unsigned int nTime, unsigned int nNonce, 
   }
 
   if (hash > hashTarget) {
+fprintf(stderr, "DEBUG: c_submitblocK: submitting as alt coin block\n");
     c_processaltblock(pblock); /* try nonce on alt coins */ 
     return (0); /* share was submitted successfully */
   }
@@ -1154,9 +1152,11 @@ const char *c_getminingtransactions(int ifaceIndex, unsigned int workId)
   int err;
   bool ok;
 
-  pblock = mapWork[workId];
-  if (pblock == NULL)
+  if (mapWork.count(workId) == 0) {
     return (NULL);
+  }
+ 
+  pblock = mapWork[workId];
 
 //  CTxDB txdb(ifaceIndex, "r");
   BOOST_FOREACH (CTransaction& tx, pblock->vtx)

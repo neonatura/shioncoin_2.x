@@ -181,7 +181,7 @@ bool SaveExternalBlockchainFile()
         delete pblock;
 
         chain.total++;
-        if (99 == (chain.total % 100))
+        if (999 == (chain.total % 1000))
           return (true);
       }
     }

@@ -244,7 +244,6 @@ int bc_idx_clear(bc_t *bc, bcsize_t pos)
     return (err);
 
   n_pos = MAX(0, (bc->idx_map.hdr->of / sizeof(bc_idx_t)));
-fprintf(stderr, "DEBUG: bc_idx_clear: n_pos = %d\n", n_pos);
 
   of = (pos * sizeof(bc_idx_t));
   if (pos >= (bc->idx_map.hdr->of / sizeof(bc_idx_t)) &&

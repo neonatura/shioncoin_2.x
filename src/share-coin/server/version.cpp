@@ -26,12 +26,18 @@
 #include "shcoind.h"
 #include "main.h"
 #include <string>
+#include <boost/algorithm/string.hpp>
 #include "version.h"
+
 
 // Name of client reported in the 'version' message. Report the same name
 // for both bitcoind and bitcoin-qt, to make it harder for attackers to
 // target servers or GUI users specifically.
-const std::string CLIENT_NAME("USDE");
+std::string GetClientName(CIface *iface)
+{
+  std::string cli_name = boost::to_upper_copy<std::string>(iface->name);
+  return (cli_name);
+}
 
 // Client version number
 #define CLIENT_VERSION_SUFFIX   "-beta"

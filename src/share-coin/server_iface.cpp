@@ -681,7 +681,7 @@ void CNode::PushVersion()
   }
 
   PushMessage("version", PROTOCOL_VERSION(iface), nLocalServices, nTime, addrYou, addrMe,
-      nLocalHostNonce, FormatSubVersion(CLIENT_NAME, CLIENT_VERSION, std::vector<string>()), GetBestHeight(ifaceIndex));
+      nLocalHostNonce, FormatSubVersion(GetClientName(iface), CLIENT_VERSION, std::vector<string>()), GetBestHeight(ifaceIndex));
 }
 
 

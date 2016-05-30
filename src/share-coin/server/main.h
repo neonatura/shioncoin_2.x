@@ -610,6 +610,8 @@ public:
     }
 };
 
+extern std::string GetClientName(CIface *iface);
+
 /** An alert is a combination of a serialized CUnsignedAlert and a signature. */
 class CAlert : public CUnsignedAlert
 {
@@ -669,7 +671,8 @@ public:
 
     bool AppliesToMe(int ifaceIndex) const
     {
-        return AppliesTo(ifaceIndex, FormatSubVersion(CLIENT_NAME, CLIENT_VERSION, std::vector<std::string>()));
+      CIface *iface = GetCoinByIndex(ifaceIndex);
+      return AppliesTo(ifaceIndex, FormatSubVersion(GetClientName(iface), CLIENT_VERSION, std::vector<std::string>()));
     }
 
     bool RelayTo(CNode* pnode) const
