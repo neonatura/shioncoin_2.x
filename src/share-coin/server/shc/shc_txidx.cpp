@@ -119,7 +119,6 @@ bool shc_FillBlockIndex()
       break;
   }
   nBestIndex--;
-fprintf(stderr, "DEBUG: shc max height %d\n", nBestIndex);
 
   lastIndex = NULL;
   pindexBest = NULL;

@@ -175,7 +175,7 @@ const char *c_getblocktemplate(int ifaceIndex)
 //      fprintf(stderr, "DEBUG: c_getblocktemplate: stalling on work generation..\n");
       return (NULL);
     }
-    templateWeight = MIN(15, templateWeight + 1);
+    templateWeight = MIN(10, templateWeight + 1);
     indexWeight = 0;
   }
 
@@ -285,27 +285,35 @@ void c_processaltblock(CBlock* pblock)
     /* insert nonce */
     alt_block->nNonce = pblock->nNonce;
 
+    /* rebuild merkle root hash */
+    alt_block->hashMerkleRoot = alt_block->BuildMerkleTree();
+
     {
       uint256 hash = alt_block->GetPoWHash();
       uint256 hashTarget = CBigNum().SetCompact(alt_block->nBits).getuint256();
-      if (hash > hashTarget)
+      if (hash > hashTarget) {
+fprintf(stderr, "DEBUG: c_processaltblock: alt_block is too low diff\n");
         continue; // BLKERR_TARGET_LOW
+}
     }
 
     // Check for duplicate
     uint256 hash = alt_block->GetHash();
     blkidx_t *blockIndex = GetBlockTable(ifaceIndex);
-    if (blockIndex->count(hash) || alt_block->IsOrphan())
+    if (blockIndex->count(hash) || alt_block->IsOrphan()) {
+fprintf(stderr, "DEBUG: c_processaltblock: alt_block is duplicate\n");
       continue;  // BLKERR_DUPLICATE_BLOCK
+    }
 
     /* verify integrity */
     if (!alt_block->CheckBlock()) {
-      shcoind_log("c_processblock: !CheckBlock()");
+fprintf(stderr, "DEBUG: c_processaltblock: alt_block checkblock failure\n");
       continue; // BLKERR_CHECKPOINT
     }
 
     // Store to disk
     if (!alt_block->AcceptBlock()) {
+fprintf(stderr, "DEBUG: c_processaltblock: alt_block accept failure\n"); 
       continue; // BLKERR_INVALID_BLOCK
     }
 

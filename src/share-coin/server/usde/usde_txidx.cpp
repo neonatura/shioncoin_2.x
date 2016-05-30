@@ -118,7 +118,6 @@ bool usde_FillBlockIndex()
       break;
   }
   nBestIndex--;
-fprintf(stderr, "DEBUG: usde max height %d\n", nBestIndex);
 
   lastIndex = NULL;
   pindexBest = NULL;

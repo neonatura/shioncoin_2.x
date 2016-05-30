@@ -224,7 +224,6 @@ fprintf(stderr, "DEBUG: unet_cycle: shnet_read failure: %s [errno %d]\n", strerr
   to.tv_usec = MIN(250000, (long)1000 * (long)diff_t); /* usec */
   err = select(fd_max+1, &r_set, &w_set, &x_set, &to);
   if (err > 0) {
-fprintf(stderr, "DEBUG: INFO: select() found x%d descriptors\n", err);
     for (fd = 1; fd <= fd_max; fd++) {
       if (FD_ISSET(fd, &x_set)) {
         /* socket is in error state */

@@ -193,7 +193,6 @@ int main(int argc, char *argv[])
 #endif
 
 
-#if 0
   /* initialize coin interfaces */  
   for (idx = 1; idx < MAX_COIN_IFACE; idx++) {
     CIface *iface = GetCoinByIndex(idx);
@@ -204,11 +203,12 @@ int main(int argc, char *argv[])
     if (iface->op_init)
       iface->op_init(iface, NULL);
   }
-#endif
 
+#if 0
 fprintf(stderr, "DEBUG: initializing SHC_COIN_IFACE: '%s'\n", iface->name);
   iface = GetCoinByIndex(SHC_COIN_IFACE);
   iface->op_init(iface, NULL);
+#endif
 
 
   /* initialize stratum server */

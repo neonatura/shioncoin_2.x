@@ -475,7 +475,7 @@ int stratum_request_message(user_t *user, shjson_t *json)
   memset(iface_str, 0, sizeof(iface_str));
   strncpy(iface_str, shjson_astr(json, "iface", ""), sizeof(iface_str)-1); 
   ifaceIndex = stratum_get_iface(iface_str);
-  if (!ifaceIndex)
+  if (ifaceIndex < 1)
     ifaceIndex = stratum_default_iface();
   if (ifaceIndex < 1 || ifaceIndex >= MAX_COIN_IFACE) {
 fprintf(stderr, "DEBUG: stratum_request_message: error obtaining coin iface\n"); 
@@ -510,6 +510,7 @@ shcoind_log(buf);
     err = stratum_subscribe(user, idx);
     if (!err) {
       user->ifaceIndex = ifaceIndex;
+fprintf(stderr, "DEBUG: mining.subscribe: set ifaceIndex %d\n", ifaceIndex);
       stratum_set_difficulty(user, 128);
     }
 
@@ -538,6 +539,9 @@ shcoind_log(buf);
       shjson_free(&reply);
       return (err);
     }
+
+    user->ifaceIndex = ifaceIndex;
+fprintf(stderr, "DEBUG: mining.authorize: set ifaceIndex %d\n", ifaceIndex);
 
     reply = shjson_init(NULL);
     shjson_bool_add(reply, "result", TRUE);
