@@ -101,6 +101,8 @@ double GetBitsDifficulty(unsigned int nBits)
 static CBlock *altBlock[MAX_COIN_IFACE];
 static unsigned int altHeight[MAX_COIN_IFACE];
 
+static unsigned int templateWeight = 2;
+
 /**
  * Generate a block to work on.
  * @returns JSON encoded block state information
@@ -111,6 +113,7 @@ const char *c_getblocktemplate(int ifaceIndex)
   //static CReserveKey reservekey(pwalletMain);
   static unsigned int work_id;
   static time_t last_reset_t;
+  static int indexWeight;
   unsigned int nHeight;
   CIface *iface;
   CBlock* pblock;
@@ -143,11 +146,11 @@ const char *c_getblocktemplate(int ifaceIndex)
 
   // Update block
 
-  pblock = NULL;
 
   /* clear work after new block and every ten minutes. */
   reset = 0;
-  if (altHeight[ifaceIndex] != GetBestHeight(ifaceIndex)) {
+  if (altHeight[ifaceIndex] &&
+      altHeight[ifaceIndex] != (GetBestHeight(ifaceIndex) + 1)) {
     reset = 1;
     last_reset_t = time(NULL);
   } else if ((last_reset_t + 600) < time(NULL)) {
@@ -162,14 +165,29 @@ const char *c_getblocktemplate(int ifaceIndex)
     }
     mapWork.clear();
     altBlock[ifaceIndex] = NULL;
-fprintf(stderr, "DEBUG: c_getblocktemplate: cleared mapWork\n");
+    fprintf(stderr, "DEBUG: c_getblocktemplate: cleared mapWork\n");
+
+    templateWeight = 2;
+    indexWeight = 1;
+  } else {
+    indexWeight++;
+    if ((indexWeight % templateWeight) != 0) {
+//      fprintf(stderr, "DEBUG: c_getblocktemplate: stalling on work generation..\n");
+      return (NULL);
+    }
+    templateWeight = MIN(15, templateWeight + 1);
+    indexWeight = 0;
   }
 
+
   CBlockIndex *pindexPrev = GetBestBlockIndex(iface);
-  if (!pindexPrev)
+  if (!pindexPrev) {
+    fprintf(stderr, "DEBUG: c_getblocktemplate: best chain index unknown.\n");
     return (NULL);
+  }
   
   nHeight = pindexPrev->nHeight + 1;
+  altHeight[ifaceIndex] = nHeight;
 
   pblock = NULL;
   try {
@@ -177,14 +195,15 @@ fprintf(stderr, "DEBUG: c_getblocktemplate: cleared mapWork\n");
   } catch (std::exception& e) {
 fprintf(stderr, "DEBUG: c_getblocktemplate: CreateBlockTemplate: %s\n", e.what()); 
  }
-  if (!pblock)
+  if (!pblock) {
+fprintf(stderr, "DEBUG: c_getblocktemplate: error creating block template\n"); 
     return (NULL);
+}
 
   /* store "worker" block for until height increment. */
   work_id++;
   mapWork[work_id] = pblock; 
   altBlock[ifaceIndex] = pblock;
-  altHeight[ifaceIndex] = nHeight;
 fprintf(stderr, "DEBUG: c_getblocktemplate: added work [id %u] @ height %u for iface #%d\n", work_id, nHeight, ifaceIndex); 
 
   // Update nTime
