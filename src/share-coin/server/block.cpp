@@ -359,7 +359,7 @@ bool CTransaction::ReadTx(int ifaceIndex, uint256 txHash, uint256 *hashBlock)
 
   err = bc_idx_find(bc, txHash.GetRaw(), NULL, &txPos); 
   if (err) {
-fprintf(stderr, "DEBUG: CTransaction::ReadTx[iface #%d]: tx hash '%s' not found. [tot-tx:%d] [err:%d]\n", ifaceIndex, txHash.GetHex().c_str(), bc_idx_next(bc), err);
+fprintf(stderr, "DEBUG: CTransaction::ReadTx[iface #%d]: INFO: tx hash '%s' not found. [tot-tx:%d] [err:%d]\n", ifaceIndex, txHash.GetHex().c_str(), bc_idx_next(bc), err);
     return (false); /* not an error condition */
 }
 
@@ -617,6 +617,7 @@ bool GetTransaction(CIface *iface, const uint256 &hash, CTransaction &tx, uint25
 
 bool GetTransaction(CIface *iface, const uint256 &hash, CTransaction &tx, uint256 *hashBlock)
 {
+fprintf(stderr, "DEBUG: GetTransaction()\n");
   return (tx.ReadTx(GetCoinIndex(iface), hash, hashBlock));
 }
 
@@ -686,6 +687,8 @@ CBlock *GetBlockByTx(CIface *iface, const uint256 hash)
   CTransaction tx;
   CBlock *block;
   uint256 hashBlock;
+
+fprintf(stderr, "DEBUG: GetBlockByTx()\n");
   
   /* sanity */
   if (!iface)
@@ -1415,6 +1418,32 @@ CBlock *GetBlankBlock(CIface *iface)
 }
 #endif
 
+/* DEBUG: TODO: faster to read via nHeight */
+bool CBlock::ReadFromDisk(const CBlockIndex* pindex, bool fReadTransactions)
+{
+  CIface *iface = GetCoinByIndex(ifaceIndex);
+  bc_t *bc;
+  int nHeight;
+  int err;
+
+  if (!iface)
+    return (false);
+
+  bc = GetBlockChain(iface);
+  if (!bc)
+    return (false);
+
+  err = bc_find(bc, pindex->GetBlockHash().GetRaw(), &nHeight);
+  if (err)
+    return error(err, "bc_find '%s' [height %d]", pindex->GetBlockHash().GetHex().c_str(), pindex->nHeight);
+
+  if (nHeight != pindex->nHeight) {
+fprintf(stderr, "DEBUG: WARNING: ReadFromDisk: pindex->nHeight(%d) != chain height %d [hash %s]\n", pindex->nHeight, nHeight, pindex->GetBlockHash().GetHex().c_str());
+}
+
+  return (ReadBlock(nHeight));
+}
+#if 0
 bool CBlock::ReadFromDisk(const CBlockIndex* pindex, bool fReadTransactions)
 {
   CIface *iface = GetCoinByIndex(ifaceIndex);
@@ -1433,7 +1462,8 @@ bool CBlock::ReadFromDisk(const CBlockIndex* pindex, bool fReadTransactions)
 //  if (pindex->pprev && GetHash() != pindex->GetBlockHash())
   if (GetHash() != pindex->GetBlockHash()) {
     /* search deleted blocks */
-    ok = ReadArchBlock(pindex->GetBlockHash());
+//    ok = ReadArchBlock(pindex->GetBlockHash());
+ok = false; /* DEBUG: */
     if (!ok) {
       sprintf(errbuf, "CBlock::ReadFromDisk: block hash '%s' does not match block index '%s' for height %d:", GetHash().GetHex().c_str(), pindex->GetBlockHash().GetHex().c_str(), pindex->nHeight);
       return error(SHERR_INVAL, errbuf);
@@ -1450,6 +1480,7 @@ fprintf(stderr, "DEBUG: ReadFromDisk: retrieved archived record.\n");
   
   return (true);
 }
+#endif
 
 #if 0
 bool CBlock::ReadBlock(uint64_t nHeight)

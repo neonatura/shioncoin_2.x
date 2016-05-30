@@ -360,6 +360,9 @@ bool USDEWallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend,
 {
   CIface *iface = GetCoinByIndex(USDE_COIN_IFACE);
   int64 nValue = 0;
+
+fprintf(stderr, "DEBUG: USDEWallet::CreateTransaction()\n");
+
   BOOST_FOREACH (const PAIRTYPE(CScript, int64)& s, vecSend)
   {
     if (nValue < 0)

@@ -56,7 +56,6 @@ void SetWallet(int iface_idx, CWallet *wallet)
 
   if (iface_idx < 1 || iface_idx >= MAX_COIN_IFACE)
     return;
-fprintf(stderr, "DEBUG: SetWallet: iface_idx[%d] wallet set\n", iface_idx);
 
   pwalletMaster[iface_idx] = wallet;
 }
@@ -808,7 +807,13 @@ int CWallet::ScanForWalletTransaction(const uint256& hashTx)
 {
     CTransaction tx;
 
-    tx.ReadTx(ifaceIndex, hashTx);
+fprintf(stderr, "DEBUG: ScanForWalletTransaction()\n");
+
+    if (!tx.ReadTx(ifaceIndex, hashTx)) {
+fprintf(stderr, "DEBUG: ScanForWalletTransaction: unknown tx '%s'\n", hashTx.GetHex().c_str());
+      return (0);
+    }
+
 //    tx.ReadFromDisk(COutPoint(hashTx, 0));
     if (AddToWalletIfInvolvingMe(tx, NULL, true, true))
         return 1;
@@ -2108,6 +2113,9 @@ int CMerkleTx::SetMerkleBranch(int ifaceIndex)
   CIface *iface = GetCoinByIndex(ifaceIndex);
   if (!iface)
     return (0);
+
+fprintf(stderr, "DEBUG: CMerkleTx:SetMerkleBranch\n");
+
   CBlock *pblock = GetBlockByTx(iface, GetHash()); 
   if (!pblock)
     return (0);

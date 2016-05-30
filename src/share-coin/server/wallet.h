@@ -522,19 +522,16 @@ public:
     {
         // Must wait until coinbase is safely deep enough in the chain before valuing it
         if (IsCoinBase() && GetBlocksToMaturity(pwallet->ifaceIndex) > 0) {
-fprintf(stderr, "DEBUG: GetAvailableCredit[iface #%d]: coin is not past maturity (%d more)\n", pwallet->ifaceIndex, GetBlocksToMaturity(pwallet->ifaceIndex));
             return 0;
 }
 
         if (fUseCache && fAvailableCreditCached) {
-fprintf(stderr, "DEBUG: GetAvailableCredit: using cached credit %llu\n", (unsigned long long)nAvailableCreditCached);
             return nAvailableCreditCached;
         }
 
         int64 nCredit = 0;
         for (unsigned int i = 0; i < vout.size(); i++)
         {
-fprintf(stderr, "DEBUG: GetAvailableCredit: vout[%d].isSpent() = %s\n", i, IsSpent(i) ? "true" : "false");
             if (!IsSpent(i))
             {
                 const CTxOut &txout = vout[i];

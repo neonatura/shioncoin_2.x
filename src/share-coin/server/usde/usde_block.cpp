@@ -634,7 +634,7 @@ CBlock* usde_CreateNewBlock(CReserveKey& reservekey)
         }
 
 if (txPrev.vout.size() <= txin.prevout.n) {
-fprintf(stderr, "DEBUG: shc_CreateNewBlock: txPrev.vout.size() %d <= txin.prevout.n %d [tx %s]\n", 
+fprintf(stderr, "DEBUG: usde_CreateNewBlock: txPrev.vout.size() %d <= txin.prevout.n %d [tx %s]\n", 
  txPrev.vout.size(),
  txin.prevout.n,
 txPrev.GetHash().GetHex().c_str());
@@ -1365,8 +1365,13 @@ fprintf(stderr, "DEBUG: REORGANIZE: Connect %i blocks; %s..%s\n", vConnect.size(
   {
     CBlockIndex* pindex = vConnect[i];
     USDEBlock block;
-    if (!block.ReadFromDisk(pindex))
-      return error(SHERR_INVAL, "Reorganize() : ReadFromDisk for connect failed");
+    if (!block.ReadArchBlock(pindex->GetBlockHash())) {
+      if (!block.ReadFromDisk(pindex))
+        return error(SHERR_INVAL, "Reorganize() : ReadFromDisk for connect failed");
+fprintf(stderr, "DEBUG: REORG: connecting main-chain block '%s' @ height %d\n", block.GetHash().GetHex().c_str(), pindex->nHeight);
+    } else {
+fprintf(stderr, "DEBUG: REORG: connecting arch-chain block '%s' @ height %d\n", block.GetHash().GetHex().c_str(), pindex->nHeight);
+}
     if (!block.ConnectBlock(txdb, pindex))
     {
       // Invalid block
@@ -1858,6 +1863,7 @@ fprintf(stderr, "DEBUG: USDEBlock::AddToBlockIndex: height %d\n", pindexNew->nHe
 
 bool USDEBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)
 {
+  char errbuf[1024];
 
 #if 1 /* DEBUG: */
   if (!CheckBlock())
@@ -1920,8 +1926,8 @@ bool USDEBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)
     {
       bool fInvalid;
       if (!tx.FetchInputs(txdb, mapQueuedChanges, true, false, mapInputs, fInvalid)) {
-fprintf(stderr, "DEBUG: USDEBlock::ConnectBlock: usde_FetchInputs()\n"); 
-        return false;
+        sprintf(errbuf, "USDE::ConnectBlock: FetchInputs failed for tx '%s' @ height %u\n", tx.GetHash().GetHex().c_str(), (unsigned int)nBlockPos);
+        return error(SHERR_INVAL, errbuf);
       }
 
       if (fStrictPayToScriptHash)
@@ -1958,9 +1964,12 @@ if (vtx.size() == 0) {
 fprintf(stderr, "DEBUG: ConnectBlock: vtx.size() == 0\n");
 return false;
 }
+
+  
+  int64 nValue = usde_GetBlockValue(pindex->nHeight, nFees);
   if (vtx[0].GetValueOut() > usde_GetBlockValue(pindex->nHeight, nFees)) {
-fprintf(stderr, "DEBUG: ConnectBlock: vtx[0].GetValueOut() > usde_GetBlockValue(height %d)\n", pindex->nHeight);
-    return false;
+    sprintf(errbuf, "USDE::ConnectBlock: coinbase output (%d coins) higher than expected block value @ height %d (%d coins) [block %s].\n", FormatMoney(vtx[0].GetValueOut()).c_str(), pindex->nHeight, FormatMoney(nValue).c_str(), pindex->GetBlockHash().GetHex().c_str());
+    return error(SHERR_INVAL, errbuf);
   }
 
 

@@ -158,6 +158,7 @@ bool CTransaction::ReadFromDisk(COutPoint prevout)
 
 bool CTransaction::ReadFromDisk(int ifaceIndex, COutPoint prevout)
 {
+fprintf(stderr, "DEBUG: CTransaction::ReadFromDisk(COutPoint)\n");
   return (ReadTx(ifaceIndex, prevout.hash));
 #if 0
     CTxIndex txindex;
