@@ -29,6 +29,10 @@ int InitChainExport(int ifaceIndex, const char *path, int max);
 int InitDownloadBlockchain(int ifaceIndex, int maxHeight);
 void event_cycle_chain(int ifaceIndex);
 
+void ScanWalletTxUpdated(CWallet *wallet, const CBlock *pblock);
+
+void InitScanWalletTx(CWallet *wallet, int nHeight);
+
 #ifdef __cplusplus
 }
 #endif

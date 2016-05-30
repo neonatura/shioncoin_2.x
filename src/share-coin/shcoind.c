@@ -108,6 +108,7 @@ int main(int argc, char *argv[])
   CIface *iface;
   char blockfile_path[PATH_MAX];
   char buf[1024];
+  int idx;
   int fd;
   int err;
   int i;
@@ -196,10 +197,10 @@ int main(int argc, char *argv[])
   /* initialize coin interfaces */  
   for (idx = 1; idx < MAX_COIN_IFACE; idx++) {
     CIface *iface = GetCoinByIndex(idx);
-    if (!iface)
+    if (!iface || !iface->enabled)
       continue;
 
-    printf("info: initializing %s coin service.", iface->name);
+    printf("info: initializing %s coin service.\n", iface->name);
     if (iface->op_init)
       iface->op_init(iface, NULL);
   }
@@ -212,7 +213,7 @@ fprintf(stderr, "DEBUG: initializing SHC_COIN_IFACE: '%s'\n", iface->name);
 
 
   /* initialize stratum server */
-  printf("info: initializing stratum service.", iface->name);
+  printf("info: initializing stratum service.\n");
   err = stratum_init();
   if (err) {
     fprintf(stderr, "critical: init stratum: %s. [sherr %d]", sherrstr(err), err);

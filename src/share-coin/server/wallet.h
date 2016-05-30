@@ -78,6 +78,7 @@ protected:
 public:
     mutable CCriticalSection cs_wallet;
     mutable int ifaceIndex;
+    mutable unsigned int nScanHeight;
 
     bool fFileBacked;
     std::string strWalletFile;

@@ -29,6 +29,7 @@
 #include "crypter.h"
 #include "ui_interface.h"
 #include "base58.h"
+#include "chain.h"
 
 using namespace std;
 
@@ -462,6 +463,7 @@ bool CWallet::AddToWalletIfInvolvingMe(const CTransaction& tx, const CBlock* pbl
             // Get merkle branch if transaction was found in a block
             if (pblock) {
                 wtx.SetMerkleBranch(pblock);
+                ScanWalletTxUpdated(this, pblock);
             }
             return AddToWallet(wtx);
         }

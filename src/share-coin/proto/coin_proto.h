@@ -71,6 +71,7 @@ typedef struct coin_iface_t
 {
   /* lowercase 'common' name of currency */
   char name[MAX_SHARE_NAME_LENGTH];
+  int enabled;
   int client_ver;
   int block_ver;
   int proto_ver;

@@ -216,6 +216,7 @@ extern "C" {
 
 coin_iface_t shc_coin_iface = {
   "shc",
+  TRUE, /* enabled */
   COIN_IFACE_VERSION(SHC_VERSION_MAJOR, SHC_VERSION_MINOR,
       SHC_VERSION_REVISION, SHC_VERSION_BUILD), /* cli ver */
   2, /* block version */

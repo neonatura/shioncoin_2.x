@@ -658,6 +658,9 @@ CBlock *GetBlockByHash(CIface *iface, const uint256 hash)
   if (!blockIndex)
     return (NULL);
 
+  if (blockIndex->count(hash) == 0)
+    return (NULL);
+
   pindex = (*blockIndex)[hash];
   if (!pindex)
     return (NULL);
@@ -1204,9 +1207,14 @@ CBlockIndex *GetGenesisBlockIndex(CIface *iface) /* DEBUG: */
   CBlock *block = GetBlockByHeight(iface, 0);
   if (!block)
     return (NULL);
-  CBlockIndex *pindex = (*blockIndex)[block->GetHash()];
+
+  uint256 hash = block->GetHash();
   delete block;
 
+  if (blockIndex->count(hash) == 0)
+    return (NULL);
+
+  CBlockIndex *pindex = (*blockIndex)[hash];
   return (pindex);
 }
 
@@ -1254,6 +1262,8 @@ CBlockIndex *GetBestBlockIndex(CIface *iface)
     return (NULL);
 
   hash.SetRaw(iface->block_besthash);
+  if (blockIndex->count(hash) == 0)
+    return (NULL);
   return ((*blockIndex)[hash]);
 }
 CBlockIndex *GetBestBlockIndex(int ifaceIndex)
@@ -1428,6 +1438,7 @@ bool CBlock::ReadFromDisk(const CBlockIndex* pindex, bool fReadTransactions)
       sprintf(errbuf, "CBlock::ReadFromDisk: block hash '%s' does not match block index '%s' for height %d:", GetHash().GetHex().c_str(), pindex->GetBlockHash().GetHex().c_str(), pindex->nHeight);
       return error(SHERR_INVAL, errbuf);
     }
+fprintf(stderr, "DEBUG: ReadFromDisk: retrieved archived record.\n"); 
   }
 
 #if 0 /* DEBUG: */

@@ -684,7 +684,7 @@ else fprintf(stderr, "DEBUG: stratum_request_message[iface #%d]: error obtaining
     } else {
       work_id = (unsigned int)strtoll(work_id_str, NULL, 16);
 
-      json_str = getminingtransactioninfo(ifaceIndex, work_id);
+      json_str = getminingtransactioninfo(user->ifaceIndex ? user->ifaceIndex : ifaceIndex, work_id);
 
       reply = shjson_init(json_str);
       if (!json_str) {

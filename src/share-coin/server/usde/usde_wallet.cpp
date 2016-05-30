@@ -45,6 +45,7 @@
 #include "walletdb.h"
 #include "usde/usde_wallet.h"
 #include "usde/usde_txidx.h"
+#include "chain.h"
 
 using namespace std;
 using namespace boost;
@@ -256,6 +257,7 @@ int USDEWallet::ScanForWalletTransactions(CBlockIndex* pindexStart, bool fUpdate
 {
     int ret = 0;
 
+#if 0
     CBlockIndex* pindex = pindexStart;
     {
         LOCK(cs_wallet);
@@ -269,9 +271,13 @@ int USDEWallet::ScanForWalletTransactions(CBlockIndex* pindexStart, bool fUpdate
                     ret++;
             }
             pindex = pindex->pnext;
-// 10k; break
         }
     }
+#endif
+
+    if (pindexStart)
+      InitScanWalletTx(this, pindexStart->nHeight);
+
     return ret;
 }
 

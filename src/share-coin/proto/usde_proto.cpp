@@ -221,6 +221,7 @@ extern "C" {
 
 coin_iface_t usde_coin_iface = {
   "usde",
+  TRUE, /* enabled */
   COIN_IFACE_VERSION(USDE_VERSION_MAJOR, USDE_VERSION_MINOR,
       USDE_VERSION_REVISION, USDE_VERSION_BUILD), /* cli ver */
   1, /* block version */

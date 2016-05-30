@@ -24,6 +24,7 @@
  */  
 
 #include "shcoind.h"
+#include "wallet.h"
 #include "chain.h"
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/filesystem.hpp>
@@ -34,7 +35,65 @@ using namespace boost;
 
 ChainOp chain;
 
+
 extern CCriticalSection cs_main;
+
+static bool ScanWalletTx(int ifaceIndex)
+{
+  CIface *iface = GetCoinByIndex(ifaceIndex);
+  if (!iface)
+    return (false);
+
+  CWallet *wallet = GetWallet(iface);
+  if (!wallet)
+    return (false);
+
+  unsigned int nBestHeight = GetBestHeight(iface);
+  unsigned int nHeight = wallet->nScanHeight;
+  unsigned int nMaxHeight = nHeight + 4096;
+
+  if (nHeight >= nBestHeight)
+    return (false);
+
+  {
+    LOCK(wallet->cs_wallet);
+
+    for (; nHeight <= nBestHeight && nHeight < nMaxHeight; nHeight++) {
+      CBlock *block = GetBlockByHeight(iface, nHeight);
+      if (!block) continue;
+
+      BOOST_FOREACH(const CTransaction& tx, block->vtx) {
+        wallet->AddToWalletIfInvolvingMe(tx, block, false, false);
+      }
+
+      delete block;
+      wallet->nScanHeight = nHeight;
+    }
+  }
+fprintf(stderr, "DEBUG: ScanWalletTx: scan'd to height %d\n", wallet->nScanHeight);
+
+  return (true);
+}
+
+void InitScanWalletTx(CWallet *wallet, int nHeight)
+{
+  wallet->nScanHeight = MIN(nHeight, wallet->nScanHeight); 
+}
+
+void ScanWalletTxUpdated(CWallet *wallet, const CBlock *pblock)
+{
+  blkidx_t *blockIndex = GetBlockTable(wallet->ifaceIndex);
+  uint256 hash = pblock->GetHash();
+
+  if (blockIndex->count(hash) == 0)
+    return; /* nerp */
+
+  CBlockIndex *pindex = (*blockIndex)[hash];
+  if (wallet->nScanHeight == (pindex->nHeight - 1)) {
+    wallet->nScanHeight = pindex->nHeight;
+fprintf(stderr, "DEBUG: ScanWalletTxUpdated: wallet[#%d]->nScanHeight = %d\n", wallet->ifaceIndex, wallet->nScanHeight); 
+}
+}
 
 bool LoadExternalBlockchainFile()
 {
@@ -340,7 +399,11 @@ fprintf(stderr, "DEBUG: InitDownloadBlockchain: iface(%d) max(%d)\n", ifaceIndex
 
 void event_cycle_chain(int ifaceIndex)
 {
+
   PerformBlockChainOperation(ifaceIndex); 
+
+  ScanWalletTx(ifaceIndex);
+
 }
 #ifdef __cplusplus
 }
