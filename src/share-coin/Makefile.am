@@ -183,7 +183,8 @@ test_shcoind_SOURCES = \
 	test/test_shcoind.h \
 	test/test_init.cpp \
 	test/test_key.cpp \
-	test/test_accounting.cpp
+	test/test_accounting.cpp \
+	test/test_bignum.cpp
 
 test_shcoind_LDADD = $(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
 	-lboost_system -lboost_filesystem -lboost_thread -ldb_cxx -ldl

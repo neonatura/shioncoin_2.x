@@ -892,6 +892,9 @@ static CBlockIndex *findTransaction(int ifaceIndex, uint256 hashTx, CTransaction
 
   if (!ret_tx.ReadTx(ifaceIndex, hashTx, &hashBlock))
     return (NULL);
+
+  if (blockIndex->count(hashBlock) == 0)
+    return (NULL);
   
   return ((*blockIndex)[hashBlock]);
 }
@@ -1269,6 +1272,9 @@ int GetBlockDepthInMainChain(CIface *iface, uint256 blockHash)
 
   blockIndex = GetBlockTable(ifaceIndex);
   if (!blockIndex)
+    return (0);
+
+  if (blockIndex->count(blockHash) == 0)
     return (0);
 
   CBlockIndex *pindex = (*blockIndex)[blockHash];

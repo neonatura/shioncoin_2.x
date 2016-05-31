@@ -110,6 +110,38 @@ bool BlockChainErase(CIface *iface, size_t nHeight)
 }
 #endif
 
+#if 0
+bool BlockTxChainErase(uint256 hash)
+{
+return (true);
+}
+
+bool BlockChainErase(CIface *iface, size_t nHeight)
+{
+  bc_t *bc = GetBlockChain(iface);
+  int bestHeight;
+  int err;
+  int idx;
+
+  bestHeight = bc_idx_next(bc) - 1;
+  if (nHeight < 0 || nHeight > bestHeight)
+    return (true);
+
+  CBlock *block = GetBlockByHeight(nHeight);
+  if (block) {
+    BOOST_FOREACH(const CTransaction &tx, block.vtx) {
+      BlockTxChainErase(tx.GetHash());
+    }
+  }
+
+  err = bc_idx_clear(bc, nHeight);
+  if (err)
+    return error(err, "BlockChainErase: error clearing height %d.", (int)nHeight);
+
+  return (true);
+}
+#endif
+
 void FreeBlockTable(CIface *iface)
 {
   blkidx_t *blockIndex;

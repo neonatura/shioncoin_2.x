@@ -280,7 +280,8 @@ am_test_shcoind_OBJECTS = $(am__objects_1) $(am__objects_11) \
 	test_shcoind-test_shcoind.$(OBJEXT) \
 	test_shcoind-test_init.$(OBJEXT) \
 	test_shcoind-test_key.$(OBJEXT) \
-	test_shcoind-test_accounting.$(OBJEXT)
+	test_shcoind-test_accounting.$(OBJEXT) \
+	test_shcoind-test_bignum.$(OBJEXT)
 test_shcoind_OBJECTS = $(am_test_shcoind_OBJECTS)
 test_shcoind_DEPENDENCIES =  \
 	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a
@@ -1394,7 +1395,8 @@ test_shcoind_SOURCES = \
 	test/test_shcoind.h \
 	test/test_init.cpp \
 	test/test_key.cpp \
-	test/test_accounting.cpp
+	test/test_accounting.cpp \
+	test/test_bignum.cpp
 
 test_shcoind_LDADD = $(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
 	-lboost_system -lboost_filesystem -lboost_thread -ldb_cxx -ldl
@@ -1754,6 +1756,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-stratum_user.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-sync.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-test_accounting.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-test_bignum.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-test_block.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-test_init.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-test_key.Po@am__quote@
@@ -4063,6 +4066,20 @@ test_shcoind-test_accounting.obj: test/test_accounting.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='test/test_accounting.cpp' object='test_shcoind-test_accounting.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-test_accounting.obj `if test -f 'test/test_accounting.cpp'; then $(CYGPATH_W) 'test/test_accounting.cpp'; else $(CYGPATH_W) '$(srcdir)/test/test_accounting.cpp'; fi`
+
+test_shcoind-test_bignum.o: test/test_bignum.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-test_bignum.o -MD -MP -MF $(DEPDIR)/test_shcoind-test_bignum.Tpo -c -o test_shcoind-test_bignum.o `test -f 'test/test_bignum.cpp' || echo '$(srcdir)/'`test/test_bignum.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-test_bignum.Tpo $(DEPDIR)/test_shcoind-test_bignum.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='test/test_bignum.cpp' object='test_shcoind-test_bignum.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-test_bignum.o `test -f 'test/test_bignum.cpp' || echo '$(srcdir)/'`test/test_bignum.cpp
+
+test_shcoind-test_bignum.obj: test/test_bignum.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-test_bignum.obj -MD -MP -MF $(DEPDIR)/test_shcoind-test_bignum.Tpo -c -o test_shcoind-test_bignum.obj `if test -f 'test/test_bignum.cpp'; then $(CYGPATH_W) 'test/test_bignum.cpp'; else $(CYGPATH_W) '$(srcdir)/test/test_bignum.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-test_bignum.Tpo $(DEPDIR)/test_shcoind-test_bignum.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='test/test_bignum.cpp' object='test_shcoind-test_bignum.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-test_bignum.obj `if test -f 'test/test_bignum.cpp'; then $(CYGPATH_W) 'test/test_bignum.cpp'; else $(CYGPATH_W) '$(srcdir)/test/test_bignum.cpp'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo
