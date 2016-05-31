@@ -1349,8 +1349,10 @@ fprintf(stderr, "DEBUG: REORGANIZE: Connect %i blocks; %s..%s\n", vConnect.size(
   BOOST_FOREACH(CBlockIndex* pindex, vDisconnect)
   {
     USDEBlock block;
-    if (!block.ReadFromDisk(pindex))
-      return error(SHERR_IO, "Reorganize() : ReadFromDisk for disconnect failed");
+    if (!block.ReadFromDisk(pindex)) {
+      if (!block.ReadArchBlock(pindex->GetBlockHash()))
+        return error(SHERR_IO, "Reorganize() : ReadFromDisk for disconnect failed");
+    }
     if (!block.DisconnectBlock(txdb, pindex))
       return error(SHERR_INVAL, "Reorganize() : DisconnectBlock %s failed", pindex->GetBlockHash().ToString().substr(0,20).c_str());
 
@@ -1366,8 +1368,8 @@ fprintf(stderr, "DEBUG: REORGANIZE: Connect %i blocks; %s..%s\n", vConnect.size(
   {
     CBlockIndex* pindex = vConnect[i];
     USDEBlock block;
-    if (!block.ReadArchBlock(pindex->GetBlockHash())) {
-      if (!block.ReadFromDisk(pindex))
+    if (!block.ReadFromDisk(pindex)) {
+      if (!block.ReadArchBlock(pindex->GetBlockHash()))
         return error(SHERR_INVAL, "Reorganize() : ReadFromDisk for connect failed");
 fprintf(stderr, "DEBUG: REORG: connecting main-chain block '%s' @ height %d\n", block.GetHash().GetHex().c_str(), pindex->nHeight);
     } else {
@@ -1976,8 +1978,6 @@ return false;
 
   if (pindex->pprev)
   {
-/* DEBUG: */
-    pindex->pprev->pnext = pindex;
 #if 0
     // Update block index on disk without changing it in memory.
     // The memory index structure will be changed after the db commits.

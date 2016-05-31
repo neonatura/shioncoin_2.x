@@ -1,5 +1,9 @@
 AUTOMAKE_OPTIONS = foreign
 
+TESTS = test_shcoind
+
+noinst_PROGRAMS = test_shcoind
+
 INCLUDES = -I$(top_srcdir)/src/share-ssl-lib/$(OPENSSL_DIR)/include \
 	-I$(top_srcdir)/src/share-lib
 
@@ -19,9 +23,11 @@ proto_sources = \
 	$(srcdir)/proto/coin_proto.c \
 	$(srcdir)/proto/usde_proto.cpp \
 	$(srcdir)/proto/shc_proto.cpp \
+	$(srcdir)/proto/test_proto.cpp \
 	$(srcdir)/proto/coin_proto.h \
 	$(srcdir)/proto/usde_proto.h \
-	$(srcdir)/proto/shc_proto.h
+	$(srcdir)/proto/shc_proto.h \
+	$(srcdir)/proto/test_proto.h
 
 common_includes = \
 	$(top_builddir)/config.h \
@@ -102,6 +108,10 @@ common_sources = \
 	shcoind_opt.c
 server_sources = \
 	$(proto_sources) \
+	server/test/test_wallet.cpp \
+	server/test/test_wallet.h \
+	server/test/test_block.cpp \
+	server/test/test_block.h \
 	server/usde/usde_netmsg.cpp \
 	server/usde/usde_netmsg.h \
 	server/usde/usde_block.cpp \
@@ -120,6 +130,7 @@ server_sources = \
 	server/shc/shc_txidx.h \
 	server/block.cpp \
 	server/chain.cpp \
+	server/base58.cpp \
 	server/global.cpp \
 	server/block_merkle.cpp \
 	server/rpc_proto.cpp \
@@ -163,12 +174,30 @@ usde: shcointool
 shc: shcointool
 	ln -sf shcointool shc
 
+test_shcoind_SOURCES = \
+	$(common_includes) $(common_sources) \
+	$(server_sources) $(stratum_sources) \
+	test/CuTest.c \
+	test/CuTest.h \
+	test/test_shcoind.c \
+	test/test_shcoind.h \
+	test/test_init.cpp \
+	test/test_key.cpp \
+	test/test_accounting.cpp
+
+test_shcoind_LDADD = $(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
+	-lboost_system -lboost_filesystem -lboost_thread -ldb_cxx -ldl
+test_shcoind_CFLAGS = -I$(srcdir)/server -I$(srcdir)/blockchain -I$(srcdir)/proto -DSHCOIN_SERVER -g -O0
+test_shcoind_CXXFLAGS = -I$(srcdir)/server -I$(srcdir)/blockchain -I$(srcdir)/proto -DOS_LINUX -DSHCOIN_SERVER -g -O0
+
+
 shcoind_SOURCES = \
 	$(common_includes) $(common_sources) \
 	$(server_sources) $(stratum_sources) \
 	shcoind.c \
 	shcoind_daemon.c \
 	shcoind_daemon.h
+
 
 shcoind_LDADD = \
 	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a

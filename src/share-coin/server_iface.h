@@ -160,7 +160,7 @@ void shc_server_close(int fd, struct sockaddr *addr);
 
 uint64_t getblockheight(int ifaceIndex);
 
-
+void start_rpc_server(void);
 
 
 #ifdef __cplusplus

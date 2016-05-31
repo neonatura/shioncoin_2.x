@@ -422,7 +422,7 @@ Value signrawtransaction(const Array& params, bool fHelp)
         Array keys = params[2].get_array();
         BOOST_FOREACH(Value k, keys)
         {
-            CBitcoinSecret vchSecret;
+            CCoinSecret vchSecret;
             bool fGood = vchSecret.SetString(k.get_str());
             if (!fGood)
                 throw JSONRPCError(-5,"Invalid private key");
@@ -608,7 +608,7 @@ Value rpc_tx_signraw(CIface *iface, const Array& params, bool fHelp)
     Array keys = params[2].get_array();
     BOOST_FOREACH(Value k, keys)
     {
-      CBitcoinSecret vchSecret;
+      CCoinSecret vchSecret;
       bool fGood = vchSecret.SetString(k.get_str());
       if (!fGood)
         throw JSONRPCError(-5,"Invalid private key");

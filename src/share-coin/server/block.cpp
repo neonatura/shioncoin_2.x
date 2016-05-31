@@ -1797,6 +1797,7 @@ bool CBlock::DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex)
 
   if (pindex->pprev)
   {
+    /* bc_clear() */
     /* DEBUG: */
 //    pindex->pprev->pnext = NULL;
 #if 0

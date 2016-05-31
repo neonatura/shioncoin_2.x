@@ -1929,6 +1929,9 @@
 /* Define to 1 if strerror(0) does not return a message implying success. */
 #undef REPLACE_STRERROR_0
 
+/* Define to enable RPC service. */
+#undef RPC_SERVICE
+
 /* Define for the S390 architecture. */
 #undef S390
 
@@ -1969,7 +1972,7 @@
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
 
-/* Define stratum service. */
+/* Define to enable stratum service. */
 #undef STRATUM_SERVICE
 
 /* Define to 1 if strerror_r returns char *. */
@@ -1995,7 +1998,7 @@
 /* Define for UnixWare systems. */
 #undef UNIXWARE
 
-/* Define USDE coin service. */
+/* Define to enable USDE coin service. */
 #undef USDE_SERVICE
 
 /* Define to nonzero if you want access control list support. */

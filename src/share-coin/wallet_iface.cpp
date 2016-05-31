@@ -116,7 +116,7 @@ static uint256 get_private_key_hash(CWallet *wallet, CKeyID keyId)
   if (!wallet->GetSecret(keyId, vchSecret, fCompressed))
     return (phash);
 
-  string secret = CBitcoinSecret(vchSecret, fCompressed).ToString();
+  string secret = CCoinSecret(vchSecret, fCompressed).ToString();
 
   unsigned char *secret_str = (unsigned char *)secret.c_str();
   size_t secret_len = secret.length();
@@ -153,7 +153,7 @@ Object JSONAddressInfo(int ifaceIndex, CBitcoinAddress address, bool show_priv)
       throw JSONRPCError(STERR_ACCESS_UNAVAIL,
           "Private key for address " + currentAddress + " is not known");
     }
-    result.push_back(Pair("secret", CBitcoinSecret(vchSecret, fCompressed).ToString()));
+    result.push_back(Pair("secret", CCoinSecret(vchSecret, fCompressed).ToString()));
   }
 
 //    bool fMine = IsMine(*pwalletMain, dest);
@@ -644,7 +644,7 @@ const char *json_getaddressinfo(int ifaceIndex, const char *addr_hash, const cha
         throw JSONRPCError(STERR_ACCESS_UNAVAIL,
             "Private key for address " + currentAddress + " is not known");
       }
-      result.push_back(Pair("secret", CBitcoinSecret(vchSecret, fCompressed).ToString()));
+      result.push_back(Pair("secret", CCoinSecret(vchSecret, fCompressed).ToString()));
     }
 
 //    bool fMine = IsMine(*pwalletMain, dest);
@@ -915,7 +915,7 @@ static const char *json_stratum_account_import(int ifaceIndex, const char *acc_n
   CWallet *pwalletMain = GetWallet(iface);
   string strLabel(acc_name);
   string strSecret(privaddr_str);
-  CBitcoinSecret vchSecret;
+  CCoinSecret vchSecret;
   CKeyID vchAddress;
   bool ok;
 

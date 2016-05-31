@@ -168,14 +168,14 @@ const char *c_getblocktemplate(int ifaceIndex)
     fprintf(stderr, "DEBUG: c_getblocktemplate: cleared mapWork\n");
 
     templateWeight = 2;
-    indexWeight = 1;
+    indexWeight = 0;
   } else {
     indexWeight++;
     if ((indexWeight % templateWeight) != 0) {
 //      fprintf(stderr, "DEBUG: c_getblocktemplate: stalling on work generation..\n");
       return (NULL);
     }
-    templateWeight = MIN(10, templateWeight + 1);
+    templateWeight = MIN(11, templateWeight + 1);
     indexWeight = 0;
   }
 

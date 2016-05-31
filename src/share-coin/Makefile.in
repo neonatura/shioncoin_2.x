@@ -34,6 +34,8 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
+TESTS = test_shcoind$(EXEEXT)
+noinst_PROGRAMS = test_shcoind$(EXEEXT)
 bin_PROGRAMS = shcointool$(EXEEXT)
 sbin_PROGRAMS = shcoind$(EXEEXT)
 @STATIC_LIBSHARE_TRUE@am__append_1 = $(LIBSHARE)/src/share-lib/libshare.a
@@ -147,7 +149,7 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(sbindir)" \
 	"$(DESTDIR)$(bindir)"
-PROGRAMS = $(bin_PROGRAMS) $(sbin_PROGRAMS)
+PROGRAMS = $(bin_PROGRAMS) $(noinst_PROGRAMS) $(sbin_PROGRAMS)
 am__objects_1 =
 am__objects_2 = shcoind-bc_block.$(OBJEXT) shcoind-bc_index.$(OBJEXT) \
 	shcoind-bc_arch.$(OBJEXT) shcoind-bc_fmap.$(OBJEXT)
@@ -161,23 +163,25 @@ am__objects_3 = $(am__objects_2) shcoind-unet_accept.$(OBJEXT) \
 	shcoind-util.$(OBJEXT) shcoind-shcoind_rpc.$(OBJEXT) \
 	shcoind-shcoind_log.$(OBJEXT) shcoind-shcoind_opt.$(OBJEXT)
 am__objects_4 = shcoind-coin_proto.$(OBJEXT) \
-	shcoind-usde_proto.$(OBJEXT) shcoind-shc_proto.$(OBJEXT)
-am__objects_5 = $(am__objects_4) shcoind-usde_netmsg.$(OBJEXT) \
+	shcoind-usde_proto.$(OBJEXT) shcoind-shc_proto.$(OBJEXT) \
+	shcoind-test_proto.$(OBJEXT)
+am__objects_5 = $(am__objects_4) shcoind-test_wallet.$(OBJEXT) \
+	shcoind-test_block.$(OBJEXT) shcoind-usde_netmsg.$(OBJEXT) \
 	shcoind-usde_block.$(OBJEXT) shcoind-usde_wallet.$(OBJEXT) \
 	shcoind-usde_txidx.$(OBJEXT) shcoind-shc_netmsg.$(OBJEXT) \
 	shcoind-shc_block.$(OBJEXT) shcoind-shc_wallet.$(OBJEXT) \
 	shcoind-shc_txidx.$(OBJEXT) shcoind-block.$(OBJEXT) \
-	shcoind-chain.$(OBJEXT) shcoind-global.$(OBJEXT) \
-	shcoind-block_merkle.$(OBJEXT) shcoind-rpc_proto.$(OBJEXT) \
-	shcoind-crypter.$(OBJEXT) shcoind-txidx.$(OBJEXT) \
-	shcoind-init.$(OBJEXT) shcoind-key.$(OBJEXT) \
-	shcoind-keystore.$(OBJEXT) shcoind-main.$(OBJEXT) \
-	shcoind-rpcdump.$(OBJEXT) shcoind-rpcnet.$(OBJEXT) \
-	shcoind-rpcrawtransaction.$(OBJEXT) shcoind-script.$(OBJEXT) \
-	shcoind-sync.$(OBJEXT) shcoind-wallet.$(OBJEXT) \
-	shcoind-walletdb.$(OBJEXT) shcoind-scrypt.$(OBJEXT) \
-	shcoind-wallet_iface.$(OBJEXT) shcoind-block_iface.$(OBJEXT) \
-	shcoind-server_iface.$(OBJEXT)
+	shcoind-chain.$(OBJEXT) shcoind-base58.$(OBJEXT) \
+	shcoind-global.$(OBJEXT) shcoind-block_merkle.$(OBJEXT) \
+	shcoind-rpc_proto.$(OBJEXT) shcoind-crypter.$(OBJEXT) \
+	shcoind-txidx.$(OBJEXT) shcoind-init.$(OBJEXT) \
+	shcoind-key.$(OBJEXT) shcoind-keystore.$(OBJEXT) \
+	shcoind-main.$(OBJEXT) shcoind-rpcdump.$(OBJEXT) \
+	shcoind-rpcnet.$(OBJEXT) shcoind-rpcrawtransaction.$(OBJEXT) \
+	shcoind-script.$(OBJEXT) shcoind-sync.$(OBJEXT) \
+	shcoind-wallet.$(OBJEXT) shcoind-walletdb.$(OBJEXT) \
+	shcoind-scrypt.$(OBJEXT) shcoind-wallet_iface.$(OBJEXT) \
+	shcoind-block_iface.$(OBJEXT) shcoind-server_iface.$(OBJEXT)
 am__objects_6 = shcoind-stratum.$(OBJEXT) \
 	shcoind-stratum_http.$(OBJEXT) \
 	shcoind-stratum_message.$(OBJEXT) \
@@ -217,6 +221,71 @@ shcointool_DEPENDENCIES =  \
 	$(am__append_4)
 shcointool_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(shcointool_CXXFLAGS) \
+	$(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+am__objects_10 = test_shcoind-bc_block.$(OBJEXT) \
+	test_shcoind-bc_index.$(OBJEXT) test_shcoind-bc_arch.$(OBJEXT) \
+	test_shcoind-bc_fmap.$(OBJEXT)
+am__objects_11 = $(am__objects_10) test_shcoind-unet_accept.$(OBJEXT) \
+	test_shcoind-unet_bind.$(OBJEXT) \
+	test_shcoind-unet_buff.$(OBJEXT) test_shcoind-unet.$(OBJEXT) \
+	test_shcoind-unet_close.$(OBJEXT) \
+	test_shcoind-unet_connect.$(OBJEXT) \
+	test_shcoind-unet_io.$(OBJEXT) \
+	test_shcoind-unet_timer.$(OBJEXT) \
+	test_shcoind-unet_peer.$(OBJEXT) \
+	test_shcoind-unet_event.$(OBJEXT) \
+	test_shcoind-protocol.$(OBJEXT) test_shcoind-netbase.$(OBJEXT) \
+	test_shcoind-version.$(OBJEXT) test_shcoind-util.$(OBJEXT) \
+	test_shcoind-shcoind_rpc.$(OBJEXT) \
+	test_shcoind-shcoind_log.$(OBJEXT) \
+	test_shcoind-shcoind_opt.$(OBJEXT)
+am__objects_12 = test_shcoind-coin_proto.$(OBJEXT) \
+	test_shcoind-usde_proto.$(OBJEXT) \
+	test_shcoind-shc_proto.$(OBJEXT) \
+	test_shcoind-test_proto.$(OBJEXT)
+am__objects_13 = $(am__objects_12) test_shcoind-test_wallet.$(OBJEXT) \
+	test_shcoind-test_block.$(OBJEXT) \
+	test_shcoind-usde_netmsg.$(OBJEXT) \
+	test_shcoind-usde_block.$(OBJEXT) \
+	test_shcoind-usde_wallet.$(OBJEXT) \
+	test_shcoind-usde_txidx.$(OBJEXT) \
+	test_shcoind-shc_netmsg.$(OBJEXT) \
+	test_shcoind-shc_block.$(OBJEXT) \
+	test_shcoind-shc_wallet.$(OBJEXT) \
+	test_shcoind-shc_txidx.$(OBJEXT) test_shcoind-block.$(OBJEXT) \
+	test_shcoind-chain.$(OBJEXT) test_shcoind-base58.$(OBJEXT) \
+	test_shcoind-global.$(OBJEXT) \
+	test_shcoind-block_merkle.$(OBJEXT) \
+	test_shcoind-rpc_proto.$(OBJEXT) \
+	test_shcoind-crypter.$(OBJEXT) test_shcoind-txidx.$(OBJEXT) \
+	test_shcoind-init.$(OBJEXT) test_shcoind-key.$(OBJEXT) \
+	test_shcoind-keystore.$(OBJEXT) test_shcoind-main.$(OBJEXT) \
+	test_shcoind-rpcdump.$(OBJEXT) test_shcoind-rpcnet.$(OBJEXT) \
+	test_shcoind-rpcrawtransaction.$(OBJEXT) \
+	test_shcoind-script.$(OBJEXT) test_shcoind-sync.$(OBJEXT) \
+	test_shcoind-wallet.$(OBJEXT) test_shcoind-walletdb.$(OBJEXT) \
+	test_shcoind-scrypt.$(OBJEXT) \
+	test_shcoind-wallet_iface.$(OBJEXT) \
+	test_shcoind-block_iface.$(OBJEXT) \
+	test_shcoind-server_iface.$(OBJEXT)
+am__objects_14 = test_shcoind-stratum.$(OBJEXT) \
+	test_shcoind-stratum_http.$(OBJEXT) \
+	test_shcoind-stratum_message.$(OBJEXT) \
+	test_shcoind-stratum_protocol.$(OBJEXT) \
+	test_shcoind-stratum_user.$(OBJEXT) \
+	test_shcoind-stratum_task.$(OBJEXT)
+am_test_shcoind_OBJECTS = $(am__objects_1) $(am__objects_11) \
+	$(am__objects_13) $(am__objects_14) \
+	test_shcoind-CuTest.$(OBJEXT) \
+	test_shcoind-test_shcoind.$(OBJEXT) \
+	test_shcoind-test_init.$(OBJEXT) \
+	test_shcoind-test_key.$(OBJEXT) \
+	test_shcoind-test_accounting.$(OBJEXT)
+test_shcoind_OBJECTS = $(am_test_shcoind_OBJECTS)
+test_shcoind_DEPENDENCIES =  \
+	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a
+test_shcoind_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(test_shcoind_CXXFLAGS) \
 	$(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
 am__vpath_adj = case $$p in \
@@ -262,10 +331,14 @@ CXXLD = $(CXX)
 CXXLINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(shcoind_SOURCES) $(shcointool_SOURCES)
-DIST_SOURCES = $(shcoind_SOURCES) $(shcointool_SOURCES)
+SOURCES = $(shcoind_SOURCES) $(shcointool_SOURCES) \
+	$(test_shcoind_SOURCES)
+DIST_SOURCES = $(shcoind_SOURCES) $(shcointool_SOURCES) \
+	$(test_shcoind_SOURCES)
 ETAGS = etags
 CTAGS = ctags
+am__tty_colors = \
+red=; grn=; lgn=; blu=; std=
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 pkglibexecdir = @pkglibexecdir@
 ACLOCAL = @ACLOCAL@
@@ -1168,9 +1241,11 @@ proto_sources = \
 	$(srcdir)/proto/coin_proto.c \
 	$(srcdir)/proto/usde_proto.cpp \
 	$(srcdir)/proto/shc_proto.cpp \
+	$(srcdir)/proto/test_proto.cpp \
 	$(srcdir)/proto/coin_proto.h \
 	$(srcdir)/proto/usde_proto.h \
-	$(srcdir)/proto/shc_proto.h
+	$(srcdir)/proto/shc_proto.h \
+	$(srcdir)/proto/test_proto.h
 
 common_includes = \
 	$(top_builddir)/config.h \
@@ -1252,6 +1327,10 @@ common_sources = \
 
 server_sources = \
 	$(proto_sources) \
+	server/test/test_wallet.cpp \
+	server/test/test_wallet.h \
+	server/test/test_block.cpp \
+	server/test/test_block.h \
 	server/usde/usde_netmsg.cpp \
 	server/usde/usde_netmsg.h \
 	server/usde/usde_block.cpp \
@@ -1270,6 +1349,7 @@ server_sources = \
 	server/shc/shc_txidx.h \
 	server/block.cpp \
 	server/chain.cpp \
+	server/base58.cpp \
 	server/global.cpp \
 	server/block_merkle.cpp \
 	server/rpc_proto.cpp \
@@ -1305,6 +1385,22 @@ tool_sources = \
 	tool/tool_irc.cpp
 
 bin_SCRIPTS = usde shc
+test_shcoind_SOURCES = \
+	$(common_includes) $(common_sources) \
+	$(server_sources) $(stratum_sources) \
+	test/CuTest.c \
+	test/CuTest.h \
+	test/test_shcoind.c \
+	test/test_shcoind.h \
+	test/test_init.cpp \
+	test/test_key.cpp \
+	test/test_accounting.cpp
+
+test_shcoind_LDADD = $(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
+	-lboost_system -lboost_filesystem -lboost_thread -ldb_cxx -ldl
+
+test_shcoind_CFLAGS = -I$(srcdir)/server -I$(srcdir)/blockchain -I$(srcdir)/proto -DSHCOIN_SERVER -g -O0
+test_shcoind_CXXFLAGS = -I$(srcdir)/server -I$(srcdir)/blockchain -I$(srcdir)/proto -DOS_LINUX -DSHCOIN_SERVER -g -O0
 shcoind_SOURCES = \
 	$(common_includes) $(common_sources) \
 	$(server_sources) $(stratum_sources) \
@@ -1423,6 +1519,15 @@ clean-binPROGRAMS:
 	list=`for p in $$list; do echo "$$p"; done | sed 's/$(EXEEXT)$$//'`; \
 	echo " rm -f" $$list; \
 	rm -f $$list
+
+clean-noinstPROGRAMS:
+	@list='$(noinst_PROGRAMS)'; test -n "$$list" || exit 0; \
+	echo " rm -f" $$list; \
+	rm -f $$list || exit $$?; \
+	test -n "$(EXEEXT)" || exit 0; \
+	list=`for p in $$list; do echo "$$p"; done | sed 's/$(EXEEXT)$$//'`; \
+	echo " rm -f" $$list; \
+	rm -f $$list
 install-sbinPROGRAMS: $(sbin_PROGRAMS)
 	@$(NORMAL_INSTALL)
 	test -z "$(sbindir)" || $(MKDIR_P) "$(DESTDIR)$(sbindir)"
@@ -1472,6 +1577,9 @@ shcoind$(EXEEXT): $(shcoind_OBJECTS) $(shcoind_DEPENDENCIES)
 shcointool$(EXEEXT): $(shcointool_OBJECTS) $(shcointool_DEPENDENCIES) 
 	@rm -f shcointool$(EXEEXT)
 	$(shcointool_LINK) $(shcointool_OBJECTS) $(shcointool_LDADD) $(LIBS)
+test_shcoind$(EXEEXT): $(test_shcoind_OBJECTS) $(test_shcoind_DEPENDENCIES) 
+	@rm -f test_shcoind$(EXEEXT)
+	$(test_shcoind_LINK) $(test_shcoind_OBJECTS) $(test_shcoind_LDADD) $(LIBS)
 install-binSCRIPTS: $(bin_SCRIPTS)
 	@$(NORMAL_INSTALL)
 	test -z "$(bindir)" || $(MKDIR_P) "$(DESTDIR)$(bindir)"
@@ -1513,6 +1621,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-base58.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-bc_arch.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-bc_block.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-bc_fmap.Po@am__quote@
@@ -1554,6 +1663,9 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-stratum_task.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-stratum_user.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-sync.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-test_block.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-test_proto.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-test_wallet.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-txidx.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-unet.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-unet_accept.Po@am__quote@
@@ -1600,6 +1712,75 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcointool-unet_timer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcointool-util.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcointool-version.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-CuTest.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-base58.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-bc_arch.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-bc_block.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-bc_fmap.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-bc_index.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-block.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-block_iface.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-block_merkle.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-chain.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-coin_proto.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-crypter.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-global.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-init.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-key.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-keystore.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-main.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-netbase.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-protocol.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-rpc_proto.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-rpcdump.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-rpcnet.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-rpcrawtransaction.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-script.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-scrypt.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-server_iface.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-shc_block.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-shc_netmsg.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-shc_proto.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-shc_txidx.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-shc_wallet.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-shcoind_log.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-shcoind_opt.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-shcoind_rpc.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-stratum.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-stratum_http.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-stratum_message.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-stratum_protocol.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-stratum_task.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-stratum_user.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-sync.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-test_accounting.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-test_block.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-test_init.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-test_key.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-test_proto.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-test_shcoind.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-test_wallet.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-txidx.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-unet.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-unet_accept.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-unet_bind.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-unet_buff.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-unet_close.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-unet_connect.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-unet_event.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-unet_io.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-unet_peer.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-unet_timer.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-usde_block.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-usde_netmsg.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-usde_proto.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-usde_txidx.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-usde_wallet.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-util.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-version.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-wallet.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-wallet_iface.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-walletdb.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -2238,6 +2419,384 @@ shcointool-shcoind_opt.obj: shcoind_opt.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CFLAGS) $(CFLAGS) -c -o shcointool-shcoind_opt.obj `if test -f 'shcoind_opt.c'; then $(CYGPATH_W) 'shcoind_opt.c'; else $(CYGPATH_W) '$(srcdir)/shcoind_opt.c'; fi`
 
+test_shcoind-bc_block.o: $(srcdir)/blockchain/bc_block.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-bc_block.o -MD -MP -MF $(DEPDIR)/test_shcoind-bc_block.Tpo -c -o test_shcoind-bc_block.o `test -f '$(srcdir)/blockchain/bc_block.c' || echo '$(srcdir)/'`$(srcdir)/blockchain/bc_block.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-bc_block.Tpo $(DEPDIR)/test_shcoind-bc_block.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(srcdir)/blockchain/bc_block.c' object='test_shcoind-bc_block.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-bc_block.o `test -f '$(srcdir)/blockchain/bc_block.c' || echo '$(srcdir)/'`$(srcdir)/blockchain/bc_block.c
+
+test_shcoind-bc_block.obj: $(srcdir)/blockchain/bc_block.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-bc_block.obj -MD -MP -MF $(DEPDIR)/test_shcoind-bc_block.Tpo -c -o test_shcoind-bc_block.obj `if test -f '$(srcdir)/blockchain/bc_block.c'; then $(CYGPATH_W) '$(srcdir)/blockchain/bc_block.c'; else $(CYGPATH_W) '$(srcdir)/$(srcdir)/blockchain/bc_block.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-bc_block.Tpo $(DEPDIR)/test_shcoind-bc_block.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(srcdir)/blockchain/bc_block.c' object='test_shcoind-bc_block.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-bc_block.obj `if test -f '$(srcdir)/blockchain/bc_block.c'; then $(CYGPATH_W) '$(srcdir)/blockchain/bc_block.c'; else $(CYGPATH_W) '$(srcdir)/$(srcdir)/blockchain/bc_block.c'; fi`
+
+test_shcoind-bc_index.o: $(srcdir)/blockchain/bc_index.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-bc_index.o -MD -MP -MF $(DEPDIR)/test_shcoind-bc_index.Tpo -c -o test_shcoind-bc_index.o `test -f '$(srcdir)/blockchain/bc_index.c' || echo '$(srcdir)/'`$(srcdir)/blockchain/bc_index.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-bc_index.Tpo $(DEPDIR)/test_shcoind-bc_index.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(srcdir)/blockchain/bc_index.c' object='test_shcoind-bc_index.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-bc_index.o `test -f '$(srcdir)/blockchain/bc_index.c' || echo '$(srcdir)/'`$(srcdir)/blockchain/bc_index.c
+
+test_shcoind-bc_index.obj: $(srcdir)/blockchain/bc_index.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-bc_index.obj -MD -MP -MF $(DEPDIR)/test_shcoind-bc_index.Tpo -c -o test_shcoind-bc_index.obj `if test -f '$(srcdir)/blockchain/bc_index.c'; then $(CYGPATH_W) '$(srcdir)/blockchain/bc_index.c'; else $(CYGPATH_W) '$(srcdir)/$(srcdir)/blockchain/bc_index.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-bc_index.Tpo $(DEPDIR)/test_shcoind-bc_index.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(srcdir)/blockchain/bc_index.c' object='test_shcoind-bc_index.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-bc_index.obj `if test -f '$(srcdir)/blockchain/bc_index.c'; then $(CYGPATH_W) '$(srcdir)/blockchain/bc_index.c'; else $(CYGPATH_W) '$(srcdir)/$(srcdir)/blockchain/bc_index.c'; fi`
+
+test_shcoind-bc_arch.o: $(srcdir)/blockchain/bc_arch.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-bc_arch.o -MD -MP -MF $(DEPDIR)/test_shcoind-bc_arch.Tpo -c -o test_shcoind-bc_arch.o `test -f '$(srcdir)/blockchain/bc_arch.c' || echo '$(srcdir)/'`$(srcdir)/blockchain/bc_arch.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-bc_arch.Tpo $(DEPDIR)/test_shcoind-bc_arch.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(srcdir)/blockchain/bc_arch.c' object='test_shcoind-bc_arch.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-bc_arch.o `test -f '$(srcdir)/blockchain/bc_arch.c' || echo '$(srcdir)/'`$(srcdir)/blockchain/bc_arch.c
+
+test_shcoind-bc_arch.obj: $(srcdir)/blockchain/bc_arch.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-bc_arch.obj -MD -MP -MF $(DEPDIR)/test_shcoind-bc_arch.Tpo -c -o test_shcoind-bc_arch.obj `if test -f '$(srcdir)/blockchain/bc_arch.c'; then $(CYGPATH_W) '$(srcdir)/blockchain/bc_arch.c'; else $(CYGPATH_W) '$(srcdir)/$(srcdir)/blockchain/bc_arch.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-bc_arch.Tpo $(DEPDIR)/test_shcoind-bc_arch.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(srcdir)/blockchain/bc_arch.c' object='test_shcoind-bc_arch.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-bc_arch.obj `if test -f '$(srcdir)/blockchain/bc_arch.c'; then $(CYGPATH_W) '$(srcdir)/blockchain/bc_arch.c'; else $(CYGPATH_W) '$(srcdir)/$(srcdir)/blockchain/bc_arch.c'; fi`
+
+test_shcoind-bc_fmap.o: $(srcdir)/blockchain/bc_fmap.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-bc_fmap.o -MD -MP -MF $(DEPDIR)/test_shcoind-bc_fmap.Tpo -c -o test_shcoind-bc_fmap.o `test -f '$(srcdir)/blockchain/bc_fmap.c' || echo '$(srcdir)/'`$(srcdir)/blockchain/bc_fmap.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-bc_fmap.Tpo $(DEPDIR)/test_shcoind-bc_fmap.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(srcdir)/blockchain/bc_fmap.c' object='test_shcoind-bc_fmap.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-bc_fmap.o `test -f '$(srcdir)/blockchain/bc_fmap.c' || echo '$(srcdir)/'`$(srcdir)/blockchain/bc_fmap.c
+
+test_shcoind-bc_fmap.obj: $(srcdir)/blockchain/bc_fmap.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-bc_fmap.obj -MD -MP -MF $(DEPDIR)/test_shcoind-bc_fmap.Tpo -c -o test_shcoind-bc_fmap.obj `if test -f '$(srcdir)/blockchain/bc_fmap.c'; then $(CYGPATH_W) '$(srcdir)/blockchain/bc_fmap.c'; else $(CYGPATH_W) '$(srcdir)/$(srcdir)/blockchain/bc_fmap.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-bc_fmap.Tpo $(DEPDIR)/test_shcoind-bc_fmap.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(srcdir)/blockchain/bc_fmap.c' object='test_shcoind-bc_fmap.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-bc_fmap.obj `if test -f '$(srcdir)/blockchain/bc_fmap.c'; then $(CYGPATH_W) '$(srcdir)/blockchain/bc_fmap.c'; else $(CYGPATH_W) '$(srcdir)/$(srcdir)/blockchain/bc_fmap.c'; fi`
+
+test_shcoind-unet_accept.o: unet/unet_accept.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-unet_accept.o -MD -MP -MF $(DEPDIR)/test_shcoind-unet_accept.Tpo -c -o test_shcoind-unet_accept.o `test -f 'unet/unet_accept.c' || echo '$(srcdir)/'`unet/unet_accept.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-unet_accept.Tpo $(DEPDIR)/test_shcoind-unet_accept.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unet/unet_accept.c' object='test_shcoind-unet_accept.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-unet_accept.o `test -f 'unet/unet_accept.c' || echo '$(srcdir)/'`unet/unet_accept.c
+
+test_shcoind-unet_accept.obj: unet/unet_accept.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-unet_accept.obj -MD -MP -MF $(DEPDIR)/test_shcoind-unet_accept.Tpo -c -o test_shcoind-unet_accept.obj `if test -f 'unet/unet_accept.c'; then $(CYGPATH_W) 'unet/unet_accept.c'; else $(CYGPATH_W) '$(srcdir)/unet/unet_accept.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-unet_accept.Tpo $(DEPDIR)/test_shcoind-unet_accept.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unet/unet_accept.c' object='test_shcoind-unet_accept.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-unet_accept.obj `if test -f 'unet/unet_accept.c'; then $(CYGPATH_W) 'unet/unet_accept.c'; else $(CYGPATH_W) '$(srcdir)/unet/unet_accept.c'; fi`
+
+test_shcoind-unet_bind.o: unet/unet_bind.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-unet_bind.o -MD -MP -MF $(DEPDIR)/test_shcoind-unet_bind.Tpo -c -o test_shcoind-unet_bind.o `test -f 'unet/unet_bind.c' || echo '$(srcdir)/'`unet/unet_bind.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-unet_bind.Tpo $(DEPDIR)/test_shcoind-unet_bind.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unet/unet_bind.c' object='test_shcoind-unet_bind.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-unet_bind.o `test -f 'unet/unet_bind.c' || echo '$(srcdir)/'`unet/unet_bind.c
+
+test_shcoind-unet_bind.obj: unet/unet_bind.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-unet_bind.obj -MD -MP -MF $(DEPDIR)/test_shcoind-unet_bind.Tpo -c -o test_shcoind-unet_bind.obj `if test -f 'unet/unet_bind.c'; then $(CYGPATH_W) 'unet/unet_bind.c'; else $(CYGPATH_W) '$(srcdir)/unet/unet_bind.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-unet_bind.Tpo $(DEPDIR)/test_shcoind-unet_bind.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unet/unet_bind.c' object='test_shcoind-unet_bind.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-unet_bind.obj `if test -f 'unet/unet_bind.c'; then $(CYGPATH_W) 'unet/unet_bind.c'; else $(CYGPATH_W) '$(srcdir)/unet/unet_bind.c'; fi`
+
+test_shcoind-unet_buff.o: unet/unet_buff.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-unet_buff.o -MD -MP -MF $(DEPDIR)/test_shcoind-unet_buff.Tpo -c -o test_shcoind-unet_buff.o `test -f 'unet/unet_buff.c' || echo '$(srcdir)/'`unet/unet_buff.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-unet_buff.Tpo $(DEPDIR)/test_shcoind-unet_buff.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unet/unet_buff.c' object='test_shcoind-unet_buff.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-unet_buff.o `test -f 'unet/unet_buff.c' || echo '$(srcdir)/'`unet/unet_buff.c
+
+test_shcoind-unet_buff.obj: unet/unet_buff.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-unet_buff.obj -MD -MP -MF $(DEPDIR)/test_shcoind-unet_buff.Tpo -c -o test_shcoind-unet_buff.obj `if test -f 'unet/unet_buff.c'; then $(CYGPATH_W) 'unet/unet_buff.c'; else $(CYGPATH_W) '$(srcdir)/unet/unet_buff.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-unet_buff.Tpo $(DEPDIR)/test_shcoind-unet_buff.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unet/unet_buff.c' object='test_shcoind-unet_buff.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-unet_buff.obj `if test -f 'unet/unet_buff.c'; then $(CYGPATH_W) 'unet/unet_buff.c'; else $(CYGPATH_W) '$(srcdir)/unet/unet_buff.c'; fi`
+
+test_shcoind-unet.o: unet/unet.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-unet.o -MD -MP -MF $(DEPDIR)/test_shcoind-unet.Tpo -c -o test_shcoind-unet.o `test -f 'unet/unet.c' || echo '$(srcdir)/'`unet/unet.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-unet.Tpo $(DEPDIR)/test_shcoind-unet.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unet/unet.c' object='test_shcoind-unet.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-unet.o `test -f 'unet/unet.c' || echo '$(srcdir)/'`unet/unet.c
+
+test_shcoind-unet.obj: unet/unet.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-unet.obj -MD -MP -MF $(DEPDIR)/test_shcoind-unet.Tpo -c -o test_shcoind-unet.obj `if test -f 'unet/unet.c'; then $(CYGPATH_W) 'unet/unet.c'; else $(CYGPATH_W) '$(srcdir)/unet/unet.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-unet.Tpo $(DEPDIR)/test_shcoind-unet.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unet/unet.c' object='test_shcoind-unet.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-unet.obj `if test -f 'unet/unet.c'; then $(CYGPATH_W) 'unet/unet.c'; else $(CYGPATH_W) '$(srcdir)/unet/unet.c'; fi`
+
+test_shcoind-unet_close.o: unet/unet_close.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-unet_close.o -MD -MP -MF $(DEPDIR)/test_shcoind-unet_close.Tpo -c -o test_shcoind-unet_close.o `test -f 'unet/unet_close.c' || echo '$(srcdir)/'`unet/unet_close.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-unet_close.Tpo $(DEPDIR)/test_shcoind-unet_close.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unet/unet_close.c' object='test_shcoind-unet_close.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-unet_close.o `test -f 'unet/unet_close.c' || echo '$(srcdir)/'`unet/unet_close.c
+
+test_shcoind-unet_close.obj: unet/unet_close.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-unet_close.obj -MD -MP -MF $(DEPDIR)/test_shcoind-unet_close.Tpo -c -o test_shcoind-unet_close.obj `if test -f 'unet/unet_close.c'; then $(CYGPATH_W) 'unet/unet_close.c'; else $(CYGPATH_W) '$(srcdir)/unet/unet_close.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-unet_close.Tpo $(DEPDIR)/test_shcoind-unet_close.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unet/unet_close.c' object='test_shcoind-unet_close.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-unet_close.obj `if test -f 'unet/unet_close.c'; then $(CYGPATH_W) 'unet/unet_close.c'; else $(CYGPATH_W) '$(srcdir)/unet/unet_close.c'; fi`
+
+test_shcoind-unet_connect.o: unet/unet_connect.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-unet_connect.o -MD -MP -MF $(DEPDIR)/test_shcoind-unet_connect.Tpo -c -o test_shcoind-unet_connect.o `test -f 'unet/unet_connect.c' || echo '$(srcdir)/'`unet/unet_connect.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-unet_connect.Tpo $(DEPDIR)/test_shcoind-unet_connect.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unet/unet_connect.c' object='test_shcoind-unet_connect.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-unet_connect.o `test -f 'unet/unet_connect.c' || echo '$(srcdir)/'`unet/unet_connect.c
+
+test_shcoind-unet_connect.obj: unet/unet_connect.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-unet_connect.obj -MD -MP -MF $(DEPDIR)/test_shcoind-unet_connect.Tpo -c -o test_shcoind-unet_connect.obj `if test -f 'unet/unet_connect.c'; then $(CYGPATH_W) 'unet/unet_connect.c'; else $(CYGPATH_W) '$(srcdir)/unet/unet_connect.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-unet_connect.Tpo $(DEPDIR)/test_shcoind-unet_connect.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unet/unet_connect.c' object='test_shcoind-unet_connect.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-unet_connect.obj `if test -f 'unet/unet_connect.c'; then $(CYGPATH_W) 'unet/unet_connect.c'; else $(CYGPATH_W) '$(srcdir)/unet/unet_connect.c'; fi`
+
+test_shcoind-unet_io.o: unet/unet_io.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-unet_io.o -MD -MP -MF $(DEPDIR)/test_shcoind-unet_io.Tpo -c -o test_shcoind-unet_io.o `test -f 'unet/unet_io.c' || echo '$(srcdir)/'`unet/unet_io.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-unet_io.Tpo $(DEPDIR)/test_shcoind-unet_io.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unet/unet_io.c' object='test_shcoind-unet_io.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-unet_io.o `test -f 'unet/unet_io.c' || echo '$(srcdir)/'`unet/unet_io.c
+
+test_shcoind-unet_io.obj: unet/unet_io.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-unet_io.obj -MD -MP -MF $(DEPDIR)/test_shcoind-unet_io.Tpo -c -o test_shcoind-unet_io.obj `if test -f 'unet/unet_io.c'; then $(CYGPATH_W) 'unet/unet_io.c'; else $(CYGPATH_W) '$(srcdir)/unet/unet_io.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-unet_io.Tpo $(DEPDIR)/test_shcoind-unet_io.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unet/unet_io.c' object='test_shcoind-unet_io.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-unet_io.obj `if test -f 'unet/unet_io.c'; then $(CYGPATH_W) 'unet/unet_io.c'; else $(CYGPATH_W) '$(srcdir)/unet/unet_io.c'; fi`
+
+test_shcoind-unet_timer.o: unet/unet_timer.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-unet_timer.o -MD -MP -MF $(DEPDIR)/test_shcoind-unet_timer.Tpo -c -o test_shcoind-unet_timer.o `test -f 'unet/unet_timer.c' || echo '$(srcdir)/'`unet/unet_timer.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-unet_timer.Tpo $(DEPDIR)/test_shcoind-unet_timer.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unet/unet_timer.c' object='test_shcoind-unet_timer.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-unet_timer.o `test -f 'unet/unet_timer.c' || echo '$(srcdir)/'`unet/unet_timer.c
+
+test_shcoind-unet_timer.obj: unet/unet_timer.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-unet_timer.obj -MD -MP -MF $(DEPDIR)/test_shcoind-unet_timer.Tpo -c -o test_shcoind-unet_timer.obj `if test -f 'unet/unet_timer.c'; then $(CYGPATH_W) 'unet/unet_timer.c'; else $(CYGPATH_W) '$(srcdir)/unet/unet_timer.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-unet_timer.Tpo $(DEPDIR)/test_shcoind-unet_timer.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unet/unet_timer.c' object='test_shcoind-unet_timer.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-unet_timer.obj `if test -f 'unet/unet_timer.c'; then $(CYGPATH_W) 'unet/unet_timer.c'; else $(CYGPATH_W) '$(srcdir)/unet/unet_timer.c'; fi`
+
+test_shcoind-unet_peer.o: unet/unet_peer.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-unet_peer.o -MD -MP -MF $(DEPDIR)/test_shcoind-unet_peer.Tpo -c -o test_shcoind-unet_peer.o `test -f 'unet/unet_peer.c' || echo '$(srcdir)/'`unet/unet_peer.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-unet_peer.Tpo $(DEPDIR)/test_shcoind-unet_peer.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unet/unet_peer.c' object='test_shcoind-unet_peer.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-unet_peer.o `test -f 'unet/unet_peer.c' || echo '$(srcdir)/'`unet/unet_peer.c
+
+test_shcoind-unet_peer.obj: unet/unet_peer.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-unet_peer.obj -MD -MP -MF $(DEPDIR)/test_shcoind-unet_peer.Tpo -c -o test_shcoind-unet_peer.obj `if test -f 'unet/unet_peer.c'; then $(CYGPATH_W) 'unet/unet_peer.c'; else $(CYGPATH_W) '$(srcdir)/unet/unet_peer.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-unet_peer.Tpo $(DEPDIR)/test_shcoind-unet_peer.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unet/unet_peer.c' object='test_shcoind-unet_peer.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-unet_peer.obj `if test -f 'unet/unet_peer.c'; then $(CYGPATH_W) 'unet/unet_peer.c'; else $(CYGPATH_W) '$(srcdir)/unet/unet_peer.c'; fi`
+
+test_shcoind-unet_event.o: unet/unet_event.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-unet_event.o -MD -MP -MF $(DEPDIR)/test_shcoind-unet_event.Tpo -c -o test_shcoind-unet_event.o `test -f 'unet/unet_event.c' || echo '$(srcdir)/'`unet/unet_event.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-unet_event.Tpo $(DEPDIR)/test_shcoind-unet_event.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unet/unet_event.c' object='test_shcoind-unet_event.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-unet_event.o `test -f 'unet/unet_event.c' || echo '$(srcdir)/'`unet/unet_event.c
+
+test_shcoind-unet_event.obj: unet/unet_event.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-unet_event.obj -MD -MP -MF $(DEPDIR)/test_shcoind-unet_event.Tpo -c -o test_shcoind-unet_event.obj `if test -f 'unet/unet_event.c'; then $(CYGPATH_W) 'unet/unet_event.c'; else $(CYGPATH_W) '$(srcdir)/unet/unet_event.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-unet_event.Tpo $(DEPDIR)/test_shcoind-unet_event.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unet/unet_event.c' object='test_shcoind-unet_event.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-unet_event.obj `if test -f 'unet/unet_event.c'; then $(CYGPATH_W) 'unet/unet_event.c'; else $(CYGPATH_W) '$(srcdir)/unet/unet_event.c'; fi`
+
+test_shcoind-shcoind_rpc.o: shcoind_rpc.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-shcoind_rpc.o -MD -MP -MF $(DEPDIR)/test_shcoind-shcoind_rpc.Tpo -c -o test_shcoind-shcoind_rpc.o `test -f 'shcoind_rpc.c' || echo '$(srcdir)/'`shcoind_rpc.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-shcoind_rpc.Tpo $(DEPDIR)/test_shcoind-shcoind_rpc.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='shcoind_rpc.c' object='test_shcoind-shcoind_rpc.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-shcoind_rpc.o `test -f 'shcoind_rpc.c' || echo '$(srcdir)/'`shcoind_rpc.c
+
+test_shcoind-shcoind_rpc.obj: shcoind_rpc.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-shcoind_rpc.obj -MD -MP -MF $(DEPDIR)/test_shcoind-shcoind_rpc.Tpo -c -o test_shcoind-shcoind_rpc.obj `if test -f 'shcoind_rpc.c'; then $(CYGPATH_W) 'shcoind_rpc.c'; else $(CYGPATH_W) '$(srcdir)/shcoind_rpc.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-shcoind_rpc.Tpo $(DEPDIR)/test_shcoind-shcoind_rpc.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='shcoind_rpc.c' object='test_shcoind-shcoind_rpc.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-shcoind_rpc.obj `if test -f 'shcoind_rpc.c'; then $(CYGPATH_W) 'shcoind_rpc.c'; else $(CYGPATH_W) '$(srcdir)/shcoind_rpc.c'; fi`
+
+test_shcoind-shcoind_log.o: shcoind_log.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-shcoind_log.o -MD -MP -MF $(DEPDIR)/test_shcoind-shcoind_log.Tpo -c -o test_shcoind-shcoind_log.o `test -f 'shcoind_log.c' || echo '$(srcdir)/'`shcoind_log.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-shcoind_log.Tpo $(DEPDIR)/test_shcoind-shcoind_log.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='shcoind_log.c' object='test_shcoind-shcoind_log.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-shcoind_log.o `test -f 'shcoind_log.c' || echo '$(srcdir)/'`shcoind_log.c
+
+test_shcoind-shcoind_log.obj: shcoind_log.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-shcoind_log.obj -MD -MP -MF $(DEPDIR)/test_shcoind-shcoind_log.Tpo -c -o test_shcoind-shcoind_log.obj `if test -f 'shcoind_log.c'; then $(CYGPATH_W) 'shcoind_log.c'; else $(CYGPATH_W) '$(srcdir)/shcoind_log.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-shcoind_log.Tpo $(DEPDIR)/test_shcoind-shcoind_log.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='shcoind_log.c' object='test_shcoind-shcoind_log.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-shcoind_log.obj `if test -f 'shcoind_log.c'; then $(CYGPATH_W) 'shcoind_log.c'; else $(CYGPATH_W) '$(srcdir)/shcoind_log.c'; fi`
+
+test_shcoind-shcoind_opt.o: shcoind_opt.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-shcoind_opt.o -MD -MP -MF $(DEPDIR)/test_shcoind-shcoind_opt.Tpo -c -o test_shcoind-shcoind_opt.o `test -f 'shcoind_opt.c' || echo '$(srcdir)/'`shcoind_opt.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-shcoind_opt.Tpo $(DEPDIR)/test_shcoind-shcoind_opt.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='shcoind_opt.c' object='test_shcoind-shcoind_opt.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-shcoind_opt.o `test -f 'shcoind_opt.c' || echo '$(srcdir)/'`shcoind_opt.c
+
+test_shcoind-shcoind_opt.obj: shcoind_opt.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-shcoind_opt.obj -MD -MP -MF $(DEPDIR)/test_shcoind-shcoind_opt.Tpo -c -o test_shcoind-shcoind_opt.obj `if test -f 'shcoind_opt.c'; then $(CYGPATH_W) 'shcoind_opt.c'; else $(CYGPATH_W) '$(srcdir)/shcoind_opt.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-shcoind_opt.Tpo $(DEPDIR)/test_shcoind-shcoind_opt.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='shcoind_opt.c' object='test_shcoind-shcoind_opt.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-shcoind_opt.obj `if test -f 'shcoind_opt.c'; then $(CYGPATH_W) 'shcoind_opt.c'; else $(CYGPATH_W) '$(srcdir)/shcoind_opt.c'; fi`
+
+test_shcoind-coin_proto.o: $(srcdir)/proto/coin_proto.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-coin_proto.o -MD -MP -MF $(DEPDIR)/test_shcoind-coin_proto.Tpo -c -o test_shcoind-coin_proto.o `test -f '$(srcdir)/proto/coin_proto.c' || echo '$(srcdir)/'`$(srcdir)/proto/coin_proto.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-coin_proto.Tpo $(DEPDIR)/test_shcoind-coin_proto.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(srcdir)/proto/coin_proto.c' object='test_shcoind-coin_proto.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-coin_proto.o `test -f '$(srcdir)/proto/coin_proto.c' || echo '$(srcdir)/'`$(srcdir)/proto/coin_proto.c
+
+test_shcoind-coin_proto.obj: $(srcdir)/proto/coin_proto.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-coin_proto.obj -MD -MP -MF $(DEPDIR)/test_shcoind-coin_proto.Tpo -c -o test_shcoind-coin_proto.obj `if test -f '$(srcdir)/proto/coin_proto.c'; then $(CYGPATH_W) '$(srcdir)/proto/coin_proto.c'; else $(CYGPATH_W) '$(srcdir)/$(srcdir)/proto/coin_proto.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-coin_proto.Tpo $(DEPDIR)/test_shcoind-coin_proto.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(srcdir)/proto/coin_proto.c' object='test_shcoind-coin_proto.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-coin_proto.obj `if test -f '$(srcdir)/proto/coin_proto.c'; then $(CYGPATH_W) '$(srcdir)/proto/coin_proto.c'; else $(CYGPATH_W) '$(srcdir)/$(srcdir)/proto/coin_proto.c'; fi`
+
+test_shcoind-scrypt.o: server/scrypt.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-scrypt.o -MD -MP -MF $(DEPDIR)/test_shcoind-scrypt.Tpo -c -o test_shcoind-scrypt.o `test -f 'server/scrypt.c' || echo '$(srcdir)/'`server/scrypt.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-scrypt.Tpo $(DEPDIR)/test_shcoind-scrypt.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='server/scrypt.c' object='test_shcoind-scrypt.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-scrypt.o `test -f 'server/scrypt.c' || echo '$(srcdir)/'`server/scrypt.c
+
+test_shcoind-scrypt.obj: server/scrypt.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-scrypt.obj -MD -MP -MF $(DEPDIR)/test_shcoind-scrypt.Tpo -c -o test_shcoind-scrypt.obj `if test -f 'server/scrypt.c'; then $(CYGPATH_W) 'server/scrypt.c'; else $(CYGPATH_W) '$(srcdir)/server/scrypt.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-scrypt.Tpo $(DEPDIR)/test_shcoind-scrypt.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='server/scrypt.c' object='test_shcoind-scrypt.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-scrypt.obj `if test -f 'server/scrypt.c'; then $(CYGPATH_W) 'server/scrypt.c'; else $(CYGPATH_W) '$(srcdir)/server/scrypt.c'; fi`
+
+test_shcoind-stratum.o: stratum/stratum.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-stratum.o -MD -MP -MF $(DEPDIR)/test_shcoind-stratum.Tpo -c -o test_shcoind-stratum.o `test -f 'stratum/stratum.c' || echo '$(srcdir)/'`stratum/stratum.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-stratum.Tpo $(DEPDIR)/test_shcoind-stratum.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='stratum/stratum.c' object='test_shcoind-stratum.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-stratum.o `test -f 'stratum/stratum.c' || echo '$(srcdir)/'`stratum/stratum.c
+
+test_shcoind-stratum.obj: stratum/stratum.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-stratum.obj -MD -MP -MF $(DEPDIR)/test_shcoind-stratum.Tpo -c -o test_shcoind-stratum.obj `if test -f 'stratum/stratum.c'; then $(CYGPATH_W) 'stratum/stratum.c'; else $(CYGPATH_W) '$(srcdir)/stratum/stratum.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-stratum.Tpo $(DEPDIR)/test_shcoind-stratum.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='stratum/stratum.c' object='test_shcoind-stratum.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-stratum.obj `if test -f 'stratum/stratum.c'; then $(CYGPATH_W) 'stratum/stratum.c'; else $(CYGPATH_W) '$(srcdir)/stratum/stratum.c'; fi`
+
+test_shcoind-stratum_http.o: stratum/stratum_http.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-stratum_http.o -MD -MP -MF $(DEPDIR)/test_shcoind-stratum_http.Tpo -c -o test_shcoind-stratum_http.o `test -f 'stratum/stratum_http.c' || echo '$(srcdir)/'`stratum/stratum_http.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-stratum_http.Tpo $(DEPDIR)/test_shcoind-stratum_http.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='stratum/stratum_http.c' object='test_shcoind-stratum_http.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-stratum_http.o `test -f 'stratum/stratum_http.c' || echo '$(srcdir)/'`stratum/stratum_http.c
+
+test_shcoind-stratum_http.obj: stratum/stratum_http.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-stratum_http.obj -MD -MP -MF $(DEPDIR)/test_shcoind-stratum_http.Tpo -c -o test_shcoind-stratum_http.obj `if test -f 'stratum/stratum_http.c'; then $(CYGPATH_W) 'stratum/stratum_http.c'; else $(CYGPATH_W) '$(srcdir)/stratum/stratum_http.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-stratum_http.Tpo $(DEPDIR)/test_shcoind-stratum_http.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='stratum/stratum_http.c' object='test_shcoind-stratum_http.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-stratum_http.obj `if test -f 'stratum/stratum_http.c'; then $(CYGPATH_W) 'stratum/stratum_http.c'; else $(CYGPATH_W) '$(srcdir)/stratum/stratum_http.c'; fi`
+
+test_shcoind-stratum_message.o: stratum/stratum_message.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-stratum_message.o -MD -MP -MF $(DEPDIR)/test_shcoind-stratum_message.Tpo -c -o test_shcoind-stratum_message.o `test -f 'stratum/stratum_message.c' || echo '$(srcdir)/'`stratum/stratum_message.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-stratum_message.Tpo $(DEPDIR)/test_shcoind-stratum_message.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='stratum/stratum_message.c' object='test_shcoind-stratum_message.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-stratum_message.o `test -f 'stratum/stratum_message.c' || echo '$(srcdir)/'`stratum/stratum_message.c
+
+test_shcoind-stratum_message.obj: stratum/stratum_message.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-stratum_message.obj -MD -MP -MF $(DEPDIR)/test_shcoind-stratum_message.Tpo -c -o test_shcoind-stratum_message.obj `if test -f 'stratum/stratum_message.c'; then $(CYGPATH_W) 'stratum/stratum_message.c'; else $(CYGPATH_W) '$(srcdir)/stratum/stratum_message.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-stratum_message.Tpo $(DEPDIR)/test_shcoind-stratum_message.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='stratum/stratum_message.c' object='test_shcoind-stratum_message.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-stratum_message.obj `if test -f 'stratum/stratum_message.c'; then $(CYGPATH_W) 'stratum/stratum_message.c'; else $(CYGPATH_W) '$(srcdir)/stratum/stratum_message.c'; fi`
+
+test_shcoind-stratum_protocol.o: stratum/stratum_protocol.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-stratum_protocol.o -MD -MP -MF $(DEPDIR)/test_shcoind-stratum_protocol.Tpo -c -o test_shcoind-stratum_protocol.o `test -f 'stratum/stratum_protocol.c' || echo '$(srcdir)/'`stratum/stratum_protocol.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-stratum_protocol.Tpo $(DEPDIR)/test_shcoind-stratum_protocol.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='stratum/stratum_protocol.c' object='test_shcoind-stratum_protocol.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-stratum_protocol.o `test -f 'stratum/stratum_protocol.c' || echo '$(srcdir)/'`stratum/stratum_protocol.c
+
+test_shcoind-stratum_protocol.obj: stratum/stratum_protocol.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-stratum_protocol.obj -MD -MP -MF $(DEPDIR)/test_shcoind-stratum_protocol.Tpo -c -o test_shcoind-stratum_protocol.obj `if test -f 'stratum/stratum_protocol.c'; then $(CYGPATH_W) 'stratum/stratum_protocol.c'; else $(CYGPATH_W) '$(srcdir)/stratum/stratum_protocol.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-stratum_protocol.Tpo $(DEPDIR)/test_shcoind-stratum_protocol.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='stratum/stratum_protocol.c' object='test_shcoind-stratum_protocol.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-stratum_protocol.obj `if test -f 'stratum/stratum_protocol.c'; then $(CYGPATH_W) 'stratum/stratum_protocol.c'; else $(CYGPATH_W) '$(srcdir)/stratum/stratum_protocol.c'; fi`
+
+test_shcoind-stratum_user.o: stratum/stratum_user.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-stratum_user.o -MD -MP -MF $(DEPDIR)/test_shcoind-stratum_user.Tpo -c -o test_shcoind-stratum_user.o `test -f 'stratum/stratum_user.c' || echo '$(srcdir)/'`stratum/stratum_user.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-stratum_user.Tpo $(DEPDIR)/test_shcoind-stratum_user.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='stratum/stratum_user.c' object='test_shcoind-stratum_user.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-stratum_user.o `test -f 'stratum/stratum_user.c' || echo '$(srcdir)/'`stratum/stratum_user.c
+
+test_shcoind-stratum_user.obj: stratum/stratum_user.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-stratum_user.obj -MD -MP -MF $(DEPDIR)/test_shcoind-stratum_user.Tpo -c -o test_shcoind-stratum_user.obj `if test -f 'stratum/stratum_user.c'; then $(CYGPATH_W) 'stratum/stratum_user.c'; else $(CYGPATH_W) '$(srcdir)/stratum/stratum_user.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-stratum_user.Tpo $(DEPDIR)/test_shcoind-stratum_user.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='stratum/stratum_user.c' object='test_shcoind-stratum_user.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-stratum_user.obj `if test -f 'stratum/stratum_user.c'; then $(CYGPATH_W) 'stratum/stratum_user.c'; else $(CYGPATH_W) '$(srcdir)/stratum/stratum_user.c'; fi`
+
+test_shcoind-stratum_task.o: stratum/stratum_task.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-stratum_task.o -MD -MP -MF $(DEPDIR)/test_shcoind-stratum_task.Tpo -c -o test_shcoind-stratum_task.o `test -f 'stratum/stratum_task.c' || echo '$(srcdir)/'`stratum/stratum_task.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-stratum_task.Tpo $(DEPDIR)/test_shcoind-stratum_task.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='stratum/stratum_task.c' object='test_shcoind-stratum_task.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-stratum_task.o `test -f 'stratum/stratum_task.c' || echo '$(srcdir)/'`stratum/stratum_task.c
+
+test_shcoind-stratum_task.obj: stratum/stratum_task.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-stratum_task.obj -MD -MP -MF $(DEPDIR)/test_shcoind-stratum_task.Tpo -c -o test_shcoind-stratum_task.obj `if test -f 'stratum/stratum_task.c'; then $(CYGPATH_W) 'stratum/stratum_task.c'; else $(CYGPATH_W) '$(srcdir)/stratum/stratum_task.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-stratum_task.Tpo $(DEPDIR)/test_shcoind-stratum_task.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='stratum/stratum_task.c' object='test_shcoind-stratum_task.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-stratum_task.obj `if test -f 'stratum/stratum_task.c'; then $(CYGPATH_W) 'stratum/stratum_task.c'; else $(CYGPATH_W) '$(srcdir)/stratum/stratum_task.c'; fi`
+
+test_shcoind-CuTest.o: test/CuTest.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-CuTest.o -MD -MP -MF $(DEPDIR)/test_shcoind-CuTest.Tpo -c -o test_shcoind-CuTest.o `test -f 'test/CuTest.c' || echo '$(srcdir)/'`test/CuTest.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-CuTest.Tpo $(DEPDIR)/test_shcoind-CuTest.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='test/CuTest.c' object='test_shcoind-CuTest.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-CuTest.o `test -f 'test/CuTest.c' || echo '$(srcdir)/'`test/CuTest.c
+
+test_shcoind-CuTest.obj: test/CuTest.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-CuTest.obj -MD -MP -MF $(DEPDIR)/test_shcoind-CuTest.Tpo -c -o test_shcoind-CuTest.obj `if test -f 'test/CuTest.c'; then $(CYGPATH_W) 'test/CuTest.c'; else $(CYGPATH_W) '$(srcdir)/test/CuTest.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-CuTest.Tpo $(DEPDIR)/test_shcoind-CuTest.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='test/CuTest.c' object='test_shcoind-CuTest.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-CuTest.obj `if test -f 'test/CuTest.c'; then $(CYGPATH_W) 'test/CuTest.c'; else $(CYGPATH_W) '$(srcdir)/test/CuTest.c'; fi`
+
+test_shcoind-test_shcoind.o: test/test_shcoind.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-test_shcoind.o -MD -MP -MF $(DEPDIR)/test_shcoind-test_shcoind.Tpo -c -o test_shcoind-test_shcoind.o `test -f 'test/test_shcoind.c' || echo '$(srcdir)/'`test/test_shcoind.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-test_shcoind.Tpo $(DEPDIR)/test_shcoind-test_shcoind.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='test/test_shcoind.c' object='test_shcoind-test_shcoind.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-test_shcoind.o `test -f 'test/test_shcoind.c' || echo '$(srcdir)/'`test/test_shcoind.c
+
+test_shcoind-test_shcoind.obj: test/test_shcoind.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-test_shcoind.obj -MD -MP -MF $(DEPDIR)/test_shcoind-test_shcoind.Tpo -c -o test_shcoind-test_shcoind.obj `if test -f 'test/test_shcoind.c'; then $(CYGPATH_W) 'test/test_shcoind.c'; else $(CYGPATH_W) '$(srcdir)/test/test_shcoind.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-test_shcoind.Tpo $(DEPDIR)/test_shcoind-test_shcoind.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='test/test_shcoind.c' object='test_shcoind-test_shcoind.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-test_shcoind.obj `if test -f 'test/test_shcoind.c'; then $(CYGPATH_W) 'test/test_shcoind.c'; else $(CYGPATH_W) '$(srcdir)/test/test_shcoind.c'; fi`
+
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
 @am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
@@ -2342,6 +2901,48 @@ shcoind-shc_proto.obj: $(srcdir)/proto/shc_proto.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$(srcdir)/proto/shc_proto.cpp' object='shcoind-shc_proto.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-shc_proto.obj `if test -f '$(srcdir)/proto/shc_proto.cpp'; then $(CYGPATH_W) '$(srcdir)/proto/shc_proto.cpp'; else $(CYGPATH_W) '$(srcdir)/$(srcdir)/proto/shc_proto.cpp'; fi`
+
+shcoind-test_proto.o: $(srcdir)/proto/test_proto.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-test_proto.o -MD -MP -MF $(DEPDIR)/shcoind-test_proto.Tpo -c -o shcoind-test_proto.o `test -f '$(srcdir)/proto/test_proto.cpp' || echo '$(srcdir)/'`$(srcdir)/proto/test_proto.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-test_proto.Tpo $(DEPDIR)/shcoind-test_proto.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$(srcdir)/proto/test_proto.cpp' object='shcoind-test_proto.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-test_proto.o `test -f '$(srcdir)/proto/test_proto.cpp' || echo '$(srcdir)/'`$(srcdir)/proto/test_proto.cpp
+
+shcoind-test_proto.obj: $(srcdir)/proto/test_proto.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-test_proto.obj -MD -MP -MF $(DEPDIR)/shcoind-test_proto.Tpo -c -o shcoind-test_proto.obj `if test -f '$(srcdir)/proto/test_proto.cpp'; then $(CYGPATH_W) '$(srcdir)/proto/test_proto.cpp'; else $(CYGPATH_W) '$(srcdir)/$(srcdir)/proto/test_proto.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-test_proto.Tpo $(DEPDIR)/shcoind-test_proto.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$(srcdir)/proto/test_proto.cpp' object='shcoind-test_proto.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-test_proto.obj `if test -f '$(srcdir)/proto/test_proto.cpp'; then $(CYGPATH_W) '$(srcdir)/proto/test_proto.cpp'; else $(CYGPATH_W) '$(srcdir)/$(srcdir)/proto/test_proto.cpp'; fi`
+
+shcoind-test_wallet.o: server/test/test_wallet.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-test_wallet.o -MD -MP -MF $(DEPDIR)/shcoind-test_wallet.Tpo -c -o shcoind-test_wallet.o `test -f 'server/test/test_wallet.cpp' || echo '$(srcdir)/'`server/test/test_wallet.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-test_wallet.Tpo $(DEPDIR)/shcoind-test_wallet.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/test/test_wallet.cpp' object='shcoind-test_wallet.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-test_wallet.o `test -f 'server/test/test_wallet.cpp' || echo '$(srcdir)/'`server/test/test_wallet.cpp
+
+shcoind-test_wallet.obj: server/test/test_wallet.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-test_wallet.obj -MD -MP -MF $(DEPDIR)/shcoind-test_wallet.Tpo -c -o shcoind-test_wallet.obj `if test -f 'server/test/test_wallet.cpp'; then $(CYGPATH_W) 'server/test/test_wallet.cpp'; else $(CYGPATH_W) '$(srcdir)/server/test/test_wallet.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-test_wallet.Tpo $(DEPDIR)/shcoind-test_wallet.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/test/test_wallet.cpp' object='shcoind-test_wallet.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-test_wallet.obj `if test -f 'server/test/test_wallet.cpp'; then $(CYGPATH_W) 'server/test/test_wallet.cpp'; else $(CYGPATH_W) '$(srcdir)/server/test/test_wallet.cpp'; fi`
+
+shcoind-test_block.o: server/test/test_block.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-test_block.o -MD -MP -MF $(DEPDIR)/shcoind-test_block.Tpo -c -o shcoind-test_block.o `test -f 'server/test/test_block.cpp' || echo '$(srcdir)/'`server/test/test_block.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-test_block.Tpo $(DEPDIR)/shcoind-test_block.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/test/test_block.cpp' object='shcoind-test_block.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-test_block.o `test -f 'server/test/test_block.cpp' || echo '$(srcdir)/'`server/test/test_block.cpp
+
+shcoind-test_block.obj: server/test/test_block.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-test_block.obj -MD -MP -MF $(DEPDIR)/shcoind-test_block.Tpo -c -o shcoind-test_block.obj `if test -f 'server/test/test_block.cpp'; then $(CYGPATH_W) 'server/test/test_block.cpp'; else $(CYGPATH_W) '$(srcdir)/server/test/test_block.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-test_block.Tpo $(DEPDIR)/shcoind-test_block.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/test/test_block.cpp' object='shcoind-test_block.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-test_block.obj `if test -f 'server/test/test_block.cpp'; then $(CYGPATH_W) 'server/test/test_block.cpp'; else $(CYGPATH_W) '$(srcdir)/server/test/test_block.cpp'; fi`
 
 shcoind-usde_netmsg.o: server/usde/usde_netmsg.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-usde_netmsg.o -MD -MP -MF $(DEPDIR)/shcoind-usde_netmsg.Tpo -c -o shcoind-usde_netmsg.o `test -f 'server/usde/usde_netmsg.cpp' || echo '$(srcdir)/'`server/usde/usde_netmsg.cpp
@@ -2482,6 +3083,20 @@ shcoind-chain.obj: server/chain.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/chain.cpp' object='shcoind-chain.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-chain.obj `if test -f 'server/chain.cpp'; then $(CYGPATH_W) 'server/chain.cpp'; else $(CYGPATH_W) '$(srcdir)/server/chain.cpp'; fi`
+
+shcoind-base58.o: server/base58.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-base58.o -MD -MP -MF $(DEPDIR)/shcoind-base58.Tpo -c -o shcoind-base58.o `test -f 'server/base58.cpp' || echo '$(srcdir)/'`server/base58.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-base58.Tpo $(DEPDIR)/shcoind-base58.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/base58.cpp' object='shcoind-base58.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-base58.o `test -f 'server/base58.cpp' || echo '$(srcdir)/'`server/base58.cpp
+
+shcoind-base58.obj: server/base58.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-base58.obj -MD -MP -MF $(DEPDIR)/shcoind-base58.Tpo -c -o shcoind-base58.obj `if test -f 'server/base58.cpp'; then $(CYGPATH_W) 'server/base58.cpp'; else $(CYGPATH_W) '$(srcdir)/server/base58.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-base58.Tpo $(DEPDIR)/shcoind-base58.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/base58.cpp' object='shcoind-base58.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-base58.obj `if test -f 'server/base58.cpp'; then $(CYGPATH_W) 'server/base58.cpp'; else $(CYGPATH_W) '$(srcdir)/server/base58.cpp'; fi`
 
 shcoind-global.o: server/global.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-global.o -MD -MP -MF $(DEPDIR)/shcoind-global.Tpo -c -o shcoind-global.o `test -f 'server/global.cpp' || echo '$(srcdir)/'`server/global.cpp
@@ -2861,6 +3476,594 @@ shcointool-tool_irc.obj: tool/tool_irc.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CXXFLAGS) $(CXXFLAGS) -c -o shcointool-tool_irc.obj `if test -f 'tool/tool_irc.cpp'; then $(CYGPATH_W) 'tool/tool_irc.cpp'; else $(CYGPATH_W) '$(srcdir)/tool/tool_irc.cpp'; fi`
 
+test_shcoind-protocol.o: server/protocol.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-protocol.o -MD -MP -MF $(DEPDIR)/test_shcoind-protocol.Tpo -c -o test_shcoind-protocol.o `test -f 'server/protocol.cpp' || echo '$(srcdir)/'`server/protocol.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-protocol.Tpo $(DEPDIR)/test_shcoind-protocol.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/protocol.cpp' object='test_shcoind-protocol.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-protocol.o `test -f 'server/protocol.cpp' || echo '$(srcdir)/'`server/protocol.cpp
+
+test_shcoind-protocol.obj: server/protocol.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-protocol.obj -MD -MP -MF $(DEPDIR)/test_shcoind-protocol.Tpo -c -o test_shcoind-protocol.obj `if test -f 'server/protocol.cpp'; then $(CYGPATH_W) 'server/protocol.cpp'; else $(CYGPATH_W) '$(srcdir)/server/protocol.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-protocol.Tpo $(DEPDIR)/test_shcoind-protocol.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/protocol.cpp' object='test_shcoind-protocol.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-protocol.obj `if test -f 'server/protocol.cpp'; then $(CYGPATH_W) 'server/protocol.cpp'; else $(CYGPATH_W) '$(srcdir)/server/protocol.cpp'; fi`
+
+test_shcoind-netbase.o: server/netbase.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-netbase.o -MD -MP -MF $(DEPDIR)/test_shcoind-netbase.Tpo -c -o test_shcoind-netbase.o `test -f 'server/netbase.cpp' || echo '$(srcdir)/'`server/netbase.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-netbase.Tpo $(DEPDIR)/test_shcoind-netbase.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/netbase.cpp' object='test_shcoind-netbase.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-netbase.o `test -f 'server/netbase.cpp' || echo '$(srcdir)/'`server/netbase.cpp
+
+test_shcoind-netbase.obj: server/netbase.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-netbase.obj -MD -MP -MF $(DEPDIR)/test_shcoind-netbase.Tpo -c -o test_shcoind-netbase.obj `if test -f 'server/netbase.cpp'; then $(CYGPATH_W) 'server/netbase.cpp'; else $(CYGPATH_W) '$(srcdir)/server/netbase.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-netbase.Tpo $(DEPDIR)/test_shcoind-netbase.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/netbase.cpp' object='test_shcoind-netbase.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-netbase.obj `if test -f 'server/netbase.cpp'; then $(CYGPATH_W) 'server/netbase.cpp'; else $(CYGPATH_W) '$(srcdir)/server/netbase.cpp'; fi`
+
+test_shcoind-version.o: server/version.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-version.o -MD -MP -MF $(DEPDIR)/test_shcoind-version.Tpo -c -o test_shcoind-version.o `test -f 'server/version.cpp' || echo '$(srcdir)/'`server/version.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-version.Tpo $(DEPDIR)/test_shcoind-version.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/version.cpp' object='test_shcoind-version.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-version.o `test -f 'server/version.cpp' || echo '$(srcdir)/'`server/version.cpp
+
+test_shcoind-version.obj: server/version.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-version.obj -MD -MP -MF $(DEPDIR)/test_shcoind-version.Tpo -c -o test_shcoind-version.obj `if test -f 'server/version.cpp'; then $(CYGPATH_W) 'server/version.cpp'; else $(CYGPATH_W) '$(srcdir)/server/version.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-version.Tpo $(DEPDIR)/test_shcoind-version.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/version.cpp' object='test_shcoind-version.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-version.obj `if test -f 'server/version.cpp'; then $(CYGPATH_W) 'server/version.cpp'; else $(CYGPATH_W) '$(srcdir)/server/version.cpp'; fi`
+
+test_shcoind-util.o: server/util.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-util.o -MD -MP -MF $(DEPDIR)/test_shcoind-util.Tpo -c -o test_shcoind-util.o `test -f 'server/util.cpp' || echo '$(srcdir)/'`server/util.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-util.Tpo $(DEPDIR)/test_shcoind-util.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/util.cpp' object='test_shcoind-util.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-util.o `test -f 'server/util.cpp' || echo '$(srcdir)/'`server/util.cpp
+
+test_shcoind-util.obj: server/util.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-util.obj -MD -MP -MF $(DEPDIR)/test_shcoind-util.Tpo -c -o test_shcoind-util.obj `if test -f 'server/util.cpp'; then $(CYGPATH_W) 'server/util.cpp'; else $(CYGPATH_W) '$(srcdir)/server/util.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-util.Tpo $(DEPDIR)/test_shcoind-util.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/util.cpp' object='test_shcoind-util.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-util.obj `if test -f 'server/util.cpp'; then $(CYGPATH_W) 'server/util.cpp'; else $(CYGPATH_W) '$(srcdir)/server/util.cpp'; fi`
+
+test_shcoind-usde_proto.o: $(srcdir)/proto/usde_proto.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-usde_proto.o -MD -MP -MF $(DEPDIR)/test_shcoind-usde_proto.Tpo -c -o test_shcoind-usde_proto.o `test -f '$(srcdir)/proto/usde_proto.cpp' || echo '$(srcdir)/'`$(srcdir)/proto/usde_proto.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-usde_proto.Tpo $(DEPDIR)/test_shcoind-usde_proto.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$(srcdir)/proto/usde_proto.cpp' object='test_shcoind-usde_proto.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-usde_proto.o `test -f '$(srcdir)/proto/usde_proto.cpp' || echo '$(srcdir)/'`$(srcdir)/proto/usde_proto.cpp
+
+test_shcoind-usde_proto.obj: $(srcdir)/proto/usde_proto.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-usde_proto.obj -MD -MP -MF $(DEPDIR)/test_shcoind-usde_proto.Tpo -c -o test_shcoind-usde_proto.obj `if test -f '$(srcdir)/proto/usde_proto.cpp'; then $(CYGPATH_W) '$(srcdir)/proto/usde_proto.cpp'; else $(CYGPATH_W) '$(srcdir)/$(srcdir)/proto/usde_proto.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-usde_proto.Tpo $(DEPDIR)/test_shcoind-usde_proto.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$(srcdir)/proto/usde_proto.cpp' object='test_shcoind-usde_proto.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-usde_proto.obj `if test -f '$(srcdir)/proto/usde_proto.cpp'; then $(CYGPATH_W) '$(srcdir)/proto/usde_proto.cpp'; else $(CYGPATH_W) '$(srcdir)/$(srcdir)/proto/usde_proto.cpp'; fi`
+
+test_shcoind-shc_proto.o: $(srcdir)/proto/shc_proto.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-shc_proto.o -MD -MP -MF $(DEPDIR)/test_shcoind-shc_proto.Tpo -c -o test_shcoind-shc_proto.o `test -f '$(srcdir)/proto/shc_proto.cpp' || echo '$(srcdir)/'`$(srcdir)/proto/shc_proto.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-shc_proto.Tpo $(DEPDIR)/test_shcoind-shc_proto.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$(srcdir)/proto/shc_proto.cpp' object='test_shcoind-shc_proto.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-shc_proto.o `test -f '$(srcdir)/proto/shc_proto.cpp' || echo '$(srcdir)/'`$(srcdir)/proto/shc_proto.cpp
+
+test_shcoind-shc_proto.obj: $(srcdir)/proto/shc_proto.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-shc_proto.obj -MD -MP -MF $(DEPDIR)/test_shcoind-shc_proto.Tpo -c -o test_shcoind-shc_proto.obj `if test -f '$(srcdir)/proto/shc_proto.cpp'; then $(CYGPATH_W) '$(srcdir)/proto/shc_proto.cpp'; else $(CYGPATH_W) '$(srcdir)/$(srcdir)/proto/shc_proto.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-shc_proto.Tpo $(DEPDIR)/test_shcoind-shc_proto.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$(srcdir)/proto/shc_proto.cpp' object='test_shcoind-shc_proto.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-shc_proto.obj `if test -f '$(srcdir)/proto/shc_proto.cpp'; then $(CYGPATH_W) '$(srcdir)/proto/shc_proto.cpp'; else $(CYGPATH_W) '$(srcdir)/$(srcdir)/proto/shc_proto.cpp'; fi`
+
+test_shcoind-test_proto.o: $(srcdir)/proto/test_proto.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-test_proto.o -MD -MP -MF $(DEPDIR)/test_shcoind-test_proto.Tpo -c -o test_shcoind-test_proto.o `test -f '$(srcdir)/proto/test_proto.cpp' || echo '$(srcdir)/'`$(srcdir)/proto/test_proto.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-test_proto.Tpo $(DEPDIR)/test_shcoind-test_proto.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$(srcdir)/proto/test_proto.cpp' object='test_shcoind-test_proto.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-test_proto.o `test -f '$(srcdir)/proto/test_proto.cpp' || echo '$(srcdir)/'`$(srcdir)/proto/test_proto.cpp
+
+test_shcoind-test_proto.obj: $(srcdir)/proto/test_proto.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-test_proto.obj -MD -MP -MF $(DEPDIR)/test_shcoind-test_proto.Tpo -c -o test_shcoind-test_proto.obj `if test -f '$(srcdir)/proto/test_proto.cpp'; then $(CYGPATH_W) '$(srcdir)/proto/test_proto.cpp'; else $(CYGPATH_W) '$(srcdir)/$(srcdir)/proto/test_proto.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-test_proto.Tpo $(DEPDIR)/test_shcoind-test_proto.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$(srcdir)/proto/test_proto.cpp' object='test_shcoind-test_proto.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-test_proto.obj `if test -f '$(srcdir)/proto/test_proto.cpp'; then $(CYGPATH_W) '$(srcdir)/proto/test_proto.cpp'; else $(CYGPATH_W) '$(srcdir)/$(srcdir)/proto/test_proto.cpp'; fi`
+
+test_shcoind-test_wallet.o: server/test/test_wallet.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-test_wallet.o -MD -MP -MF $(DEPDIR)/test_shcoind-test_wallet.Tpo -c -o test_shcoind-test_wallet.o `test -f 'server/test/test_wallet.cpp' || echo '$(srcdir)/'`server/test/test_wallet.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-test_wallet.Tpo $(DEPDIR)/test_shcoind-test_wallet.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/test/test_wallet.cpp' object='test_shcoind-test_wallet.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-test_wallet.o `test -f 'server/test/test_wallet.cpp' || echo '$(srcdir)/'`server/test/test_wallet.cpp
+
+test_shcoind-test_wallet.obj: server/test/test_wallet.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-test_wallet.obj -MD -MP -MF $(DEPDIR)/test_shcoind-test_wallet.Tpo -c -o test_shcoind-test_wallet.obj `if test -f 'server/test/test_wallet.cpp'; then $(CYGPATH_W) 'server/test/test_wallet.cpp'; else $(CYGPATH_W) '$(srcdir)/server/test/test_wallet.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-test_wallet.Tpo $(DEPDIR)/test_shcoind-test_wallet.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/test/test_wallet.cpp' object='test_shcoind-test_wallet.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-test_wallet.obj `if test -f 'server/test/test_wallet.cpp'; then $(CYGPATH_W) 'server/test/test_wallet.cpp'; else $(CYGPATH_W) '$(srcdir)/server/test/test_wallet.cpp'; fi`
+
+test_shcoind-test_block.o: server/test/test_block.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-test_block.o -MD -MP -MF $(DEPDIR)/test_shcoind-test_block.Tpo -c -o test_shcoind-test_block.o `test -f 'server/test/test_block.cpp' || echo '$(srcdir)/'`server/test/test_block.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-test_block.Tpo $(DEPDIR)/test_shcoind-test_block.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/test/test_block.cpp' object='test_shcoind-test_block.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-test_block.o `test -f 'server/test/test_block.cpp' || echo '$(srcdir)/'`server/test/test_block.cpp
+
+test_shcoind-test_block.obj: server/test/test_block.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-test_block.obj -MD -MP -MF $(DEPDIR)/test_shcoind-test_block.Tpo -c -o test_shcoind-test_block.obj `if test -f 'server/test/test_block.cpp'; then $(CYGPATH_W) 'server/test/test_block.cpp'; else $(CYGPATH_W) '$(srcdir)/server/test/test_block.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-test_block.Tpo $(DEPDIR)/test_shcoind-test_block.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/test/test_block.cpp' object='test_shcoind-test_block.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-test_block.obj `if test -f 'server/test/test_block.cpp'; then $(CYGPATH_W) 'server/test/test_block.cpp'; else $(CYGPATH_W) '$(srcdir)/server/test/test_block.cpp'; fi`
+
+test_shcoind-usde_netmsg.o: server/usde/usde_netmsg.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-usde_netmsg.o -MD -MP -MF $(DEPDIR)/test_shcoind-usde_netmsg.Tpo -c -o test_shcoind-usde_netmsg.o `test -f 'server/usde/usde_netmsg.cpp' || echo '$(srcdir)/'`server/usde/usde_netmsg.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-usde_netmsg.Tpo $(DEPDIR)/test_shcoind-usde_netmsg.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/usde/usde_netmsg.cpp' object='test_shcoind-usde_netmsg.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-usde_netmsg.o `test -f 'server/usde/usde_netmsg.cpp' || echo '$(srcdir)/'`server/usde/usde_netmsg.cpp
+
+test_shcoind-usde_netmsg.obj: server/usde/usde_netmsg.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-usde_netmsg.obj -MD -MP -MF $(DEPDIR)/test_shcoind-usde_netmsg.Tpo -c -o test_shcoind-usde_netmsg.obj `if test -f 'server/usde/usde_netmsg.cpp'; then $(CYGPATH_W) 'server/usde/usde_netmsg.cpp'; else $(CYGPATH_W) '$(srcdir)/server/usde/usde_netmsg.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-usde_netmsg.Tpo $(DEPDIR)/test_shcoind-usde_netmsg.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/usde/usde_netmsg.cpp' object='test_shcoind-usde_netmsg.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-usde_netmsg.obj `if test -f 'server/usde/usde_netmsg.cpp'; then $(CYGPATH_W) 'server/usde/usde_netmsg.cpp'; else $(CYGPATH_W) '$(srcdir)/server/usde/usde_netmsg.cpp'; fi`
+
+test_shcoind-usde_block.o: server/usde/usde_block.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-usde_block.o -MD -MP -MF $(DEPDIR)/test_shcoind-usde_block.Tpo -c -o test_shcoind-usde_block.o `test -f 'server/usde/usde_block.cpp' || echo '$(srcdir)/'`server/usde/usde_block.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-usde_block.Tpo $(DEPDIR)/test_shcoind-usde_block.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/usde/usde_block.cpp' object='test_shcoind-usde_block.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-usde_block.o `test -f 'server/usde/usde_block.cpp' || echo '$(srcdir)/'`server/usde/usde_block.cpp
+
+test_shcoind-usde_block.obj: server/usde/usde_block.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-usde_block.obj -MD -MP -MF $(DEPDIR)/test_shcoind-usde_block.Tpo -c -o test_shcoind-usde_block.obj `if test -f 'server/usde/usde_block.cpp'; then $(CYGPATH_W) 'server/usde/usde_block.cpp'; else $(CYGPATH_W) '$(srcdir)/server/usde/usde_block.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-usde_block.Tpo $(DEPDIR)/test_shcoind-usde_block.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/usde/usde_block.cpp' object='test_shcoind-usde_block.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-usde_block.obj `if test -f 'server/usde/usde_block.cpp'; then $(CYGPATH_W) 'server/usde/usde_block.cpp'; else $(CYGPATH_W) '$(srcdir)/server/usde/usde_block.cpp'; fi`
+
+test_shcoind-usde_wallet.o: server/usde/usde_wallet.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-usde_wallet.o -MD -MP -MF $(DEPDIR)/test_shcoind-usde_wallet.Tpo -c -o test_shcoind-usde_wallet.o `test -f 'server/usde/usde_wallet.cpp' || echo '$(srcdir)/'`server/usde/usde_wallet.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-usde_wallet.Tpo $(DEPDIR)/test_shcoind-usde_wallet.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/usde/usde_wallet.cpp' object='test_shcoind-usde_wallet.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-usde_wallet.o `test -f 'server/usde/usde_wallet.cpp' || echo '$(srcdir)/'`server/usde/usde_wallet.cpp
+
+test_shcoind-usde_wallet.obj: server/usde/usde_wallet.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-usde_wallet.obj -MD -MP -MF $(DEPDIR)/test_shcoind-usde_wallet.Tpo -c -o test_shcoind-usde_wallet.obj `if test -f 'server/usde/usde_wallet.cpp'; then $(CYGPATH_W) 'server/usde/usde_wallet.cpp'; else $(CYGPATH_W) '$(srcdir)/server/usde/usde_wallet.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-usde_wallet.Tpo $(DEPDIR)/test_shcoind-usde_wallet.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/usde/usde_wallet.cpp' object='test_shcoind-usde_wallet.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-usde_wallet.obj `if test -f 'server/usde/usde_wallet.cpp'; then $(CYGPATH_W) 'server/usde/usde_wallet.cpp'; else $(CYGPATH_W) '$(srcdir)/server/usde/usde_wallet.cpp'; fi`
+
+test_shcoind-usde_txidx.o: server/usde/usde_txidx.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-usde_txidx.o -MD -MP -MF $(DEPDIR)/test_shcoind-usde_txidx.Tpo -c -o test_shcoind-usde_txidx.o `test -f 'server/usde/usde_txidx.cpp' || echo '$(srcdir)/'`server/usde/usde_txidx.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-usde_txidx.Tpo $(DEPDIR)/test_shcoind-usde_txidx.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/usde/usde_txidx.cpp' object='test_shcoind-usde_txidx.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-usde_txidx.o `test -f 'server/usde/usde_txidx.cpp' || echo '$(srcdir)/'`server/usde/usde_txidx.cpp
+
+test_shcoind-usde_txidx.obj: server/usde/usde_txidx.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-usde_txidx.obj -MD -MP -MF $(DEPDIR)/test_shcoind-usde_txidx.Tpo -c -o test_shcoind-usde_txidx.obj `if test -f 'server/usde/usde_txidx.cpp'; then $(CYGPATH_W) 'server/usde/usde_txidx.cpp'; else $(CYGPATH_W) '$(srcdir)/server/usde/usde_txidx.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-usde_txidx.Tpo $(DEPDIR)/test_shcoind-usde_txidx.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/usde/usde_txidx.cpp' object='test_shcoind-usde_txidx.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-usde_txidx.obj `if test -f 'server/usde/usde_txidx.cpp'; then $(CYGPATH_W) 'server/usde/usde_txidx.cpp'; else $(CYGPATH_W) '$(srcdir)/server/usde/usde_txidx.cpp'; fi`
+
+test_shcoind-shc_netmsg.o: server/shc/shc_netmsg.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-shc_netmsg.o -MD -MP -MF $(DEPDIR)/test_shcoind-shc_netmsg.Tpo -c -o test_shcoind-shc_netmsg.o `test -f 'server/shc/shc_netmsg.cpp' || echo '$(srcdir)/'`server/shc/shc_netmsg.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-shc_netmsg.Tpo $(DEPDIR)/test_shcoind-shc_netmsg.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/shc/shc_netmsg.cpp' object='test_shcoind-shc_netmsg.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-shc_netmsg.o `test -f 'server/shc/shc_netmsg.cpp' || echo '$(srcdir)/'`server/shc/shc_netmsg.cpp
+
+test_shcoind-shc_netmsg.obj: server/shc/shc_netmsg.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-shc_netmsg.obj -MD -MP -MF $(DEPDIR)/test_shcoind-shc_netmsg.Tpo -c -o test_shcoind-shc_netmsg.obj `if test -f 'server/shc/shc_netmsg.cpp'; then $(CYGPATH_W) 'server/shc/shc_netmsg.cpp'; else $(CYGPATH_W) '$(srcdir)/server/shc/shc_netmsg.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-shc_netmsg.Tpo $(DEPDIR)/test_shcoind-shc_netmsg.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/shc/shc_netmsg.cpp' object='test_shcoind-shc_netmsg.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-shc_netmsg.obj `if test -f 'server/shc/shc_netmsg.cpp'; then $(CYGPATH_W) 'server/shc/shc_netmsg.cpp'; else $(CYGPATH_W) '$(srcdir)/server/shc/shc_netmsg.cpp'; fi`
+
+test_shcoind-shc_block.o: server/shc/shc_block.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-shc_block.o -MD -MP -MF $(DEPDIR)/test_shcoind-shc_block.Tpo -c -o test_shcoind-shc_block.o `test -f 'server/shc/shc_block.cpp' || echo '$(srcdir)/'`server/shc/shc_block.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-shc_block.Tpo $(DEPDIR)/test_shcoind-shc_block.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/shc/shc_block.cpp' object='test_shcoind-shc_block.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-shc_block.o `test -f 'server/shc/shc_block.cpp' || echo '$(srcdir)/'`server/shc/shc_block.cpp
+
+test_shcoind-shc_block.obj: server/shc/shc_block.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-shc_block.obj -MD -MP -MF $(DEPDIR)/test_shcoind-shc_block.Tpo -c -o test_shcoind-shc_block.obj `if test -f 'server/shc/shc_block.cpp'; then $(CYGPATH_W) 'server/shc/shc_block.cpp'; else $(CYGPATH_W) '$(srcdir)/server/shc/shc_block.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-shc_block.Tpo $(DEPDIR)/test_shcoind-shc_block.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/shc/shc_block.cpp' object='test_shcoind-shc_block.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-shc_block.obj `if test -f 'server/shc/shc_block.cpp'; then $(CYGPATH_W) 'server/shc/shc_block.cpp'; else $(CYGPATH_W) '$(srcdir)/server/shc/shc_block.cpp'; fi`
+
+test_shcoind-shc_wallet.o: server/shc/shc_wallet.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-shc_wallet.o -MD -MP -MF $(DEPDIR)/test_shcoind-shc_wallet.Tpo -c -o test_shcoind-shc_wallet.o `test -f 'server/shc/shc_wallet.cpp' || echo '$(srcdir)/'`server/shc/shc_wallet.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-shc_wallet.Tpo $(DEPDIR)/test_shcoind-shc_wallet.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/shc/shc_wallet.cpp' object='test_shcoind-shc_wallet.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-shc_wallet.o `test -f 'server/shc/shc_wallet.cpp' || echo '$(srcdir)/'`server/shc/shc_wallet.cpp
+
+test_shcoind-shc_wallet.obj: server/shc/shc_wallet.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-shc_wallet.obj -MD -MP -MF $(DEPDIR)/test_shcoind-shc_wallet.Tpo -c -o test_shcoind-shc_wallet.obj `if test -f 'server/shc/shc_wallet.cpp'; then $(CYGPATH_W) 'server/shc/shc_wallet.cpp'; else $(CYGPATH_W) '$(srcdir)/server/shc/shc_wallet.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-shc_wallet.Tpo $(DEPDIR)/test_shcoind-shc_wallet.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/shc/shc_wallet.cpp' object='test_shcoind-shc_wallet.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-shc_wallet.obj `if test -f 'server/shc/shc_wallet.cpp'; then $(CYGPATH_W) 'server/shc/shc_wallet.cpp'; else $(CYGPATH_W) '$(srcdir)/server/shc/shc_wallet.cpp'; fi`
+
+test_shcoind-shc_txidx.o: server/shc/shc_txidx.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-shc_txidx.o -MD -MP -MF $(DEPDIR)/test_shcoind-shc_txidx.Tpo -c -o test_shcoind-shc_txidx.o `test -f 'server/shc/shc_txidx.cpp' || echo '$(srcdir)/'`server/shc/shc_txidx.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-shc_txidx.Tpo $(DEPDIR)/test_shcoind-shc_txidx.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/shc/shc_txidx.cpp' object='test_shcoind-shc_txidx.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-shc_txidx.o `test -f 'server/shc/shc_txidx.cpp' || echo '$(srcdir)/'`server/shc/shc_txidx.cpp
+
+test_shcoind-shc_txidx.obj: server/shc/shc_txidx.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-shc_txidx.obj -MD -MP -MF $(DEPDIR)/test_shcoind-shc_txidx.Tpo -c -o test_shcoind-shc_txidx.obj `if test -f 'server/shc/shc_txidx.cpp'; then $(CYGPATH_W) 'server/shc/shc_txidx.cpp'; else $(CYGPATH_W) '$(srcdir)/server/shc/shc_txidx.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-shc_txidx.Tpo $(DEPDIR)/test_shcoind-shc_txidx.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/shc/shc_txidx.cpp' object='test_shcoind-shc_txidx.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-shc_txidx.obj `if test -f 'server/shc/shc_txidx.cpp'; then $(CYGPATH_W) 'server/shc/shc_txidx.cpp'; else $(CYGPATH_W) '$(srcdir)/server/shc/shc_txidx.cpp'; fi`
+
+test_shcoind-block.o: server/block.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-block.o -MD -MP -MF $(DEPDIR)/test_shcoind-block.Tpo -c -o test_shcoind-block.o `test -f 'server/block.cpp' || echo '$(srcdir)/'`server/block.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-block.Tpo $(DEPDIR)/test_shcoind-block.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/block.cpp' object='test_shcoind-block.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-block.o `test -f 'server/block.cpp' || echo '$(srcdir)/'`server/block.cpp
+
+test_shcoind-block.obj: server/block.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-block.obj -MD -MP -MF $(DEPDIR)/test_shcoind-block.Tpo -c -o test_shcoind-block.obj `if test -f 'server/block.cpp'; then $(CYGPATH_W) 'server/block.cpp'; else $(CYGPATH_W) '$(srcdir)/server/block.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-block.Tpo $(DEPDIR)/test_shcoind-block.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/block.cpp' object='test_shcoind-block.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-block.obj `if test -f 'server/block.cpp'; then $(CYGPATH_W) 'server/block.cpp'; else $(CYGPATH_W) '$(srcdir)/server/block.cpp'; fi`
+
+test_shcoind-chain.o: server/chain.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-chain.o -MD -MP -MF $(DEPDIR)/test_shcoind-chain.Tpo -c -o test_shcoind-chain.o `test -f 'server/chain.cpp' || echo '$(srcdir)/'`server/chain.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-chain.Tpo $(DEPDIR)/test_shcoind-chain.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/chain.cpp' object='test_shcoind-chain.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-chain.o `test -f 'server/chain.cpp' || echo '$(srcdir)/'`server/chain.cpp
+
+test_shcoind-chain.obj: server/chain.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-chain.obj -MD -MP -MF $(DEPDIR)/test_shcoind-chain.Tpo -c -o test_shcoind-chain.obj `if test -f 'server/chain.cpp'; then $(CYGPATH_W) 'server/chain.cpp'; else $(CYGPATH_W) '$(srcdir)/server/chain.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-chain.Tpo $(DEPDIR)/test_shcoind-chain.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/chain.cpp' object='test_shcoind-chain.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-chain.obj `if test -f 'server/chain.cpp'; then $(CYGPATH_W) 'server/chain.cpp'; else $(CYGPATH_W) '$(srcdir)/server/chain.cpp'; fi`
+
+test_shcoind-base58.o: server/base58.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-base58.o -MD -MP -MF $(DEPDIR)/test_shcoind-base58.Tpo -c -o test_shcoind-base58.o `test -f 'server/base58.cpp' || echo '$(srcdir)/'`server/base58.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-base58.Tpo $(DEPDIR)/test_shcoind-base58.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/base58.cpp' object='test_shcoind-base58.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-base58.o `test -f 'server/base58.cpp' || echo '$(srcdir)/'`server/base58.cpp
+
+test_shcoind-base58.obj: server/base58.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-base58.obj -MD -MP -MF $(DEPDIR)/test_shcoind-base58.Tpo -c -o test_shcoind-base58.obj `if test -f 'server/base58.cpp'; then $(CYGPATH_W) 'server/base58.cpp'; else $(CYGPATH_W) '$(srcdir)/server/base58.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-base58.Tpo $(DEPDIR)/test_shcoind-base58.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/base58.cpp' object='test_shcoind-base58.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-base58.obj `if test -f 'server/base58.cpp'; then $(CYGPATH_W) 'server/base58.cpp'; else $(CYGPATH_W) '$(srcdir)/server/base58.cpp'; fi`
+
+test_shcoind-global.o: server/global.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-global.o -MD -MP -MF $(DEPDIR)/test_shcoind-global.Tpo -c -o test_shcoind-global.o `test -f 'server/global.cpp' || echo '$(srcdir)/'`server/global.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-global.Tpo $(DEPDIR)/test_shcoind-global.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/global.cpp' object='test_shcoind-global.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-global.o `test -f 'server/global.cpp' || echo '$(srcdir)/'`server/global.cpp
+
+test_shcoind-global.obj: server/global.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-global.obj -MD -MP -MF $(DEPDIR)/test_shcoind-global.Tpo -c -o test_shcoind-global.obj `if test -f 'server/global.cpp'; then $(CYGPATH_W) 'server/global.cpp'; else $(CYGPATH_W) '$(srcdir)/server/global.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-global.Tpo $(DEPDIR)/test_shcoind-global.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/global.cpp' object='test_shcoind-global.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-global.obj `if test -f 'server/global.cpp'; then $(CYGPATH_W) 'server/global.cpp'; else $(CYGPATH_W) '$(srcdir)/server/global.cpp'; fi`
+
+test_shcoind-block_merkle.o: server/block_merkle.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-block_merkle.o -MD -MP -MF $(DEPDIR)/test_shcoind-block_merkle.Tpo -c -o test_shcoind-block_merkle.o `test -f 'server/block_merkle.cpp' || echo '$(srcdir)/'`server/block_merkle.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-block_merkle.Tpo $(DEPDIR)/test_shcoind-block_merkle.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/block_merkle.cpp' object='test_shcoind-block_merkle.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-block_merkle.o `test -f 'server/block_merkle.cpp' || echo '$(srcdir)/'`server/block_merkle.cpp
+
+test_shcoind-block_merkle.obj: server/block_merkle.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-block_merkle.obj -MD -MP -MF $(DEPDIR)/test_shcoind-block_merkle.Tpo -c -o test_shcoind-block_merkle.obj `if test -f 'server/block_merkle.cpp'; then $(CYGPATH_W) 'server/block_merkle.cpp'; else $(CYGPATH_W) '$(srcdir)/server/block_merkle.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-block_merkle.Tpo $(DEPDIR)/test_shcoind-block_merkle.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/block_merkle.cpp' object='test_shcoind-block_merkle.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-block_merkle.obj `if test -f 'server/block_merkle.cpp'; then $(CYGPATH_W) 'server/block_merkle.cpp'; else $(CYGPATH_W) '$(srcdir)/server/block_merkle.cpp'; fi`
+
+test_shcoind-rpc_proto.o: server/rpc_proto.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-rpc_proto.o -MD -MP -MF $(DEPDIR)/test_shcoind-rpc_proto.Tpo -c -o test_shcoind-rpc_proto.o `test -f 'server/rpc_proto.cpp' || echo '$(srcdir)/'`server/rpc_proto.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-rpc_proto.Tpo $(DEPDIR)/test_shcoind-rpc_proto.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/rpc_proto.cpp' object='test_shcoind-rpc_proto.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-rpc_proto.o `test -f 'server/rpc_proto.cpp' || echo '$(srcdir)/'`server/rpc_proto.cpp
+
+test_shcoind-rpc_proto.obj: server/rpc_proto.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-rpc_proto.obj -MD -MP -MF $(DEPDIR)/test_shcoind-rpc_proto.Tpo -c -o test_shcoind-rpc_proto.obj `if test -f 'server/rpc_proto.cpp'; then $(CYGPATH_W) 'server/rpc_proto.cpp'; else $(CYGPATH_W) '$(srcdir)/server/rpc_proto.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-rpc_proto.Tpo $(DEPDIR)/test_shcoind-rpc_proto.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/rpc_proto.cpp' object='test_shcoind-rpc_proto.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-rpc_proto.obj `if test -f 'server/rpc_proto.cpp'; then $(CYGPATH_W) 'server/rpc_proto.cpp'; else $(CYGPATH_W) '$(srcdir)/server/rpc_proto.cpp'; fi`
+
+test_shcoind-crypter.o: server/crypter.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-crypter.o -MD -MP -MF $(DEPDIR)/test_shcoind-crypter.Tpo -c -o test_shcoind-crypter.o `test -f 'server/crypter.cpp' || echo '$(srcdir)/'`server/crypter.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-crypter.Tpo $(DEPDIR)/test_shcoind-crypter.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/crypter.cpp' object='test_shcoind-crypter.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-crypter.o `test -f 'server/crypter.cpp' || echo '$(srcdir)/'`server/crypter.cpp
+
+test_shcoind-crypter.obj: server/crypter.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-crypter.obj -MD -MP -MF $(DEPDIR)/test_shcoind-crypter.Tpo -c -o test_shcoind-crypter.obj `if test -f 'server/crypter.cpp'; then $(CYGPATH_W) 'server/crypter.cpp'; else $(CYGPATH_W) '$(srcdir)/server/crypter.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-crypter.Tpo $(DEPDIR)/test_shcoind-crypter.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/crypter.cpp' object='test_shcoind-crypter.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-crypter.obj `if test -f 'server/crypter.cpp'; then $(CYGPATH_W) 'server/crypter.cpp'; else $(CYGPATH_W) '$(srcdir)/server/crypter.cpp'; fi`
+
+test_shcoind-txidx.o: server/txidx.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-txidx.o -MD -MP -MF $(DEPDIR)/test_shcoind-txidx.Tpo -c -o test_shcoind-txidx.o `test -f 'server/txidx.cpp' || echo '$(srcdir)/'`server/txidx.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-txidx.Tpo $(DEPDIR)/test_shcoind-txidx.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/txidx.cpp' object='test_shcoind-txidx.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-txidx.o `test -f 'server/txidx.cpp' || echo '$(srcdir)/'`server/txidx.cpp
+
+test_shcoind-txidx.obj: server/txidx.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-txidx.obj -MD -MP -MF $(DEPDIR)/test_shcoind-txidx.Tpo -c -o test_shcoind-txidx.obj `if test -f 'server/txidx.cpp'; then $(CYGPATH_W) 'server/txidx.cpp'; else $(CYGPATH_W) '$(srcdir)/server/txidx.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-txidx.Tpo $(DEPDIR)/test_shcoind-txidx.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/txidx.cpp' object='test_shcoind-txidx.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-txidx.obj `if test -f 'server/txidx.cpp'; then $(CYGPATH_W) 'server/txidx.cpp'; else $(CYGPATH_W) '$(srcdir)/server/txidx.cpp'; fi`
+
+test_shcoind-init.o: server/init.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-init.o -MD -MP -MF $(DEPDIR)/test_shcoind-init.Tpo -c -o test_shcoind-init.o `test -f 'server/init.cpp' || echo '$(srcdir)/'`server/init.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-init.Tpo $(DEPDIR)/test_shcoind-init.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/init.cpp' object='test_shcoind-init.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-init.o `test -f 'server/init.cpp' || echo '$(srcdir)/'`server/init.cpp
+
+test_shcoind-init.obj: server/init.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-init.obj -MD -MP -MF $(DEPDIR)/test_shcoind-init.Tpo -c -o test_shcoind-init.obj `if test -f 'server/init.cpp'; then $(CYGPATH_W) 'server/init.cpp'; else $(CYGPATH_W) '$(srcdir)/server/init.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-init.Tpo $(DEPDIR)/test_shcoind-init.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/init.cpp' object='test_shcoind-init.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-init.obj `if test -f 'server/init.cpp'; then $(CYGPATH_W) 'server/init.cpp'; else $(CYGPATH_W) '$(srcdir)/server/init.cpp'; fi`
+
+test_shcoind-key.o: server/key.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-key.o -MD -MP -MF $(DEPDIR)/test_shcoind-key.Tpo -c -o test_shcoind-key.o `test -f 'server/key.cpp' || echo '$(srcdir)/'`server/key.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-key.Tpo $(DEPDIR)/test_shcoind-key.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/key.cpp' object='test_shcoind-key.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-key.o `test -f 'server/key.cpp' || echo '$(srcdir)/'`server/key.cpp
+
+test_shcoind-key.obj: server/key.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-key.obj -MD -MP -MF $(DEPDIR)/test_shcoind-key.Tpo -c -o test_shcoind-key.obj `if test -f 'server/key.cpp'; then $(CYGPATH_W) 'server/key.cpp'; else $(CYGPATH_W) '$(srcdir)/server/key.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-key.Tpo $(DEPDIR)/test_shcoind-key.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/key.cpp' object='test_shcoind-key.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-key.obj `if test -f 'server/key.cpp'; then $(CYGPATH_W) 'server/key.cpp'; else $(CYGPATH_W) '$(srcdir)/server/key.cpp'; fi`
+
+test_shcoind-keystore.o: server/keystore.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-keystore.o -MD -MP -MF $(DEPDIR)/test_shcoind-keystore.Tpo -c -o test_shcoind-keystore.o `test -f 'server/keystore.cpp' || echo '$(srcdir)/'`server/keystore.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-keystore.Tpo $(DEPDIR)/test_shcoind-keystore.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/keystore.cpp' object='test_shcoind-keystore.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-keystore.o `test -f 'server/keystore.cpp' || echo '$(srcdir)/'`server/keystore.cpp
+
+test_shcoind-keystore.obj: server/keystore.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-keystore.obj -MD -MP -MF $(DEPDIR)/test_shcoind-keystore.Tpo -c -o test_shcoind-keystore.obj `if test -f 'server/keystore.cpp'; then $(CYGPATH_W) 'server/keystore.cpp'; else $(CYGPATH_W) '$(srcdir)/server/keystore.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-keystore.Tpo $(DEPDIR)/test_shcoind-keystore.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/keystore.cpp' object='test_shcoind-keystore.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-keystore.obj `if test -f 'server/keystore.cpp'; then $(CYGPATH_W) 'server/keystore.cpp'; else $(CYGPATH_W) '$(srcdir)/server/keystore.cpp'; fi`
+
+test_shcoind-main.o: server/main.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-main.o -MD -MP -MF $(DEPDIR)/test_shcoind-main.Tpo -c -o test_shcoind-main.o `test -f 'server/main.cpp' || echo '$(srcdir)/'`server/main.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-main.Tpo $(DEPDIR)/test_shcoind-main.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/main.cpp' object='test_shcoind-main.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-main.o `test -f 'server/main.cpp' || echo '$(srcdir)/'`server/main.cpp
+
+test_shcoind-main.obj: server/main.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-main.obj -MD -MP -MF $(DEPDIR)/test_shcoind-main.Tpo -c -o test_shcoind-main.obj `if test -f 'server/main.cpp'; then $(CYGPATH_W) 'server/main.cpp'; else $(CYGPATH_W) '$(srcdir)/server/main.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-main.Tpo $(DEPDIR)/test_shcoind-main.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/main.cpp' object='test_shcoind-main.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-main.obj `if test -f 'server/main.cpp'; then $(CYGPATH_W) 'server/main.cpp'; else $(CYGPATH_W) '$(srcdir)/server/main.cpp'; fi`
+
+test_shcoind-rpcdump.o: server/rpcdump.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-rpcdump.o -MD -MP -MF $(DEPDIR)/test_shcoind-rpcdump.Tpo -c -o test_shcoind-rpcdump.o `test -f 'server/rpcdump.cpp' || echo '$(srcdir)/'`server/rpcdump.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-rpcdump.Tpo $(DEPDIR)/test_shcoind-rpcdump.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/rpcdump.cpp' object='test_shcoind-rpcdump.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-rpcdump.o `test -f 'server/rpcdump.cpp' || echo '$(srcdir)/'`server/rpcdump.cpp
+
+test_shcoind-rpcdump.obj: server/rpcdump.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-rpcdump.obj -MD -MP -MF $(DEPDIR)/test_shcoind-rpcdump.Tpo -c -o test_shcoind-rpcdump.obj `if test -f 'server/rpcdump.cpp'; then $(CYGPATH_W) 'server/rpcdump.cpp'; else $(CYGPATH_W) '$(srcdir)/server/rpcdump.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-rpcdump.Tpo $(DEPDIR)/test_shcoind-rpcdump.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/rpcdump.cpp' object='test_shcoind-rpcdump.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-rpcdump.obj `if test -f 'server/rpcdump.cpp'; then $(CYGPATH_W) 'server/rpcdump.cpp'; else $(CYGPATH_W) '$(srcdir)/server/rpcdump.cpp'; fi`
+
+test_shcoind-rpcnet.o: server/rpcnet.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-rpcnet.o -MD -MP -MF $(DEPDIR)/test_shcoind-rpcnet.Tpo -c -o test_shcoind-rpcnet.o `test -f 'server/rpcnet.cpp' || echo '$(srcdir)/'`server/rpcnet.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-rpcnet.Tpo $(DEPDIR)/test_shcoind-rpcnet.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/rpcnet.cpp' object='test_shcoind-rpcnet.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-rpcnet.o `test -f 'server/rpcnet.cpp' || echo '$(srcdir)/'`server/rpcnet.cpp
+
+test_shcoind-rpcnet.obj: server/rpcnet.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-rpcnet.obj -MD -MP -MF $(DEPDIR)/test_shcoind-rpcnet.Tpo -c -o test_shcoind-rpcnet.obj `if test -f 'server/rpcnet.cpp'; then $(CYGPATH_W) 'server/rpcnet.cpp'; else $(CYGPATH_W) '$(srcdir)/server/rpcnet.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-rpcnet.Tpo $(DEPDIR)/test_shcoind-rpcnet.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/rpcnet.cpp' object='test_shcoind-rpcnet.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-rpcnet.obj `if test -f 'server/rpcnet.cpp'; then $(CYGPATH_W) 'server/rpcnet.cpp'; else $(CYGPATH_W) '$(srcdir)/server/rpcnet.cpp'; fi`
+
+test_shcoind-rpcrawtransaction.o: server/rpcrawtransaction.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-rpcrawtransaction.o -MD -MP -MF $(DEPDIR)/test_shcoind-rpcrawtransaction.Tpo -c -o test_shcoind-rpcrawtransaction.o `test -f 'server/rpcrawtransaction.cpp' || echo '$(srcdir)/'`server/rpcrawtransaction.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-rpcrawtransaction.Tpo $(DEPDIR)/test_shcoind-rpcrawtransaction.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/rpcrawtransaction.cpp' object='test_shcoind-rpcrawtransaction.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-rpcrawtransaction.o `test -f 'server/rpcrawtransaction.cpp' || echo '$(srcdir)/'`server/rpcrawtransaction.cpp
+
+test_shcoind-rpcrawtransaction.obj: server/rpcrawtransaction.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-rpcrawtransaction.obj -MD -MP -MF $(DEPDIR)/test_shcoind-rpcrawtransaction.Tpo -c -o test_shcoind-rpcrawtransaction.obj `if test -f 'server/rpcrawtransaction.cpp'; then $(CYGPATH_W) 'server/rpcrawtransaction.cpp'; else $(CYGPATH_W) '$(srcdir)/server/rpcrawtransaction.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-rpcrawtransaction.Tpo $(DEPDIR)/test_shcoind-rpcrawtransaction.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/rpcrawtransaction.cpp' object='test_shcoind-rpcrawtransaction.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-rpcrawtransaction.obj `if test -f 'server/rpcrawtransaction.cpp'; then $(CYGPATH_W) 'server/rpcrawtransaction.cpp'; else $(CYGPATH_W) '$(srcdir)/server/rpcrawtransaction.cpp'; fi`
+
+test_shcoind-script.o: server/script.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-script.o -MD -MP -MF $(DEPDIR)/test_shcoind-script.Tpo -c -o test_shcoind-script.o `test -f 'server/script.cpp' || echo '$(srcdir)/'`server/script.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-script.Tpo $(DEPDIR)/test_shcoind-script.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/script.cpp' object='test_shcoind-script.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-script.o `test -f 'server/script.cpp' || echo '$(srcdir)/'`server/script.cpp
+
+test_shcoind-script.obj: server/script.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-script.obj -MD -MP -MF $(DEPDIR)/test_shcoind-script.Tpo -c -o test_shcoind-script.obj `if test -f 'server/script.cpp'; then $(CYGPATH_W) 'server/script.cpp'; else $(CYGPATH_W) '$(srcdir)/server/script.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-script.Tpo $(DEPDIR)/test_shcoind-script.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/script.cpp' object='test_shcoind-script.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-script.obj `if test -f 'server/script.cpp'; then $(CYGPATH_W) 'server/script.cpp'; else $(CYGPATH_W) '$(srcdir)/server/script.cpp'; fi`
+
+test_shcoind-sync.o: server/sync.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-sync.o -MD -MP -MF $(DEPDIR)/test_shcoind-sync.Tpo -c -o test_shcoind-sync.o `test -f 'server/sync.cpp' || echo '$(srcdir)/'`server/sync.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-sync.Tpo $(DEPDIR)/test_shcoind-sync.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/sync.cpp' object='test_shcoind-sync.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-sync.o `test -f 'server/sync.cpp' || echo '$(srcdir)/'`server/sync.cpp
+
+test_shcoind-sync.obj: server/sync.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-sync.obj -MD -MP -MF $(DEPDIR)/test_shcoind-sync.Tpo -c -o test_shcoind-sync.obj `if test -f 'server/sync.cpp'; then $(CYGPATH_W) 'server/sync.cpp'; else $(CYGPATH_W) '$(srcdir)/server/sync.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-sync.Tpo $(DEPDIR)/test_shcoind-sync.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/sync.cpp' object='test_shcoind-sync.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-sync.obj `if test -f 'server/sync.cpp'; then $(CYGPATH_W) 'server/sync.cpp'; else $(CYGPATH_W) '$(srcdir)/server/sync.cpp'; fi`
+
+test_shcoind-wallet.o: server/wallet.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-wallet.o -MD -MP -MF $(DEPDIR)/test_shcoind-wallet.Tpo -c -o test_shcoind-wallet.o `test -f 'server/wallet.cpp' || echo '$(srcdir)/'`server/wallet.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-wallet.Tpo $(DEPDIR)/test_shcoind-wallet.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/wallet.cpp' object='test_shcoind-wallet.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-wallet.o `test -f 'server/wallet.cpp' || echo '$(srcdir)/'`server/wallet.cpp
+
+test_shcoind-wallet.obj: server/wallet.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-wallet.obj -MD -MP -MF $(DEPDIR)/test_shcoind-wallet.Tpo -c -o test_shcoind-wallet.obj `if test -f 'server/wallet.cpp'; then $(CYGPATH_W) 'server/wallet.cpp'; else $(CYGPATH_W) '$(srcdir)/server/wallet.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-wallet.Tpo $(DEPDIR)/test_shcoind-wallet.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/wallet.cpp' object='test_shcoind-wallet.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-wallet.obj `if test -f 'server/wallet.cpp'; then $(CYGPATH_W) 'server/wallet.cpp'; else $(CYGPATH_W) '$(srcdir)/server/wallet.cpp'; fi`
+
+test_shcoind-walletdb.o: server/walletdb.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-walletdb.o -MD -MP -MF $(DEPDIR)/test_shcoind-walletdb.Tpo -c -o test_shcoind-walletdb.o `test -f 'server/walletdb.cpp' || echo '$(srcdir)/'`server/walletdb.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-walletdb.Tpo $(DEPDIR)/test_shcoind-walletdb.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/walletdb.cpp' object='test_shcoind-walletdb.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-walletdb.o `test -f 'server/walletdb.cpp' || echo '$(srcdir)/'`server/walletdb.cpp
+
+test_shcoind-walletdb.obj: server/walletdb.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-walletdb.obj -MD -MP -MF $(DEPDIR)/test_shcoind-walletdb.Tpo -c -o test_shcoind-walletdb.obj `if test -f 'server/walletdb.cpp'; then $(CYGPATH_W) 'server/walletdb.cpp'; else $(CYGPATH_W) '$(srcdir)/server/walletdb.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-walletdb.Tpo $(DEPDIR)/test_shcoind-walletdb.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/walletdb.cpp' object='test_shcoind-walletdb.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-walletdb.obj `if test -f 'server/walletdb.cpp'; then $(CYGPATH_W) 'server/walletdb.cpp'; else $(CYGPATH_W) '$(srcdir)/server/walletdb.cpp'; fi`
+
+test_shcoind-wallet_iface.o: wallet_iface.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-wallet_iface.o -MD -MP -MF $(DEPDIR)/test_shcoind-wallet_iface.Tpo -c -o test_shcoind-wallet_iface.o `test -f 'wallet_iface.cpp' || echo '$(srcdir)/'`wallet_iface.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-wallet_iface.Tpo $(DEPDIR)/test_shcoind-wallet_iface.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='wallet_iface.cpp' object='test_shcoind-wallet_iface.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-wallet_iface.o `test -f 'wallet_iface.cpp' || echo '$(srcdir)/'`wallet_iface.cpp
+
+test_shcoind-wallet_iface.obj: wallet_iface.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-wallet_iface.obj -MD -MP -MF $(DEPDIR)/test_shcoind-wallet_iface.Tpo -c -o test_shcoind-wallet_iface.obj `if test -f 'wallet_iface.cpp'; then $(CYGPATH_W) 'wallet_iface.cpp'; else $(CYGPATH_W) '$(srcdir)/wallet_iface.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-wallet_iface.Tpo $(DEPDIR)/test_shcoind-wallet_iface.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='wallet_iface.cpp' object='test_shcoind-wallet_iface.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-wallet_iface.obj `if test -f 'wallet_iface.cpp'; then $(CYGPATH_W) 'wallet_iface.cpp'; else $(CYGPATH_W) '$(srcdir)/wallet_iface.cpp'; fi`
+
+test_shcoind-block_iface.o: block_iface.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-block_iface.o -MD -MP -MF $(DEPDIR)/test_shcoind-block_iface.Tpo -c -o test_shcoind-block_iface.o `test -f 'block_iface.cpp' || echo '$(srcdir)/'`block_iface.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-block_iface.Tpo $(DEPDIR)/test_shcoind-block_iface.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='block_iface.cpp' object='test_shcoind-block_iface.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-block_iface.o `test -f 'block_iface.cpp' || echo '$(srcdir)/'`block_iface.cpp
+
+test_shcoind-block_iface.obj: block_iface.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-block_iface.obj -MD -MP -MF $(DEPDIR)/test_shcoind-block_iface.Tpo -c -o test_shcoind-block_iface.obj `if test -f 'block_iface.cpp'; then $(CYGPATH_W) 'block_iface.cpp'; else $(CYGPATH_W) '$(srcdir)/block_iface.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-block_iface.Tpo $(DEPDIR)/test_shcoind-block_iface.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='block_iface.cpp' object='test_shcoind-block_iface.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-block_iface.obj `if test -f 'block_iface.cpp'; then $(CYGPATH_W) 'block_iface.cpp'; else $(CYGPATH_W) '$(srcdir)/block_iface.cpp'; fi`
+
+test_shcoind-server_iface.o: server_iface.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-server_iface.o -MD -MP -MF $(DEPDIR)/test_shcoind-server_iface.Tpo -c -o test_shcoind-server_iface.o `test -f 'server_iface.cpp' || echo '$(srcdir)/'`server_iface.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-server_iface.Tpo $(DEPDIR)/test_shcoind-server_iface.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server_iface.cpp' object='test_shcoind-server_iface.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-server_iface.o `test -f 'server_iface.cpp' || echo '$(srcdir)/'`server_iface.cpp
+
+test_shcoind-server_iface.obj: server_iface.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-server_iface.obj -MD -MP -MF $(DEPDIR)/test_shcoind-server_iface.Tpo -c -o test_shcoind-server_iface.obj `if test -f 'server_iface.cpp'; then $(CYGPATH_W) 'server_iface.cpp'; else $(CYGPATH_W) '$(srcdir)/server_iface.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-server_iface.Tpo $(DEPDIR)/test_shcoind-server_iface.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server_iface.cpp' object='test_shcoind-server_iface.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-server_iface.obj `if test -f 'server_iface.cpp'; then $(CYGPATH_W) 'server_iface.cpp'; else $(CYGPATH_W) '$(srcdir)/server_iface.cpp'; fi`
+
+test_shcoind-test_init.o: test/test_init.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-test_init.o -MD -MP -MF $(DEPDIR)/test_shcoind-test_init.Tpo -c -o test_shcoind-test_init.o `test -f 'test/test_init.cpp' || echo '$(srcdir)/'`test/test_init.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-test_init.Tpo $(DEPDIR)/test_shcoind-test_init.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='test/test_init.cpp' object='test_shcoind-test_init.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-test_init.o `test -f 'test/test_init.cpp' || echo '$(srcdir)/'`test/test_init.cpp
+
+test_shcoind-test_init.obj: test/test_init.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-test_init.obj -MD -MP -MF $(DEPDIR)/test_shcoind-test_init.Tpo -c -o test_shcoind-test_init.obj `if test -f 'test/test_init.cpp'; then $(CYGPATH_W) 'test/test_init.cpp'; else $(CYGPATH_W) '$(srcdir)/test/test_init.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-test_init.Tpo $(DEPDIR)/test_shcoind-test_init.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='test/test_init.cpp' object='test_shcoind-test_init.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-test_init.obj `if test -f 'test/test_init.cpp'; then $(CYGPATH_W) 'test/test_init.cpp'; else $(CYGPATH_W) '$(srcdir)/test/test_init.cpp'; fi`
+
+test_shcoind-test_key.o: test/test_key.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-test_key.o -MD -MP -MF $(DEPDIR)/test_shcoind-test_key.Tpo -c -o test_shcoind-test_key.o `test -f 'test/test_key.cpp' || echo '$(srcdir)/'`test/test_key.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-test_key.Tpo $(DEPDIR)/test_shcoind-test_key.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='test/test_key.cpp' object='test_shcoind-test_key.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-test_key.o `test -f 'test/test_key.cpp' || echo '$(srcdir)/'`test/test_key.cpp
+
+test_shcoind-test_key.obj: test/test_key.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-test_key.obj -MD -MP -MF $(DEPDIR)/test_shcoind-test_key.Tpo -c -o test_shcoind-test_key.obj `if test -f 'test/test_key.cpp'; then $(CYGPATH_W) 'test/test_key.cpp'; else $(CYGPATH_W) '$(srcdir)/test/test_key.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-test_key.Tpo $(DEPDIR)/test_shcoind-test_key.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='test/test_key.cpp' object='test_shcoind-test_key.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-test_key.obj `if test -f 'test/test_key.cpp'; then $(CYGPATH_W) 'test/test_key.cpp'; else $(CYGPATH_W) '$(srcdir)/test/test_key.cpp'; fi`
+
+test_shcoind-test_accounting.o: test/test_accounting.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-test_accounting.o -MD -MP -MF $(DEPDIR)/test_shcoind-test_accounting.Tpo -c -o test_shcoind-test_accounting.o `test -f 'test/test_accounting.cpp' || echo '$(srcdir)/'`test/test_accounting.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-test_accounting.Tpo $(DEPDIR)/test_shcoind-test_accounting.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='test/test_accounting.cpp' object='test_shcoind-test_accounting.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-test_accounting.o `test -f 'test/test_accounting.cpp' || echo '$(srcdir)/'`test/test_accounting.cpp
+
+test_shcoind-test_accounting.obj: test/test_accounting.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-test_accounting.obj -MD -MP -MF $(DEPDIR)/test_shcoind-test_accounting.Tpo -c -o test_shcoind-test_accounting.obj `if test -f 'test/test_accounting.cpp'; then $(CYGPATH_W) 'test/test_accounting.cpp'; else $(CYGPATH_W) '$(srcdir)/test/test_accounting.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-test_accounting.Tpo $(DEPDIR)/test_shcoind-test_accounting.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='test/test_accounting.cpp' object='test_shcoind-test_accounting.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-test_accounting.obj `if test -f 'test/test_accounting.cpp'; then $(CYGPATH_W) 'test/test_accounting.cpp'; else $(CYGPATH_W) '$(srcdir)/test/test_accounting.cpp'; fi`
+
 mostlyclean-libtool:
 	-rm -f *.lo
 
@@ -2919,6 +4122,98 @@ GTAGS:
 distclean-tags:
 	-rm -f TAGS ID GTAGS GRTAGS GSYMS GPATH tags
 
+check-TESTS: $(TESTS)
+	@failed=0; all=0; xfail=0; xpass=0; skip=0; \
+	srcdir=$(srcdir); export srcdir; \
+	list=' $(TESTS) '; \
+	$(am__tty_colors); \
+	if test -n "$$list"; then \
+	  for tst in $$list; do \
+	    if test -f ./$$tst; then dir=./; \
+	    elif test -f $$tst; then dir=; \
+	    else dir="$(srcdir)/"; fi; \
+	    if $(TESTS_ENVIRONMENT) $${dir}$$tst; then \
+	      all=`expr $$all + 1`; \
+	      case " $(XFAIL_TESTS) " in \
+	      *[\ \	]$$tst[\ \	]*) \
+		xpass=`expr $$xpass + 1`; \
+		failed=`expr $$failed + 1`; \
+		col=$$red; res=XPASS; \
+	      ;; \
+	      *) \
+		col=$$grn; res=PASS; \
+	      ;; \
+	      esac; \
+	    elif test $$? -ne 77; then \
+	      all=`expr $$all + 1`; \
+	      case " $(XFAIL_TESTS) " in \
+	      *[\ \	]$$tst[\ \	]*) \
+		xfail=`expr $$xfail + 1`; \
+		col=$$lgn; res=XFAIL; \
+	      ;; \
+	      *) \
+		failed=`expr $$failed + 1`; \
+		col=$$red; res=FAIL; \
+	      ;; \
+	      esac; \
+	    else \
+	      skip=`expr $$skip + 1`; \
+	      col=$$blu; res=SKIP; \
+	    fi; \
+	    echo "$${col}$$res$${std}: $$tst"; \
+	  done; \
+	  if test "$$all" -eq 1; then \
+	    tests="test"; \
+	    All=""; \
+	  else \
+	    tests="tests"; \
+	    All="All "; \
+	  fi; \
+	  if test "$$failed" -eq 0; then \
+	    if test "$$xfail" -eq 0; then \
+	      banner="$$All$$all $$tests passed"; \
+	    else \
+	      if test "$$xfail" -eq 1; then failures=failure; else failures=failures; fi; \
+	      banner="$$All$$all $$tests behaved as expected ($$xfail expected $$failures)"; \
+	    fi; \
+	  else \
+	    if test "$$xpass" -eq 0; then \
+	      banner="$$failed of $$all $$tests failed"; \
+	    else \
+	      if test "$$xpass" -eq 1; then passes=pass; else passes=passes; fi; \
+	      banner="$$failed of $$all $$tests did not behave as expected ($$xpass unexpected $$passes)"; \
+	    fi; \
+	  fi; \
+	  dashes="$$banner"; \
+	  skipped=""; \
+	  if test "$$skip" -ne 0; then \
+	    if test "$$skip" -eq 1; then \
+	      skipped="($$skip test was not run)"; \
+	    else \
+	      skipped="($$skip tests were not run)"; \
+	    fi; \
+	    test `echo "$$skipped" | wc -c` -le `echo "$$banner" | wc -c` || \
+	      dashes="$$skipped"; \
+	  fi; \
+	  report=""; \
+	  if test "$$failed" -ne 0 && test -n "$(PACKAGE_BUGREPORT)"; then \
+	    report="Please report to $(PACKAGE_BUGREPORT)"; \
+	    test `echo "$$report" | wc -c` -le `echo "$$banner" | wc -c` || \
+	      dashes="$$report"; \
+	  fi; \
+	  dashes=`echo "$$dashes" | sed s/./=/g`; \
+	  if test "$$failed" -eq 0; then \
+	    echo "$$grn$$dashes"; \
+	  else \
+	    echo "$$red$$dashes"; \
+	  fi; \
+	  echo "$$banner"; \
+	  test -z "$$skipped" || echo "$$skipped"; \
+	  test -z "$$report" || echo "$$report"; \
+	  echo "$$dashes$$std"; \
+	  test "$$failed" -eq 0; \
+	else :; fi
+
 distdir: $(DISTFILES)
 	@srcdirstrip=`echo "$(srcdir)" | sed 's/[].[^$$\\*]/\\\\&/g'`; \
 	topsrcdirstrip=`echo "$(top_srcdir)" | sed 's/[].[^$$\\*]/\\\\&/g'`; \
@@ -2950,6 +4245,7 @@ distdir: $(DISTFILES)
 	  fi; \
 	done
 check-am: all-am
+	$(MAKE) $(AM_MAKEFLAGS) check-TESTS
 check: check-am
 all-am: Makefile $(PROGRAMS) $(SCRIPTS)
 installdirs:
@@ -2985,7 +4281,7 @@ maintainer-clean-generic:
 clean: clean-am
 
 clean-am: clean-binPROGRAMS clean-generic clean-libtool \
-	clean-sbinPROGRAMS mostlyclean-am
+	clean-noinstPROGRAMS clean-sbinPROGRAMS mostlyclean-am
 
 distclean: distclean-am
 	-rm -rf ./$(DEPDIR)
@@ -3057,10 +4353,11 @@ uninstall-am: uninstall-binPROGRAMS uninstall-binSCRIPTS \
 	uninstall-sbinPROGRAMS
 	@$(NORMAL_INSTALL)
 	$(MAKE) $(AM_MAKEFLAGS) uninstall-hook
-.MAKE: install-am install-exec-am install-strip uninstall-am
+.MAKE: check-am install-am install-exec-am install-strip uninstall-am
 
-.PHONY: CTAGS GTAGS all all-am check check-am clean clean-binPROGRAMS \
-	clean-generic clean-libtool clean-sbinPROGRAMS ctags distclean \
+.PHONY: CTAGS GTAGS all all-am check check-TESTS check-am clean \
+	clean-binPROGRAMS clean-generic clean-libtool \
+	clean-noinstPROGRAMS clean-sbinPROGRAMS ctags distclean \
 	distclean-compile distclean-generic distclean-libtool \
 	distclean-tags distdir dvi dvi-am html html-am info info-am \
 	install install-am install-binPROGRAMS install-binSCRIPTS \

@@ -1503,6 +1503,7 @@ int usde_server_init(void)
   return (0);
 }
 
+#if 0
 void usde_server_term(void)
 {
   unet_unbind(UNET_USDE);
@@ -1511,6 +1512,7 @@ void shc_server_term(void)
 {
   unet_unbind(UNET_SHC);
 }
+#endif
 
 list<CNode*> shc_vNodesDisconnected;
 static void shc_close_free(void)
@@ -2312,10 +2314,14 @@ void BindServer(int ifaceIndex)
 }
 
 
+static void StartRPCServer(void)
+{
+  CreateThread(ThreadRPCServer, NULL);
+}
+
 void StartCoinServer(void)
 {
 
-  CreateThread(ThreadRPCServer, NULL);
 
   // Make this thread recognisable as the startup thread
 
@@ -2426,9 +2432,14 @@ void start_node(void)
   mapArgs["-rpcuser"] = strUser;
   mapArgs["-rpcpassword"] = strPass;
 
-
   /* start cpp threads */
   StartCoinServer();
+}
+void start_rpc_server(void)
+{
+
+  /* start cpp threads */
+  StartRPCServer();
 }
 
 void start_node_peer(const char *host, int port)

@@ -1179,8 +1179,10 @@ fprintf(stderr, "DEBUG: SHC_Reorganize: block height %d\n", pindexNew->nHeight);
   BOOST_FOREACH(CBlockIndex* pindex, vDisconnect)
   {
     SHCBlock block;
-    if (!block.ReadFromDisk(pindex))
-      return error(SHERR_IO, "Reorganize() : ReadFromDisk for disconnect failed");
+    if (!block.ReadFromDisk(pindex)) { 
+      if (!block.ReadArchBlock(pindex->GetBlockHash()))
+        return error(SHERR_IO, "Reorganize() : ReadFromDisk for disconnect failed");
+    }
     if (!block.DisconnectBlock(txdb, pindex))
       return error(SHERR_INVAL, "Reorganize() : DisconnectBlock %s failed", pindex->GetBlockHash().ToString().substr(0,20).c_str());
 
@@ -1196,8 +1198,10 @@ fprintf(stderr, "DEBUG: SHC_Reorganize: block height %d\n", pindexNew->nHeight);
   {
     CBlockIndex* pindex = vConnect[i];
     SHCBlock block;
-    if (!block.ReadFromDisk(pindex))
-      return error(SHERR_INVAL, "Reorganize() : ReadFromDisk for connect failed");
+    if (!block.ReadFromDisk(pindex)) {
+      if (!block.ReadArchBlock(pindex->GetBlockHash()))
+        return error(SHERR_INVAL, "Reorganize() : ReadFromDisk for connect failed");
+    }
     if (!block.ConnectBlock(txdb, pindex))
     {
       // Invalid block
@@ -1705,8 +1709,6 @@ fprintf(stderr, "DEBUG: SHCBlock::ConnectBlock: critical: coinbaseValueOut(%llu)
 
   if (pindex->pprev)
   {
-    /* DEBUG: */
-    pindex->pprev->pnext = pindex;
 #if 0
     // Update block index on disk without changing it in memory.
     // The memory index structure will be changed after the db commits.

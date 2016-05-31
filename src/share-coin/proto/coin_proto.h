@@ -35,7 +35,7 @@ extern "C" {
 #endif
 
 
-
+#define TEST_COIN_IFACE 0
 #define USDE_COIN_IFACE 1
 #define SHC_COIN_IFACE 2
 #define MAX_COIN_IFACE 3

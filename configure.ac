@@ -313,14 +313,21 @@ AC_ARG_ENABLE([usde],
   AS_HELP_STRING([--disable-usde], [Disable USDE coin service.]))
 AM_CONDITIONAL(USDE_SERVICE, [test "x$enable_usde" != "xno"])
 if test "x$enable_usde" != "xno" ; then
-  AC_DEFINE_UNQUOTED([USDE_SERVICE], 1, [Define USDE coin service.])
+  AC_DEFINE_UNQUOTED([USDE_SERVICE], 1, [Define to enable USDE coin service.])
 fi
 
 AC_ARG_ENABLE([stratum],
   AS_HELP_STRING([--disable-stratum], [Disable stratum service.]))
 AM_CONDITIONAL(STRATUM_SERVICE, [test "x$enable_stratum" != "xno"])
 if test "x$enable_stratum" != "xno" ; then
-  AC_DEFINE_UNQUOTED([STRATUM_SERVICE], 1, [Define stratum service.])
+  AC_DEFINE_UNQUOTED([STRATUM_SERVICE], 1, [Define to enable stratum service.])
+fi
+
+AC_ARG_ENABLE([rpc],
+  AS_HELP_STRING([--disable-rpc], [Disable RPC service.]))
+AM_CONDITIONAL(RPC_SERVICE, [test "x$enable_rpc" != "xno"])
+if test "x$enable_rpc" != "xno" ; then
+  AC_DEFINE_UNQUOTED([RPC_SERVICE], 1, [Define to enable RPC service.])
 fi
 
 

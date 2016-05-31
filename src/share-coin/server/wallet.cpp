@@ -40,7 +40,7 @@ CWallet* pwalletMaster[MAX_COIN_IFACE];
 CWallet *GetWallet(int iface_idx)
 {
 
-  if (iface_idx < 1 || iface_idx >= MAX_COIN_IFACE)
+  if (iface_idx < 0 || iface_idx >= MAX_COIN_IFACE)
     return (NULL);
 
   return (pwalletMaster[iface_idx]); 
@@ -54,7 +54,7 @@ CWallet *GetWallet(CIface *iface)
 void SetWallet(int iface_idx, CWallet *wallet)
 {
 
-  if (iface_idx < 1 || iface_idx >= MAX_COIN_IFACE)
+  if (iface_idx < 0 || iface_idx >= MAX_COIN_IFACE)
     return;
 
   pwalletMaster[iface_idx] = wallet;

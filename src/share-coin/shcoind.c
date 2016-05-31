@@ -39,13 +39,23 @@ static int _rpc_thread_running;
 
 void shcoind_term(void)
 {
+  int idx;
+
   /* terminate stratum server */
   stratum_term();
 
+  for (idx = 1; idx < MAX_COIN_IFACE; idx++) {
+#ifndef USDE_SERVICE
+    if (idx == USDE_COIN_IFACE)
+      continue;
+#endif
+    unet_unbind(idx);
+  }
+#if 0
   /* terminate usde server */
   usde_server_term();
-
   shc_server_term();
+#endif
 
 #if 0
   /* close sharefs partition */
@@ -160,39 +170,10 @@ int main(int argc, char *argv[])
   server_msgq = shmsgget(NULL); /* shared server msg-queue */
   server_msg_buff = shbuf_init();
 
- 
-#if 0
-  fd = shnet_sk();
-  if (fd == -1) {
-    perror("shnet_sk");
-    return (-1);
-  }
-
-  err = shnet_bindsk(fd, NULL, STRATUM_DAEMON_PORT);
-  if (err) {
-    perror("shbindport");
-    shnet_close(fd);
-    return (err);
-  }
-#endif
-
   shapp_listen(TX_APP, server_peer);
   shapp_listen(TX_IDENT, server_peer);
   shapp_listen(TX_SESSION, server_peer);
   shapp_listen(TX_BOND, server_peer);
-
-#if 0
-  server_fd = fd;
-#endif
-
-
-
-#if 0
-  /* debug: cmdline option */
-  if (*blockfile_path)
-    reloadblockfile(blockfile_path);
-#endif
-
 
   /* initialize coin interfaces */  
   for (idx = 1; idx < MAX_COIN_IFACE; idx++) {
@@ -200,29 +181,32 @@ int main(int argc, char *argv[])
     if (!iface || !iface->enabled)
       continue;
 
-    printf("info: initializing %s coin service.\n", iface->name);
+#ifndef USDE_SERVICE
+    if (idx == USDE_COIN_IFACE) {
+      iface->enabled = FALSE;
+      continue;
+    }
+#endif
+
     if (iface->op_init)
       iface->op_init(iface, NULL);
   }
 
-#if 0
-fprintf(stderr, "DEBUG: initializing SHC_COIN_IFACE: '%s'\n", iface->name);
-  iface = GetCoinByIndex(SHC_COIN_IFACE);
-  iface->op_init(iface, NULL);
-#endif
-
-
+#ifdef STRATUM_SERVICE
   /* initialize stratum server */
-  printf("info: initializing stratum service.\n");
   err = stratum_init();
   if (err) {
     fprintf(stderr, "critical: init stratum: %s. [sherr %d]", sherrstr(err), err);
     raise(SIGTERM);
   }
+#endif
 
-  /* RPC */
-  _rpc_thread_running = TRUE;
   start_node();
+
+#ifdef RPC_SERVICE
+  _rpc_thread_running = TRUE;
+  start_rpc_server();
+#endif
 
   /* unet_cycle() */
   daemon_server();

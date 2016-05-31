@@ -1,21 +1,30 @@
-// Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2012 The Bitcoin Developers
-// Copyright (c) 2011-2012 Litecoin Developers
-// Copyright (c) 2013 usde Developers
-// Distributed under the MIT/X11 software license, see the accompanying
-// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+/*
+ * @copyright
+ *
+ *  Copyright 2014 Neo Natura
+ *
+ *  This file is part of the Share Library.
+ *  (https://github.com/neonatura/share)
+ *        
+ *  The Share Library is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version. 
+ *
+ *  The Share Library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with The Share Library.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  @endcopyright
+ */
 
 
-//
-// Why base-58 instead of standard base-64 encoding?
-// - Don't want 0OIl characters that look the same in some fonts and
-//      could be used to create visually identical looking account numbers.
-// - A string with non-alphanumeric characters is not as easily accepted as an account number.
-// - E-mail usually won't line-break if there's no punctuation to break at.
-// - Doubleclicking selects the whole number as one word if it's all alphanumeric.
-//
-#ifndef BITCOIN_BASE58_H
-#define BITCOIN_BASE58_H
+#ifndef __SERVER__BASE58_H__
+#define __SERVER__BASE58_H__
 
 #include <string>
 #include <vector>
@@ -217,6 +226,7 @@ public:
         {
             vchData.clear();
             nVersion = 0;
+fprintf(stderr, "DEBUG: CBase58Data: DecodeBase58Check failed\n");
             return false;
         }
         nVersion = vchTemp[0];
@@ -326,6 +336,9 @@ public:
             default:
                 return false;
         }
+if (vchData.size() != nExpectedSize) {
+fprintf(stderr, "DEBUG: CCoinSecret: vchData.size() %d, nExpectedSize %d\n", vchData.size(), nExpectedSize);
+}
         return fExpectTestNet == fTestNet && vchData.size() == nExpectedSize;
     }
 
@@ -401,7 +414,7 @@ bool inline CBitcoinAddressVisitor::operator()(const CScriptID &id) const      {
 bool inline CBitcoinAddressVisitor::operator()(const CNoDestination &id) const { return false; }
 
 /** A base58-encoded secret key */
-class CBitcoinSecret : public CBase58Data
+class CCoinSecret : public CBase58Data
 {
 public:
     enum
@@ -427,6 +440,10 @@ public:
         return vchSecret;
     }
 
+    bool SetString(const char* pszSecret);
+
+    bool SetString(const std::string& strSecret);
+
     bool IsValid() const
     {
         bool fExpectTestNet = false;
@@ -445,24 +462,15 @@ public:
         return fExpectTestNet == fTestNet && (vchData.size() == 32 || (vchData.size() == 33 && vchData[32] == 1));
     }
 
-    bool SetString(const char* pszSecret)
-    {
-        return CBase58Data::SetString(pszSecret) && IsValid();
-    }
 
-    bool SetString(const std::string& strSecret)
-    {
-        return SetString(strSecret.c_str());
-    }
-
-    CBitcoinSecret(const CSecret& vchSecret, bool fCompressed)
+    CCoinSecret(const CSecret& vchSecret, bool fCompressed)
     {
         SetSecret(vchSecret, fCompressed);
     }
 
-    CBitcoinSecret()
+    CCoinSecret()
     {
     }
 };
 
-#endif
+#endif /* ndef __SERVER__BASE58_H__ */
