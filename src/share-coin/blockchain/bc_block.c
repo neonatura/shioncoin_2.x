@@ -342,14 +342,19 @@ fprintf(stderr, "DEBUG: bc_get[pos %d]: bc_read <%d bytes> error '%s'\n", pos, i
 int bc_arch(bc_t *bc, bcsize_t pos, unsigned char **data_p, size_t *data_len_p)
 {
   bc_idx_t idx;
+  bc_map_t *map;
   unsigned char *data;
-  char errbuf[1024];
+  size_t data_len;
   int err;
 
   if (!data_p) {
 fprintf(stderr, "DEBUG: bc_arch_get: no data pointer specified.\n");
     return (SHERR_INVAL);
-}
+  }
+
+  *data_p = NULL;
+  if (data_len_p)
+    *data_len_p = 0;
 
   /* obtain index for record position */
   memset(&idx, 0, sizeof(idx));
@@ -360,17 +365,26 @@ fprintf(stderr, "DEBUG: bc_arch_get[pos %d]: bc_idx_get error '%s'\n", pos, sher
   }
 
 /* .. deal with idx.size == 0, i.e. prevent write of 0 */
-
-  data = (unsigned char *)calloc(idx.size, sizeof(char)); 
+  data_len = idx.size;
+  data = (unsigned char *)calloc(data_len, sizeof(char)); 
   if (!data)
     return (SHERR_NOMEM);
 
+  /* ensure journal is allocated */
+  err = bc_alloc(bc, idx.jrnl);
+  if (err)
+    return (err);
+
   /* read in serialized binary data */
-  err = bc_read(bc, pos, data, idx.size);
-  if (err) {
-fprintf(stderr, "DEBUG: bc_arch_get[pos %d]: bc_read <%d bytes> error '%s'\n", pos, idx.size, sherrstr(err));
-    return (err); 
+  memset(data, 0, data_len);
+  map = bc->data_map + idx.jrnl;
+
+  if (shcrc32(map->raw + idx.of, idx.size) != idx.crc) {
+fprintf(stderr, "DEBUG: bc_arch: invalid crc {map: %x, idx: %x} mismatch at pos %d\n", shcrc32(map->raw + idx.of, idx.size), idx.crc, pos);
+    return (SHERR_ILSEQ);
   }
+
+  memcpy(data, map->raw + idx.of, data_len);
 
   *data_p = data;
   if (data_len_p)
@@ -409,7 +423,6 @@ int bc_find(bc_t *bc, bc_hash_t hash, int *pos_p)
 }
 
 
-#if 0
 /**
  * @bug this does not handle jrnls alloc'd past one being targeted.
  */
@@ -443,11 +456,14 @@ fprintf(stderr, "DEBUG: bc_read; invalid crc {map: %x, idx: %x} mismatch at pos 
 
   /* clear index of remaining entries */
   for (i = (bc_idx_next(bc)-1); i >= pos; i--) {
-    bc_idx_clear(bc, i);
+    bc_clear(bc, i);
+//    bc_idx_clear(bc, i);
   }
 
+#if 0
   /* truncate journal at offset */
   bc_map_trunc(bc, map, idx.of);
+#endif
 
   return (0);
 }
@@ -463,7 +479,6 @@ int bc_purge(bc_t *bc, bcsize_t pos)
   shlock_close_str(BCMAP_LOCK);
   return (err);
 }
-#endif
 
 
 /**

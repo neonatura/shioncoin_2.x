@@ -69,7 +69,7 @@ uint32_t bc_arch_crc(bc_hash_t hash)
   return (shcrc(hash, sizeof(bc_hash_t)));
 }
 
-int bc_arch_find(bc_t *bc, bc_hash_t hash, bc_idx_t *ret_arch, int *ret_pos)
+int bc_arch_find(bc_t *bc, bc_hash_t hash, bc_idx_t *ret_arch, bcsize_t *ret_pos)
 {
   bc_hash_t t_hash;
   bc_idx_t *arch;
@@ -170,6 +170,9 @@ bcsize_t bc_arch_next(bc_t *bc)
   return MAX(0, (bc->arch_map.hdr->of / sizeof(bc_idx_t)));
 }
 
+/**
+ * @todo consider clearing indexes which are brought back into main chain.
+ */
 int bc_arch_set(bc_t *bc, bcsize_t pos, bc_idx_t *arch)
 {
   bc_idx_t *f_arch;
