@@ -113,7 +113,7 @@ const char *c_getblocktemplate(int ifaceIndex)
   //static CReserveKey reservekey(pwalletMain);
   static unsigned int work_id;
   static time_t last_reset_t;
-  static int indexWeight;
+  static unsigned int nIndex;
   unsigned int nHeight;
   CIface *iface;
   CBlock* pblock;
@@ -167,16 +167,17 @@ const char *c_getblocktemplate(int ifaceIndex)
     altBlock[ifaceIndex] = NULL;
     fprintf(stderr, "DEBUG: c_getblocktemplate: cleared mapWork\n");
 
-    templateWeight = 2;
-    indexWeight = 0;
+    templateWeight = 1;
   } else {
-    indexWeight++;
-    if ((indexWeight % templateWeight) != 0) {
+    nIndex++;
+    if ((nIndex % templateWeight) != 0) {
 //      fprintf(stderr, "DEBUG: c_getblocktemplate: stalling on work generation..\n");
       return (NULL);
     }
-    templateWeight = MIN(11, templateWeight + 1);
-    indexWeight = 0;
+
+    templateWeight++;
+    if (templateWeight > 10)
+      templateWeight = 5;
   }
 
 

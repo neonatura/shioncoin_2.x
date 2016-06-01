@@ -2079,7 +2079,7 @@ bool TESTBlock::ReadArchBlock(uint256 hash)
   size_t sBlockLen;
   unsigned char *sBlockData;
   char errbuf[1024];
-  int nPos;
+  bcsize_t nPos;
   bc_t *bc;
   int err;
 

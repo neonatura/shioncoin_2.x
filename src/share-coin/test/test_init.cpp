@@ -12,11 +12,9 @@ extern "C" {
 
 void test_shcoind_init(void)
 {
-  TESTWallet *wallet;
 
-  wallet = testWallet;//new TESTWallet();
-  SetWallet(TEST_COIN_IFACE, wallet);
-  RegisterWallet(wallet);
+  SetWallet(TEST_COIN_IFACE, testWallet);
+  RegisterWallet(testWallet);
   RandAddSeedPerfmon();
 
 }

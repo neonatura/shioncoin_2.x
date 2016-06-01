@@ -6,9 +6,10 @@
 user_t *client_list;
 
 extern TEST_coin_key(CuTest*);
-extern TEST_wallet_accounting(CuTest*);
+extern TEST_wallet(CuTest*);
 extern TEST_bignum(CuTest*);
 extern TEST_sha256transform(CuTest*);
+extern TEST_blockchain(CuTest*);
 
 extern void test_shcoind_init(void);
 
@@ -24,9 +25,10 @@ int main(int argc, char *argv[])
 
   /* test suits */
   SUITE_ADD_TEST(suite, TEST_coin_key);
-  SUITE_ADD_TEST(suite, TEST_wallet_accounting);
+  SUITE_ADD_TEST(suite, TEST_wallet);
   SUITE_ADD_TEST(suite, TEST_bignum);
   SUITE_ADD_TEST(suite, TEST_sha256transform);
+  SUITE_ADD_TEST(suite, TEST_blockchain);
 
   CuSuiteRun(suite);
   CuSuiteSummary(suite, output);

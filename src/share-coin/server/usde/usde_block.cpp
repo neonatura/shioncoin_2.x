@@ -2230,7 +2230,7 @@ bool USDEBlock::ReadArchBlock(uint256 hash)
   size_t sBlockLen;
   unsigned char *sBlockData;
   char errbuf[1024];
-  int nPos;
+  bcsize_t nPos;
   bc_t *bc;
   int err;
 
@@ -2256,8 +2256,14 @@ bool USDEBlock::ReadArchBlock(uint256 hash)
   sBlock.write((const char *)sBlockData, sBlockLen);
   sBlock >> *this;
   free(sBlockData);
-fprintf(stderr, "DEBUG: ARCH: loaded block '%s'\n", GetHash().GetHex().c_str());
 
+if (hash != GetHash()) {
+fprintf(stderr, "DEBUG: ARCH: Invalid arch loaded:\n");
+print();
+return (false);
+}
+
+fprintf(stderr, "DEBUG: ARCH: loaded block '%s'\n", GetHash().GetHex().c_str());
   return (true);
 }
 

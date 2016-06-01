@@ -13,6 +13,13 @@
   CuAssertTrue(ct, (testexpr))
 #define _FALSE(testexpr) \
   CuAssertTrue(ct, !(testexpr))
+
+#define _TRUE_EQUAL(_a,_b) \
+  _TRUE((_a) == (_b))
+#define _TRUE_NE(_a,_b) \
+  _TRUE((_a) != (_b))
+#define _TRUE_GT(_a,_b) \
+  _TRUE((_a) > (_b))
   
 
 static void *_cutest_ptr;
