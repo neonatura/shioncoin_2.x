@@ -1351,10 +1351,10 @@ fprintf(stderr, "DEBUG: REORGANIZE: Connect %i blocks; %s..%s\n", vConnect.size(
     USDEBlock block;
     if (!block.ReadFromDisk(pindex)) {
       if (!block.ReadArchBlock(pindex->GetBlockHash()))
-        return error(SHERR_IO, "Reorganize() : ReadFromDisk for disconnect failed");
+        return error(SHERR_IO, "USDE_Reorganize: Disconnect: block hash '%s' [height %d] could not be loaded.", pindex->GetBlockHash(), pindex->nHeight);
     }
     if (!block.DisconnectBlock(txdb, pindex))
-      return error(SHERR_INVAL, "Reorganize() : DisconnectBlock %s failed", pindex->GetBlockHash().ToString().substr(0,20).c_str());
+      return error(SHERR_INVAL, "Reorganize() : DisconnectBlock %s failed", pindex->GetBlockHash().ToString().c_str());
 
     // Queue memory transactions to resurrect
     BOOST_FOREACH(const CTransaction& tx, block.vtx)
@@ -1370,11 +1370,9 @@ fprintf(stderr, "DEBUG: REORGANIZE: Connect %i blocks; %s..%s\n", vConnect.size(
     USDEBlock block;
     if (!block.ReadFromDisk(pindex)) {
       if (!block.ReadArchBlock(pindex->GetBlockHash()))
-        return error(SHERR_INVAL, "Reorganize() : ReadFromDisk for connect failed");
-fprintf(stderr, "DEBUG: REORG: connecting main-chain block '%s' @ height %d\n", block.GetHash().GetHex().c_str(), pindex->nHeight);
-    } else {
-fprintf(stderr, "DEBUG: REORG: connecting arch-chain block '%s' @ height %d\n", block.GetHash().GetHex().c_str(), pindex->nHeight);
-}
+        return error(SHERR_IO, "USDE_Reorganize: Connect: block hash '%s' [height %d] could not be loaded.", pindex->GetBlockHash(), pindex->nHeight);
+    }
+
     if (!block.ConnectBlock(txdb, pindex))
     {
       // Invalid block
@@ -1385,6 +1383,7 @@ fprintf(stderr, "DEBUG: REORG: connecting arch-chain block '%s' @ height %d\n", 
     BOOST_FOREACH(const CTransaction& tx, block.vtx)
       vDelete.push_back(tx);
   }
+
   if (!txdb.WriteHashBestChain(pindexNew->GetBlockHash()))
     return error(SHERR_INVAL, "Reorganize() : WriteHashBestChain failed");
 
@@ -1487,6 +1486,145 @@ static bool USDE_IsInitialBlockDownload()
 }
 #endif
 
+/* not currently used */
+bool usde_Reindex(CTxDB& txdb, CBlockIndex *pindexNew)
+{
+  CIface *iface = GetCoinByIndex(USDE_COIN_IFACE);
+  bc_t *bc = GetBlockChain(iface);
+  vector<CTransaction> vResurrect;
+  vector<CTransaction> vDelete;
+  vector<CBlockIndex*> vConnect;
+  map<int, CBlock *>mLinkBlock; 
+  map<int, CBlockIndex *>mLinkIndex;
+  map<int, CBlock *>mUnlinkBlock; 
+  map<int, CBlockIndex *>mUnlinkIndex;
+  CBlockIndex *pindexIntermediate = pindexNew;
+  CBlockIndex *pindex;
+  char errbuf[1024];
+  unsigned int nHeight;
+  unsigned int nLinkHeight;
+  unsigned int nUnlinkHeight;
+  unsigned int nStartHeight;
+
+  CBlockIndex* pindexBest = GetBestBlockIndex(USDE_COIN_IFACE);
+  if (!pindexBest)
+    return error(SHERR_INVAL, "no established block-chain.");
+  fprintf(stderr, "DEBUG: USDEBlock::Reindex: block height %d\n", pindexNew->nHeight);
+
+  while (pindexIntermediate->pprev && 
+      pindexIntermediate->pprev->bnChainWork > pindexBest->bnChainWork)
+  {
+    pindexIntermediate = pindexIntermediate->pprev;
+  }
+
+  // Find the fork
+  CBlockIndex* pfork = pindexBest;
+  CBlockIndex* plonger = pindexIntermediate;
+  while (pfork != plonger)
+  {
+    while (plonger->nHeight > pfork->nHeight)
+      if (!(plonger = plonger->pprev))
+        return error(SHERR_INVAL, "Reorganize() : plonger->pprev is null");
+    if (pfork == plonger)
+      break;
+    if (!pfork->pprev) {
+      sprintf(errbuf, "USDE_Reorganize: no previous chain for '%s' height %d\n", pfork->GetBlockHash().GetHex().c_str(), pfork->nHeight); 
+      return error(SHERR_INVAL, errbuf);
+    }
+    pfork = pfork->pprev;
+  }
+  nStartHeight = pfork->nHeight;
+
+
+  /* gather unlink chain */
+  for (pindex = pindexBest; pindex->pprev && pindex->nHeight > nStartHeight; pindex = pindex->pprev) {
+    mUnlinkIndex[pindex->nHeight] = pindex;
+  }
+  for (nHeight = pindexBest->nHeight; nHeight > nStartHeight; nHeight--) {
+    CBlock *block = GetBlockByHeight(iface, nHeight);
+    if (!block) {
+      sprintf(errbuf, "no block height %d established in block-chain.");
+      unet_log(USDE_COIN_IFACE, errbuf);
+      continue;
+    }
+    mUnlinkBlock[nHeight] = block;
+  }
+  nUnlinkHeight = pindexBest->nHeight;
+
+  /* gather new chain */
+  for (pindex = pindexNew; pindex != pfork; pindex = pindex->pprev) {
+    vConnect.push_back(pindex);
+  }
+  nLinkHeight = nStartHeight + vConnect.size(); 
+
+  nHeight = nLinkHeight; 
+  BOOST_FOREACH(CBlockIndex* dis_pindex, vConnect) {
+    CBlock *block;
+
+    block = GetArchBlockByHash(iface, dis_pindex->GetBlockHash()); 
+    if (!block)
+      block = GetBlockByHash(iface, dis_pindex->GetBlockHash()); 
+
+#if 0
+    if (!block)
+      return error(SHERR_INVAL, "USDE::Reindex/Connect: unable to load block hash '%s' for new chain height %d.", dis_pindex->GetBlockHash().c_str(), nHeight);
+#endif
+
+    mLinkBlock[nHeight] = block;
+    mLinkIndex[nHeight] = pindex; 
+
+    nHeight--;
+  }
+
+  /* disconect (down) */
+  for (nHeight = nUnlinkHeight; nHeight > nStartHeight; nHeight--) {
+    pindex = mUnlinkIndex[nHeight];
+    CBlock *block = mUnlinkBlock[nHeight];
+
+    if (block && pindex) {
+      block->DisconnectBlock(txdb, pindex); 
+      BOOST_FOREACH(const CTransaction& tx, block->vtx) {
+        if (!tx.IsCoinBase())
+          vResurrect.push_back(tx);
+      }
+    }
+    if (pindex && pindex->pprev) {
+      pindex->pprev->pnext = NULL;
+    }
+    bc_clear(bc, nHeight);
+  }
+
+  /* connect (up) */
+  pindex = pfork;
+  for (nHeight = nStartHeight + 1; nHeight <= nLinkHeight; nHeight++) {
+    pindex = mLinkIndex[nHeight];
+    CBlock *block = mLinkBlock[nHeight];
+    if (!pindex || !block)
+      break;
+    if (!block->ConnectBlock(txdb, pindex))
+      break;
+    pindex->pprev->pnext = pindex;
+    BOOST_FOREACH(const CTransaction& tx, block->vtx)
+      vDelete.push_back(tx);
+  }
+
+  if (!txdb.WriteHashBestChain(pindex->GetBlockHash()))
+    return error(SHERR_INVAL, "USDE:Reindex: WriteHashBestChain failed");
+
+  if (!txdb.TxnCommit())
+    return error(SHERR_INVAL, "Reorganize() : TxnCommit failed");
+
+  // Resurrect memory transactions that were in the disconnected branch
+  BOOST_FOREACH(CTransaction& tx, vResurrect)
+    tx.AcceptToMemoryPool(txdb, false);
+
+  // Delete redundant memory transactions that are in the connected branch
+  BOOST_FOREACH(CTransaction& tx, vDelete)
+    USDEBlock::mempool.remove(tx);
+
+  return true;
+}
+
 bool USDEBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
 {
   CIface *iface = GetCoinByIndex(USDE_COIN_IFACE);
@@ -1511,6 +1649,7 @@ bool USDEBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
   }
   else
   {
+    //Reindex(pindexNew);
     // the first block in the new chain that will cause it to become the new best chain
     CBlockIndex *pindexIntermediate = pindexNew;
 
@@ -1545,7 +1684,8 @@ bool USDEBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
       USDEBlock block;
       if (!block.ReadFromDisk(pindex))
       {
-        error(SHERR_IO, "SetBestChain() : ReadFromDisk failed\n");
+        if (!block.ReadArchBlock(pindex->GetBlockHash()))
+          error(SHERR_IO, "SetBestChain() : ReadFromDisk failed\n");
         break;
       }
       if (!txdb.TxnBegin()) {
@@ -1714,6 +1854,8 @@ bool usde_AcceptBlock(USDEBlock *pblock, bool bForce)
     return error(SHERR_INVAL, "AcceptBlock() : rejected by checkpoint lockin at %d", nHeight);
   }
 
+  CBlock *origBlock = GetBlockByHeight(iface, nHeight);
+
   timing_init("USDE:WriteBlock/Accept", &ts);
   ret = pblock->WriteBlock(nHeight);
   timing_term("USDE:WriteBlock/Accept", &ts);
@@ -1725,8 +1867,17 @@ bool usde_AcceptBlock(USDEBlock *pblock, bool bForce)
   ret = pblock->AddToBlockIndex();
   timing_term("USDE:AddToBlockIndex/Accept", &ts);
   if (!ret) {
-    return error(SHERR_IO, "AcceptBlock() : AddToBlockIndex failed");
+    if (origBlock) {
+      /* revert to original block in main chain upon failure. */
+      origBlock->WriteBlock(nHeight);
+      fprintf(stderr, "DEBUG: AcceptBlock: reverted block '%s' @ height %d\n", origBlock->GetHash().GetHex().c_str(), nHeight);
+      delete origBlock;
+    }
+    return error(SHERR_IO, "USDEBlock::AcceptBlock: error adding hash '%s' to block-index at height %d.", pblock->GetHash().GetHex().c_str(), nHeight);
   }
+
+  if (origBlock)
+    delete origBlock;
 
   /* Relay inventory, but don't relay old inventory during initial block download */
   if (GetBestBlockChain(iface) == hash)
@@ -2140,31 +2291,25 @@ bool USDEBlock::Truncate()
   if (!cur_index)
     return error(SHERR_INVAL, "Erase: block not found in block-index.");
 
-  {
+  bc_t *bc = GetBlockChain(iface);
+  int nBestHeight = GetBestHeight(iface);
+  int nHeight;
+
+  USDETxDB txdb;
+  for (nHeight = nBestHeight; nHeight > cur_index->nHeight; nHeight--) {
     USDEBlock block;
-    if (block.ReadFromDisk(cur_index)) {
-      USDETxDB txdb;
-      block.SetBestChain(txdb, cur_index);
-      txdb.Close();
-    }
-  }
+    if (!block.ReadBlock(nHeight))
+      continue;
+    hash = block.GetHash(); 
+    if (!blockIndex->count(hash))
+      continue;
+    block.DisconnectBlock(txdb, (*blockIndex)[hash]);
+    bc_clear(bc, nHeight);
+  }  
+  txdb.Close();
 
-  SetBestBlockIndex(iface, cur_index);
-  cur_index->pnext = NULL;
-
-  bc_t *bc = GetBlockChain(GetCoinByIndex(ifaceIndex));
-  bc_clear(bc, cur_index->nHeight + 1); /* isolate chain */
-#if 0
-  bc_t *bc = GetBlockChain(GetCoinByIndex(ifaceIndex));
-  int bestHeight = bc_idx_next(bc) - 1;
-  int idx;
-
-  for (idx = bestHeight; idx > cur_index->nHeight; idx--) {
-/* todo: remove wallet transactions */
-    bc_clear(bc, idx);
-  }
-#endif
-
+  SetBestBlockIndex(iface, cur_index->pprev);
   return (true);
+//  return (SetBestChain(txdb, cur_index)); /* save best chain to disk */
 }
 

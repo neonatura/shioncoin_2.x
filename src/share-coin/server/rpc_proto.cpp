@@ -2033,7 +2033,7 @@ Value rpc_block_purge(CIface *iface, const Array& params, bool fHelp)
   if (!block)
     throw runtime_error("Block not found in block-chain.");
 
-//  hash = block->GetHash();
+  hash = block->GetHash();
   block->Truncate();
   delete block;
 

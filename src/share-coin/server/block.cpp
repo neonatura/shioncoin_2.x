@@ -713,6 +713,28 @@ CBlock *GetBlockByHash(CIface *iface, const uint256 hash)
   return (block);
 }
 
+CBlock *GetArchBlockByHash(CIface *iface, const uint256 hash)
+{
+  CBlock *block;
+  int err;
+  
+  /* sanity */
+  if (!iface)
+    return (NULL);
+
+  /* generate block */
+  block = GetBlankBlock(iface);
+  if (!block)
+    return (NULL);
+
+  if (!block->ReadArchBlock(hash)) {
+    delete block;
+    return (NULL);
+  }
+
+  return (block);
+}
+
 CBlock *GetBlockByTx(CIface *iface, const uint256 hash)
 {
   int ifaceIndex = GetCoinIndex(iface);
@@ -1711,6 +1733,8 @@ bool CTransaction::FetchInputs(CTxDB& txdb, const map<uint256, CTxIndex>& mapTes
       // Read txindex from txdb
       fFound = txdb.ReadTxIndex(prevout.hash, txindex);
     }
+
+    /* allows for passage past this error condition for orphans. */
     if (!fFound && (fBlock || fMiner)) {
       if (fMiner)
         return (false);

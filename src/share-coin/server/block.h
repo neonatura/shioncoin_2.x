@@ -1470,6 +1470,8 @@ void CloseBlockChain(CIface *iface);
 
 bool VerifyTxHash(CIface *iface, uint256 hashTx);
 
+CBlock *GetArchBlockByHash(CIface *iface, const uint256 hash);
+
 
 #endif /* ndef __SERVER_BLOCK_H__ */
 
