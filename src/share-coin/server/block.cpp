@@ -649,7 +649,6 @@ bool GetTransaction(CIface *iface, const uint256 &hash, CTransaction &tx, uint25
 
 bool GetTransaction(CIface *iface, const uint256 &hash, CTransaction &tx, uint256 *hashBlock)
 {
-fprintf(stderr, "DEBUG: GetTransaction()\n");
   return (tx.ReadTx(GetCoinIndex(iface), hash, hashBlock));
 }
 
@@ -742,8 +741,6 @@ CBlock *GetBlockByTx(CIface *iface, const uint256 hash)
   CBlock *block;
   uint256 hashBlock;
 
-fprintf(stderr, "DEBUG: GetBlockByTx()\n");
-  
   /* sanity */
   if (!iface)
     return (NULL);

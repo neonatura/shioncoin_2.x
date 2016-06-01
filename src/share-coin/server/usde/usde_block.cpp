@@ -2314,8 +2314,12 @@ bool USDEBlock::Truncate()
   }  
   txdb.Close();
 
-  SetBestBlockIndex(iface, cur_index->pprev);
+  SetBestBlockIndex(iface, cur_index);
+  bool ret = txdb.WriteHashBestChain(GetHash());
+  txdb.Close();
+  if (!ret)
+    return error(SHERR_INVAL, "Truncate: WriteHashBestChain '%s' failed", GetHash().GetHex().c_str());
+
   return (true);
-//  return (SetBestChain(txdb, cur_index)); /* save best chain to disk */
 }
 

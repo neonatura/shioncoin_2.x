@@ -205,7 +205,7 @@ fprintf(stderr, "DEBUG: c_getblocktemplate: error creating block template\n");
   work_id++;
   mapWork[work_id] = pblock; 
   altBlock[ifaceIndex] = pblock;
-fprintf(stderr, "DEBUG: c_getblocktemplate: added work [id %u] @ height %u for iface #%d\n", work_id, nHeight, ifaceIndex); 
+//fprintf(stderr, "DEBUG: c_getblocktemplate: added work [id %u] @ height %u for iface #%d\n", work_id, nHeight, ifaceIndex); 
 
   // Update nTime
   pblock->UpdateTime(pindexPrev);
@@ -266,9 +266,13 @@ fprintf(stderr, "DEBUG: c_getblocktemplate: added work [id %u] @ height %u for i
   return (blocktemplate_json.c_str());
 }
 
-void c_processaltblock(CBlock* pblock)
+#define MAX_NONCE_SEQUENCE 16
+void c_processaltblock(CBlock* pblock, unsigned int nMinNonce, char *xn_hex)
 {
+  CIface *iface = GetCoinByIndex(pblock->ifaceIndex);
+  shtime_t ts;
   int ifaceIndex;
+  unsigned int nNonce;
 
   for (ifaceIndex = 1; ifaceIndex < MAX_COIN_IFACE; ifaceIndex++) {
     if (pblock->ifaceIndex == ifaceIndex)
@@ -280,22 +284,29 @@ void c_processaltblock(CBlock* pblock)
     if (!alt_block)
       continue; /* no block avail for mining */
 
+    if (alt_block->hashPrevBlock != GetBestBlockChain(iface))
+      continue; /* work not up-to-date */
+
     CNode *pfrom = NULL;
     CIface *iface = GetCoinByIndex(ifaceIndex);
 
-    /* insert nonce */
-    alt_block->nNonce = pblock->nNonce;
-
-    /* rebuild merkle root hash */
+//    alt_block->nNonce = pblock->nNonce;
+    SetExtraNonce(alt_block, xn_hex);
     alt_block->hashMerkleRoot = alt_block->BuildMerkleTree();
 
-    {
+    unsigned int nMaxNonce = pblock->nNonce + MAX_NONCE_SEQUENCE;
+    uint256 hashTarget = CBigNum().SetCompact(alt_block->nBits).getuint256();
+    timing_init("ProcessAltBlock/Nonce", &ts);
+    for (nNonce = nMinNonce; nNonce < nMaxNonce; nNonce++) {
+      alt_block->nNonce = nNonce;
       uint256 hash = alt_block->GetPoWHash();
-      uint256 hashTarget = CBigNum().SetCompact(alt_block->nBits).getuint256();
-      if (hash > hashTarget) {
-fprintf(stderr, "DEBUG: c_processaltblock: alt_block is too low diff\n");
-        continue; // BLKERR_TARGET_LOW
-}
+      if (hash <= hashTarget)
+        break; 
+    }
+    timing_term("ProcessAltBlock/Nonce", &ts);
+    if (nNonce == nMaxNonce) {
+fprintf(stderr, "DEBUG: c_processaltblock: alt_block is too low diff (nonce %d-%d\n", nMinNonce, nMaxNonce);
+      continue; /* BLKERR_TARGET_LOW */
     }
 
     // Check for duplicate
@@ -319,15 +330,20 @@ fprintf(stderr, "DEBUG: c_processaltblock: alt_block accept failure\n");
     }
 
     /* success */
-fprintf(stderr, "DEBUG: ALT-COIN: c_processblock[iface #%d]: found coin via merged mining:\n", ifaceIndex);
+fprintf(stderr, "DEBUG: ALT-COIN: c_processaltblock[iface #%d]: found coin via merged mining:\n", ifaceIndex);
     alt_block->print();
   }
 
 }
 
+/**
+ * Called by miner [i.e., via stratum] to submit a new block.
+ * @see ProcessBlock()
+ */
 int c_processblock(CBlock* pblock)
 {
   blkidx_t *blockIndex = GetBlockTable(pblock->ifaceIndex);
+  CIface *iface = GetCoinByIndex(pblock->ifaceIndex);
   CNode *pfrom = NULL;
 
 /*
@@ -350,11 +366,8 @@ int c_processblock(CBlock* pblock)
     return (BLKERR_CHECKPOINT);
   }
 
-  CBlockIndex *pindexBest = GetBestBlockIndex(pblock->ifaceIndex);
-  if (pindexBest && pindexBest->GetBlockHash() != pblock->hashPrevBlock) {
-    /* wrong chain */
-fprintf(stderr, "DEBUG: c_processblock: skipping submitted block '%s'\n", pblock->GetHash().GetHex().c_str());
-    return (BLKERR_INVALID_JOB);
+  if (pblock->hashPrevBlock != GetBestBlockChain(iface)) {
+    return (BLKERR_INVALID_JOB); /* work not up-to-date */
   }
 
 
@@ -397,8 +410,10 @@ fprintf(stderr, "generated %s\n", FormatMoney(pblock->vtx[0].vout[0].nValue).c_s
 int c_submitblock(unsigned int workId, unsigned int nTime, unsigned int nNonce, char *xn_hex, char *ret_hash, double *ret_diff)
 {
   CBlock *pblock;
+  shtime_t ts;
   uint256 hash;
   uint256 hashTarget;
+  int idx;
   int err;
   bool ok;
 
@@ -408,64 +423,62 @@ int c_submitblock(unsigned int workId, unsigned int nTime, unsigned int nNonce, 
     *ret_diff = 0.0;
 
   if (mapWork.count(workId) == 0) {
-fprintf(stderr, "DEBUG: c_submitblock: task id '%u' is stale\n", workId);
     return (SHERR_TIME); /* task is stale */
-}
+  }
 
   pblock = mapWork[workId];
   if (pblock->nNonce == nNonce) {
-fprintf(stderr, "DEBUG: c_submitblock: nNonce %u is duplicate\n", nNonce);
     return (SHERR_ALREADY);
-}
+  }
 
   pblock->nTime = nTime;
   pblock->nNonce = nNonce;
+
   SetExtraNonce(pblock, xn_hex);
   pblock->hashMerkleRoot = pblock->BuildMerkleTree();
 
-
-  hash = pblock->GetPoWHash();
   hashTarget = CBigNum().SetCompact(pblock->nBits).getuint256();
+  timing_init("ProcessBlock/Nonce", &ts);
+  for (idx = 0; idx < MAX_NONCE_SEQUENCE; idx++) {
+    pblock->nNonce = nNonce + idx;
+    hash = pblock->GetPoWHash();
+    if (hash <= hashTarget) {
+      if (ret_diff) {
+        const char *hash_str = hash.ToString().c_str();
+        char nbit_str[256];
+        uint64_t nbit;
 
-  if (ret_diff) {
-    const char *hash_str = hash.ToString().c_str();
-    char nbit_str[256];
-    uint64_t nbit;
+        memset(nbit_str, '\000', sizeof(nbit_str));
+        strcpy(nbit_str, hash.ToString().substr(0,12).c_str());
 
-    memset(nbit_str, '\000', sizeof(nbit_str));
-    strcpy(nbit_str, hash.ToString().substr(0,12).c_str());
+        nbit = (uint64_t)strtoll(nbit_str, NULL, 16);
+        if (nbit == 0) nbit = 1;
 
-    nbit = (uint64_t)strtoll(nbit_str, NULL, 16);
-    if (nbit == 0) nbit = 1;
-
-    *ret_diff = ((double)0x0000ffff /  (double)(nbit & 0x00ffffff));
+        *ret_diff = ((double)0x0000ffff /  (double)(nbit & 0x00ffffff));
+      }
+      break;
+    }
   }
+  timing_term("ProcessBlock/Nonce", &ts);
 
-  if (hash > hashTarget) {
-fprintf(stderr, "DEBUG: c_submitblocK: submitting as alt coin block\n");
-    c_processaltblock(pblock); /* try nonce on alt coins */ 
-    return (0); /* share was submitted successfully */
-  }
-
-  err = c_processblock(pblock);
-  if (!err) {
-    string submit_block_hash;
-    char errbuf[1024];
-
-    submit_block_hash = pblock->GetHash().GetHex();
-    if (ret_hash)
-      strcpy(ret_hash, submit_block_hash.c_str());
-
-// fprintf(stderr, "proof-of-work found: hash(%s) target(%s)\n", hash.GetHex().c_str(), hashTarget.GetHex().c_str());
-
-    sprintf(errbuf, "submitblock[iface #%d]: mined block (%s) generated %s coins.\n", pblock->ifaceIndex, submit_block_hash.c_str(), FormatMoney(pblock->vtx[0].vout[0].nValue).c_str());
-    shcoind_log(errbuf);
-    pblock->print();
+  if (idx == MAX_NONCE_SEQUENCE) {
+    /* try nonce on alt coins */ 
+    c_processaltblock(pblock, nNonce, xn_hex);
   } else {
-fprintf(stderr, "DEBUG: submitblock: processblock error %d\n", err); 
-pblock->print();
-  }
+    err = c_processblock(pblock);
+    if (!err) {
+      string submit_block_hash;
+      char errbuf[1024];
 
+      submit_block_hash = pblock->GetHash().GetHex();
+      if (ret_hash)
+        strcpy(ret_hash, submit_block_hash.c_str());
+
+      sprintf(errbuf, "submitblock[iface #%d]: mined block (%s) generated %s coins.\n", pblock->ifaceIndex, submit_block_hash.c_str(), FormatMoney(pblock->vtx[0].vout[0].nValue).c_str());
+      shcoind_log(errbuf);
+      pblock->print();
+    }
+  }
 
   return (0);
 }

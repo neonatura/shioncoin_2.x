@@ -979,15 +979,12 @@ int64 CWallet::GetBalance() const
         {
             const CWalletTx* pcoin = &(*it).second;
             if (!pcoin->IsFinal(ifaceIndex)) {
-fprintf(stderr, "DEBUG: GetBalance: skipping non-final credit %llu\n", (unsigned long long)pcoin->GetAvailableCredit());
               continue;
             }
             if (!pcoin->IsConfirmed()) {
-fprintf(stderr, "DEBUG: GetBalance: skipping non-confirmed credit %llu\n", (unsigned long long)pcoin->GetAvailableCredit());
               continue;
             }
             nTotal += pcoin->GetAvailableCredit();
-fprintf(stderr, "DEBUG: GetBalance: nTotal += %llu\n", (unsigned long long)pcoin->GetAvailableCredit());
         }
     }
 

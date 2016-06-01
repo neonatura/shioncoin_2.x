@@ -242,6 +242,7 @@ void USDEWallet::ReacceptWalletTransactions()
         // Reaccept any txes of ours that aren't already in a block
         if (!wtx.IsCoinBase())
           wtx.AcceptWalletTransaction(txdb, false);
+//DEBUG: EraseFromWallet if dup
       }
     }
     if (!vMissingTx.empty())

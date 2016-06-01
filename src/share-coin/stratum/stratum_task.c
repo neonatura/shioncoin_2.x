@@ -5,7 +5,7 @@
 
 #define BLOCK_VERSION 1
 //#define MAX_SERVER_NONCE 128
-#define MAX_SERVER_NONCE 8
+#define MAX_SERVER_NONCE 4
 #define MAX_ROUND_TIME 600
 
 //static task_t *task_list;
@@ -124,6 +124,7 @@ fprintf(stderr, "DEBUG: check_payout: cannot get block transactions\n");
     shjson_free(&tree);
     return;
   }
+  last_payout_crc[ifaceIndex] = shcrc(block_hash, strlen(block_hash));
 
   memset(category, 0, sizeof(category));
   strncpy(category, shjson_astr(block, "category", "none"), sizeof(category) - 1);
@@ -164,6 +165,7 @@ fprintf(stderr, "DEBUG: generate amount < 1\n");
       reward += weight * user->block_tot;
       if (reward >= 0.0000001) { 
         user->balance[ifaceIndex] += reward;
+fprintf(stderr, "DEBUG: user '%s' += reward %d\n", user->worker, reward);
       }
     }
 
@@ -176,7 +178,6 @@ fprintf(stderr, "DEBUG: generate amount < 1\n");
 
   shjson_free(&tree);
 
-  last_payout_crc[ifaceIndex] = shcrc(block_hash, strlen(block_hash));
 
 }
 
@@ -197,6 +198,8 @@ static void commit_payout(int ifaceIndex, int block_height)
     strtok(uname, ".");
     if (!*uname)
       continue;
+/*
+ * if "anonymous" conitnue */
 
     if (0 == setblockreward(ifaceIndex, uname, user->balance[ifaceIndex])) {
       user->reward_val = user->balance[ifaceIndex];
