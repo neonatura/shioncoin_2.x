@@ -141,7 +141,7 @@ bool usde_FillBlockIndex()
     if (!pindexNew->CheckIndex())
       return error(SHERR_INVAL, "LoadBlockIndex() : CheckIndex failed at height %d", pindexNew->nHeight);
 
-    if (nHeight == 0)
+    if (nHeight == 0 && pindexNew->GetBlockHash() == usde_hashGenesisBlock)
       USDEBlock::pindexGenesisBlock = pindexNew;
 
     if (!pindexBest && lastIndex) {
@@ -151,7 +151,19 @@ bool usde_FillBlockIndex()
 
     lastIndex = pindexNew;
   }
-  SetBestBlockIndex(iface, pindexBest);
+
+  CBlockIndex *pindex;
+  if (USDEBlock::pindexGenesisBlock) {
+    nHeight = 0;
+    for (pindex = USDEBlock::pindexGenesisBlock; pindex && pindex->pnext; pindex = pindex->pnext) {
+      if (pindex->nHeight != nHeight)
+        fprintf(stderr, "DEBUG: FillBlockIndex: pindex->nHeight(%d) nHeight(%d)\n", pindex->nHeight, nHeight); 
+      pindex->nHeight = nHeight++;
+    }
+    if (pindex) {
+      SetBestBlockIndex(iface, pindex);
+    }
+  }
 
   return true;
 }

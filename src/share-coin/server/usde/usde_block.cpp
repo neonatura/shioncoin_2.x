@@ -1805,6 +1805,7 @@ bool usde_AcceptBlock(USDEBlock *pblock, bool bForce)
     return error(SHERR_INVAL, "AcceptBlock() : prev block '%s' not found: block index has NULL record for hash.", pblock->hashPrevBlock.GetHex().c_str());
   }
   int nHeight = pindexPrev->nHeight+1;
+fprintf(stderr, "DEBUG: ACCEPT: attempting block '%s' for height %d..\n", hash.GetHex().c_str(), nHeight); 
 
   // Check proof of work
   unsigned int nBits = pblock->GetNextWorkRequired(pindexPrev);
@@ -1853,13 +1854,14 @@ bool usde_AcceptBlock(USDEBlock *pblock, bool bForce)
     return error(SHERR_INVAL, "AcceptBlock() : rejected by checkpoint lockin at %d", nHeight);
   }
 
+#if 0
   CBlock *origBlock = GetBlockByHeight(iface, nHeight);
-
   timing_init("USDE:WriteBlock/Accept", &ts);
   ret = pblock->WriteBlock(nHeight);
   timing_term("USDE:WriteBlock/Accept", &ts);
   if (!ret)
     return error(SHERR_INVAL, "USDE: AcceptBlock(): error writing block to height %d", nHeight);
+#endif
 
 
   timing_init("USDE:AddToBlockIndex/Accept", &ts);
@@ -1872,17 +1874,28 @@ bool usde_AcceptBlock(USDEBlock *pblock, bool bForce)
  * what is origBlock's index's pnext now?
  * inconsistency with ConnectBlock's WriteBlock?
  */
+#if 0
     if (origBlock) {
       /* revert to original block in main chain upon failure. */
       origBlock->WriteBlock(nHeight);
       fprintf(stderr, "DEBUG: AcceptBlock: reverted block '%s' @ height %d\n", origBlock->GetHash().GetHex().c_str(), nHeight);
       delete origBlock;
     }
+#endif
     return error(SHERR_IO, "USDEBlock::AcceptBlock: error adding hash '%s' to block-index at height %d.", pblock->GetHash().GetHex().c_str(), nHeight);
   }
 
+/* now writes block after adding to block-index */
+  timing_init("USDE:WriteBlock/Accept", &ts);
+  ret = pblock->WriteBlock(nHeight);
+  timing_term("USDE:WriteBlock/Accept", &ts);
+  if (!ret)
+    return error(SHERR_INVAL, "USDE: AcceptBlock(): error writing block to height %d", nHeight);
+
+#if 0
   if (origBlock)
     delete origBlock;
+#endif
 
   /* Relay inventory, but don't relay old inventory during initial block download */
   if (GetBestBlockChain(iface) == hash)
@@ -2073,11 +2086,13 @@ bool USDEBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)
     if (nSigOps > MAX_BLOCK_SIGOPS(iface))
       return error(SHERR_INVAL, "ConnectBlock() : too many sigops");
 
+#if 0
     memcpy(b_hash, tx.GetHash().GetRaw(), sizeof(bc_hash_t));
     err = bc_find(bc, b_hash, &nTxPos); 
     if (err) {
       return error(SHERR_INVAL, "USDEBlock::ConncetBlock: error finding tx hash.");
     }
+#endif
 
     MapPrevTx mapInputs;
     CDiskTxPos posThisTx(USDE_COIN_IFACE, nBlockPos, nTxPos);
@@ -2134,6 +2149,15 @@ return false;
 
   if (pindex->pprev)
   {
+    if (pindex->pprev->nHeight + 1 != pindex->nHeight) {
+fprintf(stderr, "DEBUG: ConnectBlock: block-index for hash '%s' height changed from %d to %d.\n", pindex->GetBlockHash().GetHex().c_str(), pindex->nHeight, (pindex->pprev->nHeight + 1));
+      pindex->nHeight = pindex->pprev->nHeight + 1;
+    }
+    if (!WriteBlock(pindex->nHeight)) {
+      return (error(SHERR_INVAL, "ConnectBlock: error writing block hash '%s' to height %d\n", GetHash().GetHex().c_str(), pindex->nHeight));
+    }
+
+fprintf(stderr, "DEBUG: CONNECT: hash '%s' to height %d\n", GetHash().GetHex().c_str(), pindex->nHeight);
 #if 0
     // Update block index on disk without changing it in memory.
     // The memory index structure will be changed after the db commits.
@@ -2144,11 +2168,6 @@ return false;
 #endif
   }
 
-/* DEBUG: TODO: should this not occur? should AcceptBlock not do WriteBlock instead? */
-  if (!WriteBlock(pindex->nHeight)) {
-    return (error(SHERR_INVAL, "ConnectBlock: error writing block hash '%s' to height %d\n", GetHash().GetHex().c_str(), pindex->nHeight));
-  }
-fprintf(stderr, "DEBUG: CONNECT: wrote hash '%s' to height %d\n", GetHash().GetHex().c_str(), pindex->nHeight);
 
 /* DEBUG: TODO: InitWalletScan() */
   // Watch for transactions paying to me
