@@ -1358,8 +1358,8 @@ fprintf(stderr, "DEBUG: SHC_Reorganize(): error reorganizing.\n");
     BOOST_REVERSE_FOREACH(CBlockIndex *pindex, vpindexSecondary)
     {
       SHCBlock block;
-      if (!block.ReadFromDisk(pindex))
-      {
+      if (!block.ReadFromDisk(pindex) &&
+          !block.ReadArchBlock(pindex->GetBlockHash())) {
         error(SHERR_IO, "SetBestChain() : ReadFromDisk failed\n");
         break;
       }

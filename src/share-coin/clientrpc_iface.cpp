@@ -399,17 +399,16 @@ int CommandLineRPC(int argc, char *argv[])
   iface = NULL;
   memset(prog_name, 0, sizeof(prog_name));
   strncpy(prog_name, argv[0], sizeof(prog_name));
-  ptr = strrchr(prog_name, '.'); /* from end */
-  if (ptr && 0 == strcasecmp(ptr, ".exe"))
-    ptr = strchr(prog_name, '.'); /* from begin */
-  if (ptr) {
-    ptr++;
-  } else {
+  ptr = strrchr(prog_name, '/'); /* from end */
+#ifdef _WIN32
+  if (!ptr)
+    ptr = strrchr(prog_name, '\\'); /* from end */
+#endif
+  if (!ptr)
     ptr = prog_name;
-  }
-  if (*ptr == '/' || *ptr == '\\')
-    ptr++; 
-  strtok(ptr, "./\\");
+  else
+    ptr++;
+  strtok(ptr, ".");
   if (!*ptr) ptr = "shc"; /* default */
   iface = (const char *)ptr;
 

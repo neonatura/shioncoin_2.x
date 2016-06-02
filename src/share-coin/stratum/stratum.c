@@ -84,8 +84,10 @@ static void stratum_close_free(void)
   user_t *peer_next;
   user_t *peer_last;
   user_t *peer;
+  time_t now;
 
   peer_last = NULL;
+  now = time(NULL);
   for (peer = client_list; peer; peer = peer_next) {
     peer_next = peer->next;
 
@@ -93,6 +95,9 @@ static void stratum_close_free(void)
       continue;
 
     if (peer->fd == -1) {
+      if (peer->round_stamp + 3600 >= now)
+        continue; /* less than 60min */
+
       if (peer_last)
         peer_last->next = peer_next;
       else
@@ -123,7 +128,7 @@ static void stratum_timer(void)
     t = get_unet_table(peer->fd);
     if (!t || t->fd == UNDEFINED_SOCKET) {
       continue;
-}
+    }
 
 
 #if 0

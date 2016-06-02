@@ -1550,8 +1550,8 @@ Value rpc_wallet_export(CIface *iface, const Array& params, bool fHelp)
 
   if (fHelp || params.size() != 1)
     throw runtime_error(
-        "wallet.export <path>\n"
-        "Exports a wallet.dat to the path (dir or file) specified.");
+        "backupwallet <path>\n"
+        "Export the coin wallet to the specified path (dir or file).");
 
   CWallet *wallet = GetWallet(iface);
   if (!wallet)
@@ -2129,7 +2129,7 @@ Value rpc_wallet_move(CIface *iface, const Array& params, bool fHelp)
 
   if (fHelp || params.size() < 3 || params.size() > 5)
     throw runtime_error(
-        "move <fromaccount> <toaccount> <amount> [minconf=1] [comment]\n"
+        "wallet.move <fromaccount> <toaccount> <amount> [minconf=1] [comment]\n"
         "Move from one account in your wallet to another.");
 
   string strFrom = AccountFromValue(params[0]);
@@ -4185,6 +4185,7 @@ static const CRPCCommand vRPCCommands[] =
     { "wallet.addr",          &rpc_wallet_addr},
     { "wallet.accounts",      &rpc_wallet_accounts},
     { "wallet.balance",       &rpc_wallet_balance},
+    { "wallet.export",        &rpc_wallet_export},
     { "wallet.get",           &rpc_wallet_get},
     { "wallet.info",          &rpc_wallet_info},
     { "wallet.import",        &rpc_wallet_import},

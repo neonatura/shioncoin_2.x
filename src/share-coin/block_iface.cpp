@@ -205,7 +205,7 @@ fprintf(stderr, "DEBUG: c_getblocktemplate: error creating block template\n");
   work_id++;
   mapWork[work_id] = pblock; 
   altBlock[ifaceIndex] = pblock;
-//fprintf(stderr, "DEBUG: c_getblocktemplate: added work [id %u] @ height %u for iface #%d\n", work_id, nHeight, ifaceIndex); 
+fprintf(stderr, "DEBUG: c_getblocktemplate: added work [id %u] @ height %u for iface #%d\n", work_id, nHeight, ifaceIndex); 
 
   // Update nTime
   pblock->UpdateTime(pindexPrev);
@@ -269,7 +269,6 @@ fprintf(stderr, "DEBUG: c_getblocktemplate: error creating block template\n");
 #define MAX_NONCE_SEQUENCE 16
 void c_processaltblock(CBlock* pblock, unsigned int nMinNonce, char *xn_hex)
 {
-  CIface *iface = GetCoinByIndex(pblock->ifaceIndex);
   shtime_t ts;
   int ifaceIndex;
   unsigned int nNonce;
@@ -284,17 +283,17 @@ void c_processaltblock(CBlock* pblock, unsigned int nMinNonce, char *xn_hex)
     if (!alt_block)
       continue; /* no block avail for mining */
 
+    CIface *iface = GetCoinByIndex(ifaceIndex);
     if (alt_block->hashPrevBlock != GetBestBlockChain(iface))
       continue; /* work not up-to-date */
 
     CNode *pfrom = NULL;
-    CIface *iface = GetCoinByIndex(ifaceIndex);
 
 //    alt_block->nNonce = pblock->nNonce;
     SetExtraNonce(alt_block, xn_hex);
     alt_block->hashMerkleRoot = alt_block->BuildMerkleTree();
 
-    unsigned int nMaxNonce = pblock->nNonce + MAX_NONCE_SEQUENCE;
+    unsigned int nMaxNonce = nMinNonce + MAX_NONCE_SEQUENCE;
     uint256 hashTarget = CBigNum().SetCompact(alt_block->nBits).getuint256();
     timing_init("ProcessAltBlock/Nonce", &ts);
     for (nNonce = nMinNonce; nNonce < nMaxNonce; nNonce++) {

@@ -1682,10 +1682,9 @@ bool USDEBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
     BOOST_REVERSE_FOREACH(CBlockIndex *pindex, vpindexSecondary)
     {
       USDEBlock block;
-      if (!block.ReadFromDisk(pindex))
-      {
-        if (!block.ReadArchBlock(pindex->GetBlockHash()))
-          error(SHERR_IO, "SetBestChain() : ReadFromDisk failed\n");
+      if (!block.ReadFromDisk(pindex) &&
+          !block.ReadArchBlock(pindex->GetBlockHash())) {
+        error(SHERR_IO, "SetBestChain() : ReadFromDisk failed\n");
         break;
       }
       if (!txdb.TxnBegin()) {
@@ -1867,6 +1866,12 @@ bool usde_AcceptBlock(USDEBlock *pblock, bool bForce)
   ret = pblock->AddToBlockIndex();
   timing_term("USDE:AddToBlockIndex/Accept", &ts);
   if (!ret) {
+/*
+ * notes:
+ * may need to clear nHeight+1
+ * what is origBlock's index's pnext now?
+ * inconsistency with ConnectBlock's WriteBlock?
+ */
     if (origBlock) {
       /* revert to original block in main chain upon failure. */
       origBlock->WriteBlock(nHeight);
@@ -2139,11 +2144,13 @@ return false;
 #endif
   }
 
+/* DEBUG: TODO: should this not occur? should AcceptBlock not do WriteBlock instead? */
   if (!WriteBlock(pindex->nHeight)) {
     return (error(SHERR_INVAL, "ConnectBlock: error writing block hash '%s' to height %d\n", GetHash().GetHex().c_str(), pindex->nHeight));
   }
 fprintf(stderr, "DEBUG: CONNECT: wrote hash '%s' to height %d\n", GetHash().GetHex().c_str(), pindex->nHeight);
 
+/* DEBUG: TODO: InitWalletScan() */
   // Watch for transactions paying to me
   BOOST_FOREACH(CTransaction& tx, vtx)
     SyncWithWallets(iface, tx, this);
@@ -2282,44 +2289,60 @@ bool USDEBlock::IsOrphan()
 }
 
 
-bool USDEBlock::Truncate()
+bool usde_Truncate(uint256 hash)
 {
   blkidx_t *blockIndex = GetBlockTable(USDE_COIN_IFACE);
   CIface *iface = GetCoinByIndex(USDE_COIN_IFACE);
-  uint256 hash = GetHash();
+  CBlockIndex *pBestIndex;
   CBlockIndex *cur_index;
+  CBlockIndex *pindex;
+  unsigned int nHeight;
   int err;
 
-  if (!blockIndex->count(hash))
+  if (!blockIndex || !blockIndex->count(hash))
     return error(SHERR_INVAL, "Erase: block not found in block-index.");
 
   cur_index = (*blockIndex)[hash];
   if (!cur_index)
     return error(SHERR_INVAL, "Erase: block not found in block-index.");
 
-  bc_t *bc = GetBlockChain(iface);
-  int nBestHeight = GetBestHeight(iface);
-  int nHeight;
+  pBestIndex = GetBestBlockIndex(iface);
+  if (!pBestIndex)
+    return error(SHERR_INVAL, "Erase: no block-chain established.");
+  if (cur_index->nHeight > pBestIndex->nHeight)
+    return error(SHERR_INVAL, "Erase: height is not valid.");
 
-  USDETxDB txdb;
-  for (nHeight = nBestHeight; nHeight > cur_index->nHeight; nHeight--) {
+  bc_t *bc = GetBlockChain(iface);
+  unsigned int nMinHeight = cur_index->nHeight;
+  unsigned int nMaxHeight = (bc_idx_next(bc)-1);
+    
+  USDETxDB txdb; /* OPEN */
+
+  for (nHeight = nMaxHeight; nHeight > nMinHeight; nHeight--) {
     USDEBlock block;
-    if (!block.ReadBlock(nHeight))
-      continue;
-    hash = block.GetHash(); 
-    if (!blockIndex->count(hash))
-      continue;
-    block.DisconnectBlock(txdb, (*blockIndex)[hash]);
+    if (block.ReadBlock(nHeight)) {
+      uint256 t_hash = block.GetHash();
+      if (hash == cur_index->GetBlockHash())
+        break; /* bad */
+      if (blockIndex->count(t_hash) != 0)
+        block.DisconnectBlock(txdb, (*blockIndex)[t_hash]);
+    }
     bc_clear(bc, nHeight);
   }  
-  txdb.Close();
 
   SetBestBlockIndex(iface, cur_index);
-  bool ret = txdb.WriteHashBestChain(GetHash());
-  txdb.Close();
-  if (!ret)
-    return error(SHERR_INVAL, "Truncate: WriteHashBestChain '%s' failed", GetHash().GetHex().c_str());
+  bool ret = txdb.WriteHashBestChain(cur_index->GetBlockHash());
 
+  txdb.Close(); /* CLOSE */
+
+  if (!ret)
+    return error(SHERR_INVAL, "Truncate: WriteHashBestChain '%s' failed", hash.GetHex().c_str());
+
+  cur_index->pnext = NULL;
   return (true);
+}
+bool USDEBlock::Truncate()
+{
+  return (usde_Truncate(GetHash()));
 }
 

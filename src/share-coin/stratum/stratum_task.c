@@ -71,7 +71,7 @@ void incr_task_work_time(void)
 #endif
 
 static int work_idx = 0;
-static char last_payout_crc[MAX_COIN_IFACE];
+static uint64_t last_payout_crc[MAX_COIN_IFACE];
 
 /**
  * Monitors when a new accepted block becomes confirmed.
@@ -198,8 +198,9 @@ static void commit_payout(int ifaceIndex, int block_height)
     strtok(uname, ".");
     if (!*uname)
       continue;
-/*
- * if "anonymous" conitnue */
+
+    if (0 == strcasecmp(uname, "anonymous"))
+      continue; /* public */
 
     if (0 == setblockreward(ifaceIndex, uname, user->balance[ifaceIndex])) {
       user->reward_val = user->balance[ifaceIndex];
