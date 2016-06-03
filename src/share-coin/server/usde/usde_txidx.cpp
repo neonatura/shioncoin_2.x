@@ -129,12 +129,20 @@ fprintf(stderr, "DEBUG: usde_FillBlockIndex: error reading block height %d in ma
     }
     hash = block.GetHash();
 
-    if (blockIndex->count(block.hashPrevBlock) == 0) {
-      fprintf(stderr, "DEBUG: usde_FillBlockIndex: stopping at orphan '%s' @ height %d\n", hash.GetHex().c_str(), nHeight);
+    if (nHeight == 0) {
+      if (hash != usde_hashGenesisBlock) {
+fprintf(stderr, "DEBUG: usde_FillBlockIndex: stopping at invalid genesis '%s' @ height %d\n", hash.GetHex().c_str(), nHeight);
+        break; /* invalid genesis */
+      }
+    } else if (blockIndex->count(block.hashPrevBlock) == 0) {
+fprintf(stderr, "DEBUG: usde_FillBlockIndex: stopping at orphan '%s' @ height %d\n", hash.GetHex().c_str(), nHeight);
       break;
     }
 
     CBlockIndex* pindexNew = InsertBlockIndex(blockIndex, hash);
+    if (nHeight == 0) {
+      USDEBlock::pindexGenesisBlock = pindexNew;
+    }
     pindexNew->pprev = lastIndex;//InsertBlockIndex(blockIndex, block.hashPrevBlock);
     if (lastIndex) lastIndex->pnext = pindexNew;
 //    if (lastIndex && lastIndex->pprev == pindexNew) pindexNew->pnext = InsertBlockIndex(blockIndex, lastIndex->GetBlockHash());   
