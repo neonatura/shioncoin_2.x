@@ -1842,6 +1842,40 @@ bool CBlock::WriteBlock(uint64_t nHeight)
   return (true);
 }
 
+bool CBlock::WriteArchBlock()
+{
+  CIface *iface = GetCoinByIndex(ifaceIndex);
+  bc_t *bc = GetBlockChain(iface);
+  uint64_t idx_next;
+  unsigned int blockPos;
+  long sBlockLen;
+  char *sBlockData;
+  int n_height;
+  int err;
+
+  if (!bc)
+    return (false);
+
+  uint256 hash = GetHash();
+
+  /* serialize into binary */
+  CDataStream sBlock(SER_DISK, CLIENT_VERSION);
+  sBlock << *this;
+  sBlockLen = sBlock.size();
+  sBlockData = (char *)calloc(sBlockLen, sizeof(char));
+  if (!sBlockData)
+    return error(SHERR_NOMEM, "allocating %d bytes for block data\n", (int)sBlockLen);
+  sBlock.read(sBlockData, sBlockLen);
+  n_height = bc_arch_write(bc, hash.GetRaw(), sBlockData, sBlockLen);
+  free(sBlockData);
+  if (n_height < 0)
+    return error(SHERR_INVAL, "block-chain write: %s", sherrstr(n_height));
+
+  Debug("WriteArchBlock: hash '%s'\n", hash.GetHex().c_str());
+
+  return (true);
+}
+
 bool CBlock::DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex)
 {
   CIface *iface = GetCoinByIndex(ifaceIndex);

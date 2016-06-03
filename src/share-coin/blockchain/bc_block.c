@@ -553,3 +553,56 @@ int bc_clear(bc_t *bc, bcsize_t pos)
 }
 
 
+static int _bc_arch_write(bc_t *bc, bc_hash_t hash, void *raw_data, int data_len)
+{
+  unsigned char *data = (unsigned char *)raw_data;
+  bcsize_t pos;
+  bc_idx_t idx;
+  bc_map_t *map;
+  char ext[64];
+  int jrnl;
+  int err;
+
+  /* use last journal */
+  jrnl = bc_journal(bc_idx_next(bc));
+
+  err = bc_alloc(bc, jrnl);
+  if (err)
+    return (err);
+
+  map = bc->data_map + jrnl;
+  if (!*map->ext)
+    sprintf(map->ext, "%u", idx.jrnl);
+
+  /* finialize block index */
+  memset(&idx, 0, sizeof(idx));
+  idx.jrnl = jrnl;
+  idx.size = data_len;
+  idx.of = map->hdr->of;
+  idx.crc = shcrc32(data, data_len);
+  memcpy(idx.hash, hash, sizeof(bc_hash_t));
+
+  /* store serialized block data */
+  err = bc_map_append(bc, map, data, data_len);
+  if (err < 0)
+    return (err);
+
+  /* store archived block index */
+  err = bc_arch_add(bc, &idx);
+  if (err < 0)
+    return (err);
+
+  return (0);
+}
+
+int bc_arch_write(bc_t *bc, bc_hash_t hash, void *raw_data, int data_len)
+{
+  int err;
+
+  if (!shlock_open_str(BCMAP_LOCK, 0))
+    return (SHERR_NOLCK);
+
+  err = _bc_arch_write(bc, hash, raw_data, data_len);
+  shlock_close_str(BCMAP_LOCK);
+  return (err);
+}

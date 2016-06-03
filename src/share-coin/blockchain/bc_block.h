@@ -65,6 +65,8 @@ uint32_t bc_journal(int pos);
 
 int bc_arch(bc_t *bc, bcsize_t pos, unsigned char **data_p, size_t *data_len_p);
 
+int bc_arch_write(bc_t *bc, bc_hash_t hash, void *raw_data, int data_len);
+
 
 
 #endif /* ndef __BLOCKCHAIN__BC_BLOCK_H__ */

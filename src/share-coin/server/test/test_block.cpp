@@ -1371,10 +1371,7 @@ fprintf(stderr, "DEBUG: REORGANIZE: Connect %i blocks; %s..%s\n", vConnect.size(
     if (!block.ReadFromDisk(pindex)) {
       if (!block.ReadArchBlock(pindex->GetBlockHash()))
         return error(SHERR_INVAL, "Reorganize() : ReadFromDisk for connect failed");
-fprintf(stderr, "DEBUG: REORG: connecting main-chain block '%s' @ height %d\n", block.GetHash().GetHex().c_str(), pindex->nHeight);
-    } else {
-fprintf(stderr, "DEBUG: REORG: connecting arch-chain block '%s' @ height %d\n", block.GetHash().GetHex().c_str(), pindex->nHeight);
-}
+    }
     if (!block.ConnectBlock(txdb, pindex))
     {
       // Invalid block

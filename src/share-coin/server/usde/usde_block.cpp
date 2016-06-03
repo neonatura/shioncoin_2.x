@@ -1351,7 +1351,7 @@ fprintf(stderr, "DEBUG: REORGANIZE: Connect %i blocks; %s..%s\n", vConnect.size(
     USDEBlock block;
     if (!block.ReadFromDisk(pindex)) {
       if (!block.ReadArchBlock(pindex->GetBlockHash()))
-        return error(SHERR_IO, "USDE_Reorganize: Disconnect: block hash '%s' [height %d] could not be loaded.", pindex->GetBlockHash(), pindex->nHeight);
+        return error(SHERR_IO, "USDE_Reorganize: Disconnect: block hash '%s' [height %d] could not be loaded.", pindex->GetBlockHash().GetHex().c_str(), pindex->nHeight);
     }
     if (!block.DisconnectBlock(txdb, pindex))
       return error(SHERR_INVAL, "Reorganize() : DisconnectBlock %s failed", pindex->GetBlockHash().ToString().c_str());
@@ -1370,7 +1370,7 @@ fprintf(stderr, "DEBUG: REORGANIZE: Connect %i blocks; %s..%s\n", vConnect.size(
     USDEBlock block;
     if (!block.ReadFromDisk(pindex)) {
       if (!block.ReadArchBlock(pindex->GetBlockHash()))
-        return error(SHERR_IO, "USDE_Reorganize: Connect: block hash '%s' [height %d] could not be loaded.", pindex->GetBlockHash(), pindex->nHeight);
+        return error(SHERR_IO, "USDE_Reorganize: Connect: block hash '%s' [height %d] could not be loaded.", pindex->GetBlockHash().GetHex().c_str(), pindex->nHeight);
     }
 
     if (!block.ConnectBlock(txdb, pindex))
@@ -1868,6 +1868,8 @@ fprintf(stderr, "DEBUG: ACCEPT: attempting block '%s' for height %d..\n", hash.G
   ret = pblock->AddToBlockIndex();
   timing_term("USDE:AddToBlockIndex/Accept", &ts);
   if (!ret) {
+    /* write block directly to arch */
+    pblock->WriteArchBlock();
 /*
  * notes:
  * may need to clear nHeight+1

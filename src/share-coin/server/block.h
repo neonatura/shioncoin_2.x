@@ -959,6 +959,7 @@ class CBlock : public CBlockHeader
     void UpdateTime(const CBlockIndex* pindexPrev);
     bool DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex);
     bool WriteBlock(uint64_t nHeight);
+    bool WriteArchBlock();
     bool ReadFromDisk(const CBlockIndex* pindex, bool fReadTransactions=true);
     const CTransaction *GetTx(uint256 hash);
 
