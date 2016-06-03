@@ -1756,9 +1756,16 @@ bool CTransaction::FetchInputs(CTxDB& txdb, const map<uint256, CTxIndex>& mapTes
     }
     else
     {
+   //   CTransaction *tx = pblockNew->GetTx(prevout.hash);
+      /* Get prev tx from disk */
+      if (!txPrev.ReadTx(txdb.ifaceIndex, prevout.hash))
+        return error(SHERR_INVAL, "FetchInputs() : for tx %s, ReadFromDisk prev tx %s failed", GetHash().ToString().c_str(),  prevout.hash.ToString().c_str());
+
+#if 0
       // Get prev tx from disk
       if (!txPrev.ReadFromDisk(txindex.pos))
         return error(SHERR_INVAL, "FetchInputs() : %s ReadFromDisk prev tx %s failed", GetHash().ToString().substr(0,10).c_str(),  prevout.hash.ToString().substr(0,10).c_str());
+#endif
     }
   }
 

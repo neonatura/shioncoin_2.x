@@ -52,11 +52,14 @@ int GetCoinIndex(coin_iface_t *iface)
   int idx;
 
   if (!iface) {
-fprintf(stderr, "DEBUG: error: GetCoinIndex(NULL)\n");
+    fprintf(stderr, "DEBUG: error: GetCoinIndex(NULL)\n");
     return (-1);
-}
+  }
 
   for (idx = 0; idx < MAX_COIN_IFACE; idx++) {
+#ifndef TEST_SHCOIND
+    if (idx == 0) continue;
+#endif
     if (0 == strcmp(iface->name, _iface_table[idx]->name))
       return (idx);
   }

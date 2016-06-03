@@ -266,52 +266,55 @@ fprintf(stderr, "DEBUG: c_getblocktemplate: added work [id %u] @ height %u for i
   return (blocktemplate_json.c_str());
 }
 
-#define MAX_NONCE_SEQUENCE 16
-void c_processaltblock(CBlock* pblock, unsigned int nMinNonce, char *xn_hex)
+#define MAX_NONCE_SEQUENCE 32
+void c_processaltblock(int altIndex, unsigned int nMinNonce, char *xn_hex)
 {
   shtime_t ts;
   int ifaceIndex;
   unsigned int nNonce;
+  int idx;
 
   for (ifaceIndex = 1; ifaceIndex < MAX_COIN_IFACE; ifaceIndex++) {
-    if (pblock->ifaceIndex == ifaceIndex)
+    if (altIndex == ifaceIndex)
       continue; /* already processed block */
+
+    CIface *iface = GetCoinByIndex(ifaceIndex);
+    if (!iface->enabled)
+      continue;
     if (GetWallet(ifaceIndex) == NULL)
       continue; /* disabled */
 
     CBlock *alt_block = altBlock[ifaceIndex];
-    if (!alt_block)
+    if (!alt_block || !alt_block->ifaceIndex)
       continue; /* no block avail for mining */
 
-    CIface *iface = GetCoinByIndex(ifaceIndex);
     if (alt_block->hashPrevBlock != GetBestBlockChain(iface))
       continue; /* work not up-to-date */
 
     CNode *pfrom = NULL;
 
-//    alt_block->nNonce = pblock->nNonce;
+      alt_block->nNonce = nNonce; /* jic */
     SetExtraNonce(alt_block, xn_hex);
     alt_block->hashMerkleRoot = alt_block->BuildMerkleTree();
 
-    unsigned int nMaxNonce = nMinNonce + MAX_NONCE_SEQUENCE;
-    uint256 hashTarget = CBigNum().SetCompact(alt_block->nBits).getuint256();
     timing_init("ProcessAltBlock/Nonce", &ts);
-    for (nNonce = nMinNonce; nNonce < nMaxNonce; nNonce++) {
-      alt_block->nNonce = nNonce;
+    uint256 hashTarget = CBigNum().SetCompact(alt_block->nBits).getuint256();
+    for (idx = 0; idx < MAX_NONCE_SEQUENCE; idx++) {
+      alt_block->nNonce = nMinNonce + idx;
       uint256 hash = alt_block->GetPoWHash();
       if (hash <= hashTarget)
         break; 
     }
     timing_term("ProcessAltBlock/Nonce", &ts);
-    if (nNonce == nMaxNonce) {
-fprintf(stderr, "DEBUG: c_processaltblock: alt_block is too low diff (nonce %d-%d\n", nMinNonce, nMaxNonce);
+    if (idx == MAX_NONCE_SEQUENCE) {
       continue; /* BLKERR_TARGET_LOW */
     }
+fprintf(stderr, "DEBUG: c_processaltblock[iface #%d]: found alt block to submit @ nonce %u.\n", ifaceIndex, (unsigned int)nNonce); 
 
     // Check for duplicate
     uint256 hash = alt_block->GetHash();
     blkidx_t *blockIndex = GetBlockTable(ifaceIndex);
-    if (blockIndex->count(hash) || alt_block->IsOrphan()) {
+    if (blockIndex->count(hash)) {// || alt_block->IsOrphan())
 fprintf(stderr, "DEBUG: c_processaltblock: alt_block is duplicate\n");
       continue;  // BLKERR_DUPLICATE_BLOCK
     }
@@ -328,9 +331,12 @@ fprintf(stderr, "DEBUG: c_processaltblock: alt_block accept failure\n");
       continue; // BLKERR_INVALID_BLOCK
     }
 
+    break;
+#if 0
     /* success */
 fprintf(stderr, "DEBUG: ALT-COIN: c_processaltblock[iface #%d]: found coin via merged mining:\n", ifaceIndex);
     alt_block->print();
+#endif
   }
 
 }
@@ -416,6 +422,8 @@ int c_submitblock(unsigned int workId, unsigned int nTime, unsigned int nNonce, 
   int err;
   bool ok;
 
+fprintf(stderr, "DEBUG: c_submitblock()/start\n");
+
   if (ret_hash)
     ret_hash[0] = '\000';
   if (ret_diff)
@@ -436,8 +444,8 @@ int c_submitblock(unsigned int workId, unsigned int nTime, unsigned int nNonce, 
   SetExtraNonce(pblock, xn_hex);
   pblock->hashMerkleRoot = pblock->BuildMerkleTree();
 
-  hashTarget = CBigNum().SetCompact(pblock->nBits).getuint256();
   timing_init("ProcessBlock/Nonce", &ts);
+  hashTarget = CBigNum().SetCompact(pblock->nBits).getuint256();
   for (idx = 0; idx < MAX_NONCE_SEQUENCE; idx++) {
     pblock->nNonce = nNonce + idx;
     hash = pblock->GetPoWHash();
@@ -462,7 +470,7 @@ int c_submitblock(unsigned int workId, unsigned int nTime, unsigned int nNonce, 
 
   if (idx == MAX_NONCE_SEQUENCE) {
     /* try nonce on alt coins */ 
-    c_processaltblock(pblock, nNonce, xn_hex);
+    c_processaltblock(pblock->ifaceIndex, nNonce, xn_hex);
   } else {
     err = c_processblock(pblock);
     if (!err) {
@@ -477,7 +485,9 @@ int c_submitblock(unsigned int workId, unsigned int nTime, unsigned int nNonce, 
       shcoind_log(errbuf);
       pblock->print();
     }
+
   }
+fprintf(stderr, "DEBUG: c_submitblock()/end\n");
 
   return (0);
 }

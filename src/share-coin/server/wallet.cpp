@@ -39,6 +39,10 @@ CWallet* pwalletMaster[MAX_COIN_IFACE];
 
 CWallet *GetWallet(int iface_idx)
 {
+#ifndef TEST_SHCOIND
+  if (iface_idx == 0)
+    return (NULL)
+#endif
 
   if (iface_idx < 0 || iface_idx >= MAX_COIN_IFACE)
     return (NULL);
