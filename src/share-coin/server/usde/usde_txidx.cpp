@@ -105,6 +105,70 @@ bool usde_FillBlockIndex()
   CIface *iface = GetCoinByIndex(USDE_COIN_IFACE);
   blkidx_t *blockIndex = GetBlockTable(USDE_COIN_IFACE);
   bc_t *bc = GetBlockChain(iface);
+  CBlockIndex *lastIndex;
+  USDEBlock block;
+  uint256 hash;
+  int nHeight;
+
+  bool checkBest = false;
+  uint256 hashBestChain;
+  USDETxDB txdb;
+  if (txdb.ReadHashBestChain(hashBestChain))
+    checkBest = true;
+  txdb.Close();
+
+  int nMaxIndex = bc_idx_next(bc);
+
+  lastIndex = NULL;
+  for (nHeight = 0; nHeight < nMaxIndex; nHeight++) {
+    if (0 != bc_idx_get(bc, nHeight, NULL))
+      break;
+    if (!block.ReadBlock(nHeight)) {
+fprintf(stderr, "DEBUG: usde_FillBlockIndex: error reading block height %d in main chain.\n", nHeight);
+      break;
+    }
+    hash = block.GetHash();
+
+    if (blockIndex->count(block.hashPrevBlock) == 0) {
+      fprintf(stderr, "DEBUG: usde_FillBlockIndex: stopping at orphan '%s' @ height %d\n", hash.GetHex().c_str(), nHeight);
+      break;
+    }
+
+    CBlockIndex* pindexNew = InsertBlockIndex(blockIndex, hash);
+    pindexNew->pprev = lastIndex;//InsertBlockIndex(blockIndex, block.hashPrevBlock);
+    if (lastIndex) lastIndex->pnext = pindexNew;
+//    if (lastIndex && lastIndex->pprev == pindexNew) pindexNew->pnext = InsertBlockIndex(blockIndex, lastIndex->GetBlockHash());   
+
+    pindexNew->nHeight        = nHeight;
+    pindexNew->nVersion       = block.nVersion;
+    pindexNew->hashMerkleRoot = block.hashMerkleRoot;
+    pindexNew->nTime          = block.nTime;
+    pindexNew->nBits          = block.nBits;
+    pindexNew->nNonce         = block.nNonce;
+
+    if (!pindexNew->CheckIndex())
+      return error(SHERR_INVAL, "LoadBlockIndex() : CheckIndex failed at height %d", pindexNew->nHeight);
+
+    if (nHeight == 0 && pindexNew->GetBlockHash() == usde_hashGenesisBlock)
+      USDEBlock::pindexGenesisBlock = pindexNew;
+
+    lastIndex = pindexNew;
+
+    if (checkBest && hash == hashBestChain) {
+fprintf(stderr, "DEBUG: found best hash chain '%s' @ height %d\n", hashBestChain.GetHex().c_str(), nHeight);
+      break;
+    } 
+  }
+  SetBestBlockIndex(iface, lastIndex);
+
+  return true;
+}
+#if 0
+bool usde_FillBlockIndex()
+{
+  CIface *iface = GetCoinByIndex(USDE_COIN_IFACE);
+  blkidx_t *blockIndex = GetBlockTable(USDE_COIN_IFACE);
+  bc_t *bc = GetBlockChain(iface);
   CBlockIndex *pindexBest;
   CBlockIndex *lastIndex;
   USDEBlock block;
@@ -167,6 +231,7 @@ bool usde_FillBlockIndex()
 
   return true;
 }
+#endif
 
 static bool hasGenesisRoot(CBlockIndex *pindexBest)
 {
