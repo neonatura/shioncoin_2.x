@@ -1865,11 +1865,13 @@ bool TESTBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)
     if (nSigOps > MAX_BLOCK_SIGOPS(iface))
       return error(SHERR_INVAL, "ConnectBlock() : too many sigops");
 
+#if 0
     memcpy(b_hash, tx.GetHash().GetRaw(), sizeof(bc_hash_t));
     err = bc_find(bc, b_hash, &nTxPos); 
     if (err) {
       return error(SHERR_INVAL, "TESTBlock::ConncetBlock: error finding tx hash.");
     }
+#endif
 
     MapPrevTx mapInputs;
     CDiskTxPos posThisTx(TEST_COIN_IFACE, nBlockPos, nTxPos);
