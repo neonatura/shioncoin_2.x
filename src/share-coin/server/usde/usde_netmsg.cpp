@@ -503,7 +503,6 @@ fprintf(stderr, "USDE:ProcessMessage: received '%s' (%d bytes from %s)\n", strCo
         std::vector<CInv> vGetData(1,inv);
         blkidx_t blkidx = *blockIndex;
         pfrom->PushGetBlocks(blkidx[inv.hash], uint256(0));
-fprintf(stderr, "DEBUG: force request: %s\n", inv.ToString().c_str());
       }
 
       // Track requests for our stuff
@@ -631,7 +630,6 @@ fprintf(stderr, "DEBUG: force request: %s\n", inv.ToString().c_str());
 
     vector<CBlockHeader> vHeaders;
     int nLimit = 2000;
-fprintf(stderr, "DEBUG: getheaders %d to %s\n", (pindex ? pindex->nHeight : -1), hashStop.ToString().substr(0,20).c_str());
     for (; pindex; pindex = pindex->pnext)
     {
       vHeaders.push_back(pindex->GetBlockHeader());
@@ -911,7 +909,7 @@ shtime_t ts;
         }
         if (nMessageSize > vRecv.size())
         {
-            fprintf(stderr, "DEBUG: info: usde_ProcessMessages(%s, %u bytes) : nMessageSize > vRecv.size(%u)\n", strCommand.c_str(), nMessageSize, (unsigned int)vRecv.size());
+//            fprintf(stderr, "DEBUG: info: usde_ProcessMessages(%s, %u bytes) : nMessageSize > vRecv.size(%u)\n", strCommand.c_str(), nMessageSize, (unsigned int)vRecv.size());
             // Rewind and wait for rest of message
             vRecv.insert(vRecv.begin(), vHeaderSave.begin(), vHeaderSave.end());
             break;

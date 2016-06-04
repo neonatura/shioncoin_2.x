@@ -138,15 +138,17 @@ void CNode::PushGetBlocks(CBlockIndex* pindexBegin, uint256 hashEnd)
     pindexBegin = pindexBegin->pprev;
 #endif
 
-    // Filter out duplicate requests
-    if (pindexBegin == pindexLastGetBlocksBegin && hashEnd == hashLastGetBlocksEnd) {
-        return;
-}
-fprintf(stderr, "DEBUG: PushGetBlocks: requesting height %d to hash '%s'\n", pindexBegin->nHeight, hashEnd.GetHex().c_str());
-    pindexLastGetBlocksBegin = pindexBegin;
-    hashLastGetBlocksEnd = hashEnd;
+  // Filter out duplicate requests
+  if (pindexBegin == pindexLastGetBlocksBegin && hashEnd == hashLastGetBlocksEnd) {
+    return;
+  }
 
-    PushMessage("getblocks", CBlockLocator(ifaceIndex, pindexBegin), hashEnd);
+  Debug("PushGetBlocks: requesting height %d to hash '%s'\n", pindexBegin->nHeight, hashEnd.GetHex().c_str());
+  pindexLastGetBlocksBegin = pindexBegin;
+  hashLastGetBlocksEnd = hashEnd;
+
+  PushMessage("getblocks", CBlockLocator(ifaceIndex, pindexBegin), hashEnd);
+
 }
 
 // find 'best' local address for a particular peer

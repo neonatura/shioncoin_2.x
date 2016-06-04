@@ -1184,7 +1184,7 @@ bool test_ProcessBlock(CNode* pfrom, CBlock* pblock)
   timing_init("AcceptBlock", &ts);
   if (!pblock->AcceptBlock()) {
     iface->net_invalid = time(NULL);
-    return error(SHERR_INVAL, "ProcessBlock() : AcceptBlock FAILED");
+    return error(SHERR_IO, "TESTBlock::AcceptBlock: error adding block '%s'.", pblock->GetHash().GetHex().c_str());
   }
   timing_term("AcceptBlock", &ts);
   iface->net_valid = time(NULL);
@@ -1711,18 +1711,21 @@ bool test_AcceptBlock(TESTBlock *pblock, bool bForce)
     return error(SHERR_INVAL, "AcceptBlock() : rejected by checkpoint lockin at %d", nHeight);
   }
 
-  timing_init("TEST:WriteBlock/Accept", &ts);
-  ret = pblock->WriteBlock(nHeight);
-  timing_term("TEST:WriteBlock/Accept", &ts);
-  if (!ret)
-    return error(SHERR_INVAL, "TEST: AcceptBlock(): error writing block to height %d", nHeight);
 
 
   timing_init("TEST:AddToBlockIndex/Accept", &ts);
   ret = pblock->AddToBlockIndex();
   timing_term("TEST:AddToBlockIndex/Accept", &ts);
   if (!ret) {
+    pblock->WriteArchBlock();
     return error(SHERR_IO, "AcceptBlock() : AddToBlockIndex failed");
+  }
+
+  timing_init("TEST:WriteBlock/Accept", &ts);
+  ret = pblock->WriteBlock(nHeight);
+  timing_term("TEST:WriteBlock/Accept", &ts);
+  if (!ret) {
+    return error(SHERR_INVAL, "TEST: AcceptBlock(): error writing block to height %d", nHeight);
   }
 
   /* Relay inventory, but don't relay old inventory during initial block download */

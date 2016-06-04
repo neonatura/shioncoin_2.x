@@ -221,7 +221,6 @@ unsigned int USDEBlock::GetNextWorkRequired(const CBlockIndex* pindexLast)
       }
     }
 
-fprintf(stderr, "DEBUG: Kimoto: using pindexLast->nBits %x\n", pindexLast->nBits);
     return pindexLast->nBits;
   }
 
@@ -1308,8 +1307,6 @@ bool static USDE_Reorganize(CTxDB& txdb, CBlockIndex* pindexNew, USDE_CTxMemPool
 {
   char errbuf[1024];
 
-fprintf(stderr, "DEBUG: USDE_Reorganize: block height %d\n", pindexNew->nHeight);
-
  // Find the fork
   CBlockIndex* pindexBest = GetBestBlockIndex(USDE_COIN_IFACE);
   CBlockIndex* pfork = pindexBest;
@@ -1341,8 +1338,8 @@ fprintf(stderr, "DEBUG: USDE_Reorganize: block height %d\n", pindexNew->nHeight)
   reverse(vConnect.begin(), vConnect.end());
 
 pindexBest = GetBestBlockIndex(USDE_COIN_IFACE);
-fprintf(stderr, "DEBUG: REORGANIZE: Disconnect %i blocks; %s..%s\n", vDisconnect.size(), pfork->GetBlockHash().ToString().substr(0,20).c_str(), pindexBest->GetBlockHash().ToString().substr(0,20).c_str());
-fprintf(stderr, "DEBUG: REORGANIZE: Connect %i blocks; %s..%s\n", vConnect.size(), pfork->GetBlockHash().ToString().substr(0,20).c_str(), pindexNew->GetBlockHash().ToString().substr(0,20).c_str());
+Debug("REORGANIZE: Disconnect %i blocks; %s..%s\n", vDisconnect.size(), pfork->GetBlockHash().ToString().substr(0,20).c_str(), pindexBest->GetBlockHash().ToString().substr(0,20).c_str());
+Debug("REORGANIZE: Connect %i blocks; %s..%s\n", vConnect.size(), pfork->GetBlockHash().ToString().substr(0,20).c_str(), pindexNew->GetBlockHash().ToString().substr(0,20).c_str());
 
   // Disconnect shorter branch
   vector<CTransaction> vResurrect;
@@ -1486,6 +1483,7 @@ static bool USDE_IsInitialBlockDownload()
 }
 #endif
 
+#if 0
 /* not currently used */
 bool usde_Reindex(CTxDB& txdb, CBlockIndex *pindexNew)
 {
@@ -1624,6 +1622,7 @@ bool usde_Reindex(CTxDB& txdb, CBlockIndex *pindexNew)
 
   return true;
 }
+#endif
 
 bool USDEBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
 {
@@ -1805,7 +1804,7 @@ bool usde_AcceptBlock(USDEBlock *pblock, bool bForce)
     return error(SHERR_INVAL, "AcceptBlock() : prev block '%s' not found: block index has NULL record for hash.", pblock->hashPrevBlock.GetHex().c_str());
   }
   int nHeight = pindexPrev->nHeight+1;
-fprintf(stderr, "DEBUG: ACCEPT: attempting block '%s' for height %d..\n", hash.GetHex().c_str(), nHeight); 
+Debug("ACCEPT: attempting block '%s' for height %d..\n", hash.GetHex().c_str(), nHeight); 
 
   // Check proof of work
   unsigned int nBits = pblock->GetNextWorkRequired(pindexPrev);
@@ -1870,20 +1869,6 @@ fprintf(stderr, "DEBUG: ACCEPT: attempting block '%s' for height %d..\n", hash.G
   if (!ret) {
     /* write block directly to arch */
     pblock->WriteArchBlock();
-/*
- * notes:
- * may need to clear nHeight+1
- * what is origBlock's index's pnext now?
- * inconsistency with ConnectBlock's WriteBlock?
- */
-#if 0
-    if (origBlock) {
-      /* revert to original block in main chain upon failure. */
-      origBlock->WriteBlock(nHeight);
-      fprintf(stderr, "DEBUG: AcceptBlock: reverted block '%s' @ height %d\n", origBlock->GetHash().GetHex().c_str(), nHeight);
-      delete origBlock;
-    }
-#endif
     return error(SHERR_IO, "USDEBlock::AcceptBlock: error adding hash '%s' to block-index at height %d.", pblock->GetHash().GetHex().c_str(), nHeight);
   }
 
@@ -2002,7 +1987,7 @@ fprintf(stderr, "DEBUG: removing pre-existing blank block index at height %d\n",
     pindexNew->pprev = (*miPrev).second;
     pindexNew->nHeight = pindexNew->pprev->nHeight + 1;
   } else {
-    fprintf(stderr, "DEBUG: USDE:AddToBlockIndex: warning: hashPrevBlock '%s' not found.\n", hashPrevBlock.GetHex().c_str());
+    Debug("USDE:AddToBlockIndex: warning: hashPrevBlock '%s' not found.\n", hashPrevBlock.GetHex().c_str());
   }
   pindexNew->bnChainWork = (pindexNew->pprev ? pindexNew->pprev->bnChainWork : 0) + pindexNew->GetBlockWork();
 
@@ -2030,7 +2015,7 @@ fprintf(stderr, "DEBUG: removing pre-existing blank block index at height %d\n",
     hashPrevBestCoinBase = vtx[0].GetHash();
   }
 
-fprintf(stderr, "DEBUG: USDEBlock::AddToBlockIndex: height %d\n", pindexNew->nHeight); 
+Debug("USDEBlock::AddToBlockIndex: height %d\n", pindexNew->nHeight); 
 
   return true;
 }
@@ -2039,6 +2024,7 @@ bool USDEBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)
 {
   char errbuf[1024];
 
+  /* "Check it again in case a previous version let a bad block in" */
 #if 1 /* DEBUG: */
   if (!CheckBlock())
     return false;
@@ -2080,7 +2066,7 @@ bool USDEBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)
       if (txdb.ReadTxIndex(hashTx, txindexOld)) {
         BOOST_FOREACH(CDiskTxPos &pos, txindexOld.vSpent)
           if (pos.IsNull())
-            return error(SHERR_INVAL, "DEBUG: USDEBlock::ConnectBlock: BIP30 enforced at height %d\n", pindex->nHeight);
+            return error(SHERR_INVAL, "USDEBlock::ConnectBlock: BIP30 enforced at height %d\n", pindex->nHeight);
       }
     }
 
@@ -2120,8 +2106,7 @@ bool USDEBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)
       nFees += tx.GetValueIn(mapInputs)-tx.GetValueOut();
 
       if (!usde_ConnectInputs(&tx, mapInputs, mapQueuedChanges, posThisTx, pindex, true, false, fStrictPayToScriptHash)) {
-fprintf(stderr, "DEBUG: usde_ConnectInputs failure\n");
-        return false;
+        return error(SHERR_INVAL, "USDEBlock::ConnectBlock: error connecting inputs.");
       }
     }
 
@@ -2136,10 +2121,9 @@ fprintf(stderr, "DEBUG: usde_ConnectInputs failure\n");
     }
   }
 
-if (vtx.size() == 0) {
-fprintf(stderr, "DEBUG: ConnectBlock: vtx.size() == 0\n");
-return false;
-}
+  if (vtx.size() == 0) {
+    return error(SHERR_INVAL, "USDEBlock::ConnectBlock: vtx.size() == 0");
+  }
 
   
   int64 nValue = usde_GetBlockValue(pindex->nHeight, nFees);
@@ -2152,14 +2136,14 @@ return false;
   if (pindex->pprev)
   {
     if (pindex->pprev->nHeight + 1 != pindex->nHeight) {
-fprintf(stderr, "DEBUG: ConnectBlock: block-index for hash '%s' height changed from %d to %d.\n", pindex->GetBlockHash().GetHex().c_str(), pindex->nHeight, (pindex->pprev->nHeight + 1));
+//fprintf(stderr, "DEBUG: ConnectBlock: block-index for hash '%s' height changed from %d to %d.\n", pindex->GetBlockHash().GetHex().c_str(), pindex->nHeight, (pindex->pprev->nHeight + 1));
       pindex->nHeight = pindex->pprev->nHeight + 1;
     }
     if (!WriteBlock(pindex->nHeight)) {
       return (error(SHERR_INVAL, "ConnectBlock: error writing block hash '%s' to height %d\n", GetHash().GetHex().c_str(), pindex->nHeight));
     }
 
-fprintf(stderr, "DEBUG: CONNECT: hash '%s' to height %d\n", GetHash().GetHex().c_str(), pindex->nHeight);
+Debug("CONNECT: hash '%s' to height %d\n", GetHash().GetHex().c_str(), pindex->nHeight);
 #if 0
     // Update block index on disk without changing it in memory.
     // The memory index structure will be changed after the db commits.
@@ -2226,18 +2210,18 @@ int ifaceIndex = USDE_COIN_IFACE;
     bc_hash_t ret_hash;
     err = bc_get_hash(bc, nHeight, ret_hash);
     if (err) {
-      fprintf(stderr, "DEBUG: CBlock::ReadBlock: bc_get_hash err %d\n", err); 
-      return (false);
+      return error(err, "USDEBlock::ReadBlock: error obtaining block-chain height %d.", nHeight);
     }
     db_hash.SetRaw((unsigned int *)ret_hash);
 
+#if 0
     if (!bc_hash_cmp(db_hash.GetRaw(), cur_hash.GetRaw())) {
-      fprintf(stderr, "DEBUG: CBlock::ReadBlock: hash '%s' from loaded block at pos %d has invalid hash of '%s'\n", db_hash.GetHex().c_str(), nHeight, cur_hash.GetHex().c_str());
+      sprintf(errbuf, "CBlock::ReadBlock: hash '%s' from loaded block at pos %d has invalid hash of '%s'.", db_hash.GetHex().c_str(), nHeight, cur_hash.GetHex().c_str());
       print();
       SetNull();
-
-      return (false);
+      return error(SHERR_INVAL, errbuf);
     }
+#endif
   }
 
 #if 0
@@ -2291,7 +2275,7 @@ print();
 return (false);
 }
 
-fprintf(stderr, "DEBUG: ARCH: loaded block '%s'\n", GetHash().GetHex().c_str());
+Debug("ARCH: loaded block '%s'\n", GetHash().GetHex().c_str());
   return (true);
 }
 

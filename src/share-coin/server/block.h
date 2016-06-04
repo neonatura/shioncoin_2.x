@@ -706,6 +706,7 @@ public:
 
     bool FillTx(int ifaceIndex, CDiskTxPos &pos);
 
+    bool EraseTx(int ifaceIndex);
 
 
     friend bool operator==(const CTransaction& a, const CTransaction& b)

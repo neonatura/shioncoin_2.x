@@ -213,6 +213,8 @@ static int stratum_subscribe(user_t *user, int req_id)
   if (!err) 
     user->flags |= USER_SUBSCRIBE;
 
+  ResetTemplateWeight();
+
   return (err);
 }
 
@@ -478,7 +480,6 @@ int stratum_request_message(user_t *user, shjson_t *json)
   if (ifaceIndex < 1)
     ifaceIndex = stratum_default_iface();
   if (ifaceIndex < 1 || ifaceIndex >= MAX_COIN_IFACE) {
-fprintf(stderr, "DEBUG: stratum_request_message: error obtaining coin iface\n"); 
     return (SHERR_INVAL);
   }
     
@@ -488,11 +489,6 @@ fprintf(stderr, "DEBUG: stratum_request_message: error obtaining coin iface\n");
     /* no operation method specified. */
     return (SHERR_INVAL);
   }
-
-
-/* DEBUG: */
-sprintf(buf, "STRATUM REQUEST '%s' [idx %d].\n", method, idx);
-shcoind_log(buf);
 
   timing_init(method, &ts);
 
@@ -510,7 +506,6 @@ shcoind_log(buf);
     err = stratum_subscribe(user, idx);
     if (!err) {
       user->ifaceIndex = ifaceIndex;
-fprintf(stderr, "DEBUG: mining.subscribe: set ifaceIndex %d\n", ifaceIndex);
       stratum_set_difficulty(user, 128);
     }
 
@@ -539,9 +534,6 @@ fprintf(stderr, "DEBUG: mining.subscribe: set ifaceIndex %d\n", ifaceIndex);
       shjson_free(&reply);
       return (err);
     }
-
-    user->ifaceIndex = ifaceIndex;
-fprintf(stderr, "DEBUG: mining.authorize: set ifaceIndex %d\n", ifaceIndex);
 
     reply = shjson_init(NULL);
     shjson_bool_add(reply, "result", TRUE);
@@ -670,7 +662,6 @@ fprintf(stderr, "DEBUG: mining.authorize: set ifaceIndex %d\n", ifaceIndex);
       shjson_free(&reply);
       return (err);
     }
-else fprintf(stderr, "DEBUG: stratum_request_message[iface #%d]: error obtaining 'getmininginfo': %s.\n", ifaceIndex, getmininginfo(ifaceIndex));
   }
   if (0 == strcmp(method, "mining.get_transactions")) {
     char *work_id_str;

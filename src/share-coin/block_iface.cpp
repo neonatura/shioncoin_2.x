@@ -101,7 +101,7 @@ double GetBitsDifficulty(unsigned int nBits)
 static CBlock *altBlock[MAX_COIN_IFACE];
 static unsigned int altHeight[MAX_COIN_IFACE];
 
-static unsigned int templateWeight = 2;
+static unsigned int templateWeight = 1;
 
 /**
  * Generate a block to work on.
@@ -165,7 +165,6 @@ const char *c_getblocktemplate(int ifaceIndex)
     }
     mapWork.clear();
     altBlock[ifaceIndex] = NULL;
-    fprintf(stderr, "DEBUG: c_getblocktemplate: cleared mapWork\n");
 
     templateWeight = 1;
   } else {
@@ -205,7 +204,7 @@ fprintf(stderr, "DEBUG: c_getblocktemplate: error creating block template\n");
   work_id++;
   mapWork[work_id] = pblock; 
   altBlock[ifaceIndex] = pblock;
-fprintf(stderr, "DEBUG: c_getblocktemplate: added work [id %u] @ height %u for iface #%d\n", work_id, nHeight, ifaceIndex); 
+//fprintf(stderr, "DEBUG: c_getblocktemplate: added work [id %u] @ height %u for iface #%d\n", work_id, nHeight, ifaceIndex); 
 
   // Update nTime
   pblock->UpdateTime(pindexPrev);
@@ -422,8 +421,6 @@ int c_submitblock(unsigned int workId, unsigned int nTime, unsigned int nNonce, 
   int err;
   bool ok;
 
-fprintf(stderr, "DEBUG: c_submitblock()/start\n");
-
   if (ret_hash)
     ret_hash[0] = '\000';
   if (ret_diff)
@@ -487,8 +484,6 @@ fprintf(stderr, "DEBUG: c_submitblock()/start\n");
     }
 
   }
-fprintf(stderr, "DEBUG: c_submitblock()/end\n");
-
   return (0);
 }
 
@@ -1324,6 +1319,11 @@ int GetTxDepthInMainChain(CIface *iface, uint256 txHash)
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+void ResetTemplateWeight(void)
+{
+  templateWeight = 0; 
+}
 
 const char *getblocktemplate(int ifaceIndex)
 {

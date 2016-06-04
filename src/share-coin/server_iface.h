@@ -162,6 +162,8 @@ uint64_t getblockheight(int ifaceIndex);
 
 void start_rpc_server(void);
 
+void ResetTemplateWeight(void);
+
 
 #ifdef __cplusplus
 }
