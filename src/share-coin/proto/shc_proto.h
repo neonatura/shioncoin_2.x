@@ -44,7 +44,7 @@ static const int SHC_PROTOCOL_VERSION = 2000000;
 static const unsigned int SHC_MAX_BLOCK_SIZE = 4096000;
 static const int64 SHC_MIN_TX_FEE = 10000;
 static const int64 SHC_MIN_RELAY_TX_FEE = 10000;
-static const int64 SHC_MAX_MONEY = 80000000000 * SHC_COIN; /* 80bil max */
+static const int64 SHC_MAX_MONEY = 1000000000 * SHC_COIN; /* 1bil max */
 static const int SHC_COINBASE_MATURITY = 60;
 
 

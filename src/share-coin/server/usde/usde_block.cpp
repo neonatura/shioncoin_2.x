@@ -1145,6 +1145,7 @@ bool usde_ProcessBlock(CNode* pfrom, CBlock* pblock)
     {
       if (pfrom)
         pfrom->Misbehaving(100);
+pblock->print();
       return error(SHERR_INVAL, "ProcessBlock() : block with timestamp before last checkpoint");
     }
     CBigNum bnNewBlock;
@@ -1235,8 +1236,10 @@ bool USDEBlock::CheckBlock()
 {
   CIface *iface = GetCoinByIndex(USDE_COIN_IFACE);
 
-  if (vtx.empty() || vtx.size() > USDE_MAX_BLOCK_SIZE || ::GetSerializeSize(*this, SER_NETWORK, USDE_PROTOCOL_VERSION) > USDE_MAX_BLOCK_SIZE)
+  if (vtx.empty() || vtx.size() > USDE_MAX_BLOCK_SIZE || ::GetSerializeSize(*this, SER_NETWORK, USDE_PROTOCOL_VERSION) > USDE_MAX_BLOCK_SIZE) {
+print();
     return error(SHERR_INVAL, "USDE::CheckBlock: size limits failed");
+}
 
   if (vtx.empty() || !vtx[0].IsCoinBase())
     return error(SHERR_INVAL, "CheckBlock() : first tx is not coinbase");

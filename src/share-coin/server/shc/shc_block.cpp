@@ -170,14 +170,15 @@ unsigned int SHCBlock::GetNextWorkRequired(const CBlockIndex* pindexLast)
   return KimotoGravityWell(pindexLast, this, BlocksTargetSpacing, PastBlocksMin, PastBlocksMax);
 }
 
+#if 0
 int64 shc_GetBlockValue(int nHeight, int64 nFees)
 {
-  uint64 nSubsidy = 2000 * COIN;
+  uint64 nSubsidy = 2000 * SHC_COIN;
   int base = nHeight;
 
   if (nHeight == 0) {
     /* burnt coins */
-    nSubsidy = 4000 * COIN;
+    nSubsidy = 4000 * SHC_COIN;
     base /= 9; /* 800bil cap. */
     nSubsidy >>= (base / 139604);
     nSubsidy /= 5;
@@ -192,6 +193,32 @@ int64 shc_GetBlockValue(int nHeight, int64 nFees)
   nSubsidy /= 10;
 
   return ((int64)nSubsidy + nFees);
+}
+#endif
+
+/**
+ * @note
+ * info: height 2000000 rewards 200.000000 [20000000000] total coins.
+ * info: height 3000000 rewards 100.000000 [10000000000] total coins.
+ * info: height 6000000 rewards 50.000000 [5000000000] total coins.
+ * info: height 10000000 rewards 25.000000 [2500000000] total coins.
+ * info: height 20000000 rewards 1.562000 [156200000] total coins.
+ * info: height 45000000 rewards 0.001000 [100000] total coins.
+ * final: height 45000018 has 999985199.994008 total coins
+ */
+int64 shc_GetBlockValue(int nHeight, int64 nFees)
+{
+
+  if (nHeight == 0)
+    return ((int64)800);
+
+  int64 nSubsidy = 2000 * SHC_COIN;
+  nSubsidy >>= (nHeight / 2500001);
+  nSubsidy /= 1000000;
+  nSubsidy *= 100000;
+  nSubsidy = MIN(200 * COIN, nSubsidy);
+
+  return (nSubsidy + nFees);
 }
 
 namespace SHC_Checkpoints

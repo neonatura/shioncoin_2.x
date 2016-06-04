@@ -286,9 +286,18 @@ void c_processaltblock(int altIndex, unsigned int nMinNonce, char *xn_hex)
     CBlock *alt_block = altBlock[ifaceIndex];
     if (!alt_block || !alt_block->ifaceIndex)
       continue; /* no block avail for mining */
-
-    if (alt_block->hashPrevBlock != GetBestBlockChain(iface))
-      continue; /* work not up-to-date */
+    
+    CBlockIndex *bestIndex = GetBestBlockIndex(iface);
+    if (alt_block->hashPrevBlock != bestIndex->GetBlockHash()) {
+      fprintf(stderr, "DEBUG: invalid block submitted[iface #%d]/prev:\n", alt_block->ifaceIndex);
+      alt_block->print();
+continue; /* BLKERR_INVALID_JOB */
+    }
+    if (alt_block->nTime < bestIndex->nTime) {
+      fprintf(stderr, "DEBUG: invalid block submitted[iface #%d]/time:\n", alt_block->ifaceIndex);
+      alt_block->print();
+continue; /* BLKERR_INVALID_BLOCK */
+    }
 
     CNode *pfrom = NULL;
 
@@ -359,6 +368,9 @@ int c_processblock(CBlock* pblock)
 */
 
 
+  CBlockIndex *bestIndex = GetBestBlockIndex(iface);
+  if (!bestIndex)
+    return (BLKERR_INVALID_JOB); /* work not up-to-date */
 
   // Check for duplicate
   uint256 hash = pblock->GetHash();
@@ -371,18 +383,22 @@ int c_processblock(CBlock* pblock)
     return (BLKERR_CHECKPOINT);
   }
 
-  if (pblock->hashPrevBlock != GetBestBlockChain(iface)) {
+  if (pblock->hashPrevBlock != bestIndex->GetBlockHash()) {
+fprintf(stderr, "DEBUG: invalid block submitted[iface #%d]/prev:\n", pblock->ifaceIndex);
+pblock->print();
     return (BLKERR_INVALID_JOB); /* work not up-to-date */
   }
-
+  if (pblock->nTime < bestIndex->nTime) {
+fprintf(stderr, "DEBUG: invalid block submitted[iface #%d]/time:\n", pblock->ifaceIndex);
+pblock->print();
+    return (BLKERR_INVALID_BLOCK);
+  }
 
   // Store to disk
   if (!pblock->AcceptBlock()) {
     shcoind_log("c_processblock: !AcceptBlock()");
     return (BLKERR_INVALID_BLOCK);
   }
-
-//  pblock->print();
 
   return (0);
 }
@@ -1323,7 +1339,7 @@ extern "C" {
 
 void ResetTemplateWeight(void)
 {
-  templateWeight = 0; 
+  templateWeight = 1;
 }
 
 const char *getblocktemplate(int ifaceIndex)

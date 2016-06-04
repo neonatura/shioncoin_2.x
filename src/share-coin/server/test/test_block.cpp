@@ -287,56 +287,9 @@ fprintf(stderr, "DEBUG: Kimoto: using pindexLast->nBits %x\n", pindexLast->nBits
   return bnNew.GetCompact();
 }
 
-
-static int64 test_GetInitialBlockValue(int nHeight, int64 nFees)
-{
-  int64 nSubsidy = 4000 * COIN;
-
-  if ((nHeight % 100) == 1)
-  {
-    nSubsidy = 100000 * COIN; //100k
-  }else if ((nHeight % 50) == 1)
-  {
-    nSubsidy = 50000 * COIN; //50k
-  }else if ((nHeight % 20) == 1)
-  {
-    nSubsidy = 20000 * COIN; //20k
-  }else if ((nHeight % 10) == 1)
-  {
-    nSubsidy = 10000 * COIN; //10k
-  }else if ((nHeight % 5) == 1)
-  {
-    nSubsidy = 5000 * COIN; //5k
-  }
-  
-  //limit first blocks to protect against instamine.
-  if (nHeight < 2){
-    nSubsidy = 24000000 * COIN; // 1.5%
-  }else if(nHeight < 500)
-  {
-    nSubsidy = 100 * COIN;
-  }
-  else if(nHeight < 1000)
-  {
-    nSubsidy = 500 * COIN;
-  } 
-    
-  nSubsidy >>= (nHeight / 139604);
-    
-  return (nSubsidy + nFees);
-}
-
 int64 test_GetBlockValue(int nHeight, int64 nFees)
 {
-  int64 nSubsidy = 4000 * COIN;
-  int base = nHeight;
-
-  if (nHeight < 107500) {
-    return (test_GetInitialBlockValue(nHeight, nFees));
-  }
-
-  nSubsidy >>= (base / 139604);
-
+  int64 nSubsidy = 1 * COIN;
   return nSubsidy + nFees;
 }
 
