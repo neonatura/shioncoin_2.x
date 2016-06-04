@@ -505,7 +505,7 @@ int stratum_request_message(user_t *user, shjson_t *json)
   if (0 == strcmp(method, "mining.subscribe")) {
     err = stratum_subscribe(user, idx);
     if (!err) {
-      user->ifaceIndex = ifaceIndex;
+      //user->ifaceIndex = ifaceIndex;
       stratum_set_difficulty(user, 128);
     }
 
@@ -675,7 +675,7 @@ int stratum_request_message(user_t *user, shjson_t *json)
     } else {
       work_id = (unsigned int)strtoll(work_id_str, NULL, 16);
 
-      json_str = getminingtransactioninfo(user->ifaceIndex ? user->ifaceIndex : ifaceIndex, work_id);
+      json_str = getminingtransactioninfo(ifaceIndex, work_id);
 
       reply = shjson_init(json_str);
       if (!json_str) {

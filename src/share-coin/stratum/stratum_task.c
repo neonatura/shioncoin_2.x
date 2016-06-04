@@ -71,6 +71,7 @@ void incr_task_work_time(void)
 #endif
 
 static int work_idx = 0;
+int DefaultWorkIndex = 0;
 static uint64_t last_payout_crc[MAX_COIN_IFACE];
 
 /**
@@ -257,10 +258,18 @@ task_t *task_init(void)
   unsigned long cb1;
   unsigned long cb2;
   int ifaceIndex;
+  int err;
   int i;
 
   for (ifaceIndex = 1; ifaceIndex < MAX_COIN_IFACE; ifaceIndex++) {
-    task_verify(ifaceIndex, &work_reset[ifaceIndex]);
+    err = task_verify(ifaceIndex, &work_reset[ifaceIndex]);
+    if (!err) {
+      int idx = stratum_default_iface(); 
+      if (idx == 0 || idx == ifaceIndex) {
+        idx = (shrand() % (MAX_COIN_IFACE-1)) + 1;
+      } 
+      DefaultWorkIndex = idx;
+    }
   }
 
   work_idx++;

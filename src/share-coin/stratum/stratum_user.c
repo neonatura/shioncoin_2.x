@@ -6,6 +6,7 @@
 #define MAX_STRATUM_USERS 32
 #define MIN_SHARE_DIFFICULTY 0.03125 /* diff 1 */
 
+extern int DefaultWorkIndex;
 
 user_t *stratum_user_find(char *username)
 {
@@ -170,6 +171,9 @@ int stratum_user_broadcast_task(task_t *task)
       continue;
     }
 
+    if (user->ifaceIndex == 0 &&
+        task->ifaceIndex != DefaultWorkIndex)
+      continue;
     if (user->ifaceIndex != task->ifaceIndex)
       continue;
 
