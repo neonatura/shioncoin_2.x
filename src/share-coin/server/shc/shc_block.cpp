@@ -1062,22 +1062,16 @@ bool SHCBlock::CheckBlock()
 {
   CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);
 
-  if (::GetSerializeSize(*this, SER_NETWORK, PROTOCOL_VERSION(iface)) > iface->max_block_size) {
-    return error(SHERR_INVAL, "CheckBlock() : size limits failed");
-  }
+  if (vtx.empty() || vtx.size() > SHC_MAX_BLOCK_SIZE || ::GetSerializeSize(*this, SER_NETWORK, SHC_PROTOCOL_VERSION) > SHC_MAX_BLOCK_SIZE)
+    return error(SHERR_INVAL, "USDE::CheckBlock: size limits failed");
+
+
 #if 0
   if (vtx[0].GetValueOut() > shc_GetBlockValue(nHeight, nFees)) {
     return (false);
   }
 #endif
 
-#if 0
-  // Size limits
-  if (vtx.empty() || 
-      vtx.size() > MAX_BLOCK_SIZE || Block::GetSerializeSize(*block, SER_NETWORK, SHC_PROTOCOL_VERSION) > MAX_BLOCK_SIZE) {
-    return error(SHERR_INVAL, "CheckBlock() : size limits failed");
-  }
-#endif
   if (vtx.empty() || !vtx[0].IsCoinBase())
     return error(SHERR_INVAL, "CheckBlock() : first tx is not coinbase");
 

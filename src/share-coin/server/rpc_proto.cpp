@@ -2389,7 +2389,7 @@ Value rpc_peer_import(CIface *iface, const Array& params, bool fHelp)
     memset(&st, 0, sizeof(st));
     fstat(fileno(fl), &st);
     if (st.st_size == 0)
-      throw runtime_error("file is not is JSON format.");
+      throw runtime_error("file is not in JSON format.");
 
     text = (char *)calloc(st.st_size + 1, sizeof(char));
     if (!text)
@@ -2402,8 +2402,10 @@ Value rpc_peer_import(CIface *iface, const Array& params, bool fHelp)
 
     json = shjson_init(text);
     free(text);
-    if (!json)
+    if (!json) {
+fprintf(stderr, "DEBUG: invalid JSON: %s\n", text);
       throw runtime_error("file is not is JSON format.");
+    }
 
     if (json->child) {
       for (node = json->child; node; node = node->next) {

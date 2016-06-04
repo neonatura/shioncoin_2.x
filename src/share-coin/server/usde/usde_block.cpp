@@ -1235,17 +1235,9 @@ bool USDEBlock::CheckBlock()
 {
   CIface *iface = GetCoinByIndex(USDE_COIN_IFACE);
 
-  if (::GetSerializeSize(*this, SER_NETWORK, PROTOCOL_VERSION(iface)) > iface->max_block_size) {
-    return error(SHERR_INVAL, "CheckBlock() : size limits failed");
-  }
-#if 0 /* DEBUG: */
-  // Size limits
-  if (vtx.empty() || 
-      vtx.size() > MAX_BLOCK_SIZE || 
-      CBlock::GetSerializeSize((CBlock)*block, SER_NETWORK, PROTOCOL_VERSION) > MAX_BLOCK_SIZE) {
-    return error(SHERR_INVAL, "CheckBlock() : size limits failed");
-  }
-#endif
+  if (vtx.empty() || vtx.size() > USDE_MAX_BLOCK_SIZE || ::GetSerializeSize(*this, SER_NETWORK, USDE_PROTOCOL_VERSION) > USDE_MAX_BLOCK_SIZE)
+    return error(SHERR_INVAL, "USDE::CheckBlock: size limits failed");
+
   if (vtx.empty() || !vtx[0].IsCoinBase())
     return error(SHERR_INVAL, "CheckBlock() : first tx is not coinbase");
 
