@@ -124,6 +124,7 @@ int main(int argc, char *argv[])
 }
 
 
+#if 0
 CAddrMan addrman;
 void shcoind_tool_LoadPeers(void)
 {
@@ -143,6 +144,7 @@ void shcoind_tool_LoadPeers(void)
   pwalletMain->ReacceptWalletTransactions();
 */
 }
+#endif
 
 #if 0
 void ImportPeers(int ifaceIndex)

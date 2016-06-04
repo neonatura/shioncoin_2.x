@@ -506,7 +506,7 @@ class CAddrDB
 private:
     boost::filesystem::path pathAddr;
 public:
-    CAddrDB();
+    CAddrDB(const char *path);
     bool Write(const CAddrMan& addr);
     bool Read(CAddrMan& addr);
 };

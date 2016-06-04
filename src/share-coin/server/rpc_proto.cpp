@@ -36,6 +36,7 @@
 #include "base58.h"
 #include "rpc_proto.h"
 #include "../server_iface.h" /* BLKERR_XXX */
+#include "addrman.h"
 #include "util.h"
 #include "chain.h"
 
@@ -2329,15 +2330,15 @@ Value rpc_peer_export(CIface *iface, const Array& params, bool fHelp)
 
   {
     FILE *fl;
-    shpeer_t *serv_peer;
+//    shpeer_t *serv_peer;
     shjson_t *json;
     shdb_t *db;
     char *text;
 
-    serv_peer = shapp_init("shcoind", NULL, SHAPP_LOCAL);
+//    serv_peer = shapp_init("shcoind", NULL, SHAPP_LOCAL);
 
-    db = shdb_open("net");
-    json = shdb_json(db, "track", 0, 0);
+    db = shdb_open(NET_DB_NAME);
+    json = shdb_json(db, SHPREF_TRACK, 0, 0);
     text = shjson_print(json);
     shjson_free(&json);
     shdb_close(db);
@@ -2349,17 +2350,94 @@ Value rpc_peer_export(CIface *iface, const Array& params, bool fHelp)
     }
     free(text);
 
-    shpeer_free(&serv_peer);
+//    shpeer_free(&serv_peer);
   }
 
 
   Object result;
-  result.push_back(Pair("mode", "export-peer"));
+  result.push_back(Pair("mode", "peer.export"));
   result.push_back(Pair("path", strPath.c_str()));
   result.push_back(Pair("state", "finished"));
 
   return (result);
 }
+
+Value rpc_peer_import(CIface *iface, const Array& params, bool fHelp)
+{
+  FILE *fl;
+  struct stat st;
+  shpeer_t *peer;
+  shjson_t *json;
+  shjson_t *node;
+  shdb_t *db;
+  char hostname[PATH_MAX+1];
+  char *text;
+
+  if (fHelp || params.size() != 1)
+    throw runtime_error(
+        "peer.import <path>\n"
+        "Export entire database of network peers in JSON format.");
+
+  std::string strPath = params[0].get_str();
+
+  {
+
+    fl = fopen(strPath.c_str(), "rb");
+    if (!fl)
+      throw runtime_error("error opening file.");
+
+    memset(&st, 0, sizeof(st));
+    fstat(fileno(fl), &st);
+    if (st.st_size == 0)
+      throw runtime_error("file is not is JSON format.");
+
+    text = (char *)calloc(st.st_size + 1, sizeof(char));
+    if (!text)
+      throw runtime_error("not enough memory to allocate file.");
+
+    fread(text, sizeof(char), st.st_size, fl);
+    fclose(fl);
+    
+//    serv_peer = shapp_init("shcoind", NULL, SHAPP_LOCAL);
+
+    json = shjson_init(text);
+    free(text);
+    if (!json)
+      throw runtime_error("file is not is JSON format.");
+
+    if (json->child) {
+      for (node = json->child; node; node = node->next) {
+        char *host = shjson_astr(node, "host", "");
+        char *label = shjson_astr(node, "label", "");
+        if (!*host || !*label) continue;
+
+fprintf(stderr, "DEBUG: found %s host '%s'\n", label, host);
+        peer = shpeer_init(label, host);
+//        shnet_track_add(peer);
+        shpeer_free(&peer);
+      }
+    }
+
+#if 0
+    db = shdb_open(NET_DB_NAME);
+    shdb_close(db);
+#endif
+
+    shjson_free(&json);
+
+
+//    shpeer_free(&serv_peer);
+  }
+
+
+  Object result;
+  result.push_back(Pair("mode", "peer-import"));
+  result.push_back(Pair("path", strPath.c_str()));
+  result.push_back(Pair("state", "finished"));
+
+  return (result);
+}
+
 
 Value rpc_peer_info(CIface *iface, const Array& params, bool fHelp)
 {
@@ -2395,20 +2473,56 @@ Value rpc_peer_info(CIface *iface, const Array& params, bool fHelp)
   return ret;
 }
 
-Value rpc_peer_import(CIface *iface, const Array& params, bool fHelp)
+Value rpc_peer_importdat(CIface *iface, const Array& params, bool fHelp)
 {
 
   if (fHelp || params.size() != 1)
     throw runtime_error(
-        "peer.import <path>\n"
-        "Import JSON export file of network peers.");
+        "peer.importdat <path>\n"
+        "Import a legacy 'peers.dat' datafile.");
 
   std::string strPath = params[0].get_str();
 
+  int ifaceIndex = GetCoinIndex(iface);
+  char addr_str[256];
+  shpeer_t *peer;
+  shpeer_t *serv_peer;
+
+  if (!iface)
+    throw runtime_error("peer db not available.");
+
+//  serv_peer = shapp_init("shcoind", NULL, SHAPP_LOCAL);
+
+  CAddrMan addrman;
+  {
+    long nStart = GetTimeMillis();
+    {
+      CAddrDB adb(strPath.c_str());
+      if (!adb.Read(addrman))
+        throw runtime_error("specified path is not a peers.dat database.");
+    }
+    Debug("Exported %d addresses from peers.dat  %dms\n",
+        (int)addrman.size(), (int)(GetTimeMillis() - nStart));
+  }
+
+  vector<CAddress> vAddr = addrman.GetAddr();
+
+  fprintf(stdout, "Import Peers:\n");
+  BOOST_FOREACH(const CAddress &addr, vAddr) {
+    sprintf(addr_str, "%s %d", addr.ToStringIP().c_str(), addr.GetPort());
+    peer = shpeer_init(iface->name, addr_str);
+    shnet_track_add(peer);
+    shpeer_free(&peer);
+//    fprintf(stdout, "\t%s\n", addr_str);
+  }
+
+//  shpeer_free(&serv_peer);
+
+
   Object result;
-  result.push_back(Pair("mode", "import-peer"));
+  result.push_back(Pair("mode", "peer.importdat"));
   result.push_back(Pair("path", strPath.c_str()));
-  result.push_back(Pair("state", "unsupported operation"));
+  result.push_back(Pair("state", "success"));
 
   return (result);
 }
@@ -4175,6 +4289,7 @@ static const CRPCCommand vRPCCommands[] =
     { "peer.add",             &rpc_peer_add},
     { "peer.count",           &rpc_peer_count},
     { "peer.import",          &rpc_peer_import},
+    { "peer.importdat",          &rpc_peer_importdat},
     { "peer.info",            &rpc_peer_info},
     { "peer.export",          &rpc_peer_export},
     { "tx.decode",            &rpc_tx_decode},

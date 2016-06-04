@@ -1327,6 +1327,9 @@ bool SHCBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
   }
   else
   {
+/* reorg will attempt to read this block from db */
+    WriteArchBlock();
+
     // the first block in the new chain that will cause it to become the new best chain
     CBlockIndex *pindexIntermediate = pindexNew;
 
@@ -1710,6 +1713,14 @@ fprintf(stderr, "DEBUG: SHCBlock::ConnectBlock: critical: coinbaseValueOut(%llu)
 
   if (pindex->pprev)
   {
+    if (pindex->pprev->nHeight + 1 != pindex->nHeight) {
+      fprintf(stderr, "DEBUG: shc_ConnectBlock: block-index for hash '%s' height changed from %d to %d.\n", pindex->GetBlockHash().GetHex().c_str(), pindex->nHeight, (pindex->pprev->nHeight + 1));
+      pindex->nHeight = pindex->pprev->nHeight + 1;
+    }
+    if (!WriteBlock(pindex->nHeight)) {
+      return (error(SHERR_INVAL, "shc_ConnectBlock: error writing block hash '%s' to height %d\n", GetHash().GetHex().c_str(), pindex->nHeight));
+    }
+
 #if 0
     // Update block index on disk without changing it in memory.
     // The memory index structure will be changed after the db commits.

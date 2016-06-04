@@ -1648,6 +1648,9 @@ bool USDEBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
   }
   else
   {
+/* DEBUG: 060316 - reorg will try to load this block from db. */
+    WriteArchBlock();
+
     //Reindex(pindexNew);
     // the first block in the new chain that will cause it to become the new best chain
     CBlockIndex *pindexIntermediate = pindexNew;
@@ -2136,7 +2139,7 @@ bool USDEBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)
   if (pindex->pprev)
   {
     if (pindex->pprev->nHeight + 1 != pindex->nHeight) {
-//fprintf(stderr, "DEBUG: ConnectBlock: block-index for hash '%s' height changed from %d to %d.\n", pindex->GetBlockHash().GetHex().c_str(), pindex->nHeight, (pindex->pprev->nHeight + 1));
+fprintf(stderr, "DEBUG: ConnectBlock: block-index for hash '%s' height changed from %d to %d.\n", pindex->GetBlockHash().GetHex().c_str(), pindex->nHeight, (pindex->pprev->nHeight + 1));
       pindex->nHeight = pindex->pprev->nHeight + 1;
     }
     if (!WriteBlock(pindex->nHeight)) {

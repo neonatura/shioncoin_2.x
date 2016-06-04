@@ -148,6 +148,8 @@ server_sources = \
 	server/wallet.cpp \
 	server/walletdb.cpp \
 	server/scrypt.c \
+	server/addrman.h \
+	server/addrman.cpp \
 	wallet_iface.cpp \
 	block_iface.cpp \
 	server_iface.cpp
@@ -160,8 +162,6 @@ stratum_sources = \
 	stratum/stratum_task.c
 
 tool_sources = \
-	server/addrman.h \
-	server/addrman.cpp \
 	tool/tool_irc.cpp
 
 bin_PROGRAMS = shcointool

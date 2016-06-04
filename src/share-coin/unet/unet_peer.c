@@ -127,7 +127,6 @@ int unet_peer_wait(unet_bind_t *bind)
   if (shtime_after(shtime(), shtime_adj(bind->scan_stamp, dur)))
     return (FALSE);
 
-  bind->scan_stamp = shtime(); /* DEBUG: */
   return (TRUE);
 }
 

@@ -559,9 +559,9 @@ void CAddrMan::Connected_(const CService &addr, int64 nTime)
 //
 
 
-CAddrDB::CAddrDB()
+CAddrDB::CAddrDB(const char *path)
 {
-    pathAddr = GetDataDir() / "peers.dat";
+  pathAddr = path;
 }
 
 bool CAddrDB::Write(const CAddrMan& addr)

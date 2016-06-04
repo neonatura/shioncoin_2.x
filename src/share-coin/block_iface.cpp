@@ -296,6 +296,7 @@ void c_processaltblock(int altIndex, unsigned int nMinNonce, char *xn_hex)
     SetExtraNonce(alt_block, xn_hex);
     alt_block->hashMerkleRoot = alt_block->BuildMerkleTree();
 
+fprintf(stderr, "DEBUG: c_processaltblock[iface #%d]: testing alt block..\n");
     timing_init("ProcessAltBlock/Nonce", &ts);
     uint256 hashTarget = CBigNum().SetCompact(alt_block->nBits).getuint256();
     for (idx = 0; idx < MAX_NONCE_SEQUENCE; idx++) {

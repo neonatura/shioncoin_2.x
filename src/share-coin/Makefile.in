@@ -180,8 +180,9 @@ am__objects_5 = $(am__objects_4) shcoind-test_wallet.$(OBJEXT) \
 	shcoind-rpcnet.$(OBJEXT) shcoind-rpcrawtransaction.$(OBJEXT) \
 	shcoind-script.$(OBJEXT) shcoind-sync.$(OBJEXT) \
 	shcoind-wallet.$(OBJEXT) shcoind-walletdb.$(OBJEXT) \
-	shcoind-scrypt.$(OBJEXT) shcoind-wallet_iface.$(OBJEXT) \
-	shcoind-block_iface.$(OBJEXT) shcoind-server_iface.$(OBJEXT)
+	shcoind-scrypt.$(OBJEXT) shcoind-addrman.$(OBJEXT) \
+	shcoind-wallet_iface.$(OBJEXT) shcoind-block_iface.$(OBJEXT) \
+	shcoind-server_iface.$(OBJEXT)
 am__objects_6 = shcoind-stratum.$(OBJEXT) \
 	shcoind-stratum_http.$(OBJEXT) \
 	shcoind-stratum_message.$(OBJEXT) \
@@ -210,8 +211,7 @@ am__objects_8 = $(am__objects_7) shcointool-unet_accept.$(OBJEXT) \
 	shcointool-util.$(OBJEXT) shcointool-shcoind_rpc.$(OBJEXT) \
 	shcointool-shcoind_log.$(OBJEXT) \
 	shcointool-shcoind_opt.$(OBJEXT)
-am__objects_9 = shcointool-addrman.$(OBJEXT) \
-	shcointool-tool_irc.$(OBJEXT)
+am__objects_9 = shcointool-tool_irc.$(OBJEXT)
 am_shcointool_OBJECTS = $(am__objects_1) $(am__objects_8) \
 	shcointool-shcoind_tool.$(OBJEXT) \
 	shcointool-clientrpc_iface.$(OBJEXT) $(am__objects_9)
@@ -264,7 +264,7 @@ am__objects_13 = $(am__objects_12) test_shcoind-test_wallet.$(OBJEXT) \
 	test_shcoind-rpcrawtransaction.$(OBJEXT) \
 	test_shcoind-script.$(OBJEXT) test_shcoind-sync.$(OBJEXT) \
 	test_shcoind-wallet.$(OBJEXT) test_shcoind-walletdb.$(OBJEXT) \
-	test_shcoind-scrypt.$(OBJEXT) \
+	test_shcoind-scrypt.$(OBJEXT) test_shcoind-addrman.$(OBJEXT) \
 	test_shcoind-wallet_iface.$(OBJEXT) \
 	test_shcoind-block_iface.$(OBJEXT) \
 	test_shcoind-server_iface.$(OBJEXT)
@@ -1370,6 +1370,8 @@ server_sources = \
 	server/wallet.cpp \
 	server/walletdb.cpp \
 	server/scrypt.c \
+	server/addrman.h \
+	server/addrman.cpp \
 	wallet_iface.cpp \
 	block_iface.cpp \
 	server_iface.cpp
@@ -1383,8 +1385,6 @@ stratum_sources = \
 	stratum/stratum_task.c
 
 tool_sources = \
-	server/addrman.h \
-	server/addrman.cpp \
 	tool/tool_irc.cpp
 
 bin_SCRIPTS = usde shc
@@ -1627,6 +1627,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-addrman.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-base58.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-bc_arch.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-bc_block.Po@am__quote@
@@ -1693,7 +1694,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-wallet.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-wallet_iface.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-walletdb.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcointool-addrman.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcointool-bc_arch.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcointool-bc_block.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcointool-bc_fmap.Po@am__quote@
@@ -1719,6 +1719,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcointool-util.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcointool-version.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-CuTest.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-addrman.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-base58.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-bc_arch.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-bc_block.Po@am__quote@
@@ -3345,6 +3346,20 @@ shcoind-walletdb.obj: server/walletdb.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-walletdb.obj `if test -f 'server/walletdb.cpp'; then $(CYGPATH_W) 'server/walletdb.cpp'; else $(CYGPATH_W) '$(srcdir)/server/walletdb.cpp'; fi`
 
+shcoind-addrman.o: server/addrman.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-addrman.o -MD -MP -MF $(DEPDIR)/shcoind-addrman.Tpo -c -o shcoind-addrman.o `test -f 'server/addrman.cpp' || echo '$(srcdir)/'`server/addrman.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-addrman.Tpo $(DEPDIR)/shcoind-addrman.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/addrman.cpp' object='shcoind-addrman.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-addrman.o `test -f 'server/addrman.cpp' || echo '$(srcdir)/'`server/addrman.cpp
+
+shcoind-addrman.obj: server/addrman.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-addrman.obj -MD -MP -MF $(DEPDIR)/shcoind-addrman.Tpo -c -o shcoind-addrman.obj `if test -f 'server/addrman.cpp'; then $(CYGPATH_W) 'server/addrman.cpp'; else $(CYGPATH_W) '$(srcdir)/server/addrman.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-addrman.Tpo $(DEPDIR)/shcoind-addrman.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/addrman.cpp' object='shcoind-addrman.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-addrman.obj `if test -f 'server/addrman.cpp'; then $(CYGPATH_W) 'server/addrman.cpp'; else $(CYGPATH_W) '$(srcdir)/server/addrman.cpp'; fi`
+
 shcoind-wallet_iface.o: wallet_iface.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-wallet_iface.o -MD -MP -MF $(DEPDIR)/shcoind-wallet_iface.Tpo -c -o shcoind-wallet_iface.o `test -f 'wallet_iface.cpp' || echo '$(srcdir)/'`wallet_iface.cpp
 @am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-wallet_iface.Tpo $(DEPDIR)/shcoind-wallet_iface.Po
@@ -3470,20 +3485,6 @@ shcointool-clientrpc_iface.obj: clientrpc_iface.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='clientrpc_iface.cpp' object='shcointool-clientrpc_iface.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CXXFLAGS) $(CXXFLAGS) -c -o shcointool-clientrpc_iface.obj `if test -f 'clientrpc_iface.cpp'; then $(CYGPATH_W) 'clientrpc_iface.cpp'; else $(CYGPATH_W) '$(srcdir)/clientrpc_iface.cpp'; fi`
-
-shcointool-addrman.o: server/addrman.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CXXFLAGS) $(CXXFLAGS) -MT shcointool-addrman.o -MD -MP -MF $(DEPDIR)/shcointool-addrman.Tpo -c -o shcointool-addrman.o `test -f 'server/addrman.cpp' || echo '$(srcdir)/'`server/addrman.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcointool-addrman.Tpo $(DEPDIR)/shcointool-addrman.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/addrman.cpp' object='shcointool-addrman.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CXXFLAGS) $(CXXFLAGS) -c -o shcointool-addrman.o `test -f 'server/addrman.cpp' || echo '$(srcdir)/'`server/addrman.cpp
-
-shcointool-addrman.obj: server/addrman.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CXXFLAGS) $(CXXFLAGS) -MT shcointool-addrman.obj -MD -MP -MF $(DEPDIR)/shcointool-addrman.Tpo -c -o shcointool-addrman.obj `if test -f 'server/addrman.cpp'; then $(CYGPATH_W) 'server/addrman.cpp'; else $(CYGPATH_W) '$(srcdir)/server/addrman.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcointool-addrman.Tpo $(DEPDIR)/shcointool-addrman.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/addrman.cpp' object='shcointool-addrman.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CXXFLAGS) $(CXXFLAGS) -c -o shcointool-addrman.obj `if test -f 'server/addrman.cpp'; then $(CYGPATH_W) 'server/addrman.cpp'; else $(CYGPATH_W) '$(srcdir)/server/addrman.cpp'; fi`
 
 shcointool-tool_irc.o: tool/tool_irc.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CXXFLAGS) $(CXXFLAGS) -MT shcointool-tool_irc.o -MD -MP -MF $(DEPDIR)/shcointool-tool_irc.Tpo -c -o shcointool-tool_irc.o `test -f 'tool/tool_irc.cpp' || echo '$(srcdir)/'`tool/tool_irc.cpp
@@ -4002,6 +4003,20 @@ test_shcoind-walletdb.obj: server/walletdb.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/walletdb.cpp' object='test_shcoind-walletdb.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-walletdb.obj `if test -f 'server/walletdb.cpp'; then $(CYGPATH_W) 'server/walletdb.cpp'; else $(CYGPATH_W) '$(srcdir)/server/walletdb.cpp'; fi`
+
+test_shcoind-addrman.o: server/addrman.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-addrman.o -MD -MP -MF $(DEPDIR)/test_shcoind-addrman.Tpo -c -o test_shcoind-addrman.o `test -f 'server/addrman.cpp' || echo '$(srcdir)/'`server/addrman.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-addrman.Tpo $(DEPDIR)/test_shcoind-addrman.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/addrman.cpp' object='test_shcoind-addrman.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-addrman.o `test -f 'server/addrman.cpp' || echo '$(srcdir)/'`server/addrman.cpp
+
+test_shcoind-addrman.obj: server/addrman.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-addrman.obj -MD -MP -MF $(DEPDIR)/test_shcoind-addrman.Tpo -c -o test_shcoind-addrman.obj `if test -f 'server/addrman.cpp'; then $(CYGPATH_W) 'server/addrman.cpp'; else $(CYGPATH_W) '$(srcdir)/server/addrman.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-addrman.Tpo $(DEPDIR)/test_shcoind-addrman.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/addrman.cpp' object='test_shcoind-addrman.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-addrman.obj `if test -f 'server/addrman.cpp'; then $(CYGPATH_W) 'server/addrman.cpp'; else $(CYGPATH_W) '$(srcdir)/server/addrman.cpp'; fi`
 
 test_shcoind-wallet_iface.o: wallet_iface.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-wallet_iface.o -MD -MP -MF $(DEPDIR)/test_shcoind-wallet_iface.Tpo -c -o test_shcoind-wallet_iface.o `test -f 'wallet_iface.cpp' || echo '$(srcdir)/'`wallet_iface.cpp
