@@ -439,6 +439,9 @@ int stratum_default_iface(void)
   diff = 0;
   ifaceIndex = 0;
   for (idx = 1; idx < MAX_COIN_IFACE; idx++) {
+    iface = GetCoinByIndex(idx);
+    if (!iface || !iface->enabled) continue;
+
     t_diff = GetNextDifficulty(idx);
     if (t_diff >= diff) {
       ifaceIndex = idx;
@@ -449,6 +452,7 @@ int stratum_default_iface(void)
   return (ifaceIndex);
 }
 
+extern int DefaultWorkIndex;
 /**
  * @todo: leave stale worker users (without open fd) until next round reset. current behavior does not payout if connection is severed.
  */ 
@@ -489,6 +493,7 @@ int stratum_request_message(user_t *user, shjson_t *json)
     /* no operation method specified. */
     return (SHERR_INVAL);
   }
+fprintf(stderr, "DEBUG: STRATUM '%s'\n", method);
 
   timing_init(method, &ts);
 
@@ -675,7 +680,7 @@ int stratum_request_message(user_t *user, shjson_t *json)
     } else {
       work_id = (unsigned int)strtoll(work_id_str, NULL, 16);
 
-      json_str = getminingtransactioninfo(ifaceIndex, work_id);
+      json_str = getminingtransactioninfo((user->ifaceIndex?user->ifaceIndex:DefaultWorkIndex), work_id);
 
       reply = shjson_init(json_str);
       if (!json_str) {

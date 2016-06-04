@@ -261,6 +261,8 @@ task_t *task_init(void)
   int err;
   int i;
 
+  if (!DefaultWorkIndex)
+    DefaultWorkIndex = stratum_default_iface(); 
   for (ifaceIndex = 1; ifaceIndex < MAX_COIN_IFACE; ifaceIndex++) {
     err = task_verify(ifaceIndex, &work_reset[ifaceIndex]);
     if (!err) {
@@ -268,7 +270,9 @@ task_t *task_init(void)
       if (idx == 0 || idx == ifaceIndex) {
         idx = (shrand() % (MAX_COIN_IFACE-1)) + 1;
       } 
-      DefaultWorkIndex = idx;
+      CIface *ifaceWork = GetCoinByIndex(idx);
+      if (ifaceWork && ifaceWork->enabled)
+        DefaultWorkIndex = idx;
     }
   }
 

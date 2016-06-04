@@ -483,8 +483,10 @@ int c_submitblock(unsigned int workId, unsigned int nTime, unsigned int nNonce, 
   timing_term("ProcessBlock/Nonce", &ts);
 
   if (idx == MAX_NONCE_SEQUENCE) {
+#if 0
     /* try nonce on alt coins */ 
     c_processaltblock(pblock->ifaceIndex, nNonce, xn_hex);
+#endif
   } else {
     err = c_processblock(pblock);
     if (!err) {
