@@ -13,6 +13,11 @@ extern "C" {
 void test_shcoind_init(void)
 {
 
+  /* initialize chain */
+  test_CreateGenesisBlock();
+  test_GenerateBlock();
+
+  /* load wallet */
   SetWallet(TEST_COIN_IFACE, testWallet);
   RegisterWallet(testWallet);
   RandAddSeedPerfmon();

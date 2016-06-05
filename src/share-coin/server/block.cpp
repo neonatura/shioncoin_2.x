@@ -36,7 +36,11 @@ blkidx_t tableBlockIndex[MAX_COIN_IFACE];
 
 blkidx_t *GetBlockTable(int ifaceIndex)
 {
-  if (ifaceIndex < 1 || ifaceIndex >= MAX_COIN_IFACE)
+#ifndef TEST_SHCOIND
+  if (ifaceIndex == 0)
+    return (NULL);
+#endif
+  if (ifaceIndex < 0 || ifaceIndex >= MAX_COIN_IFACE)
     return (NULL);
   return (&tableBlockIndex[ifaceIndex]);
 }
