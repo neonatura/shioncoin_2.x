@@ -164,6 +164,7 @@ void start_rpc_server(void);
 
 void ResetTemplateWeight(void);
 
+void PeerClearBanned(void);
 
 #ifdef __cplusplus
 }

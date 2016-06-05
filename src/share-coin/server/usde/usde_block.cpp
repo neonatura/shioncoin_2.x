@@ -1134,6 +1134,7 @@ bool usde_ProcessBlock(CNode* pfrom, CBlock* pblock)
   // Preliminary checks
   if (!pblock->CheckBlock()) {
     iface->net_invalid = time(NULL);
+pblock->print();
     return error(SHERR_INVAL, "ProcessBlock() : CheckBlock FAILED");
   }
 

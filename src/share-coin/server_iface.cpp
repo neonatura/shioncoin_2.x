@@ -143,7 +143,8 @@ void CNode::PushGetBlocks(CBlockIndex* pindexBegin, uint256 hashEnd)
     return;
   }
 
-  Debug("PushGetBlocks: requesting height %d to hash '%s'\n", pindexBegin->nHeight, hashEnd.GetHex().c_str());
+  if (pindexBegin)
+    Debug("PushGetBlocks: requesting height %d to hash '%s'\n", pindexBegin->nHeight, hashEnd.GetHex().c_str());
   pindexLastGetBlocksBegin = pindexBegin;
   hashLastGetBlocksEnd = hashEnd;
 
@@ -694,6 +695,11 @@ std::map<CNetAddr, int64> CNode::setBanned;
 CCriticalSection CNode::cs_setBanned;
 
 void CNode::ClearBanned()
+{
+    setBanned.clear();
+}
+
+void PeerClearBanned(void)
 {
     setBanned.clear();
 }

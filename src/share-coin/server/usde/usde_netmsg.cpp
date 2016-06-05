@@ -484,6 +484,8 @@ fprintf(stderr, "USDE:ProcessMessage: received '%s' (%d bytes from %s)\n", strCo
     {
       const CInv &inv = vInv[nInv];
 
+      inv.ifaceIndex = USDE_COIN_IFACE;
+
       if (fShutdown)
         return true;
       pfrom->AddInventoryKnown(inv);
@@ -500,7 +502,7 @@ fprintf(stderr, "USDE:ProcessMessage: received '%s' (%d bytes from %s)\n", strCo
         // In case we are on a very long side-chain, it is possible that we already have
         // the last block in an inv bundle sent in response to getblocks. Try to detect
         // this situation and push another getblocks to continue.
-        std::vector<CInv> vGetData(1,inv);
+        std::vector<CInv> vGetData(USDE_COIN_IFACE, inv);
         blkidx_t blkidx = *blockIndex;
         pfrom->PushGetBlocks(blkidx[inv.hash], uint256(0));
       }
@@ -528,6 +530,7 @@ fprintf(stderr, "USDE:ProcessMessage: received '%s' (%d bytes from %s)\n", strCo
     {
       if (fShutdown)
         return true;
+inv.ifaceIndex = USDE_COIN_IFACE;
       if (fDebugNet || (vInv.size() == 1))
         printf("received getdata for: %s\n", inv.ToString().c_str());
 
@@ -537,9 +540,15 @@ fprintf(stderr, "USDE:ProcessMessage: received '%s' (%d bytes from %s)\n", strCo
         map<uint256, CBlockIndex*>::iterator mi = blockIndex->find(inv.hash);
         if (mi != blockIndex->end())
         {
+          CBlockIndex *pindex = (*mi).second;
           USDEBlock block;
-          block.ReadFromDisk((*mi).second);
-          pfrom->PushMessage("block", block);
+          if (block.ReadFromDisk(pindex) && block.CheckBlock() &&
+              pindex->nHeight <= GetBestHeight(USDE_COIN_IFACE)) {
+            pfrom->PushMessage("block", block);
+          } else {
+            Debug("USDE: WARN: failure validating requested block '%s' at height %d\n", block.GetHash().GetHex().c_str(), pindex->nHeight);
+            block.print();
+          }
 
           // Trigger them to send a getblocks request for the next batch of inventory
           if (inv.hash == pfrom->hashContinue)
@@ -714,6 +723,7 @@ fprintf(stderr, "USDE:ProcessMessage: received '%s' (%d bytes from %s)\n", strCo
     USDEBlock block;
     vRecv >> block;
 
+    Debug("USDE[block]: received block '%s' from peer '%s'\n", block.GetHash().GetHex().c_str(), pfrom->addr.ToString().c_str());
 
     timing_init("AddInventoryKnown", &ts);
     CInv inv(ifaceIndex, MSG_BLOCK, block.GetHash());
@@ -727,8 +737,6 @@ fprintf(stderr, "USDE:ProcessMessage: received '%s' (%d bytes from %s)\n", strCo
     if (block.nDoS) pfrom->Misbehaving(block.nDoS);
     timing_term(tag2, &ts);
 
-    //printf("received block %s\n", block.GetHash().ToString().substr(0,20).c_str());
-    //block.print();
   }
 
 
@@ -1123,8 +1131,7 @@ bool usde_SendMessages(CIface *iface, CNode* pto, bool fSendTrickle)
       const CInv& inv = (*pto->mapAskFor.begin()).second;
       if (!AlreadyHave(iface, txdb, inv))
       {
-        if (fDebugNet)
-          printf("sending getdata: %s\n", inv.ToString().c_str());
+        fprintf(stderr, "DEBUG: sending getdata: %s\n", inv.ToString().c_str());
         vGetData.push_back(inv);
         if (vGetData.size() >= 1000)
         {

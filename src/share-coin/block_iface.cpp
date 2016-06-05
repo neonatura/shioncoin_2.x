@@ -356,16 +356,15 @@ fprintf(stderr, "DEBUG: ALT-COIN: c_processaltblock[iface #%d]: found coin via m
  */
 int c_processblock(CBlock* pblock)
 {
+  NodeList &vNodes = GetNodeList(pblock->ifaceIndex);
   blkidx_t *blockIndex = GetBlockTable(pblock->ifaceIndex);
   CIface *iface = GetCoinByIndex(pblock->ifaceIndex);
   CNode *pfrom = NULL;
 
-/*
   if (vNodes.empty())
     return (0); // silent
-  if (IsInitialBlockDownload(ifaceIndex))
+  if (IsInitialBlockDownload(pblock->ifaceIndex))
     return (0); // silent
-*/
 
 
   CBlockIndex *bestIndex = GetBestBlockIndex(iface);

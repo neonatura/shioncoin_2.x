@@ -481,6 +481,8 @@ bool static ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CData
     {
       const CInv &inv = vInv[nInv];
 
+      inv.ifaceIndex = SHC_COIN_IFACE;
+
       if (fShutdown)
         return true;
       pfrom->AddInventoryKnown(inv);
@@ -497,7 +499,7 @@ bool static ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CData
         // In case we are on a very long side-chain, it is possible that we already have
         // the last block in an inv bundle sent in response to getblocks. Try to detect
         // this situation and push another getblocks to continue.
-        std::vector<CInv> vGetData(1,inv);
+        std::vector<CInv> vGetData(SHC_COIN_IFACE, inv);
         blkidx_t blkidx = *blockIndex;
         pfrom->PushGetBlocks(blkidx[inv.hash], uint256(0));
         if (fDebug)
@@ -527,6 +529,7 @@ bool static ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CData
     {
       if (fShutdown)
         return true;
+inv.ifaceIndex = SHC_COIN_IFACE;
       if (fDebugNet || (vInv.size() == 1))
         printf("received getdata for: %s\n", inv.ToString().c_str());
 
@@ -536,9 +539,15 @@ bool static ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CData
         map<uint256, CBlockIndex*>::iterator mi = blockIndex->find(inv.hash);
         if (mi != blockIndex->end())
         {
+          CBlockIndex *pindex = (*mi).second;
           SHCBlock block;
-          block.ReadFromDisk((*mi).second);
-          pfrom->PushMessage("block", block);
+          if (block.ReadFromDisk(pindex) && block.CheckBlock() &&
+              pindex->nHeight <= GetBestHeight(SHC_COIN_IFACE)) {
+            pfrom->PushMessage("block", block);
+          } else {
+            Debug("SHC: WARN: failure validating requested block '%s' at height %d\n", block.GetHash().GetHex().c_str(), pindex->nHeight);
+            block.print();
+          }
 
           // Trigger them to send a getblocks request for the next batch of inventory
           if (inv.hash == pfrom->hashContinue)
