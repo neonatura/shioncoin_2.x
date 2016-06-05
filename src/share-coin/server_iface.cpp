@@ -145,6 +145,8 @@ void CNode::PushGetBlocks(CBlockIndex* pindexBegin, uint256 hashEnd)
 
   if (pindexBegin)
     Debug("PushGetBlocks: requesting height %d to hash '%s'\n", pindexBegin->nHeight, hashEnd.GetHex().c_str());
+  else
+    Debug("PushGetBlocks: requesting requesting to hash '%s'\n", hashEnd.GetHex().c_str());
   pindexLastGetBlocksBegin = pindexBegin;
   hashLastGetBlocksEnd = hashEnd;
 

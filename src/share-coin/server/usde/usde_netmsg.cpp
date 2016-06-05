@@ -491,14 +491,14 @@ fprintf(stderr, "USDE:ProcessMessage: received '%s' (%d bytes from %s)\n", strCo
       pfrom->AddInventoryKnown(inv);
 
       bool fAlreadyHave = AlreadyHave(iface, txdb, inv);
-      if (fDebug)
-        printf("  got inventory: %s  %s\n", inv.ToString().c_str(), fAlreadyHave ? "have" : "new");
+Debug("USDE: ProcessMessage: got inventory: %s  %s\n", inv.ToString().c_str(), fAlreadyHave ? "have" : "new");
 
       if (!fAlreadyHave)
         pfrom->AskFor(inv);
       else if (inv.type == MSG_BLOCK && USDE_mapOrphanBlocks.count(inv.hash)) {
         pfrom->PushGetBlocks(GetBestBlockIndex(USDE_COIN_IFACE), usde_GetOrphanRoot(USDE_mapOrphanBlocks[inv.hash]));
       } else if (nInv == nLastBlock) {
+fprintf(stderr, "DEBUG: pushing for block..\n");
         // In case we are on a very long side-chain, it is possible that we already have
         // the last block in an inv bundle sent in response to getblocks. Try to detect
         // this situation and push another getblocks to continue.
@@ -1109,6 +1109,7 @@ bool usde_SendMessages(CIface *iface, CNode* pto, bool fSendTrickle)
           vInv.push_back(inv);
           if (vInv.size() >= 1000)
           {
+BOOST_FOREACH(CInv& inv, vInv) { fprintf(stderr, "DEBUG: sending inventory[iface #%d]: %s\n", inv.ifaceIndex, inv.ToString().c_str()); }
             pto->PushMessage("inv", vInv);
             vInv.clear();
           }
@@ -1116,8 +1117,10 @@ bool usde_SendMessages(CIface *iface, CNode* pto, bool fSendTrickle)
       }
       pto->vInventoryToSend = vInvWait;
     }
-    if (!vInv.empty())
+    if (!vInv.empty()) {
+BOOST_FOREACH(CInv& inv, vInv) { fprintf(stderr, "DEBUG: sending inventory[iface #%d]: %s\n", inv.ifaceIndex, inv.ToString().c_str()); }
       pto->PushMessage("inv", vInv);
+    }
 
 
     //

@@ -422,16 +422,15 @@ CBlockIndex *bestIndex = GetBestBlockIndex(iface);
 if (!bestIndex)
 return;
 
+  if (dlChainIndex[ifaceIndex] != 0 &&
+      dlChainIndex[ifaceIndex] != bestIndex->nHeight) {
+    iface->net_valid = time(NULL);
+fprintf(stderr, "DEBUG: UpdateDownloadBlockChain: height %d, iface %d\n", bestIndex->nHeight, ifaceIndex); 
+  }
 
   dlChainIndex[ifaceIndex] = MAX(dlChainIndex[ifaceIndex], bestIndex->nHeight);
 
 
-  if (dlChainIndex[ifaceIndex] == bestIndex->nHeight) {
-    return;
-    iface->net_valid = time(NULL);
-  }
-
-fprintf(stderr, "DEBUG: UpdateDownloadBlockChain: height %d, iface %d\n", bestIndex->nHeight, ifaceIndex); 
 }
 
 void event_cycle_chain(int ifaceIndex)

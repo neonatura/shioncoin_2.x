@@ -69,7 +69,6 @@ fprintf(stderr, "DEBUG: CMessageHeader::IsValid: no trailing zeros.\n");
 }
         }
         else if (*p1 < ' ' || *p1 > 0x7E) {
-fprintf(stderr, "DEBUG: CMessageHeader::IsValid: character out of range (%d)\n"< (int)*p1);
             return false;
 }
     }
