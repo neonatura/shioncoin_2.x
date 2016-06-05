@@ -187,8 +187,10 @@ fprintf(stderr, "DEBUG: uevent_cycle_peer:  no bind \n");
     goto fin;
   }
 
-  if (unet_peer_find(shpeer_addr(peer)))
+  if (unet_peer_find(shpeer_addr(peer))) {
+    shnet_track_mark(peer, 1); /* give points for being connected */
     goto fin; /* already connected */
+  }
 
   err = uevent_peer_verify(e);
   if (err)

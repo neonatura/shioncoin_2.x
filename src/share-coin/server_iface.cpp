@@ -699,10 +699,6 @@ void CNode::ClearBanned()
     setBanned.clear();
 }
 
-void PeerClearBanned(void)
-{
-    setBanned.clear();
-}
 
 bool CNode::IsBanned(CNetAddr ip)
 {
@@ -1264,8 +1260,12 @@ void usde_server_accept(int hSocket, struct sockaddr *net_addr)
     {
       fprintf(stderr, "connection from %s dropped (banned)\n", addr.ToString().c_str());
       unet_close(hSocket, "banned");
-      //    closesocket(hSocket);
       return;
+    }
+  } else {
+    if (CNode::IsBanned(addr)) {
+      /* force clear ban list due to manual connection initiation. */
+      CNode::ClearBanned();
     }
   }
 
@@ -1737,6 +1737,11 @@ void shc_server_accept(int hSocket, struct sockaddr *net_addr)
       unet_close(hSocket, "banned");
       //    closesocket(hSocket);
       return;
+    }
+  } else {
+    if (CNode::IsBanned(addr)) {
+      /* force clear ban list due to manual connection initiation. */
+      CNode::ClearBanned();
     }
   }
 
