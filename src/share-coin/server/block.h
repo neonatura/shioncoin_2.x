@@ -1332,8 +1332,9 @@ class CBlockLocator
         Set((*mi).second);
     }
 
-    CBlockLocator(const std::vector<uint256>& vHaveIn)
+    CBlockLocator(int ifaceIndexIn, const std::vector<uint256>& vHaveIn)
     {
+      ifaceIndex = ifaceIndex;
       vHave = vHaveIn;
     }
 
@@ -1473,6 +1474,8 @@ void CloseBlockChain(CIface *iface);
 bool VerifyTxHash(CIface *iface, uint256 hashTx);
 
 CBlock *GetArchBlockByHash(CIface *iface, const uint256 hash);
+
+uint256 GetGenesisBlockHash(int ifaceIndex);
 
 
 #endif /* ndef __SERVER_BLOCK_H__ */

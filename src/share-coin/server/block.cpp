@@ -605,9 +605,9 @@ CBlock *GetBlockTemplate(int ifaceIndex)
 
 
 
-extern CCriticalSection cs_main;
 
 #if 0
+extern CCriticalSection cs_main;
 /** Return transaction in tx, and if it was found inside a block, its hash is placed in hashBlock */
 bool GetTransaction(CIface *iface, const uint256 &hash, CTransaction &tx, uint256 &hashBlock)
 {
@@ -918,6 +918,25 @@ uint256 CBlockLocator::GetBlockHash()
         return hash;
     }
   }
+  return GetGenesisBlockHash(ifaceIndex);
+}
+#if 0
+uint256 CBlockLocator::GetBlockHash()
+{
+  CIface *iface = GetCoinByIndex(ifaceIndex);
+  blkidx_t *blockIndex = GetBlockTable(ifaceIndex); 
+
+  // Find the first block the caller has in the main chain
+  BOOST_FOREACH(const uint256& hash, vHave)
+  {
+    std::map<uint256, CBlockIndex*>::iterator mi = blockIndex->find(hash);
+    if (mi != blockIndex->end())
+    {
+      CBlockIndex* pindex = (*mi).second;
+      if (pindex->IsInMainChain(ifaceIndex))
+        return hash;
+    }
+  }
 
   CBlock *block = GetBlockByHeight(iface, 0);
   if (!block) {
@@ -929,6 +948,7 @@ uint256 CBlockLocator::GetBlockHash()
   return hashBlock;
 //  return block->hashGenesisBlock;
 }
+#endif
 
 
 int CBlockLocator::GetHeight()
@@ -960,6 +980,24 @@ CBlockIndex* CBlockLocator::GetBlockIndex()
   return (GetGenesisBlockIndex(iface));
 }
 
+
+void CBlockLocator::Set(const CBlockIndex* pindex)
+{
+  vHave.clear();
+  int nStep = 1;
+  while (pindex)
+  {
+    vHave.push_back(pindex->GetBlockHash());
+
+    // Exponentially larger steps back
+    for (int i = 0; pindex && i < nStep; i++)
+      pindex = pindex->pprev;
+    if (vHave.size() > 10)
+      nStep *= 2;
+  }
+  vHave.push_back(GetGenesisBlockHash(ifaceIndex));
+}
+#if 0
 void CBlockLocator::Set(const CBlockIndex* pindex)
 {
   CIface *iface = GetCoinByIndex(ifaceIndex);
@@ -977,6 +1015,8 @@ void CBlockLocator::Set(const CBlockIndex* pindex)
       nStep *= 2;
   }
 
+  /* all the way back */
+  pindex = 
   CBlock *block = GetBlockByHeight(iface, 0);
   if (block) {
     uint256 hashBlock = block->GetHash();
@@ -984,7 +1024,33 @@ void CBlockLocator::Set(const CBlockIndex* pindex)
     delete block; 
   }
 }
+#endif
 
+
+
+int CBlockLocator::GetDistanceBack()
+{
+  blkidx_t *blockIndex = GetBlockTable(ifaceIndex);
+
+  // Retrace how far back it was in the sender's branch
+  int nDistance = 0;
+  int nStep = 1;
+  BOOST_FOREACH(const uint256& hash, vHave)
+  {
+    std::map<uint256, CBlockIndex*>::iterator mi = blockIndex->find(hash);
+    if (mi != blockIndex->end())
+    {
+      CBlockIndex* pindex = (*mi).second;
+      if (pindex->IsInMainChain(ifaceIndex))
+        return nDistance;
+    }
+    nDistance += nStep;
+    if (nDistance > 10)
+      nStep *= 2;
+  }
+  return nDistance;
+}
+#if 0
 int CBlockLocator::GetDistanceBack()
 {
   // Retrace how far back it was in the sender's branch
@@ -1006,6 +1072,7 @@ int CBlockLocator::GetDistanceBack()
   }
   return nDistance;
 }
+#endif
 
 
 
@@ -1984,3 +2051,14 @@ bool CTransaction::EraseTx(int ifaceIndex)
 }
 
 
+uint256 GetGenesisBlockHash(int ifaceIndex)
+{
+  uint256 hash;
+  CIface *iface = GetCoinByIndex(ifaceIndex);
+  CBlock *block = GetBlockByHeight(iface, 0); 
+  if (!block)
+    return (false);
+  hash = block->GetHash();
+  delete block;
+  return (hash);
+}

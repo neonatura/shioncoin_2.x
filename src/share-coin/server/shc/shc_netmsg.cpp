@@ -588,15 +588,16 @@ bool static ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CData
     {
       if (pindex->GetBlockHash() == hashStop)
       {
-        printf("  getblocks stopping at %d %s\n", pindex->nHeight, pindex->GetBlockHash().ToString().substr(0,20).c_str());
+        fprintf(stderr, "DEBUG:  getblocks stopping at %d %s\n", pindex->nHeight, pindex->GetBlockHash().ToString().substr(0,20).c_str());
         break;
       }
       pfrom->PushInventory(CInv(ifaceIndex, MSG_BLOCK, pindex->GetBlockHash()));
+fprintf(stderr, "DEBUG: shc_ProcessMessage: PushBlock height %d\n", pindex->nHeight);
       if (--nLimit <= 0)
       {
         // When this block is requested, we'll send an inv that'll make them
         // getblocks the next batch of inventory.
-        printf("  getblocks stopping at limit %d %s\n", pindex->nHeight, pindex->GetBlockHash().ToString().substr(0,20).c_str());
+        fprintf(stderr, "DEBUG:  getblocks stopping at limit %d %s\n", pindex->nHeight, pindex->GetBlockHash().ToString().substr(0,20).c_str());
         pfrom->hashContinue = pindex->GetBlockHash();
         break;
       }
