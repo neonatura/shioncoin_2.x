@@ -13,7 +13,18 @@ extern "C" {
 
 void test_shcoind_init(void)
 {
+  CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
   uint256 thash;
+
+/* initialize chains */
+  bc_t *tx_bc = GetBlockTxChain(iface);
+  bc_t *bc = GetBlockChain(iface);
+
+  /* load wallet */
+testWallet = new TESTWallet();
+  SetWallet(TEST_COIN_IFACE, testWallet);
+  RegisterWallet(testWallet);
+  RandAddSeedPerfmon();
 
   /* initialize chain */
   {
@@ -23,12 +34,13 @@ void test_shcoind_init(void)
   }
   test_CreateGenesisBlock();
 
-//  test_GenerateBlock();
 
-  /* load wallet */
-  SetWallet(TEST_COIN_IFACE, testWallet);
-  RegisterWallet(testWallet);
-  RandAddSeedPerfmon();
+/* DEBUG: add 'test_wallet.cpp' */
+  /* initialize wallet */
+//  test_LoadWallet();
+
+
+//CBlock *test_block = test_GenerateBlock(); /* DEBUG: */
 
 }
 

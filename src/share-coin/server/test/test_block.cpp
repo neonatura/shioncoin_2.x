@@ -110,7 +110,7 @@ namespace TEST_Checkpoints
   //
   static MapCheckpoints mapCheckpoints =
     boost::assign::map_list_of
-    ( 0, uint256("0x33abc26f9a026f1279cb49600efdd63f42e7c2d3a15463ad8090505d3e967752"))
+    ( 0, uint256("0xf4319e4e89b35b5f26ec0363a09d29703402f120cf1bf8e6f535548d5ec3c5cc") )
     ;
 
 
@@ -552,59 +552,56 @@ block.print(); /* DEBUG: */
   return (true);
 }
 
-bool test_GenerateBlock()
+CBlock *test_GenerateBlock()
 {
+  CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
   static unsigned int nNonceIndex;
   CBlockIndex *bestIndex = GetBestBlockIndex(TEST_COIN_IFACE);
   blkidx_t *blockIndex = GetBlockTable(TEST_COIN_IFACE);
 
   if (blockIndex->empty())
-    return (test_CreateGenesisBlock());
+    return (NULL);
 
-  const char* pszTimestamp = "Neo Natura (share-coin) 2016";
-  CTransaction txNew;
-  txNew.vin.resize(1);
-  txNew.vout.resize(1);
-  txNew.vin[0].scriptSig = CScript() << 486604799 << CBigNum(4) << vector<unsigned char>((const unsigned char*)pszTimestamp, (const unsigned char*)pszTimestamp + strlen(pszTimestamp));
-  txNew.vout[0].nValue = 1 * COIN;
-  txNew.vout[0].scriptPubKey = CScript() << ParseHex("04a5814813115273a109cff99907ba4a05d951873dae7acb6c973d0c9e7c88911a3dbc9aa600deac241b91707e7b4ffb30ad91c8e56e695a1ddf318592988afe0a") << OP_CHECKSIG;
-  TESTBlock block;
-  block.vtx.push_back(txNew);
-  if (bestIndex)
-    block.hashPrevBlock = bestIndex->GetBlockHash();
-  block.hashMerkleRoot = block.BuildMerkleTree();
-  block.nVersion = TESTBlock::CURRENT_VERSION;
-  block.nTime    = time(NULL);
-  block.nBits    = block.GetNextWorkRequired(bestIndex);
-  block.nNonce   = ++nNonceIndex;
+  CWallet *wallet = GetWallet(iface);
+  CReserveKey reservekey(wallet);
+  CBlock *block = test_CreateNewBlock(reservekey);
+
+
+//  block->vtx.push_back(txNew);
+// if (bestIndex) block->hashPrevBlock = bestIndex->GetBlockHash();
+  block->hashMerkleRoot = block->BuildMerkleTree();
+//  block->nVersion = TESTBlock::CURRENT_VERSION;
+//  block->nTime    = time(NULL);
+//  block->nBits    = block->GetNextWorkRequired(bestIndex);
+  block->nNonce   = ++nNonceIndex;
 
 
   {
-    uint256 hashTarget = CBigNum().SetCompact(block.nBits).getuint256();
+    uint256 hashTarget = CBigNum().SetCompact(block->nBits).getuint256();
     uint256 thash;
     char scratchpad[SCRYPT_SCRATCHPAD_SIZE];
 
     loop
     {
-      scrypt_1024_1_1_256_sp(BEGIN(block.nVersion), BEGIN(thash), scratchpad);
+      scrypt_1024_1_1_256_sp(BEGIN(block->nVersion), BEGIN(thash), scratchpad);
       if (thash <= hashTarget)
         break;
-      if ((block.nNonce & 0xFFF) == 0)
+      if ((block->nNonce & 0xFFF) == 0)
       {
-        printf("nonce %08X: hash = %s (target = %s)\n", block.nNonce, thash.ToString().c_str(), hashTarget.ToString().c_str());
+        printf("nonce %08X: hash = %s (target = %s)\n", block->nNonce, thash.ToString().c_str(), hashTarget.ToString().c_str());
       }
-      ++block.nNonce;
-      if (block.nNonce == 0)
+      ++block->nNonce;
+      if (block->nNonce == 0)
       {
         printf("NONCE WRAPPED, incrementing time\n");
-        ++block.nTime;
+        ++block->nTime;
       }
     }
   }
 
-block.print(); /* DEBUG: */
+block->print(); /* DEBUG: */
 
-  return (true);
+  return (block);
 }
 
 

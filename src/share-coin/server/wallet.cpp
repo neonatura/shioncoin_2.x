@@ -57,6 +57,10 @@ CWallet *GetWallet(CIface *iface)
 
 void SetWallet(int iface_idx, CWallet *wallet)
 {
+#ifndef TEST_SHCOIND
+  if (iface_idx == 0)
+    return;
+#endif
 
   if (iface_idx < 0 || iface_idx >= MAX_COIN_IFACE)
     return;

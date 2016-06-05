@@ -51,7 +51,8 @@
 using namespace std;
 using namespace boost;
 
-TESTWallet *testWallet = new TESTWallet();
+TESTWallet *testWallet;
+
 CScript TEST_COINBASE_FLAGS;
 
 

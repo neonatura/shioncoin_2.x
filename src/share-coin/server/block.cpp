@@ -188,7 +188,11 @@ void CloseBlockChains(void)
   CIface *iface;
   int idx;
 
-  for (idx = 1; idx < MAX_COIN_IFACE; idx++) {
+  for (idx = 0; idx < MAX_COIN_IFACE; idx++) {
+#ifndef TEST_SHCOIND
+    if (idx == 0) continue;
+#endif
+
     iface = GetCoinByIndex(idx);
     if (!iface)
       continue;

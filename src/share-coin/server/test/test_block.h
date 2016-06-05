@@ -130,6 +130,6 @@ uint256 test_GetOrphanRoot(const CBlock* pblock);
 
 void test_SyncWithWallets(const CTransaction& tx, const CBlock* pblock, bool fUpdate);
 
-bool test_GenerateBlock();
+CBlock *test_GenerateBlock();
 
 #endif /* ndef __TEST__TEST_BLOCK_H__ */

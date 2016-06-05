@@ -361,10 +361,16 @@ int c_processblock(CBlock* pblock)
   CIface *iface = GetCoinByIndex(pblock->ifaceIndex);
   CNode *pfrom = NULL;
 
-  if (vNodes.empty())
+  if (vNodes.empty()) {
+fprintf(stderr, "DEBUG: c_processblock: no connected peers.\n");
+    return (0); 
+}
+#if 0 
+  if (IsInitialBlockDownload(pblock->ifaceIndex)) {
+fprintf(stderr, "DEBUG: c_processblock: IsInitialBlockDownload()\n");
     return (0); // silent
-  if (IsInitialBlockDownload(pblock->ifaceIndex))
-    return (0); // silent
+  }
+#endif
 
 
   CBlockIndex *bestIndex = GetBestBlockIndex(iface);

@@ -70,6 +70,10 @@ coin_iface_t *GetCoinByIndex(int index)
 {
   if (index < 0 || index >= MAX_COIN_IFACE)
     return (NULL);
+#ifndef TEST_SHCOIND
+  if (index == 0)
+    return (NULL);
+#endif
 
   return (_iface_table[index]);
 }
@@ -81,6 +85,10 @@ coin_iface_t *GetCoin(const char *name)
   if (!name)
     return (NULL);
   for (i = 0; i < MAX_COIN_IFACE; i++) {
+#ifndef TEST_SHCOIND
+    if (i == 0)
+      continue;
+#endif
     if (0 == strcasecmp(_iface_table[i]->name, name))
       return (_iface_table[i]);
   }
