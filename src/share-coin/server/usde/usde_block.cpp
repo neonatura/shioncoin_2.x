@@ -1628,6 +1628,8 @@ bool USDEBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
   shtime_t ts;
   bool ret;
 
+  Debug("USDEBlock::SetBestChain: setting best chain to block '%s' @ height %d.", pindexNew->GetBlockHash().GetHex().c_str(), pindexNew->nHeight);
+
   if (!txdb.TxnBegin())
     return error(SHERR_INVAL, "SetBestChain() : TxnBegin failed");
 

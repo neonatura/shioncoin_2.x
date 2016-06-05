@@ -541,9 +541,11 @@ bool test_CreateGenesisBlock()
   if (!ret)
     return (false);
 
+#if 0
   TESTTxDB txdb;
   block.SetBestChain(txdb, (*blockIndex)[test_hashGenesisBlock]);
   txdb.Close();
+#endif
 
 block.print(); /* DEBUG: */
 
@@ -1278,9 +1280,16 @@ bool TESTBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
   shtime_t ts;
   bool ret;
 
+  Debug("TESTBlock::SetBestChain: setting best chain to block '%s' @ height %d.", pindexNew->GetBlockHash().GetHex().c_str(), pindexNew->nHeight);
+
   if (!txdb.TxnBegin())
     return error(SHERR_INVAL, "SetBestChain() : TxnBegin failed");
 
+if (TESTBlock::pindexGenesisBlock) {
+CBlockIndex *pindex = TESTBlock::pindexGenesisBlock;
+fprintf(stderr, "DEBUG: TESTBlock::pindexGenesisBlock: %s\n", pindex->GetBlockHash().GetHex().c_str()); 
+}
+fprintf(stderr, "DEBUG: TESTBlock::SetBestChain '%s'\n", hash.GetHex().c_str());
   if (TESTBlock::pindexGenesisBlock == NULL && hash == test_hashGenesisBlock)
   {
     txdb.WriteHashBestChain(hash);

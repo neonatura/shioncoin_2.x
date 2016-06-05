@@ -164,8 +164,6 @@ int stratum_user_broadcast_task(task_t *task)
   int clear;
   int err;
 
-fprintf(stderr, "DEBUG: stratum_user_broadcast_task: DefaultWorkIndex %d\n", DefaultWorkIndex);
-
   if (!task)
     return (0);
   for (user = client_list; user; user = user->next) {
@@ -183,7 +181,6 @@ fprintf(stderr, "DEBUG: stratum_user_broadcast_task: DefaultWorkIndex %d\n", Def
 
     clear = (user->height != task->height);
     err = stratum_send_task(user, task, clear);
-fprintf(stderr, "DEBUG: %d = stratum_send_task(clear %d)\n", err, clear);
     if (!err)
       user->height = task->height;
 
