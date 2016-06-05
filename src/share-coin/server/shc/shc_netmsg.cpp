@@ -583,7 +583,7 @@ bool static ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CData
     if (pindex)
       pindex = pindex->pnext;
     int nLimit = 500;
-    printf("getblocks %d to %s limit %d\n", (pindex ? pindex->nHeight : -1), hashStop.ToString().substr(0,20).c_str(), nLimit);
+    fprintf(stderr, "DEBUG: getblocks %d to %s limit %d\n", (pindex ? pindex->nHeight : -1), hashStop.ToString().substr(0,20).c_str(), nLimit);
     for (; pindex; pindex = pindex->pnext)
     {
       if (pindex->GetBlockHash() == hashStop)

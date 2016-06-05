@@ -33,6 +33,8 @@ void ScanWalletTxUpdated(CWallet *wallet, const CBlock *pblock);
 
 void InitScanWalletTx(CWallet *wallet, int nHeight);
 
+void UpdateDownloadBlockchain(int ifaceIndex);
+
 #ifdef __cplusplus
 }
 #endif

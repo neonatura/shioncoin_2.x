@@ -31,6 +31,7 @@
 #include "test_block.h"
 #include "test_txidx.h"
 #include "test_wallet.h"
+#include "chain.h"
 
 #ifdef WIN32
 #include <string.h>
@@ -1140,7 +1141,7 @@ bool test_ProcessBlock(CNode* pfrom, CBlock* pblock)
     return error(SHERR_IO, "TESTBlock::AcceptBlock: error adding block '%s'.", pblock->GetHash().GetHex().c_str());
   }
   timing_term("AcceptBlock", &ts);
-  iface->net_valid = time(NULL);
+  UpdateDownloadBlockchain(TEST_COIN_IFACE);
 
   // Recursively process any orphan blocks that depended on this one
   vector<uint256> vWorkQueue;

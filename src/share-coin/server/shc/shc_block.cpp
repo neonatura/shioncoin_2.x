@@ -31,6 +31,7 @@
 #include "shc_block.h"
 #include "shc_wallet.h"
 #include "shc_txidx.h"
+#include "chain.h"
 
 #ifdef WIN32
 #include <string.h>
@@ -210,7 +211,7 @@ int64 shc_GetBlockValue(int nHeight, int64 nFees)
 {
 
   if (nHeight == 0)
-    return ((int64)800);
+    return ((int64)800 * COIN);
 
   int64 nSubsidy = 2000 * SHC_COIN;
   nSubsidy >>= (nHeight / 2500001);
@@ -1040,7 +1041,7 @@ bool shc_ProcessBlock(CNode* pfrom, CBlock* pblock)
     return error(SHERR_IO, "SHCBlock::AcceptBlock: error adding block '%s'.", pblock->GetHash().GetHex().c_str());
   }
   timing_term("AcceptBlock", &ts);
-  iface->net_valid = time(NULL);
+  UpdateDownloadBlockchain(SHC_COIN_IFACE);
 
   // Recursively process any orphan blocks that depended on this one
   vector<uint256> vWorkQueue;
@@ -1291,9 +1292,6 @@ bool SHCBlock::SetBestChainInner(CTxDB& txdb, CBlockIndex *pindexNew)
   uint256 hash = GetHash();
   bc_t *bc = GetBlockChain(GetCoinByIndex(SHC_COIN_IFACE));
 
-  if ((bc_idx_next(bc)-1) != pindexNew->nHeight) {
-fprintf(stderr, "DEBUG: SHCBlock::SetBestChainInner: warning: next blockchain db height (%d) != new block index height (%d)\n", (int)bc_idx_next(bc), (int)pindexNew->nHeight); 
-}
 
   // Adding to current best branch
   if (!ConnectBlock(txdb, pindexNew) || !txdb.WriteHashBestChain(hash))

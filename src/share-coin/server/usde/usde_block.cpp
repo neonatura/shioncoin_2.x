@@ -31,6 +31,7 @@
 #include "usde_block.h"
 #include "usde_txidx.h"
 #include "usde_wallet.h"
+#include "chain.h"
 
 #ifdef WIN32
 #include <string.h>
@@ -1187,7 +1188,7 @@ pblock->print();
     return error(SHERR_INVAL, "ProcessBlock() : AcceptBlock FAILED");
   }
   timing_term("AcceptBlock", &ts);
-  iface->net_valid = time(NULL);
+  UpdateDownloadBlockchain(USDE_COIN_IFACE);
 
   // Recursively process any orphan blocks that depended on this one
   vector<uint256> vWorkQueue;
