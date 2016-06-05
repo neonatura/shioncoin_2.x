@@ -34,17 +34,21 @@ static const char *_stratum_user_html_template =
 "Accepted: %u\r\n"
 "\r\n";
 static const char *_stratum_html_template = 
-"\r\n"
-"Ledger Blocks: %lu\r\n"
-"Difficulty: %f\r\n"
-"USDE Network: %-2.2fkh/s\r\n"
-"\r\n";
+"<u>%s</u>\r\n"
+"<div style=\"font-size : 12px; font-family : Georgia;\">\r\n" /* show ver */
+"<div style=\"float : left; margin-left : 16px;\">Ledger Blocks: %lu</div>\r\n"
+"<div style=\"float : left; margin-left : 16px;\">Difficulty: %-4.4f</div>\r\n"
+"<div style=\"float : left; margin-left : 16px;\">Network Speed: %-1.1fkh/s</div>\r\n"
+"<div style=\"float : left; margin-left : 16px;\">Max Coins: %lu</div>\r\n"
+"<div style=\"float : left; margin-left : 16px;\">Maturity: %lu</div>\r\n"
+"<div style=\"clear : both;\"></div>\r\n"
+"</div>\r\n"
+"<hr></hr>\r\n";
 
 
 char *stratum_http_response(SOCKET sk, char *url)
 {
   static char ret_html[10240];
-  int ifaceIndex = USDE_COIN_IFACE;
   char uname[512];
 
   if (0 == strncmp(url, "/user/", strlen("/user/"))) {
@@ -62,12 +66,27 @@ char *stratum_http_response(SOCKET sk, char *url)
         user->worker, stratum_user_speed(user), 
         (unsigned long)user->block_tot, (unsigned int)user->block_cnt);
   } else {
-    shjson_t *json = shjson_init(getmininginfo(ifaceIndex));
-    sprintf(ret_html, _stratum_html_template, 
-        (unsigned long)shjson_array_num(json, "result", 0),
-        shjson_array_num(json, "result", 1),
-        shjson_array_num(json, "result", 2));
-    shjson_free(&json);
+    int idx;
+    for (idx = 1; idx < MAX_COIN_IFACE; idx++) { 
+      CIface *iface = GetCoinByIndex(idx);
+      if (!iface || !iface->enabled) continue;
+
+      *ret_html = '\0';
+      {
+        shjson_t *json = shjson_init(getmininginfo(idx));
+        unsigned long height = shjson_array_num(json, "result", 0);
+        sprintf(ret_html+strlen(ret_html), _stratum_html_template, 
+            iface->name, height,
+            shjson_array_num(json, "result", 1),
+            shjson_array_num(json, "result", 2),
+            (unsigned long)(iface->max_money / COIN),
+            (unsigned long)iface->coinbase_maturity);
+        shjson_free(&json);
+
+/* DEBUG: TODO: .. show mem usage .. blockIndex vs mapped files ~ */
+      }
+
+    }
   }
 
   return (ret_html);

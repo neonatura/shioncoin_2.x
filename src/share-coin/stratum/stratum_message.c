@@ -138,8 +138,10 @@ int stratum_send_task(user_t *user, task_t *task, int clean)
   if (!(user->flags & USER_SUBSCRIBE))
     return (0);
 
+#if 0
   if (task->height < user->height)
     return (SHERR_INVAL);
+#endif
 
   sprintf(proto_str, "%-8.8x", task->version);
   sprintf(time_str, "%-8.8x", task->curtime);

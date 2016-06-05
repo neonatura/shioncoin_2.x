@@ -181,11 +181,11 @@ fprintf(stderr, "DEBUG: stratum_user_broadcast_task: DefaultWorkIndex %d\n", Def
         continue;
     }
 
-    clear = (user->height < task->height);
+    clear = (user->height != task->height);
     err = stratum_send_task(user, task, clear);
 fprintf(stderr, "DEBUG: %d = stratum_send_task(clear %d)\n", err, clear);
     if (!err)
-      user->height = MAX(user->height, task->height);
+      user->height = task->height;
 
   }
 
