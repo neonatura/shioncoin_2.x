@@ -2331,6 +2331,8 @@ bool usde_Truncate(uint256 hash)
       if (blockIndex->count(t_hash) != 0)
         block.DisconnectBlock(txdb, (*blockIndex)[t_hash]);
     }
+  }
+  for (nHeight = nMaxHeight; nHeight > nMinHeight; nHeight--) {
     bc_clear(bc, nHeight);
   }  
 

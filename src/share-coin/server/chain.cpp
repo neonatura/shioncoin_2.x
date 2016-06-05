@@ -399,7 +399,7 @@ int InitDownloadBlockchain(int ifaceIndex, int maxHeight)
   if (dlChainIndex[ifaceIndex] == 0) {
     dlChainIndex[ifaceIndex] = maxHeight;
   } else {
-    dlChainIndex[ifaceIndex] = MIN(dlChainIndex[ifaceIndex], maxHeight);
+    dlChainIndex[ifaceIndex] = MAX(dlChainIndex[ifaceIndex], maxHeight);
   }
   
 fprintf(stderr, "DEBUG: InitDownloadBlockchain: iface(%d) max(%d)\n", ifaceIndex, dlChainIndex[ifaceIndex]);
