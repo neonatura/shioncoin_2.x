@@ -1882,60 +1882,60 @@ bool SHCBlock::IsOrphan()
 }
 
 
-bool SHCBlock::Truncate()
+bool shc_Truncate(uint256 hash)
 {
   blkidx_t *blockIndex = GetBlockTable(SHC_COIN_IFACE);
   CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);
-  bc_t *bc = GetBlockChain(iface);
+  CBlockIndex *pBestIndex;
   CBlockIndex *cur_index;
+  CBlockIndex *pindex;
+  unsigned int nHeight;
   int err;
 
-if (!blockIndex->count(GetHash()))
+  if (!blockIndex || !blockIndex->count(hash))
     return error(SHERR_INVAL, "Erase: block not found in block-index.");
 
-  cur_index = (*blockIndex)[GetHash()];
+  cur_index = (*blockIndex)[hash];
   if (!cur_index)
     return error(SHERR_INVAL, "Erase: block not found in block-index.");
 
-#if 0
-  CBlockIndex *pindex;
-  pindex = GetBestBlockIndex(iface);
-  if (!pindex)
-    return error(SHERR_INVAL, "Erase: no established tail of block-chain.");
+  pBestIndex = GetBestBlockIndex(iface);
+  if (!pBestIndex)
+    return error(SHERR_INVAL, "Erase: no block-chain established.");
+  if (cur_index->nHeight > pBestIndex->nHeight)
+    return error(SHERR_INVAL, "Erase: height is not valid.");
 
-  SHCTxDB txdb;
-  while (pindex && pindex->nHeight >= cur_index->nHeight) {
+  bc_t *bc = GetBlockChain(iface);
+  unsigned int nMinHeight = cur_index->nHeight;
+  unsigned int nMaxHeight = (bc_idx_next(bc)-1);
+    
+  SHCTxDB txdb; /* OPEN */
+
+  for (nHeight = nMaxHeight; nHeight > nMinHeight; nHeight--) {
     SHCBlock block;
-    if (block.ReadBlock(pindex->nHeight)) {
-      block.DisconnectBlock(txdb, pindex);
+    if (block.ReadBlock(nHeight)) {
+      uint256 t_hash = block.GetHash();
+      if (hash == cur_index->GetBlockHash())
+        break; /* bad */
+      if (blockIndex->count(t_hash) != 0)
+        block.DisconnectBlock(txdb, (*blockIndex)[t_hash]);
     }
-    pindex = pindex->pprev;
-  }
-  if (pindex) {
-    SHCBlock block;
-    if (block.ReadBlock(pindex->nHeight)) {
-      pindex->pnext = NULL;
-      block.SetBestChain(txdb, pindex);
-    }
-  }
+    bc_clear(bc, nHeight);
+  }  
 
-  txdb.Close();
-#endif
-  CBlockIndex *pindex = cur_index->pprev;
-  if (pindex) {
-    SHCBlock block;
-    if (block.ReadFromDisk(pindex)) {
-      SHCTxDB txdb;
-      block.SetBestChain(txdb, pindex);
-      txdb.Close();
-    }
-  }
+  SetBestBlockIndex(iface, cur_index);
+  bool ret = txdb.WriteHashBestChain(cur_index->GetBlockHash());
 
-#if 0
-  err = BlockChainErase(iface, cur_index->nHeight);
-  if (err)
-    return error(err, "BlockChainErase[SHC]");
-#endif
+  txdb.Close(); /* CLOSE */
 
+  if (!ret)
+    return error(SHERR_INVAL, "Truncate: WriteHashBestChain '%s' failed", hash.GetHex().c_str());
+
+  cur_index->pnext = NULL;
   return (true);
 }
+bool SHCBlock::Truncate()
+{
+  return (shc_Truncate(GetHash()));
+}
+

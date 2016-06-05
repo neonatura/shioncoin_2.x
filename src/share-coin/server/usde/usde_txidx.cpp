@@ -326,6 +326,7 @@ bool USDETxDB::LoadBlockIndex()
   SetBestBlockIndex(USDE_COIN_IFACE, pindexBest);
   //  SetBestHeight(iface, pindexBest->nHeight);
   USDEBlock::bnBestChainWork = pindexBest->bnChainWork;
+  pindexBest->pnext = NULL;
 
   sprintf(errbuf, "USDE::LoadBlockIndex: hashBestChain=%s  height=%d  date=%s\n",
       hashBestChain.GetHex().c_str(), GetBestHeight(USDE_COIN_IFACE),

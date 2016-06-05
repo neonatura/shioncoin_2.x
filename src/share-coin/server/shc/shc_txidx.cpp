@@ -251,8 +251,9 @@ bool SHCTxDB::LoadBlockIndex()
 
   SetBestBlockIndex(SHC_COIN_IFACE, pindexBest);
   //  SetBestHeight(iface, pindexBest->nHeight);
-
   SHCBlock::bnBestChainWork = pindexBest->bnChainWork;
+  pindexBest->pnext = NULL;
+
   printf("LoadBlockIndex(): SHCBlock::hashBestChain=%s  height=%d  date=%s\n",
       hashBestChain.ToString().substr(0,20).c_str(), GetBestHeight(iface),
       DateTimeStrFormat("%x %H:%M:%S", pindexBest->GetBlockTime()).c_str());
