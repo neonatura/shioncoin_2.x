@@ -51,7 +51,8 @@ using namespace boost;
 
 uint256 shc_hashGenesisBlock("0xf4319e4e89b35b5f26ec0363a09d29703402f120cf1bf8e6f535548d5ec3c5cc");
 static uint256 shc_hashGenesisMerkle("0xd3f4bbe7fe61bda819369b4cd3a828f3ad98d971dda0c20a466a9ce64846c321");
-static CBigNum SHC_bnProofOfWorkLimit(~uint256(0) >> 20); // starting difficulty is 1 / 2^12
+static CBigNum SHC_bnGenesisProofOfWorkLimit(~uint256(0) >> 20);
+static CBigNum SHC_bnProofOfWorkLimit(~uint256(0) >> 21);
 
 map<uint256, SHCBlock*> SHC_mapOrphanBlocks;
 multimap<uint256, SHCBlock*> SHC_mapOrphanBlocksByPrev;
@@ -159,7 +160,8 @@ unsigned int SHCBlock::GetNextWorkRequired(const CBlockIndex* pindexLast)
 
   // Genesis block
   if (pindexLast == NULL)
-    return (SHC_bnProofOfWorkLimit.GetCompact());
+    return (SHC_bnGenesisProofOfWorkLimit.GetCompact());
+    //return (SHC_bnProofOfWorkLimit.GetCompact());
 
   static const int64	BlocksTargetSpacing	= 1.0 * 60; // 1.0 minutes
   unsigned int	TimeDaySeconds	= 60 * 60 * 24;
@@ -197,6 +199,7 @@ int64 shc_GetBlockValue(int nHeight, int64 nFees)
 }
 #endif
 
+#if 0
 /**
  * @note
  * info: height 2000000 rewards 200.000000 [20000000000] total coins.
@@ -221,6 +224,19 @@ int64 shc_GetBlockValue(int nHeight, int64 nFees)
 
   return (nSubsidy + nFees);
 }
+#endif
+
+int64 shc_GetBlockValue(int nHeight, int64 nFees)
+{
+  if (nHeight == 0) return (800 * COIN);
+
+  int64 nSubsidy = 3334 * SHC_COIN;
+  nSubsidy >>= (nHeight / 1499836);
+  nSubsidy /= 10000000;
+  nSubsidy *= 1000000;
+  return ((int64)nSubsidy + nFees);
+}
+
 
 namespace SHC_Checkpoints
 {
@@ -236,7 +252,7 @@ namespace SHC_Checkpoints
   static MapCheckpoints mapCheckpoints =
     boost::assign::map_list_of
     ( 0, uint256("0xf4319e4e89b35b5f26ec0363a09d29703402f120cf1bf8e6f535548d5ec3c5cc") )
-    ( 320, uint256("0x97b2a43e1d7bfaebb947d8fe4d0615fe767040c0ef83deb5c3f7f62852184276") )
+  //  ( 320, uint256("0x97b2a43e1d7bfaebb947d8fe4d0615fe767040c0ef83deb5c3f7f62852184276") )
 
     ;
 
@@ -1148,6 +1164,14 @@ bool SHCBlock::CheckBlock()
   if (hashMerkleRoot != BuildMerkleTree()) {
     return error(SHERR_INVAL, "CheckBlock() : hashMerkleRoot mismatch");
   }
+
+/* DEBUG: TODO: */
+/* addition verification.. 
+ * ensure genesis block has higher payout in coinbase
+ * ensure genesis block has lower difficulty (nbits)
+ * ensure genesis block has earlier block time
+ */
+
 
   return true;
 }
