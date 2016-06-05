@@ -903,7 +903,7 @@ shtime_t ts;
         vRecv >> hdr;
         if (!hdr.IsValid())
         {
-            fprintf(stderr, "DEBUG: PROCESSMESSAGE: ERRORS IN HEADER %s\n", hdr.GetCommand().c_str());
+            fprintf(stderr, "DEBUG: USDE: PROCESSMESSAGE: ERRORS IN HEADER %s\n", hdr.GetCommand().c_str());
             continue;
         }
         string strCommand = hdr.GetCommand();

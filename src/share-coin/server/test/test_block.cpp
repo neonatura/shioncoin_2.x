@@ -110,7 +110,7 @@ namespace TEST_Checkpoints
   //
   static MapCheckpoints mapCheckpoints =
     boost::assign::map_list_of
-    ( 0, uint256("0xf4319e4e89b35b5f26ec0363a09d29703402f120cf1bf8e6f535548d5ec3c5cc") )
+    ( 0, uint256("0x0xf4e533069fcce5b4a3488b4363caa24e9f3265b260868794881c0164e286394b") )
     ;
 
 

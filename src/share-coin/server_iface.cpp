@@ -680,7 +680,7 @@ void CNode::PushVersion()
   {
     char buf[256];
     sprintf(buf, "PushVersion: version %d, blocks=%d, us=%s, them=%s, peer=%s", PROTOCOL_VERSION(iface), GetBestHeight(ifaceIndex), addrMe.ToString().c_str(), addrYou.ToString().c_str(), addr.ToString().c_str());
-    unet_log(UNET_USDE, buf);
+    unet_log(ifaceIndex, buf);
   }
 
   PushMessage("version", PROTOCOL_VERSION(iface), nLocalServices, nTime, addrYou, addrMe,

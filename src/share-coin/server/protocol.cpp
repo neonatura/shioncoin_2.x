@@ -51,8 +51,10 @@ std::string CMessageHeader::GetCommand() const
 bool CMessageHeader::IsValid() const
 {
     // Check start string
-    if (memcmp(pchMessageStart, ::pchMessageStart, sizeof(pchMessageStart)) != 0)
+    if (memcmp(pchMessageStart, ::pchMessageStart, sizeof(pchMessageStart)) != 0) {
+fprintf(stderr, "DEBUG: CMessageHeader::IsValid: no pchMessageStart prefix\n");
         return false;
+  }
 
     // Check the command string for errors
     for (const char* p1 = pchCommand; p1 < pchCommand + COMMAND_SIZE; p1++)
@@ -61,17 +63,21 @@ bool CMessageHeader::IsValid() const
         {
             // Must be all zeros after the first zero
             for (; p1 < pchCommand + COMMAND_SIZE; p1++)
-                if (*p1 != 0)
+                if (*p1 != 0) {
+fprintf(stderr, "DEBUG: CMessageHeader::IsValid: no trailing zeros.\n");
                     return false;
+}
         }
-        else if (*p1 < ' ' || *p1 > 0x7E)
+        else if (*p1 < ' ' || *p1 > 0x7E) {
+fprintf(stderr, "DEBUG: CMessageHeader::IsValid: character out of range (%d)\n"< (int)*p1);
             return false;
+}
     }
 
     // Message size
     if (nMessageSize > MAX_SIZE)
     {
-        printf("CMessageHeader::IsValid() : (%s, %u bytes) nMessageSize > MAX_SIZE\n", GetCommand().c_str(), nMessageSize);
+        fprintf(stderr, "DEBUG: CMessageHeader::IsValid() : (%s, %u bytes) nMessageSize > MAX_SIZE\n", GetCommand().c_str(), nMessageSize);
         return false;
     }
 

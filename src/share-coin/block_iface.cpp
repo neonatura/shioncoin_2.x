@@ -404,6 +404,7 @@ pblock->print();
     shcoind_log("c_processblock: !AcceptBlock()");
     return (BLKERR_INVALID_BLOCK);
   }
+fprintf(stderr, "DEBUG: c_processblock: accepted block\n"); 
 
   return (0);
 }
