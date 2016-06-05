@@ -398,8 +398,10 @@ int InitDownloadBlockchain(int ifaceIndex, int maxHeight)
   
 fprintf(stderr, "DEBUG: InitDownloadBlockchain: iface(%d) max(%d)\n", ifaceIndex, dlChainIndex[ifaceIndex]);
   CIface *iface = GetCoinByIndex(ifaceIndex);
-  if (iface)
+  if (iface) {
     iface->net_invalid = 0;
+    iface->net_valid = time(NULL);
+  }
   
   return (0);
 }
@@ -407,7 +409,6 @@ fprintf(stderr, "DEBUG: InitDownloadBlockchain: iface(%d) max(%d)\n", ifaceIndex
 void UpdateDownloadBlockchain(int ifaceIndex)
 {
   CIface *iface = GetCoinByIndex(ifaceIndex);
-  
 
   if (!iface)
     return;
@@ -418,6 +419,8 @@ return;
 
   iface->net_valid = time(NULL);
   dlChainIndex[ifaceIndex] = MAX(dlChainIndex[ifaceIndex], bestIndex->nHeight);
+
+fprintf(stderr, "DEBUG: UpdateDownloadBlockChain: height %d, iface %d\n", bestIndex->nHeight, ifaceIndex); 
 }
 
 void event_cycle_chain(int ifaceIndex)
