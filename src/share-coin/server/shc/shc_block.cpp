@@ -1046,7 +1046,6 @@ bool shc_ProcessBlock(CNode* pfrom, CBlock* pblock)
     /* request missing blocks */
     if (pfrom)
       pfrom->PushGetBlocks(GetBestBlockIndex(SHC_COIN_IFACE), shc_GetOrphanRoot(pblock2));
-    iface->net_invalid = time(NULL);
     return true;
   }
 
@@ -1054,6 +1053,7 @@ bool shc_ProcessBlock(CNode* pfrom, CBlock* pblock)
 
   timing_init("AcceptBlock", &ts);
   if (!pblock->AcceptBlock()) {
+    iface->net_invalid = time(NULL);
     return error(SHERR_IO, "SHCBlock::AcceptBlock: error adding block '%s'.", pblock->GetHash().GetHex().c_str());
   }
   timing_term("AcceptBlock", &ts);
