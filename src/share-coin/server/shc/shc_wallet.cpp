@@ -252,6 +252,7 @@ fprintf(stderr, "DEBUG: SHCWallet::ReacceptWalletTransactions()\n");
         fRepeat = true;  // Found missing transactions: re-do Reaccept.
     }
   }
+  txdb.Close();
 }
 
 int SHCWallet::ScanForWalletTransactions(CBlockIndex* pindexStart, bool fUpdate)

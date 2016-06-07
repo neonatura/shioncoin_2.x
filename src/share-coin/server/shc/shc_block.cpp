@@ -1475,6 +1475,10 @@ bool SHCBlock::IsBestChain()
 
 bool shc_AcceptBlock(SHCBlock *pblock)
 {
+}
+#if 0
+bool shc_AcceptBlock(SHCBlock *pblock)
+{
   CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);
   int ifaceIndex = SHC_COIN_IFACE;
   NodeList &vNodes = GetNodeList(ifaceIndex);
@@ -1547,9 +1551,11 @@ bool shc_AcceptBlock(SHCBlock *pblock)
 
   return true;
 }
+#endif
 
 bool SHCBlock::AcceptBlock()
 {
+#if 0
   bool ret = shc_AcceptBlock(this);
   if (!ret)
     return (false);
@@ -1575,6 +1581,8 @@ bool SHCBlock::AcceptBlock()
   }
 
   return true;
+#endif
+  return (core_AcceptBlock(this));
 }
 
 CScript SHCBlock::GetCoinbaseFlags()
@@ -1588,6 +1596,7 @@ static void shc_UpdatedTransaction(const uint256& hashTx)
     pwallet->UpdatedTransaction(hashTx);
 }
 
+#if 0
 bool SHCBlock::AddToBlockIndex()
 {
   blkidx_t *blockIndex = GetBlockTable(SHC_COIN_IFACE);
@@ -1642,6 +1651,7 @@ bool SHCBlock::AddToBlockIndex()
 
   return true;
 }
+#endif
 
 bool SHCBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)
 {
@@ -1746,10 +1756,13 @@ fprintf(stderr, "DEBUG: shc_ConnectInputs failure\n");
       return error(SHERR_INVAL, "ConnectBlock() : UpdateTxIndex failed");
     }
   }
+
+#if 0
 if (vtx.size() == 0) {
 fprintf(stderr, "DEBUG: ConnectBlock: vtx.size() == 0\n");
 return false;
 }
+#endif
 
   if (vtx[0].GetValueOut() > shc_GetBlockValue(pindex->nHeight, nFees)) {
 fprintf(stderr, "DEBUG: SHCBlock::ConnectBlock: critical: coinbaseValueOut(%llu) > BlockValue(%llu) @ height %d [fee %llu]\n", (unsigned long long)vtx[0].GetValueOut(), (unsigned long long)shc_GetBlockValue(pindex->nHeight, nFees), pindex->nHeight, (unsigned long long)nFees); 
@@ -1963,3 +1976,52 @@ bool SHCBlock::Truncate()
   return (shc_Truncate(GetHash()));
 }
 
+bool SHCBlock::VerifyCheckpoint(int nHeight)
+{
+  return (SHC_Checkpoints::CheckBlock(nHeight, GetHash()));
+}
+uint64_t SHCBlock::GetTotalBlocksEstimate()
+{
+  return ((uint64_t)SHC_Checkpoints::GetTotalBlocksEstimate());
+}
+
+bool SHCBlock::AddToBlockIndex()
+{
+  blkidx_t *blockIndex = GetBlockTable(SHC_COIN_IFACE);
+  uint256 hash = GetHash();
+  CBlockIndex *pindexNew;
+  shtime_t ts;
+
+  // Check for duplicate
+  if (blockIndex->count(hash)) 
+    return error(SHERR_INVAL, "AddToBlockIndex() : %s already exists", hash.GetHex().c_str());
+
+  /* create new index */
+  pindexNew = new CBlockIndex(*this);
+  if (!pindexNew)
+    return error(SHERR_INVAL, "AddToBlockIndex() : new CBlockIndex failed");
+
+  map<uint256, CBlockIndex*>::iterator mi = blockIndex->insert(make_pair(hash, pindexNew)).first;
+  pindexNew->phashBlock = &((*mi).first);
+  map<uint256, CBlockIndex*>::iterator miPrev = blockIndex->find(hashPrevBlock);
+  if (miPrev != blockIndex->end())
+  {
+    pindexNew->pprev = (*miPrev).second;
+    pindexNew->nHeight = pindexNew->pprev->nHeight + 1;
+  }
+  pindexNew->bnChainWork = (pindexNew->pprev ? pindexNew->pprev->bnChainWork : 0) + pindexNew->GetBlockWork();
+
+  if (pindexNew->bnChainWork > bnBestChainWork) {
+    SHCTxDB txdb;
+    bool ret = SetBestChain(txdb, pindexNew);
+    txdb.Close();
+    if (!ret)
+      return false;
+  } else {
+    /* usher to the holding cell */
+    WriteArchBlock();
+    Debug("SHCBlock::AddToBlockIndex: skipping block (%s) SetBestChain() since pindexNew->bnChainWork(%s) <= bnBestChainWork(%s)", pindexNew->GetBlockHash().GetHex().c_str(), pindexNew->bnChainWork.ToString().c_str(), bnBestChainWork.ToString().c_str());
+  }
+
+  return true;
+}

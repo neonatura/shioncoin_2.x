@@ -331,7 +331,7 @@ int CWalletDB::LoadWallet(CWallet* pwallet)
     BOOST_FOREACH(uint256 hash, vWalletUpgrade)
         WriteTx(hash, pwallet->mapWallet[hash]);
 
-    printf("nFileVersion = %d\n", nFileVersion);
+//    printf("nFileVersion = %d\n", nFileVersion);
 
 
 #if 0

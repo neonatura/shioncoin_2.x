@@ -10,6 +10,7 @@ extern TEST_wallet(CuTest*);
 extern TEST_bignum(CuTest*);
 extern TEST_sha256transform(CuTest*);
 extern TEST_blockchain(CuTest*);
+extern TEST_reorganize(CuTest*);
 
 extern void test_shcoind_init(void);
 
@@ -29,6 +30,7 @@ int main(int argc, char *argv[])
   SUITE_ADD_TEST(suite, TEST_bignum);
   SUITE_ADD_TEST(suite, TEST_sha256transform);
   SUITE_ADD_TEST(suite, TEST_blockchain);
+  SUITE_ADD_TEST(suite, TEST_reorganize);
 
   CuSuiteRun(suite);
   CuSuiteSummary(suite, output);

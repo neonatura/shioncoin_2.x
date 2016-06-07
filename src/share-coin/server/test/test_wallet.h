@@ -49,4 +49,6 @@ class TESTWallet : public CWallet
 
 extern TESTWallet *testWallet;
 
+bool test_LoadWallet(void);
+
 #endif /* ndef __TEST_WALLET_H__ */

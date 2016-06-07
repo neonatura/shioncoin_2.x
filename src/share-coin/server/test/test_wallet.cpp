@@ -116,6 +116,7 @@ bool test_LoadWallet(void)
 
   RegisterWallet(testWallet);
 
+#if 0
   CBlockIndex *pindexRescan = GetBestBlockIndex(TEST_COIN_IFACE);
   if (GetBoolArg("-rescan"))
     pindexRescan = TESTBlock::pindexGenesisBlock;
@@ -138,6 +139,7 @@ bool test_LoadWallet(void)
   }
 
   test_UpgradeWallet();
+#endif
 
   // Add wallet transactions that aren't already in a block to mapTransactions
   testWallet->ReacceptWalletTransactions(); 
@@ -200,7 +202,7 @@ void TESTWallet::ReacceptWalletTransactions()
   TESTTxDB txdb;
   bool fRepeat = true;
 
-  while (fRepeat)
+/* erase previous transactions */
   {
     LOCK(cs_wallet);
     fRepeat = false;
@@ -208,9 +210,12 @@ void TESTWallet::ReacceptWalletTransactions()
     BOOST_FOREACH(PAIRTYPE(const uint256, CWalletTx)& item, mapWallet)
     {
       CWalletTx& wtx = item.second;
+
+      txdb.EraseTxIndex(wtx);
+
+#if 0
       if (wtx.IsCoinBase() && wtx.IsSpent(0))
         continue;
-
       CTxIndex txindex;
       bool fUpdated = false;
       if (txdb.ReadTxIndex(wtx.GetHash(), txindex))
@@ -245,14 +250,19 @@ void TESTWallet::ReacceptWalletTransactions()
         if (!wtx.IsCoinBase())
           wtx.AcceptWalletTransaction(txdb, false);
       }
+#endif
     }
+#if 0
     if (!vMissingTx.empty())
     {
       // TODO: optimize this to scan just part of the block chain?
       if (ScanForWalletTransactions(TESTBlock::pindexGenesisBlock))
         fRepeat = true;  // Found missing transactions: re-do Reaccept.
     }
+#endif
   }
+
+  txdb.Close();
 }
 
 int TESTWallet::ScanForWalletTransactions(CBlockIndex* pindexStart, bool fUpdate)

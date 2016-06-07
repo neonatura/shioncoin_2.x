@@ -1773,6 +1773,7 @@ static double calc_difficulty(unsigned int nBits)
 }
 #endif
 
+#if 0
 bool usde_AcceptBlock(USDEBlock *pblock, bool bForce)
 {
   CIface *iface = GetCoinByIndex(USDE_COIN_IFACE);
@@ -1868,7 +1869,6 @@ Debug("ACCEPT: attempting block '%s' for height %d..\n", hash.GetHex().c_str(), 
   timing_term("USDE:AddToBlockIndex/Accept", &ts);
   if (!ret) {
     /* write block directly to arch */
-    pblock->WriteArchBlock();
     return error(SHERR_IO, "USDEBlock::AcceptBlock: error adding hash '%s' to block-index at height %d.", pblock->GetHash().GetHex().c_str(), nHeight);
   }
 
@@ -1896,9 +1896,11 @@ Debug("ACCEPT: attempting block '%s' for height %d..\n", hash.GetHex().c_str(), 
 
   return true;
 }
+#endif
 
 bool USDEBlock::AcceptBlock()
 {
+#if 0
   shtime_t ts;
   bool ret;
 
@@ -1931,6 +1933,8 @@ bool USDEBlock::AcceptBlock()
 #endif
 
   return true;
+#endif
+  return (core_AcceptBlock(this));
 }
 
 CScript USDEBlock::GetCoinbaseFlags()
@@ -1945,6 +1949,7 @@ static void usde_UpdatedTransaction(const uint256& hashTx)
 }
 
 
+#if 0
 bool USDEBlock::AddToBlockIndex()//bool bForce)
 {
   blkidx_t *blockIndex = GetBlockTable(USDE_COIN_IFACE);
@@ -2019,6 +2024,7 @@ Debug("USDEBlock::AddToBlockIndex: height %d\n", pindexNew->nHeight);
 
   return true;
 }
+#endif
 
 bool USDEBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)
 {
@@ -2121,10 +2127,11 @@ bool USDEBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)
     }
   }
 
+#if 0
   if (vtx.size() == 0) {
     return error(SHERR_INVAL, "USDEBlock::ConnectBlock: vtx.size() == 0");
   }
-
+#endif
   
   int64 nValue = usde_GetBlockValue(pindex->nHeight, nFees);
   if (vtx[0].GetValueOut() > usde_GetBlockValue(pindex->nHeight, nFees)) {
@@ -2353,3 +2360,52 @@ bool USDEBlock::Truncate()
   return (usde_Truncate(GetHash()));
 }
 
+bool USDEBlock::VerifyCheckpoint(int nHeight)
+{
+  return (USDE_Checkpoints::CheckBlock(nHeight, GetHash()));
+}
+uint64_t USDEBlock::GetTotalBlocksEstimate()
+{
+  return ((uint64_t)USDE_Checkpoints::GetTotalBlocksEstimate());
+}
+
+bool USDEBlock::AddToBlockIndex()
+{
+  blkidx_t *blockIndex = GetBlockTable(USDE_COIN_IFACE);
+  uint256 hash = GetHash();
+  CBlockIndex *pindexNew;
+  shtime_t ts;
+
+  // Check for duplicate
+  if (blockIndex->count(hash)) 
+    return error(SHERR_INVAL, "AddToBlockIndex() : %s already exists", hash.GetHex().c_str());
+
+  /* create new index */
+  pindexNew = new CBlockIndex(*this);
+  if (!pindexNew)
+    return error(SHERR_INVAL, "AddToBlockIndex() : new CBlockIndex failed");
+
+  map<uint256, CBlockIndex*>::iterator mi = blockIndex->insert(make_pair(hash, pindexNew)).first;
+  pindexNew->phashBlock = &((*mi).first);
+  map<uint256, CBlockIndex*>::iterator miPrev = blockIndex->find(hashPrevBlock);
+  if (miPrev != blockIndex->end())
+  {
+    pindexNew->pprev = (*miPrev).second;
+    pindexNew->nHeight = pindexNew->pprev->nHeight + 1;
+  }
+  pindexNew->bnChainWork = (pindexNew->pprev ? pindexNew->pprev->bnChainWork : 0) + pindexNew->GetBlockWork();
+
+  if (pindexNew->bnChainWork > bnBestChainWork) {
+    USDETxDB txdb;
+    bool ret = SetBestChain(txdb, pindexNew);
+    txdb.Close();
+    if (!ret)
+      return false;
+  } else {
+    /* usher to the holding cell */
+    WriteArchBlock();
+    Debug("USDEBlock::AddToBlockIndex: skipping block (%s) SetBestChain() since pindexNew->bnChainWork(%s) <= bnBestChainWork(%s)", pindexNew->GetBlockHash().GetHex().c_str(), pindexNew->bnChainWork.ToString().c_str(), bnBestChainWork.ToString().c_str());
+  }
+
+  return true;
+}

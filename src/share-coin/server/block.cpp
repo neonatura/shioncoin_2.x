@@ -816,6 +816,9 @@ bool ProcessBlock(CNode* pfrom, CBlock* pblock)
   if (!iface)
     return (false);
 
+  if (!iface->op_block_process)
+    return error(SHERR_OPNOTSUPP, "ProcessBlock[%s]: no block process operation suported.", iface->name);
+
   pblock->originPeer = pfrom;
   err = iface->op_block_process(iface, pblock);
   if (err) {
@@ -1561,11 +1564,7 @@ bool CBlock::ReadFromDisk(const CBlockIndex* pindex, bool fReadTransactions)
 
   err = bc_find(bc, pindex->GetBlockHash().GetRaw(), &nHeight);
   if (err)
-    return error(err, "bc_find '%s' [height %d]", pindex->GetBlockHash().GetHex().c_str(), pindex->nHeight);
-
-  if (nHeight != pindex->nHeight) {
-fprintf(stderr, "DEBUG: WARNING: ReadFromDisk: pindex->nHeight(%d) != chain height %d [hash %s]\n", pindex->nHeight, nHeight, pindex->GetBlockHash().GetHex().c_str());
-}
+    return false;//error(err, "bc_find '%s' [height %d]", pindex->GetBlockHash().GetHex().c_str(), pindex->nHeight);
 
   return (ReadBlock(nHeight));
 }
@@ -1755,7 +1754,7 @@ bool CTransaction::CheckTransaction(int ifaceIndex) const
   if (IsCoinBase())
   {
     if (vin[0].scriptSig.size() < 2 || vin[0].scriptSig.size() > 100)
-      return error(SHERR_INVAL, "CTransaction::CheckTransaction() : coinbase script size");
+      return error(SHERR_INVAL, "CTransaction::CheckTransaction() : coinbase script size invalid (2 < (%d) < 100)", vin[0].scriptSig.size());
   }
   else
   {
@@ -2070,3 +2069,94 @@ uint256 GetGenesisBlockHash(int ifaceIndex)
   delete block;
   return (hash);
 }
+
+/**
+ * The core method of accepting a new block onto the block-chain.
+ */
+bool core_AcceptBlock(CBlock *pblock)
+{
+  int ifaceIndex = pblock->ifaceIndex;
+  CIface *iface = GetCoinByIndex(ifaceIndex);
+  NodeList &vNodes = GetNodeList(ifaceIndex);
+  bc_t *bc = GetBlockChain(GetCoinByIndex(ifaceIndex));
+  blkidx_t *blockIndex = GetBlockTable(ifaceIndex);
+  uint256 hash = pblock->GetHash();
+  char errbuf[1024];
+  bool ret;
+
+  if (blockIndex->count(hash))
+    return error(SHERR_INVAL, "AcceptBlock() : block already in block table.");
+
+  // Get prev block index
+  map<uint256, CBlockIndex*>::iterator mi = blockIndex->find(pblock->hashPrevBlock);
+  if (mi == blockIndex->end())
+    return error(SHERR_INVAL, "AcceptBlock() : prev block '%s' not found.", pblock->hashPrevBlock.GetHex().c_str());
+  CBlockIndex* pindexPrev = (*mi).second;
+  if (!pindexPrev) {
+    return error(SHERR_INVAL, "AcceptBlock() : prev block '%s' not found: block index has NULL record for hash.", pblock->hashPrevBlock.GetHex().c_str());
+  }
+  int nHeight = pindexPrev->nHeight+1;
+
+  // Check proof of work
+  unsigned int nBits = pblock->GetNextWorkRequired(pindexPrev);
+  if (pblock->nBits != nBits) {
+    pblock->print();
+    sprintf(errbuf, "AcceptBlock: invalid difficulty (%x) specified (next work required is %x) for block height %d [prev '%s']\n", pblock->nBits, nBits, nHeight, pindexPrev->GetBlockHash().GetHex().c_str());
+    return error(SHERR_INVAL, errbuf);
+  }
+
+#if 0
+  if (!CheckDiskSpace(::GetSerializeSize(*pblock, SER_DISK, CLIENT_VERSION))) {
+    return error(SHERR_IO, "AcceptBlock() : out of disk space");
+  }
+#endif
+
+  // Check timestamp against prev
+  if (pblock->GetBlockTime() <= pindexPrev->GetMedianTimePast()) {
+    pblock->print();
+    return error(SHERR_INVAL, "AcceptBlock: block timestamp is too early");
+  }
+
+  BOOST_FOREACH(const CTransaction& tx, pblock->vtx) {
+#if 0 /* not standard */
+    // Check that all inputs exist
+    if (!tx.IsCoinBase()) {
+      BOOST_FOREACH(const CTxIn& txin, tx.vin) {
+        if (txin.prevout.IsNull())
+          return error(SHERR_INVAL, "AcceptBlock(): prevout is null");
+        if (!VerifyTxHash(iface, txin.prevout.hash))
+          return error(SHERR_INVAL, "AcceptBlock(): unknown prevout hash '%s'", txin.prevout.hash.GetHex().c_str());
+      }
+    }
+#endif
+    // Check that all transactions are finalized 
+    if (!tx.IsFinal(ifaceIndex, nHeight, pblock->GetBlockTime())) {
+      pblock->print();
+      return error(SHERR_INVAL, "AcceptBlock: block contains a non-final transaction");
+    }
+  }
+
+  // Check that the block chain matches the known block chain up to a checkpoint
+  if (!pblock->VerifyCheckpoint(nHeight)) {
+    pblock->print();
+    return error(SHERR_INVAL, "AcceptBlock: rejected by checkpoint lockin at %d", nHeight);
+  }
+
+  ret = pblock->AddToBlockIndex();
+  if (!ret) {
+    pblock->print();
+    return error(SHERR_IO, "AcceptBlock: AddToBlockIndex failed");
+  }
+
+  /* Relay inventory [but don't relay old inventory during initial block download] */
+  int nBlockEstimate = pblock->GetTotalBlocksEstimate();
+  if (GetBestBlockChain(iface) == hash) {
+    LOCK(cs_vNodes);
+    BOOST_FOREACH(CNode* pnode, vNodes)
+      if (GetBestHeight(iface) > (pnode->nStartingHeight != -1 ? pnode->nStartingHeight - 2000 : nBlockEstimate))
+        pnode->PushInventory(CInv(ifaceIndex, MSG_BLOCK, hash));
+  }
+
+  return true;
+}
+

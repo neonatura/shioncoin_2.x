@@ -23,7 +23,7 @@ void test_shcoind_init(void)
   /* load wallet */
 testWallet = new TESTWallet();
   SetWallet(TEST_COIN_IFACE, testWallet);
-  RegisterWallet(testWallet);
+  //RegisterWallet(testWallet);
   RandAddSeedPerfmon();
 
   /* initialize chain */
@@ -35,9 +35,8 @@ testWallet = new TESTWallet();
   test_CreateGenesisBlock();
 
 
-/* DEBUG: add 'test_wallet.cpp' */
   /* initialize wallet */
-//  test_LoadWallet();
+  test_LoadWallet();
 
 
 //CBlock *test_block = test_GenerateBlock(); /* DEBUG: */

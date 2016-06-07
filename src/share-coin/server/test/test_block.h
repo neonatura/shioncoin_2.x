@@ -90,6 +90,8 @@ public:
     bool ReadArchBlock(uint256 hash);
     bool IsOrphan();
     bool Truncate();
+    bool VerifyCheckpoint(int nHeight);
+    uint64_t GetTotalBlocksEstimate();
 
   protected:
     bool SetBestChainInner(CTxDB& txdb, CBlockIndex *pindexNew);

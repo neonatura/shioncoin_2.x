@@ -252,6 +252,7 @@ void USDEWallet::ReacceptWalletTransactions()
         fRepeat = true;  // Found missing transactions: re-do Reaccept.
     }
   }
+  txdb.Close();
 }
 
 int USDEWallet::ScanForWalletTransactions(CBlockIndex* pindexStart, bool fUpdate)

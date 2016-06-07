@@ -977,6 +977,8 @@ class CBlock : public CBlockHeader
     virtual bool IsOrphan() = 0;
     virtual bool AddToBlockIndex() = 0;
     virtual void InvalidChainFound(CBlockIndex* pindexNew) = 0;
+    virtual bool VerifyCheckpoint(int nHeight) = 0;
+    virtual uint64_t GetTotalBlocksEstimate() = 0;
 
   protected:
     virtual bool SetBestChainInner(CTxDB& txdb, CBlockIndex *pindexNew) = 0;
@@ -1195,6 +1197,8 @@ public:
     bool ReadArchBlock(uint256 hash);
     bool IsOrphan();
     bool Truncate();
+    bool VerifyCheckpoint(int nHeight);
+    uint64_t GetTotalBlocksEstimate();
 
   protected:
     bool SetBestChainInner(CTxDB& txdb, CBlockIndex *pindexNew);
@@ -1266,6 +1270,8 @@ public:
     bool ReadArchBlock(uint256 hash);
     bool IsOrphan();
     bool Truncate();
+    bool VerifyCheckpoint(int nHeight);
+    uint64_t GetTotalBlocksEstimate();
 
   protected:
     bool SetBestChainInner(CTxDB& txdb, CBlockIndex *pindexNew);
@@ -1477,6 +1483,7 @@ CBlock *GetArchBlockByHash(CIface *iface, const uint256 hash);
 
 uint256 GetGenesisBlockHash(int ifaceIndex);
 
+bool core_AcceptBlock(CBlock *pblock);
 
 #endif /* ndef __SERVER_BLOCK_H__ */
 
