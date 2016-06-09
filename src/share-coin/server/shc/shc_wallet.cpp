@@ -28,6 +28,7 @@
 #include "init.h"
 #include "strlcpy.h"
 #include "ui_interface.h"
+#include "chain.h"
 
 #ifdef WIN32
 #include <string.h>
@@ -197,8 +198,6 @@ void SHCWallet::ReacceptWalletTransactions()
   SHCTxDB txdb;
   bool fRepeat = true;
 
-fprintf(stderr, "DEBUG: SHCWallet::ReacceptWalletTransactions()\n");
-
   while (fRepeat)
   {
     LOCK(cs_wallet);
@@ -255,6 +254,7 @@ fprintf(stderr, "DEBUG: SHCWallet::ReacceptWalletTransactions()\n");
   txdb.Close();
 }
 
+#if 0
 int SHCWallet::ScanForWalletTransactions(CBlockIndex* pindexStart, bool fUpdate)
 {
   int ret = 0;
@@ -277,6 +277,13 @@ fprintf(stderr, "DEBUG: ScanForWalletTransactions: pindexStart '%s'\n", pindexSt
   }
   return ret;
 }
+#endif
+int SHCWallet::ScanForWalletTransactions(CBlockIndex* pindexStart, bool fUpdate)
+{
+  if (pindexStart)
+    InitServiceWalletEvent(this, pindexStart->nHeight);
+  return (0);
+}
 
 int64 SHCWallet::GetTxFee(CTransaction tx)
 {
@@ -288,15 +295,19 @@ int64 SHCWallet::GetTxFee(CTransaction tx)
   if (tx.IsCoinBase())
     return (0);
 
+  CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);
+  CBlock *pblock = GetBlockByTx(iface, tx.GetHash());
+
   SHCTxDB txdb;
 
   nFees = 0;
   bool fInvalid = false;
-  if (tx.FetchInputs(txdb, mapQueuedChanges, true, false, inputs, fInvalid))
+  if (tx.FetchInputs(txdb, mapQueuedChanges, pblock, false, inputs, fInvalid))
     nFees += tx.GetValueIn(inputs) - tx.GetValueOut();
 
   txdb.Close();
 
+  if (pblock) delete pblock;
   return (nFees);
 }
 

@@ -586,7 +586,7 @@ continue;
       map<uint256, CTxIndex> mapTestPoolTmp(mapTestPool);
       MapPrevTx mapInputs;
       bool fInvalid;
-      if (!tx.FetchInputs(txdb, mapTestPoolTmp, false, true, mapInputs, fInvalid))
+      if (!tx.FetchInputs(txdb, mapTestPoolTmp, NULL, true, mapInputs, fInvalid))
         continue;
 
       int64 nTxFees = tx.GetValueIn(mapInputs)-tx.GetValueOut();
@@ -771,7 +771,7 @@ bool SHC_CTxMemPool::accept(CTxDB& txdb, CTransaction &tx, bool fCheckInputs, bo
     MapPrevTx mapInputs;
     map<uint256, CTxIndex> mapUnused;
     bool fInvalid = false;
-    if (!tx.FetchInputs(txdb, mapUnused, false, false, mapInputs, fInvalid))
+    if (!tx.FetchInputs(txdb, mapUnused, NULL, false, mapInputs, fInvalid))
     {
       if (fInvalid)
         return error(SHERR_INVAL, "CTxMemPool::accept() : FetchInputs found invalid tx %s", hash.ToString().substr(0,10).c_str());
@@ -1057,7 +1057,7 @@ bool shc_ProcessBlock(CNode* pfrom, CBlock* pblock)
     return error(SHERR_IO, "SHCBlock::AcceptBlock: error adding block '%s'.", pblock->GetHash().GetHex().c_str());
   }
   timing_term("AcceptBlock", &ts);
-  UpdateDownloadBlockchain(SHC_COIN_IFACE);
+  ServiceBlockEventUpdate(SHC_COIN_IFACE);
 
   // Recursively process any orphan blocks that depended on this one
   vector<uint256> vWorkQueue;
@@ -1722,7 +1722,7 @@ fprintf(stderr, "DEBUG: SHCBlock::ConnectBlock: null disk pos, ret false\n");
     if (!tx.IsCoinBase())
     {
       bool fInvalid;
-      if (!tx.FetchInputs(txdb, mapQueuedChanges, true, false, mapInputs, fInvalid)) {
+      if (!tx.FetchInputs(txdb, mapQueuedChanges, this, false, mapInputs, fInvalid)) {
 fprintf(stderr, "DEBUG: SHCBlock::ConnectBlock: shc_FetchInputs()\n"); 
         return false;
       }
@@ -2018,9 +2018,16 @@ bool SHCBlock::AddToBlockIndex()
     if (!ret)
       return false;
   } else {
-    /* usher to the holding cell */
-    WriteArchBlock();
-    Debug("SHCBlock::AddToBlockIndex: skipping block (%s) SetBestChain() since pindexNew->bnChainWork(%s) <= bnBestChainWork(%s)", pindexNew->GetBlockHash().GetHex().c_str(), pindexNew->bnChainWork.ToString().c_str(), bnBestChainWork.ToString().c_str());
+  CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);
+    if (hashPrevBlock == GetBestBlockChain(iface)) {
+      if (!WriteBlock(pindexNew->nHeight)) {
+        return error(SHERR_INVAL, "USDE: AddToBLocKindex: WriteBlock failure");
+      }
+    } else {
+      /* usher to the holding cell */
+      WriteArchBlock();
+      Debug("SHCBlock::AddToBlockIndex: skipping block (%s) SetBestChain() since pindexNew->bnChainWork(%s) <= bnBestChainWork(%s)", pindexNew->GetBlockHash().GetHex().c_str(), pindexNew->bnChainWork.ToString().c_str(), bnBestChainWork.ToString().c_str());
+    }
   }
 
   return true;

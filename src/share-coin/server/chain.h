@@ -26,14 +26,19 @@ typedef struct ChainOp
 
 int InitChainImport(int ifaceIndex, const char *path, int offset);
 int InitChainExport(int ifaceIndex, const char *path, int max);
-int InitDownloadBlockchain(int ifaceIndex, int maxHeight);
+
 void event_cycle_chain(int ifaceIndex);
 
-void ScanWalletTxUpdated(CWallet *wallet, const CBlock *pblock);
+void ServiceWalletEventUpdate(CWallet *wallet, const CBlock *pblock);
 
-void InitScanWalletTx(CWallet *wallet, int nHeight);
+void InitServiceWalletEvent(CWallet *wallet, uint64_t nHeight);
 
-void UpdateDownloadBlockchain(int ifaceIndex);
+int InitServiceBlockEvent(int ifaceIndex, uint64_t nHeight);
+
+void UpdateServiceBlockEvent(int ifaceIndex);
+
+void ServiceBlockEventUpdate(int ifaceIndex);
+
 
 #ifdef __cplusplus
 }

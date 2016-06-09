@@ -1771,10 +1771,9 @@ bool CTransaction::CheckTransaction(int ifaceIndex) const
   return true;
 }
 
-bool CTransaction::FetchInputs(CTxDB& txdb, const map<uint256, CTxIndex>& mapTestPool, bool fBlock, bool fMiner, MapPrevTx& inputsRet, bool& fInvalid)
+bool CTransaction::FetchInputs(CTxDB& txdb, const map<uint256, CTxIndex>& mapTestPool, CBlock *pblockNew, bool fMiner, MapPrevTx& inputsRet, bool& fInvalid)
 {
   CIface *iface = GetCoinByIndex(txdb.ifaceIndex);
-  char errbuf[1024];
 
   // FetchInputs can return false either because we just haven't seen some inputs
   // (in which case the transaction should be stored as an orphan)
@@ -1794,7 +1793,7 @@ bool CTransaction::FetchInputs(CTxDB& txdb, const map<uint256, CTxIndex>& mapTes
     // Read txindex
     CTxIndex& txindex = inputsRet[prevout.hash].first;
     bool fFound = true;
-    if ((fBlock || fMiner) && mapTestPool.count(prevout.hash))
+    if ((pblockNew || fMiner) && mapTestPool.count(prevout.hash))
     {
       // Get txindex from current proposed changes
       txindex = mapTestPool.find(prevout.hash)->second;
@@ -1806,11 +1805,11 @@ bool CTransaction::FetchInputs(CTxDB& txdb, const map<uint256, CTxIndex>& mapTes
     }
 
     /* allows for passage past this error condition for orphans. */
-    if (!fFound && (fBlock || fMiner)) {
+    if (!fFound && (pblockNew || fMiner)) {
       if (fMiner)
         return (false);
-      sprintf(errbuf, "FetchInputs() : %s prev tx %s index entry not found", GetHash().GetHex().c_str(), prevout.hash.GetHex().c_str());
-      return (error(SHERR_NOENT, errbuf));
+
+      return error(SHERR_NOENT, "FetchInputs: %s prev tx %s index entry not found", GetHash().GetHex().c_str(), prevout.hash.GetHex().c_str());
     }
 
     // Read txPrev
@@ -1830,16 +1829,23 @@ bool CTransaction::FetchInputs(CTxDB& txdb, const map<uint256, CTxIndex>& mapTes
     }
     else
     {
-   //   CTransaction *tx = pblockNew->GetTx(prevout.hash);
       /* Get prev tx from disk */
-      if (!txPrev.ReadTx(txdb.ifaceIndex, prevout.hash))
-        return error(SHERR_INVAL, "FetchInputs() : for tx %s, ReadFromDisk prev tx %s failed", GetHash().ToString().c_str(),  prevout.hash.ToString().c_str());
+      if (!txPrev.ReadTx(txdb.ifaceIndex, prevout.hash)) {
+        const CTransaction *tx;
+        Debug("CTransaction::FetchInputs[%s]: for tx %s, ReadFromDisk prev tx %s failed", iface->name, GetHash().ToString().c_str(),  prevout.hash.ToString().c_str());
 
+        if (!pblockNew ||
+            !(tx = pblockNew->GetTx(prevout.hash))) {
+          return error(SHERR_INVAL, "CTransaction::FetchInputs[%s]: for tx %s, prev tx %s unknown", iface->name, GetHash().ToString().c_str(),  prevout.hash.ToString().c_str());
+        }
+
+        txPrev.Init(*tx);
 #if 0
       // Get prev tx from disk
       if (!txPrev.ReadFromDisk(txindex.pos))
         return error(SHERR_INVAL, "FetchInputs() : %s ReadFromDisk prev tx %s failed", GetHash().ToString().substr(0,10).c_str(),  prevout.hash.ToString().substr(0,10).c_str());
 #endif
+      }
     }
   }
 
@@ -2159,4 +2165,5 @@ bool core_AcceptBlock(CBlock *pblock)
 
   return true;
 }
+
 

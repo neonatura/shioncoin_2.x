@@ -67,6 +67,8 @@ using namespace boost::asio;
 using namespace json_spirit;
 using namespace boost::assign;
 
+#include "rpccert_proto.h"
+
 #include "SSLIOStreamDevice.h"
 
 void ThreadRPCServer2(void* parg);
@@ -141,6 +143,11 @@ void RPCTypeCheck(const Object& o,
     }
 }
 
+Value ValueFromAmount(int64 amount)
+{
+    return (double)amount / (double)COIN;
+}
+
 double GetDifficulty(int ifaceIndex, const CBlockIndex* blockindex = NULL)
 {
     // Floating point number that is a multiple of the minimum difficulty,
@@ -184,11 +191,6 @@ int64 AmountFromValue(const Value& value)
         throw JSONRPCError(-3, "Invalid amount");
 #endif
     return nAmount;
-}
-
-Value ValueFromAmount(int64 amount)
-{
-    return (double)amount / (double)COIN;
 }
 
 std::string
@@ -2403,7 +2405,7 @@ Value rpc_peer_import(CIface *iface, const Array& params, bool fHelp)
     json = shjson_init(text);
     free(text);
     if (!json) {
-fprintf(stderr, "DEBUG: invalid JSON: %s\n", text);
+//fprintf(stderr, "DEBUG: invalid JSON: %s\n", text);
       throw runtime_error("file is not is JSON format.");
     }
 
@@ -2413,9 +2415,8 @@ fprintf(stderr, "DEBUG: invalid JSON: %s\n", text);
         char *label = shjson_astr(node, "label", "");
         if (!*host || !*label) continue;
 
-fprintf(stderr, "DEBUG: found %s host '%s'\n", label, host);
         peer = shpeer_init(label, host);
-//        shnet_track_add(peer);
+        shnet_track_add(peer);
         shpeer_free(&peer);
       }
     }
@@ -4284,6 +4285,7 @@ static const CRPCCommand vRPCCommands[] =
 //    { "block.template",       &rpc_block_template},
     { "block.work",           &rpc_block_work},
     { "block.workex",         &rpc_block_workex},
+    { "cert.fee",             &rpc_cert_fee},
     { "msg.sign",             &rpc_msg_sign},
     { "msg.verify",           &rpc_msg_verify},
     { "net.info",             &rpc_net_info},
@@ -5455,6 +5457,7 @@ fprintf(stderr, "DEBUG: QuickCheckWork returned false\n");
   return (c_processblock(pblock));
 }
 
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -5475,6 +5478,7 @@ int submitblock(char *hashPrevBlock, char *hashMerkleRoot, unsigned int nTime, u
   return (c_submitblock(hashPrevBlock, hashMerkleRoot, nTime, nBits, nNonce));
 }
 */
+
 
 
 #ifdef __cplusplus

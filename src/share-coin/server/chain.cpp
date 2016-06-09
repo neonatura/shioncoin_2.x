@@ -39,9 +39,46 @@ ChainOp chain;
 extern CCriticalSection cs_main;
 
 
-static int dlChainIndex[MAX_COIN_IFACE];
+#ifdef __cplusplus
+extern "C" {
+#endif
+static void set_serv_state(CIface *iface, int flag)
+{
+  char errbuf[256];
 
-static bool ScanWalletTx(int ifaceIndex)
+  iface->flags |= flag;
+
+  memset(errbuf, 0, sizeof(errbuf));
+  if (flag & COINF_DL_SCAN) {
+    strcpy(errbuf, "entering service mode: download block-chain [scan]");
+  } else if (flag & COINF_DL_SYNC) {
+    strcpy(errbuf, "entering service mode: download block-chain [sync]");
+  } else if (flag & COINF_WALLET_SCAN) {
+    strcpy(errbuf, "entering service mode: wallet tx [scan]");
+  } else if (flag & COINF_WALLET_SYNC) {
+    strcpy(errbuf, "entering service mode: wallet tx [sync]");
+  } else if (flag & COINF_PEER_SCAN) {
+    strcpy(errbuf, "entering service mode: peer list [scan]");
+  } else if (flag & COINF_PEER_SYNC) {
+    strcpy(errbuf, "entering service mode: peer list [sync]");
+  }
+  if (*errbuf)
+    unet_log(GetCoinIndex(iface), errbuf);
+}
+static void unset_serv_state(CIface *iface, int flag)
+{
+  iface->flags &= ~flag;
+}
+static bool serv_state(CIface *iface, int flag)
+{
+  return (iface->flags & flag);
+}
+#ifdef __cplusplus
+}
+#endif
+
+
+static bool ServiceWalletEvent(int ifaceIndex)
 {
   CIface *iface = GetCoinByIndex(ifaceIndex);
   if (!iface)
@@ -49,14 +86,14 @@ static bool ScanWalletTx(int ifaceIndex)
 
   CWallet *wallet = GetWallet(iface);
   if (!wallet)
-    return (false);
+    return (false); /* no-op */
 
   unsigned int nBestHeight = GetBestHeight(iface);
   unsigned int nHeight = wallet->nScanHeight;
-  unsigned int nMaxHeight = nHeight + 4096;
+  unsigned int nMaxHeight = nHeight + 2048;
 
   if (nHeight >= nBestHeight)
-    return (false);
+    return (false); /* done */
 
   {
     LOCK(wallet->cs_wallet);
@@ -73,16 +110,12 @@ static bool ScanWalletTx(int ifaceIndex)
       wallet->nScanHeight = nHeight;
     }
   }
+fprintf(stderr, "DEBUG: ServiceWalletEvent: wallet->nScanHeight = %d\n", wallet->nScanHeight);
 
   return (true);
 }
 
-void InitScanWalletTx(CWallet *wallet, int nHeight)
-{
-  wallet->nScanHeight = MIN(nHeight, wallet->nScanHeight); 
-}
-
-void ScanWalletTxUpdated(CWallet *wallet, const CBlock *pblock)
+void ServiceWalletEventUpdate(CWallet *wallet, const CBlock *pblock)
 {
   blkidx_t *blockIndex = GetBlockTable(wallet->ifaceIndex);
   uint256 hash = pblock->GetHash();
@@ -91,10 +124,7 @@ void ScanWalletTxUpdated(CWallet *wallet, const CBlock *pblock)
     return; /* nerp */
 
   CBlockIndex *pindex = (*blockIndex)[hash];
-  if (wallet->nScanHeight == (pindex->nHeight - 1)) {
-    wallet->nScanHeight = pindex->nHeight;
-fprintf(stderr, "DEBUG: ScanWalletTxUpdated: wallet[#%d]->nScanHeight = %d\n", wallet->ifaceIndex, wallet->nScanHeight); 
-}
+  wallet->nScanHeight = MIN(wallet->nScanHeight, pindex->nHeight);
 }
 
 bool LoadExternalBlockchainFile()
@@ -255,7 +285,7 @@ bool SaveExternalBlockchainFile()
   return (false);
 }
 
-bool DownloadIfaceBlockchain(int ifaceIndex)
+bool ServiceBlockEvent(int ifaceIndex)
 {
   static int nNodeIndex;
   NodeList &vNodes = GetNodeList(ifaceIndex);
@@ -267,54 +297,40 @@ bool DownloadIfaceBlockchain(int ifaceIndex)
   if (!iface)
     return (false);
 
-if (!iface->enabled)
-return (false);
+  if (!iface->enabled)
+    return (false);
 
-  if (vNodes.size() == 0) {
-    return (false); 
-}
+  if (vNodes.size() == 0)
+    return (true); /* keep trying */
 
   CBlockIndex *pindexBest = GetBestBlockIndex(ifaceIndex);
-  if (!pindexBest) { 
+  if (!pindexBest)
+    return (true); /* keep trying */
 
-fprintf(stderr, "DEBUG: DownloadBlockchain: no best index\n");
-    return (false);
-  }
-
-  if (pindexBest->nHeight == dlChainIndex[ifaceIndex])
-    return (false);
-  if (pindexBest->nHeight > dlChainIndex[ifaceIndex]) {
-UpdateDownloadBlockchain(ifaceIndex);
+  if (pindexBest->nHeight > iface->blockscan_max) {
+    ServiceBlockEventUpdate(ifaceIndex);
     return (false);
   }
 
   expire_t = time(NULL) - 100;
   if (iface->net_valid < expire_t) { /* done w/ last round */
-    if (iface->net_valid) fprintf(stderr, "DEBUG: DownloadBlockChain: last valid block received %ds ago\n", (time(NULL) - iface->net_valid)); 
-    if (iface->net_invalid) fprintf(stderr, "DEBUG: DownloadBlockChain: last valid block received %ds ago\n", (time(NULL) - iface->net_invalid)); 
     if (iface->net_valid < iface->net_invalid) {
-      fprintf(stderr, "DEBUG: net_valid < net_invalid\n");
+fprintf(stderr, "DEBUG: net_valid < net_invalid\n");
       return (false); /* give up */
     }
 
     int idx = (nNodeIndex % vNodes.size());
     pfrom = vNodes[idx];
-    fprintf(stderr, "DEBUG: DownloadBlockChain[iface #%d]: pfrom->PushGetBlocks(%d) from '%s'\n", ifaceIndex, pindexBest->nHeight, pfrom->addr.ToString().c_str());
+fprintf(stderr, "DEBUG: DownloadBlockChain[iface #%d]: pfrom->PushGetBlocks(%d) from '%s'\n", ifaceIndex, pindexBest->nHeight, pfrom->addr.ToString().c_str());
     pfrom->PushGetBlocks(pindexBest, uint256(0));
     nNodeIndex++;
 
+    /* force next check to be later */
     iface->net_valid = time(NULL);
   }
 
+fprintf(stderr, "DEBUG: ServiceBlockEvent: iface[%s]->blockscan_max = %d\n", iface->name, (int)iface->blockscan_max);
   return (true);
-}
-
-bool DownloadBlockchain()
-{
-  int idx;
-  for (idx = 1; idx < MAX_COIN_IFACE; idx++) {
-    DownloadIfaceBlockchain(idx);
-  }
 }
 
 void PerformBlockChainOperation(int ifaceIndex)
@@ -346,6 +362,67 @@ void PerformBlockChainOperation(int ifaceIndex)
   }
 }
 
+bool ServicePeerEvent(int ifaceIndex)
+{
+  NodeList &vNodes = GetNodeList(ifaceIndex);
+  CNode *pfrom;
+
+  if (vNodes.empty())
+    return (true); /* keep checking */
+
+  pfrom = vNodes.front();
+  if (pfrom->fGetAddr)
+    return (false); /* op already performed against this node */
+
+  pfrom->PushMessage("getaddr");
+  pfrom->fGetAddr = true;
+fprintf(stderr, "DEBUG: ServiceBlockEvent: pfrom->PushMessage('getaddr')\n");
+
+  return (false); /* all done */
+}
+
+void ServiceEventState(int ifaceIndex)
+{
+  CIface *iface = GetCoinByIndex(ifaceIndex);
+
+  if (!serv_state(iface, COINF_DL_SCAN) &&
+      !serv_state(iface, COINF_DL_SYNC)) {
+    set_serv_state(iface, COINF_DL_SCAN);
+  } else if (serv_state(iface, COINF_DL_SCAN)) {
+    if (!ServiceBlockEvent(ifaceIndex)) {
+      set_serv_state(iface, COINF_DL_SYNC);
+      unset_serv_state(iface, COINF_DL_SCAN);
+    }
+  }
+
+  if (serv_state(iface, COINF_DL_SYNC) &&
+      !serv_state(iface, COINF_WALLET_SCAN) &&
+      !serv_state(iface, COINF_WALLET_SYNC)) {
+    set_serv_state(iface, COINF_WALLET_SCAN);
+  } else if (serv_state(iface, COINF_WALLET_SCAN)) {
+    if (!ServiceWalletEvent(ifaceIndex)) {
+      set_serv_state(iface, COINF_WALLET_SYNC);
+      unset_serv_state(iface, COINF_WALLET_SCAN);
+    }
+  }
+
+  if (serv_state(iface, COINF_DL_SYNC) &&
+      serv_state(iface, COINF_WALLET_SYNC) &&
+      !serv_state(iface, COINF_PEER_SCAN) &&
+      !serv_state(iface, COINF_PEER_SYNC)) {
+    set_serv_state(iface, COINF_PEER_SCAN);
+  } else if (serv_state(iface, COINF_PEER_SCAN)) {
+    if (!ServicePeerEvent(ifaceIndex)) {
+      set_serv_state(iface, COINF_PEER_SYNC);
+      unset_serv_state(iface, COINF_PEER_SCAN);
+    }
+  }
+}
+
+void InitServiceWalletEvent(CWallet *wallet, uint64_t nHeight)
+{
+  wallet->nScanHeight = MIN(nHeight, wallet->nScanHeight); 
+}
 
 #ifdef __cplusplus
 extern "C" {
@@ -393,44 +470,22 @@ int InitChainExport(int ifaceIndex, const char *path, int max)
   return (0);
 } 
 
-int InitDownloadBlockchain(int ifaceIndex, int maxHeight)
-{
-
-  if (dlChainIndex[ifaceIndex] == 0) {
-    dlChainIndex[ifaceIndex] = maxHeight;
-  } else {
-    dlChainIndex[ifaceIndex] = MAX(dlChainIndex[ifaceIndex], maxHeight);
-  }
-  
-fprintf(stderr, "DEBUG: InitDownloadBlockchain: iface(%d) max(%d)\n", ifaceIndex, dlChainIndex[ifaceIndex]);
-  CIface *iface = GetCoinByIndex(ifaceIndex);
-  if (iface) {
-    iface->net_invalid = 0;
-  }
-  
-  return (0);
-}
-
-void UpdateDownloadBlockchain(int ifaceIndex)
+void ServiceBlockEventUpdate(int ifaceIndex)
 {
   CIface *iface = GetCoinByIndex(ifaceIndex);
 
   if (!iface)
     return;
 
-CBlockIndex *bestIndex = GetBestBlockIndex(iface);
-if (!bestIndex)
-return;
+  CBlockIndex *bestIndex = GetBestBlockIndex(iface);
+  if (!bestIndex)
+    return;
 
-  if (dlChainIndex[ifaceIndex] != 0 &&
-      dlChainIndex[ifaceIndex] != bestIndex->nHeight) {
-    iface->net_valid = time(NULL);
-fprintf(stderr, "DEBUG: UpdateDownloadBlockChain: height %d, iface %d\n", bestIndex->nHeight, ifaceIndex); 
-  }
+  if (iface->blockscan_max == bestIndex->nHeight)
+    return;
 
-  dlChainIndex[ifaceIndex] = MAX(dlChainIndex[ifaceIndex], bestIndex->nHeight);
-
-
+  iface->net_valid = time(NULL);
+  iface->blockscan_max = MAX(iface->blockscan_max, bestIndex->nHeight);
 }
 
 void event_cycle_chain(int ifaceIndex)
@@ -438,13 +493,34 @@ void event_cycle_chain(int ifaceIndex)
 
   PerformBlockChainOperation(ifaceIndex); 
 
-  ScanWalletTx(ifaceIndex);
-
-  DownloadBlockchain();
+  ServiceEventState(ifaceIndex);
 
 }
+
+int InitServiceBlockEvent(int ifaceIndex, uint64_t nHeight)
+{
+  CIface *iface = GetCoinByIndex(ifaceIndex);
+
+  if (!iface)
+    return (SHERR_INVAL);
+  if (!iface->enabled)
+    return (SHERR_OPNOTSUPP);
+
+  if ((nHeight - 1) <= GetBestHeight(iface))
+    return (0); /* all done */
+
+  /* resync */
+  iface->net_invalid = 0;
+  iface->blockscan_max = MAX(iface->blockscan_max, nHeight);
+  unset_serv_state(iface, COINF_DL_SYNC);
+
+  return (0);
+}
+
+
 #ifdef __cplusplus
 }
 #endif
+
 
 

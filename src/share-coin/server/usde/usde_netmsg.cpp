@@ -341,7 +341,7 @@ fprintf(stderr, "USDE:ProcessMessage: received '%s' (%d bytes from %s)\n", strCo
     CBlockIndex *pindexBest = GetBestBlockIndex(USDE_COIN_IFACE);
     if (pindexBest) {
       if (pindexBest->nHeight < pfrom->nStartingHeight) {
-        InitDownloadBlockchain(USDE_COIN_IFACE, pfrom->nStartingHeight);
+        InitServiceBlockEvent(USDE_COIN_IFACE, pfrom->nStartingHeight);
       }
     }
 

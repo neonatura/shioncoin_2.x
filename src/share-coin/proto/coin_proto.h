@@ -43,9 +43,10 @@ extern "C" {
 
 #define COINF_DL_SCAN (1 << 0)
 #define COINF_DL_SYNC (1 << 1)
-#define COINF_WALLETS_SCAN (1 << 3)
+#define COINF_WALLET_SCAN (1 << 3)
 #define COINF_WALLET_SYNC (1 << 4)
-#define COINF_GETADDR (1 << 5)
+#define COINF_PEER_SCAN (1 << 5)
+#define COINF_PEER_SYNC (1 << 6)
 
 
 #define COIN_IFACE_VERSION(_maj, _min, _rev, _bui) \
@@ -112,7 +113,6 @@ typedef struct coin_iface_t
   time_t net_valid;
   time_t net_invalid;
   uint32_t blockscan_max;
-  uint32_t walletscan_max;
   int flags;
 } coin_iface_t;
 

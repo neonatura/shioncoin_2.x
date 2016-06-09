@@ -443,6 +443,7 @@ public:
     }
 };
 
+class CBlock;
 class CBlockIndex;
 typedef std::map<uint256, CBlockIndex*> blkidx_t;
 
@@ -758,7 +759,7 @@ public:
      * @param[out] fInvalid returns true if transaction is invalid
      * @return  Returns true if all inputs are in txdb or mapTestPool
      */
-    bool FetchInputs(CTxDB& txdb, const std::map<uint256, CTxIndex>& mapTestPool, bool fBlock, bool fMiner, MapPrevTx& inputsRet, bool& fInvalid);
+    bool FetchInputs(CTxDB& txdb, const std::map<uint256, CTxIndex>& mapTestPool, CBlock *pblockNew, bool fMiner, MapPrevTx& inputsRet, bool& fInvalid);
 
 
 
@@ -1484,6 +1485,7 @@ CBlock *GetArchBlockByHash(CIface *iface, const uint256 hash);
 uint256 GetGenesisBlockHash(int ifaceIndex);
 
 bool core_AcceptBlock(CBlock *pblock);
+
 
 #endif /* ndef __SERVER_BLOCK_H__ */
 

@@ -78,6 +78,8 @@ extern shbuf_t *server_msg_buff;
 #include <string>
 #include <db_cxx.h>
 
+typedef std::vector<unsigned char> cbuff;
+
 #include <boost/version.hpp>
 #include <boost/foreach.hpp>
 #include <boost/filesystem.hpp>
@@ -90,6 +92,7 @@ extern shbuf_t *server_msg_buff;
 #include "server/block.h"
 #include "server/txidx.h"
 #include "server/global.h"
+#include "server/certificate.h"
 #endif
 
 /**

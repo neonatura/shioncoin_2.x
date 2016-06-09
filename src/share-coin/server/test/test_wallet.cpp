@@ -288,7 +288,7 @@ int TESTWallet::ScanForWalletTransactions(CBlockIndex* pindexStart, bool fUpdate
 #endif
 
     if (pindexStart)
-      InitScanWalletTx(this, pindexStart->nHeight);
+      InitServiceWalletEvent(this, pindexStart->nHeight);
 
     return ret;
 }
@@ -303,15 +303,19 @@ int64 TESTWallet::GetTxFee(CTransaction tx)
   if (tx.IsCoinBase())
     return (0);
 
+  CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
+  CBlock *pblock = GetBlockByTx(iface, tx.GetHash());
+
   TESTTxDB txdb;
 
   nFees = 0;
   bool fInvalid = false;
-  if (tx.FetchInputs(txdb, mapQueuedChanges, true, false, inputs, fInvalid))
+  if (tx.FetchInputs(txdb, mapQueuedChanges, pblock, false, inputs, fInvalid))
     nFees += tx.GetValueIn(inputs) - tx.GetValueOut();
 
   txdb.Close();
 
+  if (pblock) delete pblock;
   return (nFees);
 }
 

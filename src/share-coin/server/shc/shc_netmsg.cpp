@@ -338,7 +338,7 @@ bool static ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CData
     CBlockIndex *pindexBest = GetBestBlockIndex(SHC_COIN_IFACE);
     if (pindexBest) {
       if (pindexBest->nHeight < pfrom->nStartingHeight) {
-        InitDownloadBlockchain(SHC_COIN_IFACE, pfrom->nStartingHeight);
+        InitServiceBlockEvent(SHC_COIN_IFACE, pfrom->nStartingHeight);
       }
     }
 

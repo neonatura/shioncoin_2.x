@@ -460,24 +460,24 @@ bool CWallet::AddToWallet(const CWalletTx& wtxIn)
 // If fUpdate is true, existing transactions will be updated.
 bool CWallet::AddToWalletIfInvolvingMe(const CTransaction& tx, const CBlock* pblock, bool fUpdate, bool fFindBlock)
 {
-    uint256 hash = tx.GetHash();
-    {
-        LOCK(cs_wallet);
-        bool fExisted = mapWallet.count(hash);
-        if (fExisted && !fUpdate) return false;
-        if (fExisted || IsFromMe(tx) || IsMine(tx)) {
-            CWalletTx wtx(this,tx);
-            // Get merkle branch if transaction was found in a block
-            if (pblock) {
-                wtx.SetMerkleBranch(pblock);
-                ScanWalletTxUpdated(this, pblock);
-            }
-            return AddToWallet(wtx);
-        }
-        else
-            WalletUpdateSpent(tx);
+  uint256 hash = tx.GetHash();
+  {
+    LOCK(cs_wallet);
+    bool fExisted = mapWallet.count(hash);
+    if (fExisted && !fUpdate) return false;
+    if (fExisted || IsFromMe(tx) || IsMine(tx)) {
+      CWalletTx wtx(this,tx);
+      // Get merkle branch if transaction was found in a block
+      if (pblock) {
+        wtx.SetMerkleBranch(pblock);
+        ServiceWalletEventUpdate(this, pblock);
+      }
+      return AddToWallet(wtx);
     }
-    return false;
+    else
+      WalletUpdateSpent(tx);
+  }
+  return false;
 }
 
 bool CWallet::EraseFromWallet(uint256 hash)

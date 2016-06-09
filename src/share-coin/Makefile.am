@@ -2,7 +2,6 @@ AUTOMAKE_OPTIONS = foreign
 
 TESTS = test_shcoind
 
-noinst_PROGRAMS = test_shcoind
 
 INCLUDES = -I$(top_srcdir)/src/share-ssl-lib/$(OPENSSL_DIR)/include \
 	-I$(top_srcdir)/src/share-lib
@@ -45,12 +44,14 @@ common_includes = \
 	$(top_srcdir)/src/share-lib/net/shnet.h \
 	unet/unet.h \
 	server/block.h \
+	server/certificate.h \
 	server/chain.h \
 	server/global.h \
 	server/allocators.h \
 	server/base58.h \
 	server/bignum.h \
 	server/rpc_proto.h \
+	server/rpccert_proto.h \
 	server/compat.h \
 	server/crypter.h \
 	server/txidx.h \
@@ -129,11 +130,13 @@ server_sources = \
 	server/shc/shc_txidx.cpp \
 	server/shc/shc_txidx.h \
 	server/block.cpp \
+	server/certificate.cpp \
 	server/chain.cpp \
 	server/base58.cpp \
 	server/global.cpp \
 	server/block_merkle.cpp \
 	server/rpc_proto.cpp \
+	server/rpccert_proto.cpp \
 	server/crypter.cpp \
 	server/txidx.cpp \
 	server/init.cpp \
@@ -164,15 +167,19 @@ stratum_sources = \
 tool_sources = \
 	tool/tool_irc.cpp
 
-bin_PROGRAMS = shcointool
+noinst_PROGRAMS = test_shcoind shcointool
 sbin_PROGRAMS = shcoind
-bin_SCRIPTS = usde shc
+bin_SCRIPTS = shc
+
+if USDE_SERVICE
+bin_SCRIPTS += usde
 
 usde: shcointool
-	ln -sf shcointool usde
+	cp -f shcointool usde
+endif
 
 shc: shcointool
-	ln -sf shcointool shc
+	cp -f shcointool shc
 
 test_shcoind_SOURCES = \
 	$(common_includes) $(common_sources) \
