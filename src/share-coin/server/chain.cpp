@@ -307,7 +307,7 @@ bool ServiceBlockEvent(int ifaceIndex)
   if (!pindexBest)
     return (true); /* keep trying */
 
-  if (pindexBest->nHeight > iface->blockscan_max) {
+  if (pindexBest->nHeight >= iface->blockscan_max) {
     ServiceBlockEventUpdate(ifaceIndex);
     return (false);
   }
@@ -506,7 +506,7 @@ int InitServiceBlockEvent(int ifaceIndex, uint64_t nHeight)
   if (!iface->enabled)
     return (SHERR_OPNOTSUPP);
 
-  if ((nHeight - 1) <= GetBestHeight(iface))
+  if (nHeight >= iface->blockscan_max)
     return (0); /* all done */
 
   /* resync */
