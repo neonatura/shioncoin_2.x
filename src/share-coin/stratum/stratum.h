@@ -83,7 +83,7 @@ double speed[MAX_SPEED_STEP];
   /** the timestamp when the current round started. */
   time_t round_stamp;
 
-  double reward_val;
+  double reward_val[MAX_COIN_IFACE];
   time_t reward_time;
   uint64_t reward_height;
   int ifaceIndex;

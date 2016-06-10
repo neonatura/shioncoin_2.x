@@ -72,7 +72,7 @@ void incr_task_work_time(void)
 
 static int work_idx = 0;
 int DefaultWorkIndex = 0;
-static uint64_t last_payout_crc[MAX_COIN_IFACE];
+static char last_payout_hash[MAX_COIN_IFACE][256];
 
 /**
  * Monitors when a new accepted block becomes confirmed.
@@ -119,24 +119,29 @@ fprintf(stderr, "DEBUG: check_payout: cannot get block transactions\n");
     return;
   }
 
-  if (last_payout_crc[ifaceIndex] == 0)
-    last_payout_crc[ifaceIndex] = shcrc(block_hash, strlen(block_hash));
-  if (last_payout_crc[ifaceIndex] == shcrc(block_hash, strlen(block_hash))) {
-    shjson_free(&tree);
-    return;
-  }
-  last_payout_crc[ifaceIndex] = shcrc(block_hash, strlen(block_hash));
+  if (!*last_payout_hash[ifaceIndex]) {
+    strcpy(last_payout_hash[ifaceIndex], block_hash);
+  } 
 
   memset(category, 0, sizeof(category));
   strncpy(category, shjson_astr(block, "category", "none"), sizeof(category) - 1);
+  if (0 != strcmp(category, "generate")) {
+    return;
+  }
+
+  if (0 == strcmp(last_payout_hash[ifaceIndex], block_hash)) {
+    shjson_free(&tree);
+    return;
+  }
+  strcpy(last_payout_hash[ifaceIndex], block_hash);
 
 
-  if (0 == strcmp(category, "generate")) {
+
+  {
     double amount = shjson_num(block, "amount", 0);
     double fee;
 
     if (amount < 1) {
-fprintf(stderr, "DEBUG: generate amount < 1\n");
       shjson_free(&tree);
       return;
     }
@@ -150,7 +155,6 @@ fprintf(stderr, "DEBUG: generate amount < 1\n");
     for (user = client_list; user; user = user->next) {
       for (i = 0; i < MAX_ROUNDS_PER_HOUR; i++)
         tot_shares += user->block_avg[i];
-      tot_shares += user->block_tot;
     }
     tot_shares = MAX(1.0, tot_shares);
 
@@ -162,11 +166,10 @@ fprintf(stderr, "DEBUG: generate amount < 1\n");
 
       reward = 0;
       for (i = 0; i < MAX_ROUNDS_PER_HOUR; i++)
-        reward += weight * user->block_avg[i];
-      reward += weight * user->block_tot;
+        reward += (weight * user->block_avg[i]);
       if (reward >= 0.0000001) { 
         user->balance[ifaceIndex] += reward;
-fprintf(stderr, "DEBUG: user '%s' += reward %d\n", user->worker, reward);
+fprintf(stderr, "DEBUG: user '%s' += reward %f (%-1.1f%%)\n", user->worker, reward, (weight * 100));
       }
     }
 
@@ -204,9 +207,9 @@ static void commit_payout(int ifaceIndex, int block_height)
       continue; /* public */
 
     if (0 == setblockreward(ifaceIndex, uname, user->balance[ifaceIndex])) {
-      user->reward_val = user->balance[ifaceIndex];
       user->reward_time = time(NULL);
       user->reward_height = block_height;
+//      user->reward_val[ifaceIndex] += user->balance[ifaceIndex];
       user->balance[ifaceIndex] = 0;
     }
   }

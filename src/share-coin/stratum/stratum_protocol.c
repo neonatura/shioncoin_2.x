@@ -649,7 +649,7 @@ fprintf(stderr, "DEBUG: STRATUM '%s'\n", method);
       shjson_num_add(udata, NULL, stratum_user_speed(t_user)); /* khs */
       shjson_str_add(udata, NULL, t_user->block_hash);
       shjson_str_add(udata, NULL, t_user->cli_ver);
-      shjson_num_add(udata, NULL, t_user->reward_val);
+//      shjson_num_add(udata, NULL, t_user->reward_val);
       shjson_num_add(udata, NULL, t_user->reward_time);
       shjson_num_add(udata, NULL, t_user->reward_height);
     }
