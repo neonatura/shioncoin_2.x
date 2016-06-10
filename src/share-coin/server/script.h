@@ -83,6 +83,13 @@ enum opcodetype
     OP_15 = 0x5f,
     OP_16 = 0x60,
 
+    /* certification ops */
+    OP_CERTISSUER_NEW=0x0a,
+    OP_CERTISSUER_ACTIVATE=0x0b,
+    OP_CERTISSUER_UPDATE=0x0c,
+    OP_CERT_NEW=0x0d,
+    OP_CERT_TRANSFER=0x0e,
+
     // control
     OP_NOP = 0x61,
     OP_VER = 0x62,

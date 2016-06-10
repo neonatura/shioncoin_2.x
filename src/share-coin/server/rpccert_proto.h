@@ -42,5 +42,8 @@
 Value rpc_cert_fee(CIface *iface, const Array& params, bool fHelp);
 
 
+Value rpc_cert_newent(CIface *iface, const Array& params, bool fHelp);
+
+
 #endif /* ndef __SERVER__RPCCERT_PROTO_H__ */
 

@@ -38,6 +38,7 @@
 #include "script.h"
 #include "coin_proto.h"
 #include <vector>
+#include "certificate.h"
 
 typedef std::vector<uint256> HashList;
 
@@ -447,17 +448,30 @@ class CBlock;
 class CBlockIndex;
 typedef std::map<uint256, CBlockIndex*> blkidx_t;
 
+#define TX_VERSION TXF_VERSION
+
 /** The basic transaction that is broadcasted on the network and contained in
  * blocks.  A transaction can contain multiple inputs and outputs.
  */
 class CTransaction
 {
 public:
-    static const int TX_VERSION = (1 << 0);
+    static const int TXF_VERSION = (1 << 0);
+    static const int TXF_VERSION_2 = (1 << 1);
+    static const int TXF_ENTITY = (1 << 2);
+    static const int TXF_CERTIFICATE = (1 << 3);
+    static const int TXF_LICENSE = (1 << 4);
+    static const int TXF_ALIAS = (1 << 6);
+    static const int TXF_EXCHANGE = (1 << 9);
+    static const int TXF_ASSET = (1 << 12);
+
     int nFlag;
     std::vector<CTxIn> vin;
     std::vector<CTxOut> vout;
     unsigned int nLockTime;
+
+    CCertEnt *entity;
+    CCert *certificate;
 
     // Denial-of-service detection:
     mutable int nDoS;
@@ -488,11 +502,12 @@ public:
 
     void SetNull()
     {
-        nFlag = CTransaction::TX_VERSION;
+        nFlag = CTransaction::TXF_VERSION;
         vin.clear();
         vout.clear();
         nLockTime = 0;
         nDoS = 0;  // Denial-of-service prevention
+        entity = NULL;
     }
 
     bool IsNull() const
@@ -709,6 +724,12 @@ public:
 
     bool EraseTx(int ifaceIndex);
 
+    CCertEnt *CreateEntity(const char *name, vector<unsigned char> secret)
+    {
+      nFlag |= CTransaction::TXF_ENTITY;
+      entity = new CCertEnt(name, secret);
+      return (entity);
+    }
 
     friend bool operator==(const CTransaction& a, const CTransaction& b)
     {

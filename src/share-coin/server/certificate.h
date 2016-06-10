@@ -108,6 +108,28 @@ class CCertEnt
       sig = SHSig(&entity.ent_sig);
     }
 
+    CCertEnt(const char *name, vector<unsigned char> secret)
+    {
+
+      SetNull();
+
+      strncpy(entity.ent_name, name, sizeof(entity.ent_name)-1);
+      memcpy(&entity.ent_peer, ashpeer(), sizeof(entity.ent_peer));
+      entity.ent_len = MIN(secret.size(), sizeof(entity.ent_data));
+
+      {
+        int idx;
+        vector<unsigned char>::const_iterator vi = secret.begin();
+        while (vi != secret.end()) {
+          entity.ent_data[idx++] = (char)(*vi);
+          if (idx >= entity.ent_len) break;
+          vi++;           
+        }                 
+      }
+
+      Sign();
+    }
+
     IMPLEMENT_SERIALIZE (
       READWRITE(cbuff(entity.ent_data, entity.ent_data + sizeof(entity.ent_data)));
       READWRITE(cbuff(entity.ent_name, entity.ent_name + sizeof(entity.ent_name)));
@@ -116,12 +138,40 @@ class CCertEnt
       READWRITE(entity.ent_len);
     )
 
+    friend bool operator==(const CCertEnt &a, const CCertEnt &b)
+    {
+      return (0 == memcpy((unsigned char *)&a.entity,
+            (unsigned char *)&b.entity, sizeof(shcert_ent_t)));
+    }
+
+    CCertEnt operator=(const CCertEnt &b)
+    {
+      memcpy(&entity, &b.entity, sizeof(entity));
+      peer = SHPeer(&entity.ent_peer);
+      sig = SHSig(&entity.ent_sig);
+    }
+
     void SetNull()
     {
       memset(&entity, 0, sizeof(entity));
     }
 
-    std::string GetName()
+    void Sign()
+    {
+      shkey_t *key;
+
+      entity.ent_sig.sig_stamp = shtime_adj(shtime(), -1);
+      entity.ent_sig.sig_expire = 
+        shtime_adj(entity.ent_sig.sig_stamp, SHARE_DEFAULT_EXPIRE_TIME);
+
+      entity.ent_sig.sig_key.alg = SHKEY_ALG_SHR;
+      key = shkey_cert(shpeer_kpub(&entity.ent_peer), 
+          shcrc(entity.ent_data, entity.ent_len), entity.ent_sig.sig_stamp);
+      memcpy(&entity.ent_sig.sig_key, key, sizeof(shkey_t));
+      shkey_free(&key);
+    }
+
+    string GetName()
     {
       string ent_name(entity.ent_name);
       return (ent_name);
@@ -133,6 +183,25 @@ class CCertEnt
       return ((const char *)entity.ent_data);
     }
 
+    uint160 GetHash()
+    {
+      unsigned char *raw_data = (unsigned char *)&entity;
+      vector<unsigned char> vchHash(raw_data, raw_data + sizeof(entity));
+      return (Hash160(vchHash));
+    }
+
+    bool Expired()
+    {
+      return (shtime_after(shtime(), entity.ent_sig.sig_expire));
+    }
+
+    string SerializeToString(CIface *iface)
+    {
+      CDataStream dsCertIssuer(SER_NETWORK, PROTOCOL_VERSION(iface)); 
+      dsCertIssuer << *this;
+      vector<unsigned char> vchData(dsCertIssuer.begin(), dsCertIssuer.end());
+      return EncodeBase64(vchData.data(), vchData.size());
+    }     
 
 };
 
@@ -203,6 +272,8 @@ class CCert
     
 };
 
+extern std::map<uint160, uint256> mapCertIssuers;
+
 
 /** 
  * a 'discount' applied when certification is infrequent.
@@ -214,6 +285,14 @@ uint64 GetCertFeeSubsidy(unsigned int nHeight);
  */
 int64 GetCertNetworkFee(int nHeight);
 
+bool DecodeCertScript(const CScript& script, int& op, vector<vector<unsigned char> > &vvch, CScript::const_iterator& pc); 
+
+int IndexOfCertIssuerOutput(const CTransaction& tx); 
+
+class CWallet;
+class CReserveKey;
+class CWalletTx;
+bool CreateCertTransactionWithInputTx(CWallet *wallet, const vector<pair<CScript, int64> >& vecSend, CWalletTx& wtxIn, int nTxOut, CWalletTx& wtxNew, CReserveKey& reservekey, int64& nFeeRet);
 
 
 #endif /* ndef __SERVER__CERTIFICATE_H__ */
