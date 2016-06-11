@@ -89,6 +89,30 @@ enum opcodetype
     OP_CERTISSUER_UPDATE=0x0c,
     OP_CERT_NEW=0x0d,
     OP_CERT_TRANSFER=0x0e,
+    OP_CERT_LICENSE=0x10,
+
+    /* exchange */ 
+    OP_OFFER_NEW=0x04,
+    OP_OFFER_ACTIVATE=0x05,
+    OP_OFFER_UPDATE=0x06,
+    OP_OFFER_ACCEPT=0x07,
+    OP_OFFER_PAY=0x08,
+    OP_OFFERACCEPT_TRANSFER=0x09,
+
+    /* alias */
+    OP_ALIAS_NEW = 0x01,
+    OP_ALIAS_ACTIVATE=0x02,
+    OP_ALIAS_UPDATE=0x03,
+
+    /* asset */
+    OP_ASSET = 0x0f,
+    XOP_ASSET_NEW = 0x01,
+    XOP_ASSET_ACTIVATE = 0x02,
+    XOP_ASSET_SEND = 0x03,
+    XOP_ASSET_PEG = 0x04,
+    XOP_ASSET_UPDATE = 0x05,
+    XOP_ASSET_GENERATE = 0x06,
+    XOP_ASSET_DISSOLVE = 0x07,
 
     // control
     OP_NOP = 0x61,
