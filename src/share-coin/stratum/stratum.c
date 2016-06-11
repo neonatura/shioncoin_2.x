@@ -95,8 +95,8 @@ static void stratum_close_free(void)
       continue;
 
     if (peer->fd == -1) {
-      if (peer->round_stamp + 3600 >= now)
-        continue; /* less than 60min */
+      if (peer->work_stamp + 3000 >= now)
+        continue; /* less than 50min */
 
       if (peer_last)
         peer_last->next = peer_next;

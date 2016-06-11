@@ -216,7 +216,7 @@ bool static ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CData
   blkidx_t *blockIndex;
   shtime_t ts;
 
-fprintf(stderr, "USDE:ProcessMessage: received '%s' (%d bytes from %s)\n", strCommand.c_str(), vRecv.size(), pfrom->addr.ToString().c_str());
+//fprintf(stderr, "USDE:ProcessMessage: received '%s' (%d bytes from %s)\n", strCommand.c_str(), vRecv.size(), pfrom->addr.ToString().c_str());
 
 
   RandAddSeedPerfmon();

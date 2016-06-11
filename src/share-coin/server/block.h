@@ -446,6 +446,7 @@ public:
 
 class CBlock;
 class CBlockIndex;
+class COffer;
 typedef std::map<uint256, CBlockIndex*> blkidx_t;
 
 #define TX_VERSION TXF_VERSION
@@ -462,7 +463,7 @@ public:
     static const int TXF_CERTIFICATE = (1 << 3);
     static const int TXF_LICENSE = (1 << 4);
     static const int TXF_ALIAS = (1 << 6);
-    static const int TXF_EXCHANGE = (1 << 9);
+    static const int TXF_OFFER = (1 << 9);
     static const int TXF_ASSET = (1 << 12);
 
     int nFlag;
@@ -472,6 +473,11 @@ public:
 
     CCertEnt *entity;
     CCert *certificate;
+    CLicense *license;
+    CAlias *reference;
+    CAsset *asset;
+    COffer *offer;
+
 
     // Denial-of-service detection:
     mutable int nDoS;
@@ -490,6 +496,18 @@ public:
         READWRITE(vin);
         READWRITE(vout);
         READWRITE(nLockTime);
+        if (this->nFlag & TXF_ENTITY)
+          READWRITE(*entity);
+        if (this->nFlag & TXF_CERTIFICATE)
+          READWRITE(*certificate);
+        if (this->nFlag & TXF_LICENSE)
+          READWRITE(*license);
+        if (this->nFlag & TXF_ALIAS)
+          READWRITE(*reference);
+        if (this->nFlag & TXF_ASSET)
+          READWRITE(*asset);
+        if (this->nFlag & TXF_OFFER)
+          READWRITE(*offer);
     )
 
     void Init(CTransaction tx)

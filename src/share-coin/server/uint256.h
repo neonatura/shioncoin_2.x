@@ -456,6 +456,21 @@ public:
         return *this;
     }
 
+    uint160& operator=(const shkey_t& b)
+    {
+      for (int i = 0; i < WIDTH; i++)
+        pn[i] = b.code[i];
+      return *this;
+    }
+
+    shkey_t *GetKey()
+    {
+      shkey_t key;
+      memset(&key, 0, sizeof(key));
+      for (int i = 0; i < WIDTH; i++)
+        key.code[i] = pn[i];
+    }
+
     uint160(uint64 b)
     {
         pn[0] = (unsigned int)b;

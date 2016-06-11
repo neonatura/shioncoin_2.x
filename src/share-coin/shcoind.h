@@ -85,6 +85,7 @@ typedef std::vector<unsigned char> cbuff;
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 
+#include "server/shlib.h"
 #include "server/bignum.h"
 #include "server/sync.h"
 #include "server/uint256.h"
@@ -93,6 +94,7 @@ typedef std::vector<unsigned char> cbuff;
 #include "server/txidx.h"
 #include "server/global.h"
 #include "server/certificate.h"
+#include "server/offer.h"
 #endif
 
 /**

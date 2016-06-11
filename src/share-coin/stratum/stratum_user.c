@@ -181,8 +181,10 @@ int stratum_user_broadcast_task(task_t *task)
 
     clear = (user->height != task->height);
     err = stratum_send_task(user, task, clear);
-    if (!err)
+    if (!err) {
       user->height = task->height;
+      user->work_stamp = time(NULL);
+    }
 
   }
 

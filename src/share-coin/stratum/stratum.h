@@ -83,7 +83,9 @@ double speed[MAX_SPEED_STEP];
   /** the timestamp when the current round started. */
   time_t round_stamp;
 
-  double reward_val[MAX_COIN_IFACE];
+  /* the timestamp of when the client last recieved work */
+  time_t work_stamp;
+
   time_t reward_time;
   uint64_t reward_height;
   int ifaceIndex;

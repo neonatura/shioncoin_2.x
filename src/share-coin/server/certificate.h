@@ -33,62 +33,13 @@ inline std::vector<unsigned char> vchFromString(const std::string &str) {
   return std::vector<unsigned char>(strbeg, strbeg + str.size());
 }   
 
-typedef shcert_t SHCert;
-typedef shcert_ent_t SHCertEnt;
 
-class SHPeer
-{
-  public:
-    shpeer_t peer;
-    mutable unsigned char *raw_data;
-
-    SHPeer()
-    {
-      SetNull();
-    }
-    SHPeer(shpeer_t *peerIn)
-    {
-      memcpy(&peer, peerIn, sizeof(peer));
-      raw_data = (unsigned char *)&peer;
-    }
-    IMPLEMENT_SERIALIZE (
-        READWRITE(cbuff(raw_data, raw_data + sizeof(peer)));
-    )
-    void SetNull()
-    {
-      memset(&peer, 0, sizeof(peer));
-      raw_data = NULL;
-    }
-};
-
-class SHSig
-{
-  public:
-    shsig_t sig;
-    mutable unsigned char *raw_data;
-
-    SHSig()
-    {
-      SetNull();
-    }
-    SHSig(shsig_t *sigIn)
-    {
-      memcpy(&sig, sigIn, sizeof(sig));
-      raw_data = (unsigned char *)&sig;
-    }
-    IMPLEMENT_SERIALIZE (
-        READWRITE(cbuff(raw_data, raw_data + sizeof(sig)));
-    )
-    void SetNull()
-    {
-      memset(&sig, 0, sizeof(sig));
-      raw_data = NULL;
-    }
-};
 
 class CCertEnt
 {
+  static const int CERTENT_VERSION = 1;
   protected:
+    int nVersion;
     SHCertEnt entity;
 
   public:
@@ -100,7 +51,7 @@ class CCertEnt
       SetNull();
     }
     
-    CCertEnt(shcert_ent_t *entityIn)
+    CCertEnt(SHCertEnt *entityIn)
     {
       SetNull();
       memcpy(&entity, entityIn, sizeof(entity));
@@ -131,8 +82,9 @@ class CCertEnt
     }
 
     IMPLEMENT_SERIALIZE (
-      READWRITE(cbuff(entity.ent_data, entity.ent_data + sizeof(entity.ent_data)));
-      READWRITE(cbuff(entity.ent_name, entity.ent_name + sizeof(entity.ent_name)));
+      READWRITE(nVersion);
+      READWRITE(FLATDATA(entity.ent_data));
+      READWRITE(FLATDATA(entity.ent_name));
       READWRITE(peer);
       READWRITE(sig);
       READWRITE(entity.ent_len);
@@ -141,7 +93,7 @@ class CCertEnt
     friend bool operator==(const CCertEnt &a, const CCertEnt &b)
     {
       return (0 == memcpy((unsigned char *)&a.entity,
-            (unsigned char *)&b.entity, sizeof(shcert_ent_t)));
+            (unsigned char *)&b.entity, sizeof(SHCertEnt)));
     }
 
     CCertEnt operator=(const CCertEnt &b)
@@ -153,6 +105,7 @@ class CCertEnt
 
     void SetNull()
     {
+      nVersion = CERTENT_VERSION;
       memset(&entity, 0, sizeof(entity));
     }
 
@@ -207,7 +160,9 @@ class CCertEnt
 
 class CCert
 {
+  static const int CERT_VERSION = 1;
   protected:
+    int nVersion;
     SHCert cert;
     CCertEnt ent_sub;
     CCertEnt ent_iss;
@@ -227,9 +182,10 @@ class CCert
     }
 
     IMPLEMENT_SERIALIZE (
+      READWRITE(nVersion);
       READWRITE(ent_sub);
       READWRITE(ent_iss);
-      READWRITE(cbuff(cert.cert_ser, cert.cert_ser + sizeof(cert.cert_ser)));
+      READWRITE(FLATDATA(cert.cert_ser));
       READWRITE(cert.cert_fee);
       READWRITE(cert.cert_flag);
       READWRITE(cert.cert_ver);
@@ -237,6 +193,7 @@ class CCert
 
     void SetNull()
     {
+      nVersion = CERT_VERSION;
       memset(&cert, 0, sizeof(cert));
     }
 
@@ -270,6 +227,128 @@ class CCert
       return (&ent_sub);
     }
     
+};
+
+class CLicense
+{
+  static const int LICENSE_VERSION = 1;
+  protected:
+    int nVersion;
+    shlic_t license;
+
+  public:
+
+    CLicense()
+    {
+      SetNull();
+    }
+    CLicense(CCertEnt *ent)
+    {
+      SetNull();
+      SetEntity(ent);
+    }
+    IMPLEMENT_SERIALIZE (
+      READWRITE(nVersion);
+      READWRITE(FLATDATA(license));
+    )
+    void SetNull()
+    {
+      nVersion = LICENSE_VERSION;
+      memset(&license, 0, sizeof(license));
+    }
+    void SetEntity(CCertEnt *ent)
+    {
+      memcpy(&license.lic_cert,
+          ent->GetHash().GetKey(), sizeof(license.lic_cert.code));
+    }
+};
+
+class CAlias
+{
+  static const int ALIAS_VERSION = 1;
+
+  protected:
+    int nVersion;
+    shref_t reference;
+
+  public:
+    CAlias()
+    {
+      SetNull();
+    }
+
+    CAlias(string name, uint256 hash)
+    {
+      SetNull();
+      strncpy(reference.ref_name, name.c_str(), sizeof(reference.ref_name));
+      strncpy(reference.ref_hash, hash.GetHex().c_str(), sizeof(reference.ref_hash));
+      memcpy(&reference.ref_peer, ashpeer(), sizeof(reference.ref_peer));
+    }
+
+    IMPLEMENT_SERIALIZE (
+      READWRITE(nVersion);
+      READWRITE(FLATDATA(reference));
+    )
+
+    void SetNull()
+    {
+      nVersion = ALIAS_VERSION;
+      memcpy(&reference, 0, sizeof(reference));
+    }
+ 
+};
+
+class CAsset
+{
+  static const int ASSET_VERSION = 1;
+
+  protected:
+    int nVersion;
+    SHAsset asset;
+    SHPeer sigPeer;
+
+  public:
+    CAsset()
+    {
+      SetNull();
+    }
+
+    IMPLEMENT_SERIALIZE (
+      READWRITE(nVersion);
+      READWRITE(FLATDATA(asset));
+    )
+
+    void SetNull()
+    {
+      nVersion = ASSET_VERSION;
+      memset(&asset, 0, sizeof(SHAsset));
+    }
+
+    bool Sign(SHPeer *peer)
+    {
+      if (asset.ass_stamp)
+        return (true); /* already signed */
+
+      asset.ass_stamp = shtime();
+#if 0
+      int err = generate_asset_signature(&asset, peer);
+      if (err)
+        return (false);
+
+      memcpy(&sigPeer, peer, sizeof(sigPeer));
+#endif
+      return (true);
+    }
+
+    bool Verify(SHPeer *peer)
+    {
+#if 0
+      int err = verify_asset_signature(&asset, peer);
+      if (err)
+        return (false);
+#endif
+      return (true);
+    }
 };
 
 extern std::map<uint160, uint256> mapCertIssuers;
