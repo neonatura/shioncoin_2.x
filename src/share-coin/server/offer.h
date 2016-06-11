@@ -3,34 +3,13 @@
 #ifndef __OFFER_H__
 #define __OFFER_H__
 
-bool ExtractOfferAddress(const CScript& script, std::string& address);
-bool IsOfferMine(const CTransaction& tx);
-bool IsOfferMine(const CTransaction& tx, const CTxOut& txout, bool ignore_aliasnew = false);
-std::string SendOfferMoneyWithInputTx(CScript scriptPubKey, int64 nValue, int64 nNetFee, CWalletTx& wtxIn, CWalletTx& wtxNew, 
-    bool fAskFee, const std::string& txData = "");
-bool CreateOfferTransactionWithInputTx(const std::vector<std::pair<CScript, int64> >& vecSend, CWalletTx& wtxIn, int nTxOut, 
-    CWalletTx& wtxNew, CReserveKey& reservekey, int64& nFeeRet, const std::string& txData);
 
-bool DecodeOfferTx(const CTransaction& tx, int& op, int& nOut, std::vector<std::vector<unsigned char> >& vvch, int nHeight);
-bool DecodeOfferScript(const CScript& script, int& op, std::vector<std::vector<unsigned char> > &vvch);
-bool IsOfferOp(int op);
-int IndexOfOfferOutput(const CTransaction& tx);
-uint64 GetOfferFeeSubsidy(unsigned int nHeight);
-bool GetValueOfOfferTxHash(const uint256 &txHash, std::vector<unsigned char>& vchValue, uint256& hash, int& nHeight);
-int GetOfferTxHashHeight(const uint256 txHash);
-int GetOfferDisplayExpirationDepth(int nHeight);
-int64 GetOfferNetworkFee(int seed, int nHeight);
-int64 GetOfferNetFee(const CTransaction& tx);
-bool InsertOfferFee(CBlockIndex *pindex, uint256 hash, uint64 nValue);
-
-std::string offerFromOp(int op);
-
-extern std::map<std::vector<unsigned char>, uint256> mapMyOffers;
-extern std::map<std::vector<unsigned char>, uint256> mapMyOfferAccepts;
+extern std::map<std::vector<unsigned char>, uint256> mapOffers;
+extern std::map<std::vector<unsigned char>, uint256> mapOfferAccepts;
 extern std::map<std::vector<unsigned char>, std::set<uint256> > mapOfferPending;
 extern std::map<std::vector<unsigned char>, std::set<uint256> > mapOfferAcceptPending;
 
-class CBitcoinAddress;
+class CCoinAddr;
 
 class COfferAccept {
 public:

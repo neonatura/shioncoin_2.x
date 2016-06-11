@@ -102,7 +102,7 @@ Value dumpprivkey(const Array& params, bool fHelp)
 	    "Reveals the private key corresponding to <usdeaddress>.");
 
     string strAddress = params[0].get_str();
-    CBitcoinAddress address;
+    CCoinAddr address;
     if (!address.SetString(strAddress))
 	throw JSONRPCError(-5, "Invalid usde address");
     CKeyID keyID;

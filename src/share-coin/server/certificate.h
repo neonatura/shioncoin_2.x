@@ -28,10 +28,6 @@
 
 using namespace std;
 
-inline std::vector<unsigned char> vchFromString(const std::string &str) {
-  unsigned char *strbeg = (unsigned char*) str.c_str();
-  return std::vector<unsigned char>(strbeg, strbeg + str.size());
-}   
 
 
 
@@ -263,44 +259,9 @@ class CLicense
     }
 };
 
-class CAlias
-{
-  static const int ALIAS_VERSION = 1;
-
-  protected:
-    int nVersion;
-    shref_t reference;
-
-  public:
-    CAlias()
-    {
-      SetNull();
-    }
-
-    CAlias(string name, uint256 hash)
-    {
-      SetNull();
-      strncpy(reference.ref_name, name.c_str(), sizeof(reference.ref_name));
-      strncpy(reference.ref_hash, hash.GetHex().c_str(), sizeof(reference.ref_hash));
-      memcpy(&reference.ref_peer, ashpeer(), sizeof(reference.ref_peer));
-    }
-
-    IMPLEMENT_SERIALIZE (
-      READWRITE(nVersion);
-      READWRITE(FLATDATA(reference));
-    )
-
-    void SetNull()
-    {
-      nVersion = ALIAS_VERSION;
-      memcpy(&reference, 0, sizeof(reference));
-    }
- 
-};
-
 class CAsset
 {
-  static const int ASSET_VERSION = 1;
+  static const int PROTO_ASSET_VERSION = 1;
 
   protected:
     int nVersion;
@@ -320,7 +281,7 @@ class CAsset
 
     void SetNull()
     {
-      nVersion = ASSET_VERSION;
+      nVersion = PROTO_ASSET_VERSION;
       memset(&asset, 0, sizeof(SHAsset));
     }
 

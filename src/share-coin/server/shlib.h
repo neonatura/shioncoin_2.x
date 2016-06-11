@@ -82,4 +82,9 @@ class SHSig
     }
 };
 
+inline std::vector<unsigned char> vchFromString(const std::string &str) {
+  unsigned char *strbeg = (unsigned char*) str.c_str();
+  return std::vector<unsigned char>(strbeg, strbeg + str.size());
+}   
+
 #endif /* ndef __SHLIB_H__ */

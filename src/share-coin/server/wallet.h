@@ -80,6 +80,9 @@ public:
     mutable int ifaceIndex;
     mutable unsigned int nScanHeight;
 
+    mutable std::map<std::vector<unsigned char>, uint256> mapAlias;
+    mutable std::map<std::vector<unsigned char>, uint256> mapAliasPending;
+
     bool fFileBacked;
     std::string strWalletFile;
 

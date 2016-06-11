@@ -67,7 +67,7 @@ ScriptPubKeyToJSON(const CScript& scriptPubKey, Object& out)
 
     Array a;
     BOOST_FOREACH(const CTxDestination& addr, addresses)
-        a.push_back(CBitcoinAddress(addr).ToString());
+        a.push_back(CCoinAddr(addr).ToString());
     out.push_back(Pair("addresses", a));
 }
 
@@ -252,10 +252,10 @@ Value createrawtransaction(const Array& params, bool fHelp)
         rawTx.vin.push_back(in);
     }
 
-    set<CBitcoinAddress> setAddress;
+    set<CCoinAddr> setAddress;
     BOOST_FOREACH(const Pair& s, sendTo)
     {
-        CBitcoinAddress address(s.name_);
+        CCoinAddr address(s.name_);
         if (!address.IsValid())
             throw JSONRPCError(-5, string("Invalid Bitcoin address:")+s.name_);
 

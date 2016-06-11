@@ -1293,14 +1293,14 @@ bool CTransaction::FetchInputs(int ifaceIndex, const map<uint256, CTxIndex>& map
 }
 #endif
 
-int64 GetBestHeight(CIface *iface)
+int GetBestHeight(CIface *iface)
 {
   CBlockIndex *pindex = GetBestBlockIndex(iface);
   if (!pindex)
     return (-1);
   return (pindex->nHeight);
 }
-int64 GetBestHeight(int ifaceIndex)
+int GetBestHeight(int ifaceIndex)
 {
   return (GetBestHeight(GetCoinByIndex(ifaceIndex)));
 }

@@ -39,6 +39,8 @@
 #include "coin_proto.h"
 #include <vector>
 #include "certificate.h"
+#include "alias.h"
+#include "offer.h"
 
 typedef std::vector<uint256> HashList;
 
@@ -446,44 +448,30 @@ public:
 
 class CBlock;
 class CBlockIndex;
-class COffer;
 typedef std::map<uint256, CBlockIndex*> blkidx_t;
 
 #define TX_VERSION TXF_VERSION
 
-/** The basic transaction that is broadcasted on the network and contained in
- * blocks.  A transaction can contain multiple inputs and outputs.
- */
-class CTransaction
+class CTransactionCore
 {
-public:
+  public:
+
     static const int TXF_VERSION = (1 << 0);
     static const int TXF_VERSION_2 = (1 << 1);
-    static const int TXF_ENTITY = (1 << 2);
-    static const int TXF_CERTIFICATE = (1 << 3);
-    static const int TXF_LICENSE = (1 << 4);
+    static const int TXF_STAMP = (1 << 2);
+    static const int TXF_ENTITY = (1 << 3);
+    static const int TXF_CERTIFICATE = (1 << 4);
+    static const int TXF_LICENSE = (1 << 5);
     static const int TXF_ALIAS = (1 << 6);
-    static const int TXF_OFFER = (1 << 9);
-    static const int TXF_ASSET = (1 << 12);
+    static const int TXF_OFFER = (1 << 7);
+    static const int TXF_ASSET = (1 << 8);
 
     int nFlag;
     std::vector<CTxIn> vin;
     std::vector<CTxOut> vout;
     unsigned int nLockTime;
 
-    CCertEnt *entity;
-    CCert *certificate;
-    CLicense *license;
-    CAlias *reference;
-    CAsset *asset;
-    COffer *offer;
-
-
-    // Denial-of-service detection:
-    mutable int nDoS;
-    bool DoS(int nDoSIn, bool fIn) const { nDoS += nDoSIn; return fIn; }
-
-    CTransaction()
+    CTransactionCore()
     {
         SetNull();
     }
@@ -496,36 +484,22 @@ public:
         READWRITE(vin);
         READWRITE(vout);
         READWRITE(nLockTime);
-        if (this->nFlag & TXF_ENTITY)
-          READWRITE(*entity);
-        if (this->nFlag & TXF_CERTIFICATE)
-          READWRITE(*certificate);
-        if (this->nFlag & TXF_LICENSE)
-          READWRITE(*license);
-        if (this->nFlag & TXF_ALIAS)
-          READWRITE(*reference);
-        if (this->nFlag & TXF_ASSET)
-          READWRITE(*asset);
-        if (this->nFlag & TXF_OFFER)
-          READWRITE(*offer);
     )
 
-    void Init(CTransaction tx)
+    void SetNull()
+    {
+        nFlag = CTransactionCore::TXF_VERSION;
+        vin.clear();
+        vout.clear();
+        nLockTime = 0;
+    }
+
+    void Init(CTransactionCore tx)
     {
       nFlag = tx.nFlag;
       vin = tx.vin;
       vout = tx.vout;
       nLockTime = tx.nLockTime;
-    }
-
-    void SetNull()
-    {
-        nFlag = CTransaction::TXF_VERSION;
-        vin.clear();
-        vout.clear();
-        nLockTime = 0;
-        nDoS = 0;  // Denial-of-service prevention
-        entity = NULL;
     }
 
     bool IsNull() const
@@ -539,6 +513,80 @@ public:
         return (true);
       } 
       return (false);
+    }
+
+};
+
+/** The basic transaction that is broadcasted on the network and contained in
+ * blocks.  A transaction can contain multiple inputs and outputs.
+ */
+class CTransaction : public CTransactionCore
+{
+public:
+
+    shtime_t stamp;
+    CCertEnt *entity;
+    CCert *certificate;
+    CLicense *license;
+    CAlias *alias;
+    CAsset *asset;
+    COffer *offer;
+
+    // Denial-of-service detection:
+    mutable int nDoS;
+    bool DoS(int nDoSIn, bool fIn) const { nDoS += nDoSIn; return fIn; }
+
+    CTransaction()
+    {
+        SetNull();
+    }
+
+
+/*
+  ~CTransaction() { if (alias) delete alias; }
+*/
+
+    IMPLEMENT_SERIALIZE
+    (
+      READWRITE(*(CTransactionCore*)this);
+      if (this->nFlag & TXF_STAMP)
+        READWRITE(FLATDATA(stamp));
+      if (this->nFlag & TXF_ENTITY)
+        READWRITE(*entity);
+      if (this->nFlag & TXF_CERTIFICATE)
+        READWRITE(*certificate);
+      if (this->nFlag & TXF_LICENSE)
+        READWRITE(*license);
+      if (this->nFlag & TXF_ALIAS)
+        READWRITE(*alias);
+      if (this->nFlag & TXF_ASSET)
+        READWRITE(*asset);
+      if (this->nFlag & TXF_OFFER)
+        READWRITE(*offer);
+    )
+
+    void Init(CTransaction tx)
+    {
+      CTransactionCore::Init(tx);
+      stamp = tx.stamp;
+      entity = tx.entity;
+      certificate = tx.certificate;
+      license = tx.license;
+      alias = tx.alias;
+      asset = tx.asset;
+      offer = tx.offer;
+    }
+
+    void SetNull()
+    {
+      CTransactionCore::SetNull();
+      stamp = shtime();
+      entity = NULL;
+      certificate = NULL;
+      license = NULL;
+      alias = NULL;
+      asset = NULL;
+      offer = NULL;
     }
 
     uint256 GetHash() const
@@ -747,6 +795,13 @@ public:
       nFlag |= CTransaction::TXF_ENTITY;
       entity = new CCertEnt(name, secret);
       return (entity);
+    }
+
+    CAlias *CreateAlias(const char *name, uint160 hash)
+    {
+      nFlag |= CTransaction::TXF_ALIAS;
+      alias = new CAlias(name, hash);
+      return (alias);
     }
 
     friend bool operator==(const CTransaction& a, const CTransaction& b)
@@ -1496,9 +1551,9 @@ CTxMemPool *GetTxMemPool(CIface *iface);
 
 bool ProcessBlock(CNode* pfrom, CBlock* pblock);
 
-int64 GetBestHeight(CIface *iface);
+int GetBestHeight(CIface *iface);
 
-int64 GetBestHeight(int ifaceIndex);
+int GetBestHeight(int ifaceIndex);
 
 bool IsInitialBlockDownload(int ifaceIndex);
 

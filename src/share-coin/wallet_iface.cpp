@@ -85,7 +85,7 @@ public:
         obj.push_back(Pair("script", GetTxnOutputType(whichType)));
         Array a;
         BOOST_FOREACH(const CTxDestination& addr, addresses)
-            a.push_back(CBitcoinAddress(addr).ToString());
+            a.push_back(CCoinAddr(addr).ToString());
         obj.push_back(Pair("addresses", a));
         if (whichType == TX_MULTISIG)
             obj.push_back(Pair("sigsrequired", nRequired));
@@ -126,7 +126,7 @@ static uint256 get_private_key_hash(CWallet *wallet, CKeyID keyId)
 }
 
 
-Object JSONAddressInfo(int ifaceIndex, CBitcoinAddress address, bool show_priv)
+Object JSONAddressInfo(int ifaceIndex, CCoinAddr address, bool show_priv)
 {
   CWallet *pwalletMain = GetWallet(ifaceIndex);
   CTxDestination dest = address.Get();
@@ -272,7 +272,7 @@ int c_LoadPeers(void)
 }
 #endif
 
-CBitcoinAddress GetNewAddress(CWallet *wallet, string strAccount)
+CCoinAddr GetNewAddress(CWallet *wallet, string strAccount)
 {
   if (!wallet->IsLocked())
     wallet->TopUpKeyPool();
@@ -286,7 +286,7 @@ CBitcoinAddress GetNewAddress(CWallet *wallet, string strAccount)
 
   wallet->SetAddressBookName(keyID, strAccount);
 
-  return CBitcoinAddress(keyID);
+  return CCoinAddr(keyID);
 }
 
 string getnewaddr_str;
@@ -308,23 +308,23 @@ const char *json_getnewaddress(int ifaceIndex, const char *account)
   }
   CKeyID keyID = newKey.GetID();
   wallet->SetAddressBookName(keyID, strAccount);
-  getnewaddr_str = CBitcoinAddress(keyID).ToString();
+  getnewaddr_str = CCoinAddr(keyID).ToString();
 
   return (getnewaddr_str.c_str());
 }
 
 
-CBitcoinAddress GetAddressByAccount(CWallet *wallet, const char *accountName, bool& found)
+CCoinAddr GetAddressByAccount(CWallet *wallet, const char *accountName, bool& found)
 {
-  CBitcoinAddress address;
+  CCoinAddr address;
   string strAccount(accountName);
   Array ret;
 
   // Find all addresses that have the given account
   found = false;
-  BOOST_FOREACH(const PAIRTYPE(CBitcoinAddress, string)& item, wallet->mapAddressBook)
+  BOOST_FOREACH(const PAIRTYPE(CCoinAddr, string)& item, wallet->mapAddressBook)
   {
-    const CBitcoinAddress& acc_address = item.first;
+    const CCoinAddr& acc_address = item.first;
     const string& strName = item.second;
     if (strName == strAccount) {
       address = acc_address;
@@ -339,7 +339,7 @@ const char *c_getaddressbyaccount(int ifaceIndex, const char *accountName)
 {
   CWallet *wallet = GetWallet(ifaceIndex);
   bool found = false;
-  CBitcoinAddress addr = GetAddressByAccount(wallet, accountName, found);
+  CCoinAddr addr = GetAddressByAccount(wallet, accountName, found);
   if (!found || !addr.IsValid())
      return (NULL);
   return (addr.ToString().c_str());
@@ -369,7 +369,7 @@ fprintf(stderr, "DEBUG: c_setblockreward: wallet is locked\n");
   }
 fprintf(stderr, "DEBUG: c_setblockreward: '%s' f/ %f\n", accountName, dAmount);
 
-  const CBitcoinAddress address = GetAddressByAccount(pwalletMain, accountName, found);
+  const CCoinAddr address = GetAddressByAccount(pwalletMain, accountName, found);
   if (!found) {
 fprintf(stderr, "DEBUG: c_setblockreward[iface #%d]: account '%s' not found\n", ifaceIndex, accountName);
     return (-5);
@@ -424,7 +424,7 @@ static int c_wallet_account_transfer(int ifaceIndex, const char *sourceAccountNa
     return (-14);
 
   CWalletDB walletdb(pwalletMain->strWalletFile);
-  CBitcoinAddress address;
+  CCoinAddr address;
   string strMainAccount(sourceAccountName);
   string strAccount(accountName);
   string strComment(comment);
@@ -441,9 +441,9 @@ static int c_wallet_account_transfer(int ifaceIndex, const char *sourceAccountNa
   }
 
   // Find all addresses that have the given account
-  BOOST_FOREACH(const PAIRTYPE(CBitcoinAddress, string)& item, pwalletMain->mapAddressBook)
+  BOOST_FOREACH(const PAIRTYPE(CCoinAddr, string)& item, pwalletMain->mapAddressBook)
   {
-    const CBitcoinAddress& acc_address = item.first;
+    const CCoinAddr& acc_address = item.first;
     const string& strName = item.second;
     if (strName == strAccount) {
       address = acc_address;
@@ -519,9 +519,9 @@ static bool valid_pkey_hash(string strAccount, uint256 in_pkey)
     if (!wallet) 
       continue;
 
-    BOOST_FOREACH(const PAIRTYPE(CBitcoinAddress, string)& item, wallet->mapAddressBook)
+    BOOST_FOREACH(const PAIRTYPE(CCoinAddr, string)& item, wallet->mapAddressBook)
     {
-      const CBitcoinAddress& address = item.first;
+      const CCoinAddr& address = item.first;
       const string& strName = item.second;
       CKeyID keyID;
 
@@ -596,7 +596,7 @@ const char *json_getaddressinfo(int ifaceIndex, const char *addr_hash, const cha
   Object result;
 
   try {
-    CBitcoinAddress address(strAddr);
+    CCoinAddr address(strAddr);
     CKeyID keyID;
 
     if (!address.IsValid()) {
@@ -670,9 +670,9 @@ const char *json_getaddressinfo(int ifaceIndex, const char *addr_hash, const cha
 
 bool VerifyLocalAddress(CWallet *wallet, CKeyID vchAddress)
 {
-  BOOST_FOREACH(const PAIRTYPE(CBitcoinAddress, string)& item, wallet->mapAddressBook)
+  BOOST_FOREACH(const PAIRTYPE(CCoinAddr, string)& item, wallet->mapAddressBook)
   {
-    const CBitcoinAddress& address = item.first;
+    const CCoinAddr& address = item.first;
     const string& strName = item.second;
     CKeyID keyID;
     address.GetKeyID(keyID);
@@ -706,7 +706,7 @@ static const char *json_stratum_create_account(int ifaceIndex, const char *acc_n
         continue;
 
       found = false;
-      CBitcoinAddress address = GetAddressByAccount(wallet, acc_name, found);
+      CCoinAddr address = GetAddressByAccount(wallet, acc_name, found);
       if (found && address.IsValid()) {
         throw JSONRPCError(STERR_INVAL_PARAM, "Account name is not unique.");
       }
@@ -732,7 +732,7 @@ static const char *json_stratum_create_account(int ifaceIndex, const char *acc_n
       CKeyID keyId = newKey.GetID();
       wallet->SetAddressBookName(keyId, strAccount);
       if (ifaceIndex == idx) {
-        coinAddr = CBitcoinAddress(keyId).ToString();
+        coinAddr = CCoinAddr(keyId).ToString();
         phash = get_private_key_hash(pwalletMain, keyId);
       }
     }
@@ -759,7 +759,7 @@ static const char *c_stratum_account_transfer(int ifaceIndex, char *account, cha
   CWalletDB walletdb(pwalletMain->strWalletFile);
   string strAccount(account);
   string strDestAddress(dest);
-  CBitcoinAddress dest_address(strDestAddress);
+  CCoinAddr dest_address(strDestAddress);
   CWalletTx wtx;
   int64 nAmount;
   string strAddress;
@@ -802,7 +802,7 @@ static const char *c_stratum_account_transfer(int ifaceIndex, char *account, cha
 
     vector<pair<CScript, int64> > vecSend;
     bool bankAddressFound = false;
-    CBitcoinAddress bankAddress;
+    CCoinAddr bankAddress;
     CScript scriptPubKey;
     CReserveKey keyChange(pwalletMain);
 
@@ -856,7 +856,7 @@ static const char *c_stratum_account_info(int ifaceIndex, const char *acc_name, 
   uint256 in_pkey;
   Object result;
   Array addr_list;
-  CBitcoinAddress address;
+  CCoinAddr address;
   uint256 phash;
 
   try {
@@ -875,9 +875,9 @@ static const char *c_stratum_account_info(int ifaceIndex, const char *acc_name, 
     result.push_back(Pair("unconfirmed", ValueFromAmount(nUnconfirm)));
 
     // Find all addresses that have the given account
-    BOOST_FOREACH(const PAIRTYPE(CBitcoinAddress, string)& item, pwalletMain->mapAddressBook)
+    BOOST_FOREACH(const PAIRTYPE(CCoinAddr, string)& item, pwalletMain->mapAddressBook)
     {
-      const CBitcoinAddress& acc_address = item.first;
+      const CCoinAddr& acc_address = item.first;
       const string& strName = item.second;
       if (strName == strAccount) {
         addr_list.push_back(JSONAddressInfo(ifaceIndex, acc_address, false));
@@ -885,9 +885,9 @@ static const char *c_stratum_account_info(int ifaceIndex, const char *acc_name, 
     }
     result.push_back(Pair("addresses", addr_list));
 #if 0
-    BOOST_FOREACH(const PAIRTYPE(CBitcoinAddress, string)& item, pwalletMain->mapAddressBook)
+    BOOST_FOREACH(const PAIRTYPE(CCoinAddr, string)& item, pwalletMain->mapAddressBook)
     {
-      const CBitcoinAddress& acc_address = item.first;
+      const CCoinAddr& acc_address = item.first;
       const string& strName = item.second;
       if (strName == strAccount) {
         addr_list.push_back(acc_address.ToString());
@@ -953,7 +953,7 @@ static const char *json_stratum_account_import(int ifaceIndex, const char *acc_n
   }
 
   Object result;
-  CBitcoinAddress addr(vchAddress);
+  CCoinAddr addr(vchAddress);
 
   result.push_back(Pair("address", addr.ToString()));
   account_import_json = JSONRPCReply(result, Value::null, Value::null);

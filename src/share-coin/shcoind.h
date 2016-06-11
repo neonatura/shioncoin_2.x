@@ -93,8 +93,6 @@ typedef std::vector<unsigned char> cbuff;
 #include "server/block.h"
 #include "server/txidx.h"
 #include "server/global.h"
-#include "server/certificate.h"
-#include "server/offer.h"
 #endif
 
 /**

@@ -489,7 +489,7 @@ int64 GetAccountBalance(CIface *iface, const string& strAccount, int nMinDepth)
 }
 #endif
 
-static CBitcoinAddress GetAccountAddress(CWallet *wallet, string strAccount, bool bForceNew=false)
+static CCoinAddr GetAccountAddress(CWallet *wallet, string strAccount, bool bForceNew=false)
 {
 
   if (!wallet)
@@ -527,7 +527,7 @@ static CBitcoinAddress GetAccountAddress(CWallet *wallet, string strAccount, boo
     walletdb.WriteAccount(strAccount, account);
   }
 
-  return CBitcoinAddress(account.vchPubKey.GetID());
+  return CCoinAddr(account.vchPubKey.GetID());
 }
 
 static void GetAccountAddresses(CWallet *wallet, string strAccount, set<CTxDestination>& setAddress)
@@ -566,7 +566,7 @@ static Value ListReceived(CWallet *wallet, const Array& params, bool fByAccounts
     fIncludeEmpty = params[1].get_bool();
 
   // Tally
-  map<CBitcoinAddress, tallyitem> mapTally;
+  map<CCoinAddr, tallyitem> mapTally;
   for (map<uint256, CWalletTx>::iterator it = wallet->mapWallet.begin(); it != wallet->mapWallet.end(); ++it)
   {
     const CWalletTx& wtx = (*it).second;
@@ -593,11 +593,11 @@ static Value ListReceived(CWallet *wallet, const Array& params, bool fByAccounts
   // Reply
   Array ret;
   map<string, tallyitem> mapAccountTally;
-  BOOST_FOREACH(const PAIRTYPE(CBitcoinAddress, string)& item, wallet->mapAddressBook)
+  BOOST_FOREACH(const PAIRTYPE(CCoinAddr, string)& item, wallet->mapAddressBook)
   {
-    const CBitcoinAddress& address = item.first;
+    const CCoinAddr& address = item.first;
     const string& strAccount = item.second;
-    map<CBitcoinAddress, tallyitem>::iterator it = mapTally.find(address);
+    map<CCoinAddr, tallyitem>::iterator it = mapTally.find(address);
     if (it == mapTally.end() && !fIncludeEmpty)
       continue;
 
@@ -681,7 +681,7 @@ void ListTransactions(int ifaceIndex, const CWalletTx& wtx, const string& strAcc
     {
       Object entry;
       entry.push_back(Pair("account", strSentAccount));
-      entry.push_back(Pair("address", CBitcoinAddress(s.first).ToString()));
+      entry.push_back(Pair("address", CCoinAddr(s.first).ToString()));
       entry.push_back(Pair("category", "send"));
       entry.push_back(Pair("amount", ValueFromAmount(-s.second)));
       entry.push_back(Pair("fee", ValueFromAmount(-nFee)));
@@ -703,7 +703,7 @@ void ListTransactions(int ifaceIndex, const CWalletTx& wtx, const string& strAcc
       {
         Object entry;
         entry.push_back(Pair("account", account));
-        entry.push_back(Pair("address", CBitcoinAddress(r.first).ToString()));
+        entry.push_back(Pair("address", CCoinAddr(r.first).ToString()));
         entry.push_back(Pair("category", "receive"));
         entry.push_back(Pair("amount", ValueFromAmount(r.second)));
         if (fLong)
@@ -1424,7 +1424,7 @@ Value rpc_msg_sign(CIface *iface, const Array& params, bool fHelp)
   string strAddress = params[0].get_str();
   string strMessage = params[1].get_str();
 
-  CBitcoinAddress addr(strAddress);
+  CCoinAddr addr(strAddress);
   if (!addr.IsValid())
     throw JSONRPCError(-3, "Invalid address");
 
@@ -1464,7 +1464,7 @@ Value rpc_msg_verify(CIface *iface, const Array& params, bool fHelp)
   string strSign     = params[1].get_str();
   string strMessage  = params[2].get_str();
 
-  CBitcoinAddress addr(strAddress);
+  CCoinAddr addr(strAddress);
   if (!addr.IsValid())
     throw JSONRPCError(-3, "Invalid address");
 
@@ -1575,7 +1575,7 @@ Value rpc_wallet_get(CIface *iface, const Array& params, bool fHelp)
         "wallet.get <coin address>\n"
         "Returns the account associated with the given address.");
 
-  CBitcoinAddress address(params[0].get_str());
+  CCoinAddr address(params[0].get_str());
   if (!address.IsValid())
     throw JSONRPCError(-5, "Invalid usde address");
 
@@ -1596,7 +1596,7 @@ Value rpc_wallet_key(CIface *iface, const Array& params, bool fHelp)
         "Reveals the private key corresponding to <usdeaddress>.");
 
   string strAddress = params[0].get_str();
-  CBitcoinAddress address;
+  CCoinAddr address;
   if (!address.SetString(strAddress))
     throw JSONRPCError(-5, "Invalid usde address");
   CKeyID keyID;
@@ -1800,7 +1800,7 @@ Value rpc_wallet_recvbyaddr(CIface *iface, const Array& params, bool fHelp)
         "Returns the total amount received by <usdeaddress> in transactions with at least [minconf] confirmations.");
 
   // usde address
-  CBitcoinAddress address = CBitcoinAddress(params[0].get_str());
+  CCoinAddr address = CCoinAddr(params[0].get_str());
   CScript scriptPubKey;
   if (!address.IsValid())
     throw JSONRPCError(-5, "Invalid usde address");
@@ -1842,7 +1842,7 @@ Value rpc_wallet_send(CIface *iface, const Array& params, bool fHelp)
         + HelpRequiringPassphrase());
 
   string strAccount = AccountFromValue(params[0]);
-  CBitcoinAddress address(params[1].get_str());
+  CCoinAddr address(params[1].get_str());
   if (!address.IsValid())
     throw JSONRPCError(-5, "Invalid coin address");
   int64 nAmount = AmountFromValue(params[2]);
@@ -1880,7 +1880,7 @@ Value rpc_wallet_set(CIface *iface, const Array& params, bool fHelp)
             "wallet.set <usdeaddress> <account>\n"
             "Sets the account associated with the given address.");
 
-    CBitcoinAddress address(params[0].get_str());
+    CCoinAddr address(params[0].get_str());
     if (!address.IsValid())
         throw JSONRPCError(-5, "Invalid usde address");
 
@@ -1956,7 +1956,7 @@ Value rpc_wallet_validate(CIface *iface, const Array& params, bool fHelp)
         "wallet.validate <usdeaddress>\n"
         "Return information about <coin-address>.");
 
-  CBitcoinAddress address(params[0].get_str());
+  CCoinAddr address(params[0].get_str());
   bool isValid = address.IsValid();
 
   Object ret;
@@ -1992,9 +1992,9 @@ Value rpc_wallet_list(CIface *iface, const Array& params, bool fHelp)
 
   // Find all addresses that have the given account
   Array ret;
-  BOOST_FOREACH(const PAIRTYPE(CBitcoinAddress, string)& item, pwalletMain->mapAddressBook)
+  BOOST_FOREACH(const PAIRTYPE(CCoinAddr, string)& item, pwalletMain->mapAddressBook)
   {
-    const CBitcoinAddress& address = item.first;
+    const CCoinAddr& address = item.first;
     const string& strName = item.second;
     if (strName == strAccount)
       ret.push_back(address.ToString());
@@ -2197,13 +2197,13 @@ Value rpc_wallet_multisend(CIface *iface, const Array& params, bool fHelp)
   if (params.size() > 3 && params[3].type() != null_type && !params[3].get_str().empty())
     wtx.mapValue["comment"] = params[3].get_str();
 
-  set<CBitcoinAddress> setAddress;
+  set<CCoinAddr> setAddress;
   vector<pair<CScript, int64> > vecSend;
 
   int64 totalAmount = 0;
   BOOST_FOREACH(const Pair& s, sendTo)
   {
-    CBitcoinAddress address(s.name_);
+    CCoinAddr address(s.name_);
     if (!address.IsValid())
       throw JSONRPCError(-5, string("Invalid usde address:")+s.name_);
 
@@ -2583,7 +2583,7 @@ Value getnewaddress(const Array& params, bool fHelp)
 
     pwalletMain->SetAddressBookName(keyID, strAccount);
 
-    return CBitcoinAddress(keyID).ToString();
+    return CCoinAddr(keyID).ToString();
 }
 #endif
 
@@ -2617,7 +2617,7 @@ Value setaccount(const Array& params, bool fHelp)
             "setaccount <usdeaddress> <account>\n"
             "Sets the account associated with the given address.");
 
-    CBitcoinAddress address(params[0].get_str());
+    CCoinAddr address(params[0].get_str());
     if (!address.IsValid())
         throw JSONRPCError(-5, "Invalid usde address");
 
@@ -2649,7 +2649,7 @@ Value getaccount(const Array& params, bool fHelp)
             "getaccount <usdeaddress>\n"
             "Returns the account associated with the given address.");
 
-    CBitcoinAddress address(params[0].get_str());
+    CCoinAddr address(params[0].get_str());
     if (!address.IsValid())
         throw JSONRPCError(-5, "Invalid usde address");
 
@@ -2674,9 +2674,9 @@ Value getaddressesbyaccount(const Array& params, bool fHelp)
 
     // Find all addresses that have the given account
     Array ret;
-    BOOST_FOREACH(const PAIRTYPE(CBitcoinAddress, string)& item, pwalletMain->mapAddressBook)
+    BOOST_FOREACH(const PAIRTYPE(CCoinAddr, string)& item, pwalletMain->mapAddressBook)
     {
-        const CBitcoinAddress& address = item.first;
+        const CCoinAddr& address = item.first;
         const string& strName = item.second;
         if (strName == strAccount)
             ret.push_back(address.ToString());
@@ -2728,7 +2728,7 @@ Value sendtoaddress(const Array& params, bool fHelp)
             "<amount> is a real and is rounded to the nearest 0.00000001"
             + HelpRequiringPassphrase());
 
-    CBitcoinAddress address(params[0].get_str());
+    CCoinAddr address(params[0].get_str());
     if (!address.IsValid())
         throw JSONRPCError(-5, "Invalid usde address");
 
@@ -2766,7 +2766,7 @@ Value signmessage(const Array& params, bool fHelp)
     string strAddress = params[0].get_str();
     string strMessage = params[1].get_str();
 
-    CBitcoinAddress addr(strAddress);
+    CCoinAddr addr(strAddress);
     if (!addr.IsValid())
         throw JSONRPCError(-3, "Invalid address");
 
@@ -2800,7 +2800,7 @@ Value verifymessage(const Array& params, bool fHelp)
     string strSign     = params[1].get_str();
     string strMessage  = params[2].get_str();
 
-    CBitcoinAddress addr(strAddress);
+    CCoinAddr addr(strAddress);
     if (!addr.IsValid())
         throw JSONRPCError(-3, "Invalid address");
 
@@ -2836,7 +2836,7 @@ Value getreceivedbyaddress(const Array& params, bool fHelp)
             "Returns the total amount received by <usdeaddress> in transactions with at least [minconf] confirmations.");
 
     // usde address
-    CBitcoinAddress address = CBitcoinAddress(params[0].get_str());
+    CCoinAddr address = CCoinAddr(params[0].get_str());
     CScript scriptPubKey;
     if (!address.IsValid())
         throw JSONRPCError(-5, "Invalid usde address");
@@ -3030,7 +3030,7 @@ Value sendfrom(const Array& params, bool fHelp)
             + HelpRequiringPassphrase());
 
     string strAccount = AccountFromValue(params[0]);
-    CBitcoinAddress address(params[1].get_str());
+    CCoinAddr address(params[1].get_str());
     if (!address.IsValid())
         throw JSONRPCError(-5, "Invalid usde address");
     int64 nAmount = AmountFromValue(params[2]);
@@ -3082,13 +3082,13 @@ Value sendmany(const Array& params, bool fHelp)
     if (params.size() > 3 && params[3].type() != null_type && !params[3].get_str().empty())
         wtx.mapValue["comment"] = params[3].get_str();
 
-    set<CBitcoinAddress> setAddress;
+    set<CCoinAddr> setAddress;
     vector<pair<CScript, int64> > vecSend;
 
     int64 totalAmount = 0;
     BOOST_FOREACH(const Pair& s, sendTo)
     {
-        CBitcoinAddress address(s.name_);
+        CCoinAddr address(s.name_);
         if (!address.IsValid())
             throw JSONRPCError(-5, string("Invalid usde address:")+s.name_);
 
@@ -3162,7 +3162,7 @@ Value addmultisigaddress(const Array& params, bool fHelp)
         const std::string& ks = keys[i].get_str();
 
         // Case 1: usde address and we have full public key:
-        CBitcoinAddress address(ks);
+        CCoinAddr address(ks);
         if (address.IsValid())
         {
             CKeyID keyID;
@@ -3197,7 +3197,7 @@ Value addmultisigaddress(const Array& params, bool fHelp)
     pwalletMain->AddCScript(inner);
 
     pwalletMain->SetAddressBookName(innerID, strAccount);
-    return CBitcoinAddress(innerID).ToString();
+    return CCoinAddr(innerID).ToString();
 }
 #endif
 
@@ -3741,7 +3741,7 @@ public:
         obj.push_back(Pair("script", GetTxnOutputType(whichType)));
         Array a;
         BOOST_FOREACH(const CTxDestination& addr, addresses)
-            a.push_back(CBitcoinAddress(addr).ToString());
+            a.push_back(CCoinAddr(addr).ToString());
         obj.push_back(Pair("addresses", a));
         if (whichType == TX_MULTISIG)
             obj.push_back(Pair("sigsrequired", nRequired));
@@ -3758,7 +3758,7 @@ Value validateaddress(const Array& params, bool fHelp)
             "validateaddress <usdeaddress>\n"
             "Return information about <usdeaddress>.");
 
-    CBitcoinAddress address(params[0].get_str());
+    CCoinAddr address(params[0].get_str());
     bool isValid = address.IsValid();
 
     Object ret;
@@ -4177,7 +4177,7 @@ Value rpc_addmultisigaddress(CIface *iface, const Array& params, bool fHelp)
         const std::string& ks = keys[i].get_str();
 
         // Case 1: usde address and we have full public key:
-        CBitcoinAddress address(ks);
+        CCoinAddr address(ks);
         if (address.IsValid())
         {
             CKeyID keyID;
@@ -4212,7 +4212,7 @@ Value rpc_addmultisigaddress(CIface *iface, const Array& params, bool fHelp)
     pwalletMain->AddCScript(inner);
 
     pwalletMain->SetAddressBookName(innerID, strAccount);
-    return CBitcoinAddress(innerID).ToString();
+    return CCoinAddr(innerID).ToString();
 }
 
 Value rpc_tx_get(CIface *iface, const Array& params, bool fHelp)
