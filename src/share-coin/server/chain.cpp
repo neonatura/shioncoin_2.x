@@ -421,6 +421,8 @@ void ServiceEventState(int ifaceIndex)
 
 void InitServiceWalletEvent(CWallet *wallet, uint64_t nHeight)
 {
+  CIface *iface = GetCoinByIndex(wallet->ifaceIndex);
+  unset_serv_state(iface, COINF_WALLET_SYNC);
   wallet->nScanHeight = MIN(nHeight, wallet->nScanHeight); 
 }
 

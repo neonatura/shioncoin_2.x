@@ -1789,9 +1789,13 @@ fprintf(stderr, "DEBUG: SHCBlock::ConnectBlock: critical: coinbaseValueOut(%llu)
 #endif
   }
 
+#if 0
   // Watch for transactions paying to me
   BOOST_FOREACH(CTransaction& tx, vtx)
     SyncWithWallets(iface, tx, this);
+#endif
+  CWallet *wallet = GetWallet(iface);
+  InitServiceWalletEvent(wallet, pindex->nHeight);
 
   return true;
 }
