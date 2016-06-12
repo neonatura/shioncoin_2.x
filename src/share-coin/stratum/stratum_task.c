@@ -192,9 +192,10 @@ static void commit_payout(int ifaceIndex, int block_height)
 {
   user_t *user;
   char uname[256];
+  double coin_val;
 
   for (user = client_list; user; user = user->next) {
-    if (user->balance[ifaceIndex] < 1.0)
+    if (user->balance[ifaceIndex] < 5.0)
       continue;
 
     memset(uname, 0, sizeof(uname));
@@ -206,11 +207,12 @@ static void commit_payout(int ifaceIndex, int block_height)
     if (0 == strcasecmp(uname, "anonymous"))
       continue; /* public */
 
-    if (0 == setblockreward(ifaceIndex, uname, user->balance[ifaceIndex])) {
+    coin_val = (double)((uint64_t)user->balance[ifaceIndex] / 5) * 5;
+    if (0 == setblockreward(ifaceIndex, uname, coin_val)) {
       user->reward_time = time(NULL);
       user->reward_height = block_height;
 //      user->reward_val[ifaceIndex] += user->balance[ifaceIndex];
-      user->balance[ifaceIndex] = 0;
+      user->balance[ifaceIndex] = MAX(0.0, user->balance[ifaceIndex] - coin_val);
     }
   }
 }
