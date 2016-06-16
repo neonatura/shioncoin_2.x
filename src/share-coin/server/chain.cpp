@@ -108,7 +108,6 @@ static bool ServiceWalletEvent(int ifaceIndex)
     }
   }
   if (nHeight > nBestHeight) {
-fprintf(stderr, "DEBUG: ServiceWalletEvent: wallet scan completed at height %d.\n", nBestHeight);
     return (false); /* done */
   }
 
@@ -308,12 +307,16 @@ bool ServiceBlockEvent(int ifaceIndex)
   if (!pindexBest)
     return (true); /* keep trying */
 
+  if (iface->blockscan_max == 0)
+    return (true); /* keep trying */
+
   if (pindexBest->nHeight >= iface->blockscan_max) {
+fprintf(stderr, "DEBUG: quitting d/l scan @ height %d (max %d)\n", pindexBest->nHeight, iface->blockscan_max);
     ServiceBlockEventUpdate(ifaceIndex);
     return (false);
   }
 
-  expire_t = time(NULL) - 100;
+  expire_t = time(NULL) - 60;
   if (iface->net_valid < expire_t) { /* done w/ last round */
     if (iface->net_valid < iface->net_invalid) {
 fprintf(stderr, "DEBUG: net_valid < net_invalid\n");
@@ -481,14 +484,12 @@ void ServiceBlockEventUpdate(int ifaceIndex)
     return;
 
   CBlockIndex *bestIndex = GetBestBlockIndex(iface);
-  if (!bestIndex)
-    return;
-
-  if (iface->blockscan_max == bestIndex->nHeight)
+  if (bestIndex && iface->blockscan_max == bestIndex->nHeight)
     return;
 
   iface->net_valid = time(NULL);
   iface->blockscan_max = MAX(iface->blockscan_max, bestIndex->nHeight);
+fprintf(stderr, "DEBUG: ServiceBlockEventUpdate: blockscan_max %d\n", iface->blockscan_max);
 }
 
 void event_cycle_chain(int ifaceIndex)
@@ -509,7 +510,7 @@ int InitServiceBlockEvent(int ifaceIndex, uint64_t nHeight)
   if (!iface->enabled)
     return (SHERR_OPNOTSUPP);
 
-  if (nHeight >= iface->blockscan_max)
+  if (nHeight < iface->blockscan_max)
     return (0); /* all done */
 
   /* resync */

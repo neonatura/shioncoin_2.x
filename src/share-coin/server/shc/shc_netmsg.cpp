@@ -340,8 +340,12 @@ fprintf(stderr, "DEBUG: ProcessMessage: pfrom->nVersion (already) %d\n", pfrom->
     if (pindexBest) {
       if (pindexBest->nHeight < pfrom->nStartingHeight) {
         InitServiceBlockEvent(SHC_COIN_IFACE, pfrom->nStartingHeight);
-      }
-    }
+      } else {
+fprintf(stderr, "DEBUG: pindexBest->nHeight(%d) < pfrom->nStartingHeight(%d)\n", pindexBest->nHeight, pfrom->nStartingHeight);
+}
+    } else {
+        InitServiceBlockEvent(SHC_COIN_IFACE, pfrom->nStartingHeight);
+}
 
 
     // Relay alerts
