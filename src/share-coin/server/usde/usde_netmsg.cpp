@@ -714,7 +714,10 @@ inv.ifaceIndex = USDE_COIN_IFACE;
       if (nEvicted > 0)
         printf("mapOrphan overflow, removed %u tx\n", nEvicted);
     }
-    if (tx.nDoS) pfrom->Misbehaving(tx.nDoS);
+#if 0
+    if (tx.nDoS) 
+      pfrom->Misbehaving(tx.nDoS);
+#endif
   }
 
 
@@ -734,7 +737,10 @@ inv.ifaceIndex = USDE_COIN_IFACE;
     timing_init(tag2, &ts);
     if (ProcessBlock(pfrom, &block))
       mapAlreadyAskedFor.erase(inv);
-    if (block.nDoS) pfrom->Misbehaving(block.nDoS);
+#if 0
+    if (block.nDoS) 
+      pfrom->Misbehaving(block.nDoS);
+#endif
     timing_term(tag2, &ts);
 
   }

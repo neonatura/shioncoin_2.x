@@ -2161,14 +2161,8 @@ Debug("CONNECT: hash '%s' to height %d\n", GetHash().GetHex().c_str(), pindex->n
 #endif
   }
 
-
-#if 0
-  // Watch for transactions paying to me
   BOOST_FOREACH(CTransaction& tx, vtx)
     SyncWithWallets(iface, tx, this);
-#endif
-  CWallet *wallet = GetWallet(iface);
-  InitServiceWalletEvent(wallet, pindex->nHeight);
 
   return true;
 }

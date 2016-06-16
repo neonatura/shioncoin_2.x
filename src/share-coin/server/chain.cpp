@@ -92,10 +92,7 @@ static bool ServiceWalletEvent(int ifaceIndex)
   unsigned int nHeight = wallet->nScanHeight;
   unsigned int nMaxHeight = nHeight + 1024;
 
-  if (nHeight >= nBestHeight)
-    return (false); /* done */
-
-  {
+  if (nHeight <= nBestHeight) {
     LOCK(wallet->cs_wallet);
 
     for (; nHeight <= nBestHeight && nHeight < nMaxHeight; nHeight++) {
@@ -110,11 +107,15 @@ static bool ServiceWalletEvent(int ifaceIndex)
       wallet->nScanHeight = nHeight;
     }
   }
-fprintf(stderr, "DEBUG: ServiceWalletEvent: wallet->nScanHeight = %d\n", wallet->nScanHeight);
+  if (nHeight > nBestHeight) {
+fprintf(stderr, "DEBUG: ServiceWalletEvent: wallet scan completed at height %d.\n", nBestHeight);
+    return (false); /* done */
+  }
 
   return (true);
 }
 
+/* deprecate */
 void ServiceWalletEventUpdate(CWallet *wallet, const CBlock *pblock)
 {
   blkidx_t *blockIndex = GetBlockTable(wallet->ifaceIndex);
@@ -124,7 +125,7 @@ void ServiceWalletEventUpdate(CWallet *wallet, const CBlock *pblock)
     return; /* nerp */
 
   CBlockIndex *pindex = (*blockIndex)[hash];
-  wallet->nScanHeight = MIN(wallet->nScanHeight, pindex->nHeight);
+  wallet->nScanHeight = MAX(wallet->nScanHeight, pindex->nHeight);
 }
 
 bool LoadExternalBlockchainFile()

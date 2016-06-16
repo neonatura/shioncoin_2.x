@@ -280,6 +280,7 @@ fprintf(stderr, "DEBUG: ScanForWalletTransactions: pindexStart '%s'\n", pindexSt
 #endif
 int SHCWallet::ScanForWalletTransactions(CBlockIndex* pindexStart, bool fUpdate)
 {
+fprintf(stderr, "DEBUG: SHC:ScanForWalletTransactions()\n");
   if (pindexStart)
     InitServiceWalletEvent(this, pindexStart->nHeight);
   return (0);

@@ -30,6 +30,7 @@
 #include "ui_interface.h"
 #include "shc_block.h"
 #include "shc_txidx.h"
+#include "chain.h"
 
 #ifdef WIN32
 #include <string.h>
@@ -276,6 +277,7 @@ bool SHCTxDB::LoadBlockIndex()
   int total = 0;
   int invalid = 0;
   int maxHeight = 0;
+  int checkHeight = pindexBest->nHeight;
 
   CBlockIndex* pindexFork = NULL;
   map<pair<unsigned int, unsigned int>, CBlockIndex*> mapBlockPos;
@@ -301,6 +303,8 @@ bool SHCTxDB::LoadBlockIndex()
     }
     if (pindex->nHeight > maxHeight)
       maxHeight = pindex->nHeight;
+    if (pindex->nHeight < checkHeight)
+      checkHeight = pindex->nHeight;
   }
   if (pindexFork && !fRequestShutdown)
   {
@@ -320,6 +324,9 @@ bool SHCTxDB::LoadBlockIndex()
   sprintf(errbuf, "SHC::LoadBlockIndex: Verified %-2.2f%% of %d total blocks: %d total invalid blocks found.", (double)(100 / (double)maxHeight * (double)total), maxHeight, invalid);
   unet_log(SHC_COIN_IFACE, errbuf);
 
+  CWallet *wallet = GetWallet(SHC_COIN_IFACE);
+  InitServiceWalletEvent(wallet, checkHeight);
+fprintf(stderr, "DEBUG: SHC: checkHeight = %d\n", checkHeight);
 
   return true;
 }

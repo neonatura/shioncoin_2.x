@@ -532,15 +532,10 @@ public:
     CAsset *asset;
     COffer *offer;
 
-    // Denial-of-service detection:
-    mutable int nDoS;
-    bool DoS(int nDoSIn, bool fIn) const { nDoS += nDoSIn; return fIn; }
-
     CTransaction()
     {
         SetNull();
     }
-
 
 /*
   ~CTransaction() { if (alias) delete alias; }
@@ -868,7 +863,6 @@ protected:
 class CBlockCore
 {
   public:
-    mutable int nDoS;
 
     CBlockCore()
     {
@@ -877,14 +871,8 @@ class CBlockCore
 
     void SetNull()
     {
-      nDoS = 0;
     }
 
-    bool DoS(int nDoSIn, bool fIn) const 
-    {
-      nDoS += nDoSIn;
-      return fIn;
-    }
 };
 
 class CBlockHeader : public CBlockCore

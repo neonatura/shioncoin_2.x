@@ -236,6 +236,7 @@ bool static ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CData
     // Each connection can only send one version message
     if (pfrom->nVersion != 0)
     {
+fprintf(stderr, "DEBUG: ProcessMessage: pfrom->nVersion (already) %d\n", pfrom->nVersion); 
       pfrom->Misbehaving(1);
       return false;
     }
@@ -360,6 +361,7 @@ bool static ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CData
 
   else if (pfrom->nVersion == 0)
   {
+fprintf(stderr, "DEBUG: ProcessMessage: Must have a version message before anything else\n");
     // Must have a version message before anything else
     pfrom->Misbehaving(1);
     return false;
@@ -713,10 +715,16 @@ fprintf(stderr, "DEBUG: getheaders %d to %s\n", (pindex ? pindex->nHeight : -1),
       // DoS prevention: do not allow SHC_mapOrphanTransactions to grow unbounded
       unsigned int nEvicted = shc_LimitOrphanTxSize(MAX_ORPHAN_TRANSACTIONS(iface));
       if (nEvicted > 0)
-        printf("SHC_mapOrphan overflow, removed %u tx\n", nEvicted);
+        fprintf(stderr, "DEBUG: SHC_mapOrphan overflow, removed %u tx\n", nEvicted);
     }
-    if (tx.nDoS) pfrom->Misbehaving(tx.nDoS);
+#if 0
+    if (tx.nDoS) { 
+fprintf(stderr, "DEBUG: ProcessMessage[tx]: tx.NDoS = %d\n", tx.nDoS); 
+      pfrom->Misbehaving(tx.nDoS);
+    }
+#endif
   }
+
 
 
   else if (strCommand == "block")
@@ -734,7 +742,12 @@ fprintf(stderr, "DEBUG: getheaders %d to %s\n", (pindex ? pindex->nHeight : -1),
     timing_init(tag2, &ts);
     if (ProcessBlock(pfrom, &block))
       mapAlreadyAskedFor.erase(inv);
-    if (block.nDoS) pfrom->Misbehaving(block.nDoS);
+#if 0
+    if (block.nDoS) {
+fprintf(stderr, "DEBUG: ProcessMessage[tx]: block.nDoS = %d\n", block.nDoS); 
+      pfrom->Misbehaving(block.nDoS);
+    }
+#endif
     timing_term(tag2, &ts);
 
     //printf("received block %s\n", block.GetHash().ToString().substr(0,20).c_str());

@@ -30,6 +30,7 @@
 #include "ui_interface.h"
 #include "usde_block.h"
 #include "usde_txidx.h"
+#include "chain.h"
 
 #ifdef WIN32
 #include <string.h>
@@ -350,6 +351,7 @@ bool USDETxDB::LoadBlockIndex()
   int total = 0;
   int invalid = 0;
   int maxHeight = 0;
+  int checkHeight = pindexBest->nHeight;
 
   CBlockIndex* pindexFork = NULL;
   map<pair<unsigned int, unsigned int>, CBlockIndex*> mapBlockPos;
@@ -374,6 +376,8 @@ bool USDETxDB::LoadBlockIndex()
     }
     if (pindex->nHeight > maxHeight)
       maxHeight = pindex->nHeight;
+    if (pindex->nHeight < checkHeight)
+      checkHeight = pindex->nHeight;
   }
 if (pindex) fprintf(stderr, "DEBUG: USDE: lowest validated height %d (%s)\n", pindex->nHeight, pindex->GetBlockHash().GetHex().c_str()); 
   if (pindexFork && !fRequestShutdown)
@@ -393,6 +397,10 @@ if (pindex) fprintf(stderr, "DEBUG: USDE: lowest validated height %d (%s)\n", pi
   maxHeight++;
   sprintf(errbuf, "USDE::LoadBlockIndex: Verified %-2.2f%% of %d total blocks: %d total invalid blocks found.", (double)(100 / (double)maxHeight * (double)total), maxHeight, invalid);
   unet_log(USDE_COIN_IFACE, errbuf);
+
+  CWallet *wallet = GetWallet(USDE_COIN_IFACE);
+  InitServiceWalletEvent(wallet, checkHeight);
+fprintf(stderr, "DEBUG: USDE: checkHeight = %d\n", checkHeight);
 
   return true;
 }

@@ -231,7 +231,7 @@ void WalletTxToJSON(int ifaceIndex, const CWalletTx& wtx, Object& entry)
         entry.push_back(Pair("blockhash", wtx.hashBlock.GetHex()));
         entry.push_back(Pair("blockindex", wtx.nIndex));
     } else {
-      fprintf(stderr, "DEBUG: WalletTxToJSON: ifaceIndex(%d) wtx(%s): !confirmed; depth = %d\n", ifaceIndex, wtx.GetHash().GetHex().c_str(), confirms);
+//      fprintf(stderr, "DEBUG: WalletTxToJSON: ifaceIndex(%d) wtx(%s): !confirmed; depth = %d\n", ifaceIndex, wtx.GetHash().GetHex().c_str(), confirms);
     }
     entry.push_back(Pair("txid", wtx.GetHash().GetHex()));
     entry.push_back(Pair("time", (boost::int64_t)wtx.GetTxTime()));
@@ -1553,7 +1553,68 @@ Value rpc_wallet_export(CIface *iface, const Array& params, bool fHelp)
 
   if (fHelp || params.size() != 1)
     throw runtime_error(
-        "backupwallet <path>\n"
+        "wallet.export <path>\n"
+        "Export the coin wallet to the specified path in JSON format.");
+
+  std::string strPath = params[0].get_str();
+
+  shjson_t *json = shjson_init(NULL);
+  shjson_t *tree = shjson_array_add(json, iface->name);
+  shjson_t *node;
+  FILE *fl;
+  char *text;
+
+  CWallet *pwalletMain = GetWallet(iface);
+  map<string, int64> mapAccountBalances;
+  BOOST_FOREACH(const PAIRTYPE(CTxDestination, string)& entry, pwalletMain->mapAddressBook) {
+    CTxDestination dest = entry.first;
+    string strLabel = entry.second;
+
+    if (!IsMine(*pwalletMain, dest))
+      continue;
+
+#if 0
+    CCoinAddr address;
+    if (!address.SetString(strLabel))
+      continue;//throw JSONRPCError(-5, "Invalid address");
+#endif
+
+    CCoinAddr addr(dest);
+    CKeyID keyID;
+    if (!addr.GetKeyID(keyID))
+      continue;//throw JSONRPCError(-3, "Address does not refer to a key");
+
+    CSecret vchSecret;
+    bool fCompressed;
+    if (!pwalletMain->GetSecret(keyID, vchSecret, fCompressed))
+      continue;//throw JSONRPCError(-4,"Private key for address " + strLabel + " is not known");
+    string strKey = CCoinSecret(vchSecret, fCompressed).ToString();
+
+    node = shjson_obj_add(tree, NULL);
+    shjson_str_add(node, "key", (char *)strKey.c_str()); 
+    shjson_str_add(node, "label", (char *)strLabel.c_str());
+    shjson_str_add(node, "addr", (char *)addr.ToString().c_str());
+  }
+
+  text = shjson_print(json);
+  shjson_free(&json);
+
+  fl = fopen(strPath.c_str(), "wb");
+  if (fl) {
+    fwrite(text, sizeof(char), strlen(text), fl);
+    fclose(fl);
+  }
+  free(text);
+
+  return Value::null;
+}
+
+Value rpc_wallet_exportdat(CIface *iface, const Array& params, bool fHelp)
+{
+
+  if (fHelp || params.size() != 1)
+    throw runtime_error(
+        "wallet.exportdat <path>\n"
         "Export the coin wallet to the specified path (dir or file).");
 
   CWallet *wallet = GetWallet(iface);
@@ -1577,7 +1638,7 @@ Value rpc_wallet_get(CIface *iface, const Array& params, bool fHelp)
 
   CCoinAddr address(params[0].get_str());
   if (!address.IsValid())
-    throw JSONRPCError(-5, "Invalid usde address");
+    throw JSONRPCError(-5, "Invalid coin address");
 
   string strAccount;
   map<CTxDestination, string>::iterator mi = pwalletMain->mapAddressBook.find(address.Get());
@@ -1592,13 +1653,13 @@ Value rpc_wallet_key(CIface *iface, const Array& params, bool fHelp)
 
   if (fHelp || params.size() != 1)
     throw runtime_error(
-        "wallet.key <usdeaddress>\n"
-        "Reveals the private key corresponding to <usdeaddress>.");
+        "wallet.key <address>\n"
+        "Reveals the private key corresponding to <address>.");
 
   string strAddress = params[0].get_str();
   CCoinAddr address;
   if (!address.SetString(strAddress))
-    throw JSONRPCError(-5, "Invalid usde address");
+    throw JSONRPCError(-5, "Invalid address");
   CKeyID keyID;
   if (!address.GetKeyID(keyID))
     throw JSONRPCError(-3, "Address does not refer to a key");
@@ -1641,12 +1702,100 @@ Value rpc_wallet_import(CIface *iface, const Array& params, bool fHelp)
   CWallet *pwalletMain = GetWallet(iface);
   int ifaceIndex = GetCoinIndex(iface);
 
-  if (fHelp || params.size() != 2) {
+  if (fHelp || params.size() != 1) {
     throw runtime_error(
-        "wallet.import <priv-key> <account>\n"
-        "Adds a private key (as returned by wallet.key) to your wallet.");
+        "wallet.import <path>\n"
+        "Import a JSON wallet file.");
   }
 
+  std::string strPath = params[0].get_str();
+
+  {
+  shjson_t *json;
+  shjson_t *tree;
+shjson_t *node;
+char *text;
+struct stat st;
+FILE *fl;
+    char label[256];
+    char addr[256];
+    char key[256];
+
+    memset(label, 0, sizeof(label));
+    memset(addr, 0, sizeof(addr));
+    memset(key, 0, sizeof(key));
+
+    fl = fopen(strPath.c_str(), "rb");
+    if (!fl)
+      throw runtime_error("error opening file.");
+
+    memset(&st, 0, sizeof(st));
+    fstat(fileno(fl), &st);
+    if (st.st_size == 0)
+      throw runtime_error("file is not in JSON format.");
+
+    text = (char *)calloc(st.st_size + 1, sizeof(char));
+    if (!text)
+      throw runtime_error("not enough memory to allocate file.");
+
+    fread(text, sizeof(char), st.st_size, fl);
+    fclose(fl);
+
+    //    serv_peer = shapp_init("shcoind", NULL, SHAPP_LOCAL);
+
+    json = shjson_init(text);
+    free(text);
+    if (!json) {
+      throw runtime_error("file is not is JSON format.");
+    }
+
+    tree = json->child;
+    if (tree && tree->string) {
+      if (0 != strcmp(tree->string, iface->name))
+        throw runtime_error("wallet file references incorrect coin service.");
+
+      for (node = tree->child; node; node = node->next) {
+        strncpy(label, shjson_astr(node, "label", ""), sizeof(label)-1);
+        strncpy(addr, shjson_astr(node, "addr", ""), sizeof(addr)-1);
+        strncpy(key, shjson_astr(node, "key", ""), sizeof(key)-1);
+        if (!*key) continue;
+
+        string strSecret(key);
+        string strLabel(label);
+
+        CCoinSecret vchSecret;
+        bool fGood = vchSecret.SetString(strSecret);
+        if (!fGood) {
+//fprintf(stderr, "DEBUG: invalid private key '%s'\n", key);
+          continue;// throw JSONRPCError(-5,"Invalid private key");
+}
+
+        CKey key;
+        bool fCompressed;
+        CSecret secret = vchSecret.GetSecret(fCompressed);
+        key.SetSecret(secret, fCompressed);
+        CKeyID vchAddress = key.GetPubKey().GetID();
+        {
+          LOCK2(cs_main, pwalletMain->cs_wallet);
+
+          pwalletMain->MarkDirty();
+          pwalletMain->SetAddressBookName(vchAddress, strLabel);
+
+          if (!pwalletMain->AddKey(key)) {
+fprintf(stderr, "DEBUG: error adding address '%s' to wallet.\n", addr);
+            continue; //throw JSONRPCError(-4,"Error adding key to wallet");
+          }
+
+        }
+      }
+    }
+
+    shjson_free(&json);
+  }
+pwalletMain->ScanForWalletTransactions(GetGenesisBlockIndex(iface), true);
+pwalletMain->ReacceptWalletTransactions();
+
+#if 0
   string strSecret = params[0].get_str();
   string strLabel = "";
 //  if (params.size() > 1)
@@ -1673,6 +1822,7 @@ Value rpc_wallet_import(CIface *iface, const Array& params, bool fHelp)
     pwalletMain->ScanForWalletTransactions(GetGenesisBlockIndex(iface), true);
     pwalletMain->ReacceptWalletTransactions();
   }
+#endif
 
   return Value::null;
 }
@@ -1830,6 +1980,21 @@ Value rpc_wallet_recvbyaddr(CIface *iface, const Array& params, bool fHelp)
   return  ValueFromAmount(nAmount);
 }
 
+Value rpc_wallet_rescan(CIface *iface, const Array& params, bool fHelp)
+{
+  CWallet *wallet = GetWallet(iface);
+  int ifaceIndex = GetCoinIndex(iface);
+
+  if (fHelp || params.size() != 0)
+    throw runtime_error(
+        "wallet.rescan\n"
+        "Rescan the block-chain for personal wallet transactions.\n");
+
+  InitServiceWalletEvent(wallet, 0);
+
+  return Value::null;
+}
+
 Value rpc_wallet_send(CIface *iface, const Array& params, bool fHelp)
 {
   CWallet *pwalletMain = GetWallet(iface);
@@ -1901,6 +2066,48 @@ Value rpc_wallet_set(CIface *iface, const Array& params, bool fHelp)
 
     return Value::null;
 }
+
+Value rpc_wallet_setkey(CIface *iface, const Array& params, bool fHelp)
+{
+  CWallet *pwalletMain = GetWallet(iface);
+  int ifaceIndex = GetCoinIndex(iface);
+
+  if (fHelp || params.size() != 2) {
+    throw runtime_error(
+        "wallet.setkey <priv-key> <account>\n"
+        "Adds a private key (as returned by wallet.key) to your wallet.");
+  }
+
+  string strSecret = params[0].get_str();
+  string strLabel = "";
+//  if (params.size() > 1)
+    strLabel = params[1].get_str();
+  CCoinSecret vchSecret;
+  bool fGood = vchSecret.SetString(strSecret);
+
+  if (!fGood) throw JSONRPCError(-5,"Invalid private key");
+
+  CKey key;
+  bool fCompressed;
+  CSecret secret = vchSecret.GetSecret(fCompressed);
+  key.SetSecret(secret, fCompressed);
+  CKeyID vchAddress = key.GetPubKey().GetID();
+  {
+    LOCK2(cs_main, pwalletMain->cs_wallet);
+
+    pwalletMain->MarkDirty();
+    pwalletMain->SetAddressBookName(vchAddress, strLabel);
+
+    if (!pwalletMain->AddKey(key))
+      throw JSONRPCError(-4,"Error adding key to wallet");
+
+    pwalletMain->ScanForWalletTransactions(GetGenesisBlockIndex(iface), true);
+    pwalletMain->ReacceptWalletTransactions();
+  }
+
+  return Value::null;
+}
+
 
 Value rpc_wallet_unspent(CIface *iface, const Array& params, bool fHelp)
 {
@@ -2405,7 +2612,6 @@ Value rpc_peer_import(CIface *iface, const Array& params, bool fHelp)
     json = shjson_init(text);
     free(text);
     if (!json) {
-//fprintf(stderr, "DEBUG: invalid JSON: %s\n", text);
       throw runtime_error("file is not is JSON format.");
     }
 
@@ -3985,7 +4191,6 @@ Value getblockhash(const Array& params, bool fHelp)
     if (!err) {
       uint256 hash;
       hash.SetRaw((unsigned int *)ret_hash);
-      fprintf(stderr, "DEBUG: RPC: getblockhash: blockchain pos %d has hash '%s'\n", nHeight, hash.GetHex().c_str());
     }
   }
 
@@ -4254,7 +4459,6 @@ Value rpc_tx_get(CIface *iface, const Array& params, bool fHelp)
     if (!tx.ReadTx(ifaceIndex, hash, &hashBlock))
       throw JSONRPCError(-5, "Invalid transaction id");
 
-fprintf(stderr, "DEBUG: rpc_tx_get: hashBlock '%s'\n", hashBlock.GetHex().c_str()); 
     TxToJSON(iface, tx, hashBlock, entry);
   }
 
@@ -4305,6 +4509,7 @@ static const CRPCCommand vRPCCommands[] =
     { "wallet.accounts",      &rpc_wallet_accounts},
     { "wallet.balance",       &rpc_wallet_balance},
     { "wallet.export",        &rpc_wallet_export},
+    { "wallet.exportdat",     &rpc_wallet_exportdat},
     { "wallet.get",           &rpc_wallet_get},
     { "wallet.info",          &rpc_wallet_info},
     { "wallet.import",        &rpc_wallet_import},
@@ -4317,8 +4522,10 @@ static const CRPCCommand vRPCCommands[] =
     { "wallet.new",           &rpc_wallet_newaddr},
     { "wallet.recvbyaccount", &rpc_wallet_recvbyaccount},
     { "wallet.recvbyaddr",    &rpc_wallet_recvbyaddr},
+    { "wallet.rescan",          &rpc_wallet_rescan},
     { "wallet.send",          &rpc_wallet_send},
     { "wallet.set",           &rpc_wallet_set},
+    { "wallet.setkey",        &rpc_wallet_setkey},
     { "wallet.unspent",       &rpc_wallet_unspent},
     { "wallet.validate",       &rpc_wallet_validate},
 //    { "tx.sendraw",           &rpc_sendrawtransaction},
@@ -5047,7 +5254,7 @@ json_spirit::Value CRPCTable::execute(CIface *iface, const std::string &strMetho
   else if (strMethod == "dumpprivkey")
     method = "wallet.key";
   else if (strMethod == "importprivkey")
-    method = "wallet.import";
+    method = "wallet.setkey";
   else
     method = strMethod;
 
@@ -5165,7 +5372,6 @@ const char *c_getblocktemplate(void)
         CBlockIndex* pindexPrevNew = pindexBest;
 //        nStart = GetTime();
 
-if (!pwalletMain) fprintf(stderr, "DEBUG: CreateNewBlock: Wallet not initialized.");
         pblock = CreateNewBlock(reservekey);
         if (!pblock)
           return (NULL);
@@ -5334,7 +5540,6 @@ int c_processblock(CBlock* pblock)
 
   // Preliminary checks
   if (!pblock->CheckBlock()) {
-fprintf(stderr, "DEBUG: c_processblock: !CheckBlock()\n");
     return (BLKERR_INVALID_FORMAT);
   }
 
@@ -5355,7 +5560,6 @@ fprintf(stderr, "DEBUG: c_processblock: !CheckBlock()\n");
 
   // Store to disk
   if (!pblock->AcceptBlock()) {
-fprintf(stderr, "DEBUG: c_processblock: !AcceptBlock()\n");
     return (BLKERR_INVALID_BLOCK);
   }
 

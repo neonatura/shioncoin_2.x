@@ -717,7 +717,7 @@ bool SHC_CTxMemPool::accept(CTxDB& txdb, CTransaction &tx, bool fCheckInputs, bo
 
   // Coinbase is only valid in a block, not as a loose transaction
   if (tx.IsCoinBase())
-    return tx.DoS(100, error(SHERR_INVAL, "CTxMemPool::accept() : coinbase as individual tx"));
+    return error(SHERR_INVAL, "CTxMemPool::accept() : coinbase as individual tx");
 
   // To help v0.1.5 clients who would see it as a negative number
   if ((int64)tx.nLockTime > std::numeric_limits<int>::max())
@@ -1789,13 +1789,8 @@ fprintf(stderr, "DEBUG: SHCBlock::ConnectBlock: critical: coinbaseValueOut(%llu)
 #endif
   }
 
-#if 0
-  // Watch for transactions paying to me
   BOOST_FOREACH(CTransaction& tx, vtx)
     SyncWithWallets(iface, tx, this);
-#endif
-  CWallet *wallet = GetWallet(iface);
-  InitServiceWalletEvent(wallet, pindex->nHeight);
 
   return true;
 }

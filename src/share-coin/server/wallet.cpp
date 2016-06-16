@@ -470,7 +470,6 @@ bool CWallet::AddToWalletIfInvolvingMe(const CTransaction& tx, const CBlock* pbl
       // Get merkle branch if transaction was found in a block
       if (pblock) {
         wtx.SetMerkleBranch(pblock);
-//        ServiceWalletEventUpdate(this, pblock);
       }
       return AddToWallet(wtx);
     }
