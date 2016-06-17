@@ -45,6 +45,45 @@ int stratum_user_count(user_t *user)
   return (cnt);
 }
 
+void merge_idle_worker(user_t *user)
+{
+  user_t *t_user;
+  int i;
+
+  for (t_user = client_list; t_user; t_user = t_user->next) {
+    if (t_user == user)
+      continue; /* does not apply to self */
+    if (t_user->flags & USER_SYSTEM)
+      continue; /* skip system users */
+    if (t_user->fd != -1)
+      continue; /* skip active users */
+    if (0 != strcmp(user->worker, t_user->worker))
+      continue; /* wrong worker */ 
+
+    /* transfer share rates */
+    for (i = 0; i < MAX_ROUNDS_PER_HOUR; i++) {
+      user->block_avg[i] += t_user->block_avg[i];
+      t_user->block_avg[i] = 0;
+    }
+    user->block_tot += t_user->block_tot;
+    user->block_cnt += t_user->block_cnt;
+    t_user->block_tot = 0;
+    t_user->block_cnt = 0;
+
+    /* transfer pending reward */
+    for (i = 1; i < MAX_COIN_IFACE; i++) {
+      user->balance[i] += t_user->balance[i];
+      t_user->balance[i] = 0;
+    }
+
+    /* mark idle worker for immediate deletion */
+    t_user->work_stamp = 0;
+
+fprintf(stderr, "DEBUG: merge_idle_worker: found idle dup worker \"%s\".", user->worker); 
+  }
+
+}
+
 user_t *stratum_user(user_t *user, char *username)
 {
   char name[256]; 
@@ -68,6 +107,7 @@ user_t *stratum_user(user_t *user, char *username)
 
 
   strncpy(user->worker, username, sizeof(user->worker) - 1);
+  merge_idle_worker(user);
 
   return (user);
 }

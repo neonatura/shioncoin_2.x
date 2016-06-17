@@ -23,6 +23,7 @@
  *  @endcopyright
  */
 
+#include <share.h>
 #include "shcoind.h"
 #include "net.h"
 #include "init.h"
@@ -47,7 +48,6 @@
 #endif
 
 #include <boost/array.hpp>
-#include <share.h>
 
 using namespace std;
 using namespace boost;
@@ -1361,6 +1361,7 @@ void shc_MessageHandler(CIface *iface)
     pnodeTrickle = vNodesCopy[GetRand(vNodesCopy.size())];
   BOOST_FOREACH(CNode* pnode, vNodesCopy)
   {
+#if 0
     // Receive messages
     {
       TRY_LOCK(pnode->cs_vRecv, lockRecv);
@@ -1369,6 +1370,7 @@ void shc_MessageHandler(CIface *iface)
     }
     if (fShutdown)
       return;
+#endif
 
     // Send messages
     {
@@ -1389,7 +1391,86 @@ void shc_MessageHandler(CIface *iface)
 
 }
 
-#define USDE_READ_BUFFER_SIZE 131072
+extern bool usde_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataStream& vRecv);
+bool usde_coin_server_recv_msg(CIface *iface, CNode* pfrom)
+{
+  CDataStream& vRecv = pfrom->vRecv;
+  CMessageHeader hdr;
+
+  if (vRecv.empty())
+    return (true);
+
+  vRecv >> hdr;
+
+  /* check checksum */
+  string strCommand = hdr.GetCommand();
+  unsigned int nMessageSize = hdr.nMessageSize;
+
+  /* verify checksum */
+  uint256 hash = Hash(vRecv.begin(), vRecv.begin() + nMessageSize);
+  unsigned int nChecksum = 0;
+  memcpy(&nChecksum, &hash, sizeof(nChecksum));
+  if (nChecksum != hdr.nChecksum) {
+    fprintf(stderr, "DEBUG: ProcessMessages(%s, %u bytes) : CHECKSUM ERROR nChecksum=%08x hdr.nChecksum=%08x\n",
+        strCommand.c_str(), nMessageSize, nChecksum, hdr.nChecksum);
+    return (false);
+  }
+
+  bool fRet;
+  {
+    LOCK(cs_main);
+    fRet = usde_ProcessMessage(iface, pfrom, strCommand, vRecv);
+  }
+
+  return (fRet);
+}
+
+int usde_coin_server_recv(CIface *iface, CNode *pnode, shbuf_t *buff)
+{
+  coinhdr_t hdr;
+  unsigned char *data;
+  int size;
+
+  size = shbuf_size(buff);
+  if (size < SIZEOF_COINHDR_T)
+    return (SHERR_AGAIN);
+
+  if (pnode->vSend.size() >= SendBufferSize()) /* wait for output to flush */
+    return (SHERR_AGAIN);
+
+  data = (unsigned char *)shbuf_data(buff);
+  mempcpy(&hdr, data, SIZEOF_COINHDR_T);
+
+  /* verify magic sequence */
+  if (0 != memcmp(hdr.magic, iface->hdr_magic, 4)) {
+    shbuf_clear(buff);
+    return (SHERR_ILSEQ);
+  }
+
+  if (hdr.size > MAX_SIZE) {
+    shbuf_clear(buff);
+    return (SHERR_INVAL);
+  }
+
+  if (hdr.size > sizeof(hdr) + size)
+    return (SHERR_AGAIN);
+
+  /* transfer to cli buffer */
+  CDataStream& vRecv = pnode->vRecv;
+  vRecv.resize(sizeof(hdr) + hdr.size);
+  memcpy(&vRecv[0], data, sizeof(hdr) + hdr.size);
+  shbuf_trim(buff, sizeof(hdr) + hdr.size);
+
+  bool fRet = usde_coin_server_recv_msg(iface, pnode);
+//fprintf(stderr, "DEBUG: usde_coin_server_recv: usde_coin_server_recv_msg ret'd %s <%u bytes> [%s]\n", fRet ? "true" : "false", hdr.size, hdr.cmd); 
+
+  vRecv.erase(vRecv.begin(), vRecv.end());
+  vRecv.Compact();
+
+  pnode->nLastRecv = GetTime();
+  return (0);
+}
+
 void usde_server_timer(void)
 {
   static int verify_idx;
@@ -1421,34 +1502,27 @@ void usde_server_timer(void)
       if (fShutdown)
         return;
 
+      shbuf_t *pchBuf = shnet_read_buf(pnode->hSocket);
+      if (pchBuf)
+        usde_coin_server_recv(iface, pnode, pchBuf);
 
+#if 0
       /* incoming data */
       CDataStream& vRecv = pnode->vRecv;
       unsigned int nPos = vRecv.size();
       shbuf_t *pchBuf = shnet_read_buf(pnode->hSocket);
       if (pchBuf) {
         unsigned char *pch = shbuf_data(pchBuf);
-        size_t nBytes = shbuf_size(pchBuf);
+        size_t nBytes = MIN(65536, shbuf_size(pchBuf));
+
+
         vRecv.resize(nPos + nBytes);
         memcpy(&vRecv[nPos], pch, nBytes);
-        shbuf_clear(pchBuf);
+        shbuf_trim(pchBuf, nBytes);
         pnode->nLastRecv = GetTime();
       } else {
         unet_shutdown(pnode->hSocket);
-      }
-#if 0
-    char pchBuf[USDE_READ_BUFFER_SIZE];
-      memset(pchBuf, '\000', USDE_READ_BUFFER_SIZE);
-      /* incoming data */
-      CDataStream& vRecv = pnode->vRecv;
-      unsigned int nPos = vRecv.size();
-      size_t nBytes = USDE_READ_BUFFER_SIZE;
-      int err = unet_read(pnode->hSocket, pchBuf, &nBytes);
-      if (!err && nBytes > 0) { 
-        vRecv.resize(nPos + nBytes);
-        memcpy(&vRecv[nPos], pchBuf, nBytes);
-        pnode->nLastRecv = GetTime();
-fprintf(stderr, "DEBUG: usde_server_timer: vRecv[%u] += <%d bytes> (buff %u)\n", (unsigned int)nPos, (unsigned int)nBytes, (unsigned int)vRecv.size());
+fprintf(stderr, "DEBUG: usde_server_timer: unet_shutdown()\n"); 
       }
 #endif
 
@@ -1480,11 +1554,9 @@ fprintf(stderr, "DEBUG: usde_server_timer: vRecv[%u] += <%d bytes> (buff %u)\n",
   event_cycle_chain(USDE_COIN_IFACE); /* DEBUG: */
 
   if (0 == (verify_idx % 100)) {
-#if 0
     bc = GetBlockTxChain(iface);
     if (bc)
       bc_idle(bc);
-#endif
 
     bc = GetBlockChain(iface);
     if (bc)
@@ -1595,7 +1667,86 @@ static void shc_close_free(void)
   }
 }
 
-#define SHC_READ_BUFFER_SIZE 131072
+extern bool shc_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataStream& vRecv);
+bool shc_coin_server_recv_msg(CIface *iface, CNode* pfrom)
+{
+  CDataStream& vRecv = pfrom->vRecv;
+  CMessageHeader hdr;
+
+  if (vRecv.empty())
+    return (true);
+
+  vRecv >> hdr;
+
+  /* check checksum */
+  string strCommand = hdr.GetCommand();
+  unsigned int nMessageSize = hdr.nMessageSize;
+
+  /* verify checksum */
+  uint256 hash = Hash(vRecv.begin(), vRecv.begin() + nMessageSize);
+  unsigned int nChecksum = 0;
+  memcpy(&nChecksum, &hash, sizeof(nChecksum));
+  if (nChecksum != hdr.nChecksum) {
+    fprintf(stderr, "DEBUG: ProcessMessages(%s, %u bytes) : CHECKSUM ERROR nChecksum=%08x hdr.nChecksum=%08x\n",
+        strCommand.c_str(), nMessageSize, nChecksum, hdr.nChecksum);
+    return (false);
+  }
+
+  bool fRet;
+  {
+    LOCK(cs_main);
+    fRet = shc_ProcessMessage(iface, pfrom, strCommand, vRecv);
+  }
+
+  return (fRet);
+}
+
+int shc_coin_server_recv(CIface *iface, CNode *pnode, shbuf_t *buff)
+{
+  coinhdr_t hdr;
+  unsigned char *data;
+  int size;
+
+  size = shbuf_size(buff);
+  if (size < SIZEOF_COINHDR_T)
+    return (SHERR_AGAIN);
+
+  if (pnode->vSend.size() >= SendBufferSize()) /* wait for output to flush */
+    return (SHERR_AGAIN);
+
+  data = (unsigned char *)shbuf_data(buff);
+  mempcpy(&hdr, data, SIZEOF_COINHDR_T);
+
+  /* verify magic sequence */
+  if (0 != memcmp(hdr.magic, iface->hdr_magic, 4)) {
+    shbuf_clear(buff);
+    return (SHERR_ILSEQ);
+  }
+
+  if (hdr.size > MAX_SIZE) {
+    shbuf_clear(buff);
+    return (SHERR_INVAL);
+  }
+
+  if (hdr.size > sizeof(hdr) + size)
+    return (SHERR_AGAIN);
+
+  /* transfer to cli buffer */
+  CDataStream& vRecv = pnode->vRecv;
+  vRecv.resize(sizeof(hdr) + hdr.size);
+  memcpy(&vRecv[0], data, sizeof(hdr) + hdr.size);
+  shbuf_trim(buff, sizeof(hdr) + hdr.size);
+
+  bool fRet = shc_coin_server_recv_msg(iface, pnode);
+//fprintf(stderr, "DEBUG: shc_coin_server_recv: shc_coin_server_recv_msg ret'd %s <%u bytes> [%s]\n", fRet ? "true" : "false", hdr.size, hdr.cmd); 
+
+  vRecv.erase(vRecv.begin(), vRecv.end());
+  vRecv.Compact();
+
+  pnode->nLastRecv = GetTime();
+  return (0);
+}
+
 void shc_server_timer(void)
 {
   static int verify_idx;
@@ -1624,30 +1775,26 @@ void shc_server_timer(void)
       if (fShutdown)
         return;
 
-
+      shbuf_t *pchBuf = shnet_read_buf(pnode->hSocket);
+      if (pchBuf)
+        shc_coin_server_recv(iface, pnode, pchBuf);
+#if 0
       /* incoming data */
       CDataStream& vRecv = pnode->vRecv;
       unsigned int nPos = vRecv.size();
       shbuf_t *pchBuf = shnet_read_buf(pnode->hSocket);
       if (pchBuf) {
         unsigned char *pch = shbuf_data(pchBuf);
-        size_t nBytes = shbuf_size(pchBuf);
+        size_t nBytes = MIN(409600, shbuf_size(pchBuf));
+
+
         vRecv.resize(nPos + nBytes);
         memcpy(&vRecv[nPos], pch, nBytes);
-        shbuf_clear(pchBuf);
+        shbuf_trim(pchBuf, nBytes);
         pnode->nLastRecv = GetTime();
       } else {
         unet_shutdown(pnode->hSocket);
-      }
-#if 0
-    char pchBuf[SHC_READ_BUFFER_SIZE];
-      memset(pchBuf, '\000', SHC_READ_BUFFER_SIZE);
-      size_t nBytes = SHC_READ_BUFFER_SIZE;
-      int err = unet_read(pnode->hSocket, pchBuf, &nBytes);
-      if (!err && nBytes > 0) { 
-        vRecv.resize(nPos + nBytes);
-        memcpy(&vRecv[nPos], pchBuf, nBytes);
-        pnode->nLastRecv = GetTime();
+fprintf(stderr, "DEBUG: shc_server_timer: unet_shutdown()\n"); 
       }
 #endif
 
@@ -1679,11 +1826,9 @@ void shc_server_timer(void)
   event_cycle_chain(SHC_COIN_IFACE); /* DEBUG: TODO: uevent */
 
   if (0 == (verify_idx % 100)) {
-#if 0
     bc = GetBlockTxChain(iface);
     if (bc)
       bc_idle(bc);
-#endif
 
     bc = GetBlockChain(iface);
     if (bc)

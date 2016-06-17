@@ -198,6 +198,7 @@ coin_iface_t test_coin_iface = {
   1, /* block version */
   TEST_PROTOCOL_VERSION, /* network protocol version */ 
   TEST_COIN_DAEMON_PORT,
+  { 0xd9, 0xd9, 0xf9, 0xbd },
   TEST_MAX_BLOCK_SIZE,
   TEST_MAX_ORPHAN_TRANSACTIONS,
   TEST_MIN_TX_FEE,

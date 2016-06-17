@@ -222,6 +222,7 @@ coin_iface_t shc_coin_iface = {
   2, /* block version */
   SHC_PROTOCOL_VERSION, /* network proto ver */
   SHC_COIN_DAEMON_PORT,
+  { 0xd9, 0xd9, 0xf9, 0xbd },
   SHC_MAX_BLOCK_SIZE,
   SHC_MAX_ORPHAN_TRANSACTIONS,
   SHC_MIN_TX_FEE,

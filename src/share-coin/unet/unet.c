@@ -108,7 +108,7 @@ void unet_cycle(double max_t)
   fd_set x_set;
   SOCKET fd;
   double diff_t;
-  size_t w_len;
+  ssize_t w_len;
   SOCKET sk;
   int fd_max;
   int mode;
@@ -149,6 +149,7 @@ void unet_cycle(double max_t)
 
       timing_init("shnet_write", &ts);
       w_tot = shbuf_size(t->wbuff);
+#if 0
       for (w_of = 0; w_of < w_tot; w_of += w_len) {
         w_len = shnet_write(fd, shbuf_data(t->wbuff)+w_of, w_tot-w_of);
         if (w_len < 0) {
@@ -159,9 +160,18 @@ fprintf(stderr, "DEBUG: unet_cycle: shnet_write failure: %s [errno %d]\n", strer
           break;
         }
       }      
+#endif
+      w_len = shnet_write(fd, shbuf_data(t->wbuff), w_tot);
+      if (w_len < 0) {
+        if (errno != EAGAIN) {
+fprintf(stderr, "DEBUG: unet_cycle: shnet_write failure: %s [errno %d]\n", strerror(errno), errno);  
+          unet_close(fd, "write");
+        }
+      } else if (w_len > 0) {
+        shbuf_trim(t->wbuff, w_len);
+      }
       timing_term("shnet_write", &ts);
 
-      shbuf_trim(t->wbuff, w_of);
       t->stamp = shtime();
     }
 

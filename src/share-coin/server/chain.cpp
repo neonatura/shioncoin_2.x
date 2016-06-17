@@ -325,7 +325,7 @@ fprintf(stderr, "DEBUG: net_valid < net_invalid\n");
 
     int idx = (nNodeIndex % vNodes.size());
     pfrom = vNodes[idx];
-fprintf(stderr, "DEBUG: DownloadBlockChain[iface #%d]: pfrom->PushGetBlocks(%d) from '%s'\n", ifaceIndex, pindexBest->nHeight, pfrom->addr.ToString().c_str());
+fprintf(stderr, "DEBUG: DownloadBlockChain[iface #%d]: pfrom->PushGetBlocks(%d) to '%s'\n", ifaceIndex, pindexBest->nHeight, pfrom->addr.ToString().c_str());
     pfrom->PushGetBlocks(pindexBest, uint256(0));
     nNodeIndex++;
 
@@ -333,7 +333,6 @@ fprintf(stderr, "DEBUG: DownloadBlockChain[iface #%d]: pfrom->PushGetBlocks(%d) 
     iface->net_valid = time(NULL);
   }
 
-fprintf(stderr, "DEBUG: ServiceBlockEvent: iface[%s]->blockscan_max = %d\n", iface->name, (int)iface->blockscan_max);
   return (true);
 }
 

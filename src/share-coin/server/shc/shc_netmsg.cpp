@@ -207,7 +207,7 @@ static bool AlreadyHave(CIface *iface, SHCTxDB& txdb, const CInv& inv)
 // The characters are rarely used upper ascii, not valid as UTF-8, and produce
 // a large 4-byte int at any alignment.
 
-bool static ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataStream& vRecv)
+bool shc_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataStream& vRecv)
 {
   NodeList &vNodes = GetNodeList(iface);
   static map<CService, CPubKey> mapReuseKey;
@@ -901,6 +901,9 @@ shtime_t ts;
         // Scan for message start
         CDataStream::iterator pstart = search(vRecv.begin(), vRecv.end(), BEGIN(pchMessageStart), END(pchMessageStart));
         int nHeaderSize = vRecv.GetSerializeSize(CMessageHeader());
+if (nHeaderSize != 24) {
+fprintf(stderr, "DEBUG: nHeaderSize = %d\n", nHeaderSize);
+}
         if (vRecv.end() - pstart < nHeaderSize)
         {
             if ((int)vRecv.size() > nHeaderSize)
@@ -911,7 +914,7 @@ shtime_t ts;
             break;
         }
         if (pstart - vRecv.begin() > 0)
-            printf("\n\nPROCESSMESSAGE SKIPPED %d BYTES\n\n", pstart - vRecv.begin());
+          fprintf(stderr, "PROCESSMESSAGE SKIPPED %d BYTES\n", pstart - vRecv.begin());
         vRecv.erase(vRecv.begin(), pstart);
 
         // Read header
@@ -945,7 +948,7 @@ shtime_t ts;
         memcpy(&nChecksum, &hash, sizeof(nChecksum));
         if (nChecksum != hdr.nChecksum)
         {
-            printf("ProcessMessages(%s, %u bytes) : CHECKSUM ERROR nChecksum=%08x hdr.nChecksum=%08x\n",
+            fprintf(stderr, "DEBUG: ProcessMessages(%s, %u bytes) : CHECKSUM ERROR nChecksum=%08x hdr.nChecksum=%08x\n",
                strCommand.c_str(), nMessageSize, nChecksum, hdr.nChecksum);
             continue;
         }
@@ -966,7 +969,7 @@ shtime_t ts;
         {
             {
                 LOCK(cs_main);
-                fRet = ProcessMessage(iface, pfrom, strCommand, vMsg);
+                fRet = shc_ProcessMessage(iface, pfrom, strCommand, vMsg);
             }
             if (fShutdown)
                 return true;

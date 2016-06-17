@@ -207,7 +207,7 @@ static bool AlreadyHave(CIface *iface, USDETxDB& txdb, const CInv& inv)
 // The characters are rarely used upper ascii, not valid as UTF-8, and produce
 // a large 4-byte int at any alignment.
 
-bool static ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataStream& vRecv)
+bool usde_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataStream& vRecv)
 {
   NodeList &vNodes = GetNodeList(iface);
   static map<CService, CPubKey> mapReuseKey;
@@ -955,7 +955,7 @@ shtime_t ts;
         {
             {
                 LOCK(cs_main);
-                fRet = ProcessMessage(iface, pfrom, strCommand, vMsg);
+                fRet = usde_ProcessMessage(iface, pfrom, strCommand, vMsg);
             }
             if (fShutdown)
                 return true;

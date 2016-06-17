@@ -85,6 +85,8 @@ typedef struct coin_iface_t
   /* socket */
   int port;
 
+  unsigned char hdr_magic[4];
+
   uint64_t max_block_size;
   uint64_t max_orphan_tx;
   uint64_t min_tx_fee;
@@ -118,6 +120,14 @@ typedef struct coin_iface_t
 
 typedef struct coin_iface_t CIface;
 
+typedef struct coinhdr_t
+{
+  unsigned char magic[4];
+  char cmd[12];
+  uint32_t size;
+  uint32_t crc;
+} coinhdr_t;
+#define SIZEOF_COINHDR_T 24
 
 int GetCoinAttr(const char *name, char *attr);
 

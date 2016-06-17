@@ -199,6 +199,12 @@ test_shcoind_LDADD = $(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
 	-lboost_system -lboost_filesystem -lboost_thread -ldb_cxx -ldl
 test_shcoind_CFLAGS = -I$(srcdir)/server -I$(srcdir)/blockchain -I$(srcdir)/proto -DSHCOIN_SERVER -g -O0 -DTEST_SHCOIND
 test_shcoind_CXXFLAGS = -I$(srcdir)/server -I$(srcdir)/blockchain -I$(srcdir)/proto -DOS_LINUX -DSHCOIN_SERVER -g -O0 -DTEST_SHCOIND
+if STATIC_LIBSHARE
+test_shcoind_LDADD += $(LIBSHARE)/src/share-lib/libshare.a
+test_shcoind_CFLAGS += -I$(LIBSHARE)/include
+test_shcoind_CXXFLAGS += -I$(LIBSHARE)/include
+endif
+
 
 
 shcoind_SOURCES = \
