@@ -213,12 +213,16 @@ bc_map_t *map;
   int err;
 
   err = bc_idx_open(bc);
-  if (err)
+  if (err) {
+fprintf(stderr, "DEBUG: bc_append: bc_idx_open() err %d\n", err);
     return (err);
+}
 
   pos = bc_idx_next(bc);
-  if (pos < 0)
+  if (pos < 0) {
+fprintf(stderr, "DEBUG: bc_append: bc_idx_next() err %d\n", err);
     return (pos);
+}
 
 #if 0
   memset(&idx, 0, sizeof(idx));
@@ -242,8 +246,10 @@ bc_map_t *map;
   bc_idx_set(bc, pos, &idx);
 #endif
   err = bc_write(bc, pos, hash, data, data_len);
-  if (err)
+  if (err) {
+fprintf(stderr, "DEBUG: bc_append: bc_write() err %d <%d bytes>\n", err, data_len);
     return (err); 
+}
 
   return (pos);
 }
