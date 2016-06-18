@@ -34,11 +34,11 @@ static const char *_stratum_user_html_template =
 "Accepted: %u\r\n"
 "\r\n";
 static const char *_stratum_html_template = 
-"<u>%s</u>\r\n"
-"<div style=\"font-size : 12px; font-family : Georgia;\">\r\n" /* show ver */
-"<div style=\"float : left; margin-left : 16px;\">Ledger Blocks: %lu</div>\r\n"
+"<div style=\"font-size : 14px; font-family : Georgia; height : 32px; width : 99%; background : linear-gradient(to bottom, #1e5799 0%,#2989d8 50%,#207cca 51%,#7db9e8 100%); color : #e8e8e9; padding-top : 10px;\">\r\n" /* show ver */
+"<div style=\"float : left; margin-left : 16px; margin-right : 16px; font-size : 16px;\">%s</div>\r\n"
+"<div style=\"float : left; margin-left : 16px;\">Block Height: %lu</div>\r\n"
 "<div style=\"float : left; margin-left : 16px;\">Difficulty: %-4.4f</div>\r\n"
-"<div style=\"float : left; margin-left : 16px;\">Network Speed: %-1.1fkh/s</div>\r\n"
+"<div style=\"float : left; margin-left : 16px;\">Global Speed: %-1.1fkh/s</div>\r\n"
 "<div style=\"float : left; margin-left : 16px;\">Max Coins: %lu</div>\r\n"
 "<div style=\"float : left; margin-left : 16px;\">Maturity: %lu</div>\r\n"
 "<div style=\"clear : both;\"></div>\r\n"
@@ -51,42 +51,26 @@ char *stratum_http_response(SOCKET sk, char *url)
   static char ret_html[10240];
   char uname[512];
 
-  if (0 == strncmp(url, "/user/", strlen("/user/"))) {
-    user_t *user;
+  int idx;
+  for (idx = 1; idx < MAX_COIN_IFACE; idx++) { 
+    CIface *iface = GetCoinByIndex(idx);
+    if (!iface || !iface->enabled) continue;
 
-    memset(uname, 0, sizeof(uname));
-    strncpy(uname, url + strlen("/user/"), sizeof(uname)-1); 
-    strtok(uname, "/?&");
+    *ret_html = '\0';
+    {
+      shjson_t *json = shjson_init(getmininginfo(idx));
+      unsigned long height = shjson_array_num(json, "result", 0);
+      sprintf(ret_html+strlen(ret_html), _stratum_html_template, 
+          iface->name, height,
+          shjson_array_num(json, "result", 1),
+          shjson_array_num(json, "result", 2),
+          (unsigned long)(iface->max_money / COIN),
+          (unsigned long)iface->coinbase_maturity);
+      shjson_free(&json);
 
-    user = stratum_user_find(uname); 
-    if (!user)
-      return (ret_html); /* blank */
-
-    sprintf(ret_html, _stratum_user_html_template,
-        user->worker, stratum_user_speed(user), 
-        (unsigned long)user->block_tot, (unsigned int)user->block_cnt);
-  } else {
-    int idx;
-    for (idx = 1; idx < MAX_COIN_IFACE; idx++) { 
-      CIface *iface = GetCoinByIndex(idx);
-      if (!iface || !iface->enabled) continue;
-
-      *ret_html = '\0';
-      {
-        shjson_t *json = shjson_init(getmininginfo(idx));
-        unsigned long height = shjson_array_num(json, "result", 0);
-        sprintf(ret_html+strlen(ret_html), _stratum_html_template, 
-            iface->name, height,
-            shjson_array_num(json, "result", 1),
-            shjson_array_num(json, "result", 2),
-            (unsigned long)(iface->max_money / COIN),
-            (unsigned long)iface->coinbase_maturity);
-        shjson_free(&json);
-
-/* DEBUG: TODO: .. show mem usage .. blockIndex vs mapped files ~ */
-      }
-
+      /* DEBUG: TODO: .. show mem usage .. blockIndex vs mapped files ~ */
     }
+
   }
 
   return (ret_html);
@@ -94,7 +78,9 @@ char *stratum_http_response(SOCKET sk, char *url)
 
 void stratum_http_request(SOCKET sk, char *url)
 {
+  user_t *user;
   shbuf_t *buff;
+char ret_html[4096];
 
   buff = shbuf_init();
   shbuf_catstr(buff, "HTTP/1.0 200 OK\r\n"); 
@@ -102,6 +88,27 @@ void stratum_http_request(SOCKET sk, char *url)
   shbuf_catstr(buff, "\r\n"); 
   shbuf_catstr(buff, "<html><body>\r\n"); 
   shbuf_catstr(buff, stratum_http_response(sk, url));
+
+  shbuf_catstr(buff, 
+      "<div style=\"width : 80%; margin-left : auto; margin-right : auto; font-size : 13px; width : 90%;\">" 
+      "<table cellspacing=1 style=\"width : 100%; linear-gradient(to bottom, #1e9957,#29d889,#20ca7c,#8de8b9); color : #666;\">"
+      "<tr style=\"background-color : lime; color : #999;\"><td>Worker</td><td>Speed</td><td>Shares</td><td>Blocks Submitted</td></tr>");
+  for (user = client_list; user; user = user->next) {
+    if (!*user->worker)
+      continue;
+
+    sprintf(ret_html,
+        "<tr><td>%s</td>"
+        "<td>%-4.4f</td>"
+        "<td>%-4.4f</td>"
+        "<td>%u</td></tr>",
+        user->worker, stratum_user_speed(user),
+        user->block_tot, (unsigned int)user->block_cnt);
+    shbuf_catstr(buff, ret_html);
+  }
+  shbuf_catstr(buff, "</table>");
+
+
   shbuf_catstr(buff, "</body></html>\r\n"); 
 
   unet_write(sk, shbuf_data(buff), shbuf_size(buff));
