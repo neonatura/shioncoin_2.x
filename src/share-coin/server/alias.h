@@ -26,6 +26,12 @@
 #ifndef __ALIAS_H__
 #define __ALIAS_H__
 
+#include "base58.h"
+
+typedef map<std::string, uint256> alias_list;
+
+extern alias_list mapAliases[MAX_COIN_IFACE];
+
 inline bool arrcasecmp(cbuff v1, cbuff v2)
 {
   int idx;
@@ -60,6 +66,7 @@ class CAliasIndex
     void SetNull()
     {
       label.clear();
+      fActive = false;
     }
 
     bool isActive()
@@ -79,15 +86,15 @@ class CAlias : public CAliasIndex
 
   protected:
     uint32_t nVersion;
-    uint32_t nType;
-    shtime_t expire;
-    uint160 hash;
+    SHAlias ref;
+
+    mutable uint160 hash160;
 
   public:
     static const int ALIAS_NONE = 0;
-    static const int ALIAS_COINADDR = 1;
-//    static const int ALIAS_CERT = 2;
+    static const int ALIAS_COINADDR = TXREF_PUBADDR;
 
+    static const int LEVEL_LABEL = 1;
 
     CAlias()
     {
@@ -96,63 +103,72 @@ class CAlias : public CAliasIndex
 
     CAlias(const char *labelIn, uint160 hashIn)
     {
+      SetNull();
+
       label = vchFromString(labelIn); 
-      hash = hashIn;
-      nType = ALIAS_COINADDR;
-      expire = shtime_adj(shtime(), SHARE_DEFAULT_EXPIRE_TIME);
+      hash160 = hashIn;
+
+      ref.ref_type = ALIAS_COINADDR;
+      ref.ref_level = LEVEL_LABEL;
+      strncpy(ref.ref_name, labelIn, sizeof(ref.ref_name)-1);
+      strncpy(ref.ref_hash, hashIn.ToString().c_str(), sizeof(ref.ref_hash)-1);
+      ref.ref_expire = shtime_adj(shtime(), SHARE_DEFAULT_EXPIRE_TIME);
+      memcpy(&ref.ref_peer, ashpeer(), sizeof(ref.ref_peer));
     }
 
     IMPLEMENT_SERIALIZE (
       READWRITE(nVersion);
-      READWRITE(nType);
-      READWRITE(FLATDATA(expire));
-      READWRITE(hash);
-      READWRITE(label);
+      READWRITE(FLATDATA(ref));
     )
 
     friend bool operator==(const CAlias &a, const CAlias &b)
     {
-      return (a.nType == b.nType &&
+      return (a.ref.ref_type == b.ref.ref_type &&
           arrcasecmp(a.label, b.label));
     }
 
     CAlias operator=(const CAlias &b)
     {
       nVersion = b.nVersion;
-      nType = b.nType;
-      expire = b.expire;
-      hash = b.hash;
+      memcpy(&ref, &b.ref, sizeof(ref));
       label = b.label;
+      hash160 = b.hash160;
+      fActive = b.fActive;
     }
 
     void SetNull()
     {
       CAliasIndex::SetNull();
       nVersion = PROTO_ALIAS_VERSION;
-      nType = ALIAS_NONE;
-      expire = SHTIME_UNDEFINED;
-      hash.SetHex("0x0");
+      memset(&ref, 0, sizeof(ref));
+      hash160.SetHex("0x0");
     }
+
     time_t GetExpireTime()
     {
-      return (shutime(expire));
+      return (shutime(ref.ref_expire));
     }
     bool isExpired()
     {
-      return (shtime_after(shtime(), expire));
+      return (shtime_after(shtime(), ref.ref_expire));
     }
     uint160 GetHash()
     {
-      return (Hash160(label));
+      unsigned char *data = (unsigned char *)&ref;
+      cbuff buff(data, data + sizeof(ref));
+      return (Hash160(buff));
     }
-    uint160 GetAliasHash()
+    uint160 GetAliasHash160()
     {
-      return (hash);
+      return (hash160);
     }
 
 };
 
 
+alias_list *GetAliasTable(int ifaceIndex);
+
+int init_alias_addr_tx(CIface *iface, const char *title, uint160 ref_hash, CWalletTx& wtx);
 
 #endif /* ndef __ALIAS_H__ */
 

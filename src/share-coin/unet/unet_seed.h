@@ -16,5 +16,11 @@ static char *usde_seed_list[USDE_SEED_LIST_SIZE] = {
 /* 68.65.205.226:9014 */
 };
 
+#define SHC_SEED_LIST_SIZE 2
+static char *shc_seed_list[SHC_SEED_LIST_SIZE] = {
+  "45.79.197.174",
+  "45.79.195.108"
+};
+
 
 #endif /* ndef __UNET_SEED_H__ */

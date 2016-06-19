@@ -44,6 +44,7 @@ common_includes = \
 	$(top_srcdir)/src/share-lib/net/shnet.h \
 	unet/unet.h \
 	server/block.h \
+	server/alias.h \
 	server/certificate.h \
 	server/chain.h \
 	server/global.h \
@@ -51,6 +52,7 @@ common_includes = \
 	server/base58.h \
 	server/bignum.h \
 	server/rpc_proto.h \
+	server/rpcalias_proto.h \
 	server/rpccert_proto.h \
 	server/compat.h \
 	server/crypter.h \
@@ -130,12 +132,14 @@ server_sources = \
 	server/shc/shc_txidx.cpp \
 	server/shc/shc_txidx.h \
 	server/block.cpp \
+	server/alias.cpp \
 	server/certificate.cpp \
 	server/chain.cpp \
 	server/base58.cpp \
 	server/global.cpp \
 	server/block_merkle.cpp \
 	server/rpc_proto.cpp \
+	server/rpcalias_proto.cpp \
 	server/rpccert_proto.cpp \
 	server/crypter.cpp \
 	server/txidx.cpp \

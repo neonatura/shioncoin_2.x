@@ -173,9 +173,10 @@ am__objects_5 = $(am__objects_4) shcoind-test_wallet.$(OBJEXT) \
 	shcoind-usde_txidx.$(OBJEXT) shcoind-shc_netmsg.$(OBJEXT) \
 	shcoind-shc_block.$(OBJEXT) shcoind-shc_wallet.$(OBJEXT) \
 	shcoind-shc_txidx.$(OBJEXT) shcoind-block.$(OBJEXT) \
-	shcoind-certificate.$(OBJEXT) shcoind-chain.$(OBJEXT) \
-	shcoind-base58.$(OBJEXT) shcoind-global.$(OBJEXT) \
-	shcoind-block_merkle.$(OBJEXT) shcoind-rpc_proto.$(OBJEXT) \
+	shcoind-alias.$(OBJEXT) shcoind-certificate.$(OBJEXT) \
+	shcoind-chain.$(OBJEXT) shcoind-base58.$(OBJEXT) \
+	shcoind-global.$(OBJEXT) shcoind-block_merkle.$(OBJEXT) \
+	shcoind-rpc_proto.$(OBJEXT) shcoind-rpcalias_proto.$(OBJEXT) \
 	shcoind-rpccert_proto.$(OBJEXT) shcoind-crypter.$(OBJEXT) \
 	shcoind-txidx.$(OBJEXT) shcoind-init.$(OBJEXT) \
 	shcoind-key.$(OBJEXT) shcoind-keystore.$(OBJEXT) \
@@ -256,11 +257,13 @@ am__objects_13 = $(am__objects_12) test_shcoind-test_wallet.$(OBJEXT) \
 	test_shcoind-shc_block.$(OBJEXT) \
 	test_shcoind-shc_wallet.$(OBJEXT) \
 	test_shcoind-shc_txidx.$(OBJEXT) test_shcoind-block.$(OBJEXT) \
+	test_shcoind-alias.$(OBJEXT) \
 	test_shcoind-certificate.$(OBJEXT) \
 	test_shcoind-chain.$(OBJEXT) test_shcoind-base58.$(OBJEXT) \
 	test_shcoind-global.$(OBJEXT) \
 	test_shcoind-block_merkle.$(OBJEXT) \
 	test_shcoind-rpc_proto.$(OBJEXT) \
+	test_shcoind-rpcalias_proto.$(OBJEXT) \
 	test_shcoind-rpccert_proto.$(OBJEXT) \
 	test_shcoind-crypter.$(OBJEXT) test_shcoind-txidx.$(OBJEXT) \
 	test_shcoind-init.$(OBJEXT) test_shcoind-key.$(OBJEXT) \
@@ -1272,6 +1275,7 @@ common_includes = \
 	$(top_srcdir)/src/share-lib/net/shnet.h \
 	unet/unet.h \
 	server/block.h \
+	server/alias.h \
 	server/certificate.h \
 	server/chain.h \
 	server/global.h \
@@ -1279,6 +1283,7 @@ common_includes = \
 	server/base58.h \
 	server/bignum.h \
 	server/rpc_proto.h \
+	server/rpcalias_proto.h \
 	server/rpccert_proto.h \
 	server/compat.h \
 	server/crypter.h \
@@ -1359,12 +1364,14 @@ server_sources = \
 	server/shc/shc_txidx.cpp \
 	server/shc/shc_txidx.h \
 	server/block.cpp \
+	server/alias.cpp \
 	server/certificate.cpp \
 	server/chain.cpp \
 	server/base58.cpp \
 	server/global.cpp \
 	server/block_merkle.cpp \
 	server/rpc_proto.cpp \
+	server/rpcalias_proto.cpp \
 	server/rpccert_proto.cpp \
 	server/crypter.cpp \
 	server/txidx.cpp \
@@ -1599,6 +1606,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-addrman.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-alias.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-base58.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-bc_arch.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-bc_block.Po@am__quote@
@@ -1619,6 +1627,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-netbase.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-protocol.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-rpc_proto.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-rpcalias_proto.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-rpccert_proto.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-rpcdump.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-rpcnet.Po@am__quote@
@@ -1693,6 +1702,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcointool-version.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-CuTest.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-addrman.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-alias.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-base58.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-bc_arch.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-bc_block.Po@am__quote@
@@ -1713,6 +1723,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-netbase.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-protocol.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-rpc_proto.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-rpcalias_proto.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-rpccert_proto.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-rpcdump.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-rpcnet.Po@am__quote@
@@ -3055,6 +3066,20 @@ shcoind-block.obj: server/block.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-block.obj `if test -f 'server/block.cpp'; then $(CYGPATH_W) 'server/block.cpp'; else $(CYGPATH_W) '$(srcdir)/server/block.cpp'; fi`
 
+shcoind-alias.o: server/alias.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-alias.o -MD -MP -MF $(DEPDIR)/shcoind-alias.Tpo -c -o shcoind-alias.o `test -f 'server/alias.cpp' || echo '$(srcdir)/'`server/alias.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-alias.Tpo $(DEPDIR)/shcoind-alias.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/alias.cpp' object='shcoind-alias.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-alias.o `test -f 'server/alias.cpp' || echo '$(srcdir)/'`server/alias.cpp
+
+shcoind-alias.obj: server/alias.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-alias.obj -MD -MP -MF $(DEPDIR)/shcoind-alias.Tpo -c -o shcoind-alias.obj `if test -f 'server/alias.cpp'; then $(CYGPATH_W) 'server/alias.cpp'; else $(CYGPATH_W) '$(srcdir)/server/alias.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-alias.Tpo $(DEPDIR)/shcoind-alias.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/alias.cpp' object='shcoind-alias.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-alias.obj `if test -f 'server/alias.cpp'; then $(CYGPATH_W) 'server/alias.cpp'; else $(CYGPATH_W) '$(srcdir)/server/alias.cpp'; fi`
+
 shcoind-certificate.o: server/certificate.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-certificate.o -MD -MP -MF $(DEPDIR)/shcoind-certificate.Tpo -c -o shcoind-certificate.o `test -f 'server/certificate.cpp' || echo '$(srcdir)/'`server/certificate.cpp
 @am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-certificate.Tpo $(DEPDIR)/shcoind-certificate.Po
@@ -3138,6 +3163,20 @@ shcoind-rpc_proto.obj: server/rpc_proto.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/rpc_proto.cpp' object='shcoind-rpc_proto.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-rpc_proto.obj `if test -f 'server/rpc_proto.cpp'; then $(CYGPATH_W) 'server/rpc_proto.cpp'; else $(CYGPATH_W) '$(srcdir)/server/rpc_proto.cpp'; fi`
+
+shcoind-rpcalias_proto.o: server/rpcalias_proto.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-rpcalias_proto.o -MD -MP -MF $(DEPDIR)/shcoind-rpcalias_proto.Tpo -c -o shcoind-rpcalias_proto.o `test -f 'server/rpcalias_proto.cpp' || echo '$(srcdir)/'`server/rpcalias_proto.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-rpcalias_proto.Tpo $(DEPDIR)/shcoind-rpcalias_proto.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/rpcalias_proto.cpp' object='shcoind-rpcalias_proto.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-rpcalias_proto.o `test -f 'server/rpcalias_proto.cpp' || echo '$(srcdir)/'`server/rpcalias_proto.cpp
+
+shcoind-rpcalias_proto.obj: server/rpcalias_proto.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-rpcalias_proto.obj -MD -MP -MF $(DEPDIR)/shcoind-rpcalias_proto.Tpo -c -o shcoind-rpcalias_proto.obj `if test -f 'server/rpcalias_proto.cpp'; then $(CYGPATH_W) 'server/rpcalias_proto.cpp'; else $(CYGPATH_W) '$(srcdir)/server/rpcalias_proto.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-rpcalias_proto.Tpo $(DEPDIR)/shcoind-rpcalias_proto.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/rpcalias_proto.cpp' object='shcoind-rpcalias_proto.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-rpcalias_proto.obj `if test -f 'server/rpcalias_proto.cpp'; then $(CYGPATH_W) 'server/rpcalias_proto.cpp'; else $(CYGPATH_W) '$(srcdir)/server/rpcalias_proto.cpp'; fi`
 
 shcoind-rpccert_proto.o: server/rpccert_proto.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-rpccert_proto.o -MD -MP -MF $(DEPDIR)/shcoind-rpccert_proto.Tpo -c -o shcoind-rpccert_proto.o `test -f 'server/rpccert_proto.cpp' || echo '$(srcdir)/'`server/rpccert_proto.cpp
@@ -3741,6 +3780,20 @@ test_shcoind-block.obj: server/block.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-block.obj `if test -f 'server/block.cpp'; then $(CYGPATH_W) 'server/block.cpp'; else $(CYGPATH_W) '$(srcdir)/server/block.cpp'; fi`
 
+test_shcoind-alias.o: server/alias.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-alias.o -MD -MP -MF $(DEPDIR)/test_shcoind-alias.Tpo -c -o test_shcoind-alias.o `test -f 'server/alias.cpp' || echo '$(srcdir)/'`server/alias.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-alias.Tpo $(DEPDIR)/test_shcoind-alias.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/alias.cpp' object='test_shcoind-alias.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-alias.o `test -f 'server/alias.cpp' || echo '$(srcdir)/'`server/alias.cpp
+
+test_shcoind-alias.obj: server/alias.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-alias.obj -MD -MP -MF $(DEPDIR)/test_shcoind-alias.Tpo -c -o test_shcoind-alias.obj `if test -f 'server/alias.cpp'; then $(CYGPATH_W) 'server/alias.cpp'; else $(CYGPATH_W) '$(srcdir)/server/alias.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-alias.Tpo $(DEPDIR)/test_shcoind-alias.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/alias.cpp' object='test_shcoind-alias.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-alias.obj `if test -f 'server/alias.cpp'; then $(CYGPATH_W) 'server/alias.cpp'; else $(CYGPATH_W) '$(srcdir)/server/alias.cpp'; fi`
+
 test_shcoind-certificate.o: server/certificate.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-certificate.o -MD -MP -MF $(DEPDIR)/test_shcoind-certificate.Tpo -c -o test_shcoind-certificate.o `test -f 'server/certificate.cpp' || echo '$(srcdir)/'`server/certificate.cpp
 @am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-certificate.Tpo $(DEPDIR)/test_shcoind-certificate.Po
@@ -3824,6 +3877,20 @@ test_shcoind-rpc_proto.obj: server/rpc_proto.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/rpc_proto.cpp' object='test_shcoind-rpc_proto.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-rpc_proto.obj `if test -f 'server/rpc_proto.cpp'; then $(CYGPATH_W) 'server/rpc_proto.cpp'; else $(CYGPATH_W) '$(srcdir)/server/rpc_proto.cpp'; fi`
+
+test_shcoind-rpcalias_proto.o: server/rpcalias_proto.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-rpcalias_proto.o -MD -MP -MF $(DEPDIR)/test_shcoind-rpcalias_proto.Tpo -c -o test_shcoind-rpcalias_proto.o `test -f 'server/rpcalias_proto.cpp' || echo '$(srcdir)/'`server/rpcalias_proto.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-rpcalias_proto.Tpo $(DEPDIR)/test_shcoind-rpcalias_proto.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/rpcalias_proto.cpp' object='test_shcoind-rpcalias_proto.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-rpcalias_proto.o `test -f 'server/rpcalias_proto.cpp' || echo '$(srcdir)/'`server/rpcalias_proto.cpp
+
+test_shcoind-rpcalias_proto.obj: server/rpcalias_proto.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-rpcalias_proto.obj -MD -MP -MF $(DEPDIR)/test_shcoind-rpcalias_proto.Tpo -c -o test_shcoind-rpcalias_proto.obj `if test -f 'server/rpcalias_proto.cpp'; then $(CYGPATH_W) 'server/rpcalias_proto.cpp'; else $(CYGPATH_W) '$(srcdir)/server/rpcalias_proto.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-rpcalias_proto.Tpo $(DEPDIR)/test_shcoind-rpcalias_proto.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/rpcalias_proto.cpp' object='test_shcoind-rpcalias_proto.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-rpcalias_proto.obj `if test -f 'server/rpcalias_proto.cpp'; then $(CYGPATH_W) 'server/rpcalias_proto.cpp'; else $(CYGPATH_W) '$(srcdir)/server/rpcalias_proto.cpp'; fi`
 
 test_shcoind-rpccert_proto.o: server/rpccert_proto.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-rpccert_proto.o -MD -MP -MF $(DEPDIR)/test_shcoind-rpccert_proto.Tpo -c -o test_shcoind-rpccert_proto.o `test -f 'server/rpccert_proto.cpp' || echo '$(srcdir)/'`server/rpccert_proto.cpp

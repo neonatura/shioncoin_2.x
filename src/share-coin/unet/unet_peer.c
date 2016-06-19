@@ -235,6 +235,15 @@ void unet_peer_fill_seed(int mode)
       sprintf(buf, "unet_peer_fill_seed: seeding peer '%s'.", shpeer_print(peer));
       unet_log(mode, buf);
     }
+  } else if (mode == UNET_SHC) {
+    for (i = 0; i < SHC_SEED_LIST_SIZE; i++) {
+      sprintf(hostname, "%s %d", shc_seed_list[i], bind->port);
+      peer = shpeer_init(unet_mode_label(mode), hostname); 
+      uevent_new_peer(mode, peer);
+
+      sprintf(buf, "unet_peer_fill_seed: seeding peer '%s'.", shpeer_print(peer));
+      unet_log(mode, buf);
+    }
   }
 }
 

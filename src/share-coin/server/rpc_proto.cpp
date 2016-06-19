@@ -1416,7 +1416,7 @@ Value rpc_msg_sign(CIface *iface, const Array& params, bool fHelp)
   CWallet *pwalletMain = GetWallet(iface);
   if (fHelp || params.size() != 2)
     throw runtime_error(
-        "msg.sign <usdeaddress> <message>\n"
+        "msg.sign <coin-addr> <message>\n"
         "Sign a message with the private key of an address");
 
   EnsureWalletIsUnlocked();
