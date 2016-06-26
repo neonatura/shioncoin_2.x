@@ -44,8 +44,6 @@ common_includes = \
 	$(top_srcdir)/src/share-lib/net/shnet.h \
 	unet/unet.h \
 	server/block.h \
-	server/alias.h \
-	server/certificate.h \
 	server/chain.h \
 	server/global.h \
 	server/allocators.h \
@@ -134,6 +132,8 @@ server_sources = \
 	server/block.cpp \
 	server/alias.cpp \
 	server/certificate.cpp \
+	server/offer.cpp \
+	server/asset.cpp \
 	server/chain.cpp \
 	server/base58.cpp \
 	server/global.cpp \
@@ -194,9 +194,9 @@ test_shcoind_SOURCES = \
 	test/test_shcoind.h \
 	test/test_init.cpp \
 	test/test_key.cpp \
-	test/test_coin.cpp \
-	test/test_bignum.cpp \
-	test/test_hash.cpp \
+	test/testcoin_coin.cpp \
+	test/testcoin_bignum.cpp \
+	test/testcoin_hash.cpp \
 	test/testcoin_block.cpp
 
 test_shcoind_LDADD = $(top_builddir)/src/share-ssl-lib/libshare_ssl.a \

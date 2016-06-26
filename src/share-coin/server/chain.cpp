@@ -488,7 +488,6 @@ void ServiceBlockEventUpdate(int ifaceIndex)
 
   iface->net_valid = time(NULL);
   iface->blockscan_max = MAX(iface->blockscan_max, bestIndex->nHeight);
-fprintf(stderr, "DEBUG: ServiceBlockEventUpdate: blockscan_max %d\n", iface->blockscan_max);
 }
 
 void event_cycle_chain(int ifaceIndex)

@@ -71,11 +71,10 @@ void timing_term(char *tag, shtime_t *stamp_p)
   double diff = shtime_diff(stamp, shtime());
   char buf[1024];
 
-  if (diff > 0.1) {
+  if (diff >= 0.2) {
     sprintf(buf, "TIMING[%s]: total %-2.2f seconds.", tag, diff);
     shcoind_log(buf);
   }
-
 
 }
 

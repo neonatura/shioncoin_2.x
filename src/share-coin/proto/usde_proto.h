@@ -45,8 +45,9 @@ static const unsigned int USDE_MAX_BLOCK_SIZE = 1000000;
 static const int64 USDE_MIN_TX_FEE = 10000000;
 static const int64 USDE_MIN_RELAY_TX_FEE = 10000000;
 static const int64 USDE_MAX_MONEY = 1600000000 * USDE_COIN;
-//static const int USDE_COINBASE_MATURITY = 100;
-static const int USDE_COINBASE_MATURITY = 120;
+
+/** The official USDE maturity is 100 depth. */
+static const int USDE_COINBASE_MATURITY = 100;
 
 
 

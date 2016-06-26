@@ -30,13 +30,18 @@
 #include "server/test/test_block.h"
 #include "server/test/test_txidx.h"
 
+#include "server/offer.h"
+#include "server/asset.h"
+
+
+
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/** 
- * @todo verify last 100 recorsd of pre-existing chain
- */
+
 _TEST(blockchain)
 {
   bc_t *bc;
@@ -191,6 +196,195 @@ _TEST(reorganize)
   delete chain3;
   delete chain2;
   delete chain1;
+}
+
+_TEST(serializetx)
+{
+  CDataStream ser(SER_DISK, DISK_VERSION);
+  CDataStream a_ser(SER_DISK, DISK_VERSION);
+  CDataStream e_ser(SER_DISK, DISK_VERSION);
+  CTransaction tx;
+  CTransaction cmp_tx;
+
+  ser << tx;
+  ser >> cmp_tx;
+  _TRUE(tx.GetHash() == cmp_tx.GetHash());
+
+  string strAlias("test");
+  uint160 addrAlias("0x1");
+  CAlias alias = CAlias(strAlias, addrAlias);
+  CAlias cmp_alias;
+  a_ser << alias;
+  a_ser >> cmp_alias;
+  _TRUE(alias.GetHash() == cmp_alias.GetHash());
+tx.nFlag |= CTransaction::TXF_ALIAS;
+tx.alias = alias;
+
+  string strAsset("test");
+char hashstr[256];
+  strcpy(hashstr, "0x0");
+  string strAssetHash(hashstr);
+  CAsset asset = CAsset(strAsset, strAssetHash);
+  CAsset cmp_asset;
+  a_ser << asset;
+  a_ser >> cmp_asset;
+  _TRUE(asset.GetHash() == cmp_asset.GetHash());
+
+  CCert cert = CCert();
+  CCert cmp_cert;
+  a_ser << cert;
+  a_ser >> cmp_cert;
+  _TRUE(cert.GetHash() == cmp_cert.GetHash());
+
+  COffer offer = COffer();
+  COfferAccept acc = COfferAccept();
+offer.accepts.push_back(acc);
+  COffer cmp_offer;
+  a_ser << offer;
+  a_ser >> cmp_offer;
+  _TRUE(offer.GetHash() == cmp_offer.GetHash());
+//_TRUE(offer.accepts.first().GetHash() == cmp_offer.accepts.first().GetHash());
+
+
+}
+
+_TEST(cointx)
+{
+  CIface *iface = GetCoinByIndex(0);
+  CWallet *wallet = GetWallet(iface);
+  int ifaceIndex = GetCoinIndex(iface);
+  int idx;
+
+  for (idx = 0; idx < 10; idx++) {
+    CBlock *block = test_GenerateBlock();
+    _TRUEPTR(block);
+    _TRUE(ProcessBlock(NULL, block) == true);
+    delete block;
+  }
+
+  bool found = false;
+  string strAccount;
+  CCoinAddr addr;
+  BOOST_FOREACH(const PAIRTYPE(CCoinAddr, string)& item, wallet->mapAddressBook)
+  {
+    const CCoinAddr& address = item.first;
+    const string& account = item.second;
+    addr = address;
+    strAccount = account;
+    found = true;
+    break;
+  }
+
+  string strExtAccount = "*" + strAccount;
+  CCoinAddr extAddr = GetAccountAddress(wallet, strExtAccount, true);
+
+  CWalletTx wtx;
+  wtx.SetNull();
+  wtx.strFromAccount = string("");
+
+  int64 nFee = 18 * COIN;
+
+  /* send to extended tx storage account */
+  CScript scriptPubKey;
+  scriptPubKey.SetDestination(extAddr.Get());
+
+  for (idx = 0; idx < 3; idx++) {
+    // send transaction
+    string strError = wallet->SendMoney(scriptPubKey, nFee, wtx, false);
+    _TRUE(strError == "");
+
+    _TRUE(wtx.CheckTransaction(TEST_COIN_IFACE)); /* .. */
+  }
+}
+
+_TEST(aliastx)
+{
+  CWallet *wallet = GetWallet(TEST_COIN_IFACE);
+  CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
+  int idx;
+  int err;
+
+  string strLabel("");
+
+  /* create a coin balance */
+  for (idx = 0; idx < 5; idx++) {
+    CBlock *block = test_GenerateBlock();
+    _TRUEPTR(block);
+    _TRUE(ProcessBlock(NULL, block) == true);
+    delete block;
+  }
+
+  CCoinAddr addr = GetAccountAddress(wallet, strLabel, false);
+  _TRUE(addr.IsValid() == true);
+
+  CWalletTx wtx;
+  err = init_alias_addr_tx(iface, "test", addr, wtx);
+  _TRUE(0 == err);
+
+  _TRUE(wtx.CheckTransaction(TEST_COIN_IFACE)); /* .. */
+  _TRUE(VerifyAlias(wtx) == true);
+
+  /* incorporate alias into block-chain + few more coins */
+  for (idx = 0; idx < 5; idx++) {
+    CBlock *block = test_GenerateBlock();
+    _TRUEPTR(block);
+    _TRUE(ProcessBlock(NULL, block) == true);
+    delete block;
+  }
+
+  err = update_alias_addr_tx(iface, "test", addr, wtx);
+  _TRUE(0 == err);
+
+  _TRUE(wtx.CheckTransaction(TEST_COIN_IFACE) == true); /* .. */
+  _TRUE(VerifyAlias(wtx) == true);
+}
+
+
+
+
+_TEST(assettx)
+{
+  CWallet *wallet = GetWallet(TEST_COIN_IFACE);
+  CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
+  int idx;
+  int err;
+
+
+  string strLabel("");
+
+  /* create a coin balance */
+  for (idx = 0; idx < 8; idx++) {
+    CBlock *block = test_GenerateBlock();
+    _TRUEPTR(block);
+    _TRUE(ProcessBlock(NULL, block) == true);
+    delete block;
+  }
+
+  CCoinAddr addr = GetAccountAddress(wallet, strLabel, false);
+  _TRUE(addr.IsValid() == true);
+
+  CWalletTx wtx;
+  err = init_asset_tx(iface, strLabel, "test", addr.ToString(), wtx);
+  _TRUE(0 == err);
+
+  _TRUE(wtx.CheckTransaction(TEST_COIN_IFACE)); /* .. */
+  _TRUE(VerifyAsset(wtx) == true);
+
+  uint160 hashAsset = wtx.asset.GetHash();
+
+  /* incorporate asset into block-chain + few more coins */
+  for (idx = 0; idx < 8; idx++) {
+    CBlock *block = test_GenerateBlock();
+    _TRUEPTR(block);
+    _TRUE(ProcessBlock(NULL, block) == true);
+    delete block;
+  }
+
+  err = update_asset_tx(iface, strLabel, hashAsset, "test", addr.ToString(), wtx);
+  _TRUE(0 == err);
+
+  _TRUE(wtx.CheckTransaction(TEST_COIN_IFACE)); /* .. */
+  _TRUE(VerifyAsset(wtx) == true);
 }
 
 

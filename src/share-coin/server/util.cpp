@@ -214,6 +214,11 @@ int Debug(const char* pszFormat, ...)
   char buf[4096];
   int ret = 0;
 
+  memset(buf, 0, sizeof(buf));
+  strncpy(buf, shpref_get("shcoind.debug", ""), sizeof(buf)-1);
+  if (*buf != 't' && *buf != 'T')
+    return (0);
+
   va_start(arg_ptr, pszFormat);
   memset(buf, 0, sizeof(buf));
   ret = vsnprintf(buf, sizeof(buf) - 1, pszFormat, arg_ptr);

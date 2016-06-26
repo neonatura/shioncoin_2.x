@@ -4,228 +4,273 @@
 #define __OFFER_H__
 
 
-extern std::map<std::vector<unsigned char>, uint256> mapOffers;
-extern std::map<std::vector<unsigned char>, uint256> mapOfferAccepts;
-extern std::map<std::vector<unsigned char>, std::set<uint256> > mapOfferPending;
-extern std::map<std::vector<unsigned char>, std::set<uint256> > mapOfferAcceptPending;
+typedef std::map<uint160, uint256> offer_list; /* hashOffer -> hashTx */
 
 class CCoinAddr;
 
-class COfferAccept {
-public:
-	std::vector<unsigned char> vchRand;
-    std::vector<unsigned char> vchMessage;
-    std::vector<unsigned char> vchAddress;
-	uint256 txHash;
-	uint64 nHeight;
-	uint64 nTime;
-	int64 nQty;
-	uint64 nPrice;
-	uint64 nFee;
-	bool bPaid;
-    uint256 txPayId;
+class COfferCore : public CExtCore 
+{
+  public:
+    cbuff vSrcAddr;
+    cbuff vDestAddr;
+    int64 nSrcValue;
+    int64 nDestValue;
 
-	COfferAccept() {
-        SetNull();
+    mutable bool bPaid;
+    mutable std::string strAccount;
+
+    COfferCore() { 
+      SetNull();
+    }
+
+    COfferCore(const COfferCore& offerIn)
+    {
+      SetNull();
+      Init(offerIn);
+    }
+
+
+    IMPLEMENT_SERIALIZE (
+      READWRITE(*(CExtCore *)this);
+      READWRITE(vSrcAddr);
+      READWRITE(vDestAddr);
+      READWRITE(nSrcValue);
+      READWRITE(nDestValue);
+    )
+
+
+    friend bool operator==(const COfferCore &a, const COfferCore &b) {
+      return (
+          ((CExtCore&) a) == ((CExtCore&) b) &&
+          a.vSrcAddr == b.vSrcAddr &&
+          a.vDestAddr == b.vDestAddr &&
+          a.nSrcValue == b.nSrcValue &&
+          a.nDestValue == b.nDestValue 
+          );
+    }
+
+    void Init(const COfferCore& b)
+    {
+      CExtCore::Init(b);
+      vSrcAddr = b.vSrcAddr;
+      vDestAddr = b.vDestAddr;
+      nSrcValue = b.nSrcValue;
+      nDestValue = b.nDestValue;
+      strAccount = b.strAccount;
+      bPaid = b.bPaid;
+    }
+
+    COfferCore operator=(const COfferCore &b)
+    {
+      Init(b);
+      return *this;
+    }
+
+    friend bool operator!=(const COfferCore &a, const COfferCore &b) {
+        return !(a == b);
+    }
+    
+    void SetNull() 
+    {
+      CExtCore::SetNull();
+      vSrcAddr.clear(); 
+      vDestAddr.clear(); 
+      nSrcValue = 0;
+      nDestValue = 0;
+
+      strAccount.clear();
+      bPaid = false;
+    }
+
+    bool IsNull() const 
+    {
+      return (nSrcValue == 0 && nDestValue == 0);
+    }
+
+    const uint160 GetHash()
+    {
+      uint256 hash = SerializeHash(*this);
+      unsigned char *raw = (unsigned char *)&hash;
+      cbuff rawbuf(raw, raw + sizeof(hash));
+      return Hash160(rawbuf);
+    }
+
+    bool IsPaid()
+    {
+      return (bPaid);
+    }
+
+    void SetPaid(bool bPaidIn)
+    {
+      bPaid = bPaidIn;
+    }
+
+    std::string GetAccount()
+    {
+      return (strAccount);
+    }
+
+    void SetAccount(std::string strAccountIn)
+    {
+      strAccount = strAccountIn;
+    }
+};
+
+class COfferAccept : public COfferCore 
+{
+  public:
+    uint160 hashOffer;
+    shtime_t nTime;
+
+    COfferAccept() {
+      SetNull();
+    }
+
+    COfferAccept(const COfferAccept& b)
+    {
+      SetNull();
+      Init(b);
+    }
+
+    COfferAccept(COfferCore& b)
+    {
+      SetNull();
+      COfferCore::Init(b);
+      hashOffer = b.GetHash();
+      vSrcAddr.clear();
+      vDestAddr.clear();
+    }
+
+    COfferAccept(const uint160& hashOfferIn, int64 srcValueIn, int64 destValueIn)
+    {
+      hashOffer = hashOfferIn;
+      nSrcValue = srcValueIn;
+      nDestValue = destValueIn;
     }
 
     IMPLEMENT_SERIALIZE (
-        READWRITE(vchRand);
-        READWRITE(vchMessage);
-        READWRITE(vchAddress);
-		READWRITE(txHash);
-        READWRITE(txPayId);
-		READWRITE(nHeight);
-    	READWRITE(nTime);
-        READWRITE(nQty);
-    	READWRITE(nPrice);
-        READWRITE(nFee);
-    	READWRITE(bPaid);
+      READWRITE(*(COfferCore *)this);
+      READWRITE(hashOffer);
+      READWRITE(this->nTime);
     )
 
     friend bool operator==(const COfferAccept &a, const COfferAccept &b) {
-        return (
-        a.vchRand == b.vchRand
-        && a.vchMessage == b.vchMessage
-        && a.vchAddress == b.vchAddress
-        && a.txHash == b.txHash
-        && a.nHeight == b.nHeight
-        && a.nTime == b.nTime
-        && a.nQty == b.nQty
-        && a.nPrice == b.nPrice
-        && a.nFee == b.nFee
-        && a.bPaid == b.bPaid
-        && a.txPayId == b.txPayId
-        );
+      return (
+          ((COfferCore&) a) == ((COfferCore&) b) &&
+          a.nTime == b.nTime &&
+          a.hashOffer == b.hashOffer
+          );
     }
 
-    COfferAccept operator=(const COfferAccept &b) {
-        vchRand = b.vchRand;
-        vchMessage = b.vchMessage;
-        vchAddress = b.vchAddress;
-        txHash = b.txHash;
-        nHeight = b.nHeight;
-        nTime = b.nTime;
-        nQty = b.nQty;
-        nPrice = b.nPrice;
-        nFee = b.nFee;
-        bPaid = b.bPaid;
-        txPayId = b.txPayId;
-        return *this;
+    COfferAccept operator=(const COfferAccept &b) 
+    {
+      Init(b);
+      return *this;
     }
 
     friend bool operator!=(const COfferAccept &a, const COfferAccept &b) {
         return !(a == b);
     }
 
-    void SetNull() { nHeight = nTime = nPrice = nQty = 0; txHash = 0; bPaid = false; }
-    bool IsNull() const { return (nTime == 0 && txHash == 0 && nHeight == 0 && nPrice == 0 && nQty == 0 && bPaid == 0); }
-
-};
-
-class COffer {
-public:
-	std::vector<unsigned char> vchRand;
-    std::vector<unsigned char> vchPaymentAddress;
-    uint256 txHash;
-    uint64 nHeight;
-    uint64 nTime;
-    uint256 hash;
-    uint64 n;
-	std::vector<unsigned char> sCategory;
-	std::vector<unsigned char> sTitle;
-	std::vector<unsigned char> sDescription;
-	uint64 nPrice;
-	int64 nQty;
-	uint64 nFee;
-	std::vector<COfferAccept>accepts;
-
-	COffer() { 
-        SetNull();
+    void Init(const COfferAccept& b)
+    {
+      COfferCore::Init(b);
+      nTime = b.nTime;
+      hashOffer = b.hashOffer;
     }
 
-    COffer(const CTransaction &tx) {
-        SetNull();
-        UnserializeFromTx(tx);
+    void SetNull()
+    {
+      COfferCore::SetNull();
+      hashOffer = 0;
+      nTime = shtime();
+    }
+
+    bool IsNull() const 
+    {
+      return (nTime == 0 && hashOffer == 0);
+    }
+
+    
+};
+
+class COffer : public COfferCore 
+{
+  protected:
+    int nSrcCoin;
+    int nDestCoin;
+    unsigned int nType;
+
+  public:
+    std::vector<COfferAccept>accepts;
+
+    COffer() {
+      SetNull();
+    }
+
+    COffer(std::string strAccountIn, int srcIndex, int64 srcValue, int destIndex, int64 destValue)
+    {
+      SetAccount(strAccountIn);
+      nSrcValue = srcValue;
+      nDestValue = destValue;
+
+      nSrcCoin = srcIndex;
+      nDestCoin = destIndex;
     }
 
     IMPLEMENT_SERIALIZE (
-        READWRITE(vchRand);
-        READWRITE(vchPaymentAddress);
-        READWRITE(sCategory);
-        READWRITE(sTitle);
-        READWRITE(sDescription);
-		READWRITE(txHash);
-        READWRITE(hash);
-		READWRITE(nHeight);
-		READWRITE(nTime);
-    	READWRITE(n);
-    	READWRITE(nPrice);
-    	READWRITE(nQty);
-    	READWRITE(nFee);
-    	READWRITE(accepts);
+        READWRITE(*(COfferCore *)this);
+        READWRITE(this->nSrcCoin);
+        READWRITE(this->nDestCoin);
+        READWRITE(this->accepts);
+        READWRITE(this->nType);
     )
 
-    bool GetAcceptByHash(std::vector<unsigned char> ahash, COfferAccept &ca) {
-    	for(unsigned int i=0;i<accepts.size();i++) {
-    		if(accepts[i].vchRand == ahash) {
-    			ca = accepts[i];
-    			return true;
-    		}
-    	}
-    	return false;
-    }
-
-    void PutOfferAccept(COfferAccept &theOA) {
-    	for(unsigned int i=0;i<accepts.size();i++) {
-    		COfferAccept oa = accepts[i];
-    		if(theOA.vchRand == oa.vchRand) {
-    			accepts[i] = theOA;
-    			return;
-    		}
-    	}
-    	accepts.push_back(theOA);
-    }
-
-    void PutToOfferList(std::vector<COffer> &offerList) {
-        for(unsigned int i=0;i<offerList.size();i++) {
-            COffer o = offerList[i];
-            if(o.nHeight == nHeight) {
-                offerList[i] = *this;
-                return;
-            }
-        }
-        offerList.push_back(*this);
-    }
-
-    bool GetOfferFromList(const std::vector<COffer> &offerList) {
-        if(offerList.size() == 0) return false;
-        for(unsigned int i=0;i<offerList.size();i++) {
-            COffer o = offerList[i];
-            if(o.nHeight == nHeight) {
-                *this = offerList[i];
-                return true;
-            }
-        }
-        *this = offerList.back();
-        return false;
-    }
-
-    int64 GetRemQty() {
-        int64 nRet = nQty;
-        for(unsigned int i=0;i<accepts.size();i++) 
-            nRet -= accepts[i].nQty;
-        return nRet;
-    }
-
     friend bool operator==(const COffer &a, const COffer &b) {
-        return (
-           a.vchRand == b.vchRand
-        && a.sCategory==b.sCategory
-        && a.sTitle == b.sTitle 
-        && a.sDescription == b.sDescription 
-        && a.nPrice == b.nPrice 
-        && a.nQty == b.nQty 
-        && a.nFee == b.nFee
-        && a.n == b.n
-        && a.hash == b.hash
-        && a.txHash == b.txHash
-        && a.nHeight == b.nHeight
-        && a.nTime == b.nTime
-        && a.accepts == b.accepts
-        && a.vchPaymentAddress == b.vchPaymentAddress
-        );
+      return (
+          ((COfferCore&) a) == ((COfferCore&) b) &&
+          a.accepts == b.accepts
+          );
     }
 
     COffer operator=(const COffer &b) {
-    	vchRand = b.vchRand;
-        sCategory = b.sCategory;
-        sTitle = b.sTitle;
-        sDescription = b.sDescription;
-        nPrice = b.nPrice;
-        nFee = b.nFee;
-        nQty = b.nQty;
-        n = b.n;
-        hash = b.hash;
-        txHash = b.txHash;
-        nHeight = b.nHeight;
-        nTime = b.nTime;
-        accepts = b.accepts;
-        vchPaymentAddress = b.vchPaymentAddress;
-        return *this;
+      COfferCore::Init(b);
+      accepts = b.accepts; 
+      return *this;
     }
 
     friend bool operator!=(const COffer &a, const COffer &b) {
-        return !(a == b);
+      return !(a == b);
     }
-    
-    void SetNull() { nHeight = n = nPrice = nQty = 0; txHash = hash = 0; accepts.clear(); vchRand.clear(); sTitle.clear(); sDescription.clear();}
-    bool IsNull() const { return (n == 0 && txHash == 0 && hash == 0 && nHeight == 0 && nPrice == 0 && nQty == 0); }
 
-    bool UnserializeFromTx(const CTransaction &tx);
-    void SerializeToTx(CTransaction &tx);
-    std::string SerializeToString();
+    void SetNull()
+    {
+      COfferCore::SetNull();
+      nSrcCoin = -1;
+      nDestCoin = -1;
+      accepts.clear();
+      nType = 16; /* reserved */
+    }
+
+    bool IsNull() const 
+    {
+      return (COfferCore::IsNull());
+    }
+
+    CIface *GetSrcIface()
+    {
+      return (GetCoinByIndex(nSrcCoin));
+    }
+
+    CIface *GetDestIface()
+    {
+      return (GetCoinByIndex(nDestCoin));
+    }
 };
+
+bool VerifyOffer(CTransaction& tx);
+
+int64 GetOfferOpFee(CIface *iface, int nHeight); 
 
 
 

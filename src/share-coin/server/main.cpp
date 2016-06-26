@@ -172,32 +172,6 @@ fprintf(stderr, "DEBUG: CTransaction::ReadFromDisk(COutPoint)\n");
 #endif
 }
 
-bool CTransaction::IsStandard() const
-{
-
-#if 0
-    if (nVersion > CTransaction::CURRENT_VERSION)
-        return false;
-#endif
-  if (!isFlag(CTransaction::TX_VERSION))
-    return (false);
-
-    BOOST_FOREACH(const CTxIn& txin, vin)
-    {
-        // Biggest 'standard' txin is a 3-signature 3-of-3 CHECKMULTISIG
-        // pay-to-script-hash, which is 3 ~80-byte signatures, 3
-        // ~65-byte public keys, plus a few script ops.
-        if (txin.scriptSig.size() > 500)
-            return false;
-        if (!txin.scriptSig.IsPushOnly())
-            return false;
-    }
-    BOOST_FOREACH(const CTxOut& txout, vout)
-        if (!::IsStandard(txout.scriptPubKey))
-            return false;
-    return true;
-}
-
 //
 // Check transaction inputs, and make sure any
 // pay-to-script-hash transactions are evaluating IsStandard scripts

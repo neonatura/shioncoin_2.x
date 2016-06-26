@@ -44,6 +44,7 @@ class USDEWallet : public CWallet
 
     bool CreateTransaction(const std::vector<std::pair<CScript, int64> >& vecSend, CWalletTx& wtxNew, CReserveKey& reservekey, int64& nFeeRet);
     bool CreateTransaction(CScript scriptPubKey, int64 nValue, CWalletTx& wtxNew, CReserveKey& reservekey, int64& nFeeRet);
+    void AddSupportingTransactions(CWalletTx& wtx);
 
 };
 

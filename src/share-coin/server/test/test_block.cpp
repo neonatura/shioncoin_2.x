@@ -93,7 +93,7 @@ unsigned int TESTBlock::GetNextWorkRequired(const CBlockIndex* pindexLast)
 
 int64 test_GetBlockValue(int nHeight, int64 nFees)
 {
-  int64 nSubsidy = 1 * COIN;
+  int64 nSubsidy = (nHeight+1) * COIN;
   return nSubsidy + nFees;
 }
 
@@ -249,7 +249,7 @@ static bool test_ConnectInputs(CTransaction *tx, MapPrevTx inputs, map<uint256, 
       for (const CBlockIndex* pindex = pindexBlock; pindex && pindexBlock->nHeight - pindex->nHeight < TEST_COINBASE_MATURITY; pindex = pindex->pprev)
         //if (pindex->nBlockPos == txindex.pos.nBlockPos && pindex->nFile == txindex.pos.nFile)
         if (pindex->nHeight == txindex.pos.nBlockPos)// && pindex->nFile == txindex.pos.nFile)
-          return error(SHERR_INVAL, "ConnectInputs() : tried to spend coinbase at depth %d", pindexBlock->nHeight - pindex->nHeight);
+          return error(SHERR_INVAL, "TEST: ConnectInputs() : tried to spend coinbase at depth %d", pindexBlock->nHeight - pindex->nHeight);
 
     // Check for negative or overflow input values
     nValueIn += txPrev.vout[prevout.n].nValue;
@@ -561,6 +561,11 @@ CBlock *test_GenerateBlock()
   CWallet *wallet = GetWallet(iface);
   CReserveKey reservekey(wallet);
   CBlock *block = test_CreateNewBlock(reservekey);
+  if (!block)
+return (NULL);
+reservekey.KeepKey();
+string sysAccount("");
+wallet->SetAddressBookName(reservekey.GetReservedKey().GetID(), sysAccount); 
 
   nXIndex++;
   sprintf(xn_hex, "%-8.8x%-8.8x", nXIndex, nXIndex);
@@ -587,7 +592,7 @@ CBlock *test_GenerateBlock()
         break;
       if ((block->nNonce & 0xFFF) == 0)
       {
-        printf("nonce %08X: hash = %s (target = %s)\n", block->nNonce, thash.ToString().c_str(), hashTarget.ToString().c_str());
+//        printf("nonce %08X: hash = %s (target = %s)\n", block->nNonce, thash.ToString().c_str(), hashTarget.ToString().c_str());
       }
       ++block->nNonce;
       if (block->nNonce == 0)
@@ -599,10 +604,7 @@ CBlock *test_GenerateBlock()
   }
   nNonceIndex = block->nNonce;
 
-#if 0
-fprintf(stderr, "DEBUG: GENERATE: hash '%s' (from '%s')\n", block->GetHash().GetHex().c_str(), block->hashPrevBlock.GetHex().c_str());
-block->print(); /* DEBUG: */
-#endif
+//block->print(); /* DEBUG: */
 
   return (block);
 }

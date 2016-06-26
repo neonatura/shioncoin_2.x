@@ -24,249 +24,388 @@
  */  
 
 #include "shcoind.h"
+#include "json/json_spirit_reader_template.h"
+#include "json/json_spirit_writer_template.h"
+#include <boost/xpressive/xpressive_dynamic.hpp>
+#include "wallet.h"
 
 using namespace std;
+using namespace json_spirit;
 
-std::map<uint160, uint256> mapCertIssuers;
 
-uint64 GetCertFeeSubsidy(unsigned int nHeight) 
+
+cert_list *GetCertTable(int ifaceIndex)
 {
-  return ( (1 * COIN) / ((nHeight / 1000000) + 1) );
+  if (ifaceIndex < 0 || ifaceIndex >= MAX_COIN_IFACE)
+    return (NULL);
+  CWallet *wallet = GetWallet(ifaceIndex);
+  if (!wallet)
+    return (NULL);
+  return (&wallet->mapCert);
 }
 
-int64 GetCertNetworkFee(int nHeight) 
+cert_list *GetCertPendingTable(int ifaceIndex)
 {
-  int64 nRes = 48 * COIN;
-  int64 nDif = 34 * COIN;
-  int nTargetHeight = 2081280;
-fprintf(stderr, "DEBUG: GEtCertNetworkFee: %llu\n", (unsigned long long)(nRes - ( (nHeight/nTargetHeight) * nDif )));
-  return nRes - ( (nHeight/nTargetHeight) * nDif );
+  if (ifaceIndex < 0 || ifaceIndex >= MAX_COIN_IFACE)
+    return (NULL);
+  CWallet *wallet = GetWallet(ifaceIndex);
+  if (!wallet)
+    return (NULL);
+  return (&wallet->mapCert);
 }
+
+bool DecodeCertHash(const CScript& script, int& mode, uint160& hash)
+{
+  CScript::const_iterator pc = script.begin();
+  opcodetype opcode;
+  int op;
+
+  if (!script.GetOp(pc, opcode)) {
+    return false;
+  }
+  mode = opcode; /* extension mode (new/activate/update) */
+  if (mode < 0xf0 || mode > 0xf9)
+    return false;
+
+  if (!script.GetOp(pc, opcode)) { 
+    return false;
+  }
+  if (opcode < OP_1 || opcode > OP_16) {
+    return false;
+  }
+  op = CScript::DecodeOP_N(opcode); /* extension type (cert) */
+  if (op != OP_CERT) {
+    return false;
+  }
+
+  vector<unsigned char> vch;
+  if (!script.GetOp(pc, opcode, vch)) {
+    return false;
+  }
+  if (opcode != OP_HASH160)
+    return (false);
+
+  if (!script.GetOp(pc, opcode, vch)) {
+    return false;
+  }
+  hash = uint160(vch);
+  return (true);
+}
+
 
 bool IsCertOp(int op) {
-    return op == OP_CERTISSUER_NEW
-        || op == OP_CERTISSUER_ACTIVATE
-        || op == OP_CERTISSUER_UPDATE
-        || op == OP_CERT_NEW
-        || op == OP_CERT_TRANSFER;
+	return (op == OP_CERT);
+}
+
+
+string certFromOp(int op) {
+	switch (op) {
+	case OP_EXT_NEW:
+		return "certnew";
+	case OP_EXT_UPDATE:
+		return "certupdate";
+	case OP_EXT_ACTIVATE:
+		return "certactivate";
+	default:
+		return "<unknown cert op>";
+	}
 }
 
 bool DecodeCertScript(const CScript& script, int& op,
-        vector<vector<unsigned char> > &vvch) {
-    CScript::const_iterator pc = script.begin();
-    return DecodeCertScript(script, op, vvch, pc);
+		vector<vector<unsigned char> > &vvch, CScript::const_iterator& pc) 
+{
+	opcodetype opcode;
+  int mode;
+
+	if (!script.GetOp(pc, opcode))
+		return false;
+  mode = opcode; /* extension mode (new/activate/update) */
+
+	if (!script.GetOp(pc, opcode))
+		return false;
+	if (opcode < OP_1 || opcode > OP_16)
+		return false;
+
+	op = CScript::DecodeOP_N(opcode); /* extension type (cert) */
+  if (op != OP_CERT)
+    return false;
+
+	for (;;) {
+		vector<unsigned char> vch;
+		if (!script.GetOp(pc, opcode, vch))
+			return false;
+		if (opcode == OP_DROP || opcode == OP_2DROP || opcode == OP_NOP)
+			break;
+		if (!(opcode >= 0 && opcode <= OP_PUSHDATA4))
+			return false;
+		vvch.push_back(vch);
+	}
+
+	// move the pc to after any DROP or NOP
+	while (opcode == OP_DROP || opcode == OP_2DROP || opcode == OP_NOP) {
+		if (!script.GetOp(pc, opcode))
+			break;
+	}
+
+	pc--;
+
+	if ((mode == OP_EXT_NEW && vvch.size() == 2) ||
+      (mode == OP_EXT_UPDATE && vvch.size() == 2) ||
+      (mode == OP_EXT_TRANSFER && vvch.size() == 2) ||
+      (mode == OP_EXT_REMOVE && vvch.size() == 2))
+    return (true);
+
+	return false;
 }
 
-bool DecodeCertScript(const CScript& script, int& op, vector<vector<unsigned char> > &vvch, CScript::const_iterator& pc) 
+bool DecodeCertScript(const CScript& script, int& op,
+		vector<vector<unsigned char> > &vvch) {
+	CScript::const_iterator pc = script.begin();
+	return DecodeCertScript(script, op, vvch, pc);
+}
+
+CScript RemoveCertScriptPrefix(const CScript& scriptIn) 
 {
-  opcodetype opcode;
-  if (!script.GetOp(pc, opcode)) return false;
-  if (opcode < OP_1 || opcode > OP_16) return false;
-  op = CScript::DecodeOP_N(opcode);
+	int op;
+	vector<vector<unsigned char> > vvch;
+	CScript::const_iterator pc = scriptIn.begin();
 
-  for (;;) {
-    vector<unsigned char> vch;
-    if (!script.GetOp(pc, opcode, vch))
-      return false;
-    if (opcode == OP_DROP || opcode == OP_2DROP || opcode == OP_NOP)
-      break;
-    if (!(opcode >= 0 && opcode <= OP_PUSHDATA4))
-      return false;
-    vvch.push_back(vch);
+	if (!DecodeCertScript(scriptIn, op, vvch, pc))
+		throw runtime_error("RemoveCertScriptPrefix() : could not decode name script");
+
+	return CScript(pc, scriptIn.end());
+}
+
+int64 GetCertOpFee(CIface *iface, int nHeight) 
+{
+  double base = ((nHeight+1) / 10240) + 1;
+  double nRes = 5100 / base * COIN;
+  double nDif = 4982 /base * COIN;
+  int64 fee = (int64)(nRes - nDif);
+  return (MAX(iface->min_tx_fee, fee));
+}
+
+
+int64 GetCertReturnFee(const CTransaction& tx) 
+{
+	int64 nFee = 0;
+	for (unsigned int i = 0; i < tx.vout.size(); i++) {
+		const CTxOut& out = tx.vout[i];
+		if (out.scriptPubKey.size() == 1 && out.scriptPubKey[0] == OP_RETURN)
+			nFee += out.nValue;
+	}
+	return nFee;
+}
+
+bool IsCertTx(const CTransaction& tx)
+{
+  int tot;
+
+  if (!tx.isFlag(CTransaction::TXF_CERTIFICATE)) {
+    return (false);
   }
 
-  // move the pc to after any DROP or NOP
-  while (opcode == OP_DROP || opcode == OP_2DROP || opcode == OP_NOP) {
-    if (!script.GetOp(pc, opcode))
-      break;
+  tot = 0;
+  BOOST_FOREACH(const CTxOut& out, tx.vout) {
+    uint160 hash;
+    int mode;
+
+    if (DecodeCertHash(out.scriptPubKey, mode, hash)) {
+      tot++;
+    }
+  }
+  if (tot == 0) {
+    return false;
   }
 
-  pc--;
+  return (true);
+}
+
+bool IsCertEntTx(const CTransaction& tx)
+{
+  int tot;
+
+  if (!tx.isFlag(CTransaction::TXF_ENTITY)) {
+    return (false);
+  }
+
+  tot = 0;
+  BOOST_FOREACH(const CTxOut& out, tx.vout) {
+    uint160 hash;
+    int mode;
+
+    if (DecodeCertHash(out.scriptPubKey, mode, hash)) {
+      tot++;
+    }
+  }
+  if (tot == 0) {
+    return false;
+  }
+
+  return (true);
+}
+
+/**
+ * Obtain the tx that defines this cert.
+ */
+bool GetTxOfCert(CIface *iface, const uint160& hashCert, CTransaction& tx) 
+{
+  int ifaceIndex = GetCoinIndex(iface);
+  cert_list *certes = GetCertTable(ifaceIndex);
+  bool ret;
+
+  if (certes->count(hashCert) == 0) {
+    return false; /* nothing by that name, sir */
+  }
+
+  uint256 hashBlock;
+  uint256 hashTx = (*certes)[hashCert];
+  CTransaction txIn;
+  ret = GetTransaction(iface, hashTx, txIn, NULL);
+  if (!ret) {
+    return false;
+  }
+
+  if (!IsCertTx(txIn)) 
+    return false; /* inval; not an cert tx */
 
 #if 0
-  if ((op == OP_CERTISSUER_NEW && vvch.size() == 1)
-      || (op == OP_CERTISSUER_ACTIVATE && vvch.size() == 3)
-      || (op == OP_CERTISSUER_UPDATE && vvch.size() == 2)
-      || (op == OP_CERT_NEW && vvch.size() == 3)
-      || (op == OP_CERT_TRANSFER && vvch.size() == 2))
-    return true;
-#endif
-  if ((op == OP_CERTISSUER_NEW && vvch.size() == 1)
-      || (op == OP_CERTISSUER_ACTIVATE && vvch.size() == 2)
-      || (op == OP_CERTISSUER_UPDATE && vvch.size() == 2)
-      || (op == OP_CERT_NEW && vvch.size() == 3)
-      || (op == OP_CERT_TRANSFER && vvch.size() == 2))
-    return true;
-  return false;
-}
-
-#if 0 /* DEBUG: */
-bool DecodeCertTx(const CTransaction& tx, int& op, int& nOut,
-    vector<vector<unsigned char> >& vvch, int nHeight) 
-{
-  bool found = false;
-
-  // Strict check - bug disallowed
-  for (unsigned int i = 0; i < tx.vout.size(); i++) {
-    const CTxOut& out = tx.vout[i];
-    vector<vector<unsigned char> > vvchRead;
-    if (DecodeCertScript(out.scriptPubKey, op, vvchRead)) {
-      nOut = i; found = true; vvch = vvchRead;
-      break;
-    }
+  if (txIn.certificate.IsExpired()) {
+    return false;
   }
-  if (!found) vvch.clear();
-  return found && IsCertOp(op);
-}
-
-int IndexOfCertIssuerOutput(const CTransaction& tx) 
-{
-  vector<vector<unsigned char> > vvch;
-  int op, nOut;
-  if (!DecodeCertTx(tx, op, nOut, vvch, -1))
-    throw runtime_error("IndexOfCertIssuerOutput() : certissuer output not found");
-  return nOut;
-}
-
-
-bool CreateCertTransactionWithInputTx(CWallet *wallet, const vector<pair<CScript, int64> >& vecSend, CWalletTx& wtxIn, int nTxOut, CWalletTx& wtxNew, CReserveKey& reservekey, int64& nFeeRet)
-{
-    int64 nValue = 0;
-    BOOST_FOREACH(const PAIRTYPE(CScript, int64)& s, vecSend) {
-        if (nValue < 0)
-            return false;
-        nValue += s.second;
-    }
-    if (vecSend.empty() || nValue < 0)
-        return false;
-
-    wtxNew.BindWallet(wallet);
-    {
-        LOCK2(cs_main, wallet->cs_wallet);
-
-        nFeeRet = nTransactionFee;
-        loop {
-            wtxNew.vin.clear();
-            wtxNew.vout.clear();
-            wtxNew.fFromMe = true;
-//            wtxNew.data = vchFromString(txData);
-
-            int64 nTotalValue = nValue + nFeeRet;
-            printf("CreateCertTransactionWithInputTx: total value = %d\n",
-                    (int) nTotalValue);
-            double dPriority = 0;
-
-            // vouts to the payees
-            BOOST_FOREACH(const PAIRTYPE(CScript, int64)& s, vecSend)
-                wtxNew.vout.push_back(CTxOut(s.second, s.first));
-
-            int64 nWtxinCredit = wtxIn.vout[nTxOut].nValue;
-
-            // Choose coins to use
-            set<pair<const CWalletTx*, unsigned int> > setCoins;
-            int64 nValueIn = 0;
-            printf( "CreateCertTransactionWithInputTx: SelectCoins(%s), nTotalValue = %s, nWtxinCredit = %s\n",
-                    FormatMoney(nTotalValue - nWtxinCredit).c_str(),
-                    FormatMoney(nTotalValue).c_str(),
-                    FormatMoney(nWtxinCredit).c_str());
-            if (nTotalValue - nWtxinCredit > 0) {
-                if (!wallet->SelectCoins(nTotalValue - nWtxinCredit,
-                        setCoins, nValueIn))
-                    return false;
-            }
-
-            printf( "CreateCertTransactionWithInputTx: selected %d tx outs, nValueIn = %s\n",
-                    (int) setCoins.size(), FormatMoney(nValueIn).c_str());
-
-            vector<pair<const CWalletTx*, unsigned int> > vecCoins(
-                    setCoins.begin(), setCoins.end());
-
-            BOOST_FOREACH(PAIRTYPE(const CWalletTx*, unsigned int)& coin, vecCoins) {
-                int64 nCredit = coin.first->vout[coin.second].nValue;
-                dPriority += (double) nCredit
-                        * coin.first->GetDepthInMainChain();
-            }
-
-            vecCoins.insert(vecCoins.begin(), make_pair(&wtxIn, nTxOut));
-
-            nValueIn += nWtxinCredit;
-            dPriority += (double) nWtxinCredit * wtxIn.GetDepthInMainChain();
-
-            // Fill a vout back to self with any change
-            int64 nChange = nValueIn - nTotalValue;
-            if (nChange >= CENT) {
-                // Note: We use a new key here to keep it from being obvious which side is the change.
-                //  The drawback is that by not reusing a previous key, the change may be lost if a
-                //  backup is restored, if the backup doesn't have the new private key for the change.
-                //  If we reused the old key, it would be possible to add code to look for and
-                //  rediscover unknown transactions that were written with keys of ours to recover
-                //  post-backup change.
-
-                // Reserve a new key pair from key pool
-                CPubKey pubkey;
-                assert(reservekey.GetReservedKey(pubkey));
-
-                // -------------- Fill a vout to ourself, using same address type as the payment
-                // Now sending always to hash160 (GetBitcoinAddressHash160 will return hash160, even if pubkey is used)
-                CScript scriptChange;
-                if (Hash160(vecSend[0].first) != 0)
-                    scriptChange.SetDestination(pubkey.GetID());
-                else
-                    scriptChange << pubkey << OP_CHECKSIG;
-
-                // Insert change txn at random position:
-                vector<CTxOut>::iterator position = wtxNew.vout.begin()
-                        + GetRandInt(wtxNew.vout.size());
-                wtxNew.vout.insert(position, CTxOut(nChange, scriptChange));
-            } else
-                reservekey.ReturnKey();
-
-            // Fill vin
-
-            BOOST_FOREACH(PAIRTYPE(const CWalletTx*, unsigned int)& coin, vecCoins)
-                wtxNew.vin.push_back(CTxIn(coin.first->GetHash(), coin.second));
-
-            // Sign
-            int nIn = 0;
-            BOOST_FOREACH(PAIRTYPE(const CWalletTx*, unsigned int)& coin, vecCoins) {
-                if (coin.first == &wtxIn
-                        && coin.second == (unsigned int) nTxOut) {
-                    if (!SignCertIssuerSignature(*coin.first, wtxNew, nIn++))
-                        throw runtime_error("could not sign certissuer coin output");
-                } else {
-                    if (!SignSignature(*wallet, *coin.first, wtxNew, nIn++))
-                        return false;
-                }
-            }
-
-            // Limit size
-            unsigned int nBytes = ::GetSerializeSize(*(CTransaction*) &wtxNew,
-                    SER_NETWORK, PROTOCOL_VERSION);
-            if (nBytes >= MAX_BLOCK_SIZE_GEN / 5)
-                return false;
-            dPriority /= nBytes;
-
-            // Check that enough fee is included
-            int64 nPayFee = nTransactionFee * (1 + (int64) nBytes / 1000);
-            bool fAllowFree = CTransaction::AllowFree(dPriority);
-            int64 nMinFee = wtxNew.GetMinFee(1, fAllowFree);
-            if (nFeeRet < max(nPayFee, nMinFee)) {
-                nFeeRet = max(nPayFee, nMinFee);
-                printf( "CreateCertTransactionWithInputTx: re-iterating (nFreeRet = %s)\n",
-                        FormatMoney(nFeeRet).c_str());
-                continue;
-            }
-
-            // Fill vtxPrev by copying from previous transactions vtxPrev
-            wtxNew.AddSupportingTransactions();
-            wtxNew.fTimeReceivedIsTxTime = true;
-
-            break;
-        }
-    }
-
-    printf("CreateCertTransactionWithInputTx succeeded:\n%s",
-            wtxNew.ToString().c_str());
-    return true;
-}
 #endif
+
+  tx.Init(txIn);
+  return true;
+}
+
+bool IsLocalCert(CIface *iface, const CTxOut& txout) 
+{
+  CWallet *pwalletMain = GetWallet(iface);
+  return (IsMine(*pwalletMain, txout.scriptPubKey)); 
+}
+
+bool IsLocalCert(CIface *iface, const CTransaction& tx)
+{
+  if (!IsCertTx(tx))
+    return (false); /* not a cert */
+
+  int nOut = IndexOfExtOutput(tx);
+  if (nOut == -1)
+    return (false); /* invalid state */
+
+  return (IsLocalCert(iface, tx.vout[nOut]));
+}
+
+
+/**
+ * Verify the integrity of an cert transaction.
+ */
+bool VerifyCert(CTransaction& tx)
+{
+  uint160 hashCert;
+  int nOut;
+
+  /* core verification */
+  if (!IsCertTx(tx))
+    return (false); /* tx not flagged as cert */
+
+  /* verify hash in pub-script matches cert hash */
+  nOut = IndexOfExtOutput(tx);
+  if (nOut == -1)
+    return (false); /* no extension output */
+
+  int mode;
+  if (!DecodeCertHash(tx.vout[nOut].scriptPubKey, mode, hashCert))
+    return (false); /* no cert hash in output */
+
+  if (mode != OP_EXT_NEW &&
+      mode != OP_EXT_UPDATE &&
+      mode != OP_EXT_TRANSFER &&
+      mode != OP_EXT_REMOVE)
+    return (false);
+
+  CCert *cert = &tx.certificate;
+  if (hashCert != cert->GetHash())
+    return (false); /* cert hash mismatch */
+
+/* DEBUG: TODO verifyCertInputs() */
+
+  return (true);
+}
+
+bool GetCertEntByHash(CIface *iface, uint160 hash, CCertEnt& issuer)
+{
+  int ifaceIndex = GetCoinIndex(iface);
+  cert_list *certs = GetCertTable(ifaceIndex);
+
+  if (certs->count(hash) == 0)
+    return (false);
+
+  uint256 hashTx = (*certs)[hash];
+  CTransaction tx;
+  bool ret = GetTransaction(iface, hashTx, tx, NULL);
+  if (!ret)
+    return (false);
+
+  if (!IsCertEntTx(tx))
+    return (false);
+
+  issuer = tx.entity;
+  return (true);
+}
+
+int init_cert_tx(CIface *iface, string strAccount, string strTitle, cbuff vchSecret, uint160 hashIssuer, CWalletTx& wtx)
+{
+  CWallet *wallet = GetWallet(iface);
+  int ifaceIndex = GetCoinIndex(iface);
+
+  if(strTitle.length() == 0)
+    return (SHERR_INVAL);
+  if(strTitle.length() > 135)
+    return (SHERR_INVAL);
+
+  CCert *cert;
+  string strExtAccount = "@" + strAccount;
+  CCoinAddr extAddr = GetAccountAddress(wallet, strExtAccount, true);
+
+  CCertEnt issuer; 
+  GetCertEntByHash(iface, hashIssuer, issuer); /* optional */
+
+  /* embed cert content into transaction */
+  wtx.SetNull();
+  cert = wtx.CreateCert(&issuer, strTitle.c_str(), vchSecret);
+  wtx.strFromAccount = strAccount; /* originating account for payment */
+
+  int64 nFee = GetCertOpFee(iface, GetBestHeight(iface));
+  int64 bal = GetAccountBalance(ifaceIndex, strAccount, 1);
+  if (bal < nFee) {
+    return (SHERR_AGAIN);
+  }
+
+  /* send to extended tx storage account */
+  CScript scriptPubKeyOrig;
+  uint160 certHash = cert->GetHash();
+  CScript scriptPubKey;
+
+  scriptPubKeyOrig.SetDestination(extAddr.Get());
+  scriptPubKey << OP_EXT_NEW << CScript::EncodeOP_N(OP_CERT) << OP_HASH160 << certHash << OP_2DROP;
+  scriptPubKey += scriptPubKeyOrig;
+
+  // send transaction
+  string strError = wallet->SendMoney(scriptPubKey, nFee, wtx, false);
+  if (strError != "") {
+    error(ifaceIndex, strError.c_str());
+    return (SHERR_INVAL);
+  }
+
+  /* todo: add to pending instead */
+  wallet->mapCert[certHash] = wtx.GetHash();
+
+  Debug("SENT:CERTNEW : title=%s, certhash=%s, tx=%s\n", strTitle.c_str(), cert->GetHash().ToString().c_str(), wtx.GetHash().GetHex().c_str());
+
+  return (0);
+}
+
+
+

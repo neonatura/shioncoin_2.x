@@ -73,15 +73,22 @@ private:
     int nWalletMaxVersion;
 
 protected:
-    bool SelectCoins(int64 nTargetValue, std::set<std::pair<const CWalletTx*,unsigned int> >& setCoinsRet, int64& nValueRet) const;
 
 public:
     mutable CCriticalSection cs_wallet;
     mutable int ifaceIndex;
     mutable unsigned int nScanHeight;
 
-    mutable std::map<std::vector<unsigned char>, uint256> mapAlias;
-    mutable std::map<std::vector<unsigned char>, uint256> mapAliasPending;
+    mutable std::map<std::string, uint256> mapAlias;
+    mutable std::map<std::string, uint256> mapAliasPending;
+    mutable std::map<std::string, uint256> mapCertIssuer;
+    mutable std::map<std::string, uint256> mapCertIssuerPending;
+    mutable std::map<uint160, uint256> mapCert;
+    mutable std::map<uint160, uint256> mapCertPending;
+    mutable std::map<uint160, uint256> mapOffer;
+    mutable std::map<uint160, uint256> mapOfferPending;
+    mutable std::map<uint160, uint256> mapAsset;
+    mutable std::map<uint160, uint256> mapAssetPending;
 
     bool fFileBacked;
     std::string strWalletFile;
@@ -121,6 +128,8 @@ nScanHeight = 0;
     std::map<CTxDestination, std::string> mapAddressBook;
 
     CPubKey vchDefaultKey;
+
+    bool SelectCoins(int64 nTargetValue, std::set<std::pair<const CWalletTx*,unsigned int> >& setCoinsRet, int64& nValueRet) const;
 
     // check whether we are allowed to upgrade (or already support) to the named feature
     bool CanSupportFeature(enum WalletFeature wf) { return nWalletMaxVersion >= wf; }
@@ -298,7 +307,7 @@ nScanHeight = 0;
     virtual bool CreateTransaction(const std::vector<std::pair<CScript, int64> >& vecSend, CWalletTx& wtxNew, CReserveKey& reservekey, int64& nFeeRet) = 0;
     virtual bool CreateTransaction(CScript scriptPubKey, int64 nValue, CWalletTx& wtxNew, CReserveKey& reservekey, int64& nFeeRet) = 0;
     virtual bool CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey) = 0;
-
+    virtual void AddSupportingTransactions(CWalletTx& wtx) = 0;
 };
 
 /** A key allocated from the key pool. */
@@ -765,6 +774,23 @@ void SetWallet(int iface_idx, CWallet *wallet);
 void SetWallet(CIface *iface, CWallet *wallet);
 
 bool LoadBlockIndex(CIface *iface);
+
+/**
+ * The output index that contains an extended transaction operation.
+ */
+int IndexOfExtOutput(const CTransaction& tx);
+
+
+CCoinAddr GetAccountAddress(CWallet *wallet, string strAccount, bool bForceNew=false);
+
+/** 
+ * Send coins with the inclusion of a specific input transaction.
+ */
+bool SendMoneyWithExtTx(CIface *iface, CWalletTx& wtxIn, CWalletTx& wtxNew, const CScript& scriptPubKey, vector<pair<CScript, int64> > vecSend);
+
+bool GetCoinAddr(CWallet *wallet, CCoinAddr& addrAccount, string& strAccount);
+
+ 
 
 #ifdef __cplusplus
 int64 GetTxFee(int ifaceIndex, CTransaction tx);

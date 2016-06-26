@@ -385,8 +385,10 @@ fprintf(stderr, "DEBUG: TESTWallet::CreateTransaction()\n");
       return false;
     nValue += s.second;
   }
-  if (vecSend.empty() || nValue < 0)
+  if (vecSend.empty() || nValue < 0) {
+fprintf(stderr, "DEBUG: CreateTransaction: zero outputs specified failure\n");
     return false;
+}
 
   wtxNew.BindWallet(this);
 
@@ -457,20 +459,23 @@ fprintf(stderr, "DEBUG: TESTWallet::CreateTransaction()\n");
           reservekey.ReturnKey();
 
         // Fill vin
-        BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setCoins)
+        BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setCoins) {
           wtxNew.vin.push_back(CTxIn(coin.first->GetHash(),coin.second));
+}
 
         // Sign
         int nIn = 0;
-        BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setCoins)
+        BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setCoins) {
           if (!SignSignature(*this, *coin.first, wtxNew, nIn++)) {
             txdb.Close();
             return false;
           }
+        }
 
         // Limit size
         unsigned int nBytes = ::GetSerializeSize(*(CTransaction*)&wtxNew, SER_NETWORK, TEST_PROTOCOL_VERSION);
         if (nBytes >= MAX_BLOCK_SIZE_GEN(iface)/5) {
+fprintf(stderr, "DEBUG: CreateTransaction: size exceed failure\n");
           txdb.Close();
           return false;
         }
@@ -503,4 +508,11 @@ bool TESTWallet::CreateTransaction(CScript scriptPubKey, int64 nValue, CWalletTx
     vector< pair<CScript, int64> > vecSend;
     vecSend.push_back(make_pair(scriptPubKey, nValue));
     return CreateTransaction(vecSend, wtxNew, reservekey, nFeeRet);
+}
+
+void TESTWallet::AddSupportingTransactions(CWalletTx& wtx)
+{
+  TESTTxDB txdb;
+  wtx.AddSupportingTransactions(txdb);
+  txdb.Close();
 }

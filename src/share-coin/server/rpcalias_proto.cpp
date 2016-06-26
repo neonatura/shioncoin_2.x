@@ -59,10 +59,18 @@ using namespace json_spirit;
 using namespace boost::assign;
 
 
-static vector<unsigned char> vchFromValue(const Value& value) {
-  string strName = value.get_str();
-  unsigned char *strbeg = (unsigned char*) strName.c_str();
-  return vector<unsigned char>(strbeg, strbeg + strName.size());
+
+
+Value rpc_alias_fee(CIface *iface, const Array& params, bool fHelp) 
+{
+
+  if (fHelp || 0 != params.size())
+    throw runtime_error(
+        "alias.fee\n"
+        "Get current service fee for alias operations.\n");
+
+  int nBestHeight = GetBestHeight(iface); 
+  return ValueFromAmount(GetAliasOpFee(iface, nBestHeight));
 }
 
 
@@ -98,9 +106,13 @@ Value rpc_alias_addr(CIface *iface, const Array& params, bool fHelp)
   if (vchData.size() >= MAX_SHARE_HASH_LENGTH)
     throw runtime_error("The coin address exceeds 135 characters.");
 
+  string strAddress = params[1].get_str();
+  CCoinAddr addr = CCoinAddr(strAddress);
+  if (!addr.IsValid())
+    throw JSONRPCError(-5, "Invalid coin address");
+
   CWalletTx wtx;
-  uint160 hash(vchDataStr.c_str());
-  err = init_alias_addr_tx(iface, vchTitleStr.c_str(), hash, wtx); 
+  err = init_alias_addr_tx(iface, vchTitleStr.c_str(), addr, wtx); 
   if (err) {
     if (err == SHERR_INVAL)
       throw JSONRPCError(-5, "Invalid coin address specified.");
@@ -116,4 +128,48 @@ Value rpc_alias_addr(CIface *iface, const Array& params, bool fHelp)
 
 
 
+Value rpc_alias_update(CIface *iface, const Array& params, bool fHelp)
+{
+
+  if (fHelp || 2 > params.size() || 3 < params.size()) {
+    throw runtime_error(
+        "alias.addrupdate <aliasname> <coin-address>\n"
+        "Update a coin address reference label.\n");
+  }
+
+  CWallet *wallet = GetWallet(iface);
+	vector<unsigned char> vchName = vchFromValue(params[0]);
+	if (vchName.size() == 0)
+		throw runtime_error("You must specify an alias label.");
+	if (vchName.size() > 135)
+		throw runtime_error("alias name > 135 bytes!\n");
+
+  CCoinAddr addr = CCoinAddr(params[1].get_str());
+  if (!addr.IsValid())
+    throw JSONRPCError(-5, "Invalid coin address");
+
+#if 0
+  CKeyID key_id;
+  if (!addr.GetKeyID(key_id))
+    throw JSONRPCError(-5, "Unsupported coin address");
+#endif
+
+	CWalletTx wtx;
+  int err;
+  err = update_alias_addr_tx(iface, params[0].get_str().c_str(), addr, wtx); 
+  if (err) {
+    if (err == SHERR_NOENT) {
+      throw runtime_error("could not find an alias with this name");
+    }
+    if (err == SHERR_REMOTE) {
+      throw runtime_error("Alias is not associated with a local account.");
+    }
+    if (err == SHERR_AGAIN) {
+      throw runtime_error("Not enough coins in account to perform the transaction.");
+    }
+    throw runtime_error("Error updating alias transaction.");
+  }
+
+	return wtx.GetHash().GetHex();
+}
 

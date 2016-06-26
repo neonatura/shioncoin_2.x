@@ -494,3 +494,10 @@ bool USDEWallet::CreateTransaction(CScript scriptPubKey, int64 nValue, CWalletTx
     vecSend.push_back(make_pair(scriptPubKey, nValue));
     return CreateTransaction(vecSend, wtxNew, reservekey, nFeeRet);
 }
+
+void USDEWallet::AddSupportingTransactions(CWalletTx& wtx)
+{
+  USDETxDB txdb;
+  wtx.AddSupportingTransactions(txdb);
+  txdb.Close();
+}

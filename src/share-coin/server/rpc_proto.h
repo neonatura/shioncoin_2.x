@@ -82,8 +82,20 @@ public:
     json_spirit::Value execute(CIface *iface, const std::string &method, const json_spirit::Array &params) const;
 };
 
+
+
 extern const CRPCTable tableRPC;
 
+inline json_spirit::Value ValueFromAmount(int64 amount)
+{
+    return (double)amount / (double)COIN;
+}
+
+inline vector<unsigned char> vchFromValue(const json_spirit::Value& value) {
+  string strName = value.get_str();
+  unsigned char *strbeg = (unsigned char*) strName.c_str();
+  return vector<unsigned char>(strbeg, strbeg + strName.size());
+}
 
 #endif
 

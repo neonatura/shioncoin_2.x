@@ -1746,8 +1746,9 @@ bool CTransaction::CheckTransaction(int ifaceIndex) const
   set<COutPoint> vInOutPoints;
   BOOST_FOREACH(const CTxIn& txin, vin)
   {
-    if (vInOutPoints.count(txin.prevout))
-      return false;
+    if (vInOutPoints.count(txin.prevout)) {
+      return error(SHERR_INVAL, "CTransaction::CheckTransaction: duplicate input specified.\n");
+}
     vInOutPoints.insert(txin.prevout);
   }
 
@@ -2166,4 +2167,212 @@ bool core_AcceptBlock(CBlock *pblock)
   return true;
 }
 
+bool CTransaction::IsStandard() const
+{
+
+  if (!isFlag(CTransaction::TX_VERSION)) {
+    return error(SHERR_INVAL, "version flag not set (%d) [CTransaction::IsStandard]", nFlag);
+  }
+
+  BOOST_FOREACH(const CTxIn& txin, vin)
+  {
+    // Biggest 'standard' txin is a 3-signature 3-of-3 CHECKMULTISIG
+    // pay-to-script-hash, which is 3 ~80-byte signatures, 3
+    // ~65-byte public keys, plus a few script ops.
+    if (txin.scriptSig.size() > 500) {
+      return error(SHERR_INVAL, "script-sig size > 500 [CTransaction::IsStandard]");
+    }
+    if (!txin.scriptSig.IsPushOnly()) {
+      return error(SHERR_INVAL, "script-sig is push-only [CTransaction::IsStandard]");
+    }
+  }
+
+  BOOST_FOREACH(const CTxOut& txout, vout) {
+    if (!::IsStandard(txout.scriptPubKey)) {
+      return error(SHERR_INVAL, "pub key is not standard [CTransaction::IsStandard] %s", txout.scriptPubKey.ToString().c_str());
+    }
+  }
+
+  return true;
+}
+
+
+
+CAlias *CTransaction::CreateAlias(std::string name, const uint160& hash)
+{
+  nFlag |= CTransaction::TXF_ALIAS;
+
+  alias = CAlias(name, hash);
+  return (&alias);
+}
+
+CCertEnt *CTransaction::CreateEntity(const char *name, cbuff secret)
+{
+
+  if (nFlag & CTransaction::TXF_ENTITY)
+    return (NULL);
+
+  nFlag |= CTransaction::TXF_ENTITY;
+  entity = CCertEnt(name, secret);
+
+  return (&entity);
+}
+
+CCert *CTransaction::CreateCert(CCertEnt *issuer, const char *name, cbuff secret)
+{
+
+  if (nFlag & CTransaction::TXF_CERTIFICATE)
+    return (NULL);
+
+  CCertEnt *cert_ent = CreateEntity(name, secret);
+  if (!cert_ent)
+    return (NULL);
+
+  nFlag |= CTransaction::TXF_CERTIFICATE;
+  certificate = CCert(issuer, cert_ent, CCert::GenerateSerialNumber());
+  return (&certificate);
+}
+
+/**
+ * @param lic_span The duration of the license in seconds.
+ */
+CLicense *CTransaction::CreateLicense(CCert *cert, uint64_t lic_crc)
+{
+  double lic_span;
+
+  if (!cert->IsActive())
+    return (NULL);
+
+  if (nFlag & CTransaction::TXF_LICENSE)
+    return (NULL);
+  
+  nFlag |= CTransaction::TXF_LICENSE;
+  license = CLicense(cert, lic_crc);
+
+  return (&license);
+}
+
+
+
+COffer *CTransaction::CreateOffer(string strAccount, int ifaceIndex, int64 nValue, int originIndex, int64 nOriginValue)
+{
+  int64 srcValue;
+  int64 destValue;
+  int srcIndex;
+  int destIndex;
+
+  if (nFlag & CTransaction::TXF_OFFER)
+    return (NULL);
+
+  if (ifaceIndex != TEST_COIN_IFACE ||
+      ifaceIndex != SHC_COIN_IFACE)
+    return (NULL); /* ERR_OPNOTSUPP */
+
+  if (nValue < 0 && nOriginValue > 0) {
+    srcValue = nOriginValue;
+    srcIndex = originIndex;
+    destValue = nValue;
+    destIndex = ifaceIndex;
+  } else if (nValue > 0 && nOriginValue < 0) {
+    srcValue = nValue;
+    srcIndex = ifaceIndex;
+    destValue = nOriginValue;
+    destIndex = originIndex;
+  } else {
+    return (NULL); /* ERR_INVAL */
+  }
+/*
+  string strExtAccount = "*" + strAccount;
+  CCoinAddr addr = GetAccountAddress(strAccount, true);
+  CCoinAddr extAddr = GetAccountAddress(strExtAccount, true);
+*/
+
+  nFlag |= CTransaction::TXF_OFFER;
+  offer = COffer(strAccount, srcIndex, srcValue, destIndex, destValue);
+
+  return (&offer);
+}
+
+COfferAccept *CTransaction::AcceptOffer(uint160 hashOffer, int64 nValue, int64 nOriginValue)
+{
+  if (nFlag & CTransaction::TXF_OFFER_ACCEPT)
+    return (NULL);
+
+  //nFlag |= CTransaction::TXF_OFFER_ACCEPT;
+  //acc = COfferAccept(
+ return (NULL); 
+}
+
+COfferAccept *CTransaction::GenerateOffer(uint160 hashOffer, int64 nValue, int64 nOriginValue)
+{
+  if (nFlag & CTransaction::TXF_OFFER_ACCEPT)
+    return (NULL);
+ return (NULL); 
+}
+
+COfferAccept *CTransaction::PayOffer(uint160 hashOffer, int64 nValue, int64 nOriginValue)
+{
+  if (nFlag & CTransaction::TXF_OFFER_ACCEPT)
+    return (NULL);
+ return (NULL); 
+}
+
+COffer *CTransaction::RemoveOffer(uint160 hashOffer)
+{
+  if (nFlag & CTransaction::TXF_OFFER)
+    return (NULL);
+ return (NULL); 
+}
+
+
+CAsset *CTransaction::CreateAsset(string strAssetName, string strAssetHash)
+{
+
+  if (nFlag & CTransaction::TXF_ASSET)
+    return (NULL);
+
+  nFlag |= CTransaction::TXF_ASSET;
+  asset = CAsset(strAssetName, strAssetHash);
+
+  return (&asset);
+}
+
+CAsset *CTransaction::UpdateAsset(const CAsset& assetIn, string strAssetName, string strAssetHash)
+{
+
+  if (nFlag & CTransaction::TXF_ASSET)
+    return (NULL);
+
+  nFlag |= CTransaction::TXF_ASSET;
+  asset = assetIn;
+  asset.SetLabel(strAssetName);
+  asset.SetAssetHash(strAssetHash);
+
+  return (&asset);
+}
+
+CAsset *CTransaction::SignAsset(const CAsset& assetIn, uint160 hashCert)
+{
+
+  if (nFlag & CTransaction::TXF_ASSET)
+    return (NULL);
+
+  nFlag |= CTransaction::TXF_ASSET;
+  asset = assetIn;
+  asset.Sign(hashCert);
+
+  return (&asset);
+}
+
+CAsset *CTransaction::RemoveAsset(const CAsset& assetIn)
+{
+
+  if (nFlag & CTransaction::TXF_ASSET)
+    return (NULL);
+
+  nFlag |= CTransaction::TXF_ASSET;
+  asset = assetIn;
+
+  return (&asset);
+}
 

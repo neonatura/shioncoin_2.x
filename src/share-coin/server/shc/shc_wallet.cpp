@@ -495,3 +495,10 @@ bool SHCWallet::CreateTransaction(CScript scriptPubKey, int64 nValue, CWalletTx&
     vecSend.push_back(make_pair(scriptPubKey, nValue));
     return CreateTransaction(vecSend, wtxNew, reservekey, nFeeRet);
 }
+
+void SHCWallet::AddSupportingTransactions(CWalletTx& wtx)
+{
+  SHCTxDB txdb;
+  wtx.AddSupportingTransactions(txdb);
+  txdb.Close();
+}

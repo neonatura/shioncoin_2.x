@@ -28,6 +28,7 @@
 
 //#include "shcoind.h"
 #include <boost/foreach.hpp>
+#include <vector>
 
 #include "uint256.h"
 #include "serialize.h"
@@ -37,10 +38,7 @@
 #include "net.h"
 #include "script.h"
 #include "coin_proto.h"
-#include <vector>
-#include "certificate.h"
-#include "alias.h"
-#include "offer.h"
+#include "txext.h"
 
 typedef std::vector<uint256> HashList;
 
@@ -464,7 +462,8 @@ class CTransactionCore
     static const int TXF_LICENSE = (1 << 5);
     static const int TXF_ALIAS = (1 << 6);
     static const int TXF_OFFER = (1 << 7);
-    static const int TXF_ASSET = (1 << 8);
+    static const int TXF_OFFER_ACCEPT = (1 << 8);
+    static const int TXF_ASSET = (1 << 9);
 
     int nFlag;
     std::vector<CTxIn> vin;
@@ -480,7 +479,7 @@ class CTransactionCore
     (
         //READWRITE(this->nVersion);
         READWRITE(this->nFlag);
-        nVersion = 1;//this->nVersion;
+//        nVersion = 1;//this->nVersion;
         READWRITE(vin);
         READWRITE(vout);
         READWRITE(nLockTime);
@@ -517,6 +516,7 @@ class CTransactionCore
 
 };
 
+
 /** The basic transaction that is broadcasted on the network and contained in
  * blocks.  A transaction can contain multiple inputs and outputs.
  */
@@ -524,64 +524,60 @@ class CTransaction : public CTransactionCore
 {
 public:
 
-    shtime_t stamp;
-    CCertEnt *entity;
-    CCert *certificate;
-    CLicense *license;
-    CAlias *alias;
-    CAsset *asset;
-    COffer *offer;
+    CCertEnt entity;
+    CCert certificate;
+    CLicense license;
+    CAlias alias;
+    CAsset asset;
+    COffer offer;
 
     CTransaction()
     {
-        SetNull();
+      SetNull();
     }
-
-/*
-  ~CTransaction() { if (alias) delete alias; }
-*/
+    CTransaction(const CTransaction& tx)
+    {
+      SetNull();
+      Init(tx);
+    }
 
     IMPLEMENT_SERIALIZE
     (
       READWRITE(*(CTransactionCore*)this);
-      if (this->nFlag & TXF_STAMP)
-        READWRITE(FLATDATA(stamp));
       if (this->nFlag & TXF_ENTITY)
-        READWRITE(*entity);
+        READWRITE(entity);
       if (this->nFlag & TXF_CERTIFICATE)
-        READWRITE(*certificate);
+        READWRITE(certificate);
       if (this->nFlag & TXF_LICENSE)
-        READWRITE(*license);
+        READWRITE(license);
       if (this->nFlag & TXF_ALIAS)
-        READWRITE(*alias);
+        READWRITE(alias);
       if (this->nFlag & TXF_ASSET)
-        READWRITE(*asset);
+        READWRITE(asset);
       if (this->nFlag & TXF_OFFER)
-        READWRITE(*offer);
+        READWRITE(offer);
     )
 
-    void Init(CTransaction tx)
+    void Init(const CTransaction& tx)
     {
       CTransactionCore::Init(tx);
-      stamp = tx.stamp;
-      entity = tx.entity;
-      certificate = tx.certificate;
-      license = tx.license;
-      alias = tx.alias;
-      asset = tx.asset;
-      offer = tx.offer;
+      if (this->nFlag & TXF_ENTITY)
+        entity = tx.entity;
+      if (this->nFlag & TXF_CERTIFICATE)
+        certificate = tx.certificate;
+      if (this->nFlag & TXF_LICENSE)
+        license = tx.license;
+      if (this->nFlag & TXF_ALIAS)
+        alias = tx.alias;
+      if (this->nFlag & TXF_ASSET)
+        asset = tx.asset;
+      if (this->nFlag & TXF_OFFER)
+        offer = tx.offer;
     }
 
     void SetNull()
     {
       CTransactionCore::SetNull();
-      stamp = shtime();
-      entity = NULL;
-      certificate = NULL;
-      license = NULL;
-      alias = NULL;
-      asset = NULL;
-      offer = NULL;
     }
 
     uint256 GetHash() const
@@ -785,18 +781,27 @@ public:
 
     bool EraseTx(int ifaceIndex);
 
-    CCertEnt *CreateEntity(const char *name, vector<unsigned char> secret)
-    {
-      nFlag |= CTransaction::TXF_ENTITY;
-      entity = new CCertEnt(name, secret);
-      return (entity);
-    }
 
-    CAlias *CreateAlias(const char *name, uint160 hash)
+    CAlias *CreateAlias(std::string name, const uint160& hash);
+
+    CCertEnt *CreateEntity(const char *name, cbuff secret);
+    CCert *CreateCert(CCertEnt *issuer, const char *name, cbuff secret);
+    CLicense *CreateLicense(CCert *cert, uint64_t lic_crc);
+
+    COffer *CreateOffer(string strAccount, int ifaceIndex, int64 nValue, int originIndex, int64 nOriginValue);
+    COfferAccept *AcceptOffer(uint160 hashOffer, int64 nValue, int64 nOriginValue);
+    COfferAccept *GenerateOffer(uint160 hashOffer, int64 nValue, int64 nOriginValue);
+    COfferAccept *PayOffer(uint160 hashOffer, int64 nValue, int64 nOriginValue);
+    COffer *RemoveOffer(uint160 hashOffer);
+
+    CAsset *CreateAsset(string strAssetName, string strAssetHash);
+    CAsset *UpdateAsset(const CAsset& assetIn, string strAssetName, string strAssetHash);
+    CAsset *SignAsset(const CAsset& assetIn, uint160 hashCert);
+    CAsset *RemoveAsset(const CAsset& assetIn);
+
+    CAlias *GetAlias()
     {
-      nFlag |= CTransaction::TXF_ALIAS;
-      alias = new CAlias(name, hash);
-      return (alias);
+      return (&alias);
     }
 
     friend bool operator==(const CTransaction& a, const CTransaction& b)

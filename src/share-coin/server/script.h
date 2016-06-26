@@ -36,6 +36,7 @@ enum txnouttype
     TX_PUBKEYHASH,
     TX_SCRIPTHASH,
     TX_MULTISIG,
+    TX_RETURN
 };
 
 class CNoDestination {
@@ -83,29 +84,18 @@ enum opcodetype
     OP_15 = 0x5f,
     OP_16 = 0x60,
 
-    /* certification ops */
-    OP_CERTISSUER_NEW=0x0a,
-    OP_CERTISSUER_ACTIVATE=0x0b,
-    OP_CERTISSUER_UPDATE=0x0c,
-    OP_CERT_NEW=0x0d,
-    OP_CERT_TRANSFER=0x0e,
-    OP_CERT_LICENSE=0x10,
-
-    /* exchange */ 
-    OP_OFFER_NEW=0x04,
-    OP_OFFER_ACTIVATE=0x05,
-    OP_OFFER_UPDATE=0x06,
-    OP_OFFER_ACCEPT=0x07,
-    OP_OFFER_PAY=0x08,
-    OP_OFFERACCEPT_TRANSFER=0x09,
-
-    /* alias */
-    OP_ALIAS_NEW = 0x01,
-    OP_ALIAS_ACTIVATE=0x02,
-    OP_ALIAS_UPDATE=0x03,
-
-    /* asset */
+    /* extension ops */
+    OP_DONATE = 0x07,
+    OP_ALIAS = 0x08,
+    OP_VAULT = 0x09,
+    OP_OFFER=0x0a,
+    OP_OFFER_ACCEPT=0x0b,
+    OP_CERT_ISSUER=0x0c,
+    OP_CERT=0x0d,
+    OP_LICENSE = 0x0e,
     OP_ASSET = 0x0f,
+
+    /* asset ops */
     XOP_ASSET_NEW = 0x01,
     XOP_ASSET_ACTIVATE = 0x02,
     XOP_ASSET_SEND = 0x03,
@@ -124,6 +114,7 @@ enum opcodetype
     OP_ELSE = 0x67,
     OP_ENDIF = 0x68,
     OP_VERIFY = 0x69,
+    /** OP_RETURN is a script opcode used to mark a transaction output as invalid. Since the data after OP_RETURN are irrelevant to Bitcoin payments, arbitrary data can be added into the output after an OP_RETURN. Since any outputs with OP_RETURN are provably unspendable, OP_RETURN outputs can be used to burn bitcoins. */ 
     OP_RETURN = 0x6a,
 
     // stack ops
@@ -220,11 +211,20 @@ enum opcodetype
     OP_NOP9 = 0xb8,
     OP_NOP10 = 0xb9,
 
-
+    /* tx extension operatives */
+    OP_EXT_NEW = 0xf0,
+    OP_EXT_ACTIVATE = 0xf1,
+    OP_EXT_UPDATE = 0xf2,
+    OP_EXT_REMOVE = 0xf3,
+    OP_EXT_GENERATE = 0xf4,
+    OP_EXT_TRANSFER = 0xf5,
+    OP_EXT_ACCEPT = 0xf6,
+    OP_EXT_PAY = 0xf7,
 
     // template matching params
     OP_SMALLINTEGER = 0xfa,
     OP_PUBKEYS = 0xfb,
+    OP_EXT_HASH = 0xfc,
     OP_PUBKEYHASH = 0xfd,
     OP_PUBKEY = 0xfe,
 

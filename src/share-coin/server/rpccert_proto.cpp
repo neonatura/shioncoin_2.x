@@ -58,13 +58,7 @@ using namespace boost::asio;
 using namespace json_spirit;
 using namespace boost::assign;
 
-Value ValueFromAmount(int64 amount);
 
-static vector<unsigned char> vchFromValue(const Value& value) {
-  string strName = value.get_str();
-  unsigned char *strbeg = (unsigned char*) strName.c_str();
-  return vector<unsigned char>(strbeg, strbeg + strName.size());
-}
 
 
 
@@ -81,17 +75,11 @@ Value rpc_cert_fee(CIface *iface, const Array& params, bool fHelp)
       ifaceIndex != SHC_COIN_IFACE)
     throw runtime_error("Unsupported operation for coin service.");
 
-  Object oRes;
-  oRes.push_back(Pair("height", (int)GetBestHeight(ifaceIndex)));
-  oRes.push_back(Pair("subsidy", 
-        ValueFromAmount(GetCertFeeSubsidy((int)GetBestHeight(ifaceIndex)))));
-  oRes.push_back(Pair("fee", 
-        ValueFromAmount(GetCertNetworkFee((int)GetBestHeight(ifaceIndex)))));
-
-  return oRes;
+  return ValueFromAmount(GetCertOpFee(iface, (int)GetBestHeight(ifaceIndex)));
 }
 
 
+#if 0
 Value rpc_cert_newent(CIface *iface, const Array& params, bool fHelp) 
 {
 
@@ -148,7 +136,7 @@ Value rpc_cert_newent(CIface *iface, const Array& params, bool fHelp)
   CScript scriptPubKeyOrig;
   scriptPubKeyOrig.SetDestination(newDefaultKey.GetID());
   CScript scriptPubKey;
-  scriptPubKey << CScript::EncodeOP_N(OP_CERTISSUER_NEW) << certissuerHash << OP_2DROP;
+  scriptPubKey << OP_EXT_NEW << CScript::EncodeOP_N(OP_CERTISSUER) << OP_HASH160 << certissuerHash << OP_2DROP << OP_2DROP;
   scriptPubKey += scriptPubKeyOrig;
 
   // send transaction
@@ -173,41 +161,8 @@ Value rpc_cert_newent(CIface *iface, const Array& params, bool fHelp)
 
   return (wtx.GetHash().GetHex());
 }
+#endif
 
-static string rpc_SendCertMoneyWithInputTx(CWallet *wallet,
-    CScript scriptPubKey, int64 nValue, int64 nNetFee, 
-    CWalletTx& wtxIn, CWalletTx& wtxNew, bool fAskFee) 
-{
-  int nTxOut = IndexOfCertIssuerOutput(wtxIn);
-  CReserveKey reservekey(wallet);
-  int64 nFeeRequired;
-  vector<pair<CScript, int64> > vecSend;
-  vecSend.push_back(make_pair(scriptPubKey, nValue));
-
-  if (nNetFee) {
-    CScript scriptFee;
-    scriptFee << OP_RETURN;
-    vecSend.push_back(make_pair(scriptFee, nNetFee));
-  }
-
-  if (!CreateCertTransactionWithInputTx(wallet, 
-        vecSend, wtxIn, nTxOut, wtxNew, reservekey, nFeeRequired)) {
-    string strError;
-    if (nValue + nFeeRequired > wallet->GetBalance())
-      strError = strprintf(_("Error: This transaction requires a transaction fee of at least %s because of its amount, complexity, or use of recently received funds "),
-          FormatMoney(nFeeRequired).c_str());
-    else
-      strError = _("Error: Transaction creation failed  ");
-    printf("SendMoney() : %s", strError.c_str());
-    return strError;
-  }
-
-  if (!wallet->CommitTransaction(wtxNew, reservekey))
-    return _(
-        "Error: The transaction was rejected.  This might happen if some of the coins in your wallet were already spent, such as if you used a copy of wallet.dat and coins were spent in the copy but not marked as spent here.");
-
-  return "";
-}
 
 #if 0 /* DEBUG: */
 Value rpc_cert_pubent(CIface *iface, const Array& params, bool fHelp)
@@ -348,8 +303,8 @@ Value rpc_cert_pubent(CIface *iface, const Array& params, bool fHelp)
     scriptPubKey += scriptPubKeyOrig;
 
     // send the tranasction
-    string strError = rpc_SendCertMoneyWithInputTx(wallet, 
-        scriptPubKey, iface->min_tx_fee, nNetFee, wtxIn, wtx, false);
+    string strError = SendMoneyWithInputTx(iface,
+      scriptPubKey, nNetFee, wtxIn, wtx, reservekey);
     if (strError != "")
       throw runtime_error(strError);
 

@@ -143,11 +143,6 @@ void RPCTypeCheck(const Object& o,
     }
 }
 
-Value ValueFromAmount(int64 amount)
-{
-    return (double)amount / (double)COIN;
-}
-
 double GetDifficulty(int ifaceIndex, const CBlockIndex* blockindex = NULL)
 {
     // Floating point number that is a multiple of the minimum difficulty,
@@ -489,46 +484,6 @@ int64 GetAccountBalance(CIface *iface, const string& strAccount, int nMinDepth)
 }
 #endif
 
-static CCoinAddr GetAccountAddress(CWallet *wallet, string strAccount, bool bForceNew=false)
-{
-
-  if (!wallet)
-    throw JSONRPCError(-12, "Error: No wallet allocated.");
-  CWalletDB walletdb(wallet->strWalletFile);
-
-  CAccount account;
-  walletdb.ReadAccount(strAccount, account);
-
-  bool bKeyUsed = false;
-
-  // Check if the current key has been used
-  if (account.vchPubKey.IsValid())
-  {
-    CScript scriptPubKey;
-    scriptPubKey.SetDestination(account.vchPubKey.GetID());
-    for (map<uint256, CWalletTx>::iterator it = wallet->mapWallet.begin();
-        it != wallet->mapWallet.end() && account.vchPubKey.IsValid();
-        ++it)
-    {
-      const CWalletTx& wtx = (*it).second;
-      BOOST_FOREACH(const CTxOut& txout, wtx.vout)
-        if (txout.scriptPubKey == scriptPubKey)
-          bKeyUsed = true;
-    }
-  }
-
-  // Generate a new key
-  if (!account.vchPubKey.IsValid() || bForceNew || bKeyUsed)
-  {
-    if (!wallet->GetKeyFromPool(account.vchPubKey, false))
-      throw JSONRPCError(-12, "Error: Keypool ran out, please call keypoolrefill first");
-
-    wallet->SetAddressBookName(account.vchPubKey.GetID(), strAccount);
-    walletdb.WriteAccount(strAccount, account);
-  }
-
-  return CCoinAddr(account.vchPubKey.GetID());
-}
 
 static void GetAccountAddresses(CWallet *wallet, string strAccount, set<CTxDestination>& setAddress)
 {

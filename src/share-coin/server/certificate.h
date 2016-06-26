@@ -29,85 +29,117 @@
 using namespace std;
 
 
+typedef map<uint160, uint256> cert_list;
 
 
-class CCertEnt
+class CCertEnt : public CExtCore
 {
-  static const int CERTENT_VERSION = 1;
-  protected:
-    int nVersion;
-    SHCertEnt entity;
 
-  public:
+  protected:
     SHPeer peer;
     SHSig sig;
+
+    mutable cbuff vchSecret;
+
+  public:
 
     CCertEnt()
     {
       SetNull();
     }
-    
-    CCertEnt(SHCertEnt *entityIn)
+
+    CCertEnt(const CCertEnt& ent)
     {
       SetNull();
-      memcpy(&entity, entityIn, sizeof(entity));
-      peer = SHPeer(&entity.ent_peer);
-      sig = SHSig(&entity.ent_sig);
+      Init(ent);
     }
 
-    CCertEnt(const char *name, vector<unsigned char> secret)
+    CCertEnt(string labelIn, cbuff secretIn)
     {
 
       SetNull();
 
-      strncpy(entity.ent_name, name, sizeof(entity.ent_name)-1);
-      memcpy(&entity.ent_peer, ashpeer(), sizeof(entity.ent_peer));
-      entity.ent_len = MIN(secret.size(), sizeof(entity.ent_data));
-
-      {
-        int idx;
-        vector<unsigned char>::const_iterator vi = secret.begin();
-        while (vi != secret.end()) {
-          entity.ent_data[idx++] = (char)(*vi);
-          if (idx >= entity.ent_len) break;
-          vi++;           
-        }                 
-      }
+      SetLabel(labelIn);
+      peer = SHPeer();
+      sig = SHSig();
+      vchSecret = secretIn;
 
       Sign();
     }
 
     IMPLEMENT_SERIALIZE (
-      READWRITE(nVersion);
-      READWRITE(FLATDATA(entity.ent_data));
-      READWRITE(FLATDATA(entity.ent_name));
-      READWRITE(peer);
-      READWRITE(sig);
-      READWRITE(entity.ent_len);
+        READWRITE(*(CExtCore *)this);
+        READWRITE(peer);
+        READWRITE(sig);
     )
 
     friend bool operator==(const CCertEnt &a, const CCertEnt &b)
     {
-      return (0 == memcpy((unsigned char *)&a.entity,
-            (unsigned char *)&b.entity, sizeof(SHCertEnt)));
+      return (
+        ((CExtCore&) a) == ((CExtCore&) b) &&
+        a.peer == b.peer &&
+        a.sig == b.sig
+        );
     }
 
     CCertEnt operator=(const CCertEnt &b)
     {
-      memcpy(&entity, &b.entity, sizeof(entity));
-      peer = SHPeer(&entity.ent_peer);
-      sig = SHSig(&entity.ent_sig);
+      SetNull();
+      Init(b);
+      return *this;
     }
 
     void SetNull()
     {
-      nVersion = CERTENT_VERSION;
-      memset(&entity, 0, sizeof(entity));
+      CExtCore::SetNull();
+      peer.SetNull();
+      sig.SetNull();
+    }
+
+    void Init(const CCertEnt& b)
+    {
+      CExtCore::Init(b);
+      peer = b.peer;
+      sig = b.sig;
+      vchSecret = b.vchSecret;
+    }
+
+    std::string GetName()
+    {
+      return (GetLabel());
+    }
+
+    const cbuff& GetSecret()
+    {
+      return (vchSecret);
+    }
+
+    bool hasSecret()
+    {
+      if (vchSecret.size() == 0)
+        return (false);
+      return (true);
+    }
+
+    void FillEntity(SHCertEnt *entity)
+    {
+      memset(entity, 0, sizeof(entity));
+      if (vchSecret.data()) {
+        entity->ent_len = MIN(sizeof(entity->ent_data), vchSecret.size());
+        memcpy(entity->ent_data, vchSecret.data(), entity->ent_len);
+      }
+      string strLabel = GetLabel();
+      strncpy(entity->ent_name, strLabel.c_str(), sizeof(entity->ent_name)-1);
+      memcpy(&entity->ent_peer, &peer.peer, sizeof(entity->ent_peer));
+      memcpy(&entity->ent_sig, &sig.sig, sizeof(entity->ent_sig));
     }
 
     void Sign()
     {
+      SHCertEnt entity;
       shkey_t *key;
+
+      FillEntity(&entity);
 
       entity.ent_sig.sig_stamp = shtime_adj(shtime(), -1);
       entity.ent_sig.sig_expire = 
@@ -116,49 +148,37 @@ class CCertEnt
       entity.ent_sig.sig_key.alg = SHKEY_ALG_SHR;
       key = shkey_cert(shpeer_kpub(&entity.ent_peer), 
           shcrc(entity.ent_data, entity.ent_len), entity.ent_sig.sig_stamp);
-      memcpy(&entity.ent_sig.sig_key, key, sizeof(shkey_t));
+      //memcpy(&entity.ent_sig.sig_key, key, sizeof(shkey_t));
+      memcpy(&sig.sig.sig_key, key, sizeof(shkey_t));
       shkey_free(&key);
-    }
-
-    string GetName()
-    {
-      string ent_name(entity.ent_name);
-      return (ent_name);
-    }
-
-    const char *GetSecret(int& data_len)
-    {
-      data_len = entity.ent_len; 
-      return ((const char *)entity.ent_data);
     }
 
     uint160 GetHash()
     {
+      uint256 hash = SerializeHash(*this);
+      unsigned char *raw = (unsigned char *)&hash;
+      cbuff rawbuf(raw, raw + sizeof(hash));
+      return Hash160(rawbuf);
+    }
+/*
+    uint160 GetHash()
+    {
+      SHCertEnt entity;
+
+      FillEntity(&entity);
       unsigned char *raw_data = (unsigned char *)&entity;
       vector<unsigned char> vchHash(raw_data, raw_data + sizeof(entity));
       return (Hash160(vchHash));
     }
+*/
 
-    bool Expired()
-    {
-      return (shtime_after(shtime(), entity.ent_sig.sig_expire));
-    }
-
-    string SerializeToString(CIface *iface)
-    {
-      CDataStream dsCertIssuer(SER_NETWORK, PROTOCOL_VERSION(iface)); 
-      dsCertIssuer << *this;
-      vector<unsigned char> vchData(dsCertIssuer.begin(), dsCertIssuer.end());
-      return EncodeBase64(vchData.data(), vchData.size());
-    }     
 
 };
 
-class CCert
+class CCert : public CExtCore
 {
-  static const int CERT_VERSION = 1;
+
   protected:
-    int nVersion;
     SHCert cert;
     CCertEnt ent_sub;
     CCertEnt ent_iss;
@@ -169,27 +189,96 @@ class CCert
       SetNull();
     }
 
-    CCert(shcert_t *certIn)
+    CCert(const CCert& certIn)
     {
       SetNull();
-      memcpy(&cert, certIn, sizeof(cert));
-      ent_sub = CCertEnt(&cert.cert_sub);
-      ent_iss = CCertEnt(&cert.cert_iss);
+      Init(certIn);
+    }
+
+    /**
+     * Create a certificate authority.
+     * @param entity The entity being issued a certificate.
+     * @param vSer A 16-byte (128-bit) serial number.
+     */
+    CCert(CCertEnt *entity, cbuff vSer, int64 nLicenseFee = 0)
+    {
+      SetNull();
+
+      uint64_t rand1 = shrand();
+      uint64_t rand2 = shrand();
+      memcpy(cert.cert_ser, &rand1, sizeof(uint64_t));
+      memcpy(cert.cert_ser + sizeof(uint64_t), &rand2, sizeof(uint64_t));
+
+      ent_sub = *entity;
+
+      /* x509 prep */
+      cert.cert_ver = 3;
+      cert.cert_flag = SHCERT_ENT_ORGANIZATION | SHCERT_CERT_DIGITAL | SHCERT_CERT_SIGN;
+      cert.cert_fee = nLicenseFee;
+    }
+
+    /**
+     * Create a issued certificate.
+     * @param issuer The issuer (certificate authority) of the certificate.
+     * @param entity The entity being issued a certificate.
+     * @param vSer A 16-byte (128-bit) serial number.
+     */
+    CCert(CCertEnt *issuer, CCertEnt *entity, cbuff vSer, int64 nLicenseFee = 0)
+    {
+      SetNull();
+
+      const char *raw = (const char *)vSer.data();
+      if (raw)
+        memcpy(&cert.cert_ser, raw, MIN(sizeof(cert.cert_ser), vSer.size()));
+
+      ent_iss = *issuer;
+      ent_sub = *entity;
+
+      /* x509 prep */
+      cert.cert_ver = 3;
+      cert.cert_flag = SHCERT_ENT_ORGANIZATION | SHCERT_CERT_CHAIN | SHCERT_CERT_DIGITAL;
+      cert.cert_fee = nLicenseFee;
     }
 
     IMPLEMENT_SERIALIZE (
-      READWRITE(nVersion);
-      READWRITE(ent_sub);
-      READWRITE(ent_iss);
-      READWRITE(FLATDATA(cert.cert_ser));
-      READWRITE(cert.cert_fee);
-      READWRITE(cert.cert_flag);
-      READWRITE(cert.cert_ver);
+        READWRITE(*(CExtCore *)this);
+        READWRITE(ent_sub);
+        READWRITE(ent_iss);
+        READWRITE(FLATDATA(cert.cert_ser));
+        READWRITE(cert.cert_fee);
+        READWRITE(cert.cert_flag);
+        READWRITE(cert.cert_ver);
     )
+
+    void Init(const CCert& b)
+    {
+      CExtCore::Init(b);
+      memcpy(&cert, &b.cert, sizeof(SHCert));
+      ent_sub = b.ent_sub;
+      ent_iss = b.ent_iss;
+    }
+
+    friend bool operator==(const CCert &a, const CCert &b) {
+      return (
+          ((CExtCore&) a) == ((CExtCore&) b) &&
+          0 == memcmp(&a.cert, &b.cert, sizeof(SHCert)) &&
+          a.ent_sub == b.ent_sub &&
+          a.ent_iss == b.ent_iss
+          );
+    }
+
+    CCert operator=(const CCert &b) {
+      Init(b);
+      return *this;
+    }
+
+    friend bool operator!=(const CCert &a, const CCert &b) {
+      return !(a == b);
+    }
 
     void SetNull()
     {
-      nVersion = CERT_VERSION;
+      CExtCore::SetNull();
       memset(&cert, 0, sizeof(cert));
     }
 
@@ -208,9 +297,13 @@ class CCert
       return ((int64)cert.cert_fee);
     }
 
+    /* a 128-bit binary context converted into a 160bit hexadecimal number. */
     std::string GetSerialNumber()
     {
-/* convert from 128bit binary .. */
+      const char *raw = (const char *)cert.cert_ser; 
+      cbuff vch(raw, raw+sizeof(cert.cert_ser));
+      uint160 hash(vch);
+      return (hash.GetHex());
     }
 
     CCertEnt *GetIssuerEntity()
@@ -222,15 +315,45 @@ class CCert
     {
       return (&ent_sub);
     }
-    
+
+    uint160 GetHash()
+    {
+      uint256 hash = SerializeHash(*this);
+      unsigned char *raw = (unsigned char *)&hash;
+      cbuff rawbuf(raw, raw + sizeof(hash));
+      return Hash160(rawbuf);
+    }
+
+    double GetLicenseFee()
+    {
+      return ((double)GetLicenseCoins() / (double)COIN);
+    }
+
+    int64 GetLicenseCoins()
+    {
+      return ((int64)cert.cert_fee);
+    }
+
+    /**
+     * Create a randomized serial number suitable for a certificate.
+     */
+    static cbuff GenerateSerialNumber()
+    {
+      unsigned char raw[16];
+      uint64_t rand1 = shrand();
+      uint64_t rand2 = shrand();
+      memcpy(raw, &rand1, sizeof(uint64_t));
+      memcpy(raw + sizeof(uint64_t), &rand2, sizeof(uint64_t));
+
+      return (cbuff(raw, raw+16));
+    }
 };
 
-class CLicense
+class CLicense : public CExtCore
 {
-  static const int LICENSE_VERSION = 1;
   protected:
-    int nVersion;
     shlic_t license;
+    int64 nFee;
 
   public:
 
@@ -238,101 +361,118 @@ class CLicense
     {
       SetNull();
     }
-    CLicense(CCertEnt *ent)
+
+    CLicense(const CLicense& lic)
     {
       SetNull();
-      SetEntity(ent);
+      Init(lic);
+    }
+
+    CLicense(CCert *cert, uint64_t crc)
+    {
+      SetNull();
+      SetCert(cert, crc);
     }
     IMPLEMENT_SERIALIZE (
-      READWRITE(nVersion);
-      READWRITE(FLATDATA(license));
+        READWRITE(*(CExtCore *)this);
+        READWRITE(FLATDATA(license));
+        READWRITE(this->nFee);
     )
+
     void SetNull()
     {
-      nVersion = LICENSE_VERSION;
+      CExtCore::SetNull();
       memset(&license, 0, sizeof(license));
+      nFee = 0;
     }
-    void SetEntity(CCertEnt *ent)
+
+    friend bool operator==(const CLicense &a, const CLicense &b) {
+      return (
+          ((CExtCore&) a) == ((CExtCore&) b) &&
+          0 == memcmp(&a.license, &b.license, sizeof(shlic_t))
+          );
+    }
+
+    CLicense operator=(const CLicense &b) {
+      Init(b);
+      return *this;
+    }
+
+    friend bool operator!=(const CLicense &a, const CLicense &b) {
+      return !(a == b);
+    }
+
+    void Init(const CLicense& b)
     {
+      CExtCore::Init(b);
+      memcpy(&license, &b.license, sizeof(license));
+    }
+
+    void SetCert(CCert *cert, uint64_t crc)
+    {
+      double lic_span;
+
+      /* identify the certificate being licensed. */
       memcpy(&license.lic_cert,
-          ent->GetHash().GetKey(), sizeof(license.lic_cert.code));
+          cert->GetHash().GetKey(), sizeof(license.lic_cert.code));
+
+      /* for sharefs file licensing */
+      shpeer_t *peer = shpeer_init(NULL, NULL);
+      memcpy(&license.lic_fs, shpeer_kpriv(peer), sizeof(shkey_t)); 
+      shpeer_free(&peer);
+
+      /* expires when certificate expires */
+      lic_span = MAX(0, cert->GetExpireTime() - time(NULL) - 1);
+      SetExpireTime(shtime_adj(shtime(), lic_span));
+
+      /* record cost of license */
+      nFee = cert->GetLicenseCoins();
+
+      /* generate signature from an externally derived checksum. */
+      Sign(crc);
     }
+
+    void Sign()
+    {
+      Sign(0);
+    }
+
+    /**
+     * Generate a digital signature for use with licensed content.
+     * @param crc A checksum of the content being licensed. For example, a software program's executable file checksum.
+     */
+    void Sign(uint64_t crc)
+    {
+      license.lic_crc = crc;
+      memcpy(&license.lic_sig, ashkey_blank(), sizeof(shkey_t));
+      uint160 hash = GetHash();
+      memcpy(&license.lic_sig, hash.GetKey(), sizeof(shkey_t)); 
+    }
+
+    const uint160 GetHash()
+    {
+      uint256 hash = SerializeHash(*this);
+      unsigned char *raw = (unsigned char *)&hash;
+      cbuff rawbuf(raw, raw + sizeof(hash));
+      return Hash160(rawbuf);
+    }
+
+    void NotifySharenet(int ifaceIndex)
+    {
+      CIface *iface = GetCoinByIndex(ifaceIndex);
+      if (!iface || !iface->enabled) return;
+
+      shnet_inform(iface, TX_LICENSE, &license, sizeof(license));
+    }
+
 };
 
-class CAsset
-{
-  static const int PROTO_ASSET_VERSION = 1;
 
-  protected:
-    int nVersion;
-    SHAsset asset;
-    SHPeer sigPeer;
+bool VerifyCert(CTransaction& tx);
 
-  public:
-    CAsset()
-    {
-      SetNull();
-    }
-
-    IMPLEMENT_SERIALIZE (
-      READWRITE(nVersion);
-      READWRITE(FLATDATA(asset));
-    )
-
-    void SetNull()
-    {
-      nVersion = PROTO_ASSET_VERSION;
-      memset(&asset, 0, sizeof(SHAsset));
-    }
-
-    bool Sign(SHPeer *peer)
-    {
-      if (asset.ass_stamp)
-        return (true); /* already signed */
-
-      asset.ass_stamp = shtime();
-#if 0
-      int err = generate_asset_signature(&asset, peer);
-      if (err)
-        return (false);
-
-      memcpy(&sigPeer, peer, sizeof(sigPeer));
-#endif
-      return (true);
-    }
-
-    bool Verify(SHPeer *peer)
-    {
-#if 0
-      int err = verify_asset_signature(&asset, peer);
-      if (err)
-        return (false);
-#endif
-      return (true);
-    }
-};
-
-extern std::map<uint160, uint256> mapCertIssuers;
+int64 GetCertOpFee(CIface *iface, int nHeight);
 
 
-/** 
- * a 'discount' applied when certification is infrequent.
- */
-uint64 GetCertFeeSubsidy(unsigned int nHeight);
-
-/**
- * The cost of a initiate, active, and transfer certificate operation.
- */
-int64 GetCertNetworkFee(int nHeight);
-
-bool DecodeCertScript(const CScript& script, int& op, vector<vector<unsigned char> > &vvch, CScript::const_iterator& pc); 
-
-int IndexOfCertIssuerOutput(const CTransaction& tx); 
-
-class CWallet;
-class CReserveKey;
-class CWalletTx;
-bool CreateCertTransactionWithInputTx(CWallet *wallet, const vector<pair<CScript, int64> >& vecSend, CWalletTx& wtxIn, int nTxOut, CWalletTx& wtxNew, CReserveKey& reservekey, int64& nFeeRet);
 
 
 #endif /* ndef __SERVER__CERTIFICATE_H__ */
