@@ -465,10 +465,13 @@ public:
 
     shkey_t *GetKey()
     {
-      shkey_t key;
+      static shkey_t key;
+
       memset(&key, 0, sizeof(key));
       for (int i = 0; i < WIDTH; i++)
         key.code[i] = pn[i];
+
+      return (&key);
     }
 
     uint160(uint64 b)

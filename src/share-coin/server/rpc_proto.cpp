@@ -4444,7 +4444,7 @@ static const CRPCCommand vRPCCommands[] =
 //    { "block.template",       &rpc_block_template},
     { "block.work",           &rpc_block_work},
     { "block.workex",         &rpc_block_workex},
-    { "cert.fee",             &rpc_cert_fee},
+//    { "cert.fee",             &rpc_cert_fee},
     { "msg.sign",             &rpc_msg_sign},
     { "msg.verify",           &rpc_msg_verify},
     { "net.info",             &rpc_net_info},

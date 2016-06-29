@@ -2206,6 +2206,7 @@ CAlias *CTransaction::CreateAlias(std::string name, const uint160& hash)
   return (&alias);
 }
 
+/*
 CCertEnt *CTransaction::CreateEntity(const char *name, cbuff secret)
 {
 
@@ -2217,19 +2218,21 @@ CCertEnt *CTransaction::CreateEntity(const char *name, cbuff secret)
 
   return (&entity);
 }
+*/
 
-CCert *CTransaction::CreateCert(CCertEnt *issuer, const char *name, cbuff secret)
+CCert *CTransaction::CreateCert(const char *name, cbuff secret, int64 nLicenseFee)
 {
 
   if (nFlag & CTransaction::TXF_CERTIFICATE)
     return (NULL);
 
-  CCertEnt *cert_ent = CreateEntity(name, secret);
-  if (!cert_ent)
-    return (NULL);
+  string strTitle(name);
 
   nFlag |= CTransaction::TXF_CERTIFICATE;
-  certificate = CCert(issuer, cert_ent, CCert::GenerateSerialNumber());
+  certificate = CCert(strTitle);
+  certificate.SetLicenseFee(nLicenseFee);
+  certificate.Sign(secret);
+
   return (&certificate);
 }
 
@@ -2240,8 +2243,10 @@ CLicense *CTransaction::CreateLicense(CCert *cert, uint64_t lic_crc)
 {
   double lic_span;
 
-  if (!cert->IsActive())
+  if (!cert->IsActive()) {
+fprintf(stderr, "DEBUG: CTransaction::CreateLicense: !cert->IsActive\n");
     return (NULL);
+}
 
   if (nFlag & CTransaction::TXF_LICENSE)
     return (NULL);
@@ -2254,67 +2259,56 @@ CLicense *CTransaction::CreateLicense(CCert *cert, uint64_t lic_crc)
 
 
 
-COffer *CTransaction::CreateOffer(string strAccount, int ifaceIndex, int64 nValue, int originIndex, int64 nOriginValue)
+COffer *CTransaction::CreateOffer()
 {
-  int64 srcValue;
-  int64 destValue;
-  int srcIndex;
-  int destIndex;
 
   if (nFlag & CTransaction::TXF_OFFER)
     return (NULL);
 
-  if (ifaceIndex != TEST_COIN_IFACE ||
-      ifaceIndex != SHC_COIN_IFACE)
-    return (NULL); /* ERR_OPNOTSUPP */
-
-  if (nValue < 0 && nOriginValue > 0) {
-    srcValue = nOriginValue;
-    srcIndex = originIndex;
-    destValue = nValue;
-    destIndex = ifaceIndex;
-  } else if (nValue > 0 && nOriginValue < 0) {
-    srcValue = nValue;
-    srcIndex = ifaceIndex;
-    destValue = nOriginValue;
-    destIndex = originIndex;
-  } else {
-    return (NULL); /* ERR_INVAL */
-  }
-/*
-  string strExtAccount = "*" + strAccount;
-  CCoinAddr addr = GetAccountAddress(strAccount, true);
-  CCoinAddr extAddr = GetAccountAddress(strExtAccount, true);
-*/
-
   nFlag |= CTransaction::TXF_OFFER;
-  offer = COffer(strAccount, srcIndex, srcValue, destIndex, destValue);
+  offer = COffer();
 
   return (&offer);
 }
 
-COfferAccept *CTransaction::AcceptOffer(uint160 hashOffer, int64 nValue, int64 nOriginValue)
+COfferAccept *CTransaction::AcceptOffer(COffer *offerIn)
 {
+
   if (nFlag & CTransaction::TXF_OFFER_ACCEPT)
     return (NULL);
 
-  //nFlag |= CTransaction::TXF_OFFER_ACCEPT;
-  //acc = COfferAccept(
+  nFlag |= CTransaction::TXF_OFFER_ACCEPT;
+  offer = *offerIn;
+
+  offer.vPayAddr.clear();
+  offer.vXferAddr.clear();
+  offer.nPayValue = 0;
+  offer.nXferValue = 0;
+
+ return ((COfferAccept *)&offer);
+}
+
+COffer *CTransaction::GenerateOffer(COffer *offerIn)
+{
+  if (nFlag & CTransaction::TXF_OFFER)
+    return (NULL);
+
+  nFlag |= CTransaction::TXF_OFFER;
+  offer = *offerIn;
+
  return (NULL); 
 }
 
-COfferAccept *CTransaction::GenerateOffer(uint160 hashOffer, int64 nValue, int64 nOriginValue)
+COfferAccept *CTransaction::PayOffer(COfferAccept *accept)
 {
-  if (nFlag & CTransaction::TXF_OFFER_ACCEPT)
-    return (NULL);
- return (NULL); 
-}
 
-COfferAccept *CTransaction::PayOffer(uint160 hashOffer, int64 nValue, int64 nOriginValue)
-{
   if (nFlag & CTransaction::TXF_OFFER_ACCEPT)
     return (NULL);
- return (NULL); 
+
+  nFlag |= CTransaction::TXF_OFFER_ACCEPT;
+  offer = COffer(*accept);
+
+ return ((COfferAccept *)&offer);
 }
 
 COffer *CTransaction::RemoveOffer(uint160 hashOffer)

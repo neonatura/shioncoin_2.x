@@ -351,8 +351,10 @@ CBlock* test_CreateNewBlock(CReserveKey& reservekey)
     for (map<uint256, CTransaction>::iterator mi = TESTBlock::mempool.mapTx.begin(); mi != TESTBlock::mempool.mapTx.end(); ++mi)
     {
       CTransaction& tx = (*mi).second;
-      if (tx.IsCoinBase() || !tx.IsFinal(TEST_COIN_IFACE))
+      if (tx.IsCoinBase() || !tx.IsFinal(TEST_COIN_IFACE)) {
+fprintf(stderr, "DEBUG: test_CrateNewBlock: skipping non-finalized mempool\n");
         continue;
+}
 
       TESTOrphan* porphan = NULL;
       double dPriority = 0;
@@ -424,13 +426,17 @@ continue;
 
       // Size limits
       unsigned int nTxSize = ::GetSerializeSize(tx, SER_NETWORK, TEST_PROTOCOL_VERSION);
-      if (nBlockSize + nTxSize >= MAX_BLOCK_SIZE_GEN(iface))
+      if (nBlockSize + nTxSize >= MAX_BLOCK_SIZE_GEN(iface)) {
+fprintf(stderr, "DEBUG: test_CrateNewBlock: nTxSize too big (%d)\n", nTxSize);
         continue;
+}
 
       // Legacy limits on sigOps:
       unsigned int nTxSigOps = tx.GetLegacySigOpCount();
-      if (nBlockSigOps + nTxSigOps >= MAX_BLOCK_SIGOPS(iface))
+      if (nBlockSigOps + nTxSigOps >= MAX_BLOCK_SIGOPS(iface)) {
+fprintf(stderr, "DEBUG: test_CrateNewBlock: too many sigops\n");
         continue;
+}
 
       // Transaction fee required depends on block size
       // testd: Reduce the exempted free transactions to 500 bytes (from Bitcoin's 3000 bytes)
@@ -442,19 +448,27 @@ continue;
       map<uint256, CTxIndex> mapTestPoolTmp(mapTestPool);
       MapPrevTx mapInputs;
       bool fInvalid;
-      if (!tx.FetchInputs(txdb, mapTestPoolTmp, NULL, true, mapInputs, fInvalid))
+      if (!tx.FetchInputs(txdb, mapTestPoolTmp, NULL, true, mapInputs, fInvalid)) {
+fprintf(stderr, "DEBUG: test_CrateNewBlock: !tx.FetchInputs()\n");
         continue;
+}
 
       int64 nTxFees = tx.GetValueIn(mapInputs)-tx.GetValueOut();
-      if (nTxFees < nMinFee)
+      if (nTxFees < nMinFee) {
+fprintf(stderr, "DEBUG: test_CrateNewBlock: nTxFees < nMinFee\n");
         continue;
+}
 
       nTxSigOps += tx.GetP2SHSigOpCount(mapInputs);
-      if (nBlockSigOps + nTxSigOps >= MAX_BLOCK_SIGOPS(iface))
+      if (nBlockSigOps + nTxSigOps >= MAX_BLOCK_SIGOPS(iface)) {
+fprintf(stderr, "DEBUG: >MAX_BLOCK_SIGOPS\n");
         continue;
+}
 
-      if (!test_ConnectInputs(&tx, mapInputs, mapTestPoolTmp, CDiskTxPos(0,0,0), pindexPrev, false, true))
+      if (!test_ConnectInputs(&tx, mapInputs, mapTestPoolTmp, CDiskTxPos(0,0,0), pindexPrev, false, true)) {
+fprintf(stderr, "DEBUG: !test_ConnectInputs()\n");
         continue;
+}
       mapTestPoolTmp[tx.GetHash()] = CTxIndex(CDiskTxPos(0,0,0), tx.vout.size());
       swap(mapTestPool, mapTestPoolTmp);
 
@@ -1689,9 +1703,13 @@ bool TESTBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)
     if (fEnforceBIP30) {
       CTxIndex txindexOld;
       if (txdb.ReadTxIndex(hashTx, txindexOld)) {
-        BOOST_FOREACH(CDiskTxPos &pos, txindexOld.vSpent)
-          if (pos.IsNull())
-            return error(SHERR_INVAL, "TESTBlock::ConnectBlock: BIP30 enforced at height %d (%s)\n", pindex->nHeight, pindex->GetBlockHash().GetHex().c_str());
+        BOOST_FOREACH(CDiskTxPos &pos, txindexOld.vSpent) {
+          if (pos.IsNull()) {
+fprintf(stderr, "DEBUG: ConnectBlock: POS: %s\n", txindexOld.pos.ToString().c_str()); 
+            tx.print();
+            return error(SHERR_INVAL, "TESTBlock::ConnectBlock: BIP30 enforced at height %d (block %s) (tx %s)\n", pindex->nHeight, pindex->GetBlockHash().GetHex().c_str(), tx.GetHash().GetHex().c_str());
+          }
+        }
       }
     }
 

@@ -456,8 +456,6 @@ class CTransactionCore
 
     static const int TXF_VERSION = (1 << 0);
     static const int TXF_VERSION_2 = (1 << 1);
-    static const int TXF_STAMP = (1 << 2);
-    static const int TXF_ENTITY = (1 << 3);
     static const int TXF_CERTIFICATE = (1 << 4);
     static const int TXF_LICENSE = (1 << 5);
     static const int TXF_ALIAS = (1 << 6);
@@ -524,7 +522,6 @@ class CTransaction : public CTransactionCore
 {
 public:
 
-    CCertEnt entity;
     CCert certificate;
     CLicense license;
     CAlias alias;
@@ -544,8 +541,6 @@ public:
     IMPLEMENT_SERIALIZE
     (
       READWRITE(*(CTransactionCore*)this);
-      if (this->nFlag & TXF_ENTITY)
-        READWRITE(entity);
       if (this->nFlag & TXF_CERTIFICATE)
         READWRITE(certificate);
       if (this->nFlag & TXF_LICENSE)
@@ -561,8 +556,6 @@ public:
     void Init(const CTransaction& tx)
     {
       CTransactionCore::Init(tx);
-      if (this->nFlag & TXF_ENTITY)
-        entity = tx.entity;
       if (this->nFlag & TXF_CERTIFICATE)
         certificate = tx.certificate;
       if (this->nFlag & TXF_LICENSE)
@@ -784,14 +777,13 @@ public:
 
     CAlias *CreateAlias(std::string name, const uint160& hash);
 
-    CCertEnt *CreateEntity(const char *name, cbuff secret);
-    CCert *CreateCert(CCertEnt *issuer, const char *name, cbuff secret);
+    CCert *CreateCert(const char *name, cbuff secret, int64 nLicenseFee);
     CLicense *CreateLicense(CCert *cert, uint64_t lic_crc);
 
-    COffer *CreateOffer(string strAccount, int ifaceIndex, int64 nValue, int originIndex, int64 nOriginValue);
-    COfferAccept *AcceptOffer(uint160 hashOffer, int64 nValue, int64 nOriginValue);
-    COfferAccept *GenerateOffer(uint160 hashOffer, int64 nValue, int64 nOriginValue);
-    COfferAccept *PayOffer(uint160 hashOffer, int64 nValue, int64 nOriginValue);
+    COffer *CreateOffer();
+    COfferAccept *AcceptOffer(COffer *offerIn);
+    COffer *GenerateOffer(COffer *offerIn);
+    COfferAccept *PayOffer(COfferAccept *accept);
     COffer *RemoveOffer(uint160 hashOffer);
 
     CAsset *CreateAsset(string strAssetName, string strAssetHash);

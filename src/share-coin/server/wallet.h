@@ -80,15 +80,12 @@ public:
     mutable unsigned int nScanHeight;
 
     mutable std::map<std::string, uint256> mapAlias;
-    mutable std::map<std::string, uint256> mapAliasPending;
     mutable std::map<std::string, uint256> mapCertIssuer;
-    mutable std::map<std::string, uint256> mapCertIssuerPending;
     mutable std::map<uint160, uint256> mapCert;
-    mutable std::map<uint160, uint256> mapCertPending;
+    mutable std::map<uint160, uint256> mapLicense;
     mutable std::map<uint160, uint256> mapOffer;
-    mutable std::map<uint160, uint256> mapOfferPending;
+    mutable std::map<uint160, uint256> mapOfferAccept;
     mutable std::map<uint160, uint256> mapAsset;
-    mutable std::map<uint160, uint256> mapAssetPending;
 
     bool fFileBacked;
     std::string strWalletFile;
@@ -786,7 +783,7 @@ CCoinAddr GetAccountAddress(CWallet *wallet, string strAccount, bool bForceNew=f
 /** 
  * Send coins with the inclusion of a specific input transaction.
  */
-bool SendMoneyWithExtTx(CIface *iface, CWalletTx& wtxIn, CWalletTx& wtxNew, const CScript& scriptPubKey, vector<pair<CScript, int64> > vecSend);
+bool SendMoneyWithExtTx(CIface *iface, CWalletTx& wtxIn, CWalletTx& wtxNew, const CScript& scriptPubKey, vector<pair<CScript, int64> > vecSend, int64 txFee = 0);
 
 bool GetCoinAddr(CWallet *wallet, CCoinAddr& addrAccount, string& strAccount);
 

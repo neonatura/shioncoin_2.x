@@ -44,14 +44,14 @@ cert_list *GetCertTable(int ifaceIndex)
   return (&wallet->mapCert);
 }
 
-cert_list *GetCertPendingTable(int ifaceIndex)
+cert_list *GetLicenseTable(int ifaceIndex)
 {
   if (ifaceIndex < 0 || ifaceIndex >= MAX_COIN_IFACE)
     return (NULL);
   CWallet *wallet = GetWallet(ifaceIndex);
   if (!wallet)
     return (NULL);
-  return (&wallet->mapCert);
+  return (&wallet->mapLicense);
 }
 
 bool DecodeCertHash(const CScript& script, int& mode, uint160& hash)
@@ -75,6 +75,44 @@ bool DecodeCertHash(const CScript& script, int& mode, uint160& hash)
   }
   op = CScript::DecodeOP_N(opcode); /* extension type (cert) */
   if (op != OP_CERT) {
+    return false;
+  }
+
+  vector<unsigned char> vch;
+  if (!script.GetOp(pc, opcode, vch)) {
+    return false;
+  }
+  if (opcode != OP_HASH160)
+    return (false);
+
+  if (!script.GetOp(pc, opcode, vch)) {
+    return false;
+  }
+  hash = uint160(vch);
+  return (true);
+}
+
+bool DecodeLicenseHash(const CScript& script, int& mode, uint160& hash)
+{
+  CScript::const_iterator pc = script.begin();
+  opcodetype opcode;
+  int op;
+
+  if (!script.GetOp(pc, opcode)) {
+    return false;
+  }
+  mode = opcode; /* extension mode (new/activate/update) */
+  if (mode < 0xf0 || mode > 0xf9)
+    return false;
+
+  if (!script.GetOp(pc, opcode)) { 
+    return false;
+  }
+  if (opcode < OP_1 || opcode > OP_16) {
+    return false;
+  }
+  op = CScript::DecodeOP_N(opcode); /* extension type (cert) */
+  if (op != OP_LICENSE) {
     return false;
   }
 
@@ -221,6 +259,31 @@ bool IsCertTx(const CTransaction& tx)
   return (true);
 }
 
+bool IsLicenseTx(const CTransaction& tx)
+{
+  int tot;
+
+  if (!tx.isFlag(CTransaction::TXF_LICENSE)) {
+    return (false);
+  }
+
+  tot = 0;
+  BOOST_FOREACH(const CTxOut& out, tx.vout) {
+    uint160 hash;
+    int mode;
+
+    if (DecodeLicenseHash(out.scriptPubKey, mode, hash)) {
+      tot++;
+    }
+  }
+  if (tot == 0) {
+    return false;
+  }
+
+  return (true);
+}
+
+#if 0
 bool IsCertEntTx(const CTransaction& tx)
 {
   int tot;
@@ -244,40 +307,7 @@ bool IsCertEntTx(const CTransaction& tx)
 
   return (true);
 }
-
-/**
- * Obtain the tx that defines this cert.
- */
-bool GetTxOfCert(CIface *iface, const uint160& hashCert, CTransaction& tx) 
-{
-  int ifaceIndex = GetCoinIndex(iface);
-  cert_list *certes = GetCertTable(ifaceIndex);
-  bool ret;
-
-  if (certes->count(hashCert) == 0) {
-    return false; /* nothing by that name, sir */
-  }
-
-  uint256 hashBlock;
-  uint256 hashTx = (*certes)[hashCert];
-  CTransaction txIn;
-  ret = GetTransaction(iface, hashTx, txIn, NULL);
-  if (!ret) {
-    return false;
-  }
-
-  if (!IsCertTx(txIn)) 
-    return false; /* inval; not an cert tx */
-
-#if 0
-  if (txIn.certificate.IsExpired()) {
-    return false;
-  }
 #endif
-
-  tx.Init(txIn);
-  return true;
-}
 
 bool IsLocalCert(CIface *iface, const CTxOut& txout) 
 {
@@ -299,7 +329,7 @@ bool IsLocalCert(CIface *iface, const CTransaction& tx)
 
 
 /**
- * Verify the integrity of an cert transaction.
+ * Verify the integrity of an certificate.
  */
 bool VerifyCert(CTransaction& tx)
 {
@@ -334,6 +364,54 @@ bool VerifyCert(CTransaction& tx)
   return (true);
 }
 
+/**
+ * Verify the integrity of a license
+ */
+bool VerifyLicense(CTransaction& tx)
+{
+  uint160 hashLicense;
+  int nOut;
+
+  /* core verification */
+  if (!IsLicenseTx(tx)) {
+fprintf(stderr, "DEBUG: VerifyLicense: !IsLicenseTx:\n");
+tx.print();
+    return (false); /* tx not flagged as cert */
+}
+
+  /* verify hash in pub-script matches cert hash */
+  nOut = IndexOfExtOutput(tx);
+  if (nOut == -1) {
+fprintf(stderr, "DEBUG: VerifyLicense: !IndexOfExtOutput\n");
+    return (false); /* no extension output */
+}
+
+  int mode;
+  if (!DecodeLicenseHash(tx.vout[nOut].scriptPubKey, mode, hashLicense)) {
+fprintf(stderr, "DEBUG: VerifyLicense: no hashLicense\n");
+    return (false); /* no cert hash in output */
+}
+
+  if (mode != OP_EXT_NEW &&
+      mode != OP_EXT_UPDATE &&
+      mode != OP_EXT_TRANSFER &&
+      mode != OP_EXT_REMOVE) {
+fprintf(stderr, "DEBUG: VerifyLicense: mode %d error\n", mode);
+    return (false);
+}
+
+  CLicense *lic = &tx.license;
+  if (hashLicense != lic->GetHash()) {
+fprintf(stderr, "DEBUG: VerifyLicense: hash mismatch\n");
+    return (false); /* cert hash mismatch */
+}
+
+/* DEBUG: TODO verifyLicenseInputs() */
+
+  return (true);
+}
+
+#if 0
 bool GetCertEntByHash(CIface *iface, uint160 hash, CCertEnt& issuer)
 {
   int ifaceIndex = GetCoinIndex(iface);
@@ -354,8 +432,60 @@ bool GetCertEntByHash(CIface *iface, uint160 hash, CCertEnt& issuer)
   issuer = tx.entity;
   return (true);
 }
+#endif
 
-int init_cert_tx(CIface *iface, string strAccount, string strTitle, cbuff vchSecret, uint160 hashIssuer, CWalletTx& wtx)
+/**
+ * Obtain the block-chain tx that encapsulates a certificate
+ * @param hash The certificate hash.
+ */
+bool GetTxOfCert(CIface *iface, const uint160& hash, CTransaction& tx)
+{
+  int ifaceIndex = GetCoinIndex(iface);
+  cert_list *certs = GetCertTable(ifaceIndex);
+
+  if (certs->count(hash) == 0)
+    return (false);
+
+  uint256 hashTx = (*certs)[hash];
+  bool ret = GetTransaction(iface, hashTx, tx, NULL);
+  if (!ret)
+    return (false);
+
+  if (!IsCertTx(tx)) {
+fprintf(stderr, "DEBUG: GetCertByhash(): !IsCertTx\n");
+    return (false);
+}
+
+  tx.certificate.SetActive(true);
+  return (true);
+}
+
+/**
+ * Obtain the block-chain tx that encapsulates a license.
+ * @param hash The license hash.
+ */
+bool GetTxOfLicense(CIface *iface, const uint160& hash, CTransaction& tx)
+{
+  int ifaceIndex = GetCoinIndex(iface);
+  cert_list *licenses = GetLicenseTable(ifaceIndex);
+
+  if (licenses->count(hash) == 0)
+    return (false);
+
+  uint256 hashTx = (*licenses)[hash];
+  bool ret = GetTransaction(iface, hashTx, tx, NULL);
+  if (!ret)
+    return (false);
+
+  if (!IsLicenseTx(tx)) {
+fprintf(stderr, "DEBUG: GetLicenseByhash(): !IsLicenseTx\n");
+    return (false);
+}
+
+  return (true);
+}
+
+int init_cert_tx(CIface *iface, string strAccount, string strTitle, cbuff vchSecret, int64 nLicenseFee, CWalletTx& wtx)
 {
   CWallet *wallet = GetWallet(iface);
   int ifaceIndex = GetCoinIndex(iface);
@@ -365,16 +495,19 @@ int init_cert_tx(CIface *iface, string strAccount, string strTitle, cbuff vchSec
   if(strTitle.length() > 135)
     return (SHERR_INVAL);
 
+  CCoinAddr addr = GetAccountAddress(wallet, strAccount, true);
+  if (!addr.IsValid())
+    return (SHERR_INVAL);
+
   CCert *cert;
   string strExtAccount = "@" + strAccount;
   CCoinAddr extAddr = GetAccountAddress(wallet, strExtAccount, true);
 
-  CCertEnt issuer; 
-  GetCertEntByHash(iface, hashIssuer, issuer); /* optional */
-
   /* embed cert content into transaction */
   wtx.SetNull();
-  cert = wtx.CreateCert(&issuer, strTitle.c_str(), vchSecret);
+  cert = wtx.CreateCert(strTitle.c_str(), vchSecret, nLicenseFee);
+  cert->SetActive(true); /* auto-activate */
+  cert->vAddr = vchFromString(addr.ToString());
   wtx.strFromAccount = strAccount; /* originating account for payment */
 
   int64 nFee = GetCertOpFee(iface, GetBestHeight(iface));
@@ -407,5 +540,86 @@ int init_cert_tx(CIface *iface, string strAccount, string strTitle, cbuff vchSec
   return (0);
 }
 
+/**
+ * A license tranaction pays back it's fee to the address which certifies it. 
+ * @param iface The coin service interface.
+ * @param strAccount The coin account name to conduct the transaction with.
+ * @param vchSecret Private data which is
+ * @note A license is not modifable after it has been issued.
+ */
+int init_license_tx(CIface *iface, string strAccount, uint160 hashCert, uint64_t nCrc, CWalletTx& wtx)
+{
+  CWallet *wallet = GetWallet(iface);
+  int ifaceIndex = GetCoinIndex(iface);
 
 
+  CTransaction tx;
+  bool hasCert = GetTxOfCert(iface, hashCert, tx);
+  if (!hasCert)
+    return (SHERR_NOENT);
+
+  /* destination (certificate owner) */
+  CCoinAddr certAddr(stringFromVch(tx.certificate.vAddr));
+  if (!certAddr.IsValid())
+    return (SHERR_INVAL);
+  
+  string strExtAccount = "@" + strAccount;
+  CCoinAddr extAddr = GetAccountAddress(wallet, strExtAccount, true);
+
+  /* embed cert content into transaction */
+  wtx.SetNull();
+  wtx.strFromAccount = strAccount; /* originating account for payment */
+
+  CLicense *lic = wtx.CreateLicense(&tx.certificate, nCrc);
+  if (!lic) {
+fprintf(stderr, "DEBUG: NULL = wtx.CreateLicense()\n");
+    return (SHERR_INVAL);
+}
+
+  int64 nCertFee = lic->nFee; 
+  int64 nTxFee = GetCertOpFee(iface, GetBestHeight(iface));
+
+  int64 bal = GetAccountBalance(ifaceIndex, strAccount, 1);
+  if (bal < (nCertFee + nTxFee))
+    return (SHERR_AGAIN);
+
+  /* send to extended tx storage account */
+  uint160 licHash = lic->GetHash();
+
+  /* send license fee (from cert) to cert owner */
+  CWalletTx l_wtx;
+  CScript certPubKey;
+  certPubKey.SetDestination(certAddr.Get());
+  string strError = wallet->SendMoney(certPubKey, nCertFee, l_wtx, false);
+  if (strError != "") {
+    error(ifaceIndex, strError.c_str());
+    return (SHERR_INVAL);
+  }
+
+  /* send license fee (of tx op) to nowhere. */
+  CScript scriptPubKey;
+  scriptPubKey << OP_EXT_NEW << CScript::EncodeOP_N(OP_LICENSE) << OP_HASH160 << licHash << OP_2DROP << OP_RETURN;
+  string certStrError = wallet->SendMoney(scriptPubKey, nTxFee, wtx, false);
+  if (certStrError != "") {
+    error(ifaceIndex, certStrError.c_str());
+    return (SHERR_INVAL);
+  }
+
+  /* todo: add to pending instead */
+  wallet->mapLicense[licHash] = wtx.GetHash();
+
+  Debug("SENT:LICENSENEW : lichash=%s, tx=%s\n", lic->GetHash().ToString().c_str(), wtx.GetHash().GetHex().c_str());
+
+  return (0);
+}
+
+
+
+void CLicense::NotifySharenet(int ifaceIndex)
+{
+  CIface *iface = GetCoinByIndex(ifaceIndex);
+  if (!iface || !iface->enabled) return;
+  //memcpy(&license.lic_cert, cert->GetHash().GetKey(), sizeof(license.lic_cert.code));
+
+//  shnet_inform(iface, TX_LICENSE, &license, sizeof(license));
+}

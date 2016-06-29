@@ -34,6 +34,10 @@
 #include "server/asset.h"
 
 
+extern bool GetTxOfCert(CIface *iface, const uint160& hash, CTransaction& tx);
+extern bool GetTxOfLicense(CIface *iface, const uint160& hash, CTransaction& tx);
+
+
 
 
 
@@ -337,6 +341,18 @@ _TEST(aliastx)
 
   _TRUE(wtx.CheckTransaction(TEST_COIN_IFACE) == true); /* .. */
   _TRUE(VerifyAlias(wtx) == true);
+
+/* insert into block-chain */
+  for (idx = 0; idx < 5; idx++) {
+    CBlock *block = test_GenerateBlock();
+    _TRUEPTR(block);
+    _TRUE(ProcessBlock(NULL, block) == true);
+    delete block;
+  }
+
+CTransaction t_tx;
+string strTitle("test");
+_TRUE(GetTxOfAlias(iface, strTitle, t_tx) == true);
 }
 
 
@@ -385,6 +401,82 @@ _TEST(assettx)
 
   _TRUE(wtx.CheckTransaction(TEST_COIN_IFACE)); /* .. */
   _TRUE(VerifyAsset(wtx) == true);
+}
+
+_TEST(certtx)
+{
+  CWallet *wallet = GetWallet(TEST_COIN_IFACE);
+  CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
+  int idx;
+  int err;
+
+
+  string strLabel("");
+
+  /* create a coin balance */
+  for (idx = 0; idx < 15; idx++) {
+    CBlock *block = test_GenerateBlock();
+    _TRUEPTR(block);
+    _TRUE(ProcessBlock(NULL, block) == true);
+    delete block;
+  }
+
+  CCoinAddr addr = GetAccountAddress(wallet, strLabel, false);
+  _TRUE(addr.IsValid() == true);
+
+  CWalletTx wtx;
+  const char *raw = "test-secret";
+  cbuff vchSecret(raw, raw+strlen(raw));
+  uint160 issuer;
+  err = init_cert_tx(iface, strLabel, "test", vchSecret, 1, wtx);
+fprintf(stderr, "DEBUG: CERTTX: %d = init_cert_tx()\n", err); 
+  _TRUE(0 == err);
+  uint160 hashCert = wtx.certificate.GetHash();
+ // uint256 hashTx = wtx.GetHash();
+
+  _TRUE(wtx.CheckTransaction(TEST_COIN_IFACE)); /* .. */
+  _TRUE(VerifyCert(wtx) == true);
+
+  /* insert cert into chain + create a coin balance */
+  for (idx = 0; idx < 10; idx++) {
+    CBlock *block = test_GenerateBlock();
+    _TRUEPTR(block);
+    _TRUE(ProcessBlock(NULL, block) == true);
+    delete block;
+  }
+
+  /* verify insertion */
+  CTransaction t_tx;
+  _TRUE(GetTxOfCert(iface, hashCert, t_tx) == true);
+
+  /* generake test license from certificate */
+  CWalletTx lic_wtx;
+  err = init_license_tx(iface, strLabel, hashCert, 0x1, lic_wtx);
+  fprintf(stderr, "DEBUG: %d = init_license_tx()\n", err);
+#if 0
+  if (err == -2) {
+    CTxMemPool *mempool = GetTxMemPool(iface);
+    if (mempool->exists(hashTx)) {
+      fprintf(stderr, "DEBUG: tx '%s' still in mempool\n", hashTx.GetHex().c_str());
+    }
+  }
+#endif
+  _TRUE(0 == err);
+
+  _TRUE(lic_wtx.CheckTransaction(TEST_COIN_IFACE)); /* .. */
+  _TRUE(VerifyLicense(lic_wtx) == true);
+  uint160 licHash = lic_wtx.license.GetHash();
+
+  for (idx = 0; idx < 3; idx++) {
+    CBlock *block = test_GenerateBlock();
+    _TRUEPTR(block);
+    _TRUE(ProcessBlock(NULL, block) == true);
+    delete block;
+  }
+
+  /* verify insertion */
+  CTransaction t2_tx;
+  _TRUE(GetTxOfLicense(iface, licHash, t2_tx) == true);
 }
 
 

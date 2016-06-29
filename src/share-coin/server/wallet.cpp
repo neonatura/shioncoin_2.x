@@ -2117,7 +2117,8 @@ int IndexOfExtOutput(const CTransaction& tx)
 bool SendMoneyWithExtTx(CIface *iface,
     CWalletTx& wtxIn, CWalletTx& wtxNew,
     const CScript& scriptPubKey,
-    vector<pair<CScript, int64> > vecSend)
+    vector<pair<CScript, int64> > vecSend,
+    int64 txFee)
 {
   CWallet *pwalletMain = GetWallet(iface);
   CReserveKey reservekey(pwalletMain);
@@ -2130,8 +2131,10 @@ bool SendMoneyWithExtTx(CIface *iface,
   }
 
   /* insert as initial position. this is 'primary' operation. */
-  vecSend.insert(vecSend.begin(),
-      make_pair(scriptPubKey, wtxIn.vout[nTxOut].nValue));
+  int64 tx_val = wtxIn.vout[nTxOut].nValue;
+  txFee = MAX(0, MIN(tx_val - iface->min_tx_fee, txFee));
+  int64 nValue = tx_val - txFee;
+  vecSend.insert(vecSend.begin(), make_pair(scriptPubKey, nValue));
 
 	if (!CreateTransactionWithInputTx(iface,
         vecSend, wtxIn, nTxOut, wtxNew, reservekey)) {

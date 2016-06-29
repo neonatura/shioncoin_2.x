@@ -750,6 +750,17 @@ inv.ifaceIndex = USDE_COIN_IFACE;
   {
     pfrom->vAddrToSend.clear();
 
+    /* send our own */
+    if (pfrom->fSuccessfullyConnected)
+    {
+      CAddress addrLocal = GetLocalAddress(&pfrom->addr);
+      if (addrLocal.IsRoutable() && (CService)addrLocal != (CService)pfrom->addrLocal)
+      {
+        pfrom->PushAddress(addrLocal);
+        pfrom->addrLocal = addrLocal;
+      }
+    }
+
 #if 0
     vector<CAddress> vAddr;
     vector<CAddress> vAddr = addrman.GetAddr();

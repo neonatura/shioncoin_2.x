@@ -11,13 +11,11 @@ class CCoinAddr;
 class COfferCore : public CExtCore 
 {
   public:
-    cbuff vSrcAddr;
-    cbuff vDestAddr;
-    int64 nSrcValue;
-    int64 nDestValue;
-
-    mutable bool bPaid;
-    mutable std::string strAccount;
+    cbuff vPayAddr;
+    cbuff vXferAddr;
+    cbuff vXferTx;
+    int64 nPayValue;
+    int64 nXferValue;
 
     COfferCore() { 
       SetNull();
@@ -29,35 +27,35 @@ class COfferCore : public CExtCore
       Init(offerIn);
     }
 
-
     IMPLEMENT_SERIALIZE (
       READWRITE(*(CExtCore *)this);
-      READWRITE(vSrcAddr);
-      READWRITE(vDestAddr);
-      READWRITE(nSrcValue);
-      READWRITE(nDestValue);
+      READWRITE(vPayAddr);
+      READWRITE(vXferAddr);
+      READWRITE(vXferTx);
+      READWRITE(nPayValue);
+      READWRITE(nXferValue);
     )
 
 
     friend bool operator==(const COfferCore &a, const COfferCore &b) {
       return (
           ((CExtCore&) a) == ((CExtCore&) b) &&
-          a.vSrcAddr == b.vSrcAddr &&
-          a.vDestAddr == b.vDestAddr &&
-          a.nSrcValue == b.nSrcValue &&
-          a.nDestValue == b.nDestValue 
+          a.vPayAddr == b.vPayAddr &&
+          a.vXferAddr == b.vXferAddr &&
+          a.vXferTx == b.vXferTx &&
+          a.nPayValue == b.nPayValue &&
+          a.nXferValue == b.nXferValue 
           );
     }
 
     void Init(const COfferCore& b)
     {
       CExtCore::Init(b);
-      vSrcAddr = b.vSrcAddr;
-      vDestAddr = b.vDestAddr;
-      nSrcValue = b.nSrcValue;
-      nDestValue = b.nDestValue;
-      strAccount = b.strAccount;
-      bPaid = b.bPaid;
+      vPayAddr = b.vPayAddr;
+      vXferAddr = b.vXferAddr;
+      vXferTx = b.vXferTx;
+      nPayValue = b.nPayValue;
+      nXferValue = b.nXferValue;
     }
 
     COfferCore operator=(const COfferCore &b)
@@ -73,18 +71,16 @@ class COfferCore : public CExtCore
     void SetNull() 
     {
       CExtCore::SetNull();
-      vSrcAddr.clear(); 
-      vDestAddr.clear(); 
-      nSrcValue = 0;
-      nDestValue = 0;
-
-      strAccount.clear();
-      bPaid = false;
+      vPayAddr.clear(); 
+      vXferAddr.clear(); 
+      vXferTx.clear(); 
+      nPayValue = 0;
+      nXferValue = 0;
     }
 
     bool IsNull() const 
     {
-      return (nSrcValue == 0 && nDestValue == 0);
+      return (nPayValue == 0 || nXferValue == 0);
     }
 
     const uint160 GetHash()
@@ -95,32 +91,15 @@ class COfferCore : public CExtCore
       return Hash160(rawbuf);
     }
 
-    bool IsPaid()
-    {
-      return (bPaid);
-    }
 
-    void SetPaid(bool bPaidIn)
-    {
-      bPaid = bPaidIn;
-    }
-
-    std::string GetAccount()
-    {
-      return (strAccount);
-    }
-
-    void SetAccount(std::string strAccountIn)
-    {
-      strAccount = strAccountIn;
-    }
+    bool GetPayAddr(int ifaceIndex, CCoinAddr& addr);
+    bool GetXferAddr(int ifaceIndex, CCoinAddr& addr, std::string& account);
 };
 
 class COfferAccept : public COfferCore 
 {
   public:
     uint160 hashOffer;
-    shtime_t nTime;
 
     COfferAccept() {
       SetNull();
@@ -137,27 +116,21 @@ class COfferAccept : public COfferCore
       SetNull();
       COfferCore::Init(b);
       hashOffer = b.GetHash();
-      vSrcAddr.clear();
-      vDestAddr.clear();
     }
 
     COfferAccept(const uint160& hashOfferIn, int64 srcValueIn, int64 destValueIn)
     {
       hashOffer = hashOfferIn;
-      nSrcValue = srcValueIn;
-      nDestValue = destValueIn;
     }
 
     IMPLEMENT_SERIALIZE (
       READWRITE(*(COfferCore *)this);
       READWRITE(hashOffer);
-      READWRITE(this->nTime);
     )
 
     friend bool operator==(const COfferAccept &a, const COfferAccept &b) {
       return (
           ((COfferCore&) a) == ((COfferCore&) b) &&
-          a.nTime == b.nTime &&
           a.hashOffer == b.hashOffer
           );
     }
@@ -175,7 +148,6 @@ class COfferAccept : public COfferCore
     void Init(const COfferAccept& b)
     {
       COfferCore::Init(b);
-      nTime = b.nTime;
       hashOffer = b.hashOffer;
     }
 
@@ -183,59 +155,73 @@ class COfferAccept : public COfferCore
     {
       COfferCore::SetNull();
       hashOffer = 0;
-      nTime = shtime();
     }
 
     bool IsNull() const 
     {
-      return (nTime == 0 && hashOffer == 0);
+      return (COfferCore::IsNull());
     }
 
+    const uint160 GetHash()
+    {
+      uint256 hash = SerializeHash(*this);
+      unsigned char *raw = (unsigned char *)&hash;
+      cbuff rawbuf(raw, raw + sizeof(hash));
+      return Hash160(rawbuf);
+    }
     
 };
 
-class COffer : public COfferCore 
+class COffer : public COfferAccept
 {
-  protected:
-    int nSrcCoin;
-    int nDestCoin;
-    unsigned int nType;
-
   public:
+    int nPayCoin;
+    int nXferCoin;
+    unsigned int nType;
     std::vector<COfferAccept>accepts;
 
     COffer() {
       SetNull();
     }
 
-    COffer(std::string strAccountIn, int srcIndex, int64 srcValue, int destIndex, int64 destValue)
+    COffer(const COffer& offerIn)
     {
-      SetAccount(strAccountIn);
-      nSrcValue = srcValue;
-      nDestValue = destValue;
-
-      nSrcCoin = srcIndex;
-      nDestCoin = destIndex;
+      SetNull();
+      Init(offerIn);
+    }
+    COffer(const COfferAccept& accept)
+    {
+      SetNull();
+      COfferAccept::Init(accept);
     }
 
     IMPLEMENT_SERIALIZE (
-        READWRITE(*(COfferCore *)this);
-        READWRITE(this->nSrcCoin);
-        READWRITE(this->nDestCoin);
-        READWRITE(this->accepts);
+        READWRITE(*(COfferAccept *)this);
+        READWRITE(this->nPayCoin);
+        READWRITE(this->nXferCoin);
         READWRITE(this->nType);
-    )
+        READWRITE(this->vXferTx);
+        READWRITE(this->accepts);
+        )
 
-    friend bool operator==(const COffer &a, const COffer &b) {
-      return (
-          ((COfferCore&) a) == ((COfferCore&) b) &&
-          a.accepts == b.accepts
-          );
-    }
+      friend bool operator==(const COffer &a, const COffer &b) {
+        return (
+            ((COfferAccept&) a) == ((COfferAccept&) b) &&
+            a.nPayCoin == b.nPayCoin &&
+            a.nXferCoin == b.nXferCoin &&
+            a.nType == b.nType &&
+            a.vXferTx == b.vXferTx &&
+            a.accepts == b.accepts
+            );
+      }
 
     COffer operator=(const COffer &b) {
-      COfferCore::Init(b);
-      accepts = b.accepts; 
+      COfferAccept::Init(b);
+      nPayCoin = b.nPayCoin;
+      nXferCoin = b.nXferCoin;
+      nType = b.nType;
+      vXferTx = b.vXferTx;
+      accepts = b.accepts;
       return *this;
     }
 
@@ -245,32 +231,51 @@ class COffer : public COfferCore
 
     void SetNull()
     {
-      COfferCore::SetNull();
-      nSrcCoin = -1;
-      nDestCoin = -1;
-      accepts.clear();
+      COfferAccept::SetNull();
+      nPayCoin = -1;
+      nXferCoin = -1;
       nType = 16; /* reserved */
+      vXferTx.clear();
+      accepts.clear();
     }
 
     bool IsNull() const 
     {
-      return (COfferCore::IsNull());
+      return (COfferAccept::IsNull());
     }
 
-    CIface *GetSrcIface()
+    CIface *GetPayIface()
     {
-      return (GetCoinByIndex(nSrcCoin));
+      return (GetCoinByIndex(nPayCoin));
     }
 
-    CIface *GetDestIface()
+    CIface *GetXferIface()
     {
-      return (GetCoinByIndex(nDestCoin));
+      return (GetCoinByIndex(nXferCoin));
     }
 };
 
+
+
+
 bool VerifyOffer(CTransaction& tx);
 
-int64 GetOfferOpFee(CIface *iface, int nHeight); 
+/**
+ * The coin cost to initiate a offer or offer-accept transaction.
+ * @note This is effectively minimized to the smallest possible expense.
+ */
+int64 GetOfferOpFee(CIface *iface);
+
+/**
+ * @param iface The primary coin interface
+ * @param strAccount The account name to conduct transactions for.
+ * @param srcValue A positive (offering) or negative (requesting) coin value.
+ * @param destIndex The counter-coin interface index.
+ * @param destValue The counter-coin value being offered (+) or requested (-).
+ * @param wtx Filled with the offer transaction being performed.
+ * @note One of the coin values must be negative and the other positive.
+ */
+int init_offer_tx(CIface *iface, std::string strAccount, int64 srcValue, int destIndex, int64 destValue, CWalletTx& wtx);
 
 
 
