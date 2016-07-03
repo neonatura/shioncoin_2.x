@@ -4,7 +4,7 @@ share-coin
 <h4>Part of the Share Library Suite.</b>
 
 <h3>Stratum + SHC + USDe Coin Service</h3>
-A stratum server for the SHC and USDe virtual currency is embedded into the shc and usde coin services via the program "shcoind". The "shc" and "usde" client programs are provided to perform RPC commands against the coin server.
+The SHC and USDE virtual currency coin services, and a stratum service to handle mining, is embedded into the shc and usde coin services via the program "shcoind". The "shc" and "usde" client programs are provided to perform RPC commands against their respective coin services.
 
 Note: No daemon or utility programs from the share library suite is required in order to run the coin+stratum service. The C share library is staticly linked against the coin services, and a 'make install' is not required to run the program.
 
