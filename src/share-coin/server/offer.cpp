@@ -203,11 +203,8 @@ bool IsOfferTx(const CTransaction& tx)
 
     if (DecodeOfferHash(out.scriptPubKey, mode, hash)) {
       tot++;
-    } else {
-fprintf(stderr, "DEBUG: IsOfferTx: !DecodeOfferHash()\n");
-}
+    }
   }
-fprintf(stderr, "DEBUG: IsOfferTx: tot = %d\n", tot);
   if (tot == 0) {
     return false;
   }
@@ -336,8 +333,7 @@ bool AcceptOffer(CIface *iface, COffer *offer, COfferAccept& accept)
     xferValue += abs(t_accept.nXferValue); 
   }
 
-fprintf(stderr, "DEBUG: accept.nXferValue(%llu) xferValue(%llu) <= offer->nPayValue(%llu)\n", accept.nXferValue, xferValue, offer->nPayValue);
-fprintf(stderr, "DEBUG: accept.nPayValue(%llu) xferValue(%llu) <= offer->nPayValue(%llu)\n", accept.nPayValue, payValue, offer->nXferValue);
+//fprintf(stderr, "DEBUG: accept.nXferValue(%llu) xferValue(%llu) <= offer->nPayValue(%llu)\n", accept.nXferValue, xferValue, offer->nPayValue); fprintf(stderr, "DEBUG: accept.nPayValue(%llu) xferValue(%llu) <= offer->nPayValue(%llu)\n", accept.nPayValue, payValue, offer->nXferValue);
 
   /* verify limits */
   if (abs(accept.nXferValue) + xferValue > abs(offer->nPayValue))
@@ -348,7 +344,7 @@ fprintf(stderr, "DEBUG: accept.nPayValue(%llu) xferValue(%llu) <= offer->nPayVal
   /* verify ratio */
   double srate = abs(offer->nPayValue / accept.nXferValue);
   double drate = abs(offer->nXferValue / accept.nPayValue);
-fprintf(stderr, "DEBUG: srate(%f) drate(%f)\n", srate, drate);
+//fprintf(stderr, "DEBUG: srate(%f) drate(%f)\n", srate, drate);
   if (srate != drate) {
     /* invalid offer */
     return error(SHERR_INVAL, "AcceptOffer: offer has invalid exchange ratio.");
@@ -367,21 +363,18 @@ bool GenerateOffers(CIface *iface, COffer *offer)
   uint160 hashOffer = offer->GetHash();
   bool ret;
 
-fprintf(stderr, "DEBUG: GENERATE OFFERS: hashOffer '%s'\n", hashOffer.GetHex().c_str());
-
   map<uint160, uint256>::iterator mi = offers->begin(); 
   while (mi != offers->end()) {
     const uint160& hashAccept = (*mi).first;
     const uint256& hashTx = (*mi).second;
     mi++;
 
-fprintf(stderr, "DEBUG: found accept offer '%s'\n", hashAccept.GetHex().c_str());
+//fprintf(stderr, "DEBUG: found accept offer '%s'\n", hashAccept.GetHex().c_str());
 
     CTransaction tx;
     ret = GetTransaction(iface, hashTx, tx, NULL);
     if (!ret)
       return false;
-fprintf(stderr, "DEBUG: offer '%s'\n", tx.offer.hashOffer.GetHex().c_str());
 
     COfferAccept& accept = ((COfferAccept&) tx.offer);
     if (accept.hashOffer != hashOffer) {
@@ -438,7 +431,6 @@ fprintf(stderr, "DEBUG: FindOfferTxOut: no local tx '%s'\n", hashTx.GetHex().c_s
 
   alt_wtxIn = wallet->mapWallet[hashTx];
  
-fprintf(stderr, "DEBUG: FindOfferTxOut; pay addr '%s'\n", payAddr.ToString().c_str());
   for (nOut = 0; nOut < alt_wtxIn.vout.size(); nOut++) {
     CScript& pubKey = alt_wtxIn.vout[nOut].scriptPubKey;
     CTxDestination addr;
@@ -448,7 +440,6 @@ fprintf(stderr, "DEBUG: FindOfferTxOut; pay addr '%s'\n", payAddr.ToString().c_s
       continue;
 
     CCoinAddr cmp_addr(addr);
-fprintf(stderr, "DEBUG: FindOfferTxOut: out[%d] addr '%s'\n", cmp_addr.ToString().c_str());
     if (cmp_addr == payAddr)
       return (nOut);
   }
@@ -545,7 +536,6 @@ std::string OfferHoldAltCoin(CIface *iface, string strAccount, COfferAccept *off
   offer->hXferTx = wtx.GetHash();
   offer->vXferAddr = vchFromString(xferAddr.ToString());
   offer->nXferValue = nValue;
-fprintf(stderr, "DEBUG: OfferSendAltCoinToDest: offer->hXferTx '%s'\n", offer->hXferTx.GetHex().c_str());
 
   return string("");
 }
@@ -654,7 +644,6 @@ int init_offer_tx(CIface *iface, std::string strAccount, int64 srcValue, int des
 fprintf(stderr, "DEBUG: (%s) offer->hXferTx '%s'\n", strError.c_str(), offer->hXferTx.GetHex().c_str());
       return (SHERR_CANCELED);
     }
-fprintf(stderr, "DEBUG: offer->hXferTx '%s'\n", offer->hXferTx.GetHex().c_str());
   }
 
   uint160 offerHash = offer->GetHash();
@@ -680,12 +669,10 @@ fprintf(stderr, "DEBUG: offer->hXferTx '%s'\n", offer->hXferTx.GetHex().c_str())
   return (0);
 }
 
-int accept_offer_tx(CIface *iface, string strAccount, uint160 hashOffer, int64 srcValue, int64 destValue, CWalletTx& wtx)
+int accept_offer_tx(CIface *iface, std::string strAccount, uint160 hashOffer, int64 srcValue, int64 destValue, CWalletTx& wtx)
 {
   CWallet *wallet = GetWallet(iface);
   int ifaceIndex = GetCoinIndex(iface);
-
-fprintf(stderr, "DEBUG: accept_offer_tx: info: srcValue(%lld) destValue(%lld)\n", (long long)srcValue, (long long)destValue);
 
   if (ifaceIndex != TEST_COIN_IFACE &&
       ifaceIndex != SHC_COIN_IFACE)
@@ -743,7 +730,6 @@ fprintf(stderr, "DEBUG: bal(%lu) < nFee(%lu)\nn", (unsigned long)bal, (unsigned 
   wtx.strFromAccount = strAccount; /* originating account for payment */
   COfferAccept *accept = wtx.AcceptOffer(offer);
   accept->SetActive(true); /* auto-activate */
-fprintf(stderr, "DEBUG: accept->hashOffer '%s'\n", accept->hashOffer.GetHex().c_str());
 
   string strExtAccount = "@" + strAccount;
   CWallet *altWallet = GetWallet(destIndex);
@@ -762,7 +748,7 @@ fprintf(stderr, "DEBUG: accept->hashOffer '%s'\n", accept->hashOffer.GetHex().c_
     accept->nPayValue = (-1 * srcValue);
     /* The amount being accepted. */
     accept->nXferValue = destValue;
-fprintf(stderr, "DEBUG: accept_offer_tx: accept->nXferValue = destValue %lld\n", (long long)destValue); 
+//fprintf(stderr, "DEBUG: accept_offer_tx: accept->nXferValue = destValue %lld\n", (long long)destValue); 
   } else { /* sending SHC */
     /* The exchanged (alt) coin payment address. */
     payAddr = GetAccountAddress(altWallet, strAccount, false);
@@ -774,7 +760,7 @@ fprintf(stderr, "DEBUG: accept_offer_tx: accept->nXferValue = destValue %lld\n",
     accept->nPayValue = (-1 * destValue);
     /* The amount being accepted. */
     accept->nXferValue = srcValue;
-fprintf(stderr, "DEBUG: accept_offer_tx: accept->nXferValue = srcValue %lld\n", (long long)srcValue); 
+//fprintf(stderr, "DEBUG: accept_offer_tx: accept->nXferValue = srcValue %lld\n", (long long)srcValue); 
   }
   accept->vPayAddr = vchFromString(payAddr.ToString());
   accept->vXferAddr = vchFromString(xferAddr.ToString());
@@ -807,7 +793,6 @@ fprintf(stderr, "DEBUG: accept->hXferTx '%s'\n", offer->hXferTx.GetHex().c_str()
 fprintf(stderr, "DEBUG: accept_offer_tx: (%s) offer->hXferTx '%s'\n", strError.c_str(), accept->hXferTx.GetHex().c_str());
       return (SHERR_CANCELED);
     }
-fprintf(stderr, "DEBUG: accept_offer_tx: offer->hXferTx '%s'\n", accept->hXferTx.GetHex().c_str());
   }
 
   uint160 hashAccept = accept->GetHash();
@@ -1049,7 +1034,7 @@ return (SHERR_INVAL);
       return (SHERR_INVAL);
 
     int64 nValue = MAX(0, accept.nXferValue);
-fprintf(stderr, "DEBUG: pay_tx_fee: accept sending shc: nValue %lld\n", (long long)nValue);
+//fprintf(stderr, "DEBUG: pay_tx_fee: accept sending shc: nValue %lld\n", (long long)nValue);
 if (nValue <= iface->min_tx_fee) return (SHERR_INVAL); /* DEBUG: redundant */
 
 

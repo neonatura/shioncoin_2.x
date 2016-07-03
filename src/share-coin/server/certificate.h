@@ -513,6 +513,16 @@ extern int init_license_tx(CIface *iface, string strAccount, uint160 hashCert, u
 
 bool VerifyLicense(CTransaction& tx);
 
+extern bool GetTxOfCert(CIface *iface, const uint160& hash, CTransaction& tx);
+
+extern bool GetTxOfLicense(CIface *iface, const uint160& hash, CTransaction& tx);
+
+extern int init_ident_donate_tx(CIface *iface, string strAccount, uint64_t nValue, uint160 hashCert, CWalletTx& wtx);
+extern int init_ident_certcoin_tx(CIface *iface, string strAccount, uint64_t nValue, uint160 hashCert, CCoinAddr addrDest, CWalletTx& wtx);
+extern bool VerifyIdent(CTransaction& tx);
+
+
+
 
 
 #endif /* ndef __SERVER__CERTIFICATE_H__ */

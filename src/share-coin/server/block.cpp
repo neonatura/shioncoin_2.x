@@ -90,6 +90,18 @@ bc_t *GetBlockTxChain(CIface *iface)
   return (iface->bc_tx);
 }
 
+CBlockIndex *GetBlockIndexByHeight(int ifaceIndex, unsigned int nHeight)
+{
+  CBlockIndex *pindex;
+
+  pindex = GetBestBlockIndex(ifaceIndex);
+  while (pindex && pindex->pprev && pindex->nHeight > nHeight)
+    pindex = pindex->pprev;
+
+  return (pindex);
+}
+
+
 #if 0
 bool BlockChainErase(CIface *iface, size_t nHeight)
 {
@@ -399,7 +411,7 @@ bool CTransaction::ReadTx(int ifaceIndex, uint256 txHash, uint256 *hashBlock)
 
   err = bc_idx_find(bc, txHash.GetRaw(), NULL, &txPos); 
   if (err) {
-fprintf(stderr, "DEBUG: CTransaction::ReadTx[iface #%d]: INFO: tx hash '%s' not found. [tot-tx:%d] [err:%d]\n", ifaceIndex, txHash.GetHex().c_str(), bc_idx_next(bc), err);
+//fprintf(stderr, "DEBUG: CTransaction::ReadTx[iface #%d]: INFO: tx hash '%s' not found. [tot-tx:%d] [err:%d]\n", ifaceIndex, txHash.GetHex().c_str(), bc_idx_next(bc), err);
     return (false); /* not an error condition */
 }
 
@@ -417,13 +429,12 @@ fprintf(stderr, "DEBUG: CTransaction::ReadTx[iface #%d]: INFO: tx hash '%s' not 
 
   CBlock *block = GetBlankBlock(iface);
   if (!block) { 
-fprintf(stderr, "DEBUG: CTransaction::ReadTx: error allocating new block\n");
-return (false);
-}
+    return error(SHERR_NOMEM, 
+        "CTransaction::ReadTx: error allocating new block\n");
+  }
   if (!block->ReadBlock(blockHeight)) {
-fprintf(stderr, "DEBUG: CTransaction::ReadTx: block height %d not valid.\n", blockHeight);
-  delete block;
-return (false);
+    delete block;
+    return error(SHERR_NOENT, "CTransaction::ReadTx: block height %d not valid.", blockHeight);
   }
 
   const CTransaction *tx = block->GetTx(txHash);
@@ -2244,9 +2255,9 @@ CLicense *CTransaction::CreateLicense(CCert *cert, uint64_t lic_crc)
   double lic_span;
 
   if (!cert->IsActive()) {
-fprintf(stderr, "DEBUG: CTransaction::CreateLicense: !cert->IsActive\n");
+    error(SHERR_INVAL, "CTransaction::CreateLicense: !cert->IsActive");
     return (NULL);
-}
+  }
 
   if (nFlag & CTransaction::TXF_LICENSE)
     return (NULL);
@@ -2404,4 +2415,79 @@ CIdent *CTransaction::CreateIdent()
 
   return ((CIdent *)&certificate);
 }
+
+bool CTransaction::VerifyMatrix(CMatrix *seed, const CMatrix& matrix, CBlockIndex *pindex)
+{
+  CMatrix cmp_matrix;
+  unsigned int height;
+
+  if (!pindex)
+    return (false);
+
+  if (seed) {
+    cmp_matrix = CMatrix(*seed);
+  } else {
+    cmp_matrix = CMatrix();
+  }
+
+  height = (pindex->nHeight - 27);
+  height /= 27;
+  height *= 27;
+
+  while (pindex && pindex->pprev && pindex->nHeight > height)
+    pindex = pindex->pprev;
+  if (!pindex) {
+    return (false);
+  }
+
+  cmp_matrix.Append(pindex->nHeight, pindex->GetBlockHash()); 
+  bool ret = (cmp_matrix == matrix);
+  return (ret);
+}
+
+/**
+ * @note Verified against previous matrix when the block is accepted.
+ */
+CMatrix *CTransaction::GenerateMatrix(int ifaceIndex, CMatrix *seed, CBlockIndex *pindex)
+{
+  uint32_t best_height;
+  int height;
+
+  if (nFlag & CTransaction::TXF_MATRIX)
+    return (NULL);
+
+  if (!pindex) {
+    pindex = GetBestBlockIndex(ifaceIndex);
+    if (!pindex)
+      return (NULL);
+  }
+
+
+  height = (pindex->nHeight - 27);
+  height /= 27;
+  height *= 27;
+
+  if (height <= 27)
+    return (NULL);
+
+  if (seed && seed->GetHeight() >= height)
+    return (NULL);
+
+  while (pindex && pindex->pprev && pindex->nHeight > height)
+    pindex = pindex->pprev;
+  if (!pindex) {
+    return (NULL);
+  }
+
+  nFlag |= CTransaction::TXF_MATRIX;
+  if (seed) {
+    matrix = CMatrix(*seed);
+  } else {
+    matrix = CMatrix();
+  }
+  matrix.Append(pindex->nHeight, pindex->GetBlockHash()); 
+  return (&matrix);
+}
+
+
 

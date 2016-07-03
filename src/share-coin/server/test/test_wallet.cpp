@@ -377,11 +377,8 @@ bool TESTWallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend,
   CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
   int64 nValue = 0;
 
-fprintf(stderr, "DEBUG: TESTWallet::CreateTransaction()\n");
-
   BOOST_FOREACH (const PAIRTYPE(CScript, int64)& s, vecSend)
   {
-fprintf(stderr, "DEBUG: CreateTransaction: vecSend[x].nValue = %s\n", FormatMoney(s.second).c_str());
     if (nValue < 0) {
       return false;
 }

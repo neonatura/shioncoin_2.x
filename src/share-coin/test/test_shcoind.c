@@ -15,6 +15,7 @@ extern TEST_blockchain(CuTest*);
 extern TEST_reorganize(CuTest*);
 extern TEST_serializetx(CuTest*);
 extern TEST_cointx(CuTest*);
+extern TEST_matrix(CuTest*);
 extern TEST_aliastx(CuTest*);
 extern TEST_assettx(CuTest*);
 extern TEST_identtx(CuTest*);
@@ -47,6 +48,7 @@ int main(int argc, char *argv[])
   SUITE_ADD_TEST(suite, TEST_identtx);
   SUITE_ADD_TEST(suite, TEST_certtx);
   SUITE_ADD_TEST(suite, TEST_offertx);
+  SUITE_ADD_TEST(suite, TEST_matrix);
 
   CuSuiteRun(suite);
   CuSuiteSummary(suite, output);

@@ -444,6 +444,103 @@ public:
     }
 };
 
+
+class CMatrix
+{
+  public:
+    uint32_t data[3][3]; 
+    unsigned int height; 
+
+    CMatrix()
+    {
+      SetNull();
+    }
+
+    CMatrix(const CMatrix& matrix)
+    {
+      SetNull();
+      Init(matrix);
+    }
+
+    IMPLEMENT_SERIALIZE
+    (
+      READWRITE(FLATDATA(this->data));
+      READWRITE(this->height);
+    )
+
+    friend bool operator==(const CMatrix& a, const CMatrix& b)
+    {
+      return (0 == memcmp(a.data, b.data, sizeof(uint32_t) * 9) &&
+          a.height == b.height);
+    }
+
+    friend bool operator!=(const CMatrix& a, const CMatrix& b)
+    {
+      return !(a == b);
+    }
+
+    CMatrix operator=(const CMatrix &b)
+    {
+      Init(b);
+      return (*this);
+    }
+
+    void SetNull()
+    {
+      memset(data, 0, sizeof(uint32_t) * 9);
+      height = 0;
+    }
+
+    void Init(const CMatrix& b)
+    {
+      memcpy(data, b.data, sizeof(uint32_t) * 9);
+      height = b.height;
+    }
+
+    unsigned int GetHeight()
+    {
+      return ((unsigned int)height);
+    }
+
+    void Append(int heightIn, uint256 hash)
+    {
+      this->height = heightIn;
+
+      int idx = (height / 27) % 9;
+      int row = (idx / 3) % 3;
+      int col = idx % 3;
+      data[row][col] += shcrc(hash.GetRaw(), 32);
+    }
+
+    string ToString()
+    {
+      char buf[1024];
+      int row;
+      int col;
+
+      memset(buf, 0, sizeof(buf));
+      sprintf(buf, "CMatrix(height %u", this->height);
+      for (row = 0; row < 3; row++) {
+        sprintf(buf+strlen(buf), " [#%d:", (row+1));
+        for (col = 0; col < 3; col++) {
+          sprintf(buf+strlen(buf), " %x", data[row][col]);
+        }
+        strcat(buf, "]");
+      }
+      strcat(buf, ")");
+
+      return string(buf);
+    }
+
+    const uint160 GetHash()
+    {
+      uint256 hash = SerializeHash(*this);
+      unsigned char *raw = (unsigned char *)&hash;
+      cbuff rawbuf(raw, raw + sizeof(hash));
+      return Hash160(rawbuf);
+    }
+};
+
 class CBlock;
 class CBlockIndex;
 typedef std::map<uint256, CBlockIndex*> blkidx_t;
@@ -463,6 +560,7 @@ class CTransactionCore
     static const int TXF_OFFER_ACCEPT = (1 << 8);
     static const int TXF_ASSET = (1 << 9);
     static const int TXF_IDENT = (1 << 10);
+    static const int TXF_MATRIX = (1 << 11);
 
     int nFlag;
     std::vector<CTxIn> vin;
@@ -529,6 +627,7 @@ public:
     CAsset asset;
     COffer offer;
     CIdent ident;
+    CMatrix matrix;
 
     CTransaction()
     {
@@ -806,6 +905,10 @@ public:
     {
       return (&alias);
     }
+
+    CMatrix *GenerateMatrix(int ifaceIndex, CMatrix *seed, CBlockIndex *pindex = NULL);
+
+    bool VerifyMatrix(CMatrix *seed, const CMatrix& matrix, CBlockIndex *pindex);
 
     friend bool operator==(const CTransaction& a, const CTransaction& b)
     {
@@ -1574,6 +1677,8 @@ CBlock *GetArchBlockByHash(CIface *iface, const uint256 hash);
 uint256 GetGenesisBlockHash(int ifaceIndex);
 
 bool core_AcceptBlock(CBlock *pblock);
+
+CBlockIndex *GetBlockIndexByHeight(int ifaceIndex, unsigned int nHeight);
 
 
 #endif /* ndef __SERVER_BLOCK_H__ */

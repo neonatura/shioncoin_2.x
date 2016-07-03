@@ -20,11 +20,11 @@ The 'openssl version 1.0.1g' distribution has been included in the directory '/d
 
 
 <h2>SHC Specifications</h2>
-The share-coin is unique in that it provides additional types of transactions that are compatible with the underlying 'share library' file-system and network. Examples of these capabilities include exchanging coins between currencies, providing certified licenses for custom use, and assigning names to otherwise hard to remember hash tags.
+The share-coin is unique in that it provides additional types of transactions. Examples of these capabilities include exchanging coins between currencies, providing certified licenses for custom use, and assigning names to otherwise hard to remember hash tags. Some are compatible with the underlying 'share library' file-system and network providing methods to utilize SHC block-chain transactions in an external program.
  
 The shcoind SHC coin server recalcultes the block difficulty rate every block using the Kmmooto Gravity Well algorythm. The target duration for blocks is one minute.
 
-A maximum of 1Billion SHC will be generated. The reward life-time is expected to continue for around 40 years (about 2055).  
+A maximum of 1 Billion SHC coins will be generated. The reward life-time is expected to continue for around 40 years (~ 2055).  
 
 SHC Server Port: 24104
 
@@ -70,10 +70,10 @@ Building the share-coin programs:
   make install
 </pre></small><i>
 
-The binaries can be found under src/share-coin as "shcoin" and "shcoind". Performing a 'make install' will install these programs into the bin and sbin directories respectively. The "shcoin" program must be ran as the same user as the "shcoind" daemon. The daemons supplied with the share library suite (shared, shlogd, shfsyncd) and base libraries can be installed by running 'make install' in the libshare directory built from the instructions above. 
+The binaries can be found under src/share-coin as "shc", "usde", and "shcoind". Performing a 'make install' will install these programs into the bin and sbin directories respectively. The "shc" and "usde" programs must be ran as the same user as the "shcoind" daemon. The daemons supplied with the share library suite (shared, shlogd, shfsyncd) and base libraries can be installed by running 'make install' in the libshare directory built from the instructions above. 
 
 When installed on a unix-like systems that supports the traditional /etc/init.d/rc.d/ hierarchy a 'shcoind' daemon will be registered with the system to load upon startup as the root user. 
-Note: The "shcoin" client utility program must be ran as the same user as the 'shcoind' daemon.
+Note: The client utility programs "shc" and "usde" must be ran as the same user as the 'shcoind' daemon.
 
 <h3>Stratum + USDe Coin Service</h3>
 A stratum server for the USDe virtual currency is provided as a service of the shcoind program. The "shcoin" program is provided to perform RPC commands against the coin server.
@@ -125,24 +125,24 @@ To install on linux run 'yum install libboost*' or 'apt-get install libboost*'.
 
 The 'openssl version 1.0.1g' distribution has been included in the directory '/src/share-ssl-lib'. This version will automatically be compiled and linked against the shcoind and shcoin programs. The Open SSL library is used for RPC protocol communication between the shcoind daemon and shcoin utility program.
 
-shcoin - Client Utility Program
+Client Utility Program
 ===============================
 
-Run "shcoin help" to list command-line arguments:
+Run "shc help" or "usde help" to list command-line arguments:
 
 <small>
 addmultisigaddress <nrequired> <'["key","key"]'> [account]
 
-<br>addpeer <host>[:port]
+<br>peer.add <host>[:port]
 <br><i>Attempt to connect to a USDE server at the network destination specified.</i>
 
-backupwallet <destination>
+wallet.export <destination>
 
 createrawtransaction [{"txid":txid,"vout":n},...] {address:amount,...}
 
 decoderawtransaction <hex string>
 
-dumpprivkey <address>
+wallet.key <address>
 
 getaccount <address>
 
@@ -152,37 +152,35 @@ getaddressesbyaccount <account>
 
 getbalance [account] [minconf=1]
 
-getblock <hash>
+block.get <hash>
 
 getblockcount
 
-getblockhash <index>
+block.hash <index>
 
 getblocktemplate [params]
 
 getconnectioncount
 
-getdifficulty
+block.difficulty
 
-getinfo
+block.info
 
-getmininginfo
+net.info
 
 getnetworkhashps [blocks]
 
-getnewaddress [account]
+wallet.new
 
-getpeerinfo
+peer.info
 
 getrawmempool
 
-getrawtransaction <txid> [verbose=0]
+tx.get <txid> [verbose=0]
 
 getreceivedbyaccount <account> [minconf=1]
 
 getreceivedbyaddress <address> [minconf=1]
-
-gettransaction <txid>
 
 getwork [data]
 
@@ -190,11 +188,11 @@ getworkex [data, coinbase]
 
 help [command]
 
-importprivkey <privkey> [label]
+wallet.importkey <privkey> <account>
 
 keypoolrefill
 
-listaccounts [minconf=1]
+wallet.accounts [minconf=1]
 
 listreceivedbyaccount [minconf=1] [includeempty=false]
 
@@ -206,9 +204,9 @@ listtransactions [account] [count=10] [from=0]
 
 listunspent [minconf=1] [maxconf=999999]
 
-move <fromaccount> <toaccount> <amount> [minconf=1] [comment]
+wallet.move <fromaccount> <toaccount> <amount> [minconf=1] [comment]
 
-sendfrom <fromaccount> <toaddress> <amount> [minconf=1] [comment] [comment-to]
+wallet.send <fromaccount> <toaddress> <amount> [minconf=1] [comment] [comment-to]
 
 sendmany <fromaccount> {address:amount,...} [minconf=1] [comment]
 
@@ -226,11 +224,11 @@ signmessage <address> <message>
 
 signrawtransaction <hex string> [{"txid":txid,"vout":n,"scriptPubKey":hex},...] [<privatekey1>,...] [sighashtype="ALL"]
 
-stop
+shutdown
 
 validateaddress <address>
 
 verifymessage <address> <signature> <message>
 </small>
 
-The shcoind daemon and client programs store data in the "/var/lib/share/blockchain/" directory. Commands are provided in order to import or export in either a legacy or optimized manner. No RPC access is permitted except via the local machine and only by the automatically generated rpc credentials. 
+The shcoind daemon and client programs store data in the "/var/lib/share/blockchain/" directory. These programs will not [automatically] attempt to read the contents of the traditional currency hierarchy (i.e. "~/.usde/"). Commands are provided in order to import or export in either a legacy and/or optimized manner for the entire block-chain, wallet transactions, and network peer addresses. No RPC access is permitted except via the local machine and only with the automatically generated rpc credentials (see "rpc.conf" file). 

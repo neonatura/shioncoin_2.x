@@ -63,6 +63,8 @@ multimap<uint256, TESTBlock*> TEST_mapOrphanBlocksByPrev;
 map<uint256, map<uint256, CDataStream*> > TEST_mapOrphanTransactionsByPrev;
 map<uint256, CDataStream*> TEST_mapOrphanTransactions;
 
+static CMatrix test_DHRM;
+
 class TESTOrphan
 {
   public:
@@ -504,7 +506,29 @@ fprintf(stderr, "DEBUG: !test_ConnectInputs()\n");
 #endif
 
   }
-  pblock->vtx[0].vout[0].nValue = test_GetBlockValue(pindexPrev->nHeight+1, nFees);
+
+
+  int64 reward = test_GetBlockValue(pindexPrev->nHeight+1, nFees);
+
+  /* 'zero transactions' penalty. */  
+  if (pblock->vtx.size() == 1) {
+    int64 nFee = MAX(0, MIN(COIN, reward - iface->min_tx_fee));
+    if (nFee >= iface->min_tx_fee) {
+      CMatrix *m = pblock->vtx[0].GenerateMatrix(TEST_COIN_IFACE, &test_DHRM);
+      if (m) {
+        int64 min_tx = (int64)iface->min_tx_fee;
+        CScript scriptMatrix;
+        scriptMatrix << OP_EXT_GENERATE << CScript::EncodeOP_N(OP_MATRIX) << OP_HASH160 << m->GetHash() << OP_2DROP << OP_RETURN;
+        pblock->vtx[0].vout.push_back(CTxOut(nFee, scriptMatrix));
+//fprintf(stderr, "DEBUG: CreateNewBlock: test_DHRM '%s' proposed: %s\n", m->GetHash().GetHex().c_str(), m->ToString().c_str()); 
+
+        /* deduct from reward. */
+        reward -= nFee;
+      }
+    }
+  }
+
+  pblock->vtx[0].vout[0].nValue = reward;
 
   // Fill in header
   pblock->hashPrevBlock  = pindexPrev->GetBlockHash();
@@ -1587,7 +1611,35 @@ bool TESTBlock::AcceptBlock()
 
   return true;
 #endif
-  return (core_AcceptBlock(this));
+
+
+  bool fMatrix = false;
+  CMatrix matrix;
+  if (vtx.size() == 1) {
+    CTransaction& tx = vtx[0]; 
+    if (tx.isFlag(CTransaction::TXF_MATRIX)) {
+      CBlockIndex *pindex = GetBestBlockIndex(TEST_COIN_IFACE);
+      matrix = tx.matrix;
+      if (matrix.GetHeight() > test_DHRM.GetHeight()) {
+        if (!tx.VerifyMatrix(&test_DHRM, matrix, pindex)) {
+          return error(SHERR_ILSEQ, "AcceptBlock: test_DHRM failure: (seed %s) (new %s)", test_DHRM.ToString().c_str(), matrix.ToString().c_str());
+        }
+        fMatrix = true;
+        Debug("TESTBlock::AcceptBlock: DHRM verify success: (seed %s) (new %s)\n", test_DHRM.ToString().c_str(), matrix.ToString().c_str());
+
+      }
+/* DEBUG: TODO: verify script hash */
+    } 
+  }
+
+
+  bool ret = core_AcceptBlock(this);
+
+  if (ret && fMatrix) {
+    test_DHRM = matrix;
+  }
+
+  return (ret);
 }
 
 CScript TESTBlock::GetCoinbaseFlags()

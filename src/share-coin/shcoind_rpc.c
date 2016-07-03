@@ -48,10 +48,11 @@ void get_rpc_cred(char *username, char *password)
     char path[PATH_MAX+1];
     char buf[1024];
 
-    sprintf(path, "%s/usde/", get_libshare_path());
+    sprintf(path, "%s/blockchain/", get_libshare_path());
     mkdir(path, 0777);
-    strcat(path, "usde.conf");
-    sprintf(buf, "rpcuser=%s\nrpcpassword=%s\n", username, password); 
+    strcat(path, "rpc.conf");
+    sprintf(buf, "## Automatically Generated (do not modify)\n"
+        "rpcuser=%s\nrpcpassword=%s\n", username, password); 
     shfs_write_mem(path, buf, strlen(buf));
     chmod(path, 0700);
   }

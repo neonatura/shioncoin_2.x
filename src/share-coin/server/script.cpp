@@ -253,6 +253,7 @@ const char* GetOpName(opcodetype opcode)
     case OP_CERT                   : return "OP_CERT";
     case OP_LICENSE                : return "OP_LICENSE";
     case OP_ASSET                  : return "OP_ASSET";
+    case OP_MATRIX                  : return "OP_MATRIX";
 
     /* extension operatives */
     case OP_EXT_NEW                : return "OP_EXT_NEW";

@@ -85,6 +85,7 @@ enum opcodetype
     OP_16 = 0x60,
 
     /* extension ops */
+    OP_MATRIX = 0x09,
     OP_ALIAS = 0x0a,
     OP_OFFER=0x0b,
     OP_IDENT=0x0c,
