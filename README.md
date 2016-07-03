@@ -18,11 +18,6 @@ To install on linux run 'yum install libboost*' or 'apt-get install libboost*'.
 
 The 'openssl version 1.0.1g' distribution has been included in the directory '/depend/openssl-1.0.1g'. This version will automatically be compiled and linked against the shcoind and shcoin programs.
 
-You must install the 'gcc-java' package in order to provide the "jni.h" gcc header file for the java API to compile correctly.
-To install on linux run 'yum install gcc-java' or 'apt-get install gcc-java'.
-
-SWIG is optional. Pre-built source code has been generated as part of the distritution. 
-To install on linux run 'yum install swig' or 'apt-get install swig'.
 
 <h2>SHC Specifications</h2>
 The share-coin is unique in that it provides additional types of transactions that are compatible with the underlying 'share library' file-system and network. Examples of these capabilities include exchanging coins between currencies, providing certified licenses for custom use, and assigning names to otherwise hard to remember hash tags.
