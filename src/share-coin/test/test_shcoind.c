@@ -17,7 +17,9 @@ extern TEST_serializetx(CuTest*);
 extern TEST_cointx(CuTest*);
 extern TEST_aliastx(CuTest*);
 extern TEST_assettx(CuTest*);
+extern TEST_identtx(CuTest*);
 extern TEST_certtx(CuTest*);
+extern TEST_offertx(CuTest*);
 
 extern void test_shcoind_init(void);
 
@@ -42,7 +44,9 @@ int main(int argc, char *argv[])
   SUITE_ADD_TEST(suite, TEST_cointx);
   SUITE_ADD_TEST(suite, TEST_aliastx);
   SUITE_ADD_TEST(suite, TEST_assettx);
+  SUITE_ADD_TEST(suite, TEST_identtx);
   SUITE_ADD_TEST(suite, TEST_certtx);
+  SUITE_ADD_TEST(suite, TEST_offertx);
 
   CuSuiteRun(suite);
   CuSuiteSummary(suite, output);

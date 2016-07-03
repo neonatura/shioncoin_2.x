@@ -2014,8 +2014,8 @@ bool IsAliasOp(int op) {
 
 string aliasFromOp(int op) {
 	switch (op) {
-	case OP_EXT_NEW:
-		return "aliasnew";
+	case OP_EXT_ACTIVATE:
+		return "aliasactivate";
 	case OP_EXT_UPDATE:
 		return "aliasupdate";
 	default:
@@ -2061,7 +2061,7 @@ bool DecodeAliasScript(const CScript& script, int& op,
 
 	pc--;
 
-	if ((mode == OP_EXT_NEW && vvch.size() == 2) ||
+	if ((mode == OP_EXT_ACTIVATE && vvch.size() == 2) ||
       (mode == OP_EXT_UPDATE && vvch.size() >= 1) ||
       (mode == OP_EXT_TRANSFER && vvch.size() >= 1) ||
       (mode == OP_EXT_REMOVE && vvch.size() >= 1))
@@ -2212,7 +2212,7 @@ fprintf(stderr, "DEBUG: VerifyAlias: !DecodeAliasHash: %s\n", tx.vout[nOut].scri
     return (false); /* no alias hash in output */
 }
 
-  if (mode != OP_EXT_NEW && 
+  if (mode != OP_EXT_ACTIVATE && 
       mode != OP_EXT_UPDATE &&
       mode != OP_EXT_TRANSFER &&
       mode != OP_EXT_REMOVE) {
@@ -2294,7 +2294,7 @@ fprintf(stderr, "DEBUG: error obtaining address for '%s'\n", strExtAccount.c_str
 }
 
   scriptPubKeyOrig.SetDestination(extAddr.Get());
-  scriptPubKey << OP_EXT_NEW << CScript::EncodeOP_N(OP_ALIAS) << OP_HASH160 << aliasHash << OP_2DROP;
+  scriptPubKey << OP_EXT_ACTIVATE << CScript::EncodeOP_N(OP_ALIAS) << OP_HASH160 << aliasHash << OP_2DROP;
   scriptPubKey += scriptPubKeyOrig;
 
   // send transaction

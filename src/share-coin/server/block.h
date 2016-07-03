@@ -462,6 +462,7 @@ class CTransactionCore
     static const int TXF_OFFER = (1 << 7);
     static const int TXF_OFFER_ACCEPT = (1 << 8);
     static const int TXF_ASSET = (1 << 9);
+    static const int TXF_IDENT = (1 << 10);
 
     int nFlag;
     std::vector<CTxIn> vin;
@@ -477,7 +478,7 @@ class CTransactionCore
     (
         //READWRITE(this->nVersion);
         READWRITE(this->nFlag);
-//        nVersion = 1;//this->nVersion;
+        nVersion = 1;//this->nVersion;
         READWRITE(vin);
         READWRITE(vout);
         READWRITE(nLockTime);
@@ -527,6 +528,7 @@ public:
     CAlias alias;
     CAsset asset;
     COffer offer;
+    CIdent ident;
 
     CTransaction()
     {
@@ -549,8 +551,11 @@ public:
         READWRITE(alias);
       if (this->nFlag & TXF_ASSET)
         READWRITE(asset);
-      if (this->nFlag & TXF_OFFER)
+      if ((this->nFlag & TXF_OFFER) ||
+          (this->nFlag & TXF_OFFER_ACCEPT))
         READWRITE(offer);
+      if (this->nFlag & TXF_IDENT)
+        READWRITE(ident);
     )
 
     void Init(const CTransaction& tx)
@@ -564,8 +569,11 @@ public:
         alias = tx.alias;
       if (this->nFlag & TXF_ASSET)
         asset = tx.asset;
-      if (this->nFlag & TXF_OFFER)
+      if ((this->nFlag & TXF_OFFER) ||
+          (this->nFlag & TXF_OFFER_ACCEPT))
         offer = tx.offer;
+      if (this->nFlag & TXF_IDENT)
+        ident = tx.ident;
     }
 
     void SetNull()
@@ -790,6 +798,9 @@ public:
     CAsset *UpdateAsset(const CAsset& assetIn, string strAssetName, string strAssetHash);
     CAsset *SignAsset(const CAsset& assetIn, uint160 hashCert);
     CAsset *RemoveAsset(const CAsset& assetIn);
+    CIdent *CreateIdent(CIdent *ident);
+    CIdent *CreateIdent();
+
 
     CAlias *GetAlias()
     {
@@ -808,7 +819,6 @@ public:
     {
         return !(a == b);
     }
-
 
     std::string ToString() const
     {

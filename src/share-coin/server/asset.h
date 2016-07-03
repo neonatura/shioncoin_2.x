@@ -36,7 +36,6 @@ class CAsset : public CExtCore
 
   protected:
     uint160 hashCert;
-    shgeo_t loc;
     cbuff vHash;
 
     /* reserved */
@@ -65,7 +64,6 @@ class CAsset : public CExtCore
     IMPLEMENT_SERIALIZE (
       READWRITE(*(CExtCore *)this);
       READWRITE(hashCert);
-      READWRITE(FLATDATA(loc));
       READWRITE(vHash);
 
       /* reserved */
@@ -81,16 +79,12 @@ class CAsset : public CExtCore
       vHash.clear();
       vUrl.clear();
       vLocale.clear();
-
-      /* defaults */
-      shgeo_local(&loc, 0);
     }
 
     void Init(const CAsset& assetIn)
     {
       CExtCore::Init(assetIn);
       hashCert = assetIn.hashCert;
-      memcpy(&loc, &assetIn.loc, sizeof(loc));
       vHash = assetIn.vHash;
     }
 

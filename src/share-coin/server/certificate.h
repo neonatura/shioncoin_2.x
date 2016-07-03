@@ -32,26 +32,27 @@ using namespace std;
 typedef map<uint160, uint256> cert_list;
 
 
-class CCertEnt : public CExtCore
+class CIdent : public CExtCore
 {
 
   protected:
+    shgeo_t geo;
     shkey_t sig_key;
     shkey_t sig_peer;
 
   public:
-    CCertEnt()
+    CIdent()
     {
       SetNull();
     }
 
-    CCertEnt(const CCertEnt& ent)
+    CIdent(const CIdent& ent)
     {
       SetNull();
       Init(ent);
     }
 
-    CCertEnt(string labelIn)
+    CIdent(string labelIn)
     {
       SetNull();
       SetLabel(labelIn);
@@ -59,20 +60,22 @@ class CCertEnt : public CExtCore
 
     IMPLEMENT_SERIALIZE (
         READWRITE(*(CExtCore *)this);
+        READWRITE(FLATDATA(geo));
         READWRITE(FLATDATA(sig_key));
         READWRITE(FLATDATA(sig_peer));
     )
 
-    friend bool operator==(const CCertEnt &a, const CCertEnt &b)
+    friend bool operator==(const CIdent &a, const CIdent &b)
     {
       return (
         ((CExtCore&) a) == ((CExtCore&) b) &&
+        0 == memcmp(&a.geo, &b.geo, sizeof(shgeo_t)) &&
         0 == memcmp(&a.sig_key, &b.sig_key, sizeof(shkey_t)) &&
         0 == memcmp(&a.sig_peer, &b.sig_peer, sizeof(shkey_t))
 );
     }
 
-    CCertEnt operator=(const CCertEnt &b)
+    CIdent operator=(const CIdent &b)
     {
       SetNull();
       Init(b);
@@ -81,17 +84,25 @@ class CCertEnt : public CExtCore
 
     void SetNull()
     {
+      memset(&geo, 0, sizeof(geo));
       memset(&sig_key, 0, sizeof(sig_key));
       memset(&sig_peer, 0, sizeof(sig_peer));
+
+      /* default location */
+      shgeo_local(&geo, SHGEO_PREC_REGION);
     }
 
-    void Init(const CCertEnt& b)
+    void Init(const CIdent& b)
     {
       CExtCore::Init(b);
+      memcpy(&geo, &b.geo, sizeof(geo));
       memcpy(&sig_key, &b.sig_key, sizeof(sig_key));
       memcpy(&sig_peer, &b.sig_peer, sizeof(sig_peer));
     }
 
+    /**
+     * @note The signature does not take into account the geo-detic address (although the underlying certificate hash does).
+     */
     bool Sign(cbuff vchSecret)
     {
 
@@ -101,7 +112,11 @@ class CCertEnt : public CExtCore
       void *raw = (void *)vchSecret.data();
       size_t raw_len = vchSecret.size();
 
-      memcpy(&sig_peer, shpeer_kpriv(ashpeer()), sizeof(sig_peer));
+      /* The privileged key of the 'default' peer is unique per network hwaddr */
+      shpeer_t *peer = shpeer_init(NULL, NULL);
+      memcpy(&sig_peer, shpeer_kpriv(peer), sizeof(sig_peer));
+      shpeer_free(&peer);
+
       shkey_t *key = shkey_cert(&sig_peer, shcrc(raw, raw_len), tExpire);
       memcpy(&sig_key, key, sizeof(sig_key));
       shkey_free(&key);
@@ -152,10 +167,43 @@ class CCertEnt : public CExtCore
     }
 */
 
+    bool IsLocalOrigin()
+    {
+      shkey_t sig_peer;
+      bool ret = false;
+
+      shpeer_t *peer = shpeer_init(NULL, NULL);
+      if (0 == memcmp(&sig_peer, shpeer_kpriv(peer), sizeof(sig_peer)))
+        ret = true;
+      shpeer_free(&peer);
+
+      return (ret);
+    }
+
+    bool IsLocalRegion()
+    {
+      shgeo_t lcl_geo;
+      bool ret = false;
+
+      memset(&lcl_geo, 0, sizeof(lcl_geo));
+      shgeo_local_set(&lcl_geo);
+      if (shgeo_cmp(&geo, &lcl_geo, SHGEO_PREC_REGION))
+        ret = true;
+
+      return (ret);
+    }
+
+    uint160 GetHash()
+    {
+      uint256 hash = SerializeHash(*this);
+      unsigned char *raw = (unsigned char *)&hash;
+      cbuff rawbuf(raw, raw + sizeof(hash));
+      return Hash160(rawbuf);
+    }
 
 };
 
-class CCert : public CCertEnt
+class CCert : public CIdent
 {
   public:
 
@@ -170,6 +218,12 @@ class CCert : public CCertEnt
     CCert()
     {
       SetNull();
+    }
+
+    CCert(const CIdent& identIn)
+    {
+      SetNull();
+      CIdent::Init(identIn);
     }
 
     CCert(const CCert& certIn)
@@ -216,7 +270,7 @@ class CCert : public CCertEnt
     }
 
     IMPLEMENT_SERIALIZE (
-        READWRITE(*(CCertEnt *)this);
+        READWRITE(*(CIdent *)this);
         READWRITE(this->hashIssuer);
         READWRITE(this->vSerial);
         READWRITE(this->vAddr);
@@ -226,7 +280,7 @@ class CCert : public CCertEnt
 
     void Init(const CCert& b)
     {
-      CCertEnt::Init(b);
+      CIdent::Init(b);
       hashIssuer = b.hashIssuer;
       vSerial = b.vSerial;
       vAddr = b.vAddr;
@@ -236,7 +290,7 @@ class CCert : public CCertEnt
 
     friend bool operator==(const CCert &a, const CCert &b) {
       return (
-          ((CCertEnt&) a) == ((CCertEnt&) b) &&
+          ((CIdent&) a) == ((CIdent&) b) &&
           a.hashIssuer == b.hashIssuer &&
           a.vSerial == b.vSerial &&
           a.vAddr == b.vAddr &&
@@ -256,7 +310,7 @@ class CCert : public CCertEnt
 
     void SetNull()
     {
-      CCertEnt::SetNull();
+      CIdent::SetNull();
 
       vSerial.clear();
       vAddr.clear();

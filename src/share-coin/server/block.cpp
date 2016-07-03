@@ -2207,14 +2207,14 @@ CAlias *CTransaction::CreateAlias(std::string name, const uint160& hash)
 }
 
 /*
-CCertEnt *CTransaction::CreateEntity(const char *name, cbuff secret)
+CIdent *CTransaction::CreateEntity(const char *name, cbuff secret)
 {
 
   if (nFlag & CTransaction::TXF_ENTITY)
     return (NULL);
 
   nFlag |= CTransaction::TXF_ENTITY;
-  entity = CCertEnt(name, secret);
+  entity = CIdent(name, secret);
 
   return (&entity);
 }
@@ -2273,17 +2273,23 @@ COffer *CTransaction::CreateOffer()
 
 COfferAccept *CTransaction::AcceptOffer(COffer *offerIn)
 {
+  uint160 hashOffer;
 
   if (nFlag & CTransaction::TXF_OFFER_ACCEPT)
     return (NULL);
 
   nFlag |= CTransaction::TXF_OFFER_ACCEPT;
+
+  int64 nPayValue = -1 * offerIn->nXferValue;
+  int64 nXferValue = -1 * offerIn->nPayValue;
+  hashOffer = offerIn->GetHash();
   offer = *offerIn;
 
   offer.vPayAddr.clear();
   offer.vXferAddr.clear();
-  offer.nPayValue = 0;
-  offer.nXferValue = 0;
+  offer.nPayValue = nPayValue;
+  offer.nXferValue = nXferValue;
+  offer.hashOffer = hashOffer;
 
  return ((COfferAccept *)&offer);
 }
@@ -2296,7 +2302,7 @@ COffer *CTransaction::GenerateOffer(COffer *offerIn)
   nFlag |= CTransaction::TXF_OFFER;
   offer = *offerIn;
 
- return (NULL); 
+ return (&offer);
 }
 
 COfferAccept *CTransaction::PayOffer(COfferAccept *accept)
@@ -2368,5 +2374,34 @@ CAsset *CTransaction::RemoveAsset(const CAsset& assetIn)
   asset = assetIn;
 
   return (&asset);
+}
+
+CIdent *CTransaction::CreateIdent(CIdent *ident)
+{
+
+  if (nFlag & CTransaction::TXF_IDENT)
+    return (NULL);
+
+  nFlag |= CTransaction::TXF_IDENT;
+  certificate = CCert(*ident);
+
+  return ((CIdent *)&certificate);
+}
+
+CIdent *CTransaction::CreateIdent()
+{
+
+  if (nFlag & CTransaction::TXF_IDENT)
+    return (NULL);
+
+  nFlag |= CTransaction::TXF_IDENT;
+
+  CIdent ident;
+  cbuff empty;
+
+  ident.Sign(empty);
+  certificate = CCert(ident);
+
+  return ((CIdent *)&certificate);
 }
 

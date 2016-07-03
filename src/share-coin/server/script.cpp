@@ -247,12 +247,9 @@ const char* GetOpName(opcodetype opcode)
     case OP_NOP9                   : return "OP_NOP9";
     case OP_NOP10                  : return "OP_NOP10";
 
-    case OP_DONATE                 : return "OP_DONATE";
     case OP_ALIAS                  : return "OP_ALIAS";
-    case OP_VAULT                  : return "OP_VAULT";
     case OP_OFFER                  : return "OP_OFFER";
-    case OP_OFFER_ACCEPT           : return "OP_OFFER_ACCEPT";
-    case OP_CERT_ISSUER            : return "OP_CERT_ISSUER";
+    case OP_IDENT                  : return "OP_IDENT";
     case OP_CERT                   : return "OP_CERT";
     case OP_LICENSE                : return "OP_LICENSE";
     case OP_ASSET                  : return "OP_ASSET";
@@ -264,7 +261,6 @@ const char* GetOpName(opcodetype opcode)
     case OP_EXT_REMOVE             : return "OP_EXT_REMOVE";
     case OP_EXT_GENERATE           : return "OP_EXT_GENERATE";
     case OP_EXT_TRANSFER           : return "OP_EXT_TRANSFER";
-    case OP_EXT_ACCEPT             : return "OP_EXT_ACCEPT";
     case OP_EXT_PAY                : return "OP_EXT_PAY";
 
     // template matching params
@@ -1698,6 +1694,7 @@ bool SignSignature(const CKeyStore &keystore, const CScript& fromPubKey, CTransa
 
   // Test solution
   bool ret= VerifyScript(txin.scriptSig, fromPubKey, txTo, nIn, true, 0);
+if (!ret) fprintf(stderr, "DEBUG: SignSignature: !VerifyScript()\n");
   return (ret);
 }
 

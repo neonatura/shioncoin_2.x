@@ -54,6 +54,44 @@ cert_list *GetLicenseTable(int ifaceIndex)
   return (&wallet->mapLicense);
 }
 
+bool DecodeIdentHash(const CScript& script, int& mode, uint160& hash)
+{
+  CScript::const_iterator pc = script.begin();
+  opcodetype opcode;
+  int op;
+
+  if (!script.GetOp(pc, opcode)) {
+    return false;
+  }
+  mode = opcode; /* extension mode (new/activate/update) */
+  if (mode < 0xf0 || mode > 0xf9)
+    return false;
+
+  if (!script.GetOp(pc, opcode)) { 
+    return false;
+  }
+  if (opcode < OP_1 || opcode > OP_16) {
+    return false;
+  }
+  op = CScript::DecodeOP_N(opcode); /* extension type (cert) */
+  if (op != OP_IDENT) {
+    return false;
+  }
+
+  vector<unsigned char> vch;
+  if (!script.GetOp(pc, opcode, vch)) {
+    return false;
+  }
+  if (opcode != OP_HASH160)
+    return (false);
+
+  if (!script.GetOp(pc, opcode, vch)) {
+    return false;
+  }
+  hash = uint160(vch);
+  return (true);
+}
+
 bool DecodeCertHash(const CScript& script, int& mode, uint160& hash)
 {
   CScript::const_iterator pc = script.begin();
@@ -235,6 +273,30 @@ int64 GetCertReturnFee(const CTransaction& tx)
 	return nFee;
 }
 
+bool IsIdentTx(const CTransaction& tx)
+{
+  int tot;
+
+  if (!tx.isFlag(CTransaction::TXF_IDENT)) {
+    return (false);
+  }
+
+  tot = 0;
+  BOOST_FOREACH(const CTxOut& out, tx.vout) {
+    uint160 hash;
+    int mode;
+
+    if (DecodeIdentHash(out.scriptPubKey, mode, hash)) {
+      tot++;
+    }
+  }
+  if (tot == 0) {
+    return false;
+  }
+
+  return (true);
+}
+
 bool IsCertTx(const CTransaction& tx)
 {
   int tot;
@@ -327,6 +389,37 @@ bool IsLocalCert(CIface *iface, const CTransaction& tx)
   return (IsLocalCert(iface, tx.vout[nOut]));
 }
 
+bool VerifyIdent(CTransaction& tx)
+{
+  uint160 hashIdent;
+  int nOut;
+
+  /* core verification */
+  if (!IsIdentTx(tx))
+    return (false); /* tx not flagged as ident */
+
+  /* verify hash in pub-script matches ident hash */
+  nOut = IndexOfExtOutput(tx);
+  if (nOut == -1)
+    return (false); /* no extension output */
+
+  int mode;
+  if (!DecodeIdentHash(tx.vout[nOut].scriptPubKey, mode, hashIdent))
+    return (false); /* no ident hash in output */
+
+  if (mode != OP_EXT_NEW &&
+      mode != OP_EXT_GENERATE &&
+      mode != OP_EXT_PAY)
+    return (false);
+
+  CIdent *ident = (CIdent *)&tx.certificate;
+  if (hashIdent != ident->GetHash())
+    return (false); /* ident hash mismatch */
+
+/* DEBUG: TODO verifyIdentInputs() */
+
+  return (true);
+}
 
 /**
  * Verify the integrity of an certificate.
@@ -412,7 +505,7 @@ fprintf(stderr, "DEBUG: VerifyLicense: hash mismatch\n");
 }
 
 #if 0
-bool GetCertEntByHash(CIface *iface, uint160 hash, CCertEnt& issuer)
+bool GetCertEntByHash(CIface *iface, uint160 hash, CIdent& issuer)
 {
   int ifaceIndex = GetCoinIndex(iface);
   cert_list *certs = GetCertTable(ifaceIndex);
@@ -623,3 +716,168 @@ void CLicense::NotifySharenet(int ifaceIndex)
 
 //  shnet_inform(iface, TX_LICENSE, &license, sizeof(license));
 }
+
+
+/**
+ * Submits an amount of coins as a transaction fee.
+ * @hashCert An optional certificate reference to associate with the donation.
+ * @note A block depth of two must be reached before donation occurs.
+ */
+int init_ident_donate_tx(CIface *iface, string strAccount, uint64_t nValue, uint160 hashCert, CWalletTx& wtx)
+{
+  CWallet *wallet = GetWallet(iface);
+  int ifaceIndex = GetCoinIndex(iface);
+  CIdent *ident;
+
+  if (ifaceIndex != TEST_COIN_IFACE && ifaceIndex != SHC_COIN_IFACE)
+    return (SHERR_OPNOTSUPP);
+
+  if (!wallet || !iface->enabled)
+    return (SHERR_OPNOTSUPP);
+
+  int64 nFee = nValue - iface->min_tx_fee;
+  if (nFee < 0) {
+fprintf(stderr, "DEBUG: init_ident_donate_tx: nFee = %lld\n", (long long)nFee);
+    return (SHERR_INVAL);
+  }
+
+  CTransaction tx;
+  bool hasCert = GetTxOfCert(iface, hashCert, tx);
+
+  CWalletTx t_wtx;
+  if (hasCert) {
+    ident = t_wtx.CreateIdent((CIdent *)&tx.certificate);
+  } else {
+    ident = t_wtx.CreateIdent();
+  }
+  if (!ident) {
+fprintf(stderr, "DEBUG: init_ident_donate_tx: !ident\n");
+    return (SHERR_INVAL);
+}
+
+  uint160 hashIdent = ident->GetHash();
+
+  /* sent to intermediate account. */
+  CReserveKey rkey(wallet);
+  t_wtx.strFromAccount = strAccount;
+
+  CPubKey vchPubKey = rkey.GetReservedKey();
+  CScript scriptPubKeyOrig;
+  scriptPubKeyOrig.SetDestination(vchPubKey.GetID());
+  CScript scriptPubKey;
+  scriptPubKey << OP_EXT_NEW << CScript::EncodeOP_N(OP_IDENT) << OP_HASH160 << hashIdent << OP_2DROP;
+  scriptPubKey += scriptPubKeyOrig;
+//  string strError = wallet->SendMoney(scriptPubKey, nValue, t_wtx, false);
+  int64 nFeeRequired;
+  if (!wallet->CreateTransaction(scriptPubKey, nValue, t_wtx, rkey, nFeeRequired)) {
+fprintf(stderr, "DEBUG: init_ident_donate_tx: !create-tx/1\n");
+    return (SHERR_CANCELED);
+}
+
+  if (!wallet->CommitTransaction(t_wtx, rkey)) {
+fprintf(stderr, "DEBUG: init_ident_donate_tx: !committ-tx/1\n");
+    return (SHERR_CANCELED);
+}
+
+  /* deduct intermediate tx fee */
+  nFee -= nFeeRequired;
+  nFee = MAX(iface->min_tx_fee, nFee);
+
+  /* send from intermediate as tx fee */
+  wtx.SetNull();
+  wtx.strFromAccount = strAccount;
+  wtx.CreateIdent(ident);
+  CScript feePubKey;
+  vector<pair<CScript, int64> > vecSend;
+
+fprintf(stderr, "DEBUG: DONATE TEST: sending nFee %lld to block-tx fee\n", (long long)nFee);
+  wtx.strFromAccount = strAccount;
+  feePubKey << OP_EXT_GENERATE << CScript::EncodeOP_N(OP_IDENT) << OP_HASH160 << hashIdent << OP_2DROP << OP_RETURN;
+  if (!SendMoneyWithExtTx(iface, t_wtx, wtx, feePubKey, vecSend, nFee)) { 
+fprintf(stderr, "DEBUG: init_ident_donate_tx:: !SendMoneyWithExtTx()\n");
+    return (SHERR_INVAL);
+}
+
+  return (0);
+}
+
+int init_ident_certcoin_tx(CIface *iface, string strAccount, uint64_t nValue, uint160 hashCert, CCoinAddr addrDest, CWalletTx& wtx)
+{
+  CWallet *wallet = GetWallet(iface);
+  int ifaceIndex = GetCoinIndex(iface);
+  CIdent *ident;
+
+  if (ifaceIndex != TEST_COIN_IFACE && ifaceIndex != SHC_COIN_IFACE)
+    return (SHERR_OPNOTSUPP);
+
+  if (!wallet || !iface->enabled)
+    return (SHERR_OPNOTSUPP);
+
+  if (!addrDest.IsValid())
+    return (SHERR_INVAL);
+
+  if (nValue < iface->min_tx_fee) {
+    return (SHERR_INVAL);
+  }
+
+  int64 bal = GetAccountBalance(ifaceIndex, strAccount, 1);
+  if (bal < nValue) {
+    return (SHERR_AGAIN);
+  }
+
+  CTransaction tx;
+  bool hasCert = GetTxOfCert(iface, hashCert, tx);
+
+  wtx.SetNull();
+  if (hasCert) {
+    ident = wtx.CreateIdent((CIdent *)&tx.certificate);
+  } else {
+    ident = wtx.CreateIdent();
+  }
+  if (!ident) {
+fprintf(stderr, "DEBUG: init_ident_donate_tx: !ident\n");
+    return (SHERR_INVAL);
+}
+
+  uint160 hashIdent = ident->GetHash();
+
+  /* sent to intermediate account. */
+  CReserveKey rkey(wallet);
+  wtx.strFromAccount = strAccount;
+
+  CPubKey vchPubKey = rkey.GetReservedKey();
+  CScript scriptPubKeyOrig;
+  scriptPubKeyOrig.SetDestination(vchPubKey.GetID());
+  CScript scriptPubKey;
+  scriptPubKey << OP_EXT_PAY << CScript::EncodeOP_N(OP_IDENT) << OP_HASH160 << hashIdent << OP_2DROP;
+  scriptPubKey += scriptPubKeyOrig;
+  int64 nFeeRequired;
+  if (!wallet->CreateTransaction(scriptPubKey, nValue, wtx, rkey, nFeeRequired)) {
+    return (SHERR_CANCELED);
+  }
+  if (!wallet->CommitTransaction(wtx, rkey)) {
+    return (SHERR_CANCELED);
+  }
+
+  nValue -= nFeeRequired;
+  nValue = MAX(iface->min_tx_fee, nValue);
+
+  /* send from intermediate to desination specified */
+  CWalletTx t_wtx;
+  t_wtx.SetNull();
+  t_wtx.strFromAccount = strAccount;
+  t_wtx.CreateIdent(ident);
+
+  vector<pair<CScript, int64> > vecSend;
+  CScript destPubKey;
+  destPubKey.SetDestination(addrDest.Get());
+  
+  if (!SendMoneyWithExtTx(iface, wtx, t_wtx, destPubKey, vecSend)) { 
+    fprintf(stderr, "DEBUG: init_ident_donate_tx:: !SendMoneyWithExtTx()\n");
+    return (SHERR_INVAL);
+  }
+
+  return (0);
+}
+
+

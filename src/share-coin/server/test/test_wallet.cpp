@@ -381,8 +381,10 @@ fprintf(stderr, "DEBUG: TESTWallet::CreateTransaction()\n");
 
   BOOST_FOREACH (const PAIRTYPE(CScript, int64)& s, vecSend)
   {
-    if (nValue < 0)
+fprintf(stderr, "DEBUG: CreateTransaction: vecSend[x].nValue = %s\n", FormatMoney(s.second).c_str());
+    if (nValue < 0) {
       return false;
+}
     nValue += s.second;
   }
   if (vecSend.empty() || nValue < 0) {
@@ -413,8 +415,11 @@ fprintf(stderr, "DEBUG: CreateTransaction: zero outputs specified failure\n");
         // Choose coins to use
         set<pair<const CWalletTx*,unsigned int> > setCoins;
         int64 nValueIn = 0;
-        if (!SelectCoins(nTotalValue, setCoins, nValueIn))
+        if (!SelectCoins(nTotalValue, setCoins, nValueIn)) {
+fprintf(stderr, "DEBUG: CreateTransaction: !SelectCoins\n"); 
+          txdb.Close();
           return false;
+}
         BOOST_FOREACH(PAIRTYPE(const CWalletTx*, unsigned int) pcoin, setCoins)
         {
           int64 nCredit = pcoin.first->vout[pcoin.second].nValue;
@@ -467,6 +472,7 @@ fprintf(stderr, "DEBUG: CreateTransaction: zero outputs specified failure\n");
         int nIn = 0;
         BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setCoins) {
           if (!SignSignature(*this, *coin.first, wtxNew, nIn++)) {
+fprintf(stderr, "DEBUG: CreateTransaction: !SignSignature()\n");
             txdb.Close();
             return false;
           }

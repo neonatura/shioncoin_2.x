@@ -85,24 +85,12 @@ enum opcodetype
     OP_16 = 0x60,
 
     /* extension ops */
-    OP_DONATE = 0x07,
-    OP_ALIAS = 0x08,
-    OP_VAULT = 0x09,
-    OP_OFFER=0x0a,
-    OP_OFFER_ACCEPT=0x0b,
-    OP_CERT_ISSUER=0x0c,
+    OP_ALIAS = 0x0a,
+    OP_OFFER=0x0b,
+    OP_IDENT=0x0c,
     OP_CERT=0x0d,
     OP_LICENSE = 0x0e,
     OP_ASSET = 0x0f,
-
-    /* asset ops */
-    XOP_ASSET_NEW = 0x01,
-    XOP_ASSET_ACTIVATE = 0x02,
-    XOP_ASSET_SEND = 0x03,
-    XOP_ASSET_PEG = 0x04,
-    XOP_ASSET_UPDATE = 0x05,
-    XOP_ASSET_GENERATE = 0x06,
-    XOP_ASSET_DISSOLVE = 0x07,
 
     // control
     OP_NOP = 0x61,
@@ -218,8 +206,7 @@ enum opcodetype
     OP_EXT_REMOVE = 0xf3,
     OP_EXT_GENERATE = 0xf4,
     OP_EXT_TRANSFER = 0xf5,
-    OP_EXT_ACCEPT = 0xf6,
-    OP_EXT_PAY = 0xf7,
+    OP_EXT_PAY = 0xf6,
 
     // template matching params
     OP_SMALLINTEGER = 0xfa,

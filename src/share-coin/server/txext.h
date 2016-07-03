@@ -58,6 +58,13 @@ inline std::string stringFromVch(const std::vector<unsigned char> &vch)
   return res;
 }
 
+inline shpeer_t *sharenet_peer(void)
+{
+  static shpeer_t *ret_peer;
+  if (!ret_peer)
+    ret_peer = shpeer_init(NULL, NULL);
+  return (ret_peer);
+}
 
 class CExtCore
 {
@@ -67,6 +74,7 @@ class CExtCore
     unsigned int nVersion;
     shtime_t tExpire;
     cbuff vchLabel;
+    shkey_t peer;
 
     mutable bool fActive;
 
@@ -82,6 +90,7 @@ class CExtCore
       READWRITE(this->nVersion);
       READWRITE(this->vchLabel);
       READWRITE(this->tExpire);
+      READWRITE(FLATDATA(peer));
     )
 
     void SetNull()
@@ -90,6 +99,8 @@ class CExtCore
       vchLabel.clear();
       tExpire = shtime_adj(shtime(), SHARE_DEFAULT_EXPIRE_TIME);
       fActive = false;
+
+      memcpy(&peer, sharenet_peer(), sizeof(peer));
     }
 
     bool IsActive()

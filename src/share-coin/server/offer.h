@@ -8,20 +8,21 @@ typedef std::map<uint160, uint256> offer_list; /* hashOffer -> hashTx */
 
 class CCoinAddr;
 
-class COfferCore : public CExtCore 
+class COfferAccept : public CExtCore 
 {
   public:
     cbuff vPayAddr;
     cbuff vXferAddr;
-    cbuff vXferTx;
     int64 nPayValue;
     int64 nXferValue;
+    uint160 hashOffer;
+    uint256 hXferTx;
 
-    COfferCore() { 
+    COfferAccept() { 
       SetNull();
     }
 
-    COfferCore(const COfferCore& offerIn)
+    COfferAccept(const COfferAccept& offerIn)
     {
       SetNull();
       Init(offerIn);
@@ -31,51 +32,56 @@ class COfferCore : public CExtCore
       READWRITE(*(CExtCore *)this);
       READWRITE(vPayAddr);
       READWRITE(vXferAddr);
-      READWRITE(vXferTx);
       READWRITE(nPayValue);
       READWRITE(nXferValue);
+      READWRITE(hashOffer);
+      READWRITE(hXferTx);
     )
 
 
-    friend bool operator==(const COfferCore &a, const COfferCore &b) {
+    friend bool operator==(const COfferAccept &a, const COfferAccept &b) {
       return (
           ((CExtCore&) a) == ((CExtCore&) b) &&
           a.vPayAddr == b.vPayAddr &&
           a.vXferAddr == b.vXferAddr &&
-          a.vXferTx == b.vXferTx &&
           a.nPayValue == b.nPayValue &&
-          a.nXferValue == b.nXferValue 
+          a.nXferValue == b.nXferValue && 
+          a.hashOffer == b.hashOffer &&
+          a.hXferTx == b.hXferTx
           );
     }
 
-    void Init(const COfferCore& b)
+    void Init(const COfferAccept& b)
     {
       CExtCore::Init(b);
       vPayAddr = b.vPayAddr;
       vXferAddr = b.vXferAddr;
-      vXferTx = b.vXferTx;
       nPayValue = b.nPayValue;
       nXferValue = b.nXferValue;
+      hashOffer = b.hashOffer;
+      hXferTx = b.hXferTx;
     }
 
-    COfferCore operator=(const COfferCore &b)
+    COfferAccept operator=(const COfferAccept &b)
     {
       Init(b);
       return *this;
     }
 
-    friend bool operator!=(const COfferCore &a, const COfferCore &b) {
+    friend bool operator!=(const COfferAccept &a, const COfferAccept &b) {
         return !(a == b);
     }
     
     void SetNull() 
     {
       CExtCore::SetNull();
+
       vPayAddr.clear(); 
       vXferAddr.clear(); 
-      vXferTx.clear(); 
       nPayValue = 0;
       nXferValue = 0;
+      hashOffer = 0;
+      hXferTx = 0;
     }
 
     bool IsNull() const 
@@ -91,85 +97,13 @@ class COfferCore : public CExtCore
       return Hash160(rawbuf);
     }
 
-
     bool GetPayAddr(int ifaceIndex, CCoinAddr& addr);
+
     bool GetXferAddr(int ifaceIndex, CCoinAddr& addr, std::string& account);
-};
 
-class COfferAccept : public COfferCore 
-{
-  public:
-    uint160 hashOffer;
-
-    COfferAccept() {
-      SetNull();
-    }
-
-    COfferAccept(const COfferAccept& b)
-    {
-      SetNull();
-      Init(b);
-    }
-
-    COfferAccept(COfferCore& b)
-    {
-      SetNull();
-      COfferCore::Init(b);
-      hashOffer = b.GetHash();
-    }
-
-    COfferAccept(const uint160& hashOfferIn, int64 srcValueIn, int64 destValueIn)
-    {
-      hashOffer = hashOfferIn;
-    }
-
-    IMPLEMENT_SERIALIZE (
-      READWRITE(*(COfferCore *)this);
-      READWRITE(hashOffer);
-    )
-
-    friend bool operator==(const COfferAccept &a, const COfferAccept &b) {
-      return (
-          ((COfferCore&) a) == ((COfferCore&) b) &&
-          a.hashOffer == b.hashOffer
-          );
-    }
-
-    COfferAccept operator=(const COfferAccept &b) 
-    {
-      Init(b);
-      return *this;
-    }
-
-    friend bool operator!=(const COfferAccept &a, const COfferAccept &b) {
-        return !(a == b);
-    }
-
-    void Init(const COfferAccept& b)
-    {
-      COfferCore::Init(b);
-      hashOffer = b.hashOffer;
-    }
-
-    void SetNull()
-    {
-      COfferCore::SetNull();
-      hashOffer = 0;
-    }
-
-    bool IsNull() const 
-    {
-      return (COfferCore::IsNull());
-    }
-
-    const uint160 GetHash()
-    {
-      uint256 hash = SerializeHash(*this);
-      unsigned char *raw = (unsigned char *)&hash;
-      cbuff rawbuf(raw, raw + sizeof(hash));
-      return Hash160(rawbuf);
-    }
-    
+    void print();
+    std::string ToString();
+    void print_json(shjson_t *json);
 };
 
 class COffer : public COfferAccept
@@ -200,7 +134,6 @@ class COffer : public COfferAccept
         READWRITE(this->nPayCoin);
         READWRITE(this->nXferCoin);
         READWRITE(this->nType);
-        READWRITE(this->vXferTx);
         READWRITE(this->accepts);
         )
 
@@ -210,7 +143,6 @@ class COffer : public COfferAccept
             a.nPayCoin == b.nPayCoin &&
             a.nXferCoin == b.nXferCoin &&
             a.nType == b.nType &&
-            a.vXferTx == b.vXferTx &&
             a.accepts == b.accepts
             );
       }
@@ -220,7 +152,6 @@ class COffer : public COfferAccept
       nPayCoin = b.nPayCoin;
       nXferCoin = b.nXferCoin;
       nType = b.nType;
-      vXferTx = b.vXferTx;
       accepts = b.accepts;
       return *this;
     }
@@ -235,7 +166,6 @@ class COffer : public COfferAccept
       nPayCoin = -1;
       nXferCoin = -1;
       nType = 16; /* reserved */
-      vXferTx.clear();
       accepts.clear();
     }
 
@@ -253,6 +183,8 @@ class COffer : public COfferAccept
     {
       return (GetCoinByIndex(nXferCoin));
     }
+
+    void print_json(shjson_t *json);
 };
 
 

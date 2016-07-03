@@ -3,18 +3,53 @@ share-coin
 
 <h4>Part of the Share Library Suite.</b>
 
+<h3>Stratum + SHC + USDe Coin Service</h3>
+A stratum server for the SHC and USDe virtual currency is provided in this library. The server is embedded into the usde coin server in the program "shcoind". The "shc" and "usde" client programs is provided to perform RPC commands against the coin server.
+
+Note: No additional programs from the share library suite is required in order to run the coin+stratum service. The C share library is staticly linked against the coin services, and a 'make install' is not required to run the program.
+
+The stratum service utilizes new stratum methods that are not standard, and require a compatible web-based front end. See the 'sharenet-php' project for more information.
+
+
+<h3>Build Dependencies</h3>
+
+The c++ boost shared library is required.  To be specific, the "system", "filesystem", "program_options", and "thread" boost libraries. The "shcoind", "shc", and "usde" programs are the only sharelib program that link against boost libraries.
+To install on linux run 'yum install libboost*' or 'apt-get install libboost*'.
+
+The 'openssl version 1.0.1g' distribution has been included in the directory '/depend/openssl-1.0.1g'. This version will automatically be compiled and linked against the shcoind and shcoin programs.
+
+You must install the 'gcc-java' package in order to provide the "jni.h" gcc header file for the java API to compile correctly.
+To install on linux run 'yum install gcc-java' or 'apt-get install gcc-java'.
+
+SWIG is optional. Pre-built source code has been generated as part of the distritution. 
+To install on linux run 'yum install swig' or 'apt-get install swig'.
+
+<h2>SHC Specifications</h2>
+The share-coin is unique in that it provides additional types of transactions that are compatible with the underlying 'share library' file-system and network. Examples of these capabilities include exchanging coins between currencies, providing certified licenses for custom use, and assigning names to otherwise hard to remember hash tags.
+ 
+The shcoind SHC coin server recalcultes the block difficulty rate every block using the Kmmooto Gravity Well algorythm. The target duration for blocks is one minute.
+
+A maximum of 1Billion SHC will be generated. The reward life-time is expected to continue for around 40 years (about 2055).  
+
+SHC Server Port: 24104
+
+Stratum Port: 9448
+
+The SHC network requires 1 confirmation per transaction.
+
+The SHC network block matures after 60 confirmations.
+
 <h2>USDe Specifications</h2>
-The shcoind usde server recalcultes the block difficulty rate every block using the Kmmooto Gravity Well algorythm. The target duration for blocks is one minute.
+The shcoind USDe coin server recalcultes the block difficulty rate every block using the Kmmooto Gravity Well algorythm. The target duration for blocks is one minute.
 
 A maximum of 1.6Billion USDe will be generated. Block reward halves every 130,000 blocks. The current money supply is estimated at 1.12 billion coins in circulation.
 
 USDE Server Port: 54449
 
-USDE RPC Port: 54448
-
 Stratum Port: 9448
 
 The USDE network requires 5 confirmations per transaction.
+
 The USDE network block matures after 120 confirmations.
 
 
@@ -112,9 +147,9 @@ createrawtransaction [{"txid":txid,"vout":n},...] {address:amount,...}
 
 decoderawtransaction <hex string>
 
-dumpprivkey <usdeaddress>
+dumpprivkey <address>
 
-getaccount <usdeaddress>
+getaccount <address>
 
 getaccountaddress <account>
 
@@ -150,7 +185,7 @@ getrawtransaction <txid> [verbose=0]
 
 getreceivedbyaccount <account> [minconf=1]
 
-getreceivedbyaddress <usdeaddress> [minconf=1]
+getreceivedbyaddress <address> [minconf=1]
 
 gettransaction <txid>
 
@@ -160,7 +195,7 @@ getworkex [data, coinbase]
 
 help [command]
 
-importprivkey <usdeprivkey> [label]
+importprivkey <privkey> [label]
 
 keypoolrefill
 
@@ -178,29 +213,29 @@ listunspent [minconf=1] [maxconf=999999]
 
 move <fromaccount> <toaccount> <amount> [minconf=1] [comment]
 
-sendfrom <fromaccount> <tousdeaddress> <amount> [minconf=1] [comment] [comment-to]
+sendfrom <fromaccount> <toaddress> <amount> [minconf=1] [comment] [comment-to]
 
 sendmany <fromaccount> {address:amount,...} [minconf=1] [comment]
 
 sendrawtransaction <hex string>
 
-sendtoaddress <usdeaddress> <amount> [comment] [comment-to]
+sendtoaddress <address> <amount> [comment] [comment-to]
 
-setaccount <usdeaddress> <account>
+setaccount <address> <account>
 
 setmininput <amount>
 
 settxfee <amount>
 
-signmessage <usdeaddress> <message>
+signmessage <address> <message>
 
 signrawtransaction <hex string> [{"txid":txid,"vout":n,"scriptPubKey":hex},...] [<privatekey1>,...] [sighashtype="ALL"]
 
 stop
 
-validateaddress <usdeaddress>
+validateaddress <address>
 
-verifymessage <usdeaddress> <signature> <message>
+verifymessage <address> <signature> <message>
 </small>
 
-The shcoind and shcoin program will write data to the /var/lib/share/usde/ directory. The "usde.conf" configuration file is only present in this directory in order to supply the automatically generated RPC user/pass. 
+The shcoind daemon and client programs store data in the "/var/lib/share/blockchain/" directory. Commands are provided in order to import or export in either a legacy or optimized manner. No RPC access is permitted except via the local machine and only by the automatically generated rpc credentials. 

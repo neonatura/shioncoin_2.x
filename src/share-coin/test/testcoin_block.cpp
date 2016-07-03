@@ -37,6 +37,19 @@
 extern bool GetTxOfCert(CIface *iface, const uint160& hash, CTransaction& tx);
 extern bool GetTxOfLicense(CIface *iface, const uint160& hash, CTransaction& tx);
 
+extern bool GetTxOfOffer(CIface *iface, const uint160& hash, CTransaction& tx);
+
+extern int init_offer_tx(CIface *iface, std::string strAccount, int64 srcValue, int destIndex, int64 destValue, CWalletTx& wtx);
+extern int accept_offer_tx(CIface *iface, string strAccount, uint160 hashOffer, int64 srcValue, int64 destValue, CWalletTx& wtx);
+extern int generate_offer_tx(CIface *iface, uint160 hashOffer, CWalletTx& wtx);
+
+extern int pay_offer_tx(CIface *iface, uint160 hashAccept, CWalletTx& wtx);
+
+
+extern int init_ident_donate_tx(CIface *iface, string strAccount, uint64_t nValue, uint160 hashCert, CWalletTx& wtx);
+extern int init_ident_certcoin_tx(CIface *iface, string strAccount, uint64_t nValue, uint160 hashCert, CCoinAddr addrDest, CWalletTx& wtx);
+extern bool VerifyIdent(CTransaction& tx);
+
 
 
 
@@ -403,6 +416,79 @@ _TEST(assettx)
   _TRUE(VerifyAsset(wtx) == true);
 }
 
+_TEST(identtx)
+{
+  CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
+  CWallet *wallet = GetWallet(iface);
+  CWalletTx wtx;
+  string strAccount("");
+  uint160 hashCert; /* nerp */
+  int64 orig_bal;
+  int64 bal;
+  int idx;
+  int err;
+
+  for (idx = 0; idx < 2; idx++) {
+    CBlock *block = test_GenerateBlock();
+    _TRUEPTR(block);
+    _TRUE(ProcessBlock(NULL, block) == true);
+    delete block;
+  }
+
+  orig_bal = GetAccountBalance(TEST_COIN_IFACE, strAccount, 1);
+  _TRUE(orig_bal > (COIN + iface->min_tx_fee));
+fprintf(stderr, "DEBUG: donating %lld value\n", (long long)orig_bal);
+
+  err = init_ident_donate_tx(iface, strAccount, orig_bal - COIN, hashCert, wtx);  
+if (err) fprintf(stderr, "DEBUG: IDENT-TX: err == %d\n", err);
+wtx.print();
+  _TRUE(err == 0);
+  _TRUE(wtx.CheckTransaction(TEST_COIN_IFACE)); /* .. */
+  _TRUE(VerifyIdent(wtx) == true);
+
+  /* donate depth 1 -- held in interimediate account */
+  {
+    CBlock *block = test_GenerateBlock();
+    _TRUEPTR(block);
+    _TRUE(ProcessBlock(NULL, block) == true);
+    delete block;
+  }
+
+  bal = GetAccountBalance(TEST_COIN_IFACE, strAccount, 1);
+fprintf(stderr, "DEBUG: donated and now balance %lld\n", (long long)bal);
+  _TRUE(bal < orig_bal);
+
+  /* donate depth 2 -- retrieved through claiming tx fee */
+  {
+    CBlock *block = test_GenerateBlock();
+    _TRUEPTR(block);
+    _TRUE(ProcessBlock(NULL, block) == true);
+    delete block;
+  }
+
+  /* send ceritified coins to self */
+  CCoinAddr addr = GetAccountAddress(wallet, strAccount, true);
+  _TRUE(addr.IsValid() == true);
+
+  CWalletTx csend_tx;
+  err = init_ident_certcoin_tx(iface, strAccount, bal - COIN, hashCert, addr, csend_tx);
+if (err) fprintf(stderr, "DEBUG: IDENT-TX(cert coin): err == %d\n", err);
+  _TRUE(err == 0);
+  _TRUE(csend_tx.CheckTransaction(TEST_COIN_IFACE)); /* .. */
+  _TRUE(VerifyIdent(csend_tx) == true);
+
+  for (idx = 0; idx < 3; idx++) {
+    CBlock *block = test_GenerateBlock();
+    _TRUEPTR(block);
+    _TRUE(ProcessBlock(NULL, block) == true);
+    delete block;
+  }
+
+  bal = GetAccountBalance(TEST_COIN_IFACE, strAccount, 1);
+fprintf(stderr, "DEBUG: sent cert coins and now balance %lld\n", (long long)bal);
+  _TRUE(bal > orig_bal);
+}
+
 _TEST(certtx)
 {
   CWallet *wallet = GetWallet(TEST_COIN_IFACE);
@@ -453,14 +539,6 @@ fprintf(stderr, "DEBUG: CERTTX: %d = init_cert_tx()\n", err);
   CWalletTx lic_wtx;
   err = init_license_tx(iface, strLabel, hashCert, 0x1, lic_wtx);
   fprintf(stderr, "DEBUG: %d = init_license_tx()\n", err);
-#if 0
-  if (err == -2) {
-    CTxMemPool *mempool = GetTxMemPool(iface);
-    if (mempool->exists(hashTx)) {
-      fprintf(stderr, "DEBUG: tx '%s' still in mempool\n", hashTx.GetHex().c_str());
-    }
-  }
-#endif
   _TRUE(0 == err);
 
   _TRUE(lic_wtx.CheckTransaction(TEST_COIN_IFACE)); /* .. */
@@ -478,6 +556,122 @@ fprintf(stderr, "DEBUG: CERTTX: %d = init_cert_tx()\n", err);
   CTransaction t2_tx;
   _TRUE(GetTxOfLicense(iface, licHash, t2_tx) == true);
 }
+
+_TEST(offertx)
+{
+  CWallet *wallet = GetWallet(TEST_COIN_IFACE);
+  CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
+  int64 srcValue;
+  int64 destValue;
+  int idx;
+  int err;
+
+  string strLabel("");
+
+  /* create a coin balance */
+  for (idx = 0; idx < 3; idx++) {
+    CBlock *block = test_GenerateBlock();
+    _TRUEPTR(block);
+    _TRUE(ProcessBlock(NULL, block) == true);
+    delete block;
+  }
+
+  CCoinAddr addr = GetAccountAddress(wallet, strLabel, false);
+  _TRUE(addr.IsValid() == true);
+
+  int64 bal = GetAccountBalance(TEST_COIN_IFACE, strLabel, 1);
+  srcValue = -1 * (bal / 3);
+  destValue = 1 * (bal / 4);
+
+  CWalletTx wtx;
+  err = init_offer_tx(iface, strLabel, srcValue, TEST_COIN_IFACE, destValue, wtx);
+fprintf(stderr, "DEBUG: OFFER-TX: %d = init_offer_tx()\n", err); 
+  _TRUE(0 == err);
+  uint160 hashOffer = wtx.offer.GetHash();
+  uint256 hashTx = wtx.GetHash();
+
+  _TRUE(wtx.CheckTransaction(TEST_COIN_IFACE));
+  _TRUE(VerifyOffer(wtx) == true);
+
+  /* insert offer-tx into chain */
+  for (idx = 0; idx < 3; idx++) {
+    CBlock *block = test_GenerateBlock();
+    _TRUEPTR(block);
+    _TRUE(ProcessBlock(NULL, block) == true);
+    delete block;
+  }
+
+  /* verify insertion */
+  CTransaction t_tx;
+  _TRUE(GetTxOfOffer(iface, hashOffer, t_tx) == true);
+  _TRUE(t_tx.GetHash() == hashTx); 
+
+  srcValue = 1 * (bal / 3);
+  destValue = -1 * (bal / 4);
+
+  /* generake test license from certificate */
+  CWalletTx acc_wtx;
+  err = accept_offer_tx(iface, strLabel, hashOffer, srcValue, destValue, acc_wtx);
+fprintf(stderr, "DEBUG: OFFER-TX: %d = accept_offer_tx()\n", err);
+  if (err == -2) {
+    CTxMemPool *mempool = GetTxMemPool(iface);
+    if (mempool->exists(hashTx)) {
+      fprintf(stderr, "DEBUG: tx '%s' still in mempool\n", hashTx.GetHex().c_str());
+    }
+  }
+  _TRUE(0 == err);
+  uint160 hashAccept = acc_wtx.offer.GetHash();
+  _TRUE(acc_wtx.CheckTransaction(TEST_COIN_IFACE));
+  _TRUE(VerifyOffer(acc_wtx) == true);
+
+  for (idx = 0; idx < 3; idx++) {
+    CBlock *block = test_GenerateBlock();
+    _TRUEPTR(block);
+    _TRUE(ProcessBlock(NULL, block) == true);
+    delete block;
+  }
+
+  /* offer generate operation */
+  CWalletTx gen_wtx;
+  err = generate_offer_tx(iface, hashOffer, gen_wtx);
+fprintf(stderr, "DEBUG: %d = generate_offer_tx\n", err);
+  _TRUE(0 == err);
+  uint160 hashGen = gen_wtx.offer.GetHash();
+  _TRUE(gen_wtx.CheckTransaction(TEST_COIN_IFACE));
+  _TRUE(VerifyOffer(gen_wtx) == true);
+  _TRUE(hashGen == hashOffer);
+
+  for (idx = 0; idx < 3; idx++) {
+    CBlock *block = test_GenerateBlock();
+    _TRUEPTR(block);
+    _TRUE(ProcessBlock(NULL, block) == true);
+    delete block;
+  }
+
+  /* pay operation */
+  CWalletTx pay_wtx;
+  err = pay_offer_tx(iface, hashAccept, pay_wtx);
+fprintf(stderr, "DEBUG: %d = pay_offer_tx\n", err);
+  _TRUE(0 == err);
+  uint160 hashPay = pay_wtx.offer.GetHash();
+  _TRUE(pay_wtx.CheckTransaction(TEST_COIN_IFACE));
+  _TRUE(VerifyOffer(pay_wtx) == true);
+  _TRUE(hashPay == hashAccept);
+
+  {
+    CBlock *block = test_GenerateBlock();
+    _TRUEPTR(block);
+    _TRUE(ProcessBlock(NULL, block) == true);
+    delete block;
+  }
+
+/* verify payment */
+  int64 new_bal = GetAccountBalance(TEST_COIN_IFACE, strLabel, 1);
+fprintf(stderr, "DEBUG: bal %llu, new_bal %llu\n", (unsigned long long)bal, (unsigned long long)new_bal);
+  _TRUE(new_bal >= bal);
+}
+
+
 
 
 #ifdef __cplusplus

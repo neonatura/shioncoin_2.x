@@ -1964,7 +1964,7 @@ CCoinAddr GetAccountAddress(CWallet *wallet, string strAccount, bool bForceNew)
 bool CreateTransactionWithInputTx(CIface *iface, 
     const vector<pair<CScript, int64> >& vecSend,
     CWalletTx& wtxIn, int nTxOut, CWalletTx& wtxNew,
-    CReserveKey& reservekey)
+    CReserveKey& reservekey, int64 nTxFee)
 {
   int ifaceIndex = GetCoinIndex(iface);
   CWallet *pwalletMain = GetWallet(iface);
@@ -2024,7 +2024,7 @@ bool CreateTransactionWithInputTx(CIface *iface,
       dPriority += (double) nWtxinCredit * wtxIn.GetDepthInMainChain(ifaceIndex);
 
       // Fill a vout back to self (new addr) with any change
-      int64 nChange = nValueIn - nTotalValue;
+      int64 nChange = MAX(0, nValueIn - nTotalValue - nTxFee);
       if (nChange >= CENT) {
         CCoinAddr returnAddr = GetAccountAddress(pwalletMain, wtxNew.strFromAccount, true);
         CScript scriptChange;
@@ -2135,9 +2135,10 @@ bool SendMoneyWithExtTx(CIface *iface,
   txFee = MAX(0, MIN(tx_val - iface->min_tx_fee, txFee));
   int64 nValue = tx_val - txFee;
   vecSend.insert(vecSend.begin(), make_pair(scriptPubKey, nValue));
+fprintf(stderr, "DEBUG: SendMoneYWithExtTx: sending %lld nValue from ext-tx input\n", (long long)nValue);
 
 	if (!CreateTransactionWithInputTx(iface,
-        vecSend, wtxIn, nTxOut, wtxNew, reservekey)) {
+        vecSend, wtxIn, nTxOut, wtxNew, reservekey, txFee)) {
     return error(ifaceIndex, "SendMoneyWithExtTx: error creating transaction.");
   }
 
