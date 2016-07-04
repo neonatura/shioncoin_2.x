@@ -1681,6 +1681,7 @@ bool core_AcceptBlock(CBlock *pblock);
 CBlockIndex *GetBlockIndexByHeight(int ifaceIndex, unsigned int nHeight);
 
 
+
 #endif /* ndef __SERVER_BLOCK_H__ */
 
 

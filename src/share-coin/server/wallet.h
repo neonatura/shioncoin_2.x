@@ -789,6 +789,8 @@ bool GetCoinAddr(CWallet *wallet, CCoinAddr& addrAccount, string& strAccount);
 
 bool CreateTransactionWithInputTx(CIface *iface, const vector<pair<CScript, int64> >& vecSend, CWalletTx& wtxIn, int nTxOut, CWalletTx& wtxNew, CReserveKey& reservekey, int64 nTxFee = 0);
 
+bool VerifyMatrixTx(CTransaction& tx, int& mode);
+
  
 
 #ifdef __cplusplus

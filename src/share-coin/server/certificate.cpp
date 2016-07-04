@@ -416,8 +416,6 @@ bool VerifyIdent(CTransaction& tx)
   if (hashIdent != ident->GetHash())
     return (false); /* ident hash mismatch */
 
-/* DEBUG: TODO verifyIdentInputs() */
-
   return (true);
 }
 
@@ -452,8 +450,6 @@ bool VerifyCert(CTransaction& tx)
   if (hashCert != cert->GetHash())
     return (false); /* cert hash mismatch */
 
-/* DEBUG: TODO verifyCertInputs() */
-
   return (true);
 }
 
@@ -467,7 +463,6 @@ bool VerifyLicense(CTransaction& tx)
 
   /* core verification */
   if (!IsLicenseTx(tx)) {
-fprintf(stderr, "DEBUG: VerifyLicense: !IsLicenseTx:\n");
 tx.print();
     return (false); /* tx not flagged as cert */
 }
@@ -475,13 +470,11 @@ tx.print();
   /* verify hash in pub-script matches cert hash */
   nOut = IndexOfExtOutput(tx);
   if (nOut == -1) {
-fprintf(stderr, "DEBUG: VerifyLicense: !IndexOfExtOutput\n");
     return (false); /* no extension output */
 }
 
   int mode;
   if (!DecodeLicenseHash(tx.vout[nOut].scriptPubKey, mode, hashLicense)) {
-fprintf(stderr, "DEBUG: VerifyLicense: no hashLicense\n");
     return (false); /* no cert hash in output */
 }
 
@@ -489,17 +482,14 @@ fprintf(stderr, "DEBUG: VerifyLicense: no hashLicense\n");
       mode != OP_EXT_UPDATE &&
       mode != OP_EXT_TRANSFER &&
       mode != OP_EXT_REMOVE) {
-fprintf(stderr, "DEBUG: VerifyLicense: mode %d error\n", mode);
     return (false);
 }
 
   CLicense *lic = &tx.license;
   if (hashLicense != lic->GetHash()) {
-fprintf(stderr, "DEBUG: VerifyLicense: hash mismatch\n");
     return (false); /* cert hash mismatch */
 }
 
-/* DEBUG: TODO verifyLicenseInputs() */
 
   return (true);
 }
@@ -545,7 +535,6 @@ bool GetTxOfCert(CIface *iface, const uint160& hash, CTransaction& tx)
     return (false);
 
   if (!IsCertTx(tx)) {
-fprintf(stderr, "DEBUG: GetCertByhash(): !IsCertTx\n");
     return (false);
 }
 
@@ -571,7 +560,6 @@ bool GetTxOfLicense(CIface *iface, const uint160& hash, CTransaction& tx)
     return (false);
 
   if (!IsLicenseTx(tx)) {
-fprintf(stderr, "DEBUG: GetLicenseByhash(): !IsLicenseTx\n");
     return (false);
 }
 
@@ -665,7 +653,6 @@ int init_license_tx(CIface *iface, string strAccount, uint160 hashCert, uint64_t
 
   CLicense *lic = wtx.CreateLicense(&tx.certificate, nCrc);
   if (!lic) {
-fprintf(stderr, "DEBUG: NULL = wtx.CreateLicense()\n");
     return (SHERR_INVAL);
 }
 
@@ -737,7 +724,6 @@ int init_ident_donate_tx(CIface *iface, string strAccount, uint64_t nValue, uint
 
   int64 nFee = nValue - iface->min_tx_fee;
   if (nFee < 0) {
-fprintf(stderr, "DEBUG: init_ident_donate_tx: nFee = %lld\n", (long long)nFee);
     return (SHERR_INVAL);
   }
 
@@ -751,7 +737,6 @@ fprintf(stderr, "DEBUG: init_ident_donate_tx: nFee = %lld\n", (long long)nFee);
     ident = t_wtx.CreateIdent();
   }
   if (!ident) {
-fprintf(stderr, "DEBUG: init_ident_donate_tx: !ident\n");
     return (SHERR_INVAL);
 }
 
@@ -770,12 +755,10 @@ fprintf(stderr, "DEBUG: init_ident_donate_tx: !ident\n");
 //  string strError = wallet->SendMoney(scriptPubKey, nValue, t_wtx, false);
   int64 nFeeRequired;
   if (!wallet->CreateTransaction(scriptPubKey, nValue, t_wtx, rkey, nFeeRequired)) {
-fprintf(stderr, "DEBUG: init_ident_donate_tx: !create-tx/1\n");
     return (SHERR_CANCELED);
 }
 
   if (!wallet->CommitTransaction(t_wtx, rkey)) {
-fprintf(stderr, "DEBUG: init_ident_donate_tx: !committ-tx/1\n");
     return (SHERR_CANCELED);
 }
 
@@ -790,7 +773,6 @@ fprintf(stderr, "DEBUG: init_ident_donate_tx: !committ-tx/1\n");
   CScript feePubKey;
   vector<pair<CScript, int64> > vecSend;
 
-fprintf(stderr, "DEBUG: DONATE TEST: sending nFee %lld to block-tx fee\n", (long long)nFee);
   wtx.strFromAccount = strAccount;
   feePubKey << OP_EXT_GENERATE << CScript::EncodeOP_N(OP_IDENT) << OP_HASH160 << hashIdent << OP_2DROP << OP_RETURN;
   if (!SendMoneyWithExtTx(iface, t_wtx, wtx, feePubKey, vecSend, nFee)) { 
@@ -881,3 +863,63 @@ fprintf(stderr, "DEBUG: init_ident_donate_tx: !ident\n");
 }
 
 
+/**
+ * Generate a signature unique to this identify in relation to an external context. Only call after the "origin" signature has been generated.
+ * @param vchSecret The external context that the signature was generated from.
+ * @note In contrast to the CExtCore.origin field; this signature is meant specifically to reference external information as opposed to internally generated context.
+ * @see CExtCore.origin
+ * @todo Allow for blank vchSecret.
+ */
+bool CIdent::Sign(cbuff vchSecret)
+{
+
+  if (!vchSecret.data())
+    return (false);
+
+  void *raw = (void *)vchSecret.data();
+  size_t raw_len = vchSecret.size();
+
+  shkey_t s_key;
+  memset(&s_key, 0, sizeof(s_key));
+  if (origin.data() != NULL) {
+    shkey_t *t_key = shkey_bin((char *)origin.data(), origin.size());
+    memcpy(&s_key, t_key, sizeof(s_key));
+    shkey_free(&t_key);
+  }
+
+  shkey_t *key = shkey_cert(&s_key, shcrc(raw, raw_len), tExpire);
+  memcpy(&sig_key, key, sizeof(sig_key));
+  shkey_free(&key);
+
+  return (true);
+}
+
+/**
+ * Verify an identity's signature.
+ * @param vchSecret The external context that the signature was generated from.
+ */
+bool CIdent::VerifySignature(cbuff vchSecret)
+{
+  if (!vchSecret.data())
+    return (false);
+
+  shkey_t s_key;
+  memset(&s_key, 0, sizeof(s_key));
+  if (origin.data() != NULL) {
+    shkey_t *t_key = shkey_bin((char *)origin.data(), origin.size());
+    memcpy(&s_key, t_key, sizeof(s_key));
+    shkey_free(&t_key);
+  }
+
+  void *raw = (void *)vchSecret.data();
+  size_t raw_len = vchSecret.size();
+  uint64_t crc = shcrc(raw, raw_len);
+  shkey_t *key = shkey_cert(&s_key, crc, tExpire);
+  bool ret = false;
+
+  if (shkey_cmp(key, &sig_key))
+    ret = true;
+  shkey_free(&key);
+
+  return (ret);
+}

@@ -1617,7 +1617,9 @@ bool TESTBlock::AcceptBlock()
   CMatrix matrix;
   if (vtx.size() == 1) {
     CTransaction& tx = vtx[0]; 
-    if (tx.isFlag(CTransaction::TXF_MATRIX)) {
+    int mode;
+
+    if (VerifyMatrixTx(tx, mode) && mode == OP_EXT_GENERATE) {
       CBlockIndex *pindex = GetBestBlockIndex(TEST_COIN_IFACE);
       matrix = tx.matrix;
       if (matrix.GetHeight() > test_DHRM.GetHeight()) {
@@ -1628,7 +1630,6 @@ bool TESTBlock::AcceptBlock()
         Debug("TESTBlock::AcceptBlock: DHRM verify success: (seed %s) (new %s)\n", test_DHRM.ToString().c_str(), matrix.ToString().c_str());
 
       }
-/* DEBUG: TODO: verify script hash */
     } 
   }
 

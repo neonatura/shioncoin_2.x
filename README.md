@@ -59,7 +59,7 @@ Building the share library:
   ./configure
   make
   make install
-</pre></small><i>
+</pre></small></i>
 
 Building the share-coin programs:
 <i><small><pre>
@@ -68,7 +68,7 @@ Building the share-coin programs:
   ./configure --with-libshare=../libshare
   make
   make install
-</pre></small><i>
+</pre></small></i>
 
 The binaries can be found under src/share-coin as "shc", "usde", and "shcoind". Performing a 'make install' will install these programs into the bin and sbin directories respectively. The "shc" and "usde" programs must be ran as the same user as the "shcoind" daemon. The daemons supplied with the share library suite (shared, shlogd, shfsyncd) and base libraries can be installed by running 'make install' in the libshare directory built from the instructions above. 
 

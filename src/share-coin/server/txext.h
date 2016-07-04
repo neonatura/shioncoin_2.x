@@ -73,8 +73,8 @@ class CExtCore
   public:
     unsigned int nVersion;
     shtime_t tExpire;
+    cbuff origin;
     cbuff vchLabel;
-    shkey_t peer;
 
     mutable bool fActive;
 
@@ -88,19 +88,18 @@ class CExtCore
 
     IMPLEMENT_SERIALIZE (
       READWRITE(this->nVersion);
-      READWRITE(this->vchLabel);
       READWRITE(this->tExpire);
-      READWRITE(FLATDATA(peer));
+      READWRITE(this->origin);
+      READWRITE(this->vchLabel);
     )
 
     void SetNull()
     {
       nVersion = PROTO_EXT_VERSION;
-      vchLabel.clear();
       tExpire = shtime_adj(shtime(), SHARE_DEFAULT_EXPIRE_TIME);
+      origin.clear();
+      vchLabel.clear();
       fActive = false;
-
-      memcpy(&peer, sharenet_peer(), sizeof(peer));
     }
 
     bool IsActive()
@@ -110,7 +109,7 @@ class CExtCore
       return (fActive);
     }
 
-    void SetActive(bool active)
+    void SetActive(bool active) /* not persistent */
     {
       fActive = active;
     }
@@ -135,15 +134,17 @@ class CExtCore
     void Init(const CExtCore& b)
     {
       nVersion = b.nVersion;
-      vchLabel = b.vchLabel;
       tExpire = b.tExpire;
-      fActive = b.fActive;  
+      origin = b.origin;
+      vchLabel = b.vchLabel;
+      fActive = b.fActive;
     }
 
     friend bool operator==(const CExtCore &a, const CExtCore &b)
     {
       return (a.nVersion == b.nVersion &&
           a.tExpire == b.tExpire &&
+          a.origin == b.origin &&
           a.vchLabel == b.vchLabel
           );
     }
@@ -163,6 +164,12 @@ class CExtCore
       return (stringFromVch(vchLabel)); 
     }
 
+    bool SignOrigin(int ifaceIndex, CCoinAddr& addr);
+
+    bool VerifyOrigin(int ifaceIndex, CCoinAddr& addr);
+
+    const uint256 GetOrigin();
+
     void HandleState(int mode)
     {
       switch (mode) {
@@ -173,7 +180,8 @@ class CExtCore
           SetActive(false);
           break;
       }
-    } 
+    }
+
 };
 
 

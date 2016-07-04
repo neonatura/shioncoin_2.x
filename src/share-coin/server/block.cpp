@@ -2430,7 +2430,7 @@ bool CTransaction::VerifyMatrix(CMatrix *seed, const CMatrix& matrix, CBlockInde
     cmp_matrix = CMatrix();
   }
 
-  height = (pindex->nHeight - 27);
+  height = matrix.height;//(pindex->nHeight - 27);
   height /= 27;
   height *= 27;
 

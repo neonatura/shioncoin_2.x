@@ -130,6 +130,7 @@ server_sources = \
 	server/shc/shc_txidx.cpp \
 	server/shc/shc_txidx.h \
 	server/block.cpp \
+	server/txext.cpp \
 	server/alias.cpp \
 	server/certificate.cpp \
 	server/offer.cpp \

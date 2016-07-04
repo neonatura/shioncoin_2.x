@@ -250,9 +250,30 @@ offer.accepts.push_back(acc);
 
 }
 
+_TEST(signtx)
+{
+  CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
+  CWallet *wallet = GetWallet(iface);
+  string strAccount("");
+  CCoinAddr extAddr = GetAccountAddress(wallet, strAccount, true);
+  bool ret;
+
+  /* CExtCore.origin */
+  CExtCore ext;
+  _TRUE(ext.SignOrigin(TEST_COIN_IFACE, extAddr) == true);
+  _TRUE(ext.VerifyOrigin(TEST_COIN_IFACE, extAddr) == true);
+
+  CIdent ident;
+  string strSecret("secret");
+  cbuff vchSecret(vchFromString(strSecret));
+  _TRUE(ident.Sign(vchSecret) == true);
+  _TRUE(ident.VerifySignature(vchSecret) == true);
+ 
+}
+
 _TEST(cointx)
 {
-  CIface *iface = GetCoinByIndex(0);
+  CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
   CWallet *wallet = GetWallet(iface);
   int ifaceIndex = GetCoinIndex(iface);
   int idx;

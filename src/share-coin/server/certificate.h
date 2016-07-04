@@ -38,7 +38,6 @@ class CIdent : public CExtCore
   protected:
     shgeo_t geo;
     shkey_t sig_key;
-    shkey_t sig_peer;
 
   public:
     CIdent()
@@ -62,17 +61,15 @@ class CIdent : public CExtCore
         READWRITE(*(CExtCore *)this);
         READWRITE(FLATDATA(geo));
         READWRITE(FLATDATA(sig_key));
-        READWRITE(FLATDATA(sig_peer));
     )
 
     friend bool operator==(const CIdent &a, const CIdent &b)
     {
       return (
-        ((CExtCore&) a) == ((CExtCore&) b) &&
-        0 == memcmp(&a.geo, &b.geo, sizeof(shgeo_t)) &&
-        0 == memcmp(&a.sig_key, &b.sig_key, sizeof(shkey_t)) &&
-        0 == memcmp(&a.sig_peer, &b.sig_peer, sizeof(shkey_t))
-);
+          ((CExtCore&) a) == ((CExtCore&) b) &&
+          0 == memcmp(&a.geo, &b.geo, sizeof(shgeo_t)) &&
+          0 == memcmp(&a.sig_key, &b.sig_key, sizeof(shkey_t))
+          );
     }
 
     CIdent operator=(const CIdent &b)
@@ -86,7 +83,6 @@ class CIdent : public CExtCore
     {
       memset(&geo, 0, sizeof(geo));
       memset(&sig_key, 0, sizeof(sig_key));
-      memset(&sig_peer, 0, sizeof(sig_peer));
 
       /* default location */
       shgeo_local(&geo, SHGEO_PREC_REGION);
@@ -97,50 +93,14 @@ class CIdent : public CExtCore
       CExtCore::Init(b);
       memcpy(&geo, &b.geo, sizeof(geo));
       memcpy(&sig_key, &b.sig_key, sizeof(sig_key));
-      memcpy(&sig_peer, &b.sig_peer, sizeof(sig_peer));
     }
 
     /**
      * @note The signature does not take into account the geo-detic address (although the underlying certificate hash does).
      */
-    bool Sign(cbuff vchSecret)
-    {
+    bool Sign(cbuff vchSecret);
 
-      if (!vchSecret.data())
-        return (false);
-
-      void *raw = (void *)vchSecret.data();
-      size_t raw_len = vchSecret.size();
-
-      /* The privileged key of the 'default' peer is unique per network hwaddr */
-      shpeer_t *peer = shpeer_init(NULL, NULL);
-      memcpy(&sig_peer, shpeer_kpriv(peer), sizeof(sig_peer));
-      shpeer_free(&peer);
-
-      shkey_t *key = shkey_cert(&sig_peer, shcrc(raw, raw_len), tExpire);
-      memcpy(&sig_key, key, sizeof(sig_key));
-      shkey_free(&key);
-
-      return (true);
-    }
-
-    bool VerifySignature(cbuff vchSecret)
-    {
-      if (!vchSecret.data())
-        return (false);
-
-      void *raw = (void *)vchSecret.data();
-      size_t raw_len = vchSecret.size();
-      uint64_t crc = shcrc(raw, raw_len);
-      shkey_t *key = shkey_cert(&sig_peer, crc, tExpire);
-      bool ret = false;
-
-      if (shkey_cmp(key, &sig_key))
-        ret = true;
-      shkey_free(&key);
-
-      return (ret);
-    }
+    bool VerifySignature(cbuff vchSecret);
 
 /*
     uint160 GetHash()
@@ -167,18 +127,6 @@ class CIdent : public CExtCore
     }
 */
 
-    bool IsLocalOrigin()
-    {
-      shkey_t sig_peer;
-      bool ret = false;
-
-      shpeer_t *peer = shpeer_init(NULL, NULL);
-      if (0 == memcmp(&sig_peer, shpeer_kpriv(peer), sizeof(sig_peer)))
-        ret = true;
-      shpeer_free(&peer);
-
-      return (ret);
-    }
 
     bool IsLocalRegion()
     {

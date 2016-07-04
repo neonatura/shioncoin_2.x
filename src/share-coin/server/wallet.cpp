@@ -2135,7 +2135,6 @@ bool SendMoneyWithExtTx(CIface *iface,
   txFee = MAX(0, MIN(tx_val - iface->min_tx_fee, txFee));
   int64 nValue = tx_val - txFee;
   vecSend.insert(vecSend.begin(), make_pair(scriptPubKey, nValue));
-fprintf(stderr, "DEBUG: SendMoneYWithExtTx: sending %lld nValue from ext-tx input\n", (long long)nValue);
 
 	if (!CreateTransactionWithInputTx(iface,
         vecSend, wtxIn, nTxOut, wtxNew, reservekey, txFee)) {
@@ -2167,3 +2166,64 @@ bool GetCoinAddr(CWallet *wallet, CCoinAddr& addrAccount, string& strAccount)
   return (false);
 }
 
+bool DecodeMatrixHash(const CScript& script, int& mode, uint160& hash)
+{
+  CScript::const_iterator pc = script.begin();
+  opcodetype opcode;
+  int op;
+
+  if (!script.GetOp(pc, opcode)) {
+    return false;
+  }
+  mode = opcode; /* extension mode (new/activate/update) */
+  if (mode < 0xf0 || mode > 0xf9)
+    return false;
+
+  if (!script.GetOp(pc, opcode)) {
+    return false;
+  }
+  if (opcode < OP_1 || opcode > OP_16) {
+    return false;
+  }
+  op = CScript::DecodeOP_N(opcode); /* extension type */
+  if (op != OP_MATRIX) {
+    return false;
+  }
+
+  vector<unsigned char> vch;
+  if (!script.GetOp(pc, opcode, vch)) {
+    return false;
+  }
+  if (opcode != OP_HASH160)
+    return (false);
+
+  if (!script.GetOp(pc, opcode, vch)) {
+    return false;
+  }
+  hash = uint160(vch);
+  return (true);
+}
+
+bool VerifyMatrixTx(CTransaction& tx, int& mode)
+{
+  uint160 hashMatrix;
+  int nOut;
+
+  /* core verification */
+  if (!tx.isFlag(CTransaction::TXF_MATRIX))
+    return (false); /* tx not flagged as matrix */
+
+  /* verify hash in pub-script matches matrix hash */
+  nOut = IndexOfExtOutput(tx);
+  if (nOut == -1)
+    return (false); /* no extension output */
+
+  if (!DecodeMatrixHash(tx.vout[nOut].scriptPubKey, mode, hashMatrix))
+    return (false); /* no matrix hash in output */
+
+  CMatrix *matrix = (CMatrix *)&tx.matrix;
+  if (hashMatrix != matrix->GetHash())
+    return (false); /* matrix hash mismatch */
+
+  return (true);
+}
