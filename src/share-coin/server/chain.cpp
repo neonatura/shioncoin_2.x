@@ -311,7 +311,6 @@ bool ServiceBlockEvent(int ifaceIndex)
     return (true); /* keep trying */
 
   if (pindexBest->nHeight >= iface->blockscan_max) {
-fprintf(stderr, "DEBUG: quitting d/l scan @ height %d (max %d)\n", pindexBest->nHeight, iface->blockscan_max);
     ServiceBlockEventUpdate(ifaceIndex);
     return (false);
   }
@@ -319,13 +318,12 @@ fprintf(stderr, "DEBUG: quitting d/l scan @ height %d (max %d)\n", pindexBest->n
   expire_t = time(NULL) - 60;
   if (iface->net_valid < expire_t) { /* done w/ last round */
     if (iface->net_valid < iface->net_invalid) {
-fprintf(stderr, "DEBUG: net_valid < net_invalid\n");
       return (false); /* give up */
     }
 
     int idx = (nNodeIndex % vNodes.size());
     pfrom = vNodes[idx];
-fprintf(stderr, "DEBUG: DownloadBlockChain[iface #%d]: pfrom->PushGetBlocks(%d) to '%s'\n", ifaceIndex, pindexBest->nHeight, pfrom->addr.ToString().c_str());
+//fprintf(stderr, "DEBUG: DownloadBlockChain[iface #%d]: pfrom->PushGetBlocks(%d) to '%s'\n", ifaceIndex, pindexBest->nHeight, pfrom->addr.ToString().c_str());
     pfrom->PushGetBlocks(pindexBest, uint256(0));
     nNodeIndex++;
 
@@ -450,7 +448,7 @@ int InitChainImport(int ifaceIndex, const char *path, int offset)
   strncpy(chain.path, path, sizeof(chain.path)-1);
   chain.pos = offset;
 
-fprintf(stderr, "DEBUG: InitChainImport: importing (iface #%d) from path '%s'.\n", chain.ifaceIndex, chain.path);
+  Debug("InitChainImport: importing (iface #%d) from path '%s'.\n", chain.ifaceIndex, chain.path);
 
   return (0);
 } 

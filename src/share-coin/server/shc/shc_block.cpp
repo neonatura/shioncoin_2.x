@@ -1667,7 +1667,7 @@ bool SHCBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)
   bc_hash_t b_hash;
   int err;
 
-fprintf(stderr, "DEBUG: SHCBlock::ConnectBlock: nHeight(%d) hash(%s)\n", pindex->nHeight, pindex->GetBlockHash().GetHex().c_str());
+//fprintf(stderr, "DEBUG: SHCBlock::ConnectBlock: nHeight(%d) hash(%s)\n", pindex->nHeight, pindex->GetBlockHash().GetHex().c_str());
 
 
   // Do not allow blocks that contain transactions which 'overwrite' older transactions,

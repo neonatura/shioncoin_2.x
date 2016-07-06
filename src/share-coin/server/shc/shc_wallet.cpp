@@ -260,7 +260,6 @@ int SHCWallet::ScanForWalletTransactions(CBlockIndex* pindexStart, bool fUpdate)
   int ret = 0;
 
   CBlockIndex* pindex = pindexStart;
-fprintf(stderr, "DEBUG: ScanForWalletTransactions: pindexStart '%s'\n", pindexStart->GetBlockHash().GetHex().c_str());
   {
     LOCK(cs_wallet);
     while (pindex)
@@ -280,7 +279,6 @@ fprintf(stderr, "DEBUG: ScanForWalletTransactions: pindexStart '%s'\n", pindexSt
 #endif
 int SHCWallet::ScanForWalletTransactions(CBlockIndex* pindexStart, bool fUpdate)
 {
-fprintf(stderr, "DEBUG: SHC:ScanForWalletTransactions()\n");
   if (pindexStart)
     InitServiceWalletEvent(this, pindexStart->nHeight);
   return (0);

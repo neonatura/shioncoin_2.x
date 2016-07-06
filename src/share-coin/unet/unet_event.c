@@ -171,9 +171,9 @@ int uevent_cycle_peer(uevent_t *e)
 
   bind = unet_bind_table(e->mode);
   if (!bind || !(bind->flag & UNETF_PEER_SCAN)) {
-fprintf(stderr, "DEBUG: uevent_cycle_peer:  no bind \n");
+    /* try again later */ 
     goto fin;
-}
+  }
 
   if (unet_peer_wait(bind)) {
     return (SHERR_AGAIN); /* wait inbetween connections */
