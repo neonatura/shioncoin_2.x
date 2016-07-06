@@ -2773,6 +2773,16 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
         CInv inv(MSG_TX, tx.GetHash());
         pfrom->AddInventoryKnown(inv);
 
+        /* punish obvious fallacies */
+        if (tx.IsCoinBase() || 
+            tx.vin.empty() || tx.vout.empty()) { 
+          pfrom->Misbehaving(100);
+        }
+        BOOST_FOREACH(const CTxIn& txin, vin) {
+          if (txin.prevout.IsNull())
+            pfrom->Misbehaving(10);
+        }
+
         bool fMissingInputs = false;
         if (tx.AcceptToMemoryPool(txdb, true, &fMissingInputs))
         {
@@ -2826,7 +2836,9 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
             if (nEvicted > 0)
                 printf("mapOrphan overflow, removed %u tx\n", nEvicted);
         }
+#if 0
         if (tx.nDoS) pfrom->Misbehaving(tx.nDoS);
+#endif
     }
 
 

@@ -275,3 +275,14 @@ void unet_peer_fill(int mode)
 
   free(peer_list);
 }
+
+unsigned int unet_peer_total(int mode)
+{
+  unet_bind_t *bind;
+
+  bind = unet_bind_table(mode);
+  if (!bind)
+    return (0);
+
+  return (shnet_track_count(bind->peer.label));
+}

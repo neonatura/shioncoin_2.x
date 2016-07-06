@@ -31,6 +31,14 @@ void f_shcoind_log(int err_code, const char *tag, char *text, const char *src_fn
   static shbuf_t *buff;
   char origin[256];
   char *date_str;
+  char buf[256];
+
+  if (!err_code) {
+    memset(buf, 0, sizeof(buf));
+    strncpy(buf, shpref_get("shcoind.debug", ""), sizeof(buf)-1);
+    if (*buf != 't' && *buf != 'T')
+      return; /* all done */
+  }
 
   if (!buff)
     buff = shbuf_init();

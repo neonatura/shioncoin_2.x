@@ -720,26 +720,34 @@ bool CNode::IsBanned(CNetAddr ip)
 
 bool CNode::Misbehaving(int howmuch)
 {
-    if (addr.IsLocal())
-    {
-        fprintf(stderr, "Warning: local node %s misbehaving\n", addrName.c_str());
-        return false;
-    }
+  static int ban_max;
 
-    nMisbehavior += howmuch;
-    if (nMisbehavior >= GetArg("-banscore", 100))
-    {
-        int64 banTime = GetTime()+GetArg("-bantime", 60*60*24);  // Default 24-hour ban
-        {
-            LOCK(cs_setBanned);
-            if (setBanned[addr] < banTime)
-                setBanned[addr] = banTime;
-        }
-        CloseSocketDisconnect();
-        fprintf(stderr, "Disconnected %s for misbehavior (score=%d)\n", addrName.c_str(), nMisbehavior);
-        return true;
-    }
+  if (!ban_max) {
+    ban_max = atoi(shpref_get("shcoind.ban_threshold", "")); 
+    if (!ban_max) ban_max = 1000; /* default */
+  }
+
+  if (addr.IsLocal())
+  {
+    fprintf(stderr, "Warning: local node %s misbehaving\n", addrName.c_str());
     return false;
+  }
+
+  nMisbehavior += howmuch;
+  if (nMisbehavior >= ban_max)
+  {
+    int64 banTime = GetTime()+GetArg("-bantime", 60*60*6);  // Default 6-hour ban
+    {
+      LOCK(cs_setBanned);
+      if (setBanned[addr] < banTime)
+        setBanned[addr] = banTime;
+    }
+    CloseSocketDisconnect();
+    fprintf(stderr, "Disconnected %s for misbehavior (score=%d)\n", addrName.c_str(), nMisbehavior);
+    return true;
+  }
+
+  return false;
 }
 
 #undef X

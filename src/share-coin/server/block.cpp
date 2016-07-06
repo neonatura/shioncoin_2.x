@@ -830,7 +830,9 @@ bool ProcessBlock(CNode* pfrom, CBlock* pblock)
   if (!iface->op_block_process)
     return error(SHERR_OPNOTSUPP, "ProcessBlock[%s]: no block process operation suported.", iface->name);
 
+  /* trace whether remote host submitted block */
   pblock->originPeer = pfrom;
+
   err = iface->op_block_process(iface, pblock);
   if (err) {
     char errbuf[1024];
@@ -839,6 +841,9 @@ bool ProcessBlock(CNode* pfrom, CBlock* pblock)
     unet_log(pblock->ifaceIndex, errbuf);
     return (false);
   }
+
+  /* reward host for completing a block */
+  pblock->trust(1, "healthy block processed");
 
   return (true);
 }
@@ -2107,20 +2112,20 @@ bool core_AcceptBlock(CBlock *pblock)
 
   // Get prev block index
   map<uint256, CBlockIndex*>::iterator mi = blockIndex->find(pblock->hashPrevBlock);
-  if (mi == blockIndex->end())
-    return error(SHERR_INVAL, "AcceptBlock() : prev block '%s' not found.", pblock->hashPrevBlock.GetHex().c_str());
+  if (mi == blockIndex->end()) {
+    return (pblock->trust(-10, "(core) AcceptBlock: prev block '%s' not found", pblock->hashPrevBlock.GetHex().c_str()));
+  }
   CBlockIndex* pindexPrev = (*mi).second;
   if (!pindexPrev) {
     return error(SHERR_INVAL, "AcceptBlock() : prev block '%s' not found: block index has NULL record for hash.", pblock->hashPrevBlock.GetHex().c_str());
   }
-  int nHeight = pindexPrev->nHeight+1;
+
+  unsigned int nHeight = pindexPrev->nHeight+1;
 
   // Check proof of work
   unsigned int nBits = pblock->GetNextWorkRequired(pindexPrev);
   if (pblock->nBits != nBits) {
-    pblock->print();
-    sprintf(errbuf, "AcceptBlock: invalid difficulty (%x) specified (next work required is %x) for block height %d [prev '%s']\n", pblock->nBits, nBits, nHeight, pindexPrev->GetBlockHash().GetHex().c_str());
-    return error(SHERR_INVAL, errbuf);
+    return (pblock->trust(-100, "(core) AcceptBlock: invalid difficulty (%x) specified (next work required is %x) for block height %d [prev '%s']\n", pblock->nBits, nBits, nHeight, pindexPrev->GetBlockHash().GetHex().c_str()));
   }
 
 #if 0
@@ -2149,15 +2154,13 @@ bool core_AcceptBlock(CBlock *pblock)
 #endif
     // Check that all transactions are finalized 
     if (!tx.IsFinal(ifaceIndex, nHeight, pblock->GetBlockTime())) {
-      pblock->print();
-      return error(SHERR_INVAL, "AcceptBlock: block contains a non-final transaction");
+      return (pblock->trust(-10, "(core) AcceptBlock: block contains a non-final transaction at height %u", nHeight));
     }
   }
 
   // Check that the block chain matches the known block chain up to a checkpoint
   if (!pblock->VerifyCheckpoint(nHeight)) {
-    pblock->print();
-    return error(SHERR_INVAL, "AcceptBlock: rejected by checkpoint lockin at %d", nHeight);
+    return (pblock->trust(-100, "(core) AcceptBlock: rejected by checkpoint lockin at height %u", nHeight));
   }
 
   ret = pblock->AddToBlockIndex();
@@ -2489,5 +2492,45 @@ CMatrix *CTransaction::GenerateMatrix(int ifaceIndex, CMatrix *seed, CBlockIndex
   return (&matrix);
 }
 
+
+
+bool CBlock::trust(int deg, const char *msg, ...)
+{
+  CIface *iface = GetCoinByIndex(ifaceIndex);
+  va_list arg_ptr;
+  char errbuf[4096];
+  char msgbuf[4096];
+  int ret;
+
+  if (deg == 0)
+    return (true);
+
+  if (!iface || !iface->enabled)
+    return ((deg > 0) ? true : false);
+
+  va_start(arg_ptr, msg);
+  memset(msgbuf, 0, sizeof(msgbuf));
+  ret = vsnprintf(msgbuf, sizeof(msgbuf) - 1, msg, arg_ptr);
+  va_end(arg_ptr);
+
+  sprintf(errbuf, "TRUST %s%d", (deg >= 0) ? "+" : "", deg);
+  if (msg)
+    sprintf(errbuf + strlen(errbuf), " (%s)", msgbuf);
+
+  if (deg > 0) {
+    unet_log(ifaceIndex, errbuf); 
+    if (originPeer && originPeer->nMisbehavior > deg)
+      originPeer->nMisbehavior -= deg;
+    return (true);
+  }
+
+  if (originPeer)
+    originPeer->Misbehaving(-deg);
+
+  shcoind_err(SHERR_INVAL, iface->name, errbuf);
+  print();
+
+  return (false);
+}
 
 

@@ -1236,17 +1236,30 @@ bool USDEBlock::CheckBlock()
 {
   CIface *iface = GetCoinByIndex(USDE_COIN_IFACE);
 
+  if (vtx.empty()) {
+    return (trust(-100, "(usde) CheckBlock: block submitted with zero transactions"));
+  }
+  if (vtx.size() > USDE_MAX_BLOCK_SIZE) {
+    return (trust(-100, "(usde) CheckBlock: vtx.size (%d) > %d", vtx.size(), USDE_MAX_BLOCK_SIZE));
+  }
+  size_t ser_len = ::GetSerializeSize(*this, SER_NETWORK, USDE_PROTOCOL_VERSION);
+  if (ser_len > USDE_MAX_BLOCK_SIZE) {
+    return (trust(-100, "(usde) CheckBlock: block size (%d) > max-block-size (%d)", ser_len, USDE_MAX_BLOCK_SIZE));
+  }
+#if 0
   if (vtx.empty() || vtx.size() > USDE_MAX_BLOCK_SIZE || ::GetSerializeSize(*this, SER_NETWORK, USDE_PROTOCOL_VERSION) > USDE_MAX_BLOCK_SIZE) {
 print();
     return error(SHERR_INVAL, "USDE::CheckBlock: size limits failed");
-}
+  }
+#endif
 
-  if (vtx.empty() || !vtx[0].IsCoinBase())
-    return error(SHERR_INVAL, "CheckBlock() : first tx is not coinbase");
+  if (!vtx[0].IsCoinBase()) {
+    return (trust(-100, "(usde) ChecKBlock: first transaction is not coin base"));
+  }
 
   // Check proof of work matches claimed amount
   if (!usde_CheckProofOfWork(GetPoWHash(), nBits)) {
-    return error(SHERR_INVAL, "CheckBlock() : proof of work failed");
+    return (trust(-50, "(usde) CheckBlock: proof of work failed"));
   }
 
   // Check timestamp
@@ -1255,15 +1268,16 @@ print();
   }
 
   // First transaction must be coinbase, the rest must not be
-  for (unsigned int i = 1; i < vtx.size(); i++)
+  for (unsigned int i = 1; i < vtx.size(); i++) {
     if (vtx[i].IsCoinBase()) {
-      return error(SHERR_INVAL, "CheckBlock() : more than one coinbase");
+      return (trust(-100, "(usde) CheckBlock: more than one coinbase in transaction"));
     }
+  }
 
   // Check transactions
   BOOST_FOREACH(const CTransaction& tx, vtx) {
     if (!tx.CheckTransaction(USDE_COIN_IFACE)) {
-      return error(SHERR_INVAL, "CheckBlock() : CheckTransaction failed");
+      return (trust(-1, "(usde) ChecKBlock: transaction verification failure"));
     }
   }
 
@@ -1275,7 +1289,7 @@ print();
     uniqueTx.insert(tx.GetHash());
   }
   if (uniqueTx.size() != vtx.size()) {
-    return error(SHERR_INVAL, "CheckBlock() : duplicate transaction");
+    return (trust(-100, "(usde) CheckBlock: duplicate transactions"));
   }
 
   unsigned int nSigOps = 0;
@@ -1284,12 +1298,12 @@ print();
     nSigOps += tx.GetLegacySigOpCount();
   }
   if (nSigOps > MAX_BLOCK_SIGOPS(iface)) {
-    return error(SHERR_INVAL, "CheckBlock() : out-of-bounds SigOpCount");
+    return (trust(-100, "(usde) CheckBlock: out-of-bounds SigOpCount"));
   }
 
   // Check merkleroot
   if (hashMerkleRoot != BuildMerkleTree()) {
-    return error(SHERR_INVAL, "CheckBlock() : hashMerkleRoot mismatch");
+    return (trust(-100, "(usde0 CheckBlock: invalid merkle root hash"));
   }
 
   return true;
@@ -2077,8 +2091,9 @@ bool USDEBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)
     }
 
     nSigOps += tx.GetLegacySigOpCount();
-    if (nSigOps > MAX_BLOCK_SIGOPS(iface))
-      return error(SHERR_INVAL, "ConnectBlock() : too many sigops");
+    if (nSigOps > MAX_BLOCK_SIGOPS(iface)) {
+      return (trust(-100, "(usde) ConnectBlock: too many sigops (%d > %d)", nSigOps, MAX_BLOCK_SIGOPS(iface)));
+    }
 
 #if 0
     memcpy(b_hash, tx.GetHash().GetRaw(), sizeof(bc_hash_t));
@@ -2105,7 +2120,7 @@ bool USDEBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)
         // an incredibly-expensive-to-validate block.
         nSigOps += tx.GetP2SHSigOpCount(mapInputs);
         if (nSigOps > MAX_BLOCK_SIGOPS(iface)) {
-          return error(SHERR_INVAL, "ConnectBlock() : too many sigops");
+          return (trust(-100, "(usde) ConnectBlock: too many sigops (%d > %d)", nSigOps, MAX_BLOCK_SIGOPS(iface)));
         }
       }
 

@@ -189,9 +189,9 @@ protected:
     // Key is ip address, value is banned-until-time
     static std::map<CNetAddr, int64> setBanned;
     static CCriticalSection cs_setBanned;
-    int nMisbehavior;
 
 public:
+    int nMisbehavior;
     int64 nReleaseTime;
     std::map<uint256, CRequestTracker> mapRequests;
     CCriticalSection cs_mapRequests;

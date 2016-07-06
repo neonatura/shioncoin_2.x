@@ -231,6 +231,8 @@ unsigned int uevent_type_count(int type);
 
 void unet_peer_fill(int mode);
 
+unsigned int unet_peer_total(int mode);
+
 
 
 #ifdef __cplusplus

@@ -1157,6 +1157,8 @@ class CBlock : public CBlockHeader
     bool ReadFromDisk(const CBlockIndex* pindex, bool fReadTransactions=true);
     const CTransaction *GetTx(uint256 hash);
 
+    bool trust(int deg, const char *msg, ...);
+
     virtual bool Truncate() = 0;
     virtual bool ReadBlock(uint64_t nHeight) = 0;
     virtual bool ReadArchBlock(uint256 hash) = 0;

@@ -377,9 +377,10 @@ bool ServicePeerEvent(int ifaceIndex)
   if (pfrom->fGetAddr)
     return (false); /* op already performed against this node */
 
-  pfrom->PushMessage("getaddr");
-  pfrom->fGetAddr = true;
-fprintf(stderr, "DEBUG: ServiceBlockEvent: pfrom->PushMessage('getaddr')\n");
+  if (unet_peer_total(ifaceIndex) < 500) {
+    pfrom->PushMessage("getaddr");
+    pfrom->fGetAddr = true;
+  }
 
   return (false); /* all done */
 }
