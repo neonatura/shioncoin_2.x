@@ -59,7 +59,7 @@ extern "C" {
 
 
 #define MAX_BLOCK_SIGOPS(_iface) \
-  ((_iface)->max_block_size / 50)
+  ((_iface)->max_sigops)
 
 #define MAX_BLOCK_SIZE_GEN(_iface) \
   ((_iface)->max_block_size / 2)
@@ -67,6 +67,23 @@ extern "C" {
 #define MAX_ORPHAN_TRANSACTIONS(_iface) \
   ((_iface)->max_orphan_tx)
 
+/**
+ * The minimum fee applied to a tranaction.
+ */
+#define MIN_TX_FEE(_iface) \
+  (int64)(iface ? ((_iface)->min_tx_fee) : 0)
+
+/**
+ * The minimum coin value allowed to be transfered in a single transaction.
+ */
+#define MIN_INPUT_VALUE(_iface) \
+  (int64)(iface ? ((_iface)->min_input) : 0)
+
+
+#define STAT_BLOCK_ACCEPTS(_iface) (_iface)->stat.tot_block_accept
+#define STAT_BLOCK_SUBMITS(_iface) (_iface)->stat.tot_block_submit
+#define STAT_TX_ACCEPTS(_iface) (_iface)->stat.tot_tx_accept
+#define STAT_TX_SUBMITS(_iface) (_iface)->stat.tot_tx_submit
 
 struct coin_iface_t;
 typedef int (*coin_f)(struct coin_iface_t * /*iface*/, void * /* arg */);
@@ -87,12 +104,14 @@ typedef struct coin_iface_t
 
   unsigned char hdr_magic[4];
 
+  uint64_t min_input;
   uint64_t max_block_size;
   uint64_t max_orphan_tx;
   uint64_t min_tx_fee;
   uint64_t min_relay_tx_fee;
   uint64_t max_money;
   uint64_t coinbase_maturity;
+  uint64_t max_sigops;
 
   /* coin operations */
   coin_f op_init;
@@ -116,6 +135,13 @@ typedef struct coin_iface_t
   time_t net_invalid;
   uint32_t blockscan_max;
   int flags;
+
+  struct coin_stat_t {
+    uint64_t tot_block_submit;
+    uint64_t tot_block_accept;
+    uint64_t tot_tx_submit;
+    uint64_t tot_tx_accept;
+  } stat;
 } coin_iface_t;
 
 typedef struct coin_iface_t CIface;

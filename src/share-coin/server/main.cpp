@@ -71,7 +71,7 @@ int64 nHPSTimerStart;
 
 // Settings
 int64 nTransactionFee = 0;
-int64 nMinimumInputValue = CENT / 100;
+//int64 nMinimumInputValue = CENT / 100;
 
 
 CMedianFilter<int> cPeerBlockCounts(5, 0); // Amount of blocks that other nodes claim to have

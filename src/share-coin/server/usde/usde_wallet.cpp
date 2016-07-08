@@ -240,8 +240,12 @@ void USDEWallet::ReacceptWalletTransactions()
       else
       {
         // Reaccept any txes of ours that aren't already in a block
-        if (!wtx.IsCoinBase())
-          wtx.AcceptWalletTransaction(txdb, false);
+        if (!wtx.IsCoinBase()) {
+          if (!wtx.AcceptWalletTransaction(txdb, false)) {
+
+fprintf(stderr, "DEBUG: !wtx.AcceptWalletTransaction()\n");
+          }
+        }
 //DEBUG: EraseFromWallet if dup
       }
     }

@@ -269,6 +269,12 @@ static bool test_ConnectInputs(CTransaction *tx, MapPrevTx inputs, map<uint256, 
     CTxIndex& txindex = inputs[prevout.hash].first;
     CTransaction& txPrev = inputs[prevout.hash].second;
 
+    /* this coin has been marked as spent. ensure this is not a re-write of the same transaction. */
+    if (tx->IsSpentTx(txindex.vSpent[prevout.n])) {
+      if (fMiner) return false;
+      return error(SHERR_INVAL, "(test) ConnectInputs: %s prev tx (%s) already used at %s", tx->GetHash().GetHex().c_str(), txPrev.GetHash().GetHex().c_str(), txindex.vSpent[prevout.n].ToString().c_str());
+    }
+
     // Check for conflicts (double-spend)
     // This doesn't trigger the DoS code on purpose; if it did, it would make it easier
     // for an attacker to attempt to split the network.
@@ -824,7 +830,7 @@ bool TEST_CTxMemPool::addUnchecked(const uint256& hash, CTransaction &tx)
     mapTx[hash] = tx;
     for (unsigned int i = 0; i < tx.vin.size(); i++)
       mapNextTx[tx.vin[i].prevout] = CInPoint(&mapTx[hash], i);
-    iface->tx_tot++;
+    STAT_TX_ACCEPTS(iface)++;
   }
   return true;
 }
@@ -843,7 +849,7 @@ bool TEST_CTxMemPool::remove(CTransaction &tx)
       BOOST_FOREACH(const CTxIn& txin, tx.vin)
         mapNextTx.erase(txin.prevout);
       mapTx.erase(hash);
-      iface->tx_tot++;
+      STAT_TX_ACCEPTS(iface)++;
     }
   }
   return true;
@@ -997,12 +1003,12 @@ bool test_ProcessBlock(CNode* pfrom, CBlock* pblock)
     }
   }
 
-
-  // If don't already have its previous block, shunt it off to holding area until we get it
-  if (!blockIndex->count(pblock->hashPrevBlock))
+  /* block is considered orphan when previous block or one of the transaction's input hashes is unknown. */
+  if (!blockIndex->count(pblock->hashPrevBlock) ||
+      !pblock->CheckTransactionInputs(TEST_COIN_IFACE))
   {
-    Debug("ProcessBlock: ORPHAN BLOCK, prev=%s\n", pblock->hashPrevBlock.GetHex().c_str());
-    //CBlock* pblock2 = new CBlock(*pblock);
+    error(SHERR_INVAL, "(usde) ProcessBlock: warning: ORPHAN BLOCK, prev=%s\n", pblock->hashPrevBlock.GetHex().c_str());
+
     TESTBlock* pblock2 = new TESTBlock(*pblock);
     TEST_mapOrphanBlocks.insert(make_pair(hash, pblock2));
     TEST_mapOrphanBlocksByPrev.insert(make_pair(pblock2->hashPrevBlock, pblock2));
@@ -1403,7 +1409,7 @@ fprintf(stderr, "DEBUG: pindexLast = '%s' @ %d, pindexNew = '%s' @ %d\n", lastIn
   SetBestBlockIndex(TEST_COIN_IFACE, pindexNew);
   bnBestChainWork = pindexNew->bnChainWork;
   nTimeBestReceived = GetTime();
-  iface->tx_tot++;
+  STAT_TX_ACCEPTS(iface)++;
 
   // Check the version of the last 100 blocks to see if we need to upgrade:
   if (!fIsInitialDownload)
@@ -1729,18 +1735,6 @@ bool TESTBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)
   bc_hash_t b_hash;
   int err;
 
-  // Do not allow blocks that contain transactions which 'overwrite' older transactions,
-  // unless those are already completely spent.
-  // If such overwrites are allowed, coinbases and transactions depending upon those
-  // can be duplicated to remove the ability to spend the first instance -- even after
-  // being sent to another address.
-  // See BIP30 and http://r6.ca/blog/20120206T005236Z.html for more information.
-  // This logic is not necessary for memory pool transactions, as AcceptToMemoryPool
-  // already refuses previously-known transaction id's entirely.
-  // This rule applies to all blocks whose timestamp is after October 1, 2012, 0:00 UTC.
-  int64 nBIP30SwitchTime = 1349049600;
-  bool fEnforceBIP30 = (pindex->nTime > nBIP30SwitchTime);
-
   // BIP16 didn't become active until October 1 2012
   int64 nBIP16SwitchTime = 1349049600;
   bool fStrictPayToScriptHash = (pindex->nTime >= nBIP16SwitchTime);
@@ -1753,15 +1747,12 @@ bool TESTBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)
     uint256 hashTx = tx.GetHash();
     int nTxPos;
 
-    if (fEnforceBIP30) {
+    { /* BIP30 */
       CTxIndex txindexOld;
       if (txdb.ReadTxIndex(hashTx, txindexOld)) {
         BOOST_FOREACH(CDiskTxPos &pos, txindexOld.vSpent) {
-          if (pos.IsNull()) {
-fprintf(stderr, "DEBUG: ConnectBlock: POS: %s\n", txindexOld.pos.ToString().c_str()); 
-            tx.print();
+          if (tx.IsSpentTx(pos))
             return error(SHERR_INVAL, "TESTBlock::ConnectBlock: BIP30 enforced at height %d (block %s) (tx %s)\n", pindex->nHeight, pindex->GetBlockHash().GetHex().c_str(), tx.GetHash().GetHex().c_str());
-          }
         }
       }
     }

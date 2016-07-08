@@ -38,10 +38,13 @@
 
 #define SHC_MAX_ORPHAN_TRANSACTIONS 4096
 
+#define SHC_MAX_SIGOPS 32768
+
 static const int SHC_PROTOCOL_VERSION = 2000000;
 
 #define SHC_COIN (uint64_t)100000000
 static const unsigned int SHC_MAX_BLOCK_SIZE = 4096000;
+static const int64 SHC_MIN_INPUT = 100;
 static const int64 SHC_MIN_TX_FEE = 10000;
 static const int64 SHC_MIN_RELAY_TX_FEE = 10000;
 static const int64 SHC_MAX_MONEY = 1000000000 * SHC_COIN; /* 1bil max */

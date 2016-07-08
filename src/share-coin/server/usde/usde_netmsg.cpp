@@ -112,9 +112,9 @@ bool usde_AddOrphanTx(const CDataStream& vMsg)
     // have been mined or received.
     // 10,000 orphans, each of which is at most 5,000 bytes big is
     // at most 500 megabytes of orphans:
-    if (pvMsg->size() > 5000)
+    if (pvMsg->size() > 4096)
     {
-        printf("ignoring large orphan tx (size: %u, hash: %s)\n", pvMsg->size(), hash.ToString().substr(0,10).c_str());
+        error(SHERR_INVAL, "warning: ignoring large orphan tx (size: %u, hash: %s)\n", pvMsg->size(), hash.ToString().substr(0,10).c_str());
         delete pvMsg;
         return false;
     }
@@ -1108,9 +1108,12 @@ bool usde_SendMessages(CIface *iface, CNode* pto, bool fSendTrickle)
           if (!fTrickleWait)
           {
             CWalletTx wtx;
-            if (GetTransaction(inv.hash, wtx))
+            if (GetTransaction(inv.hash, wtx)) {
               if (wtx.fFromMe)
                 fTrickleWait = true;
+            } else {
+fprintf(stderr, "DEBUG: USDE: TX-INV: unknown tx '%s'\n", inv.hash.GetHex().c_str()); 
+            }
           }
 
           if (fTrickleWait)
@@ -1126,7 +1129,7 @@ bool usde_SendMessages(CIface *iface, CNode* pto, bool fSendTrickle)
           vInv.push_back(inv);
           if (vInv.size() >= 1000)
           {
-BOOST_FOREACH(CInv& inv, vInv) { fprintf(stderr, "DEBUG: sending inventory[iface #%d]: %s\n", inv.ifaceIndex, inv.ToString().c_str()); }
+//unet_log("sending inventory[iface #%d]: %s\n", inv.ifaceIndex, inv.ToString().c_str());
             pto->PushMessage("inv", vInv);
             vInv.clear();
           }
@@ -1135,7 +1138,7 @@ BOOST_FOREACH(CInv& inv, vInv) { fprintf(stderr, "DEBUG: sending inventory[iface
       pto->vInventoryToSend = vInvWait;
     }
     if (!vInv.empty()) {
-BOOST_FOREACH(CInv& inv, vInv) { fprintf(stderr, "DEBUG: sending inventory[iface #%d]: %s\n", inv.ifaceIndex, inv.ToString().c_str()); }
+//BOOST_FOREACH(CInv& inv, vInv) { fprintf(stderr, "DEBUG: sending inventory[iface #%d]: %s\n", inv.ifaceIndex, inv.ToString().c_str()); }
       pto->PushMessage("inv", vInv);
     }
 
@@ -1151,7 +1154,7 @@ BOOST_FOREACH(CInv& inv, vInv) { fprintf(stderr, "DEBUG: sending inventory[iface
       const CInv& inv = (*pto->mapAskFor.begin()).second;
       if (!AlreadyHave(iface, txdb, inv))
       {
-        fprintf(stderr, "DEBUG: sending getdata: %s\n", inv.ToString().c_str());
+//        fprintf(stderr, "DEBUG: sending getdata: %s\n", inv.ToString().c_str());
         vGetData.push_back(inv);
         if (vGetData.size() >= 1000)
         {

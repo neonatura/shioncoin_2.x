@@ -493,7 +493,7 @@ int stratum_request_message(user_t *user, shjson_t *json)
     /* no operation method specified. */
     return (SHERR_INVAL);
   }
-fprintf(stderr, "DEBUG: STRATUM '%s'\n", method);
+//fprintf(stderr, "DEBUG: STRATUM '%s'\n", method);
 
   timing_init(method, &ts);
 

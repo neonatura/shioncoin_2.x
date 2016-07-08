@@ -25,7 +25,8 @@ typedef struct ChainOp
 } ChainOp;
 
 int InitChainImport(int ifaceIndex, const char *path, int offset);
-int InitChainExport(int ifaceIndex, const char *path, int max);
+
+int InitChainExport(int ifaceIndex, const char *path, int min, int max);
 
 void event_cycle_chain(int ifaceIndex);
 

@@ -292,15 +292,16 @@ bool SHCTxDB::LoadBlockIndex()
       continue;
     }
     total++;
-    // check level 1: verify block validity
-    //if (nCheckLevel>0 && !block.CheckBlock())
-    if (!block.CheckBlock())
-    {
-      fprintf(stderr, "DEBUG: LoadBlockIndex() : *** found bad block at %d, hash=%s\n", pindex->nHeight, pindex->GetBlockHash().ToString().c_str());
+
+    if (!block.CheckBlock() ||
+        !block.CheckTransactionInputs(SHC_COIN_IFACE)) {
+      error (SHERR_INVAL, "(shc) LoadBlockIndex: critical: found bad block at %d, hash=%s\n", pindex->nHeight, pindex->GetBlockHash().ToString().c_str());
+
       pindexFork = pindex->pprev;
       invalid++;
       continue;
     }
+
     if (pindex->nHeight > maxHeight)
       maxHeight = pindex->nHeight;
     if (pindex->nHeight < checkHeight)

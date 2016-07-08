@@ -288,8 +288,9 @@ namespace SHC_Checkpoints
 
 }
 
-static bool shc_ConnectInputs(CTransaction *tx, MapPrevTx inputs, map<uint256, CTxIndex>& mapTestPool, const CDiskTxPos& posThisTx, const CBlockIndex* pindexBlock, bool fBlock, bool fMiner, bool fStrictPayToScriptHash=true)
+static bool shc_ConnectInputs(CTransaction *tx, MapPrevTx inputs, map<uint256, CTxIndex>& mapTestPool, const CDiskTxPos& posThisTx, const CBlockIndex* pindexBlock, bool fBlock, bool fMiner)
 {
+  bool fStrictPayToScriptHash=true;
 
   if (tx->IsCoinBase())
     return (true);
@@ -334,11 +335,10 @@ static bool shc_ConnectInputs(CTransaction *tx, MapPrevTx inputs, map<uint256, C
     CTxIndex& txindex = inputs[prevout.hash].first;
     CTransaction& txPrev = inputs[prevout.hash].second;
 
-    // Check for conflicts (double-spend)
-    // This doesn't trigger the DoS code on purpose; if it did, it would make it easier
-    // for an attacker to attempt to split the network.
-    if (!txindex.vSpent[prevout.n].IsNull())
-      return fMiner ? false : error(SHERR_INVAL, "ConnectInputs() : %s prev tx already used at %s", tx->GetHash().ToString().substr(0,10).c_str(), txindex.vSpent[prevout.n].ToString().c_str());
+    if (tx->IsSpentTx(txindex.vSpent[prevout.n])) {
+      if (fMiner) return false;
+      return error(SHERR_INVAL, "(shc) ConnectInputs: %s prev tx (%s) already used at %s", tx->GetHash().GetHex().c_str(), txPrev.GetHash().GetHex().c_str(), txindex.vSpent[prevout.n].ToString().c_str());
+    }
 
     // Skip ECDSA signature verification when connecting blocks (fBlock=true)
     // before the last blockchain checkpoint. This is safe because block merkle hashes are
@@ -858,7 +858,7 @@ bool SHC_CTxMemPool::addUnchecked(const uint256& hash, CTransaction &tx)
     mapTx[hash] = tx;
     for (unsigned int i = 0; i < tx.vin.size(); i++)
       mapNextTx[tx.vin[i].prevout] = CInPoint(&mapTx[hash], i);
-    iface->tx_tot++;
+    STAT_TX_ACCEPTS(iface);
   }
   return true;
 }
@@ -876,7 +876,7 @@ bool SHC_CTxMemPool::remove(CTransaction &tx)
       BOOST_FOREACH(const CTxIn& txin, tx.vin)
         mapNextTx.erase(txin.prevout);
       mapTx.erase(hash);
-      iface->tx_tot++;
+      STAT_TX_ACCEPTS(iface)++;
     }
   }
   return true;
@@ -1034,11 +1034,12 @@ bool shc_ProcessBlock(CNode* pfrom, CBlock* pblock)
   }
 
 
-  // If don't already have its previous block, shunt it off to holding area until we get it
-  if (!blockIndex->count(pblock->hashPrevBlock))
+  /* block is considered orphan when previous block or one of the transaction's input hashes is unknown. */
+  if (!blockIndex->count(pblock->hashPrevBlock) ||
+      !pblock->CheckTransactionInputs(SHC_COIN_IFACE))
   {
-    Debug("ProcessBlock: ORPHAN BLOCK, prev=%s\n", pblock->hashPrevBlock.ToString().substr(0,20).c_str());
-    //CBlock* pblock2 = new CBlock(*pblock);
+    error(SHERR_INVAL, "(usde) ProcessBlock: warning: ORPHAN BLOCK, prev=%s\n", pblock->hashPrevBlock.GetHex().c_str());
+
     SHCBlock* pblock2 = new SHCBlock(*pblock);
     SHC_mapOrphanBlocks.insert(make_pair(hash, pblock2));
     SHC_mapOrphanBlocksByPrev.insert(make_pair(pblock2->hashPrevBlock, pblock2));
@@ -1433,7 +1434,7 @@ fprintf(stderr, "DEBUG: SHC_Reorganize(): error reorganizing.\n");
  // SetBestHeight(iface, pindexNew->nHeight);
   bnBestChainWork = pindexNew->bnChainWork;
   nTimeBestReceived = GetTime();
-  iface->tx_tot++;
+  STAT_TX_ACCEPTS(iface)++;
 
   //    Debug("SetBestChain: new best=%s  height=%d  work=%s  date=%s\n", hashBestChain.ToString().substr(0,20).c_str(), nBestHeight, bnBestChainWork.ToString().c_str(), DateTimeStrFormat("%x %H:%M:%S", SHCBlock::pindexBest->GetBlockTime()).c_str());
 
@@ -1667,25 +1668,6 @@ bool SHCBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)
   bc_hash_t b_hash;
   int err;
 
-//fprintf(stderr, "DEBUG: SHCBlock::ConnectBlock: nHeight(%d) hash(%s)\n", pindex->nHeight, pindex->GetBlockHash().GetHex().c_str());
-
-
-  // Do not allow blocks that contain transactions which 'overwrite' older transactions,
-  // unless those are already completely spent.
-  // If such overwrites are allowed, coinbases and transactions depending upon those
-  // can be duplicated to remove the ability to spend the first instance -- even after
-  // being sent to another address.
-  // See BIP30 and http://r6.ca/blog/20120206T005236Z.html for more information.
-  // This logic is not necessary for memory pool transactions, as AcceptToMemoryPool
-  // already refuses previously-known transaction id's entirely.
-  // This rule applies to all blocks whose timestamp is after October 1, 2012, 0:00 UTC.
-  int64 nBIP30SwitchTime = 1349049600;
-  bool fEnforceBIP30 = (pindex->nTime > nBIP30SwitchTime);
-
-  // BIP16 didn't become active until October 1 2012
-  int64 nBIP16SwitchTime = 1349049600;
-  bool fStrictPayToScriptHash = (pindex->nTime >= nBIP16SwitchTime);
-
   map<uint256, CTxIndex> mapQueuedChanges;
   int64 nFees = 0;
   unsigned int nSigOps = 0;
@@ -1694,12 +1676,12 @@ bool SHCBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)
     uint256 hashTx = tx.GetHash();
     int nTxPos;
 
-    if (fEnforceBIP30) {
+    { /* BIP30 */
       CTxIndex txindexOld;
       if (txdb.ReadTxIndex(hashTx, txindexOld)) {
         BOOST_FOREACH(CDiskTxPos &pos, txindexOld.vSpent)
-          if (pos.IsNull()) {
-fprintf(stderr, "DEBUG: SHCBlock::ConnectBlock: null disk pos, ret false\n");
+          if (tx.IsSpentTx(pos)) {
+fprintf(stderr, "DEBUG: SHCBlock::ConnectBlock: null disk pos, ret false BIP30\n");
             return false;
           }
       }
@@ -1727,20 +1709,20 @@ fprintf(stderr, "DEBUG: SHCBlock::ConnectBlock: shc_FetchInputs()\n");
         return false;
       }
 
-      if (fStrictPayToScriptHash)
+      //if (fStrictPayToScriptHash)
       {
         // Add in sigops done by pay-to-script-hash inputs;
         // this is to prevent a "rogue miner" from creating
         // an incredibly-expensive-to-validate block.
         nSigOps += tx.GetP2SHSigOpCount(mapInputs);
         if (nSigOps > MAX_BLOCK_SIGOPS(iface)) {
-          return error(SHERR_INVAL, "ConnectBlock() : too many sigops");
+          return error(SHERR_INVAL, "(shc) ConnectBlock: signature script operations (%d) exceeded maximum limit (%d).", (int)nSigOps, (int)MAX_BLOCK_SIGOPS(iface));
         }
       }
 
       nFees += tx.GetValueIn(mapInputs)-tx.GetValueOut();
 
-      if (!shc_ConnectInputs(&tx, mapInputs, mapQueuedChanges, posThisTx, pindex, true, false, fStrictPayToScriptHash)) {
+      if (!shc_ConnectInputs(&tx, mapInputs, mapQueuedChanges, posThisTx, pindex, true, false)) {
 fprintf(stderr, "DEBUG: shc_ConnectInputs failure\n");
         return false;
       }

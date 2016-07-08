@@ -839,6 +839,8 @@ void CWallet::AvailableCoins(vector<COutput>& vCoins, bool fOnlyConfirmed) const
                 continue; /* not avail */
               }
 
+              CIface *iface = GetCoinByIndex(ifaceIndex);
+              int64 nMinimumInputValue = MIN_INPUT_VALUE(iface);
               if (!(pcoin->IsSpent(i)) && IsMine(pcoin->vout[i]) && pcoin->vout[i].nValue >= nMinimumInputValue)
                 vCoins.push_back(COutput(pcoin, i, pcoin->GetDepthInMainChain(ifaceIndex)));
             }

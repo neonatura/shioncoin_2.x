@@ -203,12 +203,15 @@ nScanHeight = 0;
     }
     bool IsMine(const CTransaction& tx) const
     {
-        BOOST_FOREACH(const CTxOut& txout, tx.vout)
-            // If output is less than minimum value, then don't include transaction.
-            // This is to help deal with dust spam bloating the wallet.
-            if (IsMine(txout) && txout.nValue >= nMinimumInputValue)
-                return true;
-        return false;
+      CIface *iface = GetCoinByIndex(ifaceIndex);
+      int64 nMinimumInputValue = MIN_INPUT_VALUE(iface);
+      BOOST_FOREACH(const CTxOut& txout, tx.vout) {
+        // If output is less than minimum value, then don't include transaction.
+        // This is to help deal with dust spam bloating the wallet.
+        if (IsMine(txout) && txout.nValue >= nMinimumInputValue)
+          return true;
+      }
+      return false;
     }
     bool IsFromMe(const CTransaction& tx) const
     {

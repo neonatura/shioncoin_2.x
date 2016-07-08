@@ -453,7 +453,7 @@ int InitChainImport(int ifaceIndex, const char *path, int offset)
   return (0);
 } 
 
-int InitChainExport(int ifaceIndex, const char *path, int max)
+int InitChainExport(int ifaceIndex, const char *path, int min, int max)
 {
   if (*chain.path)
     return (SHERR_AGAIN);
@@ -467,6 +467,7 @@ int InitChainExport(int ifaceIndex, const char *path, int max)
   chain.mode = BCOP_EXPORT;
   chain.ifaceIndex = ifaceIndex;
   strncpy(chain.path, path, sizeof(chain.path)-1);
+  chain.pos = min;
   chain.max = max;
 
   unlink(path);

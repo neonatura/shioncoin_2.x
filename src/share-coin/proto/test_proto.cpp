@@ -199,12 +199,14 @@ coin_iface_t test_coin_iface = {
   TEST_PROTOCOL_VERSION, /* network protocol version */ 
   TEST_COIN_DAEMON_PORT,
   { 0xd9, 0xd9, 0xf9, 0xbd },
+  TEST_MIN_INPUT,
   TEST_MAX_BLOCK_SIZE,
   TEST_MAX_ORPHAN_TRANSACTIONS,
   TEST_MIN_TX_FEE,
   TEST_MIN_RELAY_TX_FEE,
   TEST_MAX_MONEY,
   TEST_COINBASE_MATURITY, 
+  TEST_MAX_SIGOPS,
   COINF(test_init),
   COINF(test_term),
   NULL, /* test_msg_recv() */

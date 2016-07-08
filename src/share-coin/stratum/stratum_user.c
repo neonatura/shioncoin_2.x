@@ -50,8 +50,6 @@ void merge_idle_worker(user_t *user)
   user_t *t_user;
   int i;
 
-fprintf(stderr, "DEBUG: merge_idle_worker()\n");
-
   for (t_user = client_list; t_user; t_user = t_user->next) {
     if (t_user == user)
       continue; /* does not apply to self */
@@ -81,7 +79,7 @@ fprintf(stderr, "DEBUG: merge_idle_worker()\n");
     /* mark idle worker for immediate deletion */
     t_user->work_stamp = 0;
 
-fprintf(stderr, "DEBUG: merge_idle_worker: found idle dup worker \"%s\".", user->worker); 
+//fprintf(stderr, "DEBUG: merge_idle_worker: found idle dup worker \"%s\".", user->worker); 
   }
 
 }

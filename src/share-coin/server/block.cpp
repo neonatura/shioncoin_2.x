@@ -1776,16 +1776,74 @@ bool CTransaction::CheckTransaction(int ifaceIndex) const
   else
   {
     BOOST_FOREACH(const CTxIn& txin, vin) {
-      if (txin.prevout.IsNull())
-        return error(SHERR_INVAL, "CTransaction::CheckTransaction() : prevout is null");
-#if 0 /* DEBUG: */
-      if (!VerifyTxHash(iface, txin.prevout.hash))
-        return error(SHERR_INVAL, "CTransaction::CheckTransaction(): unknown prevout hash '%s'", txin.prevout.hash.GetHex().c_str());
+      if (txin.prevout.IsNull()) {
+        print();
+        return error(SHERR_INVAL, "(core) CheckTransaction: prevout is null");
+      }
+#if 0 
+      if (!VerifyTxHash(iface, txin.prevout.hash)) {
+        print();
+        return error(SHERR_INVAL, "(core) CheckTransaction: unknown prevout hash '%s'", txin.prevout.hash.GetHex().c_str());
+      }
 #endif
     }
   }
 
   return true;
+}
+
+/**
+ * Verify that the transactions being referenced as inputs are valid.
+ */
+bool CTransaction::CheckTransactionInputs(int ifaceIndex) const
+{
+  CIface *iface = GetCoinByIndex(ifaceIndex);
+
+  if (!iface)
+    return (false);
+
+  if (IsCoinBase())
+    return (true);
+
+  if (vin.empty())
+    return error(SHERR_INVAL, "(core) CheckTransaction: vin empty");
+
+  BOOST_FOREACH(const CTxIn& txin, vin) {
+    if (txin.prevout.IsNull()) {
+      print();
+      return error(SHERR_INVAL, "(core) CheckTransactionInputs: prevout is null");
+    }
+
+    if (!VerifyTxHash(iface, txin.prevout.hash)) {
+      print();
+      return error(SHERR_INVAL, "(core) CheckTransactionInputs: unknown prevout hash '%s'", txin.prevout.hash.GetHex().c_str());
+    }
+  }
+
+  return true;
+}
+
+bool CBlock::CheckTransactionInputs(int ifaceIndex) const
+{
+
+  BOOST_FOREACH(const CTransaction& tx, vtx) {
+    bool fInBlock = false;
+    BOOST_FOREACH(const CTxIn& txin, tx.vin) {
+      BOOST_FOREACH(const CTransaction& t_tx, vtx) {
+        if (tx != t_tx && t_tx.GetHash() == txin.prevout.hash) {
+          fInBlock = true;
+          break;
+        }
+      }
+    }
+    if (fInBlock)
+      continue;
+
+    if (!tx.CheckTransactionInputs(ifaceIndex))
+      return (false);
+  }
+
+  return (true);
 }
 
 bool CTransaction::FetchInputs(CTxDB& txdb, const map<uint256, CTxIndex>& mapTestPool, CBlock *pblockNew, bool fMiner, MapPrevTx& inputsRet, bool& fInvalid)

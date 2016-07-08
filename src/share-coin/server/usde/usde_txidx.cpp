@@ -366,10 +366,11 @@ bool USDETxDB::LoadBlockIndex()
       return error(SHERR_INVAL, "LoadBlockIndex() : block.ReadFromDisk failed");
 
     total++;
-    // check level 1: verify block validity
-    if (!block.CheckBlock())
-    {
-      fprintf(stderr, "DEBUG: LoadBlockIndex() : *** found bad block at %d, hash=%s\n", pindex->nHeight, pindex->GetBlockHash().GetHex().c_str());
+
+    if (!block.CheckBlock() ||
+        !block.CheckTransactionInputs(USDE_COIN_IFACE)) {
+      error (SHERR_INVAL, "(usde) LoadBlockIndex: critical: found bad block at %d, hash=%s\n", pindex->nHeight, pindex->GetBlockHash().ToString().c_str());
+
       pindexFork = pindex->pprev;
       invalid++;
       continue;

@@ -38,10 +38,13 @@
 
 #define USDE_MAX_ORPHAN_TRANSACTIONS 10000
 
+#define USDE_MAX_SIGOPS 20000
+
 static const int USDE_PROTOCOL_VERSION = 1000400;
 
 #define USDE_COIN (uint64_t)100000000
 static const unsigned int USDE_MAX_BLOCK_SIZE = 1000000;
+static const int64 USDE_MIN_INPUT = 10000;
 static const int64 USDE_MIN_TX_FEE = 10000000;
 static const int64 USDE_MIN_RELAY_TX_FEE = 10000000;
 static const int64 USDE_MAX_MONEY = 1600000000 * USDE_COIN;

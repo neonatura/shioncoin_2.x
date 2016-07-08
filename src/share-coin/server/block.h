@@ -184,6 +184,7 @@ hashTx = tx_hash;
     {
         printf("%s", ToString().c_str());
     }
+
 };
 
 
@@ -910,6 +911,28 @@ public:
 
     bool VerifyMatrix(CMatrix *seed, const CMatrix& matrix, CBlockIndex *pindex);
 
+    /**
+     * Verifies whether a vSpent has been spent.
+     * @param hashTx The hash of the transaction attempting to spend the input.
+     */
+    bool IsSpentTx(const CDiskTxPos& pos)
+    {
+      uint256 hashTx = GetHash();
+
+      if (pos.IsNull())
+        return (false);
+
+      /* this coin has been marked as spent. ensure this is not a re-write of the same transaction. */
+      CTransaction spent;
+      if (!spent.ReadFromDisk(pos))
+        return false; /* spent being referenced does not exist. */
+
+      if (hashTx == spent.GetHash())
+        return false; /* spent was already cataloged in past */
+
+      return true;
+    }
+
     friend bool operator==(const CTransaction& a, const CTransaction& b)
     {
         return (a.nFlag  == b.nFlag &&
@@ -960,11 +983,15 @@ public:
      */
     bool FetchInputs(CTxDB& txdb, const std::map<uint256, CTxIndex>& mapTestPool, CBlock *pblockNew, bool fMiner, MapPrevTx& inputsRet, bool& fInvalid);
 
-
-
     bool ClientConnectInputs(int ifaceIndex);
+
     bool CheckTransaction(int ifaceIndex) const;
+
+    bool CheckTransactionInputs(int ifaceIndex) const;
+
     bool AcceptToMemoryPool(CTxDB& txdb, bool fCheckInputs=true, bool* pfMissingInputs=NULL);
+
+
 
 protected:
     const CTxOut& GetOutputFor(const CTxIn& input, const MapPrevTx& inputs) const;
@@ -1158,6 +1185,8 @@ class CBlock : public CBlockHeader
     const CTransaction *GetTx(uint256 hash);
 
     bool trust(int deg, const char *msg, ...);
+
+    bool CheckTransactionInputs(int ifaceIndex) const;
 
     virtual bool Truncate() = 0;
     virtual bool ReadBlock(uint64_t nHeight) = 0;

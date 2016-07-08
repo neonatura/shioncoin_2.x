@@ -331,5 +331,5 @@ if test "x$enable_rpc" != "xno" ; then
 fi
 
 
-AC_OUTPUT(Makefile src/gnu/Makefile src/share-ssl-lib/Makefile src/share-coin/Makefile doc/Makefile bin/Makefile test/Makefile)
+AC_OUTPUT(Makefile src/gnu/Makefile src/share-ssl-lib/Makefile src/share-coin/Makefile doc/Makefile bin/Makefile)
 

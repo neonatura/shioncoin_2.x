@@ -528,14 +528,11 @@ static bool usde_ConnectInputs(CTransaction *tx, MapPrevTx inputs, map<uint256, 
     CTxIndex& txindex = inputs[prevout.hash].first;
     CTransaction& txPrev = inputs[prevout.hash].second;
 
-    // Check for conflicts (double-spend)
-    // This doesn't trigger the DoS code on purpose; if it did, it would make it easier
-    // for an attacker to attempt to split the network.
-    if (!txindex.vSpent[prevout.n].IsNull()) {
-      if (txindex.vSpent[prevout.n].nBlockPos != pindexBlock->nHeight) {
-        return fMiner ? false : error(SHERR_INVAL, "ConnectInputs() : %s prev tx already used at %s", tx->GetHash().ToString().substr(0,10).c_str(), txindex.vSpent[prevout.n].ToString().c_str());
-      }
-  }
+    /* this coin has been marked as spent. ensure this is not a re-write of the same transaction. */
+    if (tx->IsSpentTx(txindex.vSpent[prevout.n])) {
+      if (fMiner) return false;
+      return error(SHERR_INVAL, "(usde) ConnectInputs: %s prev tx (%s) already used at %s", tx->GetHash().GetHex().c_str(), txPrev.GetHash().GetHex().c_str(), txindex.vSpent[prevout.n].ToString().c_str());
+    }
 
     // Skip ECDSA signature verification when connecting blocks (fBlock=true)
     // before the last blockchain checkpoint. This is safe because block merkle hashes are
@@ -987,7 +984,7 @@ bool USDE_CTxMemPool::addUnchecked(const uint256& hash, CTransaction &tx)
     mapTx[hash] = tx;
     for (unsigned int i = 0; i < tx.vin.size(); i++)
       mapNextTx[tx.vin[i].prevout] = CInPoint(&mapTx[hash], i);
-    iface->tx_tot++;
+    STAT_TX_ACCEPTS(iface)++;
   }
   return true;
 }
@@ -1006,7 +1003,7 @@ bool USDE_CTxMemPool::remove(CTransaction &tx)
       BOOST_FOREACH(const CTxIn& txin, tx.vin)
         mapNextTx.erase(txin.prevout);
       mapTx.erase(hash);
-      iface->tx_tot++;
+      STAT_TX_ACCEPTS(iface)++;
     }
   }
   return true;
@@ -1162,11 +1159,11 @@ pblock->print();
   }
 
 
-  // If don't already have its previous block, shunt it off to holding area until we get it
-  if (!blockIndex->count(pblock->hashPrevBlock))
-  {
-    Debug("ProcessBlock: ORPHAN BLOCK, prev=%s\n", pblock->hashPrevBlock.GetHex().c_str());
-    //CBlock* pblock2 = new CBlock(*pblock);
+  /* block is considered orphan when previous block or one of the transaction's input hashes is unknown. */
+  if (!blockIndex->count(pblock->hashPrevBlock) ||
+      !pblock->CheckTransactionInputs(USDE_COIN_IFACE)) {
+    error(SHERR_INVAL, "(usde) ProcessBlock: warning: ORPHAN BLOCK, prev=%s\n", pblock->hashPrevBlock.GetHex().c_str());
+
     USDEBlock* pblock2 = new USDEBlock(*pblock);
     USDE_mapOrphanBlocks.insert(make_pair(hash, pblock2));
     USDE_mapOrphanBlocksByPrev.insert(make_pair(pblock2->hashPrevBlock, pblock2));
@@ -1724,7 +1721,7 @@ bool USDEBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
 //  SetBestHeight(iface, pindexNew->nHeight);
   bnBestChainWork = pindexNew->bnChainWork;
   nTimeBestReceived = GetTime();
-  iface->tx_tot++;
+  STAT_TX_ACCEPTS(iface)++;
 
 //fprintf(stderr, "DEBUG: USDE/SetBestChain: new best=%s  height=%d  work=%s  date=%s\n", hashBestChain.ToString().substr(0,20).c_str(), nBestHeight, bnBestChainWork.ToString().c_str(), DateTimeStrFormat("%x %H:%M:%S", USDEBlock::pindexBest->GetBlockTime()).c_str());
 
@@ -2085,7 +2082,7 @@ bool USDEBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)
       CTxIndex txindexOld;
       if (txdb.ReadTxIndex(hashTx, txindexOld)) {
         BOOST_FOREACH(CDiskTxPos &pos, txindexOld.vSpent)
-          if (pos.IsNull())
+          if (tx.IsSpentTx(pos))
             return error(SHERR_INVAL, "USDEBlock::ConnectBlock: BIP30 enforced at height %d\n", pindex->nHeight);
       }
     }

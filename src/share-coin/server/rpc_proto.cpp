@@ -754,6 +754,50 @@ Value rpc_net_info(CIface *iface, const Array& params, bool fHelp)
   return obj;
 }
 
+Value rpc_sys_info(CIface *iface, const Array& params, bool fHelp)
+{
+  CWallet *pwalletMain = GetWallet(iface);
+  int ifaceIndex = GetCoinIndex(iface);
+  char tbuf[256];
+
+  if (fHelp || params.size() != 0)
+    throw runtime_error(
+        "sys.info\n"
+        "The system attributes that control how the coin-service operates.");
+
+  Object obj;
+
+  /* versioning */
+  obj.push_back(Pair("version",       (int)iface->proto_ver));
+  obj.push_back(Pair("blockversion",  (int)iface->block_ver));
+  obj.push_back(Pair("walletversion", pwalletMain->GetVersion()));
+
+  /* attributes */
+  obj.push_back(Pair("paytxfee",      ValueFromAmount(nTransactionFee)));
+  obj.push_back(Pair("mininput",      ValueFromAmount(MIN_INPUT_VALUE(iface))));
+  obj.push_back(Pair("maxblocksize",  (int)iface->max_block_size));
+  obj.push_back(Pair("mintxfee",      ValueFromAmount(MIN_TX_FEE(iface))));
+  obj.push_back(Pair("maxmoney",      ValueFromAmount(iface->max_money)));
+  obj.push_back(Pair("maturity",      (int)iface->coinbase_maturity));
+  obj.push_back(Pair("maxsigops",     (int)iface->max_sigops));
+
+  /* stats */
+  obj.push_back(Pair("blocksubmit",  (int)iface->stat.tot_block_submit));
+  obj.push_back(Pair("blockaccept",  (int)iface->stat.tot_block_accept));
+  obj.push_back(Pair("txsubmit",  (int)iface->stat.tot_tx_submit));
+  obj.push_back(Pair("txaccept",  (int)iface->stat.tot_tx_accept));
+
+  sprintf(tbuf, "%-20.20s", ctime(&iface->net_valid));
+  string val_str(tbuf);
+  obj.push_back(Pair("lastvalidblock", val_str));
+
+  sprintf(tbuf, "%-20.20s", ctime(&iface->net_invalid));
+  string inval_str(tbuf);
+  obj.push_back(Pair("lastinvalidblock", inval_str));
+
+  return obj;
+}
+
 Value rpc_block_info(CIface *iface, const Array& params, bool fHelp)
 {
   CWallet *pwalletMain = GetWallet(iface);
@@ -782,13 +826,6 @@ Value rpc_block_info(CIface *iface, const Array& params, bool fHelp)
     obj.push_back(Pair("currentblockhash",     pindexBest->GetBlockHash().GetHex()));
   obj.push_back(Pair("currentblocksize",(uint64_t)nLastBlockSize));
   obj.push_back(Pair("currentblocktx",(uint64_t)nLastBlockTx));
-
-  obj.push_back(Pair("paytxfee",      ValueFromAmount(nTransactionFee)));
-  obj.push_back(Pair("mininput",      ValueFromAmount(nMinimumInputValue)));
-  obj.push_back(Pair("maxblocksize",  (int)iface->max_block_size));
-  obj.push_back(Pair("mintxfee",      ValueFromAmount(iface->min_tx_fee)));
-  obj.push_back(Pair("maxmoney",      ValueFromAmount(iface->max_money)));
-  obj.push_back(Pair("maturity",      (int)iface->coinbase_maturity));
 
   obj.push_back(Pair("errors",        GetWarnings(ifaceIndex, "statusbar")));
 
@@ -846,25 +883,29 @@ Value rpc_block_export(CIface *iface, const Array& params, bool fHelp)
 {
   blkidx_t *blockIndex;
   int ifaceIndex = GetCoinIndex(iface);
+  unsigned int minHeight = 0;
   unsigned int maxHeight = 0;
   int err;
 
   if (fHelp || params.size() != 1)
     throw runtime_error(
-        "block.export <path> [<height>]\n"
+        "block.export <path> [min-height] [<max-height>]\n"
         "Exports a blockchain to an external file.");
 
   std::string strPath = params[0].get_str();
   if (params.size() > 1)
-    maxHeight = params[1].get_int();
+    minHeight = params[1].get_int();
+  if (params.size() > 2)
+    maxHeight = params[2].get_int();
 
-  err = InitChainExport(ifaceIndex, strPath.c_str(), maxHeight);
+  err = InitChainExport(ifaceIndex, strPath.c_str(), minHeight, maxHeight);
   if (err)
     throw JSONRPCError(-5, sherrstr(err));
 
   Object result;
   result.push_back(Pair("mode", "export-block"));
-  result.push_back(Pair("height", (int)maxHeight));
+  result.push_back(Pair("minheight", (int)minHeight));
+  result.push_back(Pair("maxheight", (int)maxHeight));
   result.push_back(Pair("path", strPath.c_str()));
   result.push_back(Pair("state", "init"));
   return (result);
@@ -1149,7 +1190,7 @@ Value rpc_block_work(CIface *iface, const Array& params, bool fHelp)
     static int64 nStart;
     static CBlock* pblock;
     if (pindexPrev != GetBestBlockIndex(iface) ||
-        (iface->tx_tot != nTransactionsUpdatedLast && GetTime() - nStart > 60))
+        (STAT_TX_ACCEPTS(iface) != nTransactionsUpdatedLast && GetTime() - nStart > 60))
     {
       if (pindexPrev != GetBestBlockIndex(iface))
       {
@@ -1159,7 +1200,7 @@ Value rpc_block_work(CIface *iface, const Array& params, bool fHelp)
           delete pblock;
         vNewBlock.clear();
       }
-      nTransactionsUpdatedLast = iface->tx_tot;
+      nTransactionsUpdatedLast = STAT_TX_ACCEPTS(iface);
       pindexPrev = GetBestBlockIndex(iface);
       nStart = GetTime();
 
@@ -1261,7 +1302,7 @@ Value rpc_block_workex(CIface *iface, const Array& params, bool fHelp)
     static int64 nStart;
     static CBlock* pblock;
     if (pindexPrev != GetBestBlockIndex(iface) ||
-        (iface->tx_tot != nTransactionsUpdatedLast && GetTime() - nStart > 60))
+        (STAT_TX_ACCEPTS(iface) != nTransactionsUpdatedLast && GetTime() - nStart > 60))
     {
       if (pindexPrev != GetBestBlockIndex(iface)) {
         // Deallocate old blocks since they're obsolete now
@@ -1270,7 +1311,7 @@ Value rpc_block_workex(CIface *iface, const Array& params, bool fHelp)
           delete pblock;
         vNewBlock.clear();
       }
-      nTransactionsUpdatedLast = iface->tx_tot;
+      nTransactionsUpdatedLast = STAT_TX_ACCEPTS(iface);
       pindexPrev = GetBestBlockIndex(iface);
       nStart = GetTime();
 
@@ -4455,6 +4496,7 @@ static const CRPCCommand vRPCCommands[] =
     { "peer.importdat",          &rpc_peer_importdat},
     { "peer.info",            &rpc_peer_info},
     { "peer.export",          &rpc_peer_export},
+    { "sys.info",             &rpc_sys_info},
     { "tx.decode",            &rpc_tx_decode},
     { "tx.get",               &rpc_tx_get},
     { "tx.getraw",            &rpc_getrawtransaction},
