@@ -61,6 +61,8 @@ using namespace boost::assign;
 
 
 
+extern json_spirit::Value ValueFromAmount(int64 amount);
+
 
 Value rpc_cert_fee(CIface *iface, const Array& params, bool fHelp) 
 {

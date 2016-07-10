@@ -26,7 +26,7 @@
 #include "shcoind.h"
 
 
-void f_shcoind_log(int err_code, const char *tag, char *text, const char *src_fname, long src_line)
+void f_shcoind_log(int err_code, const char *tag, const char *text, const char *src_fname, long src_line)
 {
   static shbuf_t *buff;
   char origin[256];

@@ -7,6 +7,7 @@
 
 user_t *client_list;
 
+extern TEST_jsonencap(CuTest*);
 extern TEST_coin_key(CuTest*);
 extern TEST_wallet(CuTest*);
 extern TEST_bignum(CuTest*);
@@ -36,6 +37,7 @@ int main(int argc, char *argv[])
 
 
   /* test suits */
+  SUITE_ADD_TEST(suite, TEST_jsonencap);
   SUITE_ADD_TEST(suite, TEST_coin_key);
   SUITE_ADD_TEST(suite, TEST_wallet);
   SUITE_ADD_TEST(suite, TEST_bignum);

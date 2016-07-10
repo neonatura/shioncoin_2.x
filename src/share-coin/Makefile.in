@@ -203,7 +203,7 @@ shcoind_DEPENDENCIES =  \
 	$(am__append_5)
 shcoind_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CXXLD) $(shcoind_CXXFLAGS) $(CXXFLAGS) \
-	$(AM_LDFLAGS) $(LDFLAGS) -o $@
+	$(shcoind_LDFLAGS) $(LDFLAGS) -o $@
 am__objects_7 = shcointool-bc_block.$(OBJEXT) \
 	shcointool-bc_index.$(OBJEXT) shcointool-bc_arch.$(OBJEXT) \
 	shcointool-bc_fmap.$(OBJEXT)
@@ -227,7 +227,7 @@ shcointool_DEPENDENCIES =  \
 	$(am__append_8)
 shcointool_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(shcointool_CXXFLAGS) \
-	$(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+	$(CXXFLAGS) $(shcointool_LDFLAGS) $(LDFLAGS) -o $@
 am__objects_10 = test_shcoind-bc_block.$(OBJEXT) \
 	test_shcoind-bc_index.$(OBJEXT) test_shcoind-bc_arch.$(OBJEXT) \
 	test_shcoind-bc_fmap.$(OBJEXT)
@@ -294,14 +294,15 @@ am_test_shcoind_OBJECTS = $(am__objects_1) $(am__objects_11) \
 	test_shcoind-testcoin_coin.$(OBJEXT) \
 	test_shcoind-testcoin_bignum.$(OBJEXT) \
 	test_shcoind-testcoin_hash.$(OBJEXT) \
-	test_shcoind-testcoin_block.$(OBJEXT)
+	test_shcoind-testcoin_block.$(OBJEXT) \
+	test_shcoind-testcoin_json.$(OBJEXT)
 test_shcoind_OBJECTS = $(am_test_shcoind_OBJECTS)
 test_shcoind_DEPENDENCIES =  \
 	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
 	$(am__append_2)
 test_shcoind_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(test_shcoind_CXXFLAGS) \
-	$(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+	$(CXXFLAGS) $(test_shcoind_LDFLAGS) $(LDFLAGS) -o $@
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
 am__vpath_adj = case $$p in \
     $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
@@ -1421,7 +1422,8 @@ test_shcoind_SOURCES = \
 	test/testcoin_coin.cpp \
 	test/testcoin_bignum.cpp \
 	test/testcoin_hash.cpp \
-	test/testcoin_block.cpp
+	test/testcoin_block.cpp \
+	test/testcoin_json.cpp
 
 test_shcoind_LDADD = $(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
 	-lboost_system -lboost_filesystem -lboost_thread -ldb_cxx -ldl \
@@ -1432,6 +1434,7 @@ test_shcoind_CFLAGS = -I$(srcdir)/server -I$(srcdir)/blockchain \
 test_shcoind_CXXFLAGS = -I$(srcdir)/server -I$(srcdir)/blockchain \
 	-I$(srcdir)/proto -DOS_LINUX -DSHCOIN_SERVER -g -O0 \
 	-DTEST_SHCOIND $(am__append_4)
+test_shcoind_LDFLAGS = -lgmp
 shcoind_SOURCES = \
 	$(common_includes) $(common_sources) \
 	$(server_sources) $(stratum_sources) \
@@ -1446,6 +1449,7 @@ shcoind_CFLAGS = -I$(srcdir)/server -I$(srcdir)/blockchain \
 	-I$(srcdir)/proto -DSHCOIN_SERVER $(am__append_6)
 shcoind_CXXFLAGS = -I$(srcdir)/server -I$(srcdir)/blockchain \
 	-I$(srcdir)/proto -DOS_LINUX -DSHCOIN_SERVER $(am__append_7)
+shcoind_LDFLAGS = -lgmp
 shcointool_SOURCES = $(common_includes) $(common_sources) \
 	shcoind_tool.cpp clientrpc_iface.cpp $(tool_sources)
 
@@ -1458,6 +1462,7 @@ shcointool_CFLAGS = -DSHCOIN_CLIENT -I$(srcdir)/server \
 shcointool_CXXFLAGS = -DSHCOIN_CLIENT -I$(srcdir)/server \
 	-I$(top_srcdir)/src/share-coin/blockchain -I$(srcdir)/proto \
 	-DOS_LINUX $(am__append_10)
+shcointool_LDFLAGS = -lgmp
 
 #noinst_LIBRARIES = libleveldb.a
 #libleveldb_a_CXXFLAGS = \
@@ -1765,6 +1770,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-testcoin_block.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-testcoin_coin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-testcoin_hash.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-testcoin_json.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-txext.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-txidx.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-unet.Po@am__quote@
@@ -4321,6 +4327,20 @@ test_shcoind-testcoin_block.obj: test/testcoin_block.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='test/testcoin_block.cpp' object='test_shcoind-testcoin_block.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-testcoin_block.obj `if test -f 'test/testcoin_block.cpp'; then $(CYGPATH_W) 'test/testcoin_block.cpp'; else $(CYGPATH_W) '$(srcdir)/test/testcoin_block.cpp'; fi`
+
+test_shcoind-testcoin_json.o: test/testcoin_json.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-testcoin_json.o -MD -MP -MF $(DEPDIR)/test_shcoind-testcoin_json.Tpo -c -o test_shcoind-testcoin_json.o `test -f 'test/testcoin_json.cpp' || echo '$(srcdir)/'`test/testcoin_json.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-testcoin_json.Tpo $(DEPDIR)/test_shcoind-testcoin_json.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='test/testcoin_json.cpp' object='test_shcoind-testcoin_json.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-testcoin_json.o `test -f 'test/testcoin_json.cpp' || echo '$(srcdir)/'`test/testcoin_json.cpp
+
+test_shcoind-testcoin_json.obj: test/testcoin_json.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-testcoin_json.obj -MD -MP -MF $(DEPDIR)/test_shcoind-testcoin_json.Tpo -c -o test_shcoind-testcoin_json.obj `if test -f 'test/testcoin_json.cpp'; then $(CYGPATH_W) 'test/testcoin_json.cpp'; else $(CYGPATH_W) '$(srcdir)/test/testcoin_json.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-testcoin_json.Tpo $(DEPDIR)/test_shcoind-testcoin_json.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='test/testcoin_json.cpp' object='test_shcoind-testcoin_json.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-testcoin_json.obj `if test -f 'test/testcoin_json.cpp'; then $(CYGPATH_W) 'test/testcoin_json.cpp'; else $(CYGPATH_W) '$(srcdir)/test/testcoin_json.cpp'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo

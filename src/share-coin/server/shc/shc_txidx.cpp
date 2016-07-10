@@ -244,7 +244,7 @@ bool SHCTxDB::LoadBlockIndex()
   }
 
 
-  fprintf(stderr, "DEBUG: SHCTxDB::LoadBlockIndex: info: verifying hashBestChain '%s'\n", (hashBestChain).GetHex().c_str());
+//  fprintf(stderr, "DEBUG: SHCTxDB::LoadBlockIndex: info: verifying hashBestChain '%s'\n", (hashBestChain).GetHex().c_str());
 
   if (!pindexBest) {
     fprintf(stderr, "DEBUG: SHCTxDB::LoadBlockIndex: error: hashBestChain '%s' not found in block index table\n", (hashBestChain).GetHex().c_str());
@@ -327,7 +327,6 @@ bool SHCTxDB::LoadBlockIndex()
 
   CWallet *wallet = GetWallet(SHC_COIN_IFACE);
   InitServiceWalletEvent(wallet, checkHeight);
-fprintf(stderr, "DEBUG: SHC: checkHeight = %d\n", checkHeight);
 
   return true;
 }

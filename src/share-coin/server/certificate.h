@@ -26,7 +26,11 @@
 #ifndef __SERVER__CERTIFICATE_H__
 #define __SERVER__CERTIFICATE_H__
 
+#include "json/json_spirit_reader_template.h"
+#include "json/json_spirit_writer_template.h"
+
 using namespace std;
+using namespace json_spirit;
 
 
 typedef map<uint160, uint256> cert_list;
@@ -37,7 +41,6 @@ class CIdent : public CExtCore
 
   protected:
     shgeo_t geo;
-    shkey_t sig_key;
 
   public:
     CIdent()
@@ -60,15 +63,13 @@ class CIdent : public CExtCore
     IMPLEMENT_SERIALIZE (
         READWRITE(*(CExtCore *)this);
         READWRITE(FLATDATA(geo));
-        READWRITE(FLATDATA(sig_key));
     )
 
     friend bool operator==(const CIdent &a, const CIdent &b)
     {
       return (
           ((CExtCore&) a) == ((CExtCore&) b) &&
-          0 == memcmp(&a.geo, &b.geo, sizeof(shgeo_t)) &&
-          0 == memcmp(&a.sig_key, &b.sig_key, sizeof(shkey_t))
+          0 == memcmp(&a.geo, &b.geo, sizeof(shgeo_t))
           );
     }
 
@@ -82,7 +83,6 @@ class CIdent : public CExtCore
     void SetNull()
     {
       memset(&geo, 0, sizeof(geo));
-      memset(&sig_key, 0, sizeof(sig_key));
 
       /* default location */
       shgeo_local(&geo, SHGEO_PREC_REGION);
@@ -92,7 +92,6 @@ class CIdent : public CExtCore
     {
       CExtCore::Init(b);
       memcpy(&geo, &b.geo, sizeof(geo));
-      memcpy(&sig_key, &b.sig_key, sizeof(sig_key));
     }
 
     /**
@@ -148,6 +147,10 @@ class CIdent : public CExtCore
       cbuff rawbuf(raw, raw + sizeof(hash));
       return Hash160(rawbuf);
     }
+
+    std::string ToString();
+
+    Object ToValue();
 
 };
 
@@ -311,6 +314,8 @@ class CCert : public CIdent
 
       return (cbuff(raw, raw+16));
     }
+
+    Object ToValue();
 };
 
 class CLicense : public CExtCore
@@ -447,6 +452,10 @@ class CLicense : public CExtCore
     }
 
     void NotifySharenet(int ifaceIndex);
+
+    std::string ToString();
+
+    Object ToValue();
 
 };
 

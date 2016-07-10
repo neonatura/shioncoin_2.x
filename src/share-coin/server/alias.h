@@ -26,6 +26,11 @@
 #ifndef __ALIAS_H__
 #define __ALIAS_H__
 
+#include "json/json_spirit_reader_template.h"
+#include "json/json_spirit_writer_template.h"
+
+using namespace std;
+using namespace json_spirit;
 
 
 typedef std::map<std::string, uint256> alias_list;
@@ -148,6 +153,11 @@ class CAlias : public CExtCore
       cbuff rawbuf(raw, raw + sizeof(hashOut));
       return Hash160(rawbuf);
     }
+
+    std::string ToString();
+
+    Object ToValue();
+
 };
 
 class CWalletTx;

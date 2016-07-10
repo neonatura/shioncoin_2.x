@@ -2448,3 +2448,20 @@ const char *CAlias::ToString()
 }
 
 */
+std::string CAlias::ToString()
+{
+  return (write_string(Value(ToValue()), false));
+}
+
+Object CAlias::ToValue()
+{
+  Object obj = CExtCore::ToValue();
+
+  obj.push_back(Pair("addr", stringFromVch(vchData)));
+  obj.push_back(Pair("type", (int64_t)nType));
+  obj.push_back(Pair("level", (int64_t)nLevel));
+
+  return (obj);
+}
+
+

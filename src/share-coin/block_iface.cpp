@@ -406,6 +406,8 @@ pblock->print();
   }
 fprintf(stderr, "DEBUG: c_processblock: accepted block\n"); 
 
+  STAT_BLOCK_SUBMITS(iface)++;
+
   return (0);
 }
 

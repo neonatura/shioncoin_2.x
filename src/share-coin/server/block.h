@@ -40,6 +40,11 @@
 #include "coin_proto.h"
 #include "txext.h"
 
+#include "json/json_spirit_reader_template.h"
+#include "json/json_spirit_writer_template.h"
+using namespace std;
+using namespace json_spirit;
+
 typedef std::vector<uint256> HashList;
 
 
@@ -547,6 +552,7 @@ class CBlockIndex;
 typedef std::map<uint256, CBlockIndex*> blkidx_t;
 
 #define TX_VERSION TXF_VERSION
+#define TX_VERSION_2 TXF_VERSION_2
 
 class CTransactionCore
 {
@@ -611,6 +617,10 @@ class CTransactionCore
       } 
       return (false);
     }
+
+    std::string ToString();
+
+    Object ToValue();
 
 };
 
@@ -946,6 +956,7 @@ public:
         return !(a == b);
     }
 
+#if 0
     std::string ToString() const
     {
         std::string str;
@@ -961,10 +972,11 @@ public:
             str += "    " + vout[i].ToString() + "\n";
         return str;
     }
+#endif
 
-    void print() const
+    void print()
     {
-        fprintf(stderr, "%s", ToString().c_str());
+      shcoind_log(ToString().c_str());
     }
 
 
@@ -985,34 +997,22 @@ public:
 
     bool ClientConnectInputs(int ifaceIndex);
 
-    bool CheckTransaction(int ifaceIndex) const;
+    bool CheckTransaction(int ifaceIndex); 
 
-    bool CheckTransactionInputs(int ifaceIndex) const;
+    bool CheckTransactionInputs(int ifaceIndex);
 
     bool AcceptToMemoryPool(CTxDB& txdb, bool fCheckInputs=true, bool* pfMissingInputs=NULL);
 
+    Object ToValue();
+
+    Object ToValue(CBlock *pblock);
 
 
 protected:
     const CTxOut& GetOutputFor(const CTxIn& input, const MapPrevTx& inputs) const;
 };
 
-class CBlockCore
-{
-  public:
-
-    CBlockCore()
-    {
-      SetNull();
-    }
-
-    void SetNull()
-    {
-    }
-
-};
-
-class CBlockHeader : public CBlockCore
+class CBlockHeader
 {
 public:
     /* block header */
@@ -1022,6 +1022,8 @@ public:
     unsigned int nTime;
     unsigned int nBits;
     unsigned int nNonce;
+
+    mutable int ifaceIndex;
 
     CBlockHeader()
     {
@@ -1042,7 +1044,6 @@ public:
 
     void SetNull()
     {
-      CBlockCore::SetNull();
       hashPrevBlock = 0;
       hashMerkleRoot = 0;
       nTime = 0;
@@ -1064,6 +1065,11 @@ public:
     {
         return (int64)nTime;
     }
+
+    Object ToValue();
+
+    std::string ToString();
+
 };
 
 
@@ -1079,7 +1085,6 @@ class CBlock : public CBlockHeader
   public:
     std::vector<CTransaction> vtx;
     mutable std::vector<uint256> vMerkleTree; /* mem only */
-    mutable int ifaceIndex;
     mutable CNode *originPeer;
 
     CBlock()
@@ -1153,8 +1158,27 @@ class CBlock : public CBlockHeader
 
 
 
-    void print() const
+
+    //bool AddToBlockIndex(unsigned int nFile, unsigned int nBlockPos);
+//    bool ReadFromDisk(unsigned int nFile, unsigned int nBlockPos, bool fReadTransactions=true);
+
+    void UpdateTime(const CBlockIndex* pindexPrev);
+    bool DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex);
+    bool WriteBlock(uint64_t nHeight);
+    bool WriteArchBlock();
+    bool ReadFromDisk(const CBlockIndex* pindex, bool fReadTransactions=true);
+    const CTransaction *GetTx(uint256 hash);
+
+    bool trust(int deg, const char *msg, ...);
+
+    bool CheckTransactionInputs(int ifaceIndex);
+
+    Object ToValue();
+
+    void print()
     {
+      shcoind_log(ToString().c_str());
+#if 0
       fprintf(stderr, "CBlock(iface=%d, hash=%s, PoW=%s, ver=%d, hashPrevBlock=%s, hashMerkleRoot=%s, nTime=%u, nBits=%08x, nNonce=%u, vtx=%lu)\n",
           ifaceIndex, GetHash().GetHex().c_str(),
           GetPoWHash().ToString().substr(0,20).c_str(),
@@ -1172,21 +1196,8 @@ class CBlock : public CBlockHeader
       for (unsigned int i = 0; i < vMerkleTree.size(); i++)
         fprintf(stderr, " %s", vMerkleTree[i].GetHex().c_str());
       fprintf(stderr, "\n");
+#endif
     }
-
-    //bool AddToBlockIndex(unsigned int nFile, unsigned int nBlockPos);
-//    bool ReadFromDisk(unsigned int nFile, unsigned int nBlockPos, bool fReadTransactions=true);
-
-    void UpdateTime(const CBlockIndex* pindexPrev);
-    bool DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex);
-    bool WriteBlock(uint64_t nHeight);
-    bool WriteArchBlock();
-    bool ReadFromDisk(const CBlockIndex* pindex, bool fReadTransactions=true);
-    const CTransaction *GetTx(uint256 hash);
-
-    bool trust(int deg, const char *msg, ...);
-
-    bool CheckTransactionInputs(int ifaceIndex) const;
 
     virtual bool Truncate() = 0;
     virtual bool ReadBlock(uint64_t nHeight) = 0;

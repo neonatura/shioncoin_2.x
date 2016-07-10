@@ -46,8 +46,7 @@ extern Value ValueFromAmount(int64 amount);
 extern std::string HelpRequiringPassphrase();
 extern void EnsureWalletIsUnlocked();
 
-void
-ScriptPubKeyToJSON(const CScript& scriptPubKey, Object& out)
+void ScriptPubKeyToJSON(const CScript& scriptPubKey, Object& out)
 {
     txnouttype type;
     vector<CTxDestination> addresses;

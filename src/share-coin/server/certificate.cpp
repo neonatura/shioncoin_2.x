@@ -33,6 +33,7 @@ using namespace std;
 using namespace json_spirit;
 
 
+extern json_spirit::Value ValueFromAmount(int64 amount);
 
 cert_list *GetCertTable(int ifaceIndex)
 {
@@ -876,22 +877,10 @@ bool CIdent::Sign(cbuff vchSecret)
   if (!vchSecret.data())
     return (false);
 
-  void *raw = (void *)vchSecret.data();
+  unsigned char *raw = (unsigned char *)vchSecret.data();
   size_t raw_len = vchSecret.size();
 
-  shkey_t s_key;
-  memset(&s_key, 0, sizeof(s_key));
-  if (origin.data() != NULL) {
-    shkey_t *t_key = shkey_bin((char *)origin.data(), origin.size());
-    memcpy(&s_key, t_key, sizeof(s_key));
-    shkey_free(&t_key);
-  }
-
-  shkey_t *key = shkey_cert(&s_key, shcrc(raw, raw_len), tExpire);
-  memcpy(&sig_key, key, sizeof(sig_key));
-  shkey_free(&key);
-
-  return (true);
+  return (signature.SignContext(raw, raw_len));
 }
 
 /**
@@ -900,26 +889,77 @@ bool CIdent::Sign(cbuff vchSecret)
  */
 bool CIdent::VerifySignature(cbuff vchSecret)
 {
+
   if (!vchSecret.data())
     return (false);
 
-  shkey_t s_key;
-  memset(&s_key, 0, sizeof(s_key));
-  if (origin.data() != NULL) {
-    shkey_t *t_key = shkey_bin((char *)origin.data(), origin.size());
-    memcpy(&s_key, t_key, sizeof(s_key));
-    shkey_free(&t_key);
-  }
-
-  void *raw = (void *)vchSecret.data();
+  unsigned char *raw = (unsigned char *)vchSecret.data();
   size_t raw_len = vchSecret.size();
-  uint64_t crc = shcrc(raw, raw_len);
-  shkey_t *key = shkey_cert(&s_key, crc, tExpire);
-  bool ret = false;
 
-  if (shkey_cmp(key, &sig_key))
-    ret = true;
-  shkey_free(&key);
-
-  return (ret);
+  return (signature.VerifyContext(raw, raw_len));
 }
+
+std::string CIdent::ToString()
+{
+  return (write_string(Value(ToValue()), false));
+}
+
+std::string CLicense::ToString()
+{
+  return (write_string(Value(ToValue()), false));
+}
+
+Object CIdent::ToValue()
+{
+  Object obj = CExtCore::ToValue();
+  char sig[256];
+  char loc[256];
+  shnum_t x, y;
+
+  shgeo_loc(&geo, &x, &y, NULL);
+  sprintf(loc, "%f,%f", (double)x, (double)y);
+  string strGeo(loc);
+
+  obj.push_back(Pair("geo", strGeo));
+
+  return (obj);
+}
+
+Object CCert::ToValue()
+{
+  Object obj = CIdent::ToValue();
+
+  obj.push_back(Pair("issuer", hashIssuer.GetHex()));
+  obj.push_back(Pair("serialno", HexStr(vSerial.begin(), vSerial.end()))); 
+  obj.push_back(Pair("coinaddr", stringFromVch(vAddr)));
+  obj.push_back(Pair("fee", ValueFromAmount(nFee)));
+  obj.push_back(Pair("flags", nFlag));
+  
+  return (obj);
+}
+
+Object CLicense::ToValue()
+{
+  uint160 hashCrc(nCrc);
+  char peer[256];
+  char sig[256];
+  Object obj;
+
+  memset(peer, 0, sizeof(peer));
+  strncpy(peer, shkey_print(&kPeer), sizeof(peer)-1);
+  string strPeer(peer);
+
+  memset(sig, 0, sizeof(sig));
+  strncpy(sig, shkey_print(&kPeer), sizeof(sig)-1);
+  string strSig(sig);
+
+  obj.push_back(Pair("peer", strPeer));
+  obj.push_back(Pair("sig", strSig));
+  obj.push_back(Pair("cert", hCert.GetHex()));
+  obj.push_back(Pair("crc", hashCrc.GetHex()));
+  obj.push_back(Pair("fee", ValueFromAmount(nFee)));
+
+  return (obj);
+}
+
+

@@ -3,6 +3,10 @@
 #ifndef __OFFER_H__
 #define __OFFER_H__
 
+#include "json/json_spirit_reader_template.h"
+#include "json/json_spirit_writer_template.h"
+using namespace std;
+using namespace json_spirit;
 
 typedef std::map<uint160, uint256> offer_list; /* hashOffer -> hashTx */
 
@@ -101,9 +105,8 @@ class COfferAccept : public CExtCore
 
     bool GetXferAddr(int ifaceIndex, CCoinAddr& addr, std::string& account);
 
-    void print();
+    Object ToValue();
     std::string ToString();
-    void print_json(shjson_t *json);
 };
 
 class COffer : public COfferAccept
@@ -184,7 +187,7 @@ class COffer : public COfferAccept
       return (GetCoinByIndex(nXferCoin));
     }
 
-    void print_json(shjson_t *json);
+    Object ToValue();
 };
 
 

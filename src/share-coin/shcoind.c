@@ -116,6 +116,7 @@ void usage_version(void)
 int main(int argc, char *argv[])
 {
   CIface *iface;
+  bc_t *bc;
   char blockfile_path[PATH_MAX];
   char buf[1024];
   int idx;

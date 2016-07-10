@@ -198,7 +198,8 @@ test_shcoind_SOURCES = \
 	test/testcoin_coin.cpp \
 	test/testcoin_bignum.cpp \
 	test/testcoin_hash.cpp \
-	test/testcoin_block.cpp
+	test/testcoin_block.cpp \
+	test/testcoin_json.cpp
 
 test_shcoind_LDADD = $(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
 	-lboost_system -lboost_filesystem -lboost_thread -ldb_cxx -ldl
@@ -209,6 +210,7 @@ test_shcoind_LDADD += $(LIBSHARE)/src/share-lib/libshare.a
 test_shcoind_CFLAGS += -I$(LIBSHARE)/include
 test_shcoind_CXXFLAGS += -I$(LIBSHARE)/include
 endif
+test_shcoind_LDFLAGS = -lgmp
 
 
 
@@ -230,6 +232,7 @@ shcoind_CFLAGS += -I$(LIBSHARE)/include
 shcoind_CXXFLAGS += -I$(LIBSHARE)/include
 endif
 shcoind_LDADD += -lboost_system -lboost_filesystem -lboost_thread -ldb_cxx -ldl
+shcoind_LDFLAGS = -lgmp
 
 shcointool_SOURCES = $(common_includes) $(common_sources) \
 	shcoind_tool.cpp clientrpc_iface.cpp $(tool_sources)
@@ -244,6 +247,7 @@ shcointool_CFLAGS += -I$(LIBSHARE)/include
 shcointool_CXXFLAGS += -I$(LIBSHARE)/include
 endif
 shcointool_LDADD += -lboost_system -lboost_filesystem -lboost_thread -ldb_cxx -ldl
+shcointool_LDFLAGS = -lgmp
 
 #noinst_LIBRARIES = libleveldb.a
 #libleveldb_a_CXXFLAGS = \

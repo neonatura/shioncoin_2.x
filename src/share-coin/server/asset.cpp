@@ -607,3 +607,32 @@ fprintf(stderr, "DEBUG: update_asset_tx: !SendMoneyWithExtTx\n");
 
 	return (0);
 }
+
+std::string CAsset::ToString()
+{
+  return (write_string(Value(ToValue()), false));
+}
+
+Object CAsset::ToValue()
+{
+  Object obj = CExtCore::ToValue();
+
+  obj.push_back(Pair("cert", hCert.GetHex()));
+  obj.push_back(Pair("hash", stringFromVch(vHash)));
+
+  return (obj);
+}
+
+bool CAsset::Sign(uint160 sigCertIn)
+{
+  hCert = sigCertIn;
+  sigCert = CSign(hCert);
+  return true;
+}
+
+bool CAsset::VerifySignature()
+{
+  return (sigCert.VerifyContext(hCert));
+}
+
+

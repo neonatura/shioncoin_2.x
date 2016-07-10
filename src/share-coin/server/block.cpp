@@ -34,6 +34,12 @@ using namespace std;
 blkidx_t tableBlockIndex[MAX_COIN_IFACE];
 //vector <bc_t *> vBlockChain;
 
+extern double GetDifficulty(int ifaceIndex, const CBlockIndex* blockindex = NULL);
+extern std::string HexBits(unsigned int nBits);
+extern void ScriptPubKeyToJSON(const CScript& scriptPubKey, Object& out);
+
+
+
 blkidx_t *GetBlockTable(int ifaceIndex)
 {
 #ifndef TEST_SHCOIND
@@ -99,6 +105,11 @@ CBlockIndex *GetBlockIndexByHeight(int ifaceIndex, unsigned int nHeight)
     pindex = pindex->pprev;
 
   return (pindex);
+}
+
+json_spirit::Value ValueFromAmount(int64 amount)
+{
+    return (double)amount / (double)COIN;
 }
 
 
@@ -1729,7 +1740,7 @@ bool CBlock::CheckBlock()
 }
 #endif
 
-bool CTransaction::CheckTransaction(int ifaceIndex) const
+bool CTransaction::CheckTransaction(int ifaceIndex)
 {
   CIface *iface = GetCoinByIndex(ifaceIndex);
 
@@ -1795,7 +1806,7 @@ bool CTransaction::CheckTransaction(int ifaceIndex) const
 /**
  * Verify that the transactions being referenced as inputs are valid.
  */
-bool CTransaction::CheckTransactionInputs(int ifaceIndex) const
+bool CTransaction::CheckTransactionInputs(int ifaceIndex)
 {
   CIface *iface = GetCoinByIndex(ifaceIndex);
 
@@ -1823,10 +1834,10 @@ bool CTransaction::CheckTransactionInputs(int ifaceIndex) const
   return true;
 }
 
-bool CBlock::CheckTransactionInputs(int ifaceIndex) const
+bool CBlock::CheckTransactionInputs(int ifaceIndex)
 {
 
-  BOOST_FOREACH(const CTransaction& tx, vtx) {
+  BOOST_FOREACH(CTransaction& tx, vtx) {
     bool fInBlock = false;
     BOOST_FOREACH(const CTxIn& txin, tx.vin) {
       BOOST_FOREACH(const CTransaction& t_tx, vtx) {
@@ -1930,7 +1941,7 @@ bool CTransaction::FetchInputs(CTxDB& txdb, const map<uint256, CTxIndex>& mapTes
     const COutPoint prevout = vin[i].prevout;
     assert(inputsRet.count(prevout.hash) != 0);
     const CTxIndex& txindex = inputsRet[prevout.hash].first;
-    const CTransaction& txPrev = inputsRet[prevout.hash].second;
+    CTransaction& txPrev = inputsRet[prevout.hash].second;
     if (prevout.n >= txPrev.vout.size() || prevout.n >= txindex.vSpent.size())
     {
       // Revisit this if/when transaction replacement is implemented and allows
@@ -2589,6 +2600,147 @@ bool CBlock::trust(int deg, const char *msg, ...)
   print();
 
   return (false);
+}
+
+std::string CTransactionCore::ToString()
+{
+  return (write_string(Value(ToValue()), false));
+}
+
+std::string CBlockHeader::ToString()
+{
+  return (write_string(Value(ToValue()), false));
+}
+
+Object CTransactionCore::ToValue()
+{
+  Object obj;
+
+  obj.push_back(Pair("version", 
+        isFlag(CTransaction::TX_VERSION) ? 1 : 
+        isFlag(CTransaction::TX_VERSION_2) ? 2 : 0));
+  obj.push_back(Pair("flag", nFlag));
+  if (nLockTime)
+    obj.push_back(Pair("locktime", (boost::int64_t)nLockTime));
+
+
+  return (obj);
+}
+
+Object CTransaction::ToValue()
+{
+  Object obj = CTransactionCore::ToValue();
+
+  obj.push_back(Pair("txid", GetHash().GetHex()));
+
+  Array obj_vin;
+  BOOST_FOREACH(const CTxIn& txin, vin)
+  {
+    Object in;
+    if (IsCoinBase())
+      in.push_back(Pair("coinbase", HexStr(txin.scriptSig.begin(), txin.scriptSig.end())));
+    else
+    {
+      in.push_back(Pair("txid", txin.prevout.hash.GetHex()));
+      in.push_back(Pair("vout", (boost::int64_t)txin.prevout.n));
+      Object o;
+      o.push_back(Pair("asm", txin.scriptSig.ToString()));
+      o.push_back(Pair("hex", HexStr(txin.scriptSig.begin(), txin.scriptSig.end())));
+      in.push_back(Pair("scriptSig", o));
+    }   
+    in.push_back(Pair("sequence", (boost::int64_t)txin.nSequence));
+    obj_vin.push_back(in);
+  }
+  obj.push_back(Pair("vin", obj_vin));
+
+  Array obj_vout;
+  for (unsigned int i = 0; i < vout.size(); i++)
+  {     
+    const CTxOut& txout = vout[i];
+    Object out;
+    out.push_back(Pair("value", ValueFromAmount(txout.nValue)));
+    out.push_back(Pair("n", (boost::int64_t)i));
+    Object o;
+    ScriptPubKeyToJSON(txout.scriptPubKey, o);
+    out.push_back(Pair("scriptPubKey", o));
+    obj_vout.push_back(out);
+  } 
+  obj.push_back(Pair("vout", obj_vout));
+
+  if (this->nFlag & TXF_CERTIFICATE) 
+    obj.push_back(Pair("certificate", certificate.ToValue()));
+  if (this->nFlag & TXF_LICENSE)
+    obj.push_back(Pair("license", license.ToValue()));
+  if (this->nFlag & TXF_ALIAS)
+    obj.push_back(Pair("alias", alias.ToValue()));
+  if (this->nFlag & TXF_ASSET)
+    obj.push_back(Pair("asset", asset.ToValue()));
+  if (this->nFlag & TXF_OFFER)
+    obj.push_back(Pair("offer", offer.ToValue()));
+  if (this->nFlag & TXF_OFFER_ACCEPT)
+    obj.push_back(Pair("offeraccept", offer.ToValue()));
+  if (this->nFlag & TXF_IDENT)
+    obj.push_back(Pair("ident", offer.ToValue()));
+
+  return (obj);
+}
+
+Object CTransaction::ToValue(CBlock *pblock)
+{
+  CBlockHeader& block = (CBlockHeader& )(*pblock);
+  Object tx_obj = ToValue();
+  Object obj;
+
+  obj = block.ToValue();
+  obj.push_back(Pair("tx", tx_obj));
+
+  return (obj);
+}
+
+Object CBlockHeader::ToValue()
+{
+  Object obj;
+  uint256 hash = GetHash();
+
+  obj.push_back(Pair("blockhash", hash.GetHex()));
+//  obj.push_back(Pair("size", (int)::GetSerializeSize(*this, SER_NETWORK, PROTOCOL_VERSION(iface))));
+  obj.push_back(Pair("version", nVersion));
+  obj.push_back(Pair("merkleroot", hashMerkleRoot.GetHex()));
+  obj.push_back(Pair("time", (boost::int64_t)GetBlockTime()));
+  obj.push_back(Pair("nonce", (boost::uint64_t)nNonce));
+  obj.push_back(Pair("bits", HexBits(nBits)));
+
+
+  CIface *iface = GetCoinByIndex(ifaceIndex);
+  if (iface)
+    obj.push_back(Pair("confirmations", GetBlockDepthInMainChain(iface, hash)));
+
+  blkidx_t *blockIndex = GetBlockTable(ifaceIndex);
+  if (blockIndex->count(hash)) {
+    CBlockIndex *pindex = (*blockIndex)[hash];
+
+    obj.push_back(Pair("height", pindex->nHeight));
+    obj.push_back(Pair("difficulty", GetDifficulty(ifaceIndex, pindex)));
+
+    if (pindex->pprev)
+      obj.push_back(Pair("previousblockhash", pindex->pprev->GetBlockHash().GetHex()));
+    if (pindex->pnext)
+      obj.push_back(Pair("nextblockhash", pindex->pnext->GetBlockHash().GetHex()));
+  }
+
+  return obj;
+} 
+
+Object CBlock::ToValue()
+{
+  Object obj = CBlockHeader::ToValue();
+  
+  Array txs;
+  BOOST_FOREACH(const CTransaction&tx, vtx)
+    txs.push_back(GetHash().GetHex());
+  obj.push_back(Pair("tx", txs));
+
+  return (obj);
 }
 
 

@@ -1272,7 +1272,7 @@ print();
   }
 
   // Check transactions
-  BOOST_FOREACH(const CTransaction& tx, vtx) {
+  BOOST_FOREACH(CTransaction& tx, vtx) {
     if (!tx.CheckTransaction(USDE_COIN_IFACE)) {
       return (trust(-1, "(usde) ChecKBlock: transaction verification failure"));
     }

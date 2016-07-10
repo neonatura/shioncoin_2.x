@@ -67,6 +67,8 @@ using namespace boost::asio;
 using namespace json_spirit;
 using namespace boost::assign;
 
+
+
 #include "rpccert_proto.h"
 
 #include "SSLIOStreamDevice.h"
@@ -84,6 +86,7 @@ extern Value rpc_tx_signraw(CIface *iface, const Array& params, bool fHelp);
 extern Value rpc_sendrawtransaction(CIface *iface, const Array& params, bool fHelp);
 extern bool OpenNetworkConnection(const CAddress& addrConnect, const char *strDest = NULL);
 void TxToJSON(CIface *iface, const CTransaction& tx, const uint256 hashBlock, Object& entry);
+extern json_spirit::Value ValueFromAmount(int64 amount);
 
 const Object emptyobj;
 
@@ -188,8 +191,7 @@ int64 AmountFromValue(const Value& value)
     return nAmount;
 }
 
-std::string
-HexBits(unsigned int nBits)
+std::string HexBits(unsigned int nBits)
 {
     union {
         int32_t nBits;
@@ -787,13 +789,17 @@ Value rpc_sys_info(CIface *iface, const Array& params, bool fHelp)
   obj.push_back(Pair("txsubmit",  (int)iface->stat.tot_tx_submit));
   obj.push_back(Pair("txaccept",  (int)iface->stat.tot_tx_accept));
 
-  sprintf(tbuf, "%-20.20s", ctime(&iface->net_valid));
-  string val_str(tbuf);
-  obj.push_back(Pair("lastvalidblock", val_str));
+  if (iface->net_valid) {
+    sprintf(tbuf, "%-20.20s", ctime(&iface->net_valid));
+    string val_str(tbuf);
+    obj.push_back(Pair("lastvalidblock", val_str));
+  }
 
-  sprintf(tbuf, "%-20.20s", ctime(&iface->net_invalid));
-  string inval_str(tbuf);
-  obj.push_back(Pair("lastinvalidblock", inval_str));
+  if (iface->net_invalid) {
+    sprintf(tbuf, "%-20.20s", ctime(&iface->net_invalid));
+    string inval_str(tbuf);
+    obj.push_back(Pair("lastinvalidblock", inval_str));
+  }
 
   return obj;
 }
@@ -1649,8 +1655,20 @@ Value rpc_wallet_key(CIface *iface, const Array& params, bool fHelp)
 
   if (fHelp || params.size() != 1)
     throw runtime_error(
-        "wallet.key <address>\n"
-        "Reveals the private key corresponding to <address>.");
+        "Syntax: wallet.key <address>\n"
+        "Summary: Reveals the private key corresponding to a public coin address.\n"
+        "Params: [ <address> The coin address. ]\n"
+        "\n"
+        "The 'wallet.key' command provides a method to obtain the private key associated\n"
+        "with a particular coin address.\n"
+        "\n"
+        "The coin address must be available in the local wallet in order to print it's pr\n"
+        "ivate address.\n"
+        "\n"
+        "The private coin address can be imported into another system via the 'wallet.setkey' command.\n"
+        "\n"
+        "The entire wallet can be exported to a file via the 'wallet.export' command.\n"
+        );
 
   string strAddress = params[0].get_str();
   CCoinAddr address;

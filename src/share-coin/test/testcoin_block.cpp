@@ -256,19 +256,33 @@ _TEST(signtx)
   CWallet *wallet = GetWallet(iface);
   string strAccount("");
   CCoinAddr extAddr = GetAccountAddress(wallet, strAccount, true);
+  unsigned char *data;
+  size_t data_len;
   bool ret;
+
+  data = (unsigned char *)strdup("secret");
+  data_len = (size_t)sizeof(strlen("secret"));
+  string strSecret("secret");
 
   /* CExtCore.origin */
   CExtCore ext;
-  _TRUE(ext.SignOrigin(TEST_COIN_IFACE, extAddr) == true);
-  _TRUE(ext.VerifyOrigin(TEST_COIN_IFACE, extAddr) == true);
+  _TRUE(ext.signature.Sign(TEST_COIN_IFACE, extAddr, data, data_len) == true);
+  _TRUE(ext.signature.Verify(extAddr, data, data_len) == true);
 
   CIdent ident;
-  string strSecret("secret");
   cbuff vchSecret(vchFromString(strSecret));
   _TRUE(ident.Sign(vchSecret) == true);
   _TRUE(ident.VerifySignature(vchSecret) == true);
  
+  CAsset asset;
+  _TRUE(asset.Sign(ident.GetHash()) == true);
+  _TRUE(asset.VerifySignature() == true);
+
+  CLicense license;
+  _TRUE(license.signature.SignOrigin(TEST_COIN_IFACE, extAddr) == true);
+  _TRUE(license.signature.VerifyOrigin(extAddr) == true);
+
+  free(data);
 }
 
 _TEST(cointx)
@@ -420,6 +434,8 @@ _TEST(assettx)
 
   _TRUE(wtx.CheckTransaction(TEST_COIN_IFACE)); /* .. */
   _TRUE(VerifyAsset(wtx) == true);
+
+wtx.print();
 }
 
 _TEST(identtx)

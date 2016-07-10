@@ -86,10 +86,6 @@ public:
 
 extern const CRPCTable tableRPC;
 
-inline json_spirit::Value ValueFromAmount(int64 amount)
-{
-    return (double)amount / (double)COIN;
-}
 
 inline vector<unsigned char> vchFromValue(const json_spirit::Value& value) {
   string strName = value.get_str();

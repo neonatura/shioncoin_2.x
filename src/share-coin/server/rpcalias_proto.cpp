@@ -59,6 +59,7 @@ using namespace json_spirit;
 using namespace boost::assign;
 
 
+extern json_spirit::Value ValueFromAmount(int64 amount);
 
 
 Value rpc_alias_fee(CIface *iface, const Array& params, bool fHelp) 

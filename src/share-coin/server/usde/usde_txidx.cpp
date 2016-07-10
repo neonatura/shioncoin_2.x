@@ -401,7 +401,6 @@ if (pindex) fprintf(stderr, "DEBUG: USDE: lowest validated height %d (%s)\n", pi
 
   CWallet *wallet = GetWallet(USDE_COIN_IFACE);
   InitServiceWalletEvent(wallet, checkHeight);
-fprintf(stderr, "DEBUG: USDE: checkHeight = %d\n", checkHeight);
 
   return true;
 }

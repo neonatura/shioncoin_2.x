@@ -1031,3 +1031,4 @@ bool CTxDB::WriteBestInvalidWork(CBigNum bnBestInvalidWork)
   return (true);
 }
 #endif
+

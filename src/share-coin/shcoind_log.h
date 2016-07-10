@@ -39,7 +39,7 @@ extern "C" {
   (f_shcoind_log(_err, _tag, _text, __FILE__, __LINE__))
 
 
-void f_shcoind_log(int err_code, const char *tag, char *text, const char *src_fname, long src_line);
+void f_shcoind_log(int err_code, const char *tag, const char *text, const char *src_fname, long src_line);
 
 
 void timing_init(char *tag, shtime_t *stamp_p);

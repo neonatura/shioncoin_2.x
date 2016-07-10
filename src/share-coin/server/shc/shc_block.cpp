@@ -1136,7 +1136,7 @@ bool SHCBlock::CheckBlock()
     }
 
   // Check transactions
-  BOOST_FOREACH(const CTransaction& tx, vtx)
+  BOOST_FOREACH(CTransaction& tx, vtx)
     if (!tx.CheckTransaction(SHC_COIN_IFACE)) {
       return error(SHERR_INVAL, "CheckBlock() : CheckTransaction failed");
     }

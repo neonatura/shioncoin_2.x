@@ -28,6 +28,11 @@
 
 #include "base58.h"
 #include <vector>
+#include "json/json_spirit_reader_template.h"
+#include "json/json_spirit_writer_template.h"
+
+using namespace std;
+using namespace json_spirit;
 
 inline bool arrcasecmp(cbuff v1, cbuff v2)
 {
@@ -66,6 +71,108 @@ inline shpeer_t *sharenet_peer(void)
   return (ret_peer);
 }
 
+
+class CSign
+{
+  public:
+    static const int ALG_ECDSA = SHKEY_ALG_ECDSA;
+    static const int ALG_U160 = SHKEY_ALG_U160;
+
+    unsigned int nAlg;
+    cbuff vPubKey;
+    cbuff vAddrKey;
+    std::vector<cbuff> vSig;
+
+    CSign()
+    {
+      SetNull();
+    }
+
+    CSign(uint160 hash)
+    {
+      SetNull();
+      SignContext(hash);
+    }
+
+    IMPLEMENT_SERIALIZE (
+      READWRITE(this->nAlg);
+      READWRITE(this->vPubKey);
+      READWRITE(this->vAddrKey);
+      READWRITE(this->vSig);
+    )
+
+    void SetNull()
+    {
+      nAlg = 0;
+      vPubKey.clear();
+      vAddrKey.clear();
+      vSig.clear();
+    }
+
+    bool IsNull()
+    {
+      return (nAlg == 0);
+    }
+
+    void Init(const CSign& b)
+    {
+      nAlg = b.nAlg;
+      vPubKey = b.vPubKey;
+      vAddrKey = b.vAddrKey;
+      vSig = b.vSig;
+    }
+
+    friend bool operator==(const CSign &a, const CSign &b)
+    {
+      return (
+          a.nAlg == b.nAlg &&
+          a.vPubKey == b.vPubKey &&
+          a.vAddrKey == b.vAddrKey &&
+          a.vSig == b.vSig
+          );
+    }
+
+    CSign operator=(const CSign &b)
+    {
+      Init(b);
+      return *this;
+    }
+
+
+    bool SignContext(unsigned char *data, size_t data_len);
+
+    bool VerifyContext(unsigned char *data, size_t data_len);
+
+
+    bool SignAddress(int ifaceIndex, CCoinAddr& addr, unsigned char *data, size_t data_len);
+
+    bool VerifyAddress(CCoinAddr& addr, unsigned char *data, size_t data_len);
+
+    bool SignOrigin(int ifaceIndex, CCoinAddr& addr);
+
+    bool VerifyOrigin(CCoinAddr& addr);
+
+
+
+    bool SignContext(uint160 hash);
+
+    bool VerifyContext(uint160 hash);
+
+    bool Sign(int ifaceIndex, CCoinAddr& addr, unsigned char *data, size_t data_len);
+
+    bool Verify(CCoinAddr& addr, unsigned char *data, size_t data_len);
+
+
+    const uint160 GetHash()
+    {
+      uint256 hashOut = SerializeHash(*this);
+      unsigned char *raw = (unsigned char *)&hashOut;
+      cbuff rawbuf(raw, raw + sizeof(hashOut));
+      return Hash160(rawbuf);
+    }
+};
+
+
 class CExtCore
 {
   static const int PROTO_EXT_VERSION = 1;
@@ -73,8 +180,8 @@ class CExtCore
   public:
     unsigned int nVersion;
     shtime_t tExpire;
-    cbuff origin;
     cbuff vchLabel;
+    CSign signature;
 
     mutable bool fActive;
 
@@ -89,16 +196,16 @@ class CExtCore
     IMPLEMENT_SERIALIZE (
       READWRITE(this->nVersion);
       READWRITE(this->tExpire);
-      READWRITE(this->origin);
       READWRITE(this->vchLabel);
+      READWRITE(this->signature);
     )
 
     void SetNull()
     {
       nVersion = PROTO_EXT_VERSION;
       tExpire = shtime_adj(shtime(), SHARE_DEFAULT_EXPIRE_TIME);
-      origin.clear();
       vchLabel.clear();
+      signature.SetNull();
       fActive = false;
     }
 
@@ -135,8 +242,8 @@ class CExtCore
     {
       nVersion = b.nVersion;
       tExpire = b.tExpire;
-      origin = b.origin;
       vchLabel = b.vchLabel;
+      signature = b.signature;
       fActive = b.fActive;
     }
 
@@ -144,8 +251,8 @@ class CExtCore
     {
       return (a.nVersion == b.nVersion &&
           a.tExpire == b.tExpire &&
-          a.origin == b.origin &&
-          a.vchLabel == b.vchLabel
+          a.vchLabel == b.vchLabel &&
+          a.signature == b.signature
           );
     }
 
@@ -164,12 +271,6 @@ class CExtCore
       return (stringFromVch(vchLabel)); 
     }
 
-    bool SignOrigin(int ifaceIndex, CCoinAddr& addr);
-
-    bool VerifyOrigin(int ifaceIndex, CCoinAddr& addr);
-
-    const uint256 GetOrigin();
-
     void HandleState(int mode)
     {
       switch (mode) {
@@ -181,6 +282,10 @@ class CExtCore
           break;
       }
     }
+
+    std::string ToString();
+
+    Object ToValue();
 
 };
 

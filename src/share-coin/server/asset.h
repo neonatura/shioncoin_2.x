@@ -26,6 +26,10 @@
 #ifndef __ASSET_H__
 #define __ASSET_H__
 
+#include "json/json_spirit_reader_template.h"
+#include "json/json_spirit_writer_template.h"
+using namespace std;
+using namespace json_spirit;
 
 
 typedef map<uint160, uint256> asset_list;
@@ -35,7 +39,8 @@ class CAsset : public CExtCore
 {
 
   protected:
-    uint160 hashCert;
+    uint160 hCert;
+    CSign sigCert;
     cbuff vHash;
 
     /* reserved */
@@ -63,7 +68,8 @@ class CAsset : public CExtCore
 
     IMPLEMENT_SERIALIZE (
       READWRITE(*(CExtCore *)this);
-      READWRITE(hashCert);
+      READWRITE(hCert);
+      READWRITE(sigCert);
       READWRITE(vHash);
 
       /* reserved */
@@ -75,7 +81,8 @@ class CAsset : public CExtCore
     {
       CExtCore::SetNull();
 
-      hashCert = 0;
+      hCert = 0;
+      sigCert.SetNull();
       vHash.clear();
       vUrl.clear();
       vLocale.clear();
@@ -84,7 +91,8 @@ class CAsset : public CExtCore
     void Init(const CAsset& assetIn)
     {
       CExtCore::Init(assetIn);
-      hashCert = assetIn.hashCert;
+      hCert = assetIn.hCert;
+      sigCert = assetIn.sigCert;
       vHash = assetIn.vHash;
     }
 
@@ -92,7 +100,8 @@ class CAsset : public CExtCore
     {
       return (
         ((CExtCore&) a) == ((CExtCore&) b) &&
-        a.hashCert == b.hashCert &&
+        a.hCert == b.hCert &&
+        a.sigCert == b.sigCert &&
         a.vHash == b.vHash 
       );
     }
@@ -104,11 +113,9 @@ class CAsset : public CExtCore
     }
 
 
-    bool Sign(uint160 hashCertIn)
-    {
-      hashCert = hashCertIn;
-      return true;
-    }
+    bool Sign(uint160 sigCertIn);
+
+    bool VerifySignature();
 
     void SetAssetHash(string strHash)
     {
@@ -127,6 +134,10 @@ class CAsset : public CExtCore
       cbuff rawbuf(raw, raw + sizeof(hashOut));
       return Hash160(rawbuf);
     }
+
+    std::string ToString();
+
+    Object ToValue();
 
 };
 
