@@ -380,6 +380,19 @@ bool ServicePeerEvent(int ifaceIndex)
     pfrom->fGetAddr = true;
   }
 
+#if 0
+  if (!pfrom->fInbound) {
+    // Advertise our address
+    if (!fNoListen && !IsInitialBlockDownload(ifaceIndex)) {
+      CAddress addr = GetLocalAddress(&pfrom->addr);
+      if (addr.IsRoutable()) {
+        fprintf(stderr, "DEBUG: ServicePeerEvent: GetLocalAddress '%s'\n", pfrom->addr.ToString().c_str());
+        pfrom->PushAddress(addr);
+      }
+    }
+  }
+#endif
+
   return (false); /* all done */
 }
 

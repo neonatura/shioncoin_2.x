@@ -1336,7 +1336,7 @@ bool IsInitialBlockDownload(int ifaceIndex)
 {
   CBlockIndex *pindexBest = GetBestBlockIndex(ifaceIndex);
 
-  if (pindexBest == NULL);// || nBestHeight < Checkpoints::GetTotalBlocksEstimate())
+  if (pindexBest == NULL)
     return true;
 
   static int64 nLastUpdate;

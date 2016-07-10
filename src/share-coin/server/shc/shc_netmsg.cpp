@@ -296,8 +296,11 @@ fprintf(stderr, "DEBUG: ProcessMessage: pfrom->nVersion (already) %d\n", pfrom->
       if (!fNoListen && !IsInitialBlockDownload(SHC_COIN_IFACE))
       {
         CAddress addr = GetLocalAddress(&pfrom->addr);
-        if (addr.IsRoutable())
+        addr.SetPort(iface->port);
+        if (addr.IsRoutable()) {
+//fprintf(stderr, "DEBUG: VERACK: Pushing (GetLocalAddress) '%s'..\n", addr.ToString().c_str());
           pfrom->PushAddress(addr);
+        }
       }
 
 #if 0
