@@ -132,10 +132,10 @@ bool CSign::SignContext(unsigned char *data, size_t data_len)
   shkey_t *priv_key;
   shkey_t *pub_key;
   shkey_t *kpriv;
-  char pub_key_hex[256];
-  char priv_key_hex[256];
-  char sig_r[256];
-  char sig_s[256];
+  char pub_key_hex[1024];
+  char priv_key_hex[1024];
+  char sig_r[1024];
+  char sig_s[1024];
 
   if (!data || !data_len)
     return (error(SHERR_INVAL, "CSign::SignContext: no context specified."));
@@ -150,9 +150,18 @@ bool CSign::SignContext(unsigned char *data, size_t data_len)
   memset(priv_key_hex, 0, sizeof(priv_key_hex));
   strncpy(priv_key_hex, shkey_hex(kpriv), sizeof(priv_key_hex)-1);
   priv_key = shecdsa_key_priv(priv_key_hex);
+  if (!priv_key) {
+    return error(SHERR_INVAL, "CSign::SignContenxt: error generating private key.");
+  }
 
   /* generate public key */
   pub_key = shecdsa_key_pub(priv_key);
+  if (!pub_key) {
+    shkey_free(&priv_key);
+    return error(SHERR_INVAL, "CSign::SignContenxt: error generating public key.");
+  }
+
+  /* stow pub-key into sign object */
   memset(pub_key_hex, 0, sizeof(pub_key_hex));
   strncpy(pub_key_hex, shkey_hex(pub_key), sizeof(pub_key_hex)-1);
   string strPubKey(pub_key_hex);
