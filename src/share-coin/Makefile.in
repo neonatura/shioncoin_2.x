@@ -203,7 +203,7 @@ shcoind_DEPENDENCIES =  \
 	$(am__append_5)
 shcoind_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CXXLD) $(shcoind_CXXFLAGS) $(CXXFLAGS) \
-	$(shcoind_LDFLAGS) $(LDFLAGS) -o $@
+	$(AM_LDFLAGS) $(LDFLAGS) -o $@
 am__objects_7 = shcointool-bc_block.$(OBJEXT) \
 	shcointool-bc_index.$(OBJEXT) shcointool-bc_arch.$(OBJEXT) \
 	shcointool-bc_fmap.$(OBJEXT)
@@ -227,7 +227,7 @@ shcointool_DEPENDENCIES =  \
 	$(am__append_8)
 shcointool_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(shcointool_CXXFLAGS) \
-	$(CXXFLAGS) $(shcointool_LDFLAGS) $(LDFLAGS) -o $@
+	$(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 am__objects_10 = test_shcoind-bc_block.$(OBJEXT) \
 	test_shcoind-bc_index.$(OBJEXT) test_shcoind-bc_arch.$(OBJEXT) \
 	test_shcoind-bc_fmap.$(OBJEXT)
@@ -302,7 +302,7 @@ test_shcoind_DEPENDENCIES =  \
 	$(am__append_2)
 test_shcoind_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(test_shcoind_CXXFLAGS) \
-	$(CXXFLAGS) $(test_shcoind_LDFLAGS) $(LDFLAGS) -o $@
+	$(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
 am__vpath_adj = case $$p in \
     $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
@@ -1434,7 +1434,6 @@ test_shcoind_CFLAGS = -I$(srcdir)/server -I$(srcdir)/blockchain \
 test_shcoind_CXXFLAGS = -I$(srcdir)/server -I$(srcdir)/blockchain \
 	-I$(srcdir)/proto -DOS_LINUX -DSHCOIN_SERVER -g -O0 \
 	-DTEST_SHCOIND $(am__append_4)
-test_shcoind_LDFLAGS = -lgmp
 shcoind_SOURCES = \
 	$(common_includes) $(common_sources) \
 	$(server_sources) $(stratum_sources) \
@@ -1449,7 +1448,6 @@ shcoind_CFLAGS = -I$(srcdir)/server -I$(srcdir)/blockchain \
 	-I$(srcdir)/proto -DSHCOIN_SERVER $(am__append_6)
 shcoind_CXXFLAGS = -I$(srcdir)/server -I$(srcdir)/blockchain \
 	-I$(srcdir)/proto -DOS_LINUX -DSHCOIN_SERVER $(am__append_7)
-shcoind_LDFLAGS = -lgmp
 shcointool_SOURCES = $(common_includes) $(common_sources) \
 	shcoind_tool.cpp clientrpc_iface.cpp $(tool_sources)
 
@@ -1462,7 +1460,6 @@ shcointool_CFLAGS = -DSHCOIN_CLIENT -I$(srcdir)/server \
 shcointool_CXXFLAGS = -DSHCOIN_CLIENT -I$(srcdir)/server \
 	-I$(top_srcdir)/src/share-coin/blockchain -I$(srcdir)/proto \
 	-DOS_LINUX $(am__append_10)
-shcointool_LDFLAGS = -lgmp
 
 #noinst_LIBRARIES = libleveldb.a
 #libleveldb_a_CXXFLAGS = \
