@@ -70,6 +70,7 @@ void ScriptPubKeyToJSON(const CScript& scriptPubKey, Object& out)
     out.push_back(Pair("addresses", a));
 }
 
+#if 0
 void TxToJSON(CIface *iface, const CTransaction& tx, const uint256 hashBlock, Object& entry)
 {
   int ifaceIndex = GetCoinIndex(iface);
@@ -129,6 +130,7 @@ void TxToJSON(CIface *iface, const CTransaction& tx, const uint256 hashBlock, Ob
     }
   }
 }
+#endif
 
 Value rpc_getrawtransaction(CIface *iface, const Array& params, bool fHelp)
 {
@@ -159,9 +161,9 @@ Value rpc_getrawtransaction(CIface *iface, const Array& params, bool fHelp)
   if (!fVerbose)
     return strHex;
 
-  Object result;
+  Object result = tx.ToValue();
   result.push_back(Pair("hex", strHex));
-  TxToJSON(iface, tx, hashBlock, result);
+//  TxToJSON(iface, tx, hashBlock, result);
   return result;
 }
 
@@ -274,6 +276,7 @@ Value createrawtransaction(const Array& params, bool fHelp)
     ss << rawTx;
     return HexStr(ss.begin(), ss.end());
 }
+
 Value decoderawtransaction(const Array& params, bool fHelp)
 {
   CIface *iface = GetCoinByIndex(USDE_COIN_IFACE);

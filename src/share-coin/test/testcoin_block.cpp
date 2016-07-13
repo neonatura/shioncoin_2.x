@@ -26,12 +26,12 @@
 #include "test_shcoind.h"
 #include <string>
 #include <vector>
-#include "server/wallet.h"
-#include "server/test/test_block.h"
-#include "server/test/test_txidx.h"
+#include "wallet.h"
+#include "test/test_block.h"
+#include "test/test_txidx.h"
 
-#include "server/offer.h"
-#include "server/asset.h"
+#include "offer.h"
+#include "asset.h"
 
 
 
@@ -125,7 +125,7 @@ _TEST(reorganize)
   CBlock *chain1;
   CBlock *chain2;
   CBlock *chain3;
-  CBlock *blocks[10];
+  CBlock *blocks[79];
   uint256 hashParent;
   int i;
 
@@ -154,19 +154,18 @@ _TEST(reorganize)
   /* battle2 : finish */
 
   /* battle3 : start */
-  for (i = 0; i < 9; i++) { 
+  for (i = 0; i < 78; i++) { 
     blocks[i] = test_GenerateBlock();
     _TRUEPTR(blocks[i]);
     _TRUE(ProcessBlock(NULL, blocks[i]) == true);
   }
-  blocks[9] = test_GenerateBlock();
-  _TRUEPTR(blocks[9]);
+  blocks[78] = test_GenerateBlock();
+  _TRUEPTR(blocks[78]);
 
-  TESTTxDB txdb;
-  _TRUE(ProcessBlock(NULL, chain3) == true);
-  txdb.Close();
+  _TRUE(ProcessBlock(NULL, chain3) == true); /* ALT CHAIN */
+fprintf(stderr, "DEBUG: REORG:ng..\n");
 
-  _TRUE(ProcessBlock(NULL, blocks[9]) == true);
+  _TRUE(ProcessBlock(NULL, blocks[78]) == true);
   /* battle3 : finish */
 
   t_block = GetBlockByHeight(iface, 0);
@@ -179,7 +178,7 @@ _TEST(reorganize)
   _TRUE(t_block->GetHash() == hashParent); 
   delete(t_block);
 
-  for (i = 0; i < 10; i++) { 
+  for (i = 0; i < 79; i++) {
     int nHeight = 3 + i;
     t_block = GetBlockByHeight(iface, nHeight);
     _TRUEPTR(t_block); 
@@ -189,12 +188,13 @@ _TEST(reorganize)
 
   CBlockIndex *pindexBest = GetBestBlockIndex(iface);
   _TRUEPTR(pindexBest);
-  _TRUE(pindexBest->GetBlockHash() == blocks[9]->GetHash());
-  _TRUE(pindexBest->nHeight == 12);
+  _TRUE(pindexBest->GetBlockHash() == blocks[78]->GetHash());
+  _TRUE(pindexBest->nHeight == 81);
 
-  for (i = 0; i < 10; i++) { 
+  for (i = 0; i < 79; i++) { 
     delete(blocks[i]);
-}
+  }
+
   delete chain3;
   delete chain2;
   delete chain1;
@@ -271,7 +271,7 @@ _TEST(signtx)
 
   CIdent ident;
   cbuff vchSecret(vchFromString(strSecret));
-  _TRUE(ident.Sign(vchSecret) == true);
+  _TRUE(ident.Sign(TEST_COIN_IFACE, extAddr, vchSecret) == true);
   _TRUE(ident.VerifySignature(vchSecret) == true);
  
   CAsset asset;
@@ -328,6 +328,7 @@ _TEST(cointx)
   for (idx = 0; idx < 3; idx++) {
     // send transaction
     string strError = wallet->SendMoney(scriptPubKey, nFee, wtx, false);
+fprintf(stderr, "DEBUG: TEST: cointx: wallet->SendMoney: error \"%s\"\n", strError.c_str());
     _TRUE(strError == "");
 
     _TRUE(wtx.CheckTransaction(TEST_COIN_IFACE)); /* .. */
@@ -444,13 +445,20 @@ _TEST(identtx)
   CWallet *wallet = GetWallet(iface);
   CWalletTx wtx;
   string strAccount("");
-  uint160 hashCert; /* nerp */
   int64 orig_bal;
   int64 bal;
   int idx;
   int err;
 
-  for (idx = 0; idx < 2; idx++) {
+  CWalletTx cert_wtx;
+  const char *raw = "test-secret";
+  cbuff vchSecret(raw, raw+strlen(raw));
+  uint160 issuer;
+  err = init_cert_tx(iface, strAccount, "test", vchSecret, 1, cert_wtx);
+  _TRUE(0 == err);
+  uint160 hashCert = cert_wtx.certificate.GetHash();
+
+  {
     CBlock *block = test_GenerateBlock();
     _TRUEPTR(block);
     _TRUE(ProcessBlock(NULL, block) == true);
@@ -465,7 +473,7 @@ _TEST(identtx)
   _TRUE(err == 0);
   _TRUE(wtx.CheckTransaction(TEST_COIN_IFACE)); /* .. */
   _TRUE(VerifyIdent(wtx) == true);
-
+  _TRUE(wtx.IsInMemoryPool(TEST_COIN_IFACE) == true);
 
   for (idx = 0; idx < 3; idx++) {
     CBlock *block = test_GenerateBlock();
@@ -474,7 +482,11 @@ _TEST(identtx)
     delete block;
   }
 
+  /* verify insertion into block-chain */
+  _TRUE(wtx.IsInMemoryPool(TEST_COIN_IFACE) == false);
+
   bal = GetAccountBalance(TEST_COIN_IFACE, strAccount, 1);
+fprintf(stderr, "DEBUG: TEST: identtx: bal(%llu) < orig_bal(%llu)\n", (unsigned long long)bal, (unsigned long long)orig_bal); 
   _TRUE(bal < orig_bal);
   orig_bal = bal;
 
@@ -533,6 +545,7 @@ _TEST(certtx)
 
   _TRUE(wtx.CheckTransaction(TEST_COIN_IFACE)); /* .. */
   _TRUE(VerifyCert(wtx) == true);
+  _TRUE(wtx.IsInMemoryPool(TEST_COIN_IFACE) == true);
 
   /* insert cert into chain + create a coin balance */
   for (idx = 0; idx < 10; idx++) {
@@ -545,6 +558,8 @@ _TEST(certtx)
   /* verify insertion */
   CTransaction t_tx;
   _TRUE(GetTxOfCert(iface, hashCert, t_tx) == true);
+  _TRUE(t_tx.GetHash() == wtx.GetHash());
+  _TRUE(wtx.IsInMemoryPool(TEST_COIN_IFACE) == false);
 
   /* generake test license from certificate */
   CWalletTx lic_wtx;
@@ -555,6 +570,7 @@ if (err)  fprintf(stderr, "DEBUG: %d = init_license_tx()\n", err);
   _TRUE(lic_wtx.CheckTransaction(TEST_COIN_IFACE)); /* .. */
   _TRUE(VerifyLicense(lic_wtx) == true);
   uint160 licHash = lic_wtx.license.GetHash();
+  _TRUE(lic_wtx.IsInMemoryPool(TEST_COIN_IFACE) == true);
 
   for (idx = 0; idx < 3; idx++) {
     CBlock *block = test_GenerateBlock();
@@ -566,12 +582,14 @@ if (err)  fprintf(stderr, "DEBUG: %d = init_license_tx()\n", err);
   /* verify insertion */
   CTransaction t2_tx;
   _TRUE(GetTxOfLicense(iface, licHash, t2_tx) == true);
+  _TRUE(lic_wtx.IsInMemoryPool(TEST_COIN_IFACE) == false);
 }
 
 _TEST(offertx)
 {
   CWallet *wallet = GetWallet(TEST_COIN_IFACE);
   CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
+  CTransaction t_tx;
   int64 srcValue;
   int64 destValue;
   int idx;
@@ -580,7 +598,7 @@ _TEST(offertx)
   string strLabel("");
 
   /* create a coin balance */
-  for (idx = 0; idx < 3; idx++) {
+  {
     CBlock *block = test_GenerateBlock();
     _TRUEPTR(block);
     _TRUE(ProcessBlock(NULL, block) == true);
@@ -593,19 +611,25 @@ _TEST(offertx)
   int64 bal = GetAccountBalance(TEST_COIN_IFACE, strLabel, 1);
   srcValue = -1 * (bal / 3);
   destValue = 1 * (bal / 4);
+fprintf(stderr, "DEBUG: TEST: OFFER: pre-offer .. bal is now %f [srcValue %f, destValue %f]\n", ((double)bal / COIN), ((double)srcValue / COIN), ((double)destValue / COIN));
 
   CWalletTx wtx;
   err = init_offer_tx(iface, strLabel, srcValue, TEST_COIN_IFACE, destValue, wtx);
-if (err) fprintf(stderr, "DEBUG: OFFER-TX: %d = init_offer_tx()\n", err); 
+if (err) fprintf(stderr, "DEBUG: TEST: OFFER: OFFER-TX: %d = init_offer_tx()\n", err); 
   _TRUE(0 == err);
   uint160 hashOffer = wtx.offer.GetHash();
   uint256 hashTx = wtx.GetHash();
+
+  {
+    int64 t_bal = GetAccountBalance(TEST_COIN_IFACE, strLabel, 1);
+fprintf(stderr, "DEBUG: TEST: OFFER: offer initialized .. bal is now %f\n", ((double)t_bal / COIN));
+  }
 
   _TRUE(wtx.CheckTransaction(TEST_COIN_IFACE));
   _TRUE(VerifyOffer(wtx) == true);
 
   /* insert offer-tx into chain */
-  for (idx = 0; idx < 3; idx++) {
+  {
     CBlock *block = test_GenerateBlock();
     _TRUEPTR(block);
     _TRUE(ProcessBlock(NULL, block) == true);
@@ -613,14 +637,13 @@ if (err) fprintf(stderr, "DEBUG: OFFER-TX: %d = init_offer_tx()\n", err);
   }
 
   /* verify insertion */
-  CTransaction t_tx;
   _TRUE(GetTxOfOffer(iface, hashOffer, t_tx) == true);
   _TRUE(t_tx.GetHash() == hashTx); 
 
   srcValue = 1 * (bal / 3);
   destValue = -1 * (bal / 4);
 
-  /* generake test license from certificate */
+  /* generate test license from certificate */
   CWalletTx acc_wtx;
   err = accept_offer_tx(iface, strLabel, hashOffer, srcValue, destValue, acc_wtx);
 if (err) fprintf(stderr, "DEBUG: OFFER-TX: %d = accept_offer_tx()\n", err);
@@ -635,12 +658,18 @@ if (err) fprintf(stderr, "DEBUG: OFFER-TX: %d = accept_offer_tx()\n", err);
   _TRUE(acc_wtx.CheckTransaction(TEST_COIN_IFACE));
   _TRUE(VerifyOffer(acc_wtx) == true);
 
-  for (idx = 0; idx < 3; idx++) {
+  {
+    int64 t_bal = GetAccountBalance(TEST_COIN_IFACE, strLabel, 1);
+fprintf(stderr, "DEBUG: TEST: OFFER: offer accepted .. bal is now %f\n", ((double)t_bal / COIN));
+  }
+
+  {
     CBlock *block = test_GenerateBlock();
     _TRUEPTR(block);
     _TRUE(ProcessBlock(NULL, block) == true);
     delete block;
   }
+acc_wtx.print();
 
   /* offer generate operation */
   CWalletTx gen_wtx;
@@ -652,22 +681,10 @@ if (err) fprintf(stderr, "DEBUG: %d = generate_offer_tx\n", err);
   _TRUE(VerifyOffer(gen_wtx) == true);
   _TRUE(hashGen == hashOffer);
 
-  for (idx = 0; idx < 3; idx++) {
-    CBlock *block = test_GenerateBlock();
-    _TRUEPTR(block);
-    _TRUE(ProcessBlock(NULL, block) == true);
-    delete block;
+  {
+    int64 t_bal = GetAccountBalance(TEST_COIN_IFACE, strLabel, 1);
+fprintf(stderr, "DEBUG: TEST: OFFER: offer generated .. bal is now %f\n", ((double)t_bal / COIN));
   }
-
-  /* pay operation */
-  CWalletTx pay_wtx;
-  err = pay_offer_tx(iface, hashAccept, pay_wtx);
-if (err) fprintf(stderr, "DEBUG: %d = pay_offer_tx\n", err);
-  _TRUE(0 == err);
-  uint160 hashPay = pay_wtx.offer.GetHash();
-  _TRUE(pay_wtx.CheckTransaction(TEST_COIN_IFACE));
-  _TRUE(VerifyOffer(pay_wtx) == true);
-  _TRUE(hashPay == hashAccept);
 
   {
     CBlock *block = test_GenerateBlock();
@@ -675,10 +692,44 @@ if (err) fprintf(stderr, "DEBUG: %d = pay_offer_tx\n", err);
     _TRUE(ProcessBlock(NULL, block) == true);
     delete block;
   }
+gen_wtx.print();
+
+  /* pay operation */
+  CWalletTx pay_wtx;
+  err = pay_offer_tx(iface, hashAccept, pay_wtx);
+if (err) fprintf(stderr, "DEBUG: %d = pay_offer_tx\n", err);
+  _TRUE(0 == err);
+
+  /* verify pending transaction */
+  uint160 hashPay = pay_wtx.offer.GetHash();
+  _TRUE(pay_wtx.CheckTransaction(TEST_COIN_IFACE));
+  _TRUE(VerifyOffer(pay_wtx) == true);
+  _TRUE(hashPay == hashAccept);
+  _TRUE(pay_wtx.IsInMemoryPool(TEST_COIN_IFACE) == true);
+
+  {
+    int64 t_bal = GetAccountBalance(TEST_COIN_IFACE, strLabel, 1);
+fprintf(stderr, "DEBUG: TEST: OFFER: offer pay'd .. bal is now %f\n", ((double)t_bal / COIN));
+  }
+
+  {
+    CBlock *block = test_GenerateBlock();
+    _TRUEPTR(block);
+    _TRUE(ProcessBlock(NULL, block) == true);
+    delete block;
+  }
+pay_wtx.print();
+
+  _TRUE(pay_wtx.IsInMemoryPool(TEST_COIN_IFACE) == false);
+#if 0
+  /* verify payment has been appended to block-chain */
+  _TRUE(GetTxOfOffer(iface, hashPay, t_tx) == false);
+  _TRUE(t_tx.GetHash() == pay_wtx.GetHash());
+#endif
 
 /* verify payment */
   int64 new_bal = GetAccountBalance(TEST_COIN_IFACE, strLabel, 1);
-//fprintf(stderr, "DEBUG: bal %llu, new_bal %llu\n", (unsigned long long)bal, (unsigned long long)new_bal);
+fprintf(stderr, "DEBUG: TEST OFFER: offertx: bal %llu < new_bal %llu\n", (unsigned long long)bal, (unsigned long long)new_bal);
   _TRUE(new_bal >= bal);
 }
 

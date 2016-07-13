@@ -24,12 +24,12 @@
  */  
 
 #include "shcoind.h"
-#include "server/main.h"
-#include "server/util.h"
-#include "server/rpc_proto.h"
-#include "server/ui_interface.h"
+#include "main.h"
+#include "util.h"
+#include "rpc_proto.h"
+#include "ui_interface.h"
 #include "clientrpc_iface.h"
-#include "server/netbase.h"
+#include "netbase.h"
 
 #include <boost/asio.hpp>
 #include <boost/asio/ip/v6_only.hpp>
@@ -50,7 +50,7 @@ using namespace boost;
 using namespace boost::asio;
 using namespace json_spirit;
 
-#include "server/SSLIOStreamDevice.h"
+#include "SSLIOStreamDevice.h"
 
 static std::string strRPCUserColonPass;
 
@@ -346,8 +346,12 @@ Array RPCConvertValues(const std::string &strMethod, const std::vector<std::stri
 
   if (strMethod == "sendfrom"               && n > 2) ConvertTo<double>(params[2]);
   if (strMethod == "sendfrom"               && n > 3) ConvertTo<boost::int64_t>(params[3]);
-  if (strMethod == "wallet.send"               && n > 2) ConvertTo<double>(params[2]);
-  if (strMethod == "wallet.send"               && n > 3) ConvertTo<boost::int64_t>(params[3]);
+  if (strMethod == "wallet.send"            && n > 2) ConvertTo<double>(params[2]);
+  if (strMethod == "wallet.send"            && n > 3) ConvertTo<boost::int64_t>(params[3]);
+
+  if (strMethod == "cert.new"               && n > 3) ConvertTo<double>(params[3]); /* nFee */
+  if (strMethod == "wallet.donate"          && n > 1) ConvertTo<double>(params[1]); /* nValue */
+  if (strMethod == "wallet.csend"           && n > 2) ConvertTo<double>(params[2]); /* nValue */
 
   if (strMethod == "listtransactions"       && n > 1) ConvertTo<boost::int64_t>(params[1]);
   if (strMethod == "listtransactions"       && n > 2) ConvertTo<boost::int64_t>(params[2]);

@@ -508,15 +508,8 @@ class CMatrix
       return ((unsigned int)height);
     }
 
-    void Append(int heightIn, uint256 hash)
-    {
-      this->height = heightIn;
-
-      int idx = (height / 27) % 9;
-      int row = (idx / 3) % 3;
-      int col = idx % 3;
-      data[row][col] += shcrc(hash.GetRaw(), 32);
-    }
+    void Append(int heightIn, uint256 hash);
+    void Retract(int heightIn, uint256 hash);
 
     string ToString()
     {
@@ -895,7 +888,7 @@ public:
 
     CAlias *CreateAlias(std::string name, const uint160& hash);
 
-    CCert *CreateCert(const char *name, cbuff secret, int64 nLicenseFee);
+    CCert *CreateCert(int ifaceIndex, const char *name, CCoinAddr& addr, cbuff secret, int64 nLicenseFee);
     CLicense *CreateLicense(CCert *cert, uint64_t lic_crc);
 
     COffer *CreateOffer();
@@ -909,7 +902,7 @@ public:
     CAsset *SignAsset(const CAsset& assetIn, uint160 hashCert);
     CAsset *RemoveAsset(const CAsset& assetIn);
     CIdent *CreateIdent(CIdent *ident);
-    CIdent *CreateIdent();
+    CIdent *CreateIdent(int ifaceIndex, CCoinAddr& addr, cbuff vchSecret);
 
 
     CAlias *GetAlias()
@@ -1002,6 +995,8 @@ public:
     bool CheckTransactionInputs(int ifaceIndex);
 
     bool AcceptToMemoryPool(CTxDB& txdb, bool fCheckInputs=true, bool* pfMissingInputs=NULL);
+
+    bool IsInMemoryPool(int ifaceIndex);
 
     Object ToValue();
 
@@ -1163,7 +1158,6 @@ class CBlock : public CBlockHeader
 //    bool ReadFromDisk(unsigned int nFile, unsigned int nBlockPos, bool fReadTransactions=true);
 
     void UpdateTime(const CBlockIndex* pindexPrev);
-    bool DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex);
     bool WriteBlock(uint64_t nHeight);
     bool WriteArchBlock();
     bool ReadFromDisk(const CBlockIndex* pindex, bool fReadTransactions=true);
@@ -1214,6 +1208,7 @@ class CBlock : public CBlockHeader
     virtual void InvalidChainFound(CBlockIndex* pindexNew) = 0;
     virtual bool VerifyCheckpoint(int nHeight) = 0;
     virtual uint64_t GetTotalBlocksEstimate() = 0;
+    virtual bool DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex) = 0;
 
   protected:
     virtual bool SetBestChainInner(CTxDB& txdb, CBlockIndex *pindexNew) = 0;
@@ -1434,6 +1429,7 @@ public:
     bool Truncate();
     bool VerifyCheckpoint(int nHeight);
     uint64_t GetTotalBlocksEstimate();
+    bool DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex);
 
   protected:
     bool SetBestChainInner(CTxDB& txdb, CBlockIndex *pindexNew);
@@ -1507,6 +1503,7 @@ public:
     bool Truncate();
     bool VerifyCheckpoint(int nHeight);
     uint64_t GetTotalBlocksEstimate();
+    bool DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex);
 
   protected:
     bool SetBestChainInner(CTxDB& txdb, CBlockIndex *pindexNew);
@@ -1722,6 +1719,7 @@ bool core_AcceptBlock(CBlock *pblock);
 
 CBlockIndex *GetBlockIndexByHeight(int ifaceIndex, unsigned int nHeight);
 
+bool core_DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex, CBlock *pblock);
 
 
 #endif /* ndef __SERVER_BLOCK_H__ */

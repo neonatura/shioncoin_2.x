@@ -170,6 +170,11 @@ class CSign
       cbuff rawbuf(raw, raw + sizeof(hashOut));
       return Hash160(rawbuf);
     }
+
+    std::string ToString();
+
+    Object ToValue();
+
 };
 
 

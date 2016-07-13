@@ -38,11 +38,10 @@ typedef map<uint160, uint256> cert_list;
 
 class CIdent : public CExtCore
 {
-
-  protected:
-    shgeo_t geo;
-
   public:
+    shgeo_t geo;
+    cbuff vAddr;
+
     CIdent()
     {
       SetNull();
@@ -63,13 +62,15 @@ class CIdent : public CExtCore
     IMPLEMENT_SERIALIZE (
         READWRITE(*(CExtCore *)this);
         READWRITE(FLATDATA(geo));
+        READWRITE(this->vAddr);
     )
 
     friend bool operator==(const CIdent &a, const CIdent &b)
     {
       return (
           ((CExtCore&) a) == ((CExtCore&) b) &&
-          0 == memcmp(&a.geo, &b.geo, sizeof(shgeo_t))
+          0 == memcmp(&a.geo, &b.geo, sizeof(shgeo_t)) &&
+          a.vAddr == b.vAddr
           );
     }
 
@@ -84,21 +85,27 @@ class CIdent : public CExtCore
     {
       memset(&geo, 0, sizeof(geo));
 
+#if 0
       /* default location */
       shgeo_local(&geo, SHGEO_PREC_REGION);
+#endif
     }
 
     void Init(const CIdent& b)
     {
       CExtCore::Init(b);
       memcpy(&geo, &b.geo, sizeof(geo));
+      vAddr = b.vAddr;
     }
 
     /**
      * @note The signature does not take into account the geo-detic address (although the underlying certificate hash does).
      */
-    bool Sign(cbuff vchSecret);
+    bool Sign(int ifaceIndex, CCoinAddr& addr, cbuff vchSecret);
 
+    /**
+     * Verify the integrity of a signature.
+     */
     bool VerifySignature(cbuff vchSecret);
 
 /*
@@ -162,7 +169,6 @@ class CCert : public CIdent
 
     uint160 hashIssuer;
     cbuff vSerial;
-    cbuff vAddr;
     int64 nFee;
     int nFlag;
 
@@ -224,7 +230,6 @@ class CCert : public CIdent
         READWRITE(*(CIdent *)this);
         READWRITE(this->hashIssuer);
         READWRITE(this->vSerial);
-        READWRITE(this->vAddr);
         READWRITE(this->nFee);
         READWRITE(this->nFlag);
     )
@@ -234,7 +239,6 @@ class CCert : public CIdent
       CIdent::Init(b);
       hashIssuer = b.hashIssuer;
       vSerial = b.vSerial;
-      vAddr = b.vAddr;
       nFee = b.nFee;
       nFlag = b.nFlag;
     }
@@ -244,7 +248,6 @@ class CCert : public CIdent
           ((CIdent&) a) == ((CIdent&) b) &&
           a.hashIssuer == b.hashIssuer &&
           a.vSerial == b.vSerial &&
-          a.vAddr == b.vAddr &&
           a.nFee == b.nFee &&
           a.nFlag == b.nFlag
           );
@@ -264,7 +267,6 @@ class CCert : public CIdent
       CIdent::SetNull();
 
       vSerial.clear();
-      vAddr.clear();
       nFee = 0;
 
       /* x509 prep */
@@ -470,15 +472,29 @@ extern int init_license_tx(CIface *iface, string strAccount, uint160 hashCert, u
 
 bool VerifyLicense(CTransaction& tx);
 
+bool VerifyCertHash(CIface *iface, const uint160& hash);
+
 extern bool GetTxOfCert(CIface *iface, const uint160& hash, CTransaction& tx);
 
 extern bool GetTxOfLicense(CIface *iface, const uint160& hash, CTransaction& tx);
 
 extern int init_ident_donate_tx(CIface *iface, string strAccount, uint64_t nValue, uint160 hashCert, CWalletTx& wtx);
+
 extern int init_ident_certcoin_tx(CIface *iface, string strAccount, uint64_t nValue, uint160 hashCert, CCoinAddr addrDest, CWalletTx& wtx);
+
 extern bool VerifyIdent(CTransaction& tx);
 
+int GetTotalCertificates(int ifaceIndex);
 
+cert_list *GetCertTable(int ifaceIndex);
+
+bool IsCertTx(const CTransaction& tx);
+
+bool InsertCertTable(CIface *iface, CTransaction& tx, bool fUpdate = true);
+
+bool GetCertAccount(CIface *iface, const CTransaction& tx, string& strAccount);
+
+bool IsCertAccount(CIface *iface, CTransaction& tx, string strAccount);
 
 
 

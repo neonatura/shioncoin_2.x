@@ -371,6 +371,8 @@ namespace USDE_Checkpoints
     ( 1000000, uint256("0xd444bebec6a7f1345e6bee094d913bdfff0b7ae833c3e3f17b90c98fdc899aa4"))
     ( 1047382, uint256("0x7489d8515228bc90bf43ca09af944e5b3e13f43f1a15f80ae5f211533a26e791"))
     ( 1084324, uint256("0x59e7296adef10db8f517c1e05cc10b1d83925ebe53d81608a5f929ca3b98d94b"))
+    ( 1087716, uint256("0xfd322ca21f75bb01a92d903fd435a48a70fc416b2f439d3eadfbd4385138b5b7"))
+    ( 1087717, uint256("0x23fad9f5b12079dea9362a51d77e70f49a4d484ad93ca3b0e97fac38fd0addc5"))
     ( 1087718, uint256("0xa5c0965a380a1a5f99065472da29f5a3f1fc4c9713072597e63e402f87f1812e"))
     ;
 
@@ -2425,3 +2427,9 @@ CIface *iface = GetCoinByIndex(USDE_COIN_IFACE);
 
   return true;
 }
+
+bool USDEBlock::DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex)
+{
+  return (core_DisconnectBlock(txdb, pindex, this));
+}
+

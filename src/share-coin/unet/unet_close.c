@@ -93,13 +93,13 @@ void unet_close_idle(void)
 
   now = shtime();
   conn_idle_t = shtime_adj(now, -30);
-  idle_t = shtime_adj(now, -300);
+  idle_t = shtime_adj(now, -900);
 
   for (sk = 1; sk < MAX_UNET_SOCKETS; sk++) {
     t = get_unet_table(sk);
     if (!t || t->fd == UNDEFINED_SOCKET)
       continue; /* non-active */
-    
+
     if (t->stamp == UNDEFINED_TIME &&
         shtime_before(shtime_adj(t->cstamp, MAX_CONNECT_IDLE_TIME), now)) {
       sprintf(buf, "unet_close_idle: closing peer '%s' for no activity for %ds after connect.", shaddr_print(&t->net_addr), MAX_CONNECT_IDLE_TIME);
@@ -107,12 +107,14 @@ void unet_close_idle(void)
       unet_shutdown(t->fd);
       continue;
     }
-    if (t->stamp != UNDEFINED_TIME &&
-        shtime_before(shtime_adj(t->stamp, MAX_IDLE_TIME), now)) {
-      sprintf(buf, "unet_close_idle: closing peer '%s' for being idle %ds.", shaddr_print(&t->net_addr), MAX_IDLE_TIME);
-      unet_log(t->mode, buf);
-      unet_shutdown(t->fd);
-      continue;
+    if (t->mode == UNET_STRATUM) {
+      if (t->stamp != UNDEFINED_TIME &&
+          shtime_before(shtime_adj(t->stamp, MAX_IDLE_TIME), now)) {
+        sprintf(buf, "unet_close_idle: closing peer '%s' for being idle %ds.", shaddr_print(&t->net_addr), MAX_IDLE_TIME);
+        unet_log(t->mode, buf);
+        unet_shutdown(t->fd);
+        continue;
+      }
     }
     if (shbuf_size(t->wbuff) > MAX_SOCKET_BUFFER_SIZE) {
 // || shbuf_size(t->rbuff) > MAX_SOCKET_BUFFER_SIZE) {

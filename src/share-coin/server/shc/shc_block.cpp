@@ -59,6 +59,8 @@ multimap<uint256, SHCBlock*> SHC_mapOrphanBlocksByPrev;
 map<uint256, map<uint256, CDataStream*> > SHC_mapOrphanTransactionsByPrev;
 map<uint256, CDataStream*> SHC_mapOrphanTransactions;
 
+static CMatrix shc_DHRM;
+
 class SHCOrphan
 {
   public:
@@ -252,7 +254,11 @@ namespace SHC_Checkpoints
   static MapCheckpoints mapCheckpoints =
     boost::assign::map_list_of
     ( 0, uint256("0xf4319e4e89b35b5f26ec0363a09d29703402f120cf1bf8e6f535548d5ec3c5cc") )
-  //  ( 320, uint256("0x97b2a43e1d7bfaebb947d8fe4d0615fe767040c0ef83deb5c3f7f62852184276") )
+    ( 9995, uint256("0x54bac4474b4d5e3cef2d38dda11fed32e4459a97fbddf43ff9543b0f31b587fd") )
+    ( 9996, uint256("0xb6fa1b0e46ee48a1563469c4516a73817851e5681b824ef1fed1ef403b4b2f3a") )
+    ( 9997, uint256("0xfb5ac36e33bf2e739007c553c62a5c5da63d8b3b95ab32131e60ac4b2fd2533a") )
+    ( 9998, uint256("0xb52209458c16d7de358530dbf63390643c2b1291ec241eec54d8a49ca20bc0bc") )
+    ( 9999, uint256("0x8553ac8a66cc0eb3882045e1129acee1aee63b8afc016d96e8f34e9ac72fa520") )
 
     ;
 
@@ -632,7 +638,30 @@ continue;
 #endif
 
   }
-  pblock->vtx[0].vout[0].nValue = shc_GetBlockValue(pindexPrev->nHeight+1, nFees);
+
+  int64 reward = shc_GetBlockValue(pindexPrev->nHeight+1, nFees);
+#if 0
+  if ((pindexPrev->nHeight+1) >= 50000 &&
+      pblock->vtx.size() == 1) {
+    /* 'zero transactions' penalty. */
+    int64 nFee = MAX(0, MIN(COIN, reward - iface->min_tx_fee));
+    if (nFee >= iface->min_tx_fee) {
+      CMatrix *m = pblock->vtx[0].GenerateMatrix(SHC_COIN_IFACE, &shc_DHRM);
+      if (m) {
+        int64 min_tx = (int64)iface->min_tx_fee;
+        CScript scriptMatrix;
+        scriptMatrix << OP_EXT_GENERATE << CScript::EncodeOP_N(OP_MATRIX) << OP_HASH160 << m->GetHash() << OP_2DROP << OP_RETURN;
+        pblock->vtx[0].vout.push_back(CTxOut(nFee, scriptMatrix));
+fprintf(stderr, "DEBUG: CreateNewBlock: shc_DHRM '%s' proposed: %s\n", m->GetHash().GetHex().c_str(), m->ToString().c_str());
+
+        /* deduct from reward. */
+        reward -= nFee;
+      }
+    }
+  }
+#endif
+  pblock->vtx[0].vout[0].nValue = reward; 
+
 
   // Fill in header
   pblock->hashPrevBlock  = pindexPrev->GetBlockHash();
@@ -1583,7 +1612,38 @@ bool SHCBlock::AcceptBlock()
 
   return true;
 #endif
-  return (core_AcceptBlock(this));
+
+#if 0
+  bool fMatrix = false;
+  CMatrix matrix;
+  if (vtx.size() == 1) {
+    CTransaction& tx = vtx[0];
+    int mode;
+
+    if (VerifyMatrixTx(tx, mode) && mode == OP_EXT_GENERATE) {
+      CBlockIndex *pindex = GetBestBlockIndex(SHC_COIN_IFACE);
+      matrix = tx.matrix;
+      if (matrix.GetHeight() > shc_DHRM.GetHeight()) {
+        if (!tx.VerifyMatrix(&shc_DHRM, matrix, pindex)) {
+          return error(SHERR_ILSEQ, "AcceptBlock: shc_DHRM failure: (seed %s) (new %s)", shc_DHRM.ToString().c_str(), matrix.ToString().c_str());
+        }
+        fMatrix = true;
+        Debug("SHCBlock::AcceptBlock: DHRM verify success: (seed %s) (new %s)\n", shc_DHRM.ToString().c_str(), matrix.ToString().c_str());
+
+      }
+    }
+  }
+#endif
+
+  bool ret = core_AcceptBlock(this);
+
+#if 0
+  if (ret && fMatrix) {
+    shc_DHRM = matrix;
+  }
+#endif
+
+  return (ret);
 }
 
 CScript SHCBlock::GetCoinbaseFlags()
@@ -2008,6 +2068,24 @@ bool SHCBlock::AddToBlockIndex()
       /* usher to the holding cell */
       WriteArchBlock();
       Debug("SHCBlock::AddToBlockIndex: skipping block (%s) SetBestChain() since pindexNew->bnChainWork(%s) <= bnBestChainWork(%s)", pindexNew->GetBlockHash().GetHex().c_str(), pindexNew->bnChainWork.ToString().c_str(), bnBestChainWork.ToString().c_str());
+    }
+  }
+
+  return true;
+}
+
+bool SHCBlock::DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex)
+{
+
+  if (!core_DisconnectBlock(txdb, pindex, this))
+    return (false);
+
+  if (pindex->pprev)
+  {
+    /* retract block hash from DHRM matrix */
+    CTransaction& tx = vtx[0];
+    if (tx.isFlag(CTransaction::TXF_MATRIX)) {
+      shc_DHRM.Retract(pindex->nHeight, pindex->GetBlockHash());
     }
   }
 

@@ -752,6 +752,7 @@ inv.ifaceIndex = USDE_COIN_IFACE;
   {
     pfrom->vAddrToSend.clear();
 
+#if 0
     /* send our own */
     if (pfrom->fSuccessfullyConnected)
     {
@@ -762,6 +763,7 @@ inv.ifaceIndex = USDE_COIN_IFACE;
         pfrom->addrLocal = addrLocal;
       }
     }
+#endif
 
 #if 0
     vector<CAddress> vAddr;

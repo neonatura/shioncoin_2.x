@@ -329,22 +329,6 @@ int CMerkleTx::SetMerkleBranch(const CBlock* pblock)
 
 
 
-bool CTransaction::AcceptToMemoryPool(CTxDB& txdb, bool fCheckInputs, bool* pfMissingInputs)
-{
-  CIface *iface = GetCoinByIndex(txdb.ifaceIndex);
-  if (!iface) {
-    unet_log(txdb.ifaceIndex, "error obtaining coin interface");
-    return (false);
-  }
-
-  CTxMemPool *pool = GetTxMemPool(iface);
-  if (!pool) {
-    unet_log(txdb.ifaceIndex, "error obtaining tx memory pool");
-    return (false);
-  }
-
-  return (pool->accept(txdb, *this, fCheckInputs, pfMissingInputs));
-}
 
 #if 0
 bool CTxMemPool::addUnchecked(const uint256& hash, CTransaction &tx)
@@ -389,100 +373,6 @@ void CTxMemPool::queryHashes(std::vector<uint256>& vtxid)
 
 
 #endif
-
-
-
-
-
-bool CMerkleTx::AcceptToMemoryPool(CTxDB& txdb, bool fCheckInputs)
-{
-    if (fClient)
-    {
-        if (!IsInMainChain(txdb.ifaceIndex) && !ClientConnectInputs(txdb.ifaceIndex))
-            return false;
-        return CTransaction::AcceptToMemoryPool(txdb, false);
-    }
-    else
-    {
-        return CTransaction::AcceptToMemoryPool(txdb, fCheckInputs);
-    }
-}
-
-#if 0
-bool CMerkleTx::AcceptToMemoryPool(int ifaceIndex)
-{
-    CTxDB txdb(ifaceIndex, "r");
-    bool ret = AcceptToMemoryPool(txdb);
-    txdb.Close();
-}
-#endif
-
-
-
-bool CWalletTx::AcceptWalletTransaction(CTxDB& txdb, bool fCheckInputs)
-{
-  CIface *iface = GetCoinByIndex(txdb.ifaceIndex);
-  CTxMemPool *pool;
-
-  pool = GetTxMemPool(iface);
-  if (!pool) {
-    unet_log(txdb.ifaceIndex, "error obtaining tx memory pool");
-    return (false);
-  }
-
-  {
-    LOCK(pool->cs);
-    // Add previous supporting transactions first
-    BOOST_FOREACH(CMerkleTx& tx, vtxPrev)
-    {
-      if (!tx.IsCoinBase())
-      {
-        uint256 hash = tx.GetHash();
-        if (!pool->exists(hash) && !txdb.ContainsTx(hash))
-          tx.AcceptToMemoryPool(txdb, fCheckInputs);
-      }
-    }
-    return AcceptToMemoryPool(txdb, fCheckInputs);
-  }
-
-  return false;
-}
-
-#if 0
-bool CWalletTx::AcceptWalletTransaction()
-{
-  bool ret;
-
-  CTxDB txdb("r");
-  ret = AcceptWalletTransaction(txdb);
-  txdb.Close();
-
-  return (ret);
-}
-#endif
-
-
-#if 0
-/* DEBUG: */
-int CTxIndex::GetDepthInMainChain() const
-{
-  blkidx_t *blockIndex = GetBlockTable(USDE_COIN_IFACE);
-
-  // Read block header
-  USDEBlock block;
-  if (!block.ReadFromDisk(pos.nFile, pos.nBlockPos, false))
-    return 0;
-  // Find the block in the index
-  map<uint256, CBlockIndex*>::iterator mi = blockIndex->find(block.GetHash());
-  if (mi == blockIndex->end())
-    return 0;
-  CBlockIndex* pindex = (*mi).second;
-  if (!pindex || !pindex->IsInMainChain())
-    return 0;
-  return 1 + nBestHeight - pindex->nHeight;
-}
-#endif
-
 
 
 

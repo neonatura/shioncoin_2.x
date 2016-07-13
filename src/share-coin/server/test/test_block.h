@@ -92,6 +92,7 @@ public:
     bool Truncate();
     bool VerifyCheckpoint(int nHeight);
     uint64_t GetTotalBlocksEstimate();
+    bool DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex);
 
   protected:
     bool SetBestChainInner(CTxDB& txdb, CBlockIndex *pindexNew);

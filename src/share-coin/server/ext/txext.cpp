@@ -114,14 +114,15 @@ Object CExtCore::ToValue()
   Object obj;
   char tbuf[256];
 
-  strncpy(tbuf, shctime(tExpire), sizeof(tbuf) - 1);
-  string strExpire(tbuf);
-
   obj.push_back(Pair("version", (int64_t)nVersion));
-  obj.push_back(Pair("expire", strExpire)); 
 
   if (vchLabel.size() != 0)
     obj.push_back(Pair("label", stringFromVch(vchLabel)));
+
+  sprintf(tbuf, "%-20.20s", shctime(tExpire));
+  obj.push_back(Pair("expire", string(tbuf)));
+
+  obj.push_back(Pair("signature", signature.GetHash().GetHex()));
 
   return (obj);
 }
@@ -326,4 +327,16 @@ bool CSign::Verify(CCoinAddr& addr, unsigned char *data, size_t data_len)
 
   return (true);
 }
+
+std::string CSign::ToString()
+{
+  return (write_string(Value(ToValue()), false));
+}
+
+Object CSign::ToValue()
+{
+  Object obj;
+  return (obj);
+}
+
 

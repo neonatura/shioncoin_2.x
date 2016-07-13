@@ -2042,40 +2042,19 @@ bool CBlock::WriteArchBlock()
   return (true);
 }
 
-bool CBlock::DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex)
+bool core_DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex, CBlock *pblock)
 {
-  CIface *iface = GetCoinByIndex(ifaceIndex);
+  CIface *iface = GetCoinByIndex(txdb.ifaceIndex);
   int err;
+fprintf(stderr, "DEBUG: DISCONNECT: height %d\n", pindex->nHeight);
 
   if (!iface)
     return error(SHERR_INVAL, "coin iface no available.");
 
   // Disconnect in reverse order
-  for (int i = vtx.size()-1; i >= 0; i--)
-    if (!vtx[i].DisconnectInputs(txdb))
+  for (int i = pblock->vtx.size()-1; i >= 0; i--)
+    if (!pblock->vtx[i].DisconnectInputs(txdb))
       return false;
-
-  if (pindex->pprev)
-  {
-    /* bc_clear() */
-    /* DEBUG: */
-//    pindex->pprev->pnext = NULL;
-#if 0
-    // Update block index on disk without changing it in memory.
-    // The memory index structure will be changed after the db commits.
-    CDiskBlockIndex blockindexPrev(pindex->pprev);
-    blockindexPrev.hashNext = 0;
-    if (!txdb.WriteBlockIndex(blockindexPrev))
-      return error(SHERR_INVAL, "DisconnectBlock() : WriteBlockIndex failed");
-#endif
-  }
-
-#if 0
-  bool ret = BlockChainErase(iface, pindex->nHeight);
-  if (!ret)
-    return error(SHERR_INVAL, "DisconnectBlock failure at height %d.", pindex->nHeight);
-  fprintf(stderr, "DEBUG: DisconnectBlock[%s]: PURGE @ height %d\n", iface->name, pindex->nHeight);
-#endif
 
   return true;
 }
@@ -2115,6 +2094,10 @@ bool CTransaction::DisconnectInputs(CTxDB& txdb)
       // Write back
       if (!txdb.UpdateTxIndex(prevout.hash, txindex))
         return error(SHERR_INVAL, "DisconnectInputs() : UpdateTxIndex failed");
+
+/* DEBUG: TODO: remove from wallet->mapCert ifCert
+ * what to replace with?
+ * */
     }
   }
 
@@ -2247,6 +2230,15 @@ bool core_AcceptBlock(CBlock *pblock)
         pnode->PushInventory(CInv(ifaceIndex, MSG_BLOCK, hash));
   }
 
+  if (ifaceIndex == TEST_COIN_IFACE ||
+      ifaceIndex == SHC_COIN_IFACE) {
+    BOOST_FOREACH(CTransaction& tx, pblock->vtx) {
+      if (tx.isFlag(CTransaction::TXF_CERTIFICATE)) {
+        InsertCertTable(iface, tx);
+      }
+    }
+  }
+
   return true;
 }
 
@@ -2303,7 +2295,7 @@ CIdent *CTransaction::CreateEntity(const char *name, cbuff secret)
 }
 */
 
-CCert *CTransaction::CreateCert(const char *name, cbuff secret, int64 nLicenseFee)
+CCert *CTransaction::CreateCert(int ifaceIndex, const char *name, CCoinAddr& addr, cbuff secret, int64 nLicenseFee)
 {
 
   if (nFlag & CTransaction::TXF_CERTIFICATE)
@@ -2313,8 +2305,9 @@ CCert *CTransaction::CreateCert(const char *name, cbuff secret, int64 nLicenseFe
 
   nFlag |= CTransaction::TXF_CERTIFICATE;
   certificate = CCert(strTitle);
+  certificate.SetActive(true);
   certificate.SetLicenseFee(nLicenseFee);
-  certificate.Sign(secret);
+  certificate.Sign(ifaceIndex, addr, secret);
 
   return (&certificate);
 }
@@ -2471,7 +2464,7 @@ CIdent *CTransaction::CreateIdent(CIdent *ident)
   return ((CIdent *)&certificate);
 }
 
-CIdent *CTransaction::CreateIdent()
+CIdent *CTransaction::CreateIdent(int ifaceIndex, CCoinAddr& addr, cbuff vchSecret)
 {
 
   if (nFlag & CTransaction::TXF_IDENT)
@@ -2480,9 +2473,7 @@ CIdent *CTransaction::CreateIdent()
   nFlag |= CTransaction::TXF_IDENT;
 
   CIdent ident;
-  cbuff empty;
-
-  ident.Sign(empty);
+  ident.Sign(ifaceIndex, addr, vchSecret);
   certificate = CCert(ident);
 
   return ((CIdent *)&certificate);
@@ -2743,4 +2734,64 @@ Object CBlock::ToValue()
   return (obj);
 }
 
+void CMatrix::Append(int heightIn, uint256 hash)
+{
+  this->height = heightIn;
+
+  int idx = (height / 27) % 9;
+  int row = (idx / 3) % 3;
+  int col = idx % 3;
+  data[row][col] += shcrc(hash.GetRaw(), 32);
+fprintf(stderr, "DEBUG: CMatrix::Append: data[%d][%d] = %d\n", row, col, data[row][col]);
+}
+
+void CMatrix::Retract(int heightIn, uint256 hash)
+{
+
+  if (heightIn > this->height)
+    return;
+
+  this->height = heightIn - 27;
+
+  int idx = (height / 27) % 9;
+  int row = (idx / 3) % 3;
+  int col = idx % 3;
+  data[row][col] -= shcrc(hash.GetRaw(), 32);
+fprintf(stderr, "DEBUG: CMatrix::Retract: data[%d][%d] += %d\n", row, col, data[row][col]);
+}
+
+
+bool CTransaction::AcceptToMemoryPool(CTxDB& txdb, bool fCheckInputs, bool* pfMissingInputs)
+{
+  CIface *iface = GetCoinByIndex(txdb.ifaceIndex);
+  if (!iface) {
+    unet_log(txdb.ifaceIndex, "error obtaining coin interface");
+    return (false);
+  }
+
+  CTxMemPool *pool = GetTxMemPool(iface);
+  if (!pool) {
+    unet_log(txdb.ifaceIndex, "error obtaining tx memory pool");
+    return (false);
+  }
+
+  return (pool->accept(txdb, *this, fCheckInputs, pfMissingInputs));
+}
+
+bool CTransaction::IsInMemoryPool(int ifaceIndex)
+{
+  CIface *iface = GetCoinByIndex(ifaceIndex);
+  if (!iface) {
+    unet_log(ifaceIndex, "error obtaining coin interface");
+    return (false);
+  }
+
+  CTxMemPool *pool = GetTxMemPool(iface);
+  if (!pool) {
+    unet_log(ifaceIndex, "error obtaining tx memory pool");
+    return (false);
+  }
+
+  return (pool->exists(GetHash()));
+}
 

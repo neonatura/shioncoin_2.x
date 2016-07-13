@@ -26,16 +26,16 @@
 #include "test_shcoind.h"
 #include <string>
 #include <vector>
-#include "server/wallet.h"
-#include "server/test/test_block.h"
-#include "server/test/test_txidx.h"
+#include "wallet.h"
+#include "test/test_block.h"
+#include "test/test_txidx.h"
 
-#include "server/offer.h"
-#include "server/asset.h"
+#include "offer.h"
+#include "asset.h"
 
-#include "server/json/json_spirit_reader_template.h"
-#include "server/json/json_spirit_writer_template.h"
-#include "server/json/json_spirit_utils.h"
+#include "json/json_spirit_reader_template.h"
+#include "json/json_spirit_writer_template.h"
+#include "json/json_spirit_utils.h"
 
 using namespace std;
 using namespace json_spirit;

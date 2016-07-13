@@ -38,11 +38,18 @@
 #include "json/json_spirit_writer_template.h"
 #include "json/json_spirit_utils.h"
 
+Value rpc_cert_info(CIface *iface, const Array& params, bool fHelp); 
 
-Value rpc_cert_fee(CIface *iface, const Array& params, bool fHelp);
+Value rpc_cert_list(CIface *iface, const Array& params, bool fHelp);
 
+Value rpc_cert_get(CIface *iface, const Array& params, bool fHelp);
 
-Value rpc_cert_newent(CIface *iface, const Array& params, bool fHelp);
+Value rpc_cert_new(CIface *iface, const Array& params, bool fHelp);
+
+Value rpc_wallet_donate(CIface *iface, const Array& params, bool fHelp);
+
+Value rpc_wallet_csend(CIface *iface, const Array& params, bool fHelp); 
+ 
 
 
 #endif /* ndef __SERVER__RPCCERT_PROTO_H__ */

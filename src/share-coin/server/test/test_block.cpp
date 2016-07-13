@@ -526,7 +526,7 @@ fprintf(stderr, "DEBUG: !test_ConnectInputs()\n");
         CScript scriptMatrix;
         scriptMatrix << OP_EXT_GENERATE << CScript::EncodeOP_N(OP_MATRIX) << OP_HASH160 << m->GetHash() << OP_2DROP << OP_RETURN;
         pblock->vtx[0].vout.push_back(CTxOut(nFee, scriptMatrix));
-//fprintf(stderr, "DEBUG: CreateNewBlock: test_DHRM '%s' proposed: %s\n", m->GetHash().GetHex().c_str(), m->ToString().c_str()); 
+fprintf(stderr, "DEBUG: CreateNewBlock: test_DHRM (matrix hash %s) proposed: %s\n", m->GetHash().GetHex().c_str(), m->ToString().c_str()); 
 
         /* deduct from reward. */
         reward -= nFee;
@@ -1142,6 +1142,8 @@ bool TESTBlock::CheckBlock()
 bool static test_Reorganize(CTxDB& txdb, CBlockIndex* pindexNew, TEST_CTxMemPool *mempool)
 {
   char errbuf[1024];
+
+fprintf(stderr, "DEBUG: test_Reorganize() [height %d]\n", pindexNew->nHeight);
 
   /* find the fork */
   CBlockIndex* pindexBest = GetBestBlockIndex(TEST_COIN_IFACE);
@@ -1977,3 +1979,22 @@ uint64_t TESTBlock::GetTotalBlocksEstimate()
   return ((uint64_t)TEST_Checkpoints::GetTotalBlocksEstimate());
 }
 
+bool TESTBlock::DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex)
+{
+
+fprintf(stderr, "DEBUG: DisconnectBlock()\n");
+
+  if (!core_DisconnectBlock(txdb, pindex, this))
+    return (false);
+
+  if (pindex->pprev)
+  {
+    /* retract block hash from DHRM matrix */
+    CTransaction& tx = vtx[0];
+    if (tx.isFlag(CTransaction::TXF_MATRIX)) {
+      test_DHRM.Retract(pindex->nHeight, pindex->GetBlockHash());
+    }
+  }
+
+  return true;
+}

@@ -24,11 +24,11 @@
  */  
 
 #include "shcoind.h"
-#include "server/main.h"
-#include "server/net.h"
-#include "server/rpc_proto.h"
-#include "server/db.h"
-#include "server/addrman.h"
+#include "main.h"
+#include "net.h"
+#include "rpc_proto.h"
+#include "db.h"
+#include "addrman.h"
 #include "shcoind_rpc.h"
 #include <share.h>
 #include "proto/coin_proto.h"

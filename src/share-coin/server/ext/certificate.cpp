@@ -55,6 +55,36 @@ cert_list *GetLicenseTable(int ifaceIndex)
   return (&wallet->mapLicense);
 }
 
+int GetTotalCertificates(int ifaceIndex)
+{
+  cert_list *certs = GetCertTable(ifaceIndex);
+  return (certs->size());
+}
+
+bool InsertCertTable(CIface *iface, CTransaction& tx, bool fUpdate)
+{
+  CWallet *wallet = GetWallet(iface);
+
+  if (!wallet)
+    return (false);
+
+  if (!VerifyCert(tx))
+    return (false);
+
+  if (!fUpdate) {
+    int ifaceIndex = GetCoinIndex(iface);
+    cert_list *certs = GetCertTable(ifaceIndex);
+    if (certs->count(tx.certificate.GetHash()) != 0)
+      return (false); /* suppress overwrite */
+  }
+
+  CCert& cert = tx.certificate;
+  const uint160& hCert = cert.GetHash();
+  wallet->mapCert[hCert] = tx.GetHash();
+
+  return (true);
+}
+
 bool DecodeIdentHash(const CScript& script, int& mode, uint160& hash)
 {
   CScript::const_iterator pc = script.begin();
@@ -179,10 +209,18 @@ string certFromOp(int op) {
 	switch (op) {
 	case OP_EXT_NEW:
 		return "certnew";
-	case OP_EXT_UPDATE:
-		return "certupdate";
 	case OP_EXT_ACTIVATE:
 		return "certactivate";
+	case OP_EXT_UPDATE:
+		return "certupdate";
+	case OP_EXT_TRANSFER:
+		return "certtransfer";
+	case OP_EXT_REMOVE:
+		return "certremove";
+	case OP_EXT_GENERATE:
+		return "certgenerate";
+	case OP_EXT_PAY:
+		return "certpay";
 	default:
 		return "<unknown cert op>";
 	}
@@ -227,6 +265,7 @@ bool DecodeCertScript(const CScript& script, int& op,
 	pc--;
 
 	if ((mode == OP_EXT_NEW && vvch.size() == 2) ||
+      (mode == OP_EXT_ACTIVATE && vvch.size() == 2) ||
       (mode == OP_EXT_UPDATE && vvch.size() == 2) ||
       (mode == OP_EXT_TRANSFER && vvch.size() == 2) ||
       (mode == OP_EXT_REMOVE && vvch.size() == 2))
@@ -372,6 +411,32 @@ bool IsCertEntTx(const CTransaction& tx)
 }
 #endif
 
+bool GetCertAccount(CIface *iface, const CTransaction& tx, string& strAccount)
+{
+  CWallet *wallet = GetWallet(iface);
+
+  if (!IsCertTx(tx))
+    return (false); /* not a cert */
+
+  CCoinAddr addr(stringFromVch(tx.certificate.vAddr));
+  return (GetCoinAddr(wallet, addr, strAccount));
+}
+
+bool IsCertAccount(CIface *iface, CTransaction& tx, string strAccount)
+{
+  bool ret;
+  string strCertAccount;
+
+  ret = GetCertAccount(iface, tx, strCertAccount);
+  if (!ret)
+    return (false);
+
+  if (strCertAccount.length() > 0 && strCertAccount.at(0) == '@')
+    strCertAccount.erase(0, 1);
+
+  return (strAccount == strCertAccount);
+}
+
 bool IsLocalCert(CIface *iface, const CTxOut& txout) 
 {
   CWallet *pwalletMain = GetWallet(iface);
@@ -381,6 +446,17 @@ bool IsLocalCert(CIface *iface, const CTxOut& txout)
 bool IsLocalCert(CIface *iface, const CTransaction& tx)
 {
   if (!IsCertTx(tx))
+    return (false); /* not a cert */
+
+  int nOut = IndexOfExtOutput(tx);
+  if (nOut == -1)
+    return (false); /* invalid state */
+
+  return (IsLocalCert(iface, tx.vout[nOut]));
+}
+bool IsLocalIdent(CIface *iface, const CTransaction& tx)
+{
+  if (!IsIdentTx(tx))
     return (false); /* not a cert */
 
   int nOut = IndexOfExtOutput(tx);
@@ -409,6 +485,7 @@ bool VerifyIdent(CTransaction& tx)
     return (false); /* no ident hash in output */
 
   if (mode != OP_EXT_NEW &&
+      mode != OP_EXT_ACTIVATE &&
       mode != OP_EXT_GENERATE &&
       mode != OP_EXT_PAY)
     return (false);
@@ -442,6 +519,7 @@ bool VerifyCert(CTransaction& tx)
     return (false); /* no cert hash in output */
 
   if (mode != OP_EXT_NEW &&
+      mode != OP_EXT_ACTIVATE &&
       mode != OP_EXT_UPDATE &&
       mode != OP_EXT_TRANSFER &&
       mode != OP_EXT_REMOVE)
@@ -480,6 +558,7 @@ tx.print();
 }
 
   if (mode != OP_EXT_NEW &&
+      mode != OP_EXT_ACTIVATE &&
       mode != OP_EXT_UPDATE &&
       mode != OP_EXT_TRANSFER &&
       mode != OP_EXT_REMOVE) {
@@ -543,6 +622,17 @@ bool GetTxOfCert(CIface *iface, const uint160& hash, CTransaction& tx)
   return (true);
 }
 
+bool VerifyCertHash(CIface *iface, const uint160& hash)
+{
+  int ifaceIndex = GetCoinIndex(iface);
+  cert_list *certs = GetCertTable(ifaceIndex);
+
+  if (certs->count(hash) == 0)
+    return (false);
+
+  return (true);
+}
+
 /**
  * Obtain the block-chain tx that encapsulates a license.
  * @param hash The license hash.
@@ -587,10 +677,15 @@ int init_cert_tx(CIface *iface, string strAccount, string strTitle, cbuff vchSec
 
   /* embed cert content into transaction */
   wtx.SetNull();
-  cert = wtx.CreateCert(strTitle.c_str(), vchSecret, nLicenseFee);
-  cert->SetActive(true); /* auto-activate */
-  cert->vAddr = vchFromString(addr.ToString());
+  cert = wtx.CreateCert(ifaceIndex, strTitle.c_str(), addr, vchSecret, nLicenseFee);
   wtx.strFromAccount = strAccount; /* originating account for payment */
+ 
+  /* generate unique 128-bit serial number */
+  unsigned char raw_ser[16];
+  uint64_t *raw_val = (uint64_t *)raw_ser;
+  raw_val[0] = shrand();
+  raw_val[1] = shrand();
+  cert->vSerial = cbuff(raw_val, raw_val + 16);
 
   int64 nFee = GetCertOpFee(iface, GetBestHeight(iface));
   int64 bal = GetAccountBalance(ifaceIndex, strAccount, 1);
@@ -607,14 +702,15 @@ int init_cert_tx(CIface *iface, string strAccount, string strTitle, cbuff vchSec
   scriptPubKey << OP_EXT_NEW << CScript::EncodeOP_N(OP_CERT) << OP_HASH160 << certHash << OP_2DROP;
   scriptPubKey += scriptPubKeyOrig;
 
-  // send transaction
+  /* send certificate transaction */
   string strError = wallet->SendMoney(scriptPubKey, nFee, wtx, false);
   if (strError != "") {
     error(ifaceIndex, strError.c_str());
     return (SHERR_INVAL);
   }
 
-  /* todo: add to pending instead */
+  /* add as direct const reference */
+  const uint160& mapHash = cert->GetHash();
   wallet->mapCert[certHash] = wtx.GetHash();
 
   Debug("SENT:CERTNEW : title=%s, certhash=%s, tx=%s\n", strTitle.c_str(), cert->GetHash().ToString().c_str(), wtx.GetHash().GetHex().c_str());
@@ -731,15 +827,25 @@ int init_ident_donate_tx(CIface *iface, string strAccount, uint64_t nValue, uint
   CTransaction tx;
   bool hasCert = GetTxOfCert(iface, hashCert, tx);
 
+  CCoinAddr addr = GetAccountAddress(wallet, strAccount, true);
+  if (!addr.IsValid())
+    return (SHERR_INVAL);
+
   CWalletTx t_wtx;
   if (hasCert) {
-    ident = t_wtx.CreateIdent((CIdent *)&tx.certificate);
+    if (!IsCertAccount(iface, tx, strAccount)) { 
+      error(SHERR_ACCESS, "init_ident_donate_tx: certificate is not local.");
+      return (SHERR_ACCESS);
+    }
+
+    CIdent& c_ident = (CIdent&)tx.certificate;
+    ident = t_wtx.CreateIdent(&c_ident);
   } else {
-    ident = t_wtx.CreateIdent();
+    cbuff empty;
+    ident = t_wtx.CreateIdent(ifaceIndex, addr, empty);
   }
-  if (!ident) {
+  if (!ident)
     return (SHERR_INVAL);
-}
 
   uint160 hashIdent = ident->GetHash();
 
@@ -747,9 +853,9 @@ int init_ident_donate_tx(CIface *iface, string strAccount, uint64_t nValue, uint
   CReserveKey rkey(wallet);
   t_wtx.strFromAccount = strAccount;
 
-  CPubKey vchPubKey = rkey.GetReservedKey();
+  //CPubKey vchPubKey = rkey.GetReservedKey();
   CScript scriptPubKeyOrig;
-  scriptPubKeyOrig.SetDestination(vchPubKey.GetID());
+  scriptPubKeyOrig.SetDestination(addr.Get());
   CScript scriptPubKey;
   scriptPubKey << OP_EXT_NEW << CScript::EncodeOP_N(OP_IDENT) << OP_HASH160 << hashIdent << OP_2DROP;
   scriptPubKey += scriptPubKeyOrig;
@@ -810,24 +916,31 @@ int init_ident_certcoin_tx(CIface *iface, string strAccount, uint64_t nValue, ui
 
   CTransaction tx;
   bool hasCert = GetTxOfCert(iface, hashCert, tx);
+  if (!hasCert) {
+    error(SHERR_INVAL, "init_ident_certcoin_tx: invalid certificate specified.");
+    return (SHERR_INVAL);
+  }
 
   wtx.SetNull();
-  if (hasCert) {
-    ident = wtx.CreateIdent((CIdent *)&tx.certificate);
-  } else {
-    ident = wtx.CreateIdent();
+  if (!IsCertAccount(iface, tx, strAccount)) { 
+    error(SHERR_ACCESS, "init_ident_certcoin_tx: certificate is not local.");
+    return (SHERR_ACCESS);
   }
+
+  CIdent& s_cert = (CIdent&)tx.certificate;
+  ident = wtx.CreateIdent(&s_cert);
   if (!ident) {
-fprintf(stderr, "DEBUG: init_ident_donate_tx: !ident\n");
+    fprintf(stderr, "DEBUG: init_ident_donate_tx: !ident\n");
     return (SHERR_INVAL);
-}
+  }
 
   uint160 hashIdent = ident->GetHash();
 
-  /* sent to intermediate account. */
+  /* send to intermediate account. */
   CReserveKey rkey(wallet);
   wtx.strFromAccount = strAccount;
 
+  /* careful here to not collect change as reservekey is being used as an intermediate account adddress and also as the "change addr". doing both would result in multiple outputs to the same address in single tx which is taboo */
   CPubKey vchPubKey = rkey.GetReservedKey();
   CScript scriptPubKeyOrig;
   scriptPubKeyOrig.SetDestination(vchPubKey.GetID());
@@ -871,16 +984,32 @@ fprintf(stderr, "DEBUG: init_ident_donate_tx: !ident\n");
  * @see CExtCore.origin
  * @todo Allow for blank vchSecret.
  */
-bool CIdent::Sign(cbuff vchSecret)
+bool CIdent::Sign(int ifaceIndex, CCoinAddr& addr, cbuff vchSecret)
 {
+  bool ret;
 
   if (!vchSecret.data())
     return (false);
 
-  unsigned char *raw = (unsigned char *)vchSecret.data();
-  size_t raw_len = vchSecret.size();
 
-  return (signature.SignContext(raw, raw_len));
+  /* default location (optional) */
+  shgeo_local(&geo, SHGEO_PREC_DISTRICT);
+
+  if (!vchSecret.data()) {
+    unsigned char empty[64];
+    memset(empty, 0, sizeof(empty));
+    ret = signature.Sign(ifaceIndex, addr, empty, 0);
+  } else {
+    unsigned char *raw = (unsigned char *)vchSecret.data();
+    size_t raw_len = vchSecret.size();
+
+    ret = signature.Sign(ifaceIndex, addr, vchSecret.data(), vchSecret.size());
+  }
+  if (!ret)
+    return error(SHERR_INVAL, "CSign::Sign: error signing identity.");
+
+  vAddr = vchFromString(addr.ToString());
+  return (true);
 }
 
 /**
@@ -896,7 +1025,8 @@ bool CIdent::VerifySignature(cbuff vchSecret)
   unsigned char *raw = (unsigned char *)vchSecret.data();
   size_t raw_len = vchSecret.size();
 
-  return (signature.VerifyContext(raw, raw_len));
+  CCoinAddr addr(stringFromVch(vAddr));
+  return (signature.Verify(addr, vchSecret.data(), vchSecret.size()));
 }
 
 std::string CIdent::ToString()

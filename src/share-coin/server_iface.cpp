@@ -30,7 +30,7 @@
 #include "strlcpy.h"
 //#include "addrman.h"
 #include "ui_interface.h"
-#include "server/rpc_proto.h"
+#include "rpc_proto.h"
 //#include "shcoind_rpc.h"
 #include "usde/usde_netmsg.h"
 #include "shc/shc_netmsg.h"

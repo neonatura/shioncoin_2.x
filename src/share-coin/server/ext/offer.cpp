@@ -1115,8 +1115,12 @@ int nAltFeeValue = alt_wtxIn.vout[nTxOut].nValue;
     return (SHERR_CANCELED);
   }
 
-
-  wallet->mapOfferAccept[hashPay] = wtx.GetHash();
+#if 0 /* DEBUG: TODO: */
+  const uint160 mhashPay = pay->GetHash();
+  wallet->mapOffer.erase(mhashPay);
+#endif
+  const uint160& mhashAccept = accept.GetHash();
+  wallet->mapOfferAccept.erase(mhashAccept);
 
 	return (0);
 }

@@ -85,7 +85,6 @@ extern Value rpc_getrawtransaction(CIface *iface, const Array& params, bool fHel
 extern Value rpc_tx_signraw(CIface *iface, const Array& params, bool fHelp);
 extern Value rpc_sendrawtransaction(CIface *iface, const Array& params, bool fHelp);
 extern bool OpenNetworkConnection(const CAddress& addrConnect, const char *strDest = NULL);
-void TxToJSON(CIface *iface, const CTransaction& tx, const uint256 hashBlock, Object& entry);
 extern json_spirit::Value ValueFromAmount(int64 amount);
 
 const Object emptyobj;
@@ -240,10 +239,14 @@ string AccountFromValue(const Value& value)
 {
     string strAccount = value.get_str();
     if (strAccount == "*")
-        throw JSONRPCError(-11, "Invalid account name");
+      throw JSONRPCError(-11, "Invalid account name");
+    if (strAccount.length() > 0 && strAccount.at(0) == '@')
+      throw JSONRPCError(-11, "Invalid account name");
+
     return strAccount;
 }
 
+#if 0
 Object blockToJSON(CIface *iface, const CBlock& block, const CBlockIndex* blockindex)
 {
   int ifaceIndex = GetCoinIndex(iface);
@@ -276,8 +279,7 @@ Object blockToJSON(CIface *iface, const CBlock& block, const CBlockIndex* blocki
     result.push_back(Pair("nextblockhash", blockindex->pnext->GetBlockHash().GetHex()));
   return result;
 }
-
-/// Note: This interface may still be subject to change.
+#endif
 
 string CRPCTable::help(CIface *iface, string strCommand) const
 {
@@ -988,7 +990,18 @@ fprintf(stderr, "DEBUG: rpc_block_get: error loading '%s' block @ height %d\n", 
     throw JSONRPCError(-5, "Unable to load block");
   }
 
-  Object ret = blockToJSON(iface, *block, pblockindex);
+  //Object ret = blockToJSON(iface, *block, pblockindex);
+  Object ret = block->ToValue();
+
+  ret.push_back(Pair("confirmations", 
+        GetBlockDepthInMainChain(iface, block->GetHash())));
+  if (pblockindex->pprev)
+    ret.push_back(Pair("previousblockhash",
+          pblockindex->pprev->GetBlockHash().GetHex()));
+  if (pblockindex->pnext)
+    ret.push_back(Pair("nextblockhash", 
+          pblockindex->pnext->GetBlockHash().GetHex()));
+
   delete block;
 
   return (ret);
@@ -4257,10 +4270,7 @@ Value rpc_tx_decode(CIface *iface, const Array& params, bool fHelp)
     throw JSONRPCError(-22, "TX decode failed");
   }
 
-  Object result;
-  TxToJSON(iface, tx, 0, result);
-
-  return result;
+  return (tx.ToValue());
 }
 
 Value rpc_tx_list(CIface *iface, const Array& params, bool fHelp)
@@ -4436,12 +4446,56 @@ Value rpc_addmultisigaddress(CIface *iface, const Array& params, bool fHelp)
 
 Value rpc_tx_get(CIface *iface, const Array& params, bool fHelp)
 {
+  int ifaceIndex = GetCoinIndex(iface);
+  blkidx_t *blockIndex = GetBlockTable(ifaceIndex);
+  CWallet *pwalletMain = GetWallet(iface);
+
+  if (fHelp || params.size() != 1)
+    throw runtime_error(
+        "tx.get <txid>\n"
+        "Get detailed information about a block transaction."
+        );
+
+  uint256 hash;
+  hash.SetHex(params[0].get_str());
+
+
+  CTransaction tx;
+  uint256 hashBlock;
+
+  if (!tx.ReadTx(ifaceIndex, hash, &hashBlock))
+    throw JSONRPCError(-5, "Invalid transaction id");
+
+  Object entry = tx.ToValue();
+
+  if (hashBlock != 0)
+  {
+    entry.push_back(Pair("blockhash", hashBlock.GetHex()));
+    map<uint256, CBlockIndex*>::iterator mi = blockIndex->find(hashBlock);
+    if (mi != blockIndex->end() && (*mi).second)
+    {
+      CBlockIndex* pindex = (*mi).second;
+      if (pindex->IsInMainChain(ifaceIndex))
+      {
+        entry.push_back(Pair("confirmations", (int)(1 + GetBestHeight(iface) - pindex->nHeight)));
+        entry.push_back(Pair("time", (boost::int64_t)pindex->nTime));
+      }
+      else
+        entry.push_back(Pair("confirmations", 0));
+    }
+  }
+
+  return entry;
+}
+
+Value rpc_wallet_tx(CIface *iface, const Array& params, bool fHelp)
+{
   CWallet *pwalletMain = GetWallet(iface);
   int ifaceIndex = GetCoinIndex(iface);
 
   if (fHelp || params.size() != 1)
     throw runtime_error(
-        "tx.get <txid>\n"
+        "wallet.tx <txid>\n"
         "Get detailed information about in-wallet transaction <txid>");
 
   uint256 hash;
@@ -4449,32 +4503,25 @@ Value rpc_tx_get(CIface *iface, const Array& params, bool fHelp)
 
   Object entry;
 
-  if (pwalletMain->mapWallet.count(hash)) { /* mem-scan wallet tx's */
-    const CWalletTx& wtx = pwalletMain->mapWallet[hash];
+  if (pwalletMain->mapWallet.count(hash))
+    throw JSONRPCError(-5, "Invalid transaction id");
 
-    int64 nCredit = wtx.GetCredit();
-    int64 nDebit = wtx.GetDebit();
-    int64 nNet = nCredit - nDebit;
-    int64 nFee = (wtx.IsFromMe() ? wtx.GetValueOut() - nDebit : 0);
+  const CWalletTx& wtx = pwalletMain->mapWallet[hash];
 
-    entry.push_back(Pair("amount", ValueFromAmount(nNet - nFee)));
-    if (wtx.IsFromMe())
-      entry.push_back(Pair("fee", ValueFromAmount(nFee)));
+  int64 nCredit = wtx.GetCredit();
+  int64 nDebit = wtx.GetDebit();
+  int64 nNet = nCredit - nDebit;
+  int64 nFee = (wtx.IsFromMe() ? wtx.GetValueOut() - nDebit : 0);
 
-    WalletTxToJSON(ifaceIndex, wtx, entry);
+  entry.push_back(Pair("amount", ValueFromAmount(nNet - nFee)));
+  if (wtx.IsFromMe())
+    entry.push_back(Pair("fee", ValueFromAmount(nFee)));
 
-    Array details;
-    ListTransactions(ifaceIndex, wtx, "*", 0, true, details);
-    entry.push_back(Pair("details", details));
-  } else { /* disk-map scan whole block chain */
-    CTransaction tx;
-    uint256 hashBlock;
+  WalletTxToJSON(ifaceIndex, wtx, entry);
 
-    if (!tx.ReadTx(ifaceIndex, hash, &hashBlock))
-      throw JSONRPCError(-5, "Invalid transaction id");
-
-    TxToJSON(iface, tx, hashBlock, entry);
-  }
+  Array details;
+  ListTransactions(ifaceIndex, wtx, "*", 0, true, details);
+  entry.push_back(Pair("details", details));
 
   return entry;
 }
@@ -4503,7 +4550,10 @@ static const CRPCCommand vRPCCommands[] =
 //    { "block.template",       &rpc_block_template},
     { "block.work",           &rpc_block_work},
     { "block.workex",         &rpc_block_workex},
-//    { "cert.fee",             &rpc_cert_fee},
+    { "cert.info",            &rpc_cert_info},
+    { "cert.get",             &rpc_cert_get},
+    { "cert.list",            &rpc_cert_list},
+    { "cert.new",             &rpc_cert_new},
     { "msg.sign",             &rpc_msg_sign},
     { "msg.verify",           &rpc_msg_verify},
     { "net.info",             &rpc_net_info},
@@ -4523,6 +4573,7 @@ static const CRPCCommand vRPCCommands[] =
     { "wallet.addr",          &rpc_wallet_addr},
     { "wallet.accounts",      &rpc_wallet_accounts},
     { "wallet.balance",       &rpc_wallet_balance},
+    { "wallet.donate",        &rpc_wallet_donate},
     { "wallet.export",        &rpc_wallet_export},
     { "wallet.exportdat",     &rpc_wallet_exportdat},
     { "wallet.get",           &rpc_wallet_get},
@@ -4537,12 +4588,14 @@ static const CRPCCommand vRPCCommands[] =
     { "wallet.new",           &rpc_wallet_newaddr},
     { "wallet.recvbyaccount", &rpc_wallet_recvbyaccount},
     { "wallet.recvbyaddr",    &rpc_wallet_recvbyaddr},
-    { "wallet.rescan",          &rpc_wallet_rescan},
+    { "wallet.rescan",        &rpc_wallet_rescan},
     { "wallet.send",          &rpc_wallet_send},
+    { "wallet.csend",         &rpc_wallet_csend},
     { "wallet.set",           &rpc_wallet_set},
     { "wallet.setkey",        &rpc_wallet_setkey},
+    { "wallet.tx",            &rpc_wallet_tx},
     { "wallet.unspent",       &rpc_wallet_unspent},
-    { "wallet.validate",       &rpc_wallet_validate},
+    { "wallet.validate",      &rpc_wallet_validate},
 //    { "tx.sendraw",           &rpc_sendrawtransaction},
 //    { "tx.signraw",           &rpc_tx_signraw},
     { "addmultisigaddress",   &rpc_addmultisigaddress}

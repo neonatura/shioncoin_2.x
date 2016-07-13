@@ -2,9 +2,13 @@ AUTOMAKE_OPTIONS = foreign
 
 TESTS = test_shcoind
 
-
 INCLUDES = -I$(top_srcdir)/src/share-ssl-lib/$(OPENSSL_DIR)/include \
-	-I$(top_srcdir)/src/share-lib
+	-I$(top_srcdir)/src/share-lib \
+	-I$(srcdir)/proto \
+	-I$(srcdir)/server \
+	-I$(srcdir)/server/ext \
+	-I$(srcdir)/server/blockchain \
+	-I$(srcdir)/server/rpc
 
 blockchain_sources = \
 	$(srcdir)/blockchain/bc_block.c \
@@ -129,28 +133,28 @@ server_sources = \
 	server/shc/shc_wallet.h \
 	server/shc/shc_txidx.cpp \
 	server/shc/shc_txidx.h \
+	server/ext/txext.cpp \
+	server/ext/alias.cpp \
+	server/ext/certificate.cpp \
+	server/ext/offer.cpp \
+	server/ext/asset.cpp \
+	server/rpc/rpcalias_proto.cpp \
+	server/rpc/rpccert_proto.cpp \
+	server/rpc/rpcdump.cpp \
+	server/rpc/rpcnet.cpp \
+	server/rpc/rpc_proto.cpp \
+	server/rpc/rpcrawtransaction.cpp \
 	server/block.cpp \
-	server/txext.cpp \
-	server/alias.cpp \
-	server/certificate.cpp \
-	server/offer.cpp \
-	server/asset.cpp \
 	server/chain.cpp \
 	server/base58.cpp \
 	server/global.cpp \
 	server/block_merkle.cpp \
-	server/rpc_proto.cpp \
-	server/rpcalias_proto.cpp \
-	server/rpccert_proto.cpp \
 	server/crypter.cpp \
 	server/txidx.cpp \
 	server/init.cpp \
 	server/key.cpp \
 	server/keystore.cpp \
 	server/main.cpp \
-	server/rpcdump.cpp \
-	server/rpcnet.cpp \
-	server/rpcrawtransaction.cpp \
 	server/script.cpp \
 	server/sync.cpp \
 	server/wallet.cpp \
@@ -203,8 +207,8 @@ test_shcoind_SOURCES = \
 
 test_shcoind_LDADD = $(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
 	-lboost_system -lboost_filesystem -lboost_thread -ldb_cxx -ldl
-test_shcoind_CFLAGS = -I$(srcdir)/server -I$(srcdir)/blockchain -I$(srcdir)/proto -DSHCOIN_SERVER -g -O0 -DTEST_SHCOIND
-test_shcoind_CXXFLAGS = -I$(srcdir)/server -I$(srcdir)/blockchain -I$(srcdir)/proto -DOS_LINUX -DSHCOIN_SERVER -g -O0 -DTEST_SHCOIND
+test_shcoind_CFLAGS = -DSHCOIN_SERVER -g -O0 -DTEST_SHCOIND
+test_shcoind_CXXFLAGS = -DOS_LINUX -DSHCOIN_SERVER -g -O0 -DTEST_SHCOIND
 if STATIC_LIBSHARE
 test_shcoind_LDADD += $(LIBSHARE)/src/share-lib/libshare.a
 test_shcoind_CFLAGS += -I$(LIBSHARE)/include
@@ -223,8 +227,8 @@ shcoind_SOURCES = \
 
 shcoind_LDADD = \
 	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a
-shcoind_CFLAGS = -I$(srcdir)/server -I$(srcdir)/blockchain -I$(srcdir)/proto -DSHCOIN_SERVER
-shcoind_CXXFLAGS = -I$(srcdir)/server -I$(srcdir)/blockchain -I$(srcdir)/proto -DOS_LINUX -DSHCOIN_SERVER
+shcoind_CFLAGS = -DSHCOIN_SERVER
+shcoind_CXXFLAGS = -DOS_LINUX -DSHCOIN_SERVER
 if STATIC_LIBSHARE
 shcoind_LDADD += $(LIBSHARE)/src/share-lib/libshare.a
 shcoind_CFLAGS += -I$(LIBSHARE)/include
@@ -236,9 +240,8 @@ shcointool_SOURCES = $(common_includes) $(common_sources) \
 	shcoind_tool.cpp clientrpc_iface.cpp $(tool_sources)
 shcointool_LDADD = \
 	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a 
-shcointool_CFLAGS = -DSHCOIN_CLIENT -I$(srcdir)/server -I$(top_srcdir)/src/share-coin/blockchain -I$(srcdir)/proto
-shcointool_CXXFLAGS = -DSHCOIN_CLIENT \
-	-I$(srcdir)/server -I$(top_srcdir)/src/share-coin/blockchain -I$(srcdir)/proto -DOS_LINUX
+shcointool_CFLAGS = -DSHCOIN_CLIENT
+shcointool_CXXFLAGS = -DSHCOIN_CLIENT -DOS_LINUX
 if STATIC_LIBSHARE
 shcointool_LDADD += $(LIBSHARE)/src/share-lib/libshare.a
 shcointool_CFLAGS += -I$(LIBSHARE)/include

@@ -150,6 +150,13 @@ bool shc_FillBlockIndex()
         pindexBest = lastIndex;
     }
 
+    BOOST_FOREACH(CTransaction& tx, block.vtx) {
+      /* populate certificate list with latest certificate tx reference. */
+      if (tx.isFlag(CTransaction::TXF_CERTIFICATE)) {
+        InsertCertTable(iface, tx, false);
+      }
+    }
+
     lastIndex = pindexNew;
   }
   SetBestBlockIndex(iface, pindexBest);

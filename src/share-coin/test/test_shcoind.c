@@ -15,14 +15,14 @@ extern TEST_sha256transform(CuTest*);
 extern TEST_blockchain(CuTest*);
 extern TEST_reorganize(CuTest*);
 extern TEST_serializetx(CuTest*);
+extern TEST_matrix(CuTest*);
 extern TEST_signtx(CuTest*);
 extern TEST_cointx(CuTest*);
-extern TEST_matrix(CuTest*);
+extern TEST_offertx(CuTest*);
 extern TEST_aliastx(CuTest*);
 extern TEST_assettx(CuTest*);
-extern TEST_identtx(CuTest*);
 extern TEST_certtx(CuTest*);
-extern TEST_offertx(CuTest*);
+extern TEST_identtx(CuTest*);
 
 extern void test_shcoind_init(void);
 
@@ -45,14 +45,14 @@ int main(int argc, char *argv[])
   SUITE_ADD_TEST(suite, TEST_blockchain);
   SUITE_ADD_TEST(suite, TEST_reorganize);
   SUITE_ADD_TEST(suite, TEST_serializetx);
+  SUITE_ADD_TEST(suite, TEST_matrix);
   SUITE_ADD_TEST(suite, TEST_signtx);
   SUITE_ADD_TEST(suite, TEST_cointx);
+  SUITE_ADD_TEST(suite, TEST_offertx);
   SUITE_ADD_TEST(suite, TEST_aliastx);
   SUITE_ADD_TEST(suite, TEST_assettx);
-  SUITE_ADD_TEST(suite, TEST_identtx);
   SUITE_ADD_TEST(suite, TEST_certtx);
-  SUITE_ADD_TEST(suite, TEST_offertx);
-  SUITE_ADD_TEST(suite, TEST_matrix);
+  SUITE_ADD_TEST(suite, TEST_identtx);
 
   CuSuiteRun(suite);
   CuSuiteSummary(suite, output);
