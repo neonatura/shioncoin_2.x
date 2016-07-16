@@ -102,7 +102,8 @@ CBlockIndex static * InsertBlockIndex(uint256 hash)
   return pindexNew;
 }
 
-bool shc_FillBlockIndex()
+typedef vector<CBlockIndex*> txlist;
+bool shc_FillBlockIndex(txlist& vMatrix, txlist& vCert)
 {
   CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);
   blkidx_t *blockIndex = GetBlockTable(SHC_COIN_IFACE);
@@ -151,9 +152,17 @@ bool shc_FillBlockIndex()
     }
 
     BOOST_FOREACH(CTransaction& tx, block.vtx) {
-      /* populate certificate list with latest certificate tx reference. */
+      if (tx.IsCoinBase() &&
+          tx.isFlag(CTransaction::TXF_MATRIX)) {
+        int mode;
+        if (VerifyMatrixTx(tx, mode)) {
+          if (mode == OP_EXT_VALIDATE)
+            vMatrix.push_back(pindexNew);
+        }
+      }
       if (tx.isFlag(CTransaction::TXF_CERTIFICATE)) {
-        InsertCertTable(iface, tx, false);
+        if (VerifyCert(tx))
+          vCert.push_back(pindexNew);
       }
     }
 
@@ -193,7 +202,9 @@ bool SHCTxDB::LoadBlockIndex()
   if (!LoadBlockIndexGuts())
     return false;
 #endif
-  if (!shc_FillBlockIndex())
+  txlist vMatrix;
+  txlist vCert;
+  if (!shc_FillBlockIndex(vMatrix, vCert))
     return (false);
 
   if (fRequestShutdown)
@@ -334,6 +345,21 @@ bool SHCTxDB::LoadBlockIndex()
 
   CWallet *wallet = GetWallet(SHC_COIN_IFACE);
   InitServiceWalletEvent(wallet, checkHeight);
+
+  BOOST_FOREACH(CBlockIndex *pindex, vMatrix) {
+    if (pindex->nHeight > pindexBest->nHeight)
+      break;
+    shc_Validate.Append(pindex->nHeight, pindex->GetBlockHash()); 
+  }
+
+  BOOST_FOREACH(CBlockIndex *pindex, vCert) {
+    CBlock *block = GetBlockByTx(iface, pindex->GetBlockHash());
+    BOOST_FOREACH(CTransaction& tx, block->vtx) {
+      if (IsCertTx(tx))
+        InsertCertTable(iface, tx);
+    }
+    delete block;
+  }
 
   return true;
 }

@@ -209,6 +209,7 @@ enum opcodetype
     OP_EXT_GENERATE = 0xf4,
     OP_EXT_TRANSFER = 0xf5,
     OP_EXT_PAY = 0xf6,
+    OP_EXT_VALIDATE = 0xf7,
 
     // template matching params
     OP_SMALLINTEGER = 0xfa,

@@ -71,17 +71,51 @@ bool InsertCertTable(CIface *iface, CTransaction& tx, bool fUpdate)
   if (!VerifyCert(tx))
     return (false);
 
+  CCert& cert = tx.certificate;
+  const uint160& hCert = cert.GetHash();
+  int count = wallet->mapCert.count(hCert);
+
+  if (count) {
+    const uint256& o_tx = wallet->mapCert[hCert]; 
+    if (o_tx == tx.GetHash())
+      return (true); /* already assigned */
+  }
+
   if (!fUpdate) {
     int ifaceIndex = GetCoinIndex(iface);
     cert_list *certs = GetCertTable(ifaceIndex);
-    if (certs->count(tx.certificate.GetHash()) != 0)
+    if (count) {
+      wallet->mapCertArch[tx.GetHash()] = hCert;
       return (false); /* suppress overwrite */
+    }
   }
 
-  CCert& cert = tx.certificate;
-  const uint160& hCert = cert.GetHash();
-  wallet->mapCert[hCert] = tx.GetHash();
+  /* reassign previous */
+  if (count) {
+    const uint256& o_tx = wallet->mapCert[hCert]; 
+    wallet->mapCertArch[o_tx] = hCert;
+  }
 
+  wallet->mapCert[hCert] = tx.GetHash();
+  wallet->mapCertLabel[cert.GetLabel()] = hCert;
+
+  return (true);
+}
+
+bool GetCertByName(CIface *iface, string name, CCert& cert)
+{
+  CWallet *wallet = GetWallet(iface);
+
+  if (wallet->mapCertLabel.count(name) == 0)
+    return (false);
+
+  CTransaction tx;
+  const uint160& hash = wallet->mapCertLabel[name];
+  bool ret = GetTxOfCert(iface, hash, tx);
+  if (!ret)
+    return (false);
+
+  cert = tx.certificate;
   return (true);
 }
 
@@ -487,12 +521,16 @@ bool VerifyIdent(CTransaction& tx)
   if (mode != OP_EXT_NEW &&
       mode != OP_EXT_ACTIVATE &&
       mode != OP_EXT_GENERATE &&
-      mode != OP_EXT_PAY)
+      mode != OP_EXT_PAY) {
+fprintf(stderr, "DEBUG: VerifyIdent: invalid mode %d\n",  mode);
     return (false);
+}
 
   CIdent *ident = (CIdent *)&tx.certificate;
-  if (hashIdent != ident->GetHash())
+  if (hashIdent != ident->GetHash()) {
+fprintf(stderr, "DEBUG: VerifyIdent: invalid hash '%s' vs '%s'\n", ident->GetHash().GetHex().c_str(), hashIdent.GetHex().c_str());
     return (false); /* ident hash mismatch */
+}
 
   return (true);
 }
@@ -565,11 +603,9 @@ tx.print();
     return (false);
 }
 
-  CLicense *lic = &tx.license;
-  if (hashLicense != lic->GetHash()) {
-    return (false); /* cert hash mismatch */
-}
-
+  CLicense lic(tx.certificate);
+  if (hashLicense != lic.GetHash())
+    return error(SHERR_INVAL, "license certificate hash mismatch");
 
   return (true);
 }
@@ -712,6 +748,7 @@ int init_cert_tx(CIface *iface, string strAccount, string strTitle, cbuff vchSec
   /* add as direct const reference */
   const uint160& mapHash = cert->GetHash();
   wallet->mapCert[certHash] = wtx.GetHash();
+  wallet->mapCertLabel[cert->GetLabel()] = certHash;
 
   Debug("SENT:CERTNEW : title=%s, certhash=%s, tx=%s\n", strTitle.c_str(), cert->GetHash().ToString().c_str(), wtx.GetHash().GetHex().c_str());
 
@@ -725,7 +762,7 @@ int init_cert_tx(CIface *iface, string strAccount, string strTitle, cbuff vchSec
  * @param vchSecret Private data which is
  * @note A license is not modifable after it has been issued.
  */
-int init_license_tx(CIface *iface, string strAccount, uint160 hashCert, uint64_t nCrc, CWalletTx& wtx)
+int init_license_tx(CIface *iface, string strAccount, uint160 hashCert, CWalletTx& wtx)
 {
   CWallet *wallet = GetWallet(iface);
   int ifaceIndex = GetCoinIndex(iface);
@@ -748,7 +785,7 @@ int init_license_tx(CIface *iface, string strAccount, uint160 hashCert, uint64_t
   wtx.SetNull();
   wtx.strFromAccount = strAccount; /* originating account for payment */
 
-  CLicense *lic = wtx.CreateLicense(&tx.certificate, nCrc);
+  CCert *lic = wtx.CreateLicense(&tx.certificate);
   if (!lic) {
     return (SHERR_INVAL);
 }
@@ -782,7 +819,7 @@ int init_license_tx(CIface *iface, string strAccount, uint160 hashCert, uint64_t
     return (SHERR_INVAL);
   }
 
-  /* todo: add to pending instead */
+//  wallet->mapLicenseArch[licHash] = tx.GetHash();
   wallet->mapLicense[licHash] = wtx.GetHash();
 
   Debug("SENT:LICENSENEW : lichash=%s, tx=%s\n", lic->GetHash().ToString().c_str(), wtx.GetHash().GetHex().c_str());
@@ -841,13 +878,13 @@ int init_ident_donate_tx(CIface *iface, string strAccount, uint64_t nValue, uint
     CIdent& c_ident = (CIdent&)tx.certificate;
     ident = t_wtx.CreateIdent(&c_ident);
   } else {
-    cbuff empty;
-    ident = t_wtx.CreateIdent(ifaceIndex, addr, empty);
+    ident = t_wtx.CreateIdent(ifaceIndex, addr);
   }
   if (!ident)
     return (SHERR_INVAL);
 
   uint160 hashIdent = ident->GetHash();
+fprintf(stderr, "DEBUG: init_ident_donate_tx: generated ident: %s\n", ident->ToString().c_str());
 
   /* sent to intermediate account. */
   CReserveKey rkey(wallet);
@@ -886,6 +923,59 @@ int init_ident_donate_tx(CIface *iface, string strAccount, uint64_t nValue, uint
 fprintf(stderr, "DEBUG: init_ident_donate_tx:: !SendMoneyWithExtTx()\n");
     return (SHERR_INVAL);
 }
+
+  return (0);
+}
+
+/**
+ * Submits a geodetic trackable time-stamp.
+ */
+int init_ident_stamp_tx(CIface *iface, std::string strAccount, std::string strComment, CWalletTx& wtx)
+{
+  CWallet *wallet = GetWallet(iface);
+  int ifaceIndex = GetCoinIndex(iface);
+  CIdent *ident;
+
+  if (ifaceIndex != TEST_COIN_IFACE && ifaceIndex != SHC_COIN_IFACE)
+    return (SHERR_OPNOTSUPP);
+
+  if (!wallet || !iface->enabled)
+    return (SHERR_OPNOTSUPP);
+
+  if (strComment.length() > 135)
+    return (SHERR_INVAL);
+
+  int64 nFee = iface->min_tx_fee;
+
+  CCoinAddr addr = GetAccountAddress(wallet, strAccount, true);
+  if (!addr.IsValid())
+    return (SHERR_INVAL);
+
+  ident = wtx.CreateIdent(ifaceIndex, addr);
+  if (!ident)
+    return (SHERR_INVAL);
+
+  ident->SetLabel(strComment);
+
+  uint160 hashIdent = ident->GetHash();
+
+  /* sent to intermediate account. */
+  CReserveKey rkey(wallet);
+  wtx.strFromAccount = strAccount;
+
+  CScript scriptPubKeyOrig;
+  scriptPubKeyOrig.SetDestination(addr.Get());
+  CScript scriptPubKey;
+  scriptPubKey << OP_EXT_NEW << CScript::EncodeOP_N(OP_IDENT) << OP_HASH160 << hashIdent << OP_2DROP;
+  scriptPubKey += scriptPubKeyOrig;
+  int64 nFeeRequired;
+  if (!wallet->CreateTransaction(scriptPubKey, nFee, wtx, rkey, nFeeRequired)) {
+    return (SHERR_CANCELED);
+  }
+
+  if (!wallet->CommitTransaction(wtx, rkey)) {
+    return (SHERR_CANCELED);
+  }
 
   return (0);
 }
@@ -984,16 +1074,12 @@ int init_ident_certcoin_tx(CIface *iface, string strAccount, uint64_t nValue, ui
  * @see CExtCore.origin
  * @todo Allow for blank vchSecret.
  */
-bool CIdent::Sign(int ifaceIndex, CCoinAddr& addr, cbuff vchSecret)
+bool CCert::Sign(int ifaceIndex, CCoinAddr& addr, cbuff vchSecret)
 {
   bool ret;
 
   if (!vchSecret.data())
     return (false);
-
-
-  /* default location (optional) */
-  shgeo_local(&geo, SHGEO_PREC_DISTRICT);
 
   if (!vchSecret.data()) {
     unsigned char empty[64];
@@ -1016,7 +1102,7 @@ bool CIdent::Sign(int ifaceIndex, CCoinAddr& addr, cbuff vchSecret)
  * Verify an identity's signature.
  * @param vchSecret The external context that the signature was generated from.
  */
-bool CIdent::VerifySignature(cbuff vchSecret)
+bool CCert::VerifySignature(cbuff vchSecret)
 {
 
   if (!vchSecret.data())
@@ -1034,6 +1120,11 @@ std::string CIdent::ToString()
   return (write_string(Value(ToValue()), false));
 }
 
+std::string CCert::ToString()
+{
+  return (write_string(Value(ToValue()), false));
+}
+
 std::string CLicense::ToString()
 {
   return (write_string(Value(ToValue()), false));
@@ -1046,11 +1137,15 @@ Object CIdent::ToValue()
   char loc[256];
   shnum_t x, y;
 
+  obj.push_back(Pair("hash", GetHash().GetHex()));
+
   shgeo_loc(&geo, &x, &y, NULL);
   sprintf(loc, "%f,%f", (double)x, (double)y);
   string strGeo(loc);
 
+  obj.push_back(Pair("type", (int64_t)nType));
   obj.push_back(Pair("geo", strGeo));
+  obj.push_back(Pair("addr", stringFromVch(vAddr)));
 
   return (obj);
 }
@@ -1059,37 +1154,72 @@ Object CCert::ToValue()
 {
   Object obj = CIdent::ToValue();
 
+  obj.push_back(Pair("hash", GetHash().GetHex()));
   obj.push_back(Pair("issuer", hashIssuer.GetHex()));
   obj.push_back(Pair("serialno", HexStr(vSerial.begin(), vSerial.end()))); 
   obj.push_back(Pair("coinaddr", stringFromVch(vAddr)));
   obj.push_back(Pair("fee", ValueFromAmount(nFee)));
   obj.push_back(Pair("flags", nFlag));
+  obj.push_back(Pair("signature", signature.GetHash().GetHex()));
   
   return (obj);
 }
 
 Object CLicense::ToValue()
 {
-  uint160 hashCrc(nCrc);
-  char peer[256];
-  char sig[256];
-  Object obj;
-
-  memset(peer, 0, sizeof(peer));
-  strncpy(peer, shkey_print(&kPeer), sizeof(peer)-1);
-  string strPeer(peer);
-
-  memset(sig, 0, sizeof(sig));
-  strncpy(sig, shkey_print(&kPeer), sizeof(sig)-1);
-  string strSig(sig);
-
-  obj.push_back(Pair("peer", strPeer));
-  obj.push_back(Pair("sig", strSig));
-  obj.push_back(Pair("cert", hCert.GetHex()));
-  obj.push_back(Pair("crc", hashCrc.GetHex()));
-  obj.push_back(Pair("fee", ValueFromAmount(nFee)));
-
+  Object obj = CCert::ToValue();
+  obj.push_back(Pair("hash", GetHash().GetHex()));
   return (obj);
+}
+
+void CLicense::Sign(int ifaceIndex, CCoinAddr& addr)
+{
+  signature.SignOrigin(ifaceIndex, addr);
+}
+
+bool CLicense::VerifySignature(CCoinAddr& addr)
+{
+  return (signature.VerifyOrigin(addr));
+}
+
+bool DisconnectCertificate(CIface *iface, CTransaction& tx)
+{
+  CWallet *wallet = GetWallet(iface);
+  CCert& cert = tx.certificate;
+  const uint160 hCert = cert.GetHash();
+
+  if (wallet->mapCert.count(hCert) == 0)
+    return (false);
+
+  const uint256& o_tx = wallet->mapCert[hCert];
+  if (o_tx != tx.GetHash())
+    return (false);
+
+/* NOTE: order matters here. last = best */
+  uint256 n_tx;
+  bool found = false;
+  for(map<uint256,uint160>::iterator it = wallet->mapCertArch.begin(); it != wallet->mapCertArch.end(); ++it) {
+    const uint256& hash2 = (*it).first;
+    const uint160& hash1 = (*it).second;
+    if (hash1 == hCert) {
+      n_tx = hash2;
+      found = true;
+    }
+  }
+  
+  if (found) {
+    /* transition current entry to archive */
+    const uint160& o_cert = hCert;
+    wallet->mapCertArch[o_tx] = o_cert;
+
+    wallet->mapCert[hCert] = n_tx; 
+    wallet->mapCertLabel[cert.GetLabel()] = hCert;
+  } else {
+    wallet->mapCert.erase(hCert);
+    wallet->mapCertLabel.erase(cert.GetLabel());
+  }
+
+  return (true);
 }
 
 

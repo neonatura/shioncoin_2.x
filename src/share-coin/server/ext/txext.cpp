@@ -119,10 +119,8 @@ Object CExtCore::ToValue()
   if (vchLabel.size() != 0)
     obj.push_back(Pair("label", stringFromVch(vchLabel)));
 
-  sprintf(tbuf, "%-20.20s", shctime(tExpire));
+  sprintf(tbuf, "%-20.20s", shctime(tExpire)+4);
   obj.push_back(Pair("expire", string(tbuf)));
-
-  obj.push_back(Pair("signature", signature.GetHash().GetHex()));
 
   return (obj);
 }

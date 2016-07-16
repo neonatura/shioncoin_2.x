@@ -59,7 +59,7 @@ multimap<uint256, SHCBlock*> SHC_mapOrphanBlocksByPrev;
 map<uint256, map<uint256, CDataStream*> > SHC_mapOrphanTransactionsByPrev;
 map<uint256, CDataStream*> SHC_mapOrphanTransactions;
 
-static CMatrix shc_DHRM;
+ValidateMatrix shc_Validate;
 
 class SHCOrphan
 {
@@ -640,26 +640,7 @@ continue;
   }
 
   int64 reward = shc_GetBlockValue(pindexPrev->nHeight+1, nFees);
-#if 0
-  if ((pindexPrev->nHeight+1) >= 50000 &&
-      pblock->vtx.size() == 1) {
-    /* 'zero transactions' penalty. */
-    int64 nFee = MAX(0, MIN(COIN, reward - iface->min_tx_fee));
-    if (nFee >= iface->min_tx_fee) {
-      CMatrix *m = pblock->vtx[0].GenerateMatrix(SHC_COIN_IFACE, &shc_DHRM);
-      if (m) {
-        int64 min_tx = (int64)iface->min_tx_fee;
-        CScript scriptMatrix;
-        scriptMatrix << OP_EXT_GENERATE << CScript::EncodeOP_N(OP_MATRIX) << OP_HASH160 << m->GetHash() << OP_2DROP << OP_RETURN;
-        pblock->vtx[0].vout.push_back(CTxOut(nFee, scriptMatrix));
-fprintf(stderr, "DEBUG: CreateNewBlock: shc_DHRM '%s' proposed: %s\n", m->GetHash().GetHex().c_str(), m->ToString().c_str());
-
-        /* deduct from reward. */
-        reward -= nFee;
-      }
-    }
-  }
-#endif
+/* .. GenerateMatrix .. */
   pblock->vtx[0].vout[0].nValue = reward; 
 
 
@@ -1585,63 +1566,21 @@ bool shc_AcceptBlock(SHCBlock *pblock)
 
 bool SHCBlock::AcceptBlock()
 {
-#if 0
-  bool ret = shc_AcceptBlock(this);
-  if (!ret)
-    return (false);
-
-  /* Recursively process any orphan blocks that depended on this one */
-  uint256 hash = GetHash();
-  vector<uint256> vWorkQueue;
-  vWorkQueue.push_back(hash);
-  for (unsigned int i = 0; i < vWorkQueue.size(); i++)
-  {
-    uint256 hashPrev = vWorkQueue[i];
-    for (multimap<uint256, SHCBlock*>::iterator mi = SHC_mapOrphanBlocksByPrev.lower_bound(hashPrev);
-        mi != SHC_mapOrphanBlocksByPrev.upper_bound(hashPrev);
-        ++mi)
-    {
-      SHCBlock* pblockOrphan = (*mi).second;
-      if (shc_AcceptBlock(pblockOrphan))
-        vWorkQueue.push_back(pblockOrphan->GetHash());
-      SHC_mapOrphanBlocks.erase(pblockOrphan->GetHash());
-      delete pblockOrphan;
-    }
-    SHC_mapOrphanBlocksByPrev.erase(hashPrev);
-  }
-
-  return true;
-#endif
-
-#if 0
+  ValidateMatrix matrix;
   bool fMatrix = false;
-  CMatrix matrix;
-  if (vtx.size() == 1) {
-    CTransaction& tx = vtx[0];
-    int mode;
 
-    if (VerifyMatrixTx(tx, mode) && mode == OP_EXT_GENERATE) {
-      CBlockIndex *pindex = GetBestBlockIndex(SHC_COIN_IFACE);
-      matrix = tx.matrix;
-      if (matrix.GetHeight() > shc_DHRM.GetHeight()) {
-        if (!tx.VerifyMatrix(&shc_DHRM, matrix, pindex)) {
-          return error(SHERR_ILSEQ, "AcceptBlock: shc_DHRM failure: (seed %s) (new %s)", shc_DHRM.ToString().c_str(), matrix.ToString().c_str());
-        }
-        fMatrix = true;
-        Debug("SHCBlock::AcceptBlock: DHRM verify success: (seed %s) (new %s)\n", shc_DHRM.ToString().c_str(), matrix.ToString().c_str());
-
-      }
-    }
+  if (vtx.size() != 0) {
+    bool fCheck = false;
+    fMatrix = BlockAcceptValidateMatrix(&shc_Validate, matrix, vtx[0], fCheck);
+    if (fMatrix && !fCheck)
+      return error(SHERR_ILSEQ, "AcceptBlock: shc_Validate failure: (seed %s) (new %s)", shc_Validate.ToString().c_str(), matrix.ToString().c_str());
   }
-#endif
 
   bool ret = core_AcceptBlock(this);
 
-#if 0
   if (ret && fMatrix) {
-    shc_DHRM = matrix;
+    shc_Validate = matrix;
   }
-#endif
 
   return (ret);
 }
@@ -2076,16 +2015,31 @@ bool SHCBlock::AddToBlockIndex()
 
 bool SHCBlock::DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex)
 {
+  CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);
 
   if (!core_DisconnectBlock(txdb, pindex, this))
     return (false);
 
-  if (pindex->pprev)
-  {
-    /* retract block hash from DHRM matrix */
-    CTransaction& tx = vtx[0];
-    if (tx.isFlag(CTransaction::TXF_MATRIX)) {
-      shc_DHRM.Retract(pindex->nHeight, pindex->GetBlockHash());
+  if (pindex->pprev) {
+    if (txdb.ifaceIndex == TEST_COIN_IFACE ||
+        txdb.ifaceIndex == SHC_COIN_IFACE) {
+      BOOST_FOREACH(CTransaction& tx, vtx) {
+        if (tx.IsCoinBase()) {
+          if (tx.isFlag(CTransaction::TXF_MATRIX)) {
+            /* retract block hash from Validate matrix */
+            CTxMatrix& matrix = tx.matrix;
+            if (matrix.GetType() == CTxMatrix::M_VALIDATE) {
+              shc_Validate.Retract(pindex->nHeight, pindex->GetBlockHash());
+            } else if (matrix.GetType() == CTxMatrix::M_SPRING) {
+              //          spring_retract(txdb.ifaceIndex, &test_SpringMatrix, GetMatrixOrigin(tx));
+            }
+          }
+        } else {
+          if (tx.isFlag(CTransaction::TXF_CERTIFICATE)) {
+            DisconnectCertificate(iface, tx);
+          }
+        }
+      }
     }
   }
 

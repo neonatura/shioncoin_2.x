@@ -125,7 +125,7 @@ _TEST(reorganize)
   CBlock *chain1;
   CBlock *chain2;
   CBlock *chain3;
-  CBlock *blocks[79];
+  CBlock *blocks[40];
   uint256 hashParent;
   int i;
 
@@ -154,18 +154,18 @@ _TEST(reorganize)
   /* battle2 : finish */
 
   /* battle3 : start */
-  for (i = 0; i < 78; i++) { 
+  for (i = 0; i < 39; i++) { 
     blocks[i] = test_GenerateBlock();
     _TRUEPTR(blocks[i]);
     _TRUE(ProcessBlock(NULL, blocks[i]) == true);
   }
-  blocks[78] = test_GenerateBlock();
-  _TRUEPTR(blocks[78]);
+  blocks[39] = test_GenerateBlock();
+  _TRUEPTR(blocks[39]);
 
   _TRUE(ProcessBlock(NULL, chain3) == true); /* ALT CHAIN */
 fprintf(stderr, "DEBUG: REORG:ng..\n");
 
-  _TRUE(ProcessBlock(NULL, blocks[78]) == true);
+  _TRUE(ProcessBlock(NULL, blocks[39]) == true);
   /* battle3 : finish */
 
   t_block = GetBlockByHeight(iface, 0);
@@ -178,7 +178,7 @@ fprintf(stderr, "DEBUG: REORG:ng..\n");
   _TRUE(t_block->GetHash() == hashParent); 
   delete(t_block);
 
-  for (i = 0; i < 79; i++) {
+  for (i = 0; i < 40; i++) {
     int nHeight = 3 + i;
     t_block = GetBlockByHeight(iface, nHeight);
     _TRUEPTR(t_block); 
@@ -188,10 +188,10 @@ fprintf(stderr, "DEBUG: REORG:ng..\n");
 
   CBlockIndex *pindexBest = GetBestBlockIndex(iface);
   _TRUEPTR(pindexBest);
-  _TRUE(pindexBest->GetBlockHash() == blocks[78]->GetHash());
-  _TRUE(pindexBest->nHeight == 81);
+  _TRUE(pindexBest->GetBlockHash() == blocks[39]->GetHash());
+  _TRUE(pindexBest->nHeight == 42);
 
-  for (i = 0; i < 79; i++) { 
+  for (i = 0; i < 40; i++) { 
     delete(blocks[i]);
   }
 
@@ -226,11 +226,18 @@ tx.alias = alias;
 char hashstr[256];
   strcpy(hashstr, "0x0");
   string strAssetHash(hashstr);
-  CAsset asset = CAsset(strAsset, strAssetHash);
+  CAsset asset(strAsset);//, strAssetHash);
   CAsset cmp_asset;
   a_ser << asset;
   a_ser >> cmp_asset;
   _TRUE(asset.GetHash() == cmp_asset.GetHash());
+
+  CIdent ident;
+  ident.SetLabel("test");
+  CIdent cmp_ident;
+  a_ser << ident;
+  a_ser >> cmp_ident;
+  _TRUE(ident.GetHash() == cmp_ident.GetHash());
 
   CCert cert = CCert();
   CCert cmp_cert;
@@ -247,6 +254,13 @@ offer.accepts.push_back(acc);
   _TRUE(offer.GetHash() == cmp_offer.GetHash());
 //_TRUE(offer.accepts.first().GetHash() == cmp_offer.accepts.first().GetHash());
 
+  CTxMatrix matrix;
+  matrix.vData[0][0] = 1;
+  matrix.nHeight = 1;
+  CTxMatrix cmp_matrix;
+  a_ser << matrix;
+  a_ser >> cmp_matrix;
+  _TRUE(matrix.GetHash() == cmp_matrix.GetHash());
 
 }
 
@@ -265,17 +279,17 @@ _TEST(signtx)
   string strSecret("secret");
 
   /* CExtCore.origin */
-  CExtCore ext;
-  _TRUE(ext.signature.Sign(TEST_COIN_IFACE, extAddr, data, data_len) == true);
-  _TRUE(ext.signature.Verify(extAddr, data, data_len) == true);
+  CCert cert;
+  _TRUE(cert.signature.Sign(TEST_COIN_IFACE, extAddr, data, data_len) == true);
+  _TRUE(cert.signature.Verify(extAddr, data, data_len) == true);
 
-  CIdent ident;
+  cert.SetNull();
   cbuff vchSecret(vchFromString(strSecret));
-  _TRUE(ident.Sign(TEST_COIN_IFACE, extAddr, vchSecret) == true);
-  _TRUE(ident.VerifySignature(vchSecret) == true);
+  _TRUE(cert.Sign(TEST_COIN_IFACE, extAddr, vchSecret) == true);
+  _TRUE(cert.VerifySignature(vchSecret) == true);
  
   CAsset asset;
-  _TRUE(asset.Sign(ident.GetHash()) == true);
+  _TRUE(asset.Sign(cert.GetHash()) == true);
   _TRUE(asset.VerifySignature() == true);
 
   CLicense license;
@@ -420,7 +434,8 @@ _TEST(assettx)
   _TRUE(wtx.CheckTransaction(TEST_COIN_IFACE)); /* .. */
   _TRUE(VerifyAsset(wtx) == true);
 
-  uint160 hashAsset = wtx.asset.GetHash();
+  CAsset asset(wtx.certificate);
+  uint160 hashAsset = asset.GetHash();
 
   /* incorporate asset into block-chain + few more coins */
   for (idx = 0; idx < 8; idx++) {
@@ -472,6 +487,7 @@ _TEST(identtx)
   err = init_ident_donate_tx(iface, strAccount, orig_bal - COIN, hashCert, wtx);  
   _TRUE(err == 0);
   _TRUE(wtx.CheckTransaction(TEST_COIN_IFACE)); /* .. */
+wtx.print();
   _TRUE(VerifyIdent(wtx) == true);
   _TRUE(wtx.IsInMemoryPool(TEST_COIN_IFACE) == true);
 
@@ -563,13 +579,14 @@ _TEST(certtx)
 
   /* generake test license from certificate */
   CWalletTx lic_wtx;
-  err = init_license_tx(iface, strLabel, hashCert, 0x1, lic_wtx);
+  err = init_license_tx(iface, strLabel, hashCert, lic_wtx);
 if (err)  fprintf(stderr, "DEBUG: %d = init_license_tx()\n", err);
   _TRUE(0 == err);
 
   _TRUE(lic_wtx.CheckTransaction(TEST_COIN_IFACE)); /* .. */
   _TRUE(VerifyLicense(lic_wtx) == true);
-  uint160 licHash = lic_wtx.license.GetHash();
+  CLicense lic(lic_wtx.certificate);
+  uint160 licHash = lic.GetHash();
   _TRUE(lic_wtx.IsInMemoryPool(TEST_COIN_IFACE) == true);
 
   for (idx = 0; idx < 3; idx++) {
@@ -627,6 +644,7 @@ fprintf(stderr, "DEBUG: TEST: OFFER: offer initialized .. bal is now %f\n", ((do
 
   _TRUE(wtx.CheckTransaction(TEST_COIN_IFACE));
   _TRUE(VerifyOffer(wtx) == true);
+  _TRUE(wtx.IsInMemoryPool(TEST_COIN_IFACE) == true);
 
   /* insert offer-tx into chain */
   {
@@ -639,6 +657,7 @@ fprintf(stderr, "DEBUG: TEST: OFFER: offer initialized .. bal is now %f\n", ((do
   /* verify insertion */
   _TRUE(GetTxOfOffer(iface, hashOffer, t_tx) == true);
   _TRUE(t_tx.GetHash() == hashTx); 
+  _TRUE(wtx.IsInMemoryPool(TEST_COIN_IFACE) == false);
 
   srcValue = 1 * (bal / 3);
   destValue = -1 * (bal / 4);
@@ -657,6 +676,7 @@ if (err) fprintf(stderr, "DEBUG: OFFER-TX: %d = accept_offer_tx()\n", err);
   uint160 hashAccept = acc_wtx.offer.GetHash();
   _TRUE(acc_wtx.CheckTransaction(TEST_COIN_IFACE));
   _TRUE(VerifyOffer(acc_wtx) == true);
+  _TRUE(acc_wtx.IsInMemoryPool(TEST_COIN_IFACE) == true);
 
   {
     int64 t_bal = GetAccountBalance(TEST_COIN_IFACE, strLabel, 1);
@@ -670,6 +690,9 @@ fprintf(stderr, "DEBUG: TEST: OFFER: offer accepted .. bal is now %f\n", ((doubl
     delete block;
   }
 acc_wtx.print();
+
+  /* verify insertion */
+  _TRUE(acc_wtx.IsInMemoryPool(TEST_COIN_IFACE) == false);
 
   /* offer generate operation */
   CWalletTx gen_wtx;
@@ -712,7 +735,7 @@ if (err) fprintf(stderr, "DEBUG: %d = pay_offer_tx\n", err);
 fprintf(stderr, "DEBUG: TEST: OFFER: offer pay'd .. bal is now %f\n", ((double)t_bal / COIN));
   }
 
-  {
+  for (idx = 0; idx < 3; idx++) {
     CBlock *block = test_GenerateBlock();
     _TRUEPTR(block);
     _TRUE(ProcessBlock(NULL, block) == true);
@@ -738,8 +761,8 @@ fprintf(stderr, "DEBUG: TEST OFFER: offertx: bal %llu < new_bal %llu\n", (unsign
 _TEST(matrix)
 {
   CTransaction tx;
-  CMatrix seed;
-  CMatrix *m;
+  CTxMatrix seed;
+  CTxMatrix *m;
   int idx;
 
   CBlockIndex *pindex;
@@ -751,7 +774,7 @@ _TEST(matrix)
   pindex = new CBlockIndex();
   pindex->phashBlock = &hashBlock;
   pindex->nHeight = 54;
-  m = tx.GenerateMatrix(TEST_COIN_IFACE, NULL, pindex);
+  m = tx.GenerateValidateMatrix(TEST_COIN_IFACE, NULL, pindex);
   _TRUE(m == NULL);
 
   /* initial block with no seed */
@@ -760,11 +783,11 @@ _TEST(matrix)
   t_pindex->nHeight = 81;
   t_pindex->pprev = pindex;
   pindex = t_pindex;
-  m = tx.GenerateMatrix(TEST_COIN_IFACE, NULL, pindex);
+  m = tx.GenerateValidateMatrix(TEST_COIN_IFACE, NULL, pindex);
   _TRUEPTR(m);
-  bool ret = tx.VerifyMatrix(NULL, *m, pindex);
+  bool ret = tx.VerifyValidateMatrix(NULL, *m, pindex);
 if (!ret) {
-  fprintf(stderr, "DEBUG: VerifyMatrix: initial verify failure NEW: %s\n", m->ToString().c_str());
+  fprintf(stderr, "DEBUG: VerifyValidateMatrix: initial verify failure NEW: %s\n", m->ToString().c_str());
 }
   _TRUE(ret == true);
 
@@ -783,10 +806,10 @@ if (!ret) {
     pindex = t_pindex;
 
     tx.SetNull();
-    m = tx.GenerateMatrix(TEST_COIN_IFACE, &seed, pindex);
+    m = tx.GenerateValidateMatrix(TEST_COIN_IFACE, &seed, pindex);
     _TRUEPTR(m);
 
-    ret = tx.VerifyMatrix(&seed, *m, pindex);
+    ret = tx.VerifyValidateMatrix(&seed, *m, pindex);
     _TRUE(ret == true);
     
     seed = *m;
@@ -794,14 +817,15 @@ if (!ret) {
 
 /* DEBUG: TODO: free blockindex's for valgrind mem check */
 
-
-  /* ensure that block processing does not fail past x2 DHRM matrix */
-  for (idx = 0; idx < 54; idx++) {
+fprintf(stderr, "DEBUG: test matrix block / start\n");
+  /* ensure that block processing does not fail past x2 Validate matrix */
+  for (idx = 0; idx < 40; idx++) {
     CBlock *block = test_GenerateBlock();
     _TRUEPTR(block);
     _TRUE(ProcessBlock(NULL, block) == true);
     delete block;
   }
+fprintf(stderr, "DEBUG: test matrix block / finish\n");
 }
 
 

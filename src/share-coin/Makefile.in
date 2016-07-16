@@ -179,16 +179,16 @@ am__objects_5 = $(am__objects_4) shcoind-test_wallet.$(OBJEXT) \
 	shcoind-rpccert_proto.$(OBJEXT) shcoind-rpcdump.$(OBJEXT) \
 	shcoind-rpcnet.$(OBJEXT) shcoind-rpc_proto.$(OBJEXT) \
 	shcoind-rpcrawtransaction.$(OBJEXT) shcoind-block.$(OBJEXT) \
-	shcoind-chain.$(OBJEXT) shcoind-base58.$(OBJEXT) \
-	shcoind-global.$(OBJEXT) shcoind-block_merkle.$(OBJEXT) \
-	shcoind-crypter.$(OBJEXT) shcoind-txidx.$(OBJEXT) \
-	shcoind-init.$(OBJEXT) shcoind-key.$(OBJEXT) \
-	shcoind-keystore.$(OBJEXT) shcoind-main.$(OBJEXT) \
-	shcoind-script.$(OBJEXT) shcoind-sync.$(OBJEXT) \
-	shcoind-wallet.$(OBJEXT) shcoind-walletdb.$(OBJEXT) \
-	shcoind-scrypt.$(OBJEXT) shcoind-addrman.$(OBJEXT) \
-	shcoind-wallet_iface.$(OBJEXT) shcoind-block_iface.$(OBJEXT) \
-	shcoind-server_iface.$(OBJEXT)
+	shcoind-chain.$(OBJEXT) shcoind-matrix.$(OBJEXT) \
+	shcoind-base58.$(OBJEXT) shcoind-global.$(OBJEXT) \
+	shcoind-block_merkle.$(OBJEXT) shcoind-crypter.$(OBJEXT) \
+	shcoind-txidx.$(OBJEXT) shcoind-init.$(OBJEXT) \
+	shcoind-key.$(OBJEXT) shcoind-keystore.$(OBJEXT) \
+	shcoind-main.$(OBJEXT) shcoind-script.$(OBJEXT) \
+	shcoind-sync.$(OBJEXT) shcoind-wallet.$(OBJEXT) \
+	shcoind-walletdb.$(OBJEXT) shcoind-scrypt.$(OBJEXT) \
+	shcoind-addrman.$(OBJEXT) shcoind-wallet_iface.$(OBJEXT) \
+	shcoind-block_iface.$(OBJEXT) shcoind-server_iface.$(OBJEXT)
 am__objects_6 = shcoind-stratum.$(OBJEXT) \
 	shcoind-stratum_http.$(OBJEXT) \
 	shcoind-stratum_message.$(OBJEXT) \
@@ -268,7 +268,8 @@ am__objects_13 = $(am__objects_12) test_shcoind-test_wallet.$(OBJEXT) \
 	test_shcoind-rpc_proto.$(OBJEXT) \
 	test_shcoind-rpcrawtransaction.$(OBJEXT) \
 	test_shcoind-block.$(OBJEXT) test_shcoind-chain.$(OBJEXT) \
-	test_shcoind-base58.$(OBJEXT) test_shcoind-global.$(OBJEXT) \
+	test_shcoind-matrix.$(OBJEXT) test_shcoind-base58.$(OBJEXT) \
+	test_shcoind-global.$(OBJEXT) \
 	test_shcoind-block_merkle.$(OBJEXT) \
 	test_shcoind-crypter.$(OBJEXT) test_shcoind-txidx.$(OBJEXT) \
 	test_shcoind-init.$(OBJEXT) test_shcoind-key.$(OBJEXT) \
@@ -1383,6 +1384,7 @@ server_sources = \
 	server/rpc/rpcrawtransaction.cpp \
 	server/block.cpp \
 	server/chain.cpp \
+	server/matrix.cpp \
 	server/base58.cpp \
 	server/global.cpp \
 	server/block_merkle.cpp \
@@ -1628,6 +1630,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-key.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-keystore.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-main.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-matrix.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-netbase.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-offer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-protocol.Po@am__quote@
@@ -1727,6 +1730,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-key.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-keystore.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-main.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-matrix.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-netbase.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-offer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-protocol.Po@am__quote@
@@ -3244,6 +3248,20 @@ shcoind-chain.obj: server/chain.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-chain.obj `if test -f 'server/chain.cpp'; then $(CYGPATH_W) 'server/chain.cpp'; else $(CYGPATH_W) '$(srcdir)/server/chain.cpp'; fi`
 
+shcoind-matrix.o: server/matrix.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-matrix.o -MD -MP -MF $(DEPDIR)/shcoind-matrix.Tpo -c -o shcoind-matrix.o `test -f 'server/matrix.cpp' || echo '$(srcdir)/'`server/matrix.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-matrix.Tpo $(DEPDIR)/shcoind-matrix.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/matrix.cpp' object='shcoind-matrix.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-matrix.o `test -f 'server/matrix.cpp' || echo '$(srcdir)/'`server/matrix.cpp
+
+shcoind-matrix.obj: server/matrix.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-matrix.obj -MD -MP -MF $(DEPDIR)/shcoind-matrix.Tpo -c -o shcoind-matrix.obj `if test -f 'server/matrix.cpp'; then $(CYGPATH_W) 'server/matrix.cpp'; else $(CYGPATH_W) '$(srcdir)/server/matrix.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-matrix.Tpo $(DEPDIR)/shcoind-matrix.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/matrix.cpp' object='shcoind-matrix.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-matrix.obj `if test -f 'server/matrix.cpp'; then $(CYGPATH_W) 'server/matrix.cpp'; else $(CYGPATH_W) '$(srcdir)/server/matrix.cpp'; fi`
+
 shcoind-base58.o: server/base58.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-base58.o -MD -MP -MF $(DEPDIR)/shcoind-base58.Tpo -c -o shcoind-base58.o `test -f 'server/base58.cpp' || echo '$(srcdir)/'`server/base58.cpp
 @am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-base58.Tpo $(DEPDIR)/shcoind-base58.Po
@@ -3999,6 +4017,20 @@ test_shcoind-chain.obj: server/chain.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/chain.cpp' object='test_shcoind-chain.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-chain.obj `if test -f 'server/chain.cpp'; then $(CYGPATH_W) 'server/chain.cpp'; else $(CYGPATH_W) '$(srcdir)/server/chain.cpp'; fi`
+
+test_shcoind-matrix.o: server/matrix.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-matrix.o -MD -MP -MF $(DEPDIR)/test_shcoind-matrix.Tpo -c -o test_shcoind-matrix.o `test -f 'server/matrix.cpp' || echo '$(srcdir)/'`server/matrix.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-matrix.Tpo $(DEPDIR)/test_shcoind-matrix.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/matrix.cpp' object='test_shcoind-matrix.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-matrix.o `test -f 'server/matrix.cpp' || echo '$(srcdir)/'`server/matrix.cpp
+
+test_shcoind-matrix.obj: server/matrix.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-matrix.obj -MD -MP -MF $(DEPDIR)/test_shcoind-matrix.Tpo -c -o test_shcoind-matrix.obj `if test -f 'server/matrix.cpp'; then $(CYGPATH_W) 'server/matrix.cpp'; else $(CYGPATH_W) '$(srcdir)/server/matrix.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-matrix.Tpo $(DEPDIR)/test_shcoind-matrix.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/matrix.cpp' object='test_shcoind-matrix.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-matrix.obj `if test -f 'server/matrix.cpp'; then $(CYGPATH_W) 'server/matrix.cpp'; else $(CYGPATH_W) '$(srcdir)/server/matrix.cpp'; fi`
 
 test_shcoind-base58.o: server/base58.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-base58.o -MD -MP -MF $(DEPDIR)/test_shcoind-base58.Tpo -c -o test_shcoind-base58.o `test -f 'server/base58.cpp' || echo '$(srcdir)/'`server/base58.cpp

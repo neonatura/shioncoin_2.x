@@ -307,11 +307,9 @@ fprintf(stderr, "DEBUG: VerifyAsset: !IsAssetTx\n");
       mode != OP_EXT_REMOVE)
     return (false);
 
-  CAsset *asset = &tx.asset;
-  if (hashAsset != asset->GetHash()) {
-fprintf(stderr, "DEBUG: VerifyAsset: !IsAssetTx\n");
-    return (false); /* asset hash mismatch */
-}
+  CAsset asset(tx.certificate);
+  if (hashAsset != asset.GetHash())
+    return error(SHERR_INVAL, "asset hash mismatch");
 
   return (true);
 }
@@ -328,14 +326,13 @@ int init_asset_tx(CIface *iface, string strAccount, string strTitle, string strH
   if(strHash.length() == 0 || strHash.length() > 135)
     return (SHERR_INVAL);
 
-  CAsset *asset;
+  CCert *asset;
   string strExtAccount = "@" + strAccount;
   CCoinAddr extAddr = GetAccountAddress(wallet, strExtAccount, true);
 
   /* embed asset content into transaction */
   wtx.SetNull();
   asset = wtx.CreateAsset(strTitle, strHash);
-  asset->SetActive(true); /* auto-activate */
   wtx.strFromAccount = strAccount; /* originating account for payment */
 
   int64 nFee = GetAssetOpFee(iface, GetBestHeight(iface));
@@ -420,10 +417,10 @@ fprintf(stderr, "DEBUG: update_asset_tx: !IsLocalAsset\n");
   }
 
   /* generate tx */
-  CAsset *asset;
+  CCert *asset;
 	CScript scriptPubKey;
   wtx.SetNull();
-  asset = wtx.UpdateAsset(tx.asset, strTitle, strHash);
+  asset = wtx.UpdateAsset(CAsset(tx.certificate), strTitle, strHash);
   uint160 assetHash = asset->GetHash();
 
   vector<pair<CScript, int64> > vecSend;
@@ -497,10 +494,10 @@ int activate_asset_tx(CIface *iface, string strAccount, const uint160& hashAsset
   }
 
   /* generate tx */
-  CAsset *asset;
+  CCert *asset;
 	CScript scriptPubKey;
   wtx.SetNull();
-  asset = wtx.SignAsset(tx.asset, hashCert);
+  asset = wtx.SignAsset(CAsset(tx.certificate), hashCert);
   uint160 assetHash = asset->GetHash();
 
   vector<pair<CScript, int64> > vecSend;
@@ -572,10 +569,10 @@ int remove_asset_tx(CIface *iface, string strAccount, const uint160& hashAsset, 
   }
 
   /* generate tx */
-  CAsset *asset;
+  CCert *asset;
 	CScript scriptPubKey;
   wtx.SetNull();
-  asset = wtx.RemoveAsset(tx.asset);
+  asset = wtx.RemoveAsset(CAsset(tx.certificate));
   uint160 assetHash = asset->GetHash();
 
   vector<pair<CScript, int64> > vecSend;
@@ -615,24 +612,21 @@ std::string CAsset::ToString()
 
 Object CAsset::ToValue()
 {
-  Object obj = CExtCore::ToValue();
-
-  obj.push_back(Pair("cert", hCert.GetHex()));
-  obj.push_back(Pair("hash", stringFromVch(vHash)));
-
+  Object obj = CCert::ToValue();
+  obj.push_back(Pair("hash", GetHash().GetHex()));
   return (obj);
 }
 
 bool CAsset::Sign(uint160 sigCertIn)
 {
-  hCert = sigCertIn;
-  sigCert = CSign(hCert);
+  hashIssuer = sigCertIn;
+  signature.SignContext(hashIssuer);
   return true;
 }
 
 bool CAsset::VerifySignature()
 {
-  return (sigCert.VerifyContext(hCert));
+  return (signature.VerifyContext(hashIssuer));
 }
 
 

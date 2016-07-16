@@ -27,12 +27,14 @@
 #include "json/json_spirit_reader_template.h"
 #include "json/json_spirit_writer_template.h"
 #include <boost/xpressive/xpressive_dynamic.hpp>
-#include "wallet.h"
-#include "alias.h"
 
 using namespace std;
 using namespace json_spirit;
 
+#include "block.h"
+#include "wallet.h"
+#include "certificate.h"
+#include "alias.h"
 
 
 alias_list *GetAliasTable(int ifaceIndex)
@@ -2455,13 +2457,7 @@ std::string CAlias::ToString()
 
 Object CAlias::ToValue()
 {
-  Object obj = CExtCore::ToValue();
-
-  obj.push_back(Pair("addr", stringFromVch(vchData)));
-  obj.push_back(Pair("type", (int64_t)nType));
-  obj.push_back(Pair("level", (int64_t)nLevel));
-
-  return (obj);
+  return (CIdent::ToValue());
 }
 
 

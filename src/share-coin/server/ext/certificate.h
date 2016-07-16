@@ -26,14 +26,9 @@
 #ifndef __SERVER__CERTIFICATE_H__
 #define __SERVER__CERTIFICATE_H__
 
-#include "json/json_spirit_reader_template.h"
-#include "json/json_spirit_writer_template.h"
-
-using namespace std;
-using namespace json_spirit;
 
 
-typedef map<uint160, uint256> cert_list;
+
 
 
 class CIdent : public CExtCore
@@ -41,6 +36,7 @@ class CIdent : public CExtCore
   public:
     shgeo_t geo;
     cbuff vAddr;
+    unsigned int nType;
 
     CIdent()
     {
@@ -63,6 +59,7 @@ class CIdent : public CExtCore
         READWRITE(*(CExtCore *)this);
         READWRITE(FLATDATA(geo));
         READWRITE(this->vAddr);
+        READWRITE(this->nType);
     )
 
     friend bool operator==(const CIdent &a, const CIdent &b)
@@ -70,6 +67,7 @@ class CIdent : public CExtCore
       return (
           ((CExtCore&) a) == ((CExtCore&) b) &&
           0 == memcmp(&a.geo, &b.geo, sizeof(shgeo_t)) &&
+          a.nType == b.nType &&
           a.vAddr == b.vAddr
           );
     }
@@ -83,12 +81,10 @@ class CIdent : public CExtCore
 
     void SetNull()
     {
+      CExtCore::SetNull();
       memset(&geo, 0, sizeof(geo));
-
-#if 0
-      /* default location */
-      shgeo_local(&geo, SHGEO_PREC_REGION);
-#endif
+      vAddr.clear();
+      nType = 0;
     }
 
     void Init(const CIdent& b)
@@ -96,17 +92,9 @@ class CIdent : public CExtCore
       CExtCore::Init(b);
       memcpy(&geo, &b.geo, sizeof(geo));
       vAddr = b.vAddr;
+      nType = b.nType;
     }
 
-    /**
-     * @note The signature does not take into account the geo-detic address (although the underlying certificate hash does).
-     */
-    bool Sign(int ifaceIndex, CCoinAddr& addr, cbuff vchSecret);
-
-    /**
-     * Verify the integrity of a signature.
-     */
-    bool VerifySignature(cbuff vchSecret);
 
 /*
     uint160 GetHash()
@@ -140,11 +128,21 @@ class CIdent : public CExtCore
       bool ret = false;
 
       memset(&lcl_geo, 0, sizeof(lcl_geo));
-      shgeo_local_set(&lcl_geo);
+      shgeo_local(&lcl_geo, SHGEO_PREC_REGION);
       if (shgeo_cmp(&geo, &lcl_geo, SHGEO_PREC_REGION))
         ret = true;
 
       return (ret);
+    }
+
+    void SetType(int nTypeIn)
+    {
+      nType = nTypeIn;
+    }
+
+    unsigned int GetType()
+    {
+      return (nType);
     }
 
     uint160 GetHash()
@@ -164,10 +162,10 @@ class CIdent : public CExtCore
 class CCert : public CIdent
 {
   public:
-
     static const int CERTF_CHAIN = SHCERT_CERT_CHAIN;
 
     uint160 hashIssuer;
+    CSign signature;
     cbuff vSerial;
     int64 nFee;
     int nFlag;
@@ -229,6 +227,7 @@ class CCert : public CIdent
     IMPLEMENT_SERIALIZE (
         READWRITE(*(CIdent *)this);
         READWRITE(this->hashIssuer);
+        READWRITE(this->signature);
         READWRITE(this->vSerial);
         READWRITE(this->nFee);
         READWRITE(this->nFlag);
@@ -238,6 +237,7 @@ class CCert : public CIdent
     {
       CIdent::Init(b);
       hashIssuer = b.hashIssuer;
+      signature = b.signature;
       vSerial = b.vSerial;
       nFee = b.nFee;
       nFlag = b.nFlag;
@@ -247,6 +247,7 @@ class CCert : public CIdent
       return (
           ((CIdent&) a) == ((CIdent&) b) &&
           a.hashIssuer == b.hashIssuer &&
+          a.signature == b.signature &&
           a.vSerial == b.vSerial &&
           a.nFee == b.nFee &&
           a.nFlag == b.nFlag
@@ -265,6 +266,7 @@ class CCert : public CIdent
     void SetNull()
     {
       CIdent::SetNull();
+      signature.SetNull();
 
       vSerial.clear();
       nFee = 0;
@@ -304,6 +306,16 @@ class CCert : public CIdent
     }
 
     /**
+     * @note The signature does not take into account the geo-detic address (although the underlying certificate hash does).
+     */
+    bool Sign(int ifaceIndex, CCoinAddr& addr, cbuff vchSecret);
+
+    /**
+     * Verify the integrity of a signature.
+     */
+    bool VerifySignature(cbuff vchSecret);
+
+    /**
      * Create a randomized serial number suitable for a certificate.
      */
     static cbuff GenerateSerialNumber()
@@ -317,18 +329,19 @@ class CCert : public CIdent
       return (cbuff(raw, raw+16));
     }
 
+    std::string ToString();
+
     Object ToValue();
+
 };
 
-class CLicense : public CExtCore
+/**
+ * A license is a specific type of certification.
+ * @note A license is not capable of having contextual data.
+ */
+class CLicense : public CCert
 {
   public:
-    shkey_t kPeer;
-    shkey_t kSig;
-    uint160 hCert;
-    uint64_t nCrc;
-    int64 nFee;
-
     CLicense()
     {
       SetNull();
@@ -340,41 +353,29 @@ class CLicense : public CExtCore
       Init(lic);
     }
 
-    CLicense(CCert *cert, uint64_t crc)
+    CLicense(const CCert& cert)
     {
       SetNull();
-      SetCert(cert, crc);
+      CCert::Init(cert);
     }
+
     IMPLEMENT_SERIALIZE (
-        READWRITE(*(CExtCore *)this);
-        READWRITE(FLATDATA(kPeer));
-        READWRITE(FLATDATA(kSig));
-        READWRITE(this->hCert);
-        READWRITE(this->nCrc);
-        READWRITE(this->nFee);
+        READWRITE(*(CCert *)this);
     )
 
     void SetNull()
     {
-      CExtCore::SetNull();
-      memcpy(&kPeer, ashkey_blank(), sizeof(kPeer));
-      memcpy(&kSig, ashkey_blank(), sizeof(kSig));
-      hCert = 0;
-      nCrc = 0;
-      nFee = 0;
+      CCert::SetNull();
     }
 
     friend bool operator==(const CLicense &a, const CLicense &b) {
       return (
-          ((CExtCore&) a) == ((CExtCore&) b) &&
-          0 == memcmp(&a.kPeer, &b.kPeer, sizeof(shkey_t)) &&
-          0 == memcmp(&a.kSig, &b.kSig, sizeof(shkey_t)) &&
-          a.hCert == b.hCert &&
-          a.nFee && b.nFee
+          ((CCert&) a) == ((CCert&) b)
           );
     }
 
-    CLicense operator=(const CLicense &b) {
+    CLicense operator=(const CLicense &b) 
+    {
       Init(b);
       return *this;
     }
@@ -385,65 +386,12 @@ class CLicense : public CExtCore
 
     void Init(const CLicense& b)
     {
-      CExtCore::Init(b);
-      memcpy(&kPeer, &b.kPeer, sizeof(shkey_t));
-      memcpy(&kSig, &b.kSig, sizeof(shkey_t));
-      hCert = b.hCert;
-      nCrc = b.nCrc;
-      nFee = b.nFee;
+      CCert::Init(b);
     }
 
-    void SetCert(CCert *cert, uint64_t crc)
-    {
-      double lic_span;
+    void Sign(int ifaceIndex, CCoinAddr& addr);
 
-      /* identify the certificate being licensed. */
-      hCert = cert->GetHash();
-
-      /* expires when certificate expires */
-      lic_span = MAX(0, cert->GetExpireTime() - time(NULL) - 1);
-      SetExpireTime(shtime_adj(shtime(), lic_span));
-
-      /* record cost of license */
-      nFee = cert->GetLicenseFee();
-
-      /* generate signature from an externally derived checksum. */
-      Sign(crc);
-    }
-
-    void Sign()
-    {
-      Sign(0);
-    }
-
-    /**
-     * Generate a digital signature for use with licensed content.
-     * @param crc A checksum of the content being licensed. For example, a software program's executable file checksum.
-     */
-    void Sign(uint64_t crcIn)
-    {
-      nCrc = crcIn;
-
-      shpeer_t *peer = shpeer_init(NULL, NULL);
-      memcpy(&kPeer, shpeer_kpriv(peer), sizeof(kPeer));
-      shpeer_free(&peer);
-
-      shkey_t *key = shkey_cert(&kPeer, nCrc, tExpire);
-      memcpy(&kSig, key, sizeof(kSig));
-      shkey_free(&key);
-    }
-
-    bool VerifySignature()
-    {
-      shkey_t *key = shkey_cert(&kPeer, nCrc, tExpire);
-      bool ret = false;
-
-      if (shkey_cmp(key, &kSig))
-        ret = true;
-      shkey_free(&key);
-
-      return (ret);
-    }
+    bool VerifySignature(CCoinAddr& addr);
 
     const uint160 GetHash()
     {
@@ -461,6 +409,8 @@ class CLicense : public CExtCore
 
 };
 
+class CWalletTx;
+
 
 bool VerifyCert(CTransaction& tx);
 
@@ -468,7 +418,9 @@ int64 GetCertOpFee(CIface *iface, int nHeight);
 
 extern int init_cert_tx(CIface *iface, string strAccount, string strTitle, cbuff vchSecret, int64 nLicenseFee, CWalletTx& wtx);
 
-extern int init_license_tx(CIface *iface, string strAccount, uint160 hashCert, uint64_t nCrc, CWalletTx& wtx);
+int init_ident_stamp_tx(CIface *iface, std::string strAccount, std::string strComment, CWalletTx& wtx);
+
+int init_license_tx(CIface *iface, string strAccount, uint160 hashCert, CWalletTx& wtx);
 
 bool VerifyLicense(CTransaction& tx);
 
@@ -496,6 +448,9 @@ bool GetCertAccount(CIface *iface, const CTransaction& tx, string& strAccount);
 
 bool IsCertAccount(CIface *iface, CTransaction& tx, string strAccount);
 
+bool DisconnectCertificate(CIface *iface, CTransaction& tx);
+
+bool GetCertByName(CIface *iface, string name, CCert& cert);
 
 
 #endif /* ndef __SERVER__CERTIFICATE_H__ */

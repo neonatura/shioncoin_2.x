@@ -2305,6 +2305,7 @@ CCert *CTransaction::CreateCert(int ifaceIndex, const char *name, CCoinAddr& add
 
   nFlag |= CTransaction::TXF_CERTIFICATE;
   certificate = CCert(strTitle);
+  shgeo_local(&certificate.geo, SHGEO_PREC_DISTRICT);
   certificate.SetActive(true);
   certificate.SetLicenseFee(nLicenseFee);
   certificate.Sign(ifaceIndex, addr, secret);
@@ -2315,7 +2316,7 @@ CCert *CTransaction::CreateCert(int ifaceIndex, const char *name, CCoinAddr& add
 /**
  * @param lic_span The duration of the license in seconds.
  */
-CLicense *CTransaction::CreateLicense(CCert *cert, uint64_t lic_crc)
+CCert *CTransaction::CreateLicense(CCert *cert)
 {
   double lic_span;
 
@@ -2328,9 +2329,10 @@ CLicense *CTransaction::CreateLicense(CCert *cert, uint64_t lic_crc)
     return (NULL);
   
   nFlag |= CTransaction::TXF_LICENSE;
-  license = CLicense(cert, lic_crc);
+  CLicense license(*cert);
+  certificate = (CCert&)license;
 
-  return (&license);
+  return (&certificate);
 }
 
 
@@ -2401,55 +2403,56 @@ COffer *CTransaction::RemoveOffer(uint160 hashOffer)
 }
 
 
-CAsset *CTransaction::CreateAsset(string strAssetName, string strAssetHash)
+CCert *CTransaction::CreateAsset(string strAssetName, string strAssetHash)
 {
 
   if (nFlag & CTransaction::TXF_ASSET)
     return (NULL);
 
   nFlag |= CTransaction::TXF_ASSET;
-  asset = CAsset(strAssetName, strAssetHash);
+  CAsset asset(strAssetName);
+  certificate = (CCert&)asset;
 
-  return (&asset);
+  return (&certificate);
 }
 
-CAsset *CTransaction::UpdateAsset(const CAsset& assetIn, string strAssetName, string strAssetHash)
+CCert *CTransaction::UpdateAsset(const CAsset& assetIn, string strAssetName, string strAssetHash)
 {
 
   if (nFlag & CTransaction::TXF_ASSET)
     return (NULL);
 
   nFlag |= CTransaction::TXF_ASSET;
-  asset = assetIn;
-  asset.SetLabel(strAssetName);
-  asset.SetAssetHash(strAssetHash);
+  certificate = (CCert&)assetIn;
+  certificate.SetLabel(strAssetName);
 
-  return (&asset);
+  return (&certificate);
 }
 
-CAsset *CTransaction::SignAsset(const CAsset& assetIn, uint160 hashCert)
+CCert *CTransaction::SignAsset(const CAsset& assetIn, uint160 hashCert)
 {
 
   if (nFlag & CTransaction::TXF_ASSET)
     return (NULL);
 
   nFlag |= CTransaction::TXF_ASSET;
-  asset = assetIn;
+  CAsset asset = assetIn;
   asset.Sign(hashCert);
+  certificate = (CCert&)asset;
 
-  return (&asset);
+  return (&certificate);
 }
 
-CAsset *CTransaction::RemoveAsset(const CAsset& assetIn)
+CCert *CTransaction::RemoveAsset(const CAsset& assetIn)
 {
 
   if (nFlag & CTransaction::TXF_ASSET)
     return (NULL);
 
   nFlag |= CTransaction::TXF_ASSET;
-  asset = assetIn;
+  certificate = (CCert&)assetIn;
 
-  return (&asset);
+  return (&certificate);
 }
 
 CIdent *CTransaction::CreateIdent(CIdent *ident)
@@ -2460,11 +2463,12 @@ CIdent *CTransaction::CreateIdent(CIdent *ident)
 
   nFlag |= CTransaction::TXF_IDENT;
   certificate = CCert(*ident);
+  shgeo_local(&certificate.geo, SHGEO_PREC_DISTRICT);
 
   return ((CIdent *)&certificate);
 }
 
-CIdent *CTransaction::CreateIdent(int ifaceIndex, CCoinAddr& addr, cbuff vchSecret)
+CIdent *CTransaction::CreateIdent(int ifaceIndex, CCoinAddr& addr)
 {
 
   if (nFlag & CTransaction::TXF_IDENT)
@@ -2472,28 +2476,21 @@ CIdent *CTransaction::CreateIdent(int ifaceIndex, CCoinAddr& addr, cbuff vchSecr
 
   nFlag |= CTransaction::TXF_IDENT;
 
-  CIdent ident;
-  ident.Sign(ifaceIndex, addr, vchSecret);
-  certificate = CCert(ident);
+  certificate.SetNull();
+  shgeo_local(&certificate.geo, SHGEO_PREC_DISTRICT);
+  certificate.vAddr = vchFromString(addr.ToString());
 
   return ((CIdent *)&certificate);
 }
 
-bool CTransaction::VerifyMatrix(CMatrix *seed, const CMatrix& matrix, CBlockIndex *pindex)
+bool CTransaction::VerifyValidateMatrix(CTxMatrix *seed, const CTxMatrix& matrix, CBlockIndex *pindex)
 {
-  CMatrix cmp_matrix;
   unsigned int height;
 
   if (!pindex)
     return (false);
 
-  if (seed) {
-    cmp_matrix = CMatrix(*seed);
-  } else {
-    cmp_matrix = CMatrix();
-  }
-
-  height = matrix.height;//(pindex->nHeight - 27);
+  height = matrix.nHeight;
   height /= 27;
   height *= 27;
 
@@ -2503,15 +2500,24 @@ bool CTransaction::VerifyMatrix(CMatrix *seed, const CMatrix& matrix, CBlockInde
     return (false);
   }
 
-  cmp_matrix.Append(pindex->nHeight, pindex->GetBlockHash()); 
-  bool ret = (cmp_matrix == matrix);
+  bool ret;
+  if (seed) {
+    ValidateMatrix cmp_matrix(*seed);
+    cmp_matrix.Append(pindex->nHeight, pindex->GetBlockHash()); 
+    ret = (cmp_matrix == matrix);
+  } else {
+    ValidateMatrix cmp_matrix;
+    cmp_matrix.Append(pindex->nHeight, pindex->GetBlockHash()); 
+    ret = (cmp_matrix == matrix);
+fprintf(stderr, "DEBUG: VerifyValidateMatrix[height %d]: %s\n", height, cmp_matrix.ToString().c_str());
+  }
   return (ret);
 }
 
 /**
  * @note Verified against previous matrix when the block is accepted.
  */
-CMatrix *CTransaction::GenerateMatrix(int ifaceIndex, CMatrix *seed, CBlockIndex *pindex)
+CTxMatrix *CTransaction::GenerateValidateMatrix(int ifaceIndex, CTxMatrix *seed, CBlockIndex *pindex)
 {
   uint32_t best_height;
   int height;
@@ -2544,11 +2550,17 @@ CMatrix *CTransaction::GenerateMatrix(int ifaceIndex, CMatrix *seed, CBlockIndex
 
   nFlag |= CTransaction::TXF_MATRIX;
   if (seed) {
-    matrix = CMatrix(*seed);
+    ValidateMatrix matrixNew(*seed);
+    matrixNew.Append(pindex->nHeight, pindex->GetBlockHash()); 
+    matrix = (CTxMatrix&)matrixNew;
+fprintf(stderr, "DEBUG: GenerateValidateMatrix[height %d / hash %s / seed]: matrixNew is %s\n", height, pindex->GetBlockHash().GetHex().c_str(), matrixNew.ToString().c_str());
   } else {
-    matrix = CMatrix();
+    ValidateMatrix matrixNew;
+    matrixNew.Append(pindex->nHeight, pindex->GetBlockHash()); 
+fprintf(stderr, "DEBUG: GenerateValidateMatrix[height %d / hash %s / no-seed]: matrixNew is %s\n", height, pindex->GetBlockHash().GetHex().c_str(), matrixNew.ToString().c_str());
+    matrix = (CTxMatrix&)matrixNew;
   }
-  matrix.Append(pindex->nHeight, pindex->GetBlockHash()); 
+
   return (&matrix);
 }
 
@@ -2598,7 +2610,17 @@ std::string CTransactionCore::ToString()
   return (write_string(Value(ToValue()), false));
 }
 
+std::string CTransaction::ToString()
+{
+  return (write_string(Value(ToValue()), false));
+}
+
 std::string CBlockHeader::ToString()
+{
+  return (write_string(Value(ToValue()), false));
+}
+
+std::string CBlock::ToString()
 {
   return (write_string(Value(ToValue()), false));
 }
@@ -2636,7 +2658,7 @@ Object CTransaction::ToValue()
       in.push_back(Pair("vout", (boost::int64_t)txin.prevout.n));
       Object o;
       o.push_back(Pair("asm", txin.scriptSig.ToString()));
-      o.push_back(Pair("hex", HexStr(txin.scriptSig.begin(), txin.scriptSig.end())));
+//      o.push_back(Pair("hex", HexStr(txin.scriptSig.begin(), txin.scriptSig.end())));
       in.push_back(Pair("scriptSig", o));
     }   
     in.push_back(Pair("sequence", (boost::int64_t)txin.nSequence));
@@ -2660,18 +2682,24 @@ Object CTransaction::ToValue()
 
   if (this->nFlag & TXF_CERTIFICATE) 
     obj.push_back(Pair("certificate", certificate.ToValue()));
-  if (this->nFlag & TXF_LICENSE)
+  if (this->nFlag & TXF_LICENSE) {
+    CLicense license(certificate);
     obj.push_back(Pair("license", license.ToValue()));
+  }
   if (this->nFlag & TXF_ALIAS)
     obj.push_back(Pair("alias", alias.ToValue()));
-  if (this->nFlag & TXF_ASSET)
+  if (this->nFlag & TXF_ASSET) {
+    CAsset asset(certificate);
     obj.push_back(Pair("asset", asset.ToValue()));
+  }
   if (this->nFlag & TXF_OFFER)
     obj.push_back(Pair("offer", offer.ToValue()));
   if (this->nFlag & TXF_OFFER_ACCEPT)
     obj.push_back(Pair("offeraccept", offer.ToValue()));
-  if (this->nFlag & TXF_IDENT)
-    obj.push_back(Pair("ident", offer.ToValue()));
+  if (this->nFlag & TXF_IDENT) {
+    CIdent& ident = (CIdent&)certificate;
+    obj.push_back(Pair("ident", ident.ToValue()));
+  }
 
   return (obj);
 }
@@ -2734,31 +2762,7 @@ Object CBlock::ToValue()
   return (obj);
 }
 
-void CMatrix::Append(int heightIn, uint256 hash)
-{
-  this->height = heightIn;
 
-  int idx = (height / 27) % 9;
-  int row = (idx / 3) % 3;
-  int col = idx % 3;
-  data[row][col] += shcrc(hash.GetRaw(), 32);
-fprintf(stderr, "DEBUG: CMatrix::Append: data[%d][%d] = %d\n", row, col, data[row][col]);
-}
-
-void CMatrix::Retract(int heightIn, uint256 hash)
-{
-
-  if (heightIn > this->height)
-    return;
-
-  this->height = heightIn - 27;
-
-  int idx = (height / 27) % 9;
-  int row = (idx / 3) % 3;
-  int col = idx % 3;
-  data[row][col] -= shcrc(hash.GetRaw(), 32);
-fprintf(stderr, "DEBUG: CMatrix::Retract: data[%d][%d] += %d\n", row, col, data[row][col]);
-}
 
 
 bool CTransaction::AcceptToMemoryPool(CTxDB& txdb, bool fCheckInputs, bool* pfMissingInputs)

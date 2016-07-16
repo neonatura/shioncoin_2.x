@@ -39,11 +39,13 @@
 #include "script.h"
 #include "coin_proto.h"
 #include "txext.h"
+#include "matrix.h"
 
 #include "json/json_spirit_reader_template.h"
 #include "json/json_spirit_writer_template.h"
 using namespace std;
 using namespace json_spirit;
+
 
 typedef std::vector<uint256> HashList;
 
@@ -451,94 +453,6 @@ public:
 };
 
 
-class CMatrix
-{
-  public:
-    uint32_t data[3][3]; 
-    unsigned int height; 
-
-    CMatrix()
-    {
-      SetNull();
-    }
-
-    CMatrix(const CMatrix& matrix)
-    {
-      SetNull();
-      Init(matrix);
-    }
-
-    IMPLEMENT_SERIALIZE
-    (
-      READWRITE(FLATDATA(this->data));
-      READWRITE(this->height);
-    )
-
-    friend bool operator==(const CMatrix& a, const CMatrix& b)
-    {
-      return (0 == memcmp(a.data, b.data, sizeof(uint32_t) * 9) &&
-          a.height == b.height);
-    }
-
-    friend bool operator!=(const CMatrix& a, const CMatrix& b)
-    {
-      return !(a == b);
-    }
-
-    CMatrix operator=(const CMatrix &b)
-    {
-      Init(b);
-      return (*this);
-    }
-
-    void SetNull()
-    {
-      memset(data, 0, sizeof(uint32_t) * 9);
-      height = 0;
-    }
-
-    void Init(const CMatrix& b)
-    {
-      memcpy(data, b.data, sizeof(uint32_t) * 9);
-      height = b.height;
-    }
-
-    unsigned int GetHeight()
-    {
-      return ((unsigned int)height);
-    }
-
-    void Append(int heightIn, uint256 hash);
-    void Retract(int heightIn, uint256 hash);
-
-    string ToString()
-    {
-      char buf[1024];
-      int row;
-      int col;
-
-      memset(buf, 0, sizeof(buf));
-      sprintf(buf, "CMatrix(height %u", this->height);
-      for (row = 0; row < 3; row++) {
-        sprintf(buf+strlen(buf), " [#%d:", (row+1));
-        for (col = 0; col < 3; col++) {
-          sprintf(buf+strlen(buf), " %x", data[row][col]);
-        }
-        strcat(buf, "]");
-      }
-      strcat(buf, ")");
-
-      return string(buf);
-    }
-
-    const uint160 GetHash()
-    {
-      uint256 hash = SerializeHash(*this);
-      unsigned char *raw = (unsigned char *)&hash;
-      cbuff rawbuf(raw, raw + sizeof(hash));
-      return Hash160(rawbuf);
-    }
-};
 
 class CBlock;
 class CBlockIndex;
@@ -626,12 +540,9 @@ class CTransaction : public CTransactionCore
 public:
 
     CCert certificate;
-    CLicense license;
     CAlias alias;
-    CAsset asset;
     COffer offer;
-    CIdent ident;
-    CMatrix matrix;
+    CTxMatrix matrix;
 
     CTransaction()
     {
@@ -646,37 +557,35 @@ public:
     IMPLEMENT_SERIALIZE
     (
       READWRITE(*(CTransactionCore*)this);
-      if (this->nFlag & TXF_CERTIFICATE)
+      if ((this->nFlag & TXF_CERTIFICATE) ||
+          (this->nFlag & TXF_LICENSE) ||
+          (this->nFlag & TXF_ASSET) ||
+          (this->nFlag & TXF_IDENT))
         READWRITE(certificate);
-      if (this->nFlag & TXF_LICENSE)
-        READWRITE(license);
       if (this->nFlag & TXF_ALIAS)
         READWRITE(alias);
-      if (this->nFlag & TXF_ASSET)
-        READWRITE(asset);
       if ((this->nFlag & TXF_OFFER) ||
           (this->nFlag & TXF_OFFER_ACCEPT))
         READWRITE(offer);
-      if (this->nFlag & TXF_IDENT)
-        READWRITE(ident);
     )
 
     void Init(const CTransaction& tx)
     {
       CTransactionCore::Init(tx);
-      if (this->nFlag & TXF_CERTIFICATE)
+      if ((this->nFlag & TXF_IDENT) ||
+          (this->nFlag & TXF_CERTIFICATE) ||
+          (this->nFlag & TXF_LICENSE) ||
+          (this->nFlag & TXF_ASSET))
         certificate = tx.certificate;
-      if (this->nFlag & TXF_LICENSE)
-        license = tx.license;
       if (this->nFlag & TXF_ALIAS)
         alias = tx.alias;
-      if (this->nFlag & TXF_ASSET)
-        asset = tx.asset;
       if ((this->nFlag & TXF_OFFER) ||
           (this->nFlag & TXF_OFFER_ACCEPT))
         offer = tx.offer;
+#if 0
       if (this->nFlag & TXF_IDENT)
         ident = tx.ident;
+#endif
     }
 
     void SetNull()
@@ -889,7 +798,7 @@ public:
     CAlias *CreateAlias(std::string name, const uint160& hash);
 
     CCert *CreateCert(int ifaceIndex, const char *name, CCoinAddr& addr, cbuff secret, int64 nLicenseFee);
-    CLicense *CreateLicense(CCert *cert, uint64_t lic_crc);
+    CCert *CreateLicense(CCert *cert);
 
     COffer *CreateOffer();
     COfferAccept *AcceptOffer(COffer *offerIn);
@@ -897,12 +806,14 @@ public:
     COfferAccept *PayOffer(COfferAccept *accept);
     COffer *RemoveOffer(uint160 hashOffer);
 
-    CAsset *CreateAsset(string strAssetName, string strAssetHash);
-    CAsset *UpdateAsset(const CAsset& assetIn, string strAssetName, string strAssetHash);
-    CAsset *SignAsset(const CAsset& assetIn, uint160 hashCert);
-    CAsset *RemoveAsset(const CAsset& assetIn);
+    CCert *CreateAsset(string strAssetName, string strAssetHash);
+    CCert *UpdateAsset(const CAsset& assetIn, string strAssetName, string strAssetHash);
+    CCert *SignAsset(const CAsset& assetIn, uint160 hashCert);
+    CCert *RemoveAsset(const CAsset& assetIn);
+
     CIdent *CreateIdent(CIdent *ident);
-    CIdent *CreateIdent(int ifaceIndex, CCoinAddr& addr, cbuff vchSecret);
+
+    CIdent *CreateIdent(int ifaceIndex, CCoinAddr& addr);
 
 
     CAlias *GetAlias()
@@ -910,9 +821,16 @@ public:
       return (&alias);
     }
 
-    CMatrix *GenerateMatrix(int ifaceIndex, CMatrix *seed, CBlockIndex *pindex = NULL);
+    CTxMatrix *GenerateValidateMatrix(int ifaceIndex, CTxMatrix *seed, CBlockIndex *pindex = NULL);
 
-    bool VerifyMatrix(CMatrix *seed, const CMatrix& matrix, CBlockIndex *pindex);
+    bool VerifyValidateMatrix(CTxMatrix *seed, const CTxMatrix& matrix, CBlockIndex *pindex);
+
+    CTxMatrix *GetMatrix()
+    {
+      if (!isFlag(TXF_MATRIX))
+        return (NULL);
+      return (&matrix);
+    }
 
     /**
      * Verifies whether a vSpent has been spent.
@@ -1001,6 +919,8 @@ public:
     Object ToValue();
 
     Object ToValue(CBlock *pblock);
+
+    std::string ToString();
 
 
 protected:
@@ -1168,6 +1088,8 @@ class CBlock : public CBlockHeader
     bool CheckTransactionInputs(int ifaceIndex);
 
     Object ToValue();
+
+    std::string ToString();
 
     void print()
     {

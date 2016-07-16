@@ -2223,7 +2223,7 @@ bool VerifyMatrixTx(CTransaction& tx, int& mode)
   if (!DecodeMatrixHash(tx.vout[nOut].scriptPubKey, mode, hashMatrix))
     return (false); /* no matrix hash in output */
 
-  CMatrix *matrix = (CMatrix *)&tx.matrix;
+  CTxMatrix *matrix = (CTxMatrix *)&tx.matrix;
   if (hashMatrix != matrix->GetHash())
     return (false); /* matrix hash mismatch */
 

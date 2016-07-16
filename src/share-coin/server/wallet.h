@@ -80,12 +80,23 @@ public:
     mutable unsigned int nScanHeight;
 
     mutable std::map<std::string, uint256> mapAlias;
-    mutable std::map<std::string, uint256> mapCertIssuer;
-    mutable std::map<uint160, uint256> mapCert;
     mutable std::map<uint160, uint256> mapLicense;
     mutable std::map<uint160, uint256> mapOffer;
     mutable std::map<uint160, uint256> mapOfferAccept;
     mutable std::map<uint160, uint256> mapAsset;
+    mutable std::map<uint160, uint256> mapAssetArch;
+
+    /** Incoming TX_NEW : TX_IDENT transactions for the Spring matrix.  */
+    mutable std::map<uint160, uint256> mapIdent;
+
+    /** The latest TX_NEW/TX_ACTIVATE : TX_CERT certificate transactions. */
+    mutable std::map<uint160, uint256> mapCert;
+
+    /** A table of certificate names. */
+    mutable std::map<std::string, uint160> mapCertLabel;
+
+    /** The over-written TX_NEW/TX_ACTIVATE : TX_CERT certificate transactions. */
+    mutable std::map<uint256, uint160> mapCertArch;
 
     bool fFileBacked;
     std::string strWalletFile;

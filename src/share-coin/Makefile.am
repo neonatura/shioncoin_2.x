@@ -146,6 +146,7 @@ server_sources = \
 	server/rpc/rpcrawtransaction.cpp \
 	server/block.cpp \
 	server/chain.cpp \
+	server/matrix.cpp \
 	server/base58.cpp \
 	server/global.cpp \
 	server/block_merkle.cpp \

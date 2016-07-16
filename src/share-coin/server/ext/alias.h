@@ -26,14 +26,6 @@
 #ifndef __ALIAS_H__
 #define __ALIAS_H__
 
-#include "json/json_spirit_reader_template.h"
-#include "json/json_spirit_writer_template.h"
-
-using namespace std;
-using namespace json_spirit;
-
-
-typedef std::map<std::string, uint256> alias_list;
 
 
 
@@ -41,18 +33,11 @@ typedef std::map<std::string, uint256> alias_list;
 
 
 
-class CAlias : public CExtCore
+class CAlias : public CIdent
 {
-
-  protected:
-    cbuff vchData;
-    unsigned int nType;
-    unsigned int nLevel;
-
   public:
     static const int ALIAS_NONE = 0;
     static const int ALIAS_COINADDR = TXREF_PUBADDR;
-
 
     CAlias()
     {
@@ -61,7 +46,14 @@ class CAlias : public CExtCore
 
     CAlias(const CAlias& alias)
     {
+      SetNull();
       Init(alias);
+    }
+
+    CAlias(const CIdent& ident)
+    {
+      SetNull();
+      CIdent::Init(ident);
     }
 
     CAlias(std::string labelIn, const uint160& hashIn)
@@ -75,17 +67,14 @@ class CAlias : public CExtCore
       char hstr[256];
       memset(hstr, 0, sizeof(hstr));
       strncpy(hstr, hashIn.GetHex().c_str(), sizeof(hstr)-1);
-      vchData = cbuff(hstr, hstr + strlen(hstr));
+      vAddr = cbuff(hstr, hstr + strlen(hstr));
 
       /* set attributes */
-      nType = ALIAS_COINADDR;
+      SetType(ALIAS_COINADDR);
     }
 
     IMPLEMENT_SERIALIZE (
-      READWRITE(*(CExtCore *)this);
-      READWRITE(this->vchData);
-      READWRITE(this->nType);
-      READWRITE(this->nLevel);
+      READWRITE(*(CIdent *)this);
     )
 
     void FillReference(SHAlias *ref)
@@ -95,30 +84,24 @@ class CAlias : public CExtCore
       strncpy(ref->ref_name,
           (const char *)strLabel.c_str(), 
           MIN(strLabel.size(), sizeof(ref->ref_name)-1));
-      if (vchData.data()) {
+      if (vAddr.data()) {
         strncpy(ref->ref_hash,
-            (const char *)vchData.data(),
-            MIN(vchData.size(), sizeof(ref->ref_hash)-1));
+            (const char *)vAddr.data(),
+            MIN(vAddr.size(), sizeof(ref->ref_hash)-1));
       }
       ref->ref_expire = tExpire;
       ref->ref_type = nType;
-      ref->ref_level = nLevel;
     }
 
     friend bool operator==(const CAlias &a, const CAlias &b)
     {
       return (
-          ((CExtCore&) a) == ((CExtCore&) b) &&
-          a.nType == b.nType &&
-          a.nLevel == b.nLevel);
+          ((CIdent&) a) == ((CIdent&) b)
+        );
     }
     void Init(const CAlias& alias)
     {
-      CExtCore::Init(alias);
-      fActive = alias.fActive;
-      vchData = alias.vchData;
-      nType = alias.nType;
-      nLevel = alias.nLevel;
+      CIdent::Init(alias);
     }
 
     CAlias operator=(const CAlias &b)
@@ -129,11 +112,7 @@ class CAlias : public CExtCore
 
     void SetNull()
     {
-      CExtCore::SetNull();
-
-      vchData.clear();
-      nType = ALIAS_NONE;
-      nLevel = 0;
+      CIdent::SetNull();
     }
 
     void NotifySharenet(int ifaceIndex)

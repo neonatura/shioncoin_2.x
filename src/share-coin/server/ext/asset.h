@@ -26,31 +26,26 @@
 #ifndef __ASSET_H__
 #define __ASSET_H__
 
-#include "json/json_spirit_reader_template.h"
-#include "json/json_spirit_writer_template.h"
-using namespace std;
-using namespace json_spirit;
 
 
-typedef map<uint160, uint256> asset_list;
 
-
-class CAsset : public CExtCore
+/**
+ * An asset is treated as a specific type of certification.
+ * @note An asset is not capable of additional context data being stored.
+ */
+class CAsset : public CCert
 {
-
-  protected:
-    uint160 hCert;
-    CSign sigCert;
-    cbuff vHash;
-
-    /* reserved */
-    cbuff vUrl;
-    cbuff vLocale;
 
   public:
     CAsset()
     {
       SetNull();
+    }
+
+    CAsset(const CCert& certIn)
+    {
+      SetNull();
+      CCert::Init(certIn);
     }
 
     CAsset(const CAsset& assetIn)
@@ -59,50 +54,30 @@ class CAsset : public CExtCore
       Init(assetIn);
     }
 
-    CAsset(string labelIn, string strHashIn)
+    CAsset(string labelIn)
     {
       SetNull();
       SetLabel(labelIn);
-      SetAssetHash(strHashIn);
     }
 
     IMPLEMENT_SERIALIZE (
-      READWRITE(*(CExtCore *)this);
-      READWRITE(hCert);
-      READWRITE(sigCert);
-      READWRITE(vHash);
-
-      /* reserved */
-      READWRITE(vUrl);
-      READWRITE(vLocale);
+      READWRITE(*(CCert *)this);
     )
 
     void SetNull()
     {
-      CExtCore::SetNull();
-
-      hCert = 0;
-      sigCert.SetNull();
-      vHash.clear();
-      vUrl.clear();
-      vLocale.clear();
+      CCert::SetNull();
     }
 
     void Init(const CAsset& assetIn)
     {
-      CExtCore::Init(assetIn);
-      hCert = assetIn.hCert;
-      sigCert = assetIn.sigCert;
-      vHash = assetIn.vHash;
+      CCert::Init(assetIn);
     }
 
     friend bool operator==(const CAsset &a, const CAsset &b)
     {
       return (
-        ((CExtCore&) a) == ((CExtCore&) b) &&
-        a.hCert == b.hCert &&
-        a.sigCert == b.sigCert &&
-        a.vHash == b.vHash 
+        ((CCert&) a) == ((CCert&) b)
       );
     }
 
@@ -112,20 +87,9 @@ class CAsset : public CExtCore
       return (*this);
     }
 
-
     bool Sign(uint160 sigCertIn);
 
     bool VerifySignature();
-
-    void SetAssetHash(string strHash)
-    {
-      vHash = vchFromString(strHash); 
-    }
-
-    string GetAssetHash()
-    {
-      return (stringFromVch(vHash));
-    }
 
     const uint160 GetHash()
     {

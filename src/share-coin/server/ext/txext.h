@@ -186,7 +186,7 @@ class CExtCore
     unsigned int nVersion;
     shtime_t tExpire;
     cbuff vchLabel;
-    CSign signature;
+//    CSign signature;
 
     mutable bool fActive;
 
@@ -202,7 +202,7 @@ class CExtCore
       READWRITE(this->nVersion);
       READWRITE(this->tExpire);
       READWRITE(this->vchLabel);
-      READWRITE(this->signature);
+//      READWRITE(this->signature);
     )
 
     void SetNull()
@@ -210,7 +210,7 @@ class CExtCore
       nVersion = PROTO_EXT_VERSION;
       tExpire = shtime_adj(shtime(), SHARE_DEFAULT_EXPIRE_TIME);
       vchLabel.clear();
-      signature.SetNull();
+//      signature.SetNull();
       fActive = false;
     }
 
@@ -248,7 +248,7 @@ class CExtCore
       nVersion = b.nVersion;
       tExpire = b.tExpire;
       vchLabel = b.vchLabel;
-      signature = b.signature;
+//      signature = b.signature;
       fActive = b.fActive;
     }
 
@@ -256,8 +256,8 @@ class CExtCore
     {
       return (a.nVersion == b.nVersion &&
           a.tExpire == b.tExpire &&
-          a.vchLabel == b.vchLabel &&
-          a.signature == b.signature
+          a.vchLabel == b.vchLabel
+//          a.signature == b.signature
           );
     }
 
@@ -295,10 +295,16 @@ class CExtCore
 };
 
 
-#include "alias.h"
-#include "offer.h"
+typedef std::map<std::string, uint256> alias_list;
+typedef map<uint160, uint256> asset_list;
+typedef map<uint160, uint256> cert_list;
+typedef std::map<uint160, uint256> offer_list;
+
+
 #include "certificate.h"
+#include "offer.h"
 #include "asset.h"
+#include "alias.h"
 
 
 #endif /* ndef __SERVER_TXEXT_H__ */

@@ -111,6 +111,7 @@ const char* GetTxnOutputType(txnouttype t)
     case TX_PUBKEYHASH: return "pubkeyhash";
     case TX_SCRIPTHASH: return "scripthash";
     case TX_MULTISIG: return "multisig";
+    case TX_RETURN: return "return";
     }
     return NULL;
 }
@@ -254,6 +255,7 @@ const char* GetOpName(opcodetype opcode)
     case OP_LICENSE                : return "OP_LICENSE";
     case OP_ASSET                  : return "OP_ASSET";
     case OP_MATRIX                  : return "OP_MATRIX";
+    case OP_VAULT                  : return "OP_VAULT";
 
     /* extension operatives */
     case OP_EXT_NEW                : return "OP_EXT_NEW";
@@ -263,6 +265,7 @@ const char* GetOpName(opcodetype opcode)
     case OP_EXT_GENERATE           : return "OP_EXT_GENERATE";
     case OP_EXT_TRANSFER           : return "OP_EXT_TRANSFER";
     case OP_EXT_PAY                : return "OP_EXT_PAY";
+    case OP_EXT_VALIDATE                : return "OP_EXT_VALIDATE";
 
     // template matching params
     case OP_PUBKEYHASH             : return "OP_PUBKEYHASH";

@@ -193,6 +193,7 @@ Value rpc_cert_get(CIface *iface, const Array& params, bool fHelp)
 
 Value rpc_cert_new(CIface *iface, const Array& params, bool fHelp) 
 {
+  CWallet *wallet = GetWallet(iface);
   int ifaceIndex = GetCoinIndex(iface);
   int err;
 
@@ -214,6 +215,9 @@ Value rpc_cert_new(CIface *iface, const Array& params, bool fHelp)
   string strTitle = params[1].get_str();
   if (strTitle.length() == 0 || strTitle.length() > 135)
     throw JSONRPCError(-5, "Certificate name must be between 1 and 135 characters.");
+
+  if (wallet->mapCertLabel.count(strTitle))
+    throw JSONRPCError(-5, "Certificate name must be unique.");
 
   cbuff vSeed;
   if (params.size() > 2)

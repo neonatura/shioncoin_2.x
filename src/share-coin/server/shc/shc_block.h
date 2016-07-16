@@ -69,6 +69,7 @@ extern std::multimap<uint256, SHCBlock*> SHC_mapOrphanBlocksByPrev;
 extern std::map<uint256, std::map<uint256, CDataStream*> > SHC_mapOrphanTransactionsByPrev;
 extern std::map<uint256, CDataStream*> SHC_mapOrphanTransactions;
 extern uint256 shc_hashGenesisBlock;
+extern ValidateMatrix shc_Validate;
 
 
 
