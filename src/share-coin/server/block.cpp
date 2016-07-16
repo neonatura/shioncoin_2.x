@@ -2753,10 +2753,10 @@ Object CBlockHeader::ToValue()
 Object CBlock::ToValue()
 {
   Object obj = CBlockHeader::ToValue();
-  
+
   Array txs;
   BOOST_FOREACH(const CTransaction&tx, vtx)
-    txs.push_back(GetHash().GetHex());
+    txs.push_back(tx.GetHash().GetHex());
   obj.push_back(Pair("tx", txs));
 
   return (obj);
