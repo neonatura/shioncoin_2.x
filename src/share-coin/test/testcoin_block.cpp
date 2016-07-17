@@ -32,6 +32,7 @@
 
 #include "offer.h"
 #include "asset.h"
+#include "spring.h"
 
 
 
@@ -527,6 +528,7 @@ if (err) fprintf(stderr, "DEBUG: IDENT-TX(cert coin): err == %d\n", err);
 
   bal = GetAccountBalance(TEST_COIN_IFACE, strAccount, 1); /* not counting to-be-matured coins */
   _TRUE(bal > orig_bal);
+
 }
 
 _TEST(certtx)
@@ -760,10 +762,13 @@ fprintf(stderr, "DEBUG: TEST OFFER: offertx: bal %llu < new_bal %llu\n", (unsign
 
 _TEST(matrix)
 {
+  CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
   CTransaction tx;
   CTxMatrix seed;
   CTxMatrix *m;
+  double lat, lon;
   int idx;
+  int err;
 
   CBlockIndex *pindex;
   CBlockIndex *t_pindex;
@@ -814,6 +819,20 @@ if (!ret) {
     
     seed = *m;
   }
+
+  /* claim a known 'root' location in spring matrix */
+  lat = 46.6317; lon = 114.0946;
+  _TRUE(is_spring_loc(lat, lon));
+  spring_loc_claim(lat, lon);
+  _TRUE(!is_spring_loc(lat, lon));
+
+  /* claim a location through block-chain */
+  CWalletTx wtx;
+  string strAccount("");
+  string strComment("geo:46.7467,-114.1096");
+  err = init_ident_stamp_tx(iface, strAccount, strComment, wtx); 
+  _TRUE(err == 0);
+
 
 /* DEBUG: TODO: free blockindex's for valgrind mem check */
 

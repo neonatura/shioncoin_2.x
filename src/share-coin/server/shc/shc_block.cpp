@@ -60,6 +60,7 @@ map<uint256, map<uint256, CDataStream*> > SHC_mapOrphanTransactionsByPrev;
 map<uint256, CDataStream*> SHC_mapOrphanTransactions;
 
 ValidateMatrix shc_Validate;
+CTxMatrix shc_Spring;
 
 class SHCOrphan
 {
@@ -640,7 +641,13 @@ continue;
   }
 
   int64 reward = shc_GetBlockValue(pindexPrev->nHeight+1, nFees);
-/* .. GenerateMatrix .. */
+#if 0
+  if (pindexPrev->nHeight > 100000) {
+   ret = BlockGenerateValidateMatrix(iface, &shc_Validate, pblock->vtx[0], reward);
+      if (!ret) /* spring matrix */
+        ret = BlockGenerateSpringMatrix(iface, &shc_Spring, pblock->vtx[0], reward);
+  }
+#endif
   pblock->vtx[0].vout[0].nValue = reward; 
 
 
@@ -1484,9 +1491,6 @@ bool SHCBlock::IsBestChain()
   return (pindexBest && GetHash() == pindexBest->GetBlockHash());
 }
 
-bool shc_AcceptBlock(SHCBlock *pblock)
-{
-}
 #if 0
 bool shc_AcceptBlock(SHCBlock *pblock)
 {
@@ -1566,20 +1570,28 @@ bool shc_AcceptBlock(SHCBlock *pblock)
 
 bool SHCBlock::AcceptBlock()
 {
-  ValidateMatrix matrix;
-  bool fMatrix = false;
+  CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);
+  ValidateMatrix val_matrix;
+  bool fValMatrix = false;
+  int mode;
 
-  if (vtx.size() != 0) {
+  if (vtx.size() != 0 && VerifyMatrixTx(vtx[0], mode)) {
     bool fCheck = false;
-    fMatrix = BlockAcceptValidateMatrix(&shc_Validate, matrix, vtx[0], fCheck);
-    if (fMatrix && !fCheck)
-      return error(SHERR_ILSEQ, "AcceptBlock: shc_Validate failure: (seed %s) (new %s)", shc_Validate.ToString().c_str(), matrix.ToString().c_str());
+    if (mode == OP_EXT_VALIDATE) {
+      fValMatrix = BlockAcceptValidateMatrix(&shc_Validate, val_matrix, vtx[0], fCheck);
+      if (fValMatrix && !fCheck)
+        return error(SHERR_ILSEQ, "AcceptBlock: shc_Validate failure: (seed %s) (new %s)", shc_Validate.ToString().c_str(), val_matrix.ToString().c_str());
+    } else if (mode == OP_EXT_PAY) {
+      bool fHasSprMatrix = BlockAcceptSpringMatrix(iface, &shc_Spring, vtx[0], fCheck);
+      if (fHasSprMatrix && !fCheck)
+        return error(SHERR_ILSEQ, "AcceptBlock: shc_Spring failure: (seed %s) (new %s)", shc_Validate.ToString().c_str(), val_matrix.ToString().c_str());
+    }
   }
 
   bool ret = core_AcceptBlock(this);
 
-  if (ret && fMatrix) {
-    shc_Validate = matrix;
+  if (ret && fValMatrix) {
+    shc_Validate = val_matrix;
   }
 
   return (ret);
@@ -2026,12 +2038,12 @@ bool SHCBlock::DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex)
       BOOST_FOREACH(CTransaction& tx, vtx) {
         if (tx.IsCoinBase()) {
           if (tx.isFlag(CTransaction::TXF_MATRIX)) {
-            /* retract block hash from Validate matrix */
             CTxMatrix& matrix = tx.matrix;
             if (matrix.GetType() == CTxMatrix::M_VALIDATE) {
+              /* retract block hash from Validate matrix */
               shc_Validate.Retract(pindex->nHeight, pindex->GetBlockHash());
             } else if (matrix.GetType() == CTxMatrix::M_SPRING) {
-              //          spring_retract(txdb.ifaceIndex, &test_SpringMatrix, GetMatrixOrigin(tx));
+              BlockRetractSpringMatrix(iface, &shc_Spring, tx, pindex);
             }
           }
         } else {

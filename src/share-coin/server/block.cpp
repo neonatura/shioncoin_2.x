@@ -27,6 +27,7 @@
 #include "block.h"
 #include "db.h"
 #include <vector>
+#include "spring.h"
 
 using namespace std;
 
@@ -2798,4 +2799,6 @@ bool CTransaction::IsInMemoryPool(int ifaceIndex)
 
   return (pool->exists(GetHash()));
 }
+
+
 

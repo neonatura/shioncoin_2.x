@@ -440,6 +440,10 @@ int GetTotalCertificates(int ifaceIndex);
 
 cert_list *GetCertTable(int ifaceIndex);
 
+cert_list *GetIdentTable(int ifaceIndex);
+
+cert_list *GetLicenseTable(int ifaceIndex);
+
 bool IsCertTx(const CTransaction& tx);
 
 bool InsertCertTable(CIface *iface, CTransaction& tx, bool fUpdate = true);
@@ -451,6 +455,9 @@ bool IsCertAccount(CIface *iface, CTransaction& tx, string strAccount);
 bool DisconnectCertificate(CIface *iface, CTransaction& tx);
 
 bool GetCertByName(CIface *iface, string name, CCert& cert);
+
+bool GetTxOfIdent(CIface *iface, const uint160& hash, CTransaction& tx);
+
 
 
 #endif /* ndef __SERVER__CERTIFICATE_H__ */

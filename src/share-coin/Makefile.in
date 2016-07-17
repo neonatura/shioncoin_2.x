@@ -178,8 +178,9 @@ am__objects_5 = $(am__objects_4) shcoind-test_wallet.$(OBJEXT) \
 	shcoind-rpcalias_proto.$(OBJEXT) \
 	shcoind-rpccert_proto.$(OBJEXT) shcoind-rpcdump.$(OBJEXT) \
 	shcoind-rpcnet.$(OBJEXT) shcoind-rpc_proto.$(OBJEXT) \
-	shcoind-rpcrawtransaction.$(OBJEXT) shcoind-block.$(OBJEXT) \
-	shcoind-chain.$(OBJEXT) shcoind-matrix.$(OBJEXT) \
+	shcoind-rpcrawtransaction.$(OBJEXT) shcoind-rpc_bmp.$(OBJEXT) \
+	shcoind-block.$(OBJEXT) shcoind-chain.$(OBJEXT) \
+	shcoind-matrix.$(OBJEXT) shcoind-spring.$(OBJEXT) \
 	shcoind-base58.$(OBJEXT) shcoind-global.$(OBJEXT) \
 	shcoind-block_merkle.$(OBJEXT) shcoind-crypter.$(OBJEXT) \
 	shcoind-txidx.$(OBJEXT) shcoind-init.$(OBJEXT) \
@@ -267,8 +268,9 @@ am__objects_13 = $(am__objects_12) test_shcoind-test_wallet.$(OBJEXT) \
 	test_shcoind-rpcdump.$(OBJEXT) test_shcoind-rpcnet.$(OBJEXT) \
 	test_shcoind-rpc_proto.$(OBJEXT) \
 	test_shcoind-rpcrawtransaction.$(OBJEXT) \
-	test_shcoind-block.$(OBJEXT) test_shcoind-chain.$(OBJEXT) \
-	test_shcoind-matrix.$(OBJEXT) test_shcoind-base58.$(OBJEXT) \
+	test_shcoind-rpc_bmp.$(OBJEXT) test_shcoind-block.$(OBJEXT) \
+	test_shcoind-chain.$(OBJEXT) test_shcoind-matrix.$(OBJEXT) \
+	test_shcoind-spring.$(OBJEXT) test_shcoind-base58.$(OBJEXT) \
 	test_shcoind-global.$(OBJEXT) \
 	test_shcoind-block_merkle.$(OBJEXT) \
 	test_shcoind-crypter.$(OBJEXT) test_shcoind-txidx.$(OBJEXT) \
@@ -1382,9 +1384,11 @@ server_sources = \
 	server/rpc/rpcnet.cpp \
 	server/rpc/rpc_proto.cpp \
 	server/rpc/rpcrawtransaction.cpp \
+	server/rpc/rpc_bmp.c \
 	server/block.cpp \
 	server/chain.cpp \
 	server/matrix.cpp \
+	server/spring.c \
 	server/base58.cpp \
 	server/global.cpp \
 	server/block_merkle.cpp \
@@ -1634,6 +1638,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-netbase.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-offer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-protocol.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-rpc_bmp.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-rpc_proto.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-rpcalias_proto.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-rpccert_proto.Po@am__quote@
@@ -1653,6 +1658,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-shcoind_log.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-shcoind_opt.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-shcoind_rpc.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-spring.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-stratum.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-stratum_http.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-stratum_message.Po@am__quote@
@@ -1734,6 +1740,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-netbase.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-offer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-protocol.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-rpc_bmp.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-rpc_proto.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-rpcalias_proto.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-rpccert_proto.Po@am__quote@
@@ -1751,6 +1758,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-shcoind_log.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-shcoind_opt.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-shcoind_rpc.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-spring.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-stratum.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-stratum_http.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-stratum_message.Po@am__quote@
@@ -2064,6 +2072,34 @@ shcoind-coin_proto.obj: $(srcdir)/proto/coin_proto.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(srcdir)/proto/coin_proto.c' object='shcoind-coin_proto.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CFLAGS) $(CFLAGS) -c -o shcoind-coin_proto.obj `if test -f '$(srcdir)/proto/coin_proto.c'; then $(CYGPATH_W) '$(srcdir)/proto/coin_proto.c'; else $(CYGPATH_W) '$(srcdir)/$(srcdir)/proto/coin_proto.c'; fi`
+
+shcoind-rpc_bmp.o: server/rpc/rpc_bmp.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CFLAGS) $(CFLAGS) -MT shcoind-rpc_bmp.o -MD -MP -MF $(DEPDIR)/shcoind-rpc_bmp.Tpo -c -o shcoind-rpc_bmp.o `test -f 'server/rpc/rpc_bmp.c' || echo '$(srcdir)/'`server/rpc/rpc_bmp.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shcoind-rpc_bmp.Tpo $(DEPDIR)/shcoind-rpc_bmp.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='server/rpc/rpc_bmp.c' object='shcoind-rpc_bmp.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CFLAGS) $(CFLAGS) -c -o shcoind-rpc_bmp.o `test -f 'server/rpc/rpc_bmp.c' || echo '$(srcdir)/'`server/rpc/rpc_bmp.c
+
+shcoind-rpc_bmp.obj: server/rpc/rpc_bmp.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CFLAGS) $(CFLAGS) -MT shcoind-rpc_bmp.obj -MD -MP -MF $(DEPDIR)/shcoind-rpc_bmp.Tpo -c -o shcoind-rpc_bmp.obj `if test -f 'server/rpc/rpc_bmp.c'; then $(CYGPATH_W) 'server/rpc/rpc_bmp.c'; else $(CYGPATH_W) '$(srcdir)/server/rpc/rpc_bmp.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shcoind-rpc_bmp.Tpo $(DEPDIR)/shcoind-rpc_bmp.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='server/rpc/rpc_bmp.c' object='shcoind-rpc_bmp.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CFLAGS) $(CFLAGS) -c -o shcoind-rpc_bmp.obj `if test -f 'server/rpc/rpc_bmp.c'; then $(CYGPATH_W) 'server/rpc/rpc_bmp.c'; else $(CYGPATH_W) '$(srcdir)/server/rpc/rpc_bmp.c'; fi`
+
+shcoind-spring.o: server/spring.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CFLAGS) $(CFLAGS) -MT shcoind-spring.o -MD -MP -MF $(DEPDIR)/shcoind-spring.Tpo -c -o shcoind-spring.o `test -f 'server/spring.c' || echo '$(srcdir)/'`server/spring.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shcoind-spring.Tpo $(DEPDIR)/shcoind-spring.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='server/spring.c' object='shcoind-spring.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CFLAGS) $(CFLAGS) -c -o shcoind-spring.o `test -f 'server/spring.c' || echo '$(srcdir)/'`server/spring.c
+
+shcoind-spring.obj: server/spring.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CFLAGS) $(CFLAGS) -MT shcoind-spring.obj -MD -MP -MF $(DEPDIR)/shcoind-spring.Tpo -c -o shcoind-spring.obj `if test -f 'server/spring.c'; then $(CYGPATH_W) 'server/spring.c'; else $(CYGPATH_W) '$(srcdir)/server/spring.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shcoind-spring.Tpo $(DEPDIR)/shcoind-spring.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='server/spring.c' object='shcoind-spring.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CFLAGS) $(CFLAGS) -c -o shcoind-spring.obj `if test -f 'server/spring.c'; then $(CYGPATH_W) 'server/spring.c'; else $(CYGPATH_W) '$(srcdir)/server/spring.c'; fi`
 
 shcoind-scrypt.o: server/scrypt.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CFLAGS) $(CFLAGS) -MT shcoind-scrypt.o -MD -MP -MF $(DEPDIR)/shcoind-scrypt.Tpo -c -o shcoind-scrypt.o `test -f 'server/scrypt.c' || echo '$(srcdir)/'`server/scrypt.c
@@ -2680,6 +2716,34 @@ test_shcoind-coin_proto.obj: $(srcdir)/proto/coin_proto.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(srcdir)/proto/coin_proto.c' object='test_shcoind-coin_proto.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-coin_proto.obj `if test -f '$(srcdir)/proto/coin_proto.c'; then $(CYGPATH_W) '$(srcdir)/proto/coin_proto.c'; else $(CYGPATH_W) '$(srcdir)/$(srcdir)/proto/coin_proto.c'; fi`
+
+test_shcoind-rpc_bmp.o: server/rpc/rpc_bmp.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-rpc_bmp.o -MD -MP -MF $(DEPDIR)/test_shcoind-rpc_bmp.Tpo -c -o test_shcoind-rpc_bmp.o `test -f 'server/rpc/rpc_bmp.c' || echo '$(srcdir)/'`server/rpc/rpc_bmp.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-rpc_bmp.Tpo $(DEPDIR)/test_shcoind-rpc_bmp.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='server/rpc/rpc_bmp.c' object='test_shcoind-rpc_bmp.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-rpc_bmp.o `test -f 'server/rpc/rpc_bmp.c' || echo '$(srcdir)/'`server/rpc/rpc_bmp.c
+
+test_shcoind-rpc_bmp.obj: server/rpc/rpc_bmp.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-rpc_bmp.obj -MD -MP -MF $(DEPDIR)/test_shcoind-rpc_bmp.Tpo -c -o test_shcoind-rpc_bmp.obj `if test -f 'server/rpc/rpc_bmp.c'; then $(CYGPATH_W) 'server/rpc/rpc_bmp.c'; else $(CYGPATH_W) '$(srcdir)/server/rpc/rpc_bmp.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-rpc_bmp.Tpo $(DEPDIR)/test_shcoind-rpc_bmp.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='server/rpc/rpc_bmp.c' object='test_shcoind-rpc_bmp.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-rpc_bmp.obj `if test -f 'server/rpc/rpc_bmp.c'; then $(CYGPATH_W) 'server/rpc/rpc_bmp.c'; else $(CYGPATH_W) '$(srcdir)/server/rpc/rpc_bmp.c'; fi`
+
+test_shcoind-spring.o: server/spring.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-spring.o -MD -MP -MF $(DEPDIR)/test_shcoind-spring.Tpo -c -o test_shcoind-spring.o `test -f 'server/spring.c' || echo '$(srcdir)/'`server/spring.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-spring.Tpo $(DEPDIR)/test_shcoind-spring.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='server/spring.c' object='test_shcoind-spring.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-spring.o `test -f 'server/spring.c' || echo '$(srcdir)/'`server/spring.c
+
+test_shcoind-spring.obj: server/spring.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-spring.obj -MD -MP -MF $(DEPDIR)/test_shcoind-spring.Tpo -c -o test_shcoind-spring.obj `if test -f 'server/spring.c'; then $(CYGPATH_W) 'server/spring.c'; else $(CYGPATH_W) '$(srcdir)/server/spring.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-spring.Tpo $(DEPDIR)/test_shcoind-spring.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='server/spring.c' object='test_shcoind-spring.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-spring.obj `if test -f 'server/spring.c'; then $(CYGPATH_W) 'server/spring.c'; else $(CYGPATH_W) '$(srcdir)/server/spring.c'; fi`
 
 test_shcoind-scrypt.o: server/scrypt.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-scrypt.o -MD -MP -MF $(DEPDIR)/test_shcoind-scrypt.Tpo -c -o test_shcoind-scrypt.o `test -f 'server/scrypt.c' || echo '$(srcdir)/'`server/scrypt.c

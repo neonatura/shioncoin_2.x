@@ -45,6 +45,16 @@ cert_list *GetCertTable(int ifaceIndex)
   return (&wallet->mapCert);
 }
 
+cert_list *GetIdentTable(int ifaceIndex)
+{
+  if (ifaceIndex < 0 || ifaceIndex >= MAX_COIN_IFACE)
+    return (NULL);
+  CWallet *wallet = GetWallet(ifaceIndex);
+  if (!wallet)
+    return (NULL);
+  return (&wallet->mapIdent);
+}
+
 cert_list *GetLicenseTable(int ifaceIndex)
 {
   if (ifaceIndex < 0 || ifaceIndex >= MAX_COIN_IFACE)
@@ -658,6 +668,27 @@ bool GetTxOfCert(CIface *iface, const uint160& hash, CTransaction& tx)
   return (true);
 }
 
+bool GetTxOfIdent(CIface *iface, const uint160& hash, CTransaction& tx)
+{
+  int ifaceIndex = GetCoinIndex(iface);
+  cert_list *idents = GetIdentTable(ifaceIndex);
+
+  if (idents->count(hash) == 0)
+    return (false);
+
+  uint256 hashTx = (*idents)[hash];
+  bool ret = GetTransaction(iface, hashTx, tx, NULL);
+  if (!ret)
+    return (false);
+
+  if (!IsIdentTx(tx)) {
+    return (false);
+  }
+
+  tx.certificate.SetActive(true);
+  return (true);
+}
+
 bool VerifyCertHash(CIface *iface, const uint160& hash)
 {
   int ifaceIndex = GetCoinIndex(iface);
@@ -955,9 +986,15 @@ int init_ident_stamp_tx(CIface *iface, std::string strAccount, std::string strCo
   if (!ident)
     return (SHERR_INVAL);
 
+  if (strComment.substr(0, 4) == "geo:") { /* geodetic uri */
+    shnum_t lat, lon;
+    int n = sscanf(strComment.c_str(), "geo:%Lf,%Lf", &lat, &lon);
+    if (n == 2)
+      shgeo_set(&ident->geo, lat, lon, 0);
+  }
   ident->SetLabel(strComment);
 
-  uint160 hashIdent = ident->GetHash();
+  const uint160 hashIdent = ident->GetHash();
 
   /* sent to intermediate account. */
   CReserveKey rkey(wallet);
@@ -976,6 +1013,8 @@ int init_ident_stamp_tx(CIface *iface, std::string strAccount, std::string strCo
   if (!wallet->CommitTransaction(wtx, rkey)) {
     return (SHERR_CANCELED);
   }
+
+  wallet->mapIdent[hashIdent] = wtx.GetHash(); 
 
   return (0);
 }

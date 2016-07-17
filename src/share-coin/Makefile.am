@@ -144,9 +144,11 @@ server_sources = \
 	server/rpc/rpcnet.cpp \
 	server/rpc/rpc_proto.cpp \
 	server/rpc/rpcrawtransaction.cpp \
+	server/rpc/rpc_bmp.c \
 	server/block.cpp \
 	server/chain.cpp \
 	server/matrix.cpp \
+	server/spring.c \
 	server/base58.cpp \
 	server/global.cpp \
 	server/block_merkle.cpp \

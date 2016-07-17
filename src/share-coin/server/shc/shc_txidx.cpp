@@ -31,26 +31,15 @@
 #include "shc_block.h"
 #include "shc_txidx.h"
 #include "chain.h"
-
-#ifdef WIN32
-#include <string.h>
-#endif
-
-#ifdef HAVE_FCNTL_H
-#include <fcntl.h>
-#endif
-#ifdef fcntl
-#undef fcntl
-#endif
+#include "spring.h"
 
 #include <boost/array.hpp>
 #include <boost/assign/list_of.hpp>
 #include <boost/algorithm/string/replace.hpp>
-#include <share.h>
-
 
 using namespace std;
 using namespace boost;
+
 
 
 bool SHCTxDB::ReadDiskTx(uint256 hash, CTransaction& tx, CTxIndex& txindex)
@@ -103,7 +92,7 @@ CBlockIndex static * InsertBlockIndex(uint256 hash)
 }
 
 typedef vector<CBlockIndex*> txlist;
-bool shc_FillBlockIndex(txlist& vMatrix, txlist& vCert)
+bool shc_FillBlockIndex(txlist& vMatrix, txlist& vSpring, txlist& vCert)
 {
   CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);
   blkidx_t *blockIndex = GetBlockTable(SHC_COIN_IFACE);
@@ -158,6 +147,8 @@ bool shc_FillBlockIndex(txlist& vMatrix, txlist& vCert)
         if (VerifyMatrixTx(tx, mode)) {
           if (mode == OP_EXT_VALIDATE)
             vMatrix.push_back(pindexNew);
+          else if (mode == OP_EXT_PAY)
+            vSpring.push_back(pindexNew);
         }
       }
       if (tx.isFlag(CTransaction::TXF_CERTIFICATE)) {
@@ -202,9 +193,10 @@ bool SHCTxDB::LoadBlockIndex()
   if (!LoadBlockIndexGuts())
     return false;
 #endif
+  txlist vSpring;
   txlist vMatrix;
   txlist vCert;
-  if (!shc_FillBlockIndex(vMatrix, vCert))
+  if (!shc_FillBlockIndex(vMatrix, vSpring, vCert))
     return (false);
 
   if (fRequestShutdown)
@@ -346,14 +338,39 @@ bool SHCTxDB::LoadBlockIndex()
   CWallet *wallet = GetWallet(SHC_COIN_IFACE);
   InitServiceWalletEvent(wallet, checkHeight);
 
+  /* Block-chain Validation Matrix */
   BOOST_FOREACH(CBlockIndex *pindex, vMatrix) {
     if (pindex->nHeight > pindexBest->nHeight)
       break;
     shc_Validate.Append(pindex->nHeight, pindex->GetBlockHash()); 
   }
 
+  /* Spring Matrix */
+  BOOST_FOREACH(CBlockIndex *pindex, vSpring) {
+    CBlock *block = GetBlockByHash(iface, pindex->GetBlockHash());
+    shnum_t lat, lon;
+
+    CTransaction id_tx;
+    const CTransaction& m_tx = block->vtx[0];
+    if (!GetTxOfIdent(iface, m_tx.matrix.hRef, id_tx)) {
+fprintf(stderr, "DEBUG: (shc) LoadBlockIndex: invalid ident '%s' reference in spring matrix block @ height %d.", m_tx.matrix.hRef.GetHex().c_str(), pindex->nHeight); 
+      delete block;
+      continue;
+    } 
+
+    /* mark location as claimed */
+    CIdent& ident = (CIdent&)id_tx.certificate;
+    shgeo_loc(&ident.geo, &lat, &lon, NULL);
+    spring_loc_claim(lat, lon);
+
+    /* append loc to spring validation matrix. */
+    shc_Spring.Append(pindex->nHeight, block->vtx[0].GetHash());
+
+    delete block;
+  }
+
   BOOST_FOREACH(CBlockIndex *pindex, vCert) {
-    CBlock *block = GetBlockByTx(iface, pindex->GetBlockHash());
+    CBlock *block = GetBlockByHash(iface, pindex->GetBlockHash());
     BOOST_FOREACH(CTransaction& tx, block->vtx) {
       if (IsCertTx(tx))
         InsertCertTable(iface, tx);

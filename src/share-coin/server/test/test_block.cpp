@@ -64,6 +64,7 @@ map<uint256, map<uint256, CDataStream*> > TEST_mapOrphanTransactionsByPrev;
 map<uint256, CDataStream*> TEST_mapOrphanTransactions;
 
 static ValidateMatrix test_Validate;
+static CTxMatrix test_Spring;
 
 class TESTOrphan
 {
@@ -329,6 +330,7 @@ CBlock* test_CreateNewBlock(CReserveKey& reservekey)
 {
   CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
   CBlockIndex* pindexPrev = GetBestBlockIndex(iface);
+  bool ret;
 
   // Create new block
   //auto_ptr<CBlock> pblock(new CBlock());
@@ -517,8 +519,12 @@ fprintf(stderr, "DEBUG: !test_ConnectInputs()\n");
   int64 reward = test_GetBlockValue(pindexPrev->nHeight+1, nFees);
 
   if (pblock->vtx.size() == 1) {
-    BlockGenerateValidateMatrix(iface, &test_Validate, pblock->vtx[0], reward);
+    /* validation matrix */
+    ret = BlockGenerateValidateMatrix(iface, &test_Validate, pblock->vtx[0], reward);
+    if (!ret) /* spring matrix */
+      ret = BlockGenerateSpringMatrix(iface, &test_Spring, pblock->vtx[0], reward);
   }
+
 #if 0
   /* 'zero transactions' penalty. */  
   if (pblock->vtx.size() == 1) {
@@ -547,6 +553,10 @@ fprintf(stderr, "DEBUG: CreateNewBlock: test_Validate (matrix hash %s) proposed:
   pblock->UpdateTime(pindexPrev);
   pblock->nBits          = pblock->GetNextWorkRequired(pindexPrev);
   pblock->nNonce         = 0;
+
+if (pblock->vtx[0].isFlag(CTransaction::TXF_MATRIX)) {
+fprintf(stderr, "DEBUG: test_CreateNewBlock: MATRIX block: %s\n", pblock->ToString().c_str()); 
+}
 
   return pblock.release();
 }
@@ -1590,16 +1600,29 @@ bool test_AcceptBlock(TESTBlock *pblock)
 
 bool TESTBlock::AcceptBlock()
 {
-  ValidateMatrix matrix;
-  bool fCheck = false;
-  bool fMatrix = BlockAcceptValidateMatrix(&test_Validate, matrix, vtx[0], fCheck);
-  if (fMatrix && !fCheck)
-    return error(SHERR_ILSEQ, "AcceptBlock: test_Validate failure: (seed %s) (new %s)", test_Validate.ToString().c_str(), matrix.ToString().c_str());
+  CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
+
+  ValidateMatrix val_matrix;
+  bool fHasValMatrix = false;
+  int mode;
+  if (vtx.size() != 0 && VerifyMatrixTx(vtx[0], mode)) {
+fprintf(stderr, "DEBUG: AcceptBlock(): found matrix type %d\n", mode);
+    bool fCheck = false;
+    if (mode == OP_EXT_VALIDATE) {
+      bool fHasValMatrix = BlockAcceptValidateMatrix(&test_Validate, val_matrix, vtx[0], fCheck);
+      if (fHasValMatrix && !fCheck)
+        return error(SHERR_ILSEQ, "AcceptBlock: test_Validate failure: (seed %s) (new %s)", test_Validate.ToString().c_str(), val_matrix.ToString().c_str());
+    } else if (mode == OP_EXT_PAY) {
+      bool fHasSprMatrix = BlockAcceptSpringMatrix(iface, &test_Spring, vtx[0], fCheck);
+      if (fHasSprMatrix && !fCheck)
+        return error(SHERR_ILSEQ, "AcceptBlock: test_Spring failure: (seed %s) (new %s)", test_Validate.ToString().c_str(), val_matrix.ToString().c_str());
+    }
+  }
 
   bool ret = core_AcceptBlock(this);
 
-  if (ret && fMatrix) {
-    test_Validate = matrix;
+  if (ret && fHasValMatrix) {
+    test_Validate = val_matrix;
   }
 
   return (ret);
@@ -1948,12 +1971,12 @@ fprintf(stderr, "DEBUG: DisconnectBlock()\n");
       BOOST_FOREACH(CTransaction& tx, vtx) {
         if (tx.IsCoinBase()) {
           if (tx.isFlag(CTransaction::TXF_MATRIX)) {
-            /* retract block hash from Validate matrix */
             CTxMatrix& matrix = tx.matrix;
             if (matrix.GetType() == CTxMatrix::M_VALIDATE) {
-              test_Validate.Retract(pindex->nHeight, pindex->GetBlockHash());
+              /* retract block hash from Validate matrix */
+              test_Validate.Retract(matrix.nHeight, pindex->GetBlockHash());
             } else if (matrix.GetType() == CTxMatrix::M_SPRING) {
-    //          spring_retract(txdb.ifaceIndex, &test_SpringMatrix, GetMatrixOrigin(tx));
+              BlockRetractSpringMatrix(iface, &test_Spring, tx, pindex);
             }
           }
         } else {

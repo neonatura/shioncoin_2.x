@@ -40,6 +40,7 @@ class CTxMatrix
     unsigned int nType;
     unsigned int nHeight; 
     unsigned int __reserved_0__;
+    uint160 hRef;
     uint32_t vData[3][3];
 
     CTxMatrix()
@@ -59,6 +60,7 @@ class CTxMatrix
        READWRITE(this->nHeight);
        READWRITE(this->nType);
        READWRITE(this->__reserved_0__);
+       READWRITE(this->hRef);
        READWRITE(FLATDATA(this->vData));
       )
 
@@ -68,6 +70,7 @@ class CTxMatrix
           a.nVersion == b.nVersion &&
           a.nHeight == b.nHeight &&
           a.nType == b.nType &&
+          a.hRef == b.hRef &&
           0 == memcmp(a.vData, b.vData, sizeof(uint32_t) * 9)
       );
     }
@@ -89,6 +92,7 @@ class CTxMatrix
       nHeight = 0;
       nType = 0;
       __reserved_0__ = 0;
+      hRef = 0;
       memset(vData, 0, sizeof(uint32_t) * 9);
     }
 
@@ -97,6 +101,7 @@ class CTxMatrix
       nVersion = b.nVersion;
       nHeight = b.nHeight;
       nType = b.nType;
+      hRef = b.hRef;
       memcpy(vData, b.vData, sizeof(uint32_t) * 9);
     }
 
@@ -118,6 +123,11 @@ class CTxMatrix
     void SetType(int nTypeIn)
     {
       nType = nTypeIn;
+    }
+
+    uint160 GetReferenceHash()
+    {
+      return (hRef);
     }
 
     unsigned int GetCell(int row, int col)
@@ -240,9 +250,15 @@ class CBlock;
 
 bool BlockGenerateValidateMatrix(CIface *iface, ValidateMatrix *matrixIn, CTransaction& tx, int64& nReward);
 
+bool BlockGenerateSpringMatrix(CIface *iface, CTxMatrix *matrixIn, CTransaction& tx, int64& nReward);
+
 bool BlockAcceptValidateMatrix(ValidateMatrix *matrixIn, ValidateMatrix& matrix, CTransaction& tx, bool& fCheck);
 
-shgeo_t *GetMatrixOrigin(CTransaction& tx);
+bool BlockAcceptSpringMatrix(CIface *iface, CTxMatrix *matrixIn, CTransaction& tx, bool& fCheck);
+
+void BlockRetractSpringMatrix(CIface *iface, CTxMatrix *matrixIn, CTransaction& tx, CBlockIndex *pindex);
+
+
 
 
 
