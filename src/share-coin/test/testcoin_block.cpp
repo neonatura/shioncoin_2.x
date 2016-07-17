@@ -164,7 +164,6 @@ _TEST(reorganize)
   _TRUEPTR(blocks[39]);
 
   _TRUE(ProcessBlock(NULL, chain3) == true); /* ALT CHAIN */
-fprintf(stderr, "DEBUG: REORG:ng..\n");
 
   _TRUE(ProcessBlock(NULL, blocks[39]) == true);
   /* battle3 : finish */
@@ -503,7 +502,6 @@ wtx.print();
   _TRUE(wtx.IsInMemoryPool(TEST_COIN_IFACE) == false);
 
   bal = GetAccountBalance(TEST_COIN_IFACE, strAccount, 1);
-fprintf(stderr, "DEBUG: TEST: identtx: bal(%llu) < orig_bal(%llu)\n", (unsigned long long)bal, (unsigned long long)orig_bal); 
   _TRUE(bal < orig_bal);
   orig_bal = bal;
 
@@ -630,7 +628,6 @@ _TEST(offertx)
   int64 bal = GetAccountBalance(TEST_COIN_IFACE, strLabel, 1);
   srcValue = -1 * (bal / 3);
   destValue = 1 * (bal / 4);
-fprintf(stderr, "DEBUG: TEST: OFFER: pre-offer .. bal is now %f [srcValue %f, destValue %f]\n", ((double)bal / COIN), ((double)srcValue / COIN), ((double)destValue / COIN));
 
   CWalletTx wtx;
   err = init_offer_tx(iface, strLabel, srcValue, TEST_COIN_IFACE, destValue, wtx);
@@ -836,7 +833,6 @@ if (!ret) {
 
 /* DEBUG: TODO: free blockindex's for valgrind mem check */
 
-fprintf(stderr, "DEBUG: test matrix block / start\n");
   /* ensure that block processing does not fail past x2 Validate matrix */
   for (idx = 0; idx < 40; idx++) {
     CBlock *block = test_GenerateBlock();
@@ -844,7 +840,6 @@ fprintf(stderr, "DEBUG: test matrix block / start\n");
     _TRUE(ProcessBlock(NULL, block) == true);
     delete block;
   }
-fprintf(stderr, "DEBUG: test matrix block / finish\n");
 }
 
 

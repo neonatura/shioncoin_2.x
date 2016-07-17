@@ -552,10 +552,26 @@ inv.ifaceIndex = SHC_COIN_IFACE;
           SHCBlock block;
           if (block.ReadFromDisk(pindex) && block.CheckBlock() &&
               pindex->nHeight <= GetBestHeight(SHC_COIN_IFACE)) {
-            pfrom->PushMessage("block", block);
+            if (inv.type == MSG_BLOCK) {
+              pfrom->PushMessage("block", block);
+#if 0
+            } else if (inv.type == MSG_FILTERED_BLOCK) {
+              LOCK(pfrom->cs_filter);
+              if (pfrom->pfilter)
+              {
+                CMerkleBlock merkleBlock(block, *pfrom->pfilter);
+                pfrom->PushMessage("merkleblock", merkleBlock);
+                typedef std::pair<unsigned int, uint256> PairType;
+                BOOST_FOREACH(PairType& pair, merkleBlock.vMatchedTxn)
+                  if (!pfrom->setInventoryKnown.count(CInv(MSG_TX, pair.second)))
+                    pfrom->PushMessage("tx", block.vtx[pair.first]);
+              }
+
+#endif
+            } 
           } else {
-            Debug("SHC: WARN: failure validating requested block '%s' at height %d\n", block.GetHash().GetHex().c_str(), pindex->nHeight);
-            block.print();
+              Debug("SHC: WARN: failure validating requested block '%s' at height %d\n", block.GetHash().GetHex().c_str(), pindex->nHeight);
+              block.print();
           }
 
           // Trigger them to send a getblocks request for the next batch of inventory

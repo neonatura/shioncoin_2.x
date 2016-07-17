@@ -250,13 +250,13 @@ class CBlock;
 
 bool BlockGenerateValidateMatrix(CIface *iface, ValidateMatrix *matrixIn, CTransaction& tx, int64& nReward);
 
-bool BlockGenerateSpringMatrix(CIface *iface, CTxMatrix *matrixIn, CTransaction& tx, int64& nReward);
+bool BlockGenerateSpringMatrix(CIface *iface, CTransaction& tx, int64& nReward);
 
 bool BlockAcceptValidateMatrix(ValidateMatrix *matrixIn, ValidateMatrix& matrix, CTransaction& tx, bool& fCheck);
 
-bool BlockAcceptSpringMatrix(CIface *iface, CTxMatrix *matrixIn, CTransaction& tx, bool& fCheck);
+bool BlockAcceptSpringMatrix(CIface *iface, CTransaction& tx, bool& fCheck);
 
-void BlockRetractSpringMatrix(CIface *iface, CTxMatrix *matrixIn, CTransaction& tx, CBlockIndex *pindex);
+void BlockRetractSpringMatrix(CIface *iface, CTransaction& tx, CBlockIndex *pindex);
 
 
 

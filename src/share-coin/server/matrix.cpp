@@ -150,15 +150,16 @@ memset(&geo, 0, sizeof(geo));
 return (&geo);
 }
 
-bool BlockGenerateSpringMatrix(CIface *iface, CTxMatrix *matrixIn, CTransaction& tx, int64& nReward)
+bool BlockGenerateSpringMatrix(CIface *iface, CTransaction& tx, int64& nReward)
 {
 
   int64 nFee = MAX(0, MIN(COIN, nReward - iface->min_tx_fee));
   if (nFee < iface->min_tx_fee)
     return (false); /* reward too small */
 
+
   CIdent ident;
-  CTxMatrix *m = tx.GenerateSpringMatrix(TEST_COIN_IFACE, (CTxMatrix *)matrixIn, ident);
+  CTxMatrix *m = tx.GenerateSpringMatrix(TEST_COIN_IFACE, ident);
   if (!m)
     return (false); /* not applicable */
 
@@ -183,7 +184,7 @@ bool BlockGenerateSpringMatrix(CIface *iface, CTxMatrix *matrixIn, CTransaction&
   return (true);
 }
 
-bool BlockAcceptSpringMatrix(CIface *iface, CTxMatrix *matrixIn, CTransaction& tx, bool& fCheck)
+bool BlockAcceptSpringMatrix(CIface *iface, CTransaction& tx, bool& fCheck)
 {
   CWallet *wallet = GetWallet(iface);
   int ifaceIndex = GetCoinIndex(iface);
@@ -195,20 +196,22 @@ bool BlockAcceptSpringMatrix(CIface *iface, CTxMatrix *matrixIn, CTransaction& t
     CBlockIndex *pindex = GetBestBlockIndex(TEST_COIN_IFACE);
     CTxMatrix& matrix = *tx.GetMatrix();
     if (matrix.GetType() == CTxMatrix::M_SPRING) {
-      if (!tx.VerifySpringMatrix(ifaceIndex, matrixIn, matrix, &lat, &lon)) {
+      if (!tx.VerifySpringMatrix(ifaceIndex, matrix, &lat, &lon)) {
         fCheck = false;
-Debug("TESTBlock::AcceptBlock: SPRING: Spring verify failure: (seed %s) (new %s) lat(%f) lon(%f)\n", matrixIn->ToString().c_str(), matrix.ToString().c_str(), lat, lon);
+Debug("TESTBlock::AcceptBlock: SPRING: Spring verify failure: (new %s) lat(%f) lon(%f)\n", matrix.ToString().c_str(), lat, lon);
       } else {
         fCheck = true;
+#if 0
         /* update internal spring validation matrix */
-        matrixIn->nHeight = matrix.nHeight;
-        matrixIn->Append(matrixIn->nHeight, tx.GetHash());
-        matrixIn->hRef = matrix.hRef;
+        matrixIn.nHeight = matrix.nHeight;
+        matrixIn.Append(matrixIn->nHeight, tx.GetHash());
+        matrixIn.hRef = matrix.hRef;
+#endif
         /* remove claim location from spring matrix */
         spring_loc_claim(lat, lon);
         /* erase pending ident tx */
         wallet->mapIdent.erase(matrix.hRef);
-Debug("TESTBlock::AcceptBlock: SPRING: Spring verify success: (seed %s) (new %s) lat(%f) lon(%f)\n", matrixIn->ToString().c_str(), matrix.ToString().c_str(), lat, lon);
+Debug("TESTBlock::AcceptBlock: SPRING: Spring verify success: (new %s) lat(%f) lon(%f)\n", matrix.ToString().c_str(), lat, lon);
       }
       return (true); /* matrix was found */
     }
@@ -219,7 +222,7 @@ fprintf(stderr, "DEBUG: SPRING: accept failure (mode %d)\n", mode);
   return (false); /* no matrix was present */
 }
 
-CTxMatrix *CTransaction::GenerateSpringMatrix(int ifaceIndex, CTxMatrix *seed, CIdent& ident)
+CTxMatrix *CTransaction::GenerateSpringMatrix(int ifaceIndex, CIdent& ident)
 {
   CIface *iface = GetCoinByIndex(ifaceIndex);
   CWallet *wallet = GetWallet(ifaceIndex);
@@ -250,7 +253,8 @@ CTxMatrix *CTransaction::GenerateSpringMatrix(int ifaceIndex, CTxMatrix *seed, C
 
   nFlag |= CTransaction::TXF_MATRIX;
 
-  matrix = CTxMatrix(*seed);
+  matrix = CTxMatrix();
+  spring_matrix_compress(matrix.vData);
   matrix.nType = CTxMatrix::M_SPRING;
   matrix.nHeight = GetBestHeight(iface) + 1; 
   matrix.hRef = hashIdent;
@@ -258,7 +262,7 @@ CTxMatrix *CTransaction::GenerateSpringMatrix(int ifaceIndex, CTxMatrix *seed, C
   return (&matrix);
 }
 
-bool CTransaction::VerifySpringMatrix(int ifaceIndex, CTxMatrix *seed, const CTxMatrix& matrix, shnum_t *lat_p, shnum_t *lon_p)
+bool CTransaction::VerifySpringMatrix(int ifaceIndex, const CTxMatrix& matrix, shnum_t *lat_p, shnum_t *lon_p)
 {
   CIface *iface = GetCoinByIndex(ifaceIndex);
   
@@ -271,7 +275,8 @@ bool CTransaction::VerifySpringMatrix(int ifaceIndex, CTxMatrix *seed, const CTx
   if (!is_spring_loc(*lat_p, *lon_p))
     return error(SHERR_INVAL, "VerifySpringMatrix: invalid spring location.");
 
-  CTxMatrix cmp_matrix(*seed);
+  CTxMatrix cmp_matrix;
+  spring_matrix_compress(cmp_matrix.vData);
   cmp_matrix.nType = matrix.nType;
   cmp_matrix.nHeight = matrix.nHeight; 
   cmp_matrix.hRef = matrix.hRef;
@@ -286,7 +291,7 @@ fprintf(stderr, "DEBUG: SPRING: VerifySpringMatrix: coinbase %s\n", ToString().c
 }
 
 
-void BlockRetractSpringMatrix(CIface *iface, CTxMatrix *matrixIn, CTransaction& tx, CBlockIndex *pindex)
+void BlockRetractSpringMatrix(CIface *iface, CTransaction& tx, CBlockIndex *pindex)
 {
   int ifaceIndex = GetCoinIndex(iface);
   const CTxMatrix& matrix = tx.matrix;
@@ -294,7 +299,9 @@ void BlockRetractSpringMatrix(CIface *iface, CTxMatrix *matrixIn, CTransaction& 
   if (pindex->nHeight != matrix.nHeight)
     return;
 
+#if 0
   matrixIn->Retract(matrix.nHeight, tx.GetHash());
+#endif
 
   CTransaction id_tx;
   if (!GetTxOfIdent(iface, matrix.hRef, id_tx))

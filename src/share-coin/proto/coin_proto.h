@@ -141,6 +141,8 @@ typedef struct coin_iface_t
     uint64_t tot_block_accept;
     uint64_t tot_tx_submit;
     uint64_t tot_tx_accept;
+    uint64_t tot_spring_submit;
+    uint64_t tot_spring_accept;
   } stat;
 } coin_iface_t;
 

@@ -70,7 +70,6 @@ extern std::map<uint256, std::map<uint256, CDataStream*> > SHC_mapOrphanTransact
 extern std::map<uint256, CDataStream*> SHC_mapOrphanTransactions;
 extern uint256 shc_hashGenesisBlock;
 extern ValidateMatrix shc_Validate;
-extern CTxMatrix shc_Spring;
 
 
 

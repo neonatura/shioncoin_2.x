@@ -825,8 +825,9 @@ public:
 
     bool VerifyValidateMatrix(CTxMatrix *seed, const CTxMatrix& matrix, CBlockIndex *pindex);
 
-    CTxMatrix *GenerateSpringMatrix(int ifaceIndex, CTxMatrix *seed, CIdent& ident);
-    bool VerifySpringMatrix(int ifaceIndex, CTxMatrix *seed, const CTxMatrix& matrix, shnum_t *lat_p, shnum_t *lon_p);
+    CTxMatrix *GenerateSpringMatrix(int ifaceIndex, CIdent& ident);
+
+    bool VerifySpringMatrix(int ifaceIndex, const CTxMatrix& matrix, shnum_t *lat_p, shnum_t *lon_p);
 
     CTxMatrix *GetMatrix()
     {

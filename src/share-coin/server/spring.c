@@ -208,6 +208,27 @@ int spring_loc_search(shnum_t cur_lat, shnum_t cur_lon, shnum_t *lat_p, shnum_t 
   return (SHERR_NOENT);
 }
 
+void spring_matrix_compress(uint32_t matrix[3][3])
+{
+  int row, col;
+  int y, x;
+
+  for (row = 0; row < 3; row++) {
+    for (col = 0; col < 3; col++) {
+      matrix[row][col] = 0;
+    }
+  }
+
+  for (y = 0; y < 256; y++) {
+    for (x = 0; x < 256; x++) {
+      row = (int)(y / 85) % 3;
+      col = (int)(x / 85) % 3;
+      matrix[row][col] += (uint32_t)_spring_matrix[y][x];
+    }
+  }
+
+}
+
 int spring_render_fractal(char *img_path, double zoom)
 {
   static const unsigned int width = 256, height = 256;

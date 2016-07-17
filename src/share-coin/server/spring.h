@@ -91,6 +91,8 @@ int spring_render_fractal(char *img_path, double zoom);
 
 void spring_loc_claim(double lat, double lon);
 
+void spring_matrix_compress(uint32_t matrix[3][3]);
+
 
 #ifdef __cplusplus
 }

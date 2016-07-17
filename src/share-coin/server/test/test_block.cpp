@@ -64,7 +64,6 @@ map<uint256, map<uint256, CDataStream*> > TEST_mapOrphanTransactionsByPrev;
 map<uint256, CDataStream*> TEST_mapOrphanTransactions;
 
 static ValidateMatrix test_Validate;
-static CTxMatrix test_Spring;
 
 class TESTOrphan
 {
@@ -522,7 +521,7 @@ fprintf(stderr, "DEBUG: !test_ConnectInputs()\n");
     /* validation matrix */
     ret = BlockGenerateValidateMatrix(iface, &test_Validate, pblock->vtx[0], reward);
     if (!ret) /* spring matrix */
-      ret = BlockGenerateSpringMatrix(iface, &test_Spring, pblock->vtx[0], reward);
+      ret = BlockGenerateSpringMatrix(iface, pblock->vtx[0], reward);
   }
 
 #if 0
@@ -1613,7 +1612,7 @@ fprintf(stderr, "DEBUG: AcceptBlock(): found matrix type %d\n", mode);
       if (fHasValMatrix && !fCheck)
         return error(SHERR_ILSEQ, "AcceptBlock: test_Validate failure: (seed %s) (new %s)", test_Validate.ToString().c_str(), val_matrix.ToString().c_str());
     } else if (mode == OP_EXT_PAY) {
-      bool fHasSprMatrix = BlockAcceptSpringMatrix(iface, &test_Spring, vtx[0], fCheck);
+      bool fHasSprMatrix = BlockAcceptSpringMatrix(iface, vtx[0], fCheck);
       if (fHasSprMatrix && !fCheck)
         return error(SHERR_ILSEQ, "AcceptBlock: test_Spring failure: (seed %s) (new %s)", test_Validate.ToString().c_str(), val_matrix.ToString().c_str());
     }
@@ -1976,7 +1975,7 @@ fprintf(stderr, "DEBUG: DisconnectBlock()\n");
               /* retract block hash from Validate matrix */
               test_Validate.Retract(matrix.nHeight, pindex->GetBlockHash());
             } else if (matrix.GetType() == CTxMatrix::M_SPRING) {
-              BlockRetractSpringMatrix(iface, &test_Spring, tx, pindex);
+              BlockRetractSpringMatrix(iface, tx, pindex);
             }
           }
         } else {

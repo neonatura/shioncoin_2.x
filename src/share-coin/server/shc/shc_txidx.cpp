@@ -348,23 +348,18 @@ bool SHCTxDB::LoadBlockIndex()
   /* Spring Matrix */
   BOOST_FOREACH(CBlockIndex *pindex, vSpring) {
     CBlock *block = GetBlockByHash(iface, pindex->GetBlockHash());
-    shnum_t lat, lon;
+    if (!block) continue;
 
     CTransaction id_tx;
     const CTransaction& m_tx = block->vtx[0];
-    if (!GetTxOfIdent(iface, m_tx.matrix.hRef, id_tx)) {
-fprintf(stderr, "DEBUG: (shc) LoadBlockIndex: invalid ident '%s' reference in spring matrix block @ height %d.", m_tx.matrix.hRef.GetHex().c_str(), pindex->nHeight); 
-      delete block;
-      continue;
-    } 
+    if (GetTxOfIdent(iface, m_tx.matrix.hRef, id_tx)) {
+      shnum_t lat, lon;
 
-    /* mark location as claimed */
-    CIdent& ident = (CIdent&)id_tx.certificate;
-    shgeo_loc(&ident.geo, &lat, &lon, NULL);
-    spring_loc_claim(lat, lon);
-
-    /* append loc to spring validation matrix. */
-    shc_Spring.Append(pindex->nHeight, block->vtx[0].GetHash());
+      /* mark location as claimed */
+      CIdent& ident = (CIdent&)id_tx.certificate;
+      shgeo_loc(&ident.geo, &lat, &lon, NULL);
+      spring_loc_claim(lat, lon);
+    }
 
     delete block;
   }
