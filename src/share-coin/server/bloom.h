@@ -26,15 +26,14 @@
 #ifndef __SERVER__BLOOM_H__
 #define __SERVER__BLOOM_H__
 
-
+#if 0
 #include "shcoind.h"
 #include <vector>
 #include "block.h"
 #include "uint256.h"
 #include "serialize.h"
+#endif
 
-class COutPoint;
-class CTransaction;
 
 // 20,000 items with fp rate < 0.1% or 10,000 items and <0.0001%
 static const unsigned int MAX_BLOOM_FILTER_SIZE = 36000; // bytes
@@ -51,65 +50,102 @@ enum bloomflags
   BLOOM_UPDATE_MASK = 3,
 };
 
-/**
- * BloomFilter is a probabilistic filter which SPV clients provide
- * so that we can filter the transactions we sends them.
- * 
- * This allows for significantly more efficient transaction and block downloads.
- * 
- * Because bloom filters are probabilistic, an SPV node can increase the false-
- * positive rate, making us send them transactions which aren't actually theirs, 
- * allowing clients to trade more bandwidth for more privacy by obfuscating which
- * keys are owned by them.
- */
-class CBloomFilter
-{
-  private:
-    std::vector<unsigned char> vData;
-    bool isFull;
-    bool isEmpty;
-    unsigned int nHashFuncs;
-    unsigned int nTweak;
-    unsigned char nFlags;
 
-    unsigned int Hash(unsigned int nHashNum, const std::vector<unsigned char>& vDataToHash) const;
+
+
+
+
+
+
+
+class CPartialMerkleTree
+{
+  protected:
+    // the total number of transactions in the block
+    unsigned int nTransactions;
+
+    // node-is-parent-of-matched-txid bits
+    std::vector<bool> vBits;
+
+    // txids and internal hashes
+    std::vector<uint256> vHash;
+
+    // flag set when encountering invalid data
+    bool fBad;
+
+    // helper function to efficiently calculate the number of nodes at given height in the merkle tree
+    unsigned int CalcTreeWidth(int height) {
+      return (nTransactions+(1 << height)-1) >> height;
+    }
+
+    // calculate the hash of a node in the merkle tree (at leaf level: the txid's themself)
+    uint256 CalcHash(int height, unsigned int pos, const std::vector<uint256> &vTxid);
+
+    // recursive function that traverses tree nodes, storing the data as bits and hashes
+    void TraverseAndBuild(int height, unsigned int pos, const std::vector<uint256> &vTxid, const std::vector<bool> &vMatch);
+
+    // recursive function that traverses tree nodes, consuming the bits and hashes produced by TraverseAndBuild.
+    // it returns the hash of the respective node.
+    uint256 TraverseAndExtract(int height, unsigned int pos, unsigned int &nBitsUsed, unsigned int &nHashUsed, std::vector<uint256> &vMatch);
 
   public:
-    // Creates a new bloom filter which will provide the given fp rate when filled with the given number of elements
-    // Note that if the given parameters will result in a filter outside the bounds of the protocol limits,
-    // the filter created will be as close to the given parameters as possible within the protocol limits.
-    // This will apply if nFPRate is very low or nElements is unreasonably high.
-    // nTweak is a constant which is added to the seed value passed to the hash function
-    // It should generally always be a random value (and is largely only exposed for unit testing)
-    // nFlags should be one of the BLOOM_UPDATE_* enums (not _MASK)
-    CBloomFilter(unsigned int nElements, double nFPRate, unsigned int nTweak, unsigned char nFlagsIn);
-    CBloomFilter() : isFull(true) {}
+    IMPLEMENT_SERIALIZE(
+        READWRITE(nTransactions);
+        READWRITE(vHash);
+        std::vector<unsigned char> vBytes;
+        if (fRead) {
+            READWRITE(vBytes);
+            CPartialMerkleTree &us = *(const_cast<CPartialMerkleTree*>(this));
+            us.vBits.resize(vBytes.size() * 8);
+            for (unsigned int p = 0; p < us.vBits.size(); p++)
+                us.vBits[p] = (vBytes[p / 8] & (1 << (p % 8))) != 0;
+            us.fBad = false;
+        } else {
+            vBytes.resize((vBits.size()+7)/8);
+            for (unsigned int p = 0; p < vBits.size(); p++)
+                vBytes[p / 8] |= vBits[p] << (p % 8);
+            READWRITE(vBytes);
+        }
+    )
+
+
+    // Construct a partial merkle tree from a list of transaction id's, and a mask that selects a subset of them
+    CPartialMerkleTree(const std::vector<uint256> &vTxid, const std::vector<bool> &vMatch);
+
+    CPartialMerkleTree();
+
+    // extract the matching txid's represented by this partial merkle tree.
+    // returns the merkle root, or 0 in case of failure
+    uint256 ExtractMatches(std::vector<uint256> &vMatch);
+};
+
+
+
+/** Used to relay blocks as header + vector<merkle branch>
+ * to filtered nodes.
+ */
+class CMerkleBlock
+{
+public:
+    // Public only for unit testing
+    CBlockHeader header;
+    CPartialMerkleTree txn;
+
+public:
+    // Public only for unit testing and relay testing
+    // (not relayed)
+    std::vector<std::pair<unsigned int, uint256> > vMatchedTxn;
+
+    // Create from a CBlock, filtering transactions according to filter
+    // Note that this will call IsRelevantAndUpdate on the filter for each transaction,
+    // thus the filter will likely be modified.
+    CMerkleBlock(const CBlock& block, CBloomFilter& filter);
 
     IMPLEMENT_SERIALIZE
-      (
-       READWRITE(vData);
-       READWRITE(nHashFuncs);
-       READWRITE(nTweak);
-       READWRITE(nFlags);
-      )
-
-      void insert(const std::vector<unsigned char>& vKey);
-    void insert(const COutPoint& outpoint);
-    void insert(const uint256& hash);
-
-    bool contains(const std::vector<unsigned char>& vKey) const;
-    bool contains(const COutPoint& outpoint) const;
-    bool contains(const uint256& hash) const;
-
-    // True if the size is <= MAX_BLOOM_FILTER_SIZE and the number of hash functions is <= MAX_HASH_FUNCS
-    // (catch a filter which was just deserialized which was too big)
-    bool IsWithinSizeConstraints() const;
-
-    // Also adds any outputs which match the filter to the filter (to match their spending txes)
-    bool IsRelevantAndUpdate(const CTransaction& tx, const uint256& hash);
-
-    // Checks for empty and full filters to avoid wasting cpu
-    void UpdateEmptyFull();
+    (
+        READWRITE(header);
+        READWRITE(txn);
+    )
 };
 
 

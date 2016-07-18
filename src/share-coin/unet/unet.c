@@ -97,6 +97,7 @@ int unet_mode(SOCKET sk)
  */
 void unet_cycle(double max_t)
 {
+  static int last_scan_t;
   unet_bind_t *bind;
   unet_table_t *t;
   shbuf_t *buff;
@@ -222,8 +223,13 @@ fprintf(stderr, "DEBUG: unet_cycle: shnet_read failure: %s [errno %d]\n", strerr
   uevent_cycle();
 
   /* scan for new service connections */
-  if (uevent_type_count(UEVENT_PEER) == 0)
-    unet_peer_scan();
+  if (uevent_type_count(UEVENT_PEER) == 0) {
+    time_t now = time(NULL);
+    if (last_scan_t + 3 < now) {
+      unet_peer_scan();
+      last_scan_t = now;
+    }
+  }
 
   /* purge idle sockets */
   unet_close_idle(); 

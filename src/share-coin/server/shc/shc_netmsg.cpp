@@ -49,6 +49,8 @@
 using namespace std;
 using namespace boost;
 
+static const unsigned int MAX_INV_SZ = 50000;
+
 
 extern CMedianFilter<int> cPeerBlockCounts;
 extern map<uint256, CAlert> mapAlerts;
@@ -200,6 +202,7 @@ static bool AlreadyHave(CIface *iface, SHCTxDB& txdb, const CInv& inv)
 
 
 
+static const unsigned int MAX_SCRIPT_ELEMENT_SIZE = 520; // bytes
 
 
 
@@ -542,9 +545,7 @@ inv.ifaceIndex = SHC_COIN_IFACE;
       if (fDebugNet || (vInv.size() == 1))
         printf("received getdata for: %s\n", inv.ToString().c_str());
 
-      if (inv.type == MSG_BLOCK)
-      {
-        // Send block from disk
+      if (inv.type == MSG_BLOCK || inv.type == MSG_FILTERED_BLOCK) {
         map<uint256, CBlockIndex*>::iterator mi = blockIndex->find(inv.hash);
         if (mi != blockIndex->end())
         {
@@ -554,8 +555,7 @@ inv.ifaceIndex = SHC_COIN_IFACE;
               pindex->nHeight <= GetBestHeight(SHC_COIN_IFACE)) {
             if (inv.type == MSG_BLOCK) {
               pfrom->PushMessage("block", block);
-#if 0
-            } else if (inv.type == MSG_FILTERED_BLOCK) {
+            } else if (inv.type == MSG_FILTERED_BLOCK) { /* bloom */
               LOCK(pfrom->cs_filter);
               if (pfrom->pfilter)
               {
@@ -563,15 +563,13 @@ inv.ifaceIndex = SHC_COIN_IFACE;
                 pfrom->PushMessage("merkleblock", merkleBlock);
                 typedef std::pair<unsigned int, uint256> PairType;
                 BOOST_FOREACH(PairType& pair, merkleBlock.vMatchedTxn)
-                  if (!pfrom->setInventoryKnown.count(CInv(MSG_TX, pair.second)))
+                  if (!pfrom->setInventoryKnown.count(CInv(SHC_COIN_IFACE, MSG_TX, pair.second)))
                     pfrom->PushMessage("tx", block.vtx[pair.first]);
               }
-
-#endif
             } 
           } else {
-              Debug("SHC: WARN: failure validating requested block '%s' at height %d\n", block.GetHash().GetHex().c_str(), pindex->nHeight);
-              block.print();
+            Debug("SHC: WARN: failure validating requested block '%s' at height %d\n", block.GetHash().GetHex().c_str(), pindex->nHeight);
+            block.print();
           }
 
           // Trigger them to send a getblocks request for the next batch of inventory
@@ -849,6 +847,75 @@ fprintf(stderr, "DEBUG: ProcessMessage[tx]: block.nDoS = %d\n", block.nDoS);
     if (!tracker.IsNull())
       tracker.fn(tracker.param1, vRecv);
   }
+
+  /* exclusively used by bloom filter */
+  else if (strCommand == "mempool")
+  {
+    std::vector<uint256> vtxid;
+    LOCK2(SHCBlock::mempool.cs, pfrom->cs_filter);
+    SHCBlock::mempool.queryHashes(vtxid);
+    vector<CInv> vInv;
+    BOOST_FOREACH(uint256& hash, vtxid) {
+      CInv inv(SHC_COIN_IFACE, MSG_TX, hash);
+      if ((pfrom->pfilter && pfrom->pfilter->IsRelevantAndUpdate(SHCBlock::mempool.lookup(hash), hash)) ||
+          (!pfrom->pfilter))
+        vInv.push_back(inv);
+      if (vInv.size() == MAX_INV_SZ)
+        break;
+    }
+    if (vInv.size() > 0)
+      pfrom->PushMessage("inv", vInv);
+  }
+
+
+  /* exclusively used by bloom filter */
+  else if (strCommand == "filterload")
+  {
+    CBloomFilter filter(SHC_COIN_IFACE);
+    vRecv >> filter;
+
+    if (!filter.IsWithinSizeConstraints()) {
+      pfrom->Misbehaving(100);
+    } else {
+      LOCK(pfrom->cs_filter);
+      delete pfrom->pfilter;
+      pfrom->pfilter = new CBloomFilter(filter);
+      pfrom->pfilter->UpdateEmptyFull();
+    }
+    pfrom->fRelayTxes = true;
+  }
+
+
+  else if (strCommand == "filteradd")
+  {
+    vector<unsigned char> vData;
+    vRecv >> vData;
+
+    // Nodes must NEVER send a data item > 520 bytes (the max size for a script data object,
+    // and thus, the maximum size any matched object can have) in a filteradd message
+    if (vData.size() > MAX_SCRIPT_ELEMENT_SIZE)
+    {
+        pfrom->Misbehaving(100);
+    } else {
+        LOCK(pfrom->cs_filter);
+        if (pfrom->pfilter)
+            pfrom->pfilter->insert(vData);
+        else
+            pfrom->Misbehaving(100);
+    }
+  }
+
+
+  else if (strCommand == "filterclear")
+  {
+    LOCK(pfrom->cs_filter);
+    delete pfrom->pfilter;
+    pfrom->pfilter = new CBloomFilter(SHC_COIN_IFACE);
+    pfrom->fRelayTxes = true;
+  }
+
+
+
 
 
   else if (strCommand == "ping")

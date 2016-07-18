@@ -1091,6 +1091,19 @@ class CBlock : public CBlockHeader
 
     bool CheckTransactionInputs(int ifaceIndex);
 
+    CBlockHeader GetBlockHeader() const
+    {
+      CBlockHeader block;
+      block.nVersion       = nVersion;
+      block.hashPrevBlock  = hashPrevBlock;
+      block.hashMerkleRoot = hashMerkleRoot;
+      block.nTime          = nTime;
+      block.nBits          = nBits;
+      block.nNonce         = nNonce;
+      return block;
+    }
+
+
     Object ToValue();
 
     std::string ToString();
@@ -1600,6 +1613,8 @@ public:
     }
 };
 
+
+#include "bloom.h"
 
 
 CBlock *GetBlockByHeight(CIface *iface, int nHeight);

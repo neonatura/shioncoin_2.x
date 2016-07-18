@@ -2226,9 +2226,11 @@ bool core_AcceptBlock(CBlock *pblock)
   int nBlockEstimate = pblock->GetTotalBlocksEstimate();
   if (GetBestBlockChain(iface) == hash) {
     LOCK(cs_vNodes);
-    BOOST_FOREACH(CNode* pnode, vNodes)
-      if (GetBestHeight(iface) > (pnode->nStartingHeight != -1 ? pnode->nStartingHeight - 2000 : nBlockEstimate))
+    BOOST_FOREACH(CNode* pnode, vNodes) {
+      if (GetBestHeight(iface) > (pnode->nStartingHeight != -1 ? pnode->nStartingHeight - 2000 : nBlockEstimate)) {
         pnode->PushInventory(CInv(ifaceIndex, MSG_BLOCK, hash));
+      }
+    }
   }
 
   if (ifaceIndex == TEST_COIN_IFACE ||

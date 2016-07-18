@@ -149,6 +149,7 @@ server_sources = \
 	server/chain.cpp \
 	server/matrix.cpp \
 	server/spring.c \
+	server/bloom.cpp \
 	server/base58.cpp \
 	server/global.cpp \
 	server/block_merkle.cpp \

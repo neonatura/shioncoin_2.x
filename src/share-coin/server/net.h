@@ -29,6 +29,8 @@
 class CRequestTracker;
 class CNode;
 class CBlockIndex;
+class CTransaction;
+class COutPoint;
 extern int nBestHeight;
 
 
@@ -79,6 +81,7 @@ enum
 {
     MSG_TX = 1,
     MSG_BLOCK,
+    MSG_FILTERED_BLOCK /* bloom */
 };
 
 class CRequestTracker
@@ -151,6 +154,69 @@ public:
 
 
 
+/**
+ * BloomFilter is a probabilistic filter which SPV clients provide
+ * so that we can filter the transactions we sends them.
+ * 
+ * This allows for significantly more efficient transaction and block downloads.
+ * 
+ * Because bloom filters are probabilistic, an SPV node can increase the false-
+ * positive rate, making us send them transactions which aren't actually theirs, 
+ * allowing clients to trade more bandwidth for more privacy by obfuscating which
+ * keys are owned by them.
+ */
+class CBloomFilter
+{
+  private:
+    std::vector<unsigned char> vData;
+    bool isFull;
+    bool isEmpty;
+    unsigned int nHashFuncs;
+    unsigned int nTweak;
+    unsigned char nFlags;
+
+    unsigned int Hash(unsigned int nHashNum, const std::vector<unsigned char>& vDataToHash) const;
+
+  public:
+    int ifaceIndex;
+
+    // Creates a new bloom filter which will provide the given fp rate when filled with the given number of elements
+    // Note that if the given parameters will result in a filter outside the bounds of the protocol limits,
+    // the filter created will be as close to the given parameters as possible within the protocol limits.
+    // This will apply if nFPRate is very low or nElements is unreasonably high.
+    // nTweak is a constant which is added to the seed value passed to the hash function
+    // It should generally always be a random value (and is largely only exposed for unit testing)
+    // nFlags should be one of the BLOOM_UPDATE_* enums (not _MASK)
+    CBloomFilter(int ifaceIndexIn, unsigned int nElements, double nFPRate, unsigned int nTweak, unsigned char nFlagsIn);
+    CBloomFilter(int ifaceIndexIn) : isFull(true) { ifaceIndex = ifaceIndexIn; }
+
+    IMPLEMENT_SERIALIZE
+      (
+       READWRITE(vData);
+       READWRITE(nHashFuncs);
+       READWRITE(nTweak);
+       READWRITE(nFlags);
+      )
+
+    void insert(const std::vector<unsigned char>& vKey);
+    void insert(const uint256& hash);
+
+    bool contains(const std::vector<unsigned char>& vKey) const;
+    bool contains(const COutPoint& outpoint) const;
+    bool contains(const uint256& hash) const;
+
+    // True if the size is <= MAX_BLOOM_FILTER_SIZE and the number of hash functions is <= MAX_HASH_FUNCS
+    // (catch a filter which was just deserialized which was too big)
+    bool IsWithinSizeConstraints() const;
+
+    // Also adds any outputs which match the filter to the filter (to match their spending txes)
+    bool IsRelevantAndUpdate(const CTransaction& tx, const uint256& hash);
+
+    // Checks for empty and full filters to avoid wasting cpu
+    void UpdateEmptyFull();
+
+    void insert(const COutPoint& outpoint);
+};
 
 
 /** Information about a peer */
@@ -213,6 +279,11 @@ public:
     CCriticalSection cs_inventory;
     std::multimap<int64, CInv> mapAskFor;
 
+    /* bloom filter */
+    bool fRelayTxes;
+    CCriticalSection cs_filter;
+    CBloomFilter *pfilter;
+
     CNode(int ifaceIndexIn, SOCKET hSocketIn, CAddress addrIn, std::string addrNameIn = "", bool fInboundIn=false) : vSend(SER_NETWORK, MIN_PROTO_VERSION), vRecv(SER_NETWORK, MIN_PROTO_VERSION)
     {
         ifaceIndex = ifaceIndexIn;
@@ -244,6 +315,11 @@ public:
         nMisbehavior = 0;
         setInventoryKnown.max_size(SendBufferSize() / 1000);
 
+        fRelayTxes = true;
+        pfilter = NULL;
+//        pfilter = new CBloomFilter();
+
+
         // Be shy and don't send version until we hear
         if (!fInbound)
             PushVersion();
@@ -256,6 +332,8 @@ public:
             closesocket(hSocket);
             hSocket = INVALID_SOCKET;
         }
+        if (pfilter)
+          delete pfilter;
     }
 
 private:

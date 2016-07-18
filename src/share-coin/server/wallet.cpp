@@ -725,24 +725,24 @@ int CWallet::ScanForWalletTransaction(const uint256& hashTx)
 
 void CWalletTx::RelayWalletTransaction(CTxDB& txdb)
 {
-    BOOST_FOREACH(const CMerkleTx& tx, vtxPrev)
+  BOOST_FOREACH(const CMerkleTx& tx, vtxPrev)
+  {
+    if (!tx.IsCoinBase())
     {
-        if (!tx.IsCoinBase())
-        {
-            uint256 hash = tx.GetHash();
-            if (!txdb.ContainsTx(hash))
-                RelayMessage(CInv(txdb.ifaceIndex, MSG_TX, hash), (CTransaction)tx);
-        }
+      uint256 hash = tx.GetHash();
+      if (!txdb.ContainsTx(hash))
+        RelayMessage(CInv(txdb.ifaceIndex, MSG_TX, hash), (CTransaction)tx);
     }
-    if (!IsCoinBase())
+  }
+  if (!IsCoinBase())
+  {
+    uint256 hash = GetHash();
+    if (!txdb.ContainsTx(hash))
     {
-        uint256 hash = GetHash();
-        if (!txdb.ContainsTx(hash))
-        {
-            //printf("Relaying wtx %s\n", hash.ToString().substr(0,10).c_str());
-            RelayMessage(CInv(txdb.ifaceIndex, MSG_TX, hash), (CTransaction)*this);
-        }
+      //printf("Relaying wtx %s\n", hash.ToString().substr(0,10).c_str());
+      RelayMessage(CInv(txdb.ifaceIndex, MSG_TX, hash), (CTransaction)*this);
     }
+  }
 }
 
 
