@@ -534,17 +534,12 @@ fprintf(stderr, "DEBUG: ProcessMessage: Must have a version message before anyth
       return error(SHERR_INVAL, "message getdata size() = %d", vInv.size());
     }
 
-    if (fDebugNet || (vInv.size() != 1))
-      printf("received getdata (%d invsz)\n", vInv.size());
-
     BOOST_FOREACH(const CInv& inv, vInv)
     {
       if (fShutdown)
         return true;
-inv.ifaceIndex = SHC_COIN_IFACE;
-      if (fDebugNet || (vInv.size() == 1))
-        printf("received getdata for: %s\n", inv.ToString().c_str());
 
+      inv.ifaceIndex = SHC_COIN_IFACE;
       if (inv.type == MSG_BLOCK || inv.type == MSG_FILTERED_BLOCK) {
         map<uint256, CBlockIndex*>::iterator mi = blockIndex->find(inv.hash);
         if (mi != blockIndex->end())

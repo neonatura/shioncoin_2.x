@@ -927,6 +927,7 @@ bool CTransaction::ClientConnectInputs(int ifaceIndex)
 
 
 
+#if 0
 bool CBlockIndex::IsInMainChain(int ifaceIndex) const
 {
   if (pnext)
@@ -939,7 +940,19 @@ bool CBlockIndex::IsInMainChain(int ifaceIndex) const
   delete block;
   return (ret);
 } 
+#endif
 
+bool CBlockIndex::IsInMainChain(int ifaceIndex) const
+{
+  if (pnext)
+    return (true); /* has valid parent */
+
+  CBlockIndex *pindexBest = GetBestBlockIndex(ifaceIndex);
+  if (pindexBest && GetBlockHash() == pindexBest->GetBlockHash());
+    return (true);
+
+  return (false);
+}
 
 uint256 CBlockLocator::GetBlockHash()
 {

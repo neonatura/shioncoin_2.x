@@ -500,7 +500,6 @@ Debug("USDE: ProcessMessage: got inventory: %s  %s\n", inv.ToString().c_str(), f
       else if (inv.type == MSG_BLOCK && USDE_mapOrphanBlocks.count(inv.hash)) {
         pfrom->PushGetBlocks(GetBestBlockIndex(USDE_COIN_IFACE), usde_GetOrphanRoot(USDE_mapOrphanBlocks[inv.hash]));
       } else if (nInv == nLastBlock) {
-fprintf(stderr, "DEBUG: pushing for block..\n");
         // In case we are on a very long side-chain, it is possible that we already have
         // the last block in an inv bundle sent in response to getblocks. Try to detect
         // this situation and push another getblocks to continue.
@@ -525,17 +524,12 @@ fprintf(stderr, "DEBUG: pushing for block..\n");
       return error(SHERR_INVAL, "message getdata size() = %d", vInv.size());
     }
 
-    if (fDebugNet || (vInv.size() != 1))
-      printf("received getdata (%d invsz)\n", vInv.size());
-
     BOOST_FOREACH(const CInv& inv, vInv)
     {
       if (fShutdown)
         return true;
-inv.ifaceIndex = USDE_COIN_IFACE;
-      if (fDebugNet || (vInv.size() == 1))
-        printf("received getdata for: %s\n", inv.ToString().c_str());
 
+      inv.ifaceIndex = USDE_COIN_IFACE;
       if (inv.type == MSG_BLOCK)
       {
         // Send block from disk
@@ -595,12 +589,10 @@ inv.ifaceIndex = USDE_COIN_IFACE;
     if (pindex)
       pindex = pindex->pnext;
     int nLimit = 500;
-    printf("getblocks %d to %s limit %d\n", (pindex ? pindex->nHeight : -1), hashStop.ToString().substr(0,20).c_str(), nLimit);
     for (; pindex; pindex = pindex->pnext)
     {
       if (pindex->GetBlockHash() == hashStop)
       {
-        printf("  getblocks stopping at %d %s\n", pindex->nHeight, pindex->GetBlockHash().ToString().substr(0,20).c_str());
         break;
       }
       pfrom->PushInventory(CInv(ifaceIndex, MSG_BLOCK, pindex->GetBlockHash()));
@@ -608,7 +600,6 @@ inv.ifaceIndex = USDE_COIN_IFACE;
       {
         // When this block is requested, we'll send an inv that'll make them
         // getblocks the next batch of inventory.
-        printf("  getblocks stopping at limit %d %s\n", pindex->nHeight, pindex->GetBlockHash().ToString().substr(0,20).c_str());
         pfrom->hashContinue = pindex->GetBlockHash();
         break;
       }
@@ -1142,7 +1133,6 @@ fprintf(stderr, "DEBUG: USDE: TX-INV: unknown tx '%s'\n", inv.hash.GetHex().c_st
       pto->vInventoryToSend = vInvWait;
     }
     if (!vInv.empty()) {
-//BOOST_FOREACH(CInv& inv, vInv) { fprintf(stderr, "DEBUG: sending inventory[iface #%d]: %s\n", inv.ifaceIndex, inv.ToString().c_str()); }
       pto->PushMessage("inv", vInv);
     }
 
@@ -1158,7 +1148,6 @@ fprintf(stderr, "DEBUG: USDE: TX-INV: unknown tx '%s'\n", inv.hash.GetHex().c_st
       const CInv& inv = (*pto->mapAskFor.begin()).second;
       if (!AlreadyHave(iface, txdb, inv))
       {
-//        fprintf(stderr, "DEBUG: sending getdata: %s\n", inv.ToString().c_str());
         vGetData.push_back(inv);
         if (vGetData.size() >= 1000)
         {

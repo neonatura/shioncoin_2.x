@@ -94,7 +94,6 @@ static void check_payout(int ifaceIndex)
 
   templ_json = (char *)getblocktransactions(ifaceIndex);
   if (!templ_json) {
-fprintf(stderr, "DEBUG: check_payout: cannot get block transactions\n");
     return;
   }
 
@@ -169,7 +168,6 @@ fprintf(stderr, "DEBUG: check_payout: cannot get block transactions\n");
         reward += (weight * user->block_avg[i]);
       if (reward >= 0.0000001) { 
         user->balance[ifaceIndex] += reward;
-fprintf(stderr, "DEBUG: user '%s' += reward %f (%-1.1f%%)\n", user->worker, reward, (weight * 100));
       }
     }
 

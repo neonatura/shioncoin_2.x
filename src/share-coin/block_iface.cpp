@@ -170,7 +170,6 @@ const char *c_getblocktemplate(int ifaceIndex)
   } else {
     nIndex++;
     if ((nIndex % templateWeight) != 0) {
-//      fprintf(stderr, "DEBUG: c_getblocktemplate: stalling on work generation..\n");
       return (NULL);
     }
 
@@ -204,7 +203,6 @@ fprintf(stderr, "DEBUG: c_getblocktemplate: error creating block template\n");
   work_id++;
   mapWork[work_id] = pblock; 
   altBlock[ifaceIndex] = pblock;
-//fprintf(stderr, "DEBUG: c_getblocktemplate: added work [id %u] @ height %u for iface #%d\n", work_id, nHeight, ifaceIndex); 
 
   // Update nTime
   pblock->UpdateTime(pindexPrev);
@@ -404,7 +402,6 @@ pblock->print();
     shcoind_log("c_processblock: !AcceptBlock()");
     return (BLKERR_INVALID_BLOCK);
   }
-fprintf(stderr, "DEBUG: c_processblock: accepted block\n"); 
 
   STAT_BLOCK_SUBMITS(iface)++;
 

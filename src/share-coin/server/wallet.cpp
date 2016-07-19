@@ -1822,7 +1822,7 @@ int CMerkleTx::GetDepthInMainChain(int ifaceIndex, CBlockIndex* &pindexRet) cons
     return 0;
   }
   if (!pindex->IsInMainChain(ifaceIndex)) {
-    error(SHERR_INVAL, "GetDepthInMainChain: !pindex->IsInMainChain (height %d)\n", pindex->nHeight);
+    error(SHERR_INVAL, "GetDepthInMainChain: block '%s' (height %u) is not in main chain.", pindex->GetBlockHash().GetHex().c_str(), pindex->nHeight);
     return 0;
   }
 
@@ -1856,8 +1856,11 @@ int CMerkleTx::GetBlocksToMaturity(int ifaceIndex) const
   if (!iface)
     return 0;
 
-  return max(0, 
-      ((int)iface->coinbase_maturity + 1) - GetDepthInMainChain(ifaceIndex));
+  int depth = GetDepthInMainChain(ifaceIndex);
+  if (depth == 0) {
+    error(SHERR_INVAL, "GetBlocksToMaturity: warning: tx has no depth.");
+  }
+  return max(0, ((int)iface->coinbase_maturity + 1) - depth);
 }
 
 int CMerkleTx::SetMerkleBranch(const CBlock* pblock)

@@ -367,7 +367,6 @@ int c_setblockreward(int ifaceIndex, const char *accountName, double dAmount)
 fprintf(stderr, "DEBUG: c_setblockreward: wallet is locked\n");
     return (-13);
   }
-fprintf(stderr, "DEBUG: c_setblockreward: '%s' f/ %f\n", accountName, dAmount);
 
   const CCoinAddr address = GetAddressByAccount(pwalletMain, accountName, found);
   if (!found) {
@@ -398,7 +397,6 @@ fprintf(stderr, "DEBUG: c_setblockreward[iface #%d]: account '%s' not found\n", 
     return (-6);
   }
 
-
   CWalletTx wtx;
   wtx.strFromAccount = strMainAccount;
   wtx.mapValue["comment"] = strComment;
@@ -408,7 +406,6 @@ fprintf(stderr, "DEBUG: '%s' = SendMoneyTo: amount %d\n", strError.c_str(), (int
     //throw JSONRPCError(-4, strError);
     return (-4);
   }
-
 
   return (0);
 }
