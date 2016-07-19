@@ -225,7 +225,7 @@ fprintf(stderr, "DEBUG: unet_cycle: shnet_read failure: %s [errno %d]\n", strerr
   /* scan for new service connections */
   if (uevent_type_count(UEVENT_PEER) == 0) {
     time_t now = time(NULL);
-    if (last_scan_t + 3 < now) {
+    if (last_scan_t + 5 < now) {
       unet_peer_scan();
       last_scan_t = now;
     }
