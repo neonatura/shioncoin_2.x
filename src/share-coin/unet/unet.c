@@ -28,8 +28,8 @@
 static const char *_unet_label[MAX_UNET_MODES] = 
 {
   "!NONE!",
-  "usde",
   "shc",
+  "usde",
   "!RESERVED!",
   "!RESERVED!",
   "stratum",

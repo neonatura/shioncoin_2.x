@@ -136,6 +136,7 @@ void unet_peer_scan(void)
   shpeer_t *peer;
   shtime_t ts;
   double dur;
+  char errbuf[1024];
   char buf[256];
   int mode;
   int err;
@@ -154,7 +155,9 @@ void unet_peer_scan(void)
     err = shnet_track_scan(&bind->peer, &peer);
     timing_term("shnet_track_scan", &ts);
     if (err) {
-fprintf(stderr, "DEBUG: unet_peer_scan: shnet track scan error: %s\n", sherrstr(err));
+      sprintf(errbuf, "shnet track scan error: %s [unet peer scan]",
+          mode, sherrstr(err));
+      unet_log(mode, errbuf);
       continue;
     }
 
