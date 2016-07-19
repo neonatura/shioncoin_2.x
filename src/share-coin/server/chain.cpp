@@ -437,6 +437,8 @@ void ServiceEventState(int ifaceIndex)
 void InitServiceWalletEvent(CWallet *wallet, uint64_t nHeight)
 {
   CIface *iface = GetCoinByIndex(wallet->ifaceIndex);
+  if (GetBestHeight(wallet->ifaceIndex) == wallet->nScanHeight))
+    return; /* up-to-date, 'service wallet event' is redundant scan. */
   unset_serv_state(iface, COINF_WALLET_SYNC);
   wallet->nScanHeight = MIN(nHeight, wallet->nScanHeight); 
 }

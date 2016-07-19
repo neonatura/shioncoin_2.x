@@ -2017,6 +2017,7 @@ Value rpc_wallet_rescan(CIface *iface, const Array& params, bool fHelp)
         "wallet.rescan\n"
         "Rescan the block-chain for personal wallet transactions.\n");
 
+  wallet->nScanHeight = 0;
   InitServiceWalletEvent(wallet, 0);
 
   return Value::null;
