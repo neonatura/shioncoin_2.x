@@ -2601,6 +2601,7 @@ Value rpc_peer_export(CIface *iface, const Array& params, bool fHelp)
 
 Value rpc_peer_import(CIface *iface, const Array& params, bool fHelp)
 {
+  int ifaceIndex = GetCoinIndex(iface);
   FILE *fl;
   struct stat st;
   shpeer_t *peer;
@@ -2618,7 +2619,6 @@ Value rpc_peer_import(CIface *iface, const Array& params, bool fHelp)
   std::string strPath = params[0].get_str();
 
   {
-
     fl = fopen(strPath.c_str(), "rb");
     if (!fl)
       throw runtime_error("error opening file.");
@@ -2644,26 +2644,21 @@ Value rpc_peer_import(CIface *iface, const Array& params, bool fHelp)
     }
 
     if (json->child) {
-      for (node = json->child; node; node = node->next) {
-        char *host = shjson_astr(node, "host", "");
-        char *label = shjson_astr(node, "label", "");
-        if (!*host || !*label) continue;
+      unet_bind_t *bind = unet_bind_table(ifaceIndex);
+      if (bind && bind->peer_db) {
+        for (node = json->child; node; node = node->next) {
+          char *host = shjson_astr(node, "host", "");
+          char *label = shjson_astr(node, "label", "");
+          if (!*host || !*label) continue;
 
-        peer = shpeer_init(label, host);
-        shnet_track_add(peer);
-        shpeer_free(&peer);
+          peer = shpeer_init(label, host);
+          shnet_track_add(bind->peer_db, peer);
+          shpeer_free(&peer);
+        }
       }
     }
 
-#if 0
-    db = shdb_open(NET_DB_NAME);
-    shdb_close(db);
-#endif
-
     shjson_free(&json);
-
-
-//    shpeer_free(&serv_peer);
   }
 
 
@@ -2744,16 +2739,15 @@ Value rpc_peer_importdat(CIface *iface, const Array& params, bool fHelp)
 
   vector<CAddress> vAddr = addrman.GetAddr();
 
-  fprintf(stdout, "Import Peers:\n");
-  BOOST_FOREACH(const CAddress &addr, vAddr) {
-    sprintf(addr_str, "%s %d", addr.ToStringIP().c_str(), addr.GetPort());
-    peer = shpeer_init(iface->name, addr_str);
-    shnet_track_add(peer);
-    shpeer_free(&peer);
-//    fprintf(stdout, "\t%s\n", addr_str);
+  unet_bind_t *bind = unet_bind_table(ifaceIndex);
+  if (bind && bind->peer_db) {
+    BOOST_FOREACH(const CAddress &addr, vAddr) {
+      sprintf(addr_str, "%s %d", addr.ToStringIP().c_str(), addr.GetPort());
+      peer = shpeer_init(iface->name, addr_str);
+      shnet_track_add(bind->peer_db, peer);
+      shpeer_free(&peer);
+    }
   }
-
-//  shpeer_free(&serv_peer);
 
 
   Object result;
