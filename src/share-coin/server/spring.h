@@ -26,31 +26,25 @@
 #ifndef __SERVER__SPRING_H__
 #define __SERVER__SPRING_H__
 
-#if 0
-#include <boost/foreach.hpp>
-#include <vector>
-
-#include "uint256.h"
-#include "serialize.h"
-#include "util.h"
-#include "scrypt.h"
-#include "protocol.h"
-#include "net.h"
-#include "script.h"
-#include "coin_proto.h"
-#include "txext.h"
-#include "matrix.h"
-
-#include "json/json_spirit_reader_template.h"
-#include "json/json_spirit_writer_template.h"
-using namespace std;
-using namespace json_spirit;
-#endif
-
-
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+
+/**
+ * The spring matrix contains one million pre-initialized geodetic locations in a 256x256 grid. 
+ *
+ * Locations are stored as two sets of bitvectors pertaining to the latitude and longitude. Each 'tude references two bits in individual bitvectors for a particular grid location.
+ *
+ * A location can be <i>claimed</i>, for a reward of a single coin, by relaying a 'ident stamp' transaction. This transactions contains geodetic information and the payee reward coin address. Once a location has been claimed a single latitude and longitude bit will be erased from the matrix. A miniaturized version of the matrix is sent in order to ensure the matrix's integrity between coin services.
+ *
+ * Unless otherwise restricted due to the interface, for example a mobile app, their is no discimination towards <i>claiming</i> any particular geo location. Identifying each location in the matrix requires four SHA1 hash operations thereby making it difficult, excluding the initial "easier" location, to scan the entire matrix in any negligible amount of time.
+ *
+ * @ingroup sharecoin_shc
+ * @defgroup sharecoin_shcspring The spring geodetic matrix.
+ * @{
+ */
+
 
 /**
  * The matrix grid's latitude offset adjustment.
@@ -75,24 +69,45 @@ void spring_loc_set(double lat, double lon);
 
 /**
  * Whether or not a particular location is set in the matrix.
+ * @param lat The latitude of the geo location. 
+ * @param lon The longitude of the geo location. 
  * @returns TRUE if the location matches and FALSE if not.
+ * @note The latitude and longitude are not limited in range.
  */
 int is_spring_loc(double lat, double lon);
 
 /**
  * Search the surrounding area for a location registered in the matrix.
+ * @param lat_p Filled with the found latitude.
+ * @param lon_p Filled with the found longitude.
+ * @returns SHERR_NOENT when no location is found, and "0" on success.
  */
-int spring_loc_search(shnum_t cur_lat, shnum_t cur_lon, shnum_t *lat_p, shnum_t *lon_p);
+int spring_loc_search(double cur_lat, double cur_lon, double *lat_p, double *lon_p);
 
 /**
- * Render the spring matrix as a fractal image with optional [centered] zoom.
+ * Render the spring matrix as a fractal BMP image.
+ * @param zoom The degree (10.0 - 0.001) to zoom into the center.
  */
 int spring_render_fractal(char *img_path, double zoom);
 
+/**
+ * Mark a particular geo location as no longer available in the spring matrix.
+ * @param lat The latitude of the geo location.
+ * @param lon The longitude of the geo location.
+ */
 void spring_loc_claim(double lat, double lon);
 
+/**
+ * Render the current form of the spring matrix in a <i>compress</i> 3x3 multi-dimensional array.
+ * @param A multi-dimension (3x3) unsigned integer array.
+ */
 void spring_matrix_compress(uint32_t matrix[3][3]);
 
+
+
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }

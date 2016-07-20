@@ -27,29 +27,56 @@
 #ifndef __SHC_PROTO_H__
 #define __SHC_PROTO_H__
 
+
 #define SHC_VERSION_MAJOR  2 
 #define SHC_VERSION_MINOR  27
 #define SHC_VERSION_REVISION 0
 #define SHC_VERSION_BUILD 0
 
+/** The default socket port for the SHC coin service. */
 #define SHC_COIN_DAEMON_PORT 24104
 
-#define SHC_MAX_GETADDR 2500
+/** The maximum number of peer network addresses to relay at once to a remote coin service. */
+#define SHC_MAX_GETADDR 500
 
 #define SHC_MAX_ORPHAN_TRANSACTIONS 4096
 
+/**
+ * The maximum number of signature "script" operations in a single block.
+ */
 #define SHC_MAX_SIGOPS 32768
 
+/**
+ * The network protocol version used to communicate between SHC services.
+ */
 static const int SHC_PROTOCOL_VERSION = 2000000;
 
+/**
+ * Defines how many "satashi" constitutes a single coin.
+ */
 #define SHC_COIN (uint64_t)100000000
+
+/**
+ * The maximum byte size permitted for a single block.
+ */
 static const unsigned int SHC_MAX_BLOCK_SIZE = 4096000;
+
+/**
+ * The minimum "satashi" permitted to be sent in a single transaction.
+ */
 static const int64 SHC_MIN_INPUT = 100;
+
+/**
+ * The minimum block transaction fee applied.
+ */
 static const int64 SHC_MIN_TX_FEE = 10000;
 static const int64 SHC_MIN_RELAY_TX_FEE = 10000;
-static const int64 SHC_MAX_MONEY = 1000000000 * SHC_COIN; /* 1bil max */
-static const int SHC_COINBASE_MATURITY = 60;
 
+/** The maximum number of coins that will be generated during the life-time of the currency. */
+static const int64 SHC_MAX_MONEY = 1000000000 * SHC_COIN; /* 1bil max */
+
+/** The number of blocks generated before a "block reward" is considered spendable. */
+static const int SHC_COINBASE_MATURITY = 60;
 
 
 #endif /* __SHC_PROTO_H__ */

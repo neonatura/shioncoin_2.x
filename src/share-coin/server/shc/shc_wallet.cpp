@@ -29,6 +29,7 @@
 #include "strlcpy.h"
 #include "ui_interface.h"
 #include "chain.h"
+#include "shc_block.h"
 
 #ifdef WIN32
 #include <string.h>

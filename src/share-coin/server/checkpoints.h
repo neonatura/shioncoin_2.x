@@ -11,8 +11,8 @@
 class uint256;
 class CBlockIndex;
 
-/** Block-chain checkpoints are compiled-in sanity checks.
- * They are updated every release or three.
+/** 
+ * Block-chain checkpoints is a hard-coded validation check against already established blocks.
  */
 namespace Checkpoints
 {

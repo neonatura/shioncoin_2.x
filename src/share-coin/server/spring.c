@@ -23,23 +23,13 @@
  *  @endcopyright
  */  
 
+#include <math.h>
 #include "shcoind.h"
 #include "rpc_bmp.h"
 #include "spring.h"
-#if 0
-#include "block.h"
-#include "db.h"
-#include <vector>
 
-using namespace std;
-#endif
-
+/* see end of file */
 extern uint64_t _spring_matrix[256][256];
-
-
-
-#define PI 3.14159265358979323846264338327950288419716
-
 
 typedef struct spring_bits
 {
@@ -50,10 +40,10 @@ typedef struct spring_bits
   unsigned int lon1, lon2;
 } spring_bits;
 
-
+/*not needed */
 extern uint8_t* shsha1_result(shsha1_t *s);
 
-unsigned int spring_matrix_bit(uint64_t seed)
+static unsigned int spring_matrix_bit(uint64_t seed)
 {
   shsha1_t s;
   uint8_t *result;
@@ -76,7 +66,6 @@ unsigned int spring_matrix_bit(uint64_t seed)
 
   return (val % 32);
 }
-
 
 static void spring_loc_bits(spring_bits *bits)
 {
@@ -182,11 +171,11 @@ void spring_loc_claim(double lat, double lon)
 fprintf(stderr, "DEBUG: SPRING CLAIM: lat(%f) lon(%f) [y(%d) x(%d)]\n", lat, lon, bits.y, bits.x);
 }
 
-int spring_loc_search(shnum_t cur_lat, shnum_t cur_lon, shnum_t *lat_p, shnum_t *lon_p)
+int spring_loc_search(double cur_lat, double cur_lon, double *lat_p, double *lon_p)
 {
-  shnum_t s_lat, e_lat;
-  shnum_t s_lon, e_lon;
-  shnum_t lat, lon;
+  double s_lat, e_lat;
+  double s_lon, e_lon;
+  double lat, lon;
   int total;
   int found;
 
@@ -235,6 +224,7 @@ int spring_render_fractal(char *img_path, double zoom)
   BMP *bmp;
   uint32_t m_seed;
   uint32_t val;
+  shnum_t span = 0.05;
   shnum_t seed;
   shnum_t rate;
   shnum_t K;
@@ -247,8 +237,11 @@ int spring_render_fractal(char *img_path, double zoom)
   int cval;
   int idx;
   unsigned char r, g, b;
+  int px_width, px_height;
 
-  bmp = BMP_Create(width*10, height*10, 32);
+  px_width = (int)((shnum_t)256 / span);
+  px_height = (int)((shnum_t)256 / span);
+  bmp = BMP_Create(px_width, px_height, 32);
 
   m_seed = 0;
   for (y = 0; y < height; y++) {
@@ -257,11 +250,11 @@ int spring_render_fractal(char *img_path, double zoom)
     }
   }
   //seed = (shnum_t)m_seed / 16;
-  seed = (shnum_t)(m_seed / 256);
+  seed = (shnum_t)m_seed;
   seed = seed / 65536;
 
   zoom = MAX(0.001, MIN(100.0, zoom));
-  rate = 0.1 * zoom;
+  rate = span * zoom;
   min_cord = (-128 * zoom);
   max_cord = (128 * zoom);
   for (dy = min_cord; dy <= max_cord; dy += rate) {
@@ -269,12 +262,12 @@ int spring_render_fractal(char *img_path, double zoom)
       C = (dx * dy) + seed;
 
       Z = 0;
-      for (idx = 0; idx < 8; idx++) {
+      for (idx = 0; idx < 16; idx++) {
         Z = Z * Z + C;
         if (fabs(Z) >= 2)
           break;
       }
-      if (idx == 8) {
+      if (idx == 16) {
         r = g = b = 0;
       } else {
         K = fabs(Z*C);
@@ -287,8 +280,8 @@ int spring_render_fractal(char *img_path, double zoom)
         g = MIN(255, g + idx);
         b = MIN(255, b + idx);
       }
-      x = (int)((dx + max_cord) / rate) % width;
-      y = (int)((dy + max_cord) / rate) % height;
+      x = (int)((dx + max_cord) / rate) % px_width;
+      y = (int)((dy + max_cord) / rate) % px_height;
       BMP_SetPixelRGB( bmp, x, y, r, g, b);
     }
   }

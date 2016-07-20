@@ -26,13 +26,10 @@
 #ifndef __SERVER__BLOOM_H__
 #define __SERVER__BLOOM_H__
 
-#if 0
-#include "shcoind.h"
-#include <vector>
-#include "block.h"
-#include "uint256.h"
-#include "serialize.h"
-#endif
+/**
+ * @ingroup sharecoin_bloom
+ * @{
+ */
 
 
 // 20,000 items with fp rate < 0.1% or 10,000 items and <0.0001%
@@ -49,10 +46,6 @@ enum bloomflags
   BLOOM_UPDATE_P2PUBKEY_ONLY = 2,
   BLOOM_UPDATE_MASK = 3,
 };
-
-
-
-
 
 
 
@@ -149,5 +142,8 @@ public:
 };
 
 
+/*
+ * @}
+ */
 
 #endif /* ndef __SERVER__BLOOM_H__ */

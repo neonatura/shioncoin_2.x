@@ -1035,6 +1035,10 @@ class CBlock : public CBlockHeader
       return (nBits == 0);
     }
 
+    /**
+     * Obtain the block hash used to identify it's "difficulty".
+     * @see CBlockHeader.nBits
+     */
     uint256 GetPoWHash() const
     {
       uint256 thash;
@@ -1042,55 +1046,50 @@ class CBlock : public CBlockHeader
       return thash;
     }
 
-    /* block_merkle.cpp */
+    /**
+     * Generate the merkle root hash from all the block's transaction hashes.
+     * @see CBlockHeader.nMerkleRoot
+     */
     uint256 BuildMerkleTree() const;
+
     std::vector<uint256> GetMerkleBranch(int nIndex) const;
+
+    /**
+     * Verify a block's merkle root hash.
+     */
     uint256 CheckMerkleBranch(uint256 hash, const std::vector<uint256>& vMerkleBranch, int nIndex);
 
-#if 0
-    bool WriteToDisk(unsigned int& nFileRet, unsigned int& nBlockPosRet)
-    {
-      // Open history file to append
-      CAutoFile fileout = CAutoFile(AppendBlockFile(nFileRet), SER_DISK, CLIENT_VERSION);
-      if (!fileout)
-        return error(SHERR_IO, "CBlock::WriteToDisk() : AppendBlockFile failed");
-
-      // Write index header
-      unsigned int nSize = fileout.GetSerializeSize(*this);
-      fileout << FLATDATA(pchMessageStart) << nSize;
-
-      // Write block
-      long fileOutPos = ftell(fileout);
-      if (fileOutPos < 0)
-        return error(SHERR_IO, "CBlock::WriteToDisk() : ftell failed");
-      nBlockPosRet = fileOutPos;
-      fileout << *this;
-
-      // Flush stdio buffers and commit to disk before returning
-      fflush(fileout);
-      if (!IsInitialBlockDownload() || (nBestHeight+1) % 500 == 0)
-        FileCommit(fileout);
-
-      return true;
-    }
-#endif
-
-
-
-
-    //bool AddToBlockIndex(unsigned int nFile, unsigned int nBlockPos);
-//    bool ReadFromDisk(unsigned int nFile, unsigned int nBlockPos, bool fReadTransactions=true);
-
     void UpdateTime(const CBlockIndex* pindexPrev);
+
+    /**
+     * Permanently store a block's contents to disk.
+     * @param The height to associate with the stored block content.
+     */
     bool WriteBlock(uint64_t nHeight);
+
     bool WriteArchBlock();
+
     bool ReadFromDisk(const CBlockIndex* pindex, bool fReadTransactions=true);
+
+    /**
+     * Obtain a transaction in the block.
+     * @param The transaction hash to obtain.
+     */
     const CTransaction *GetTx(uint256 hash);
 
+    /**
+     * Track praised and dubious behaviour of a remote coin service.
+     */
     bool trust(int deg, const char *msg, ...);
 
+    /**
+     * Verify the neccessary transactions exist that are required in order to perform the underlying transaction.
+     */
     bool CheckTransactionInputs(int ifaceIndex);
 
+    /**
+     * Obtain the header portion of the block content.
+     */ 
     CBlockHeader GetBlockHeader() const
     {
       CBlockHeader block;
@@ -1103,11 +1102,19 @@ class CBlock : public CBlockHeader
       return block;
     }
 
-
+    /**
+     * Obtain a JSON representation of the block's content.
+     */
     Object ToValue();
 
+    /**
+     * Obtain a textual JSON representation of the block's content.
+     */
     std::string ToString();
 
+    /**
+     * Log a textual JSON representation of the block's content.
+     */
     void print()
     {
       shcoind_log(ToString().c_str());
@@ -1153,6 +1160,9 @@ class CBlock : public CBlockHeader
     virtual bool SetBestChainInner(CTxDB& txdb, CBlockIndex *pindexNew) = 0;
 };
 
+/**
+ * Obtain a blank block template for a coin interface.
+ */
 CBlock *GetBlankBlock(CIface *iface);
 
 /** The block chain is a tree shaped structure starting with the
@@ -1395,58 +1405,6 @@ public:
 };
 #endif
 
-class SHC_CTxMemPool;
-class SHCBlock : public CBlock
-{
-public:
-    // header
-    static const int CURRENT_VERSION=2;
-    static SHC_CTxMemPool mempool; 
-    static CBlockIndex *pindexBest;
-    static CBlockIndex *pindexGenesisBlock;
-    static CBigNum bnBestChainWork;
-    static CBigNum bnBestInvalidWork;
-    static int64 nTimeBestReceived;
-
-    SHCBlock()
-    {
-        ifaceIndex = SHC_COIN_IFACE;
-        SetNull();
-    }
-
-    SHCBlock(const CBlock &block)
-    {
-        ifaceIndex = SHC_COIN_IFACE;
-        SetNull();
-        *((CBlock*)this) = block;
-    }
-
-    void SetNull()
-    {
-      nVersion = SHCBlock::CURRENT_VERSION;
-      CBlock::SetNull();
-    }
-
-    bool SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew);
-    void InvalidChainFound(CBlockIndex* pindexNew);
-    unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast);
-    bool AcceptBlock();
-    bool IsBestChain();
-    CScript GetCoinbaseFlags();
-    bool AddToBlockIndex();
-    bool ConnectBlock(CTxDB& txdb, CBlockIndex* pindex);
-    bool CheckBlock();
-    bool ReadBlock(uint64_t nHeight);
-    bool ReadArchBlock(uint256 hash);
-    bool IsOrphan();
-    bool Truncate();
-    bool VerifyCheckpoint(int nHeight);
-    uint64_t GetTotalBlocksEstimate();
-    bool DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex);
-
-  protected:
-    bool SetBestChainInner(CTxDB& txdb, CBlockIndex *pindexNew);
-};
 
 class CTxMemPool
 {

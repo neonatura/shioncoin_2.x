@@ -28,11 +28,11 @@
 #include "main.h"
 #include "wallet.h"
 #include "coin_proto.h"
+
 #include "shc/shc_netmsg.h"
 #include "shc/shc_block.h"
 #include "shc/shc_wallet.h"
 #include "shc/shc_txidx.h"
-
 
 SHC_CTxMemPool SHCBlock::mempool;
 CBlockIndex *SHCBlock::pindexGenesisBlock = NULL;

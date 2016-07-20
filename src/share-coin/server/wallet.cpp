@@ -1857,9 +1857,6 @@ int CMerkleTx::GetBlocksToMaturity(int ifaceIndex) const
     return 0;
 
   int depth = GetDepthInMainChain(ifaceIndex);
-  if (depth == 0) {
-    error(SHERR_INVAL, "GetBlocksToMaturity: warning: tx has no depth.");
-  }
   return max(0, ((int)iface->coinbase_maturity + 1) - depth);
 }
 

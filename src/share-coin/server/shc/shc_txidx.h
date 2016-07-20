@@ -34,6 +34,10 @@
 #ifndef __SHC_TXIDX_H__
 #define __SHC_TXIDX_H__
 
+/**
+ * @ingroup sharecoin_shc
+ * @{
+ */
 
 class SHCTxDB : public CTxDB
 {
@@ -81,5 +85,8 @@ static bool IsChainFile(std::string strFile)
 
 bool shc_InitBlockIndex();
 
+/**
+ * @}
+ */
 
 #endif /* ndef __SHC_TXIDX_H__ */

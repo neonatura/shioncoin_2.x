@@ -437,12 +437,16 @@ typedef base_uint<256> base_uint256;
 
 
 
-//////////////////////////////////////////////////////////////////////////////
-//
-// uint160
-//
 
-/** 160-bit unsigned integer */
+/**
+ * A uint160 is used in order to store a 160-bit unsigned integer (20 bytes) which represents a hash of external contextual data. 
+ *
+ * In the case of a coin service this <i>contextual data</i> is composed of coin addresses and extended transaction operations. 
+ *
+ * A coin address or extended transaction hash is used as a way to identify individual entities and as a method to verify the integrity of the underlying contents being referenced.
+ *
+ * @see uint256
+ */
 class uint160 : public base_uint160
 {
 public:
@@ -570,12 +574,16 @@ inline const uint160 operator-(const uint160& a, const uint160& b)      { return
 
 
 
-//////////////////////////////////////////////////////////////////////////////
-//
-// uint256
-//
 
-/** 256-bit unsigned integer */
+/**
+ * A uint256 is used in order to store a 256-bit unsigned integer (32 bytes) which represents a hash of external contextual data. 
+ *
+ * In the case of a coin service this <i>contextual data</i> is composed of the block contents and individual transaction contents.
+ *
+ * A block or transaction hash is used as a way to identify individual records and as a method to verify the integrity of the underlying contents being referenced.
+ *
+ * @see uint160
+ */
 class uint256 : public base_uint256
 {
 public:

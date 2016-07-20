@@ -34,10 +34,17 @@
 #define __SHC_BLOCK_H__
 
 
+/**
+ * @ingroup sharecoin_shc
+ * @{
+ */
+
 #include <boost/assign/list_of.hpp>
 #include <boost/array.hpp>
 #include <boost/algorithm/string/replace.hpp>
 #include <share.h>
+
+
 
 
 class SHC_CTxMemPool : public CTxMemPool
@@ -51,39 +58,128 @@ class SHC_CTxMemPool : public CTxMemPool
 
 };
 
+class SHCBlock : public CBlock
+{
+public:
+    // header
+    static const int CURRENT_VERSION=2;
+    static SHC_CTxMemPool mempool; 
+    static CBlockIndex *pindexBest;
+    static CBlockIndex *pindexGenesisBlock;
+    static CBigNum bnBestChainWork;
+    static CBigNum bnBestInvalidWork;
+    static int64 nTimeBestReceived;
+
+    SHCBlock()
+    {
+        ifaceIndex = SHC_COIN_IFACE;
+        SetNull();
+    }
+
+    SHCBlock(const CBlock &block)
+    {
+        ifaceIndex = SHC_COIN_IFACE;
+        SetNull();
+        *((CBlock*)this) = block;
+    }
+
+    void SetNull()
+    {
+      nVersion = SHCBlock::CURRENT_VERSION;
+      CBlock::SetNull();
+    }
+
+    bool SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew);
+    void InvalidChainFound(CBlockIndex* pindexNew);
+    unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast);
+    bool AcceptBlock();
+    bool IsBestChain();
+    CScript GetCoinbaseFlags();
+    bool AddToBlockIndex();
+    bool ConnectBlock(CTxDB& txdb, CBlockIndex* pindex);
+    bool CheckBlock();
+    bool ReadBlock(uint64_t nHeight);
+    bool ReadArchBlock(uint256 hash);
+    bool IsOrphan();
+    bool Truncate();
+    bool VerifyCheckpoint(int nHeight);
+    uint64_t GetTotalBlocksEstimate();
+    bool DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex);
+
+  protected:
+    bool SetBestChainInner(CTxDB& txdb, CBlockIndex *pindexNew);
+};
 
 
 
+/**
+ * A memory pool where an inventory of pending block transactions are stored.
+ */
 extern SHC_CTxMemPool SHC_mempool;
 
+/**
+ * The best known tail of the SHC block-chain.
+ */
+extern CBlockIndex* SHC_pindexBest;
+
+/**
+ * A dynamically updated matrix for redundant SHC block-chain integrity. 
+ * @see OP_MATRIX
+ */
+extern ValidateMatrix shc_Validate;
+
+/**
+ * The initial block in the SHC block-chain's index reference.
+ */
 extern CBlockIndex* SHC_pindexGenesisBlock;
+
+/**
+ * The block hash of the initial block in the SHC block-chain.
+ */
+extern uint256 shc_hashGenesisBlock;
+
+
 extern int SHC_nBestHeight;
 extern CBigNum SHC_bnBestChainWork;
 extern CBigNum SHC_bnBestInvalidWork;
 extern uint256 SHC_hashBestChain;
-extern CBlockIndex* SHC_pindexBest;
 extern int64 SHC_nTimeBestReceived;
 
 extern std::map<uint256, SHCBlock*> SHC_mapOrphanBlocks;
 extern std::multimap<uint256, SHCBlock*> SHC_mapOrphanBlocksByPrev;
 extern std::map<uint256, std::map<uint256, CDataStream*> > SHC_mapOrphanTransactionsByPrev;
 extern std::map<uint256, CDataStream*> SHC_mapOrphanTransactions;
-extern uint256 shc_hashGenesisBlock;
-extern ValidateMatrix shc_Validate;
 
 
-
+/**
+ * Create a block template with pending inventoried transactions.
+ */
 CBlock* shc_CreateNewBlock(CReserveKey& reservekey);
 
+/**
+ * Generate the inital SHC block in the block-chain.
+ */
 bool shc_CreateGenesisBlock();
 
+/**
+ * Set the best known block hash.
+ */
 bool shc_SetBestChain(CBlock *block);
 
-
+/**
+ * Attempt to process an incoming block from a remote SHC coin service.
+ */
 bool shc_ProcessBlock(CNode* pfrom, CBlock* pblock);
 
-
+/**
+ * Get the first block in the best "alternate" chain not currently in the main block-chain.
+ */
 uint256 shc_GetOrphanRoot(const CBlock* pblock);
 
+
+
+/**
+ * @}
+ */
 
 #endif /* ndef __SHC_BLOCK_H__ */

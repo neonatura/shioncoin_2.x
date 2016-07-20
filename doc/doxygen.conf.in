@@ -572,6 +572,10 @@ WARN_LOGFILE           = doxy_warn.log
 INPUT = @top_srcdir@/src/share-coin \
   @top_srcdir@/src/share-coin/proto \
   @top_srcdir@/src/share-coin/server \
+  @top_srcdir@/src/share-coin/server/rpc \
+  @top_srcdir@/src/share-coin/server/shc \
+  @top_srcdir@/src/share-coin/server/usde \
+  @top_srcdir@/src/share-coin/server/ext \
   @top_srcdir@/src/share-coin/stratum
 
 # This tag can be used to specify the character encoding of the source files

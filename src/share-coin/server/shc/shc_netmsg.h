@@ -33,6 +33,10 @@
 #ifndef __SHC_NETMGSG_H__
 #define __SHC_NETMGSG_H__
 
+/**
+ * @ingroup sharecoin_shc
+ * @{
+ */
 
 
 extern "C"
@@ -56,6 +60,9 @@ bool shc_AddOrphanTx(const CDataStream& vMsg);
 unsigned int shc_LimitOrphanTxSize(unsigned int nMaxOrphans);
 
 
+/**
+ * @}
+ */
 
 
 #endif /* ndef __SHC_NETMGSG_H__ */

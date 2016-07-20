@@ -265,13 +265,8 @@ fprintf(stderr, "DEBUG: CBase58Data: DecodeBase58Check failed\n");
     bool operator> (const CBase58Data& b58) const { return CompareTo(b58) >  0; }
 };
 
-/** base58-encoded Bitcoin addresses.
- * Public-key-hash-addresses have version 0 (or 111 testnet).
- * The data vector contains RIPEMD160(SHA256(pubkey)), where pubkey is the serialized public key.
- * Script-hash-addresses have version 5 (or 196 testnet).
- * The data vector contains RIPEMD160(SHA256(cscript)), where cscript is the serialized redemption script.
- */
 class CCoinAddr;
+
 class CCoinAddrVisitor : public boost::static_visitor<bool>
 {
 private:
@@ -283,6 +278,12 @@ public:
     bool operator()(const CNoDestination &no) const;
 };
 
+/** base58-encoded coin addresses.
+ * Public-key-hash-addresses have version 0 (or 111 testnet).
+ * The data vector contains RIPEMD160(SHA256(pubkey)), where pubkey is the serialized public key.
+ * Script-hash-addresses have version 5 (or 196 testnet).
+ * The data vector contains RIPEMD160(SHA256(cscript)), where cscript is the serialized redemption script.
+ */
 class CCoinAddr : public CBase58Data
 {
 public:

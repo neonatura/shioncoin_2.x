@@ -28,6 +28,12 @@
 #ifndef __SHC_WALLET_H__
 #define __SHC_WALLET_H__
 
+/**
+ * @ingroup sharecoin_shc
+ * @{
+ */
+
+
 extern CScript SHC_COINBASE_FLAGS;
 
 class SHCWallet : public CWallet
@@ -54,6 +60,10 @@ extern SHCWallet *shcWallet;
 
 bool shc_LoadWallet(void);
 
+
+/**
+ * @}
+ */
 
 
 #endif /* ndef __SHC_WALLET_H__ */

@@ -155,15 +155,24 @@ public:
 
 
 /**
- * BloomFilter is a probabilistic filter which SPV clients provide
- * so that we can filter the transactions we sends them.
+ * A Bloom filter is a space-efficient probabilistic data structure that is used to test membership of an element. The data structure achieves great data compression at the expense of a prescribed false positive rate.
  * 
- * This allows for significantly more efficient transaction and block downloads.
+ * A Bloom filter starts out as an array of n bits all set to 0. A set of k random hash functions are chosen, each of which output a single integer between the range of 1 and n.
  * 
- * Because bloom filters are probabilistic, an SPV node can increase the false-
- * positive rate, making us send them transactions which aren't actually theirs, 
- * allowing clients to trade more bandwidth for more privacy by obfuscating which
- * keys are owned by them.
+ * When adding an element to the Bloom filter, the element is hashed k times separately, and for each of the k outputs, the corresponding Bloom filter bit at that index is set to 1.
+ * 
+ * Querying of the Bloom filter is done by using the same hash functions as before. If all k bits accessed in the bloom filter are set to 1, this demonstrates with high probability that the element lies in the set. Clearly, the k indices could have been set to 1 by the addition of a combination of other elements in the domain, but the parameters allow the user to choose the acceptable false positive rate.
+ * 
+ * Removal of elements can only be done by scrapping the bloom filter and re-creating it from scratch.
+ * 
+ * Rather than viewing the false positive rates as a liability, it is used to create a tunable parameter that represents the desired privacy level and bandwidth trade-off. A SPV client creates their Bloom filter and sends it to a full node using the message filterload, which sets the filter for which transactions are desired. The command filteradd allows addition of desired data to the filter without needing to send a totally new Bloom filter, and filterclear allows the connection to revert to standard block discovery mechanisms. If the filter has been loaded, then full nodes will send a modified form of blocks, called a merkle block. The merkle block is simply the block header with the merkle branch associated with the set Bloom filter.
+ * 
+ * An SPV client can not only add transactions as elements to the filter, but also public keys, data from signature scripts and pubkey scripts, and more. This enables P2SH transaction finding.
+ * 
+ * If a user is more privacy-conscious, he can set the Bloom filter to include more false positives, at the expense of extra bandwidth used for transaction discovery. If a user is on a tight bandwidth budget, he can set the false-positive rate to low, knowing that this will allow full nodes a clear view of what transactions are associated with his client.
+ * @ingroup sharecoin
+ * @defgroup sharecoin_bloom The bloom probabilistic filter.
+ * @{
  */
 class CBloomFilter
 {
@@ -217,6 +226,9 @@ class CBloomFilter
 
     void insert(const COutPoint& outpoint);
 };
+/**
+ * @}
+ */
 
 
 /** Information about a peer */

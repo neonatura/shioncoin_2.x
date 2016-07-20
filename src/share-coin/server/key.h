@@ -46,7 +46,11 @@ public:
     explicit key_error(const std::string& str) : std::runtime_error(str) {}
 };
 
-/** A reference to a CKey: the Hash160 of its serialized public key */
+
+/**
+ * The public key of a coin address referenced as a 160-bit hash.
+ * @see CCoinAddr
+ */
 class CKeyID : public uint160
 {
 public:

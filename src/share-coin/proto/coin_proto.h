@@ -89,7 +89,9 @@ struct coin_iface_t;
 typedef int (*coin_f)(struct coin_iface_t * /*iface*/, void * /* arg */);
 #define COINF(_f) ((coin_f)(_f))
 
-
+/**
+ * A coin interface provides a specialized means to perform service operations.
+ */
 typedef struct coin_iface_t
 {
   /* lowercase 'common' name of currency */
@@ -157,19 +159,49 @@ typedef struct coinhdr_t
 } coinhdr_t;
 #define SIZEOF_COINHDR_T 24
 
+/**
+ * Obtain a numerical attribute for a coin interface
+ */
 int GetCoinAttr(const char *name, char *attr);
 
+/**
+ * Get the defined index for a specified coin interface.
+ */
 int GetCoinIndex(coin_iface_t *iface);
+
+/**
+ * Obtain a coin interface by it's defined index.
+ * @see SHC_COIN_IFACE
+ */
 coin_iface_t *GetCoinByIndex(int index);
 
+/**
+ * Obtain a coin interface by it's common lowercase code.
+ */
 coin_iface_t *GetCoin(const char *name);
 
 
-
-/* currency interfaces */
-#include "usde_proto.h"
+/**
+ * The SHC currency coin service.
+ * @ingroup sharecoin
+ * @defgroup sharecoin_shc The SHC currency coin service.
+ * @{
+ */
 #include "shc_proto.h"
-#include "gmc_proto.h"
+/**
+ * @}
+ */
+
+/**
+ * The USDe currency coin service.
+ * @ingroup sharecoin
+ * @defgroup sharecoin_usde The USDE currency coin service.
+ * @{
+ */
+#include "usde_proto.h"
+/**
+ * @}
+ */
 
 #ifdef __cplusplus
 }
