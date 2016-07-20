@@ -102,7 +102,7 @@ int uevent_peer_verify(uevent_t *e)
   err = shnet_track_verify(peer, &e->fd);
   if (!err) {
     /* success */
-    shnet_track_mark(peer, 1);
+    shnet_track_mark(bind->peer_db, peer, 1);
     bind->scan_freq = MAX(0.001, bind->scan_freq * 1.1);
 
     /* initiate service connection. */
@@ -117,7 +117,7 @@ int uevent_peer_verify(uevent_t *e)
 
   if (err != SHERR_INPROGRESS) {
     /* connection error */
-    shnet_track_mark(peer, -1);
+    shnet_track_mark(bind->peer_db, peer, -1);
     bind->scan_freq = MAX(0.001, bind->scan_freq * 0.9);
 
     sprintf(buf, "unet_peer_verify: error: peer '%s' (%s) [sherr %d].", shpeer_print(peer), sherrstr(err), err);
@@ -135,7 +135,7 @@ int uevent_peer_verify(uevent_t *e)
     unet_log(e->mode, buf);
 
     /* error */
-    shnet_track_mark(peer, -1);
+    shnet_track_mark(bind->peer_db, peer, -1);
     bind->scan_freq = MAX(0.001, bind->scan_freq * 0.9);
 
     shnet_close(e->fd);
@@ -181,14 +181,14 @@ int uevent_cycle_peer(uevent_t *e)
 
   bind->scan_stamp = shtime();
 
-  err = shnet_track_add(peer);
+  err = shnet_track_add(bind->peer_db, peer);
   if (err) { 
     PRINT_ERROR(err, "uevent_cycle_peer: shnet_track_add");
     goto fin;
   }
 
   if (unet_peer_find(shpeer_addr(peer))) {
-    shnet_track_mark(peer, 1); /* give points for being connected */
+    shnet_track_mark(bind->peer_db, peer, 1); /* give points for being connected */
     goto fin; /* already connected */
   }
 

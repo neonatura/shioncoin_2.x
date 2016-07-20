@@ -26,6 +26,7 @@
 #include "shcoind.h"
 #include "unet_seed.h"
 
+#define MAX_UNET_PEER_SCAN_SIZE 64
 
 int unet_peer_find(struct sockaddr *addr)
 {
@@ -133,13 +134,14 @@ int unet_peer_wait(unet_bind_t *bind)
 void unet_peer_scan(void)
 {
   unet_bind_t *bind;
-  shpeer_t *peer;
+  shpeer_t **peers;
   shtime_t ts;
   double dur;
   char errbuf[1024];
   char buf[256];
   int mode;
   int err;
+  int i;
 
   for (mode = 0; mode < MAX_UNET_MODES; mode++) {
     bind = unet_bind_table(mode);
@@ -152,16 +154,18 @@ void unet_peer_scan(void)
       continue;
 
     timing_init("shnet_track_scan", &ts);
-    err = shnet_track_scan(&bind->peer, &peer);
+    peers = shnet_track_scan(bind->peer_db, &bind->peer, MAX_UNET_PEER_SCAN_SIZE);
     timing_term("shnet_track_scan", &ts);
-    if (err) {
-      sprintf(errbuf, "shnet track scan error: %s [unet peer scan]",
-          sherrstr(err));
-      unet_log(mode, errbuf);
-      continue;
-    }
+    if (peers) {
+      for (i = 0; i < MAX_UNET_PEER_SCAN_SIZE; i++) {
+        if (!peers[i])
+          break;
 
-    uevent_new_peer(mode, peer);
+        uevent_new_peer(mode, peers[i]);
+        shpeer_free(&peers[i]);
+      }
+      free(peers);
+    }
   }
 
 }
@@ -233,7 +237,7 @@ void unet_peer_fill_seed(int mode)
   if (mode == UNET_USDE) {
     for (i = 0; i < USDE_SEED_LIST_SIZE; i++) {
       sprintf(hostname, "%s %d", usde_seed_list[i], bind->port);
-      peer = shpeer_init(unet_mode_label(mode), hostname); 
+      peer = shpeer_init((char *)unet_mode_label(mode), hostname); 
       uevent_new_peer(mode, peer);
 
       sprintf(buf, "unet_peer_fill_seed: seeding peer '%s'.", shpeer_print(peer));
@@ -242,7 +246,7 @@ void unet_peer_fill_seed(int mode)
   } else if (mode == UNET_SHC) {
     for (i = 0; i < SHC_SEED_LIST_SIZE; i++) {
       sprintf(hostname, "%s %d", shc_seed_list[i], bind->port);
-      peer = shpeer_init(unet_mode_label(mode), hostname); 
+      peer = shpeer_init((char *)unet_mode_label(mode), hostname); 
       uevent_new_peer(mode, peer);
 
       sprintf(buf, "unet_peer_fill_seed: seeding peer '%s'.", shpeer_print(peer));
@@ -261,14 +265,16 @@ void unet_peer_fill(int mode)
   if (!bind)
     return;
 
-  peer_list = shnet_track_list(&bind->peer, 16);
+  peer_list = shnet_track_list(bind->peer_db, &bind->peer, MAX_UNET_PEER_SCAN_SIZE);
 
   i = 0;
   if (peer_list) {
-    for (; peer_list[i]; i++) {
+    for (; peer_list[i] && i < MAX_UNET_PEER_SCAN_SIZE; i++) {
       uevent_new_peer(mode, peer_list[i]);
+      shpeer_free(&peer_list[i]);
     }
   }
+  free(peer_list);
   if (i == 0) {
     char buf[256];
     sprintf(buf, "unet_peer_fill: fresh peer database [%s].", shpeer_print(&bind->peer)); 
@@ -277,7 +283,6 @@ void unet_peer_fill(int mode)
     unet_peer_fill_seed(mode);
   }
 
-  free(peer_list);
 }
 
 unsigned int unet_peer_total(int mode)
@@ -288,5 +293,5 @@ unsigned int unet_peer_total(int mode)
   if (!bind)
     return (0);
 
-  return (shnet_track_count(bind->peer.label));
+  return (shnet_track_count(bind->peer_db, bind->peer.label));
 }

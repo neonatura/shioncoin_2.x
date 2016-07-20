@@ -61,6 +61,8 @@ int unet_bind(int mode, int port)
   peer = shpeer_init(unet_mode_label(mode), hostname);
   memcpy(&_unet_bind[mode].peer, peer, sizeof(shpeer_t));
   shpeer_free(&peer);
+
+  _unet_bind[mode].peer_db = shnet_track_open(unet_mode_label(mode));
   
   return (0);
 }
@@ -88,6 +90,10 @@ int unet_unbind(int mode)
 
   /* close all accepted sockets */
   unet_close_all(mode);
+
+  /* close net track db */
+  shnet_track_close(_unet_bind[mode].peer_db);
+  _unet_bind[mode].peer_db = NULL;
 
   err = unet_close(_unet_bind[mode].fd, "unbind");
   _unet_bind[mode].fd = UNDEFINED_SOCKET;
