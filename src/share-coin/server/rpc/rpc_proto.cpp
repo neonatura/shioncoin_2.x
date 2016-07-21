@@ -1472,7 +1472,7 @@ Value rpc_msg_verify(CIface *iface, const Array& params, bool fHelp)
 {
   if (fHelp || params.size() != 3)
     throw runtime_error(
-        "msg.verify <usdeaddress> <signature> <message>\n"
+        "msg.verify <coin-address> <signature> <message>\n"
         "Verify a signed message");
 
   string strAddress  = params[0].get_str();
@@ -1668,7 +1668,7 @@ Value rpc_wallet_key(CIface *iface, const Array& params, bool fHelp)
 
   if (fHelp || params.size() != 1)
     throw runtime_error(
-        "Syntax: wallet.key <address>\n"
+        "wallet.key <address>\n"
         "Summary: Reveals the private key corresponding to a public coin address.\n"
         "Params: [ <address> The coin address. ]\n"
         "\n"
@@ -1973,8 +1973,8 @@ Value rpc_wallet_recvbyaddr(CIface *iface, const Array& params, bool fHelp)
 
   if (fHelp || params.size() < 1 || params.size() > 2)
     throw runtime_error(
-        "wallet.recvbyaddr <usdeaddress> [minconf=1]\n"
-        "Returns the total amount received by <usdeaddress> in transactions with at least [minconf] confirmations.");
+        "wallet.recvbyaddr <coin-address> [minconf=1]\n"
+        "Returns the total amount received by <coin-address> in transactions with at least [minconf] confirmations.");
 
   // usde address
   CCoinAddr address = CCoinAddr(params[0].get_str());
@@ -2070,7 +2070,7 @@ Value rpc_wallet_set(CIface *iface, const Array& params, bool fHelp)
   CWallet *pwalletMain = GetWallet(iface);
     if (fHelp || params.size() < 1 || params.size() > 2)
         throw runtime_error(
-            "wallet.set <usdeaddress> <account>\n"
+            "wallet.set <coin-address> <account>\n"
             "Sets the account associated with the given address.");
 
     CCoinAddr address(params[0].get_str());
@@ -2188,7 +2188,7 @@ Value rpc_wallet_validate(CIface *iface, const Array& params, bool fHelp)
 
   if (fHelp || params.size() != 1)
     throw runtime_error(
-        "wallet.validate <usdeaddress>\n"
+        "wallet.validate <coin-address>\n"
         "Return information about <coin-address>.");
 
   CCoinAddr address(params[0].get_str());
@@ -2837,81 +2837,8 @@ Value getaccountaddress(const Array& params, bool fHelp)
 
 
 
-#if 0
-Value setaccount(const Array& params, bool fHelp)
-{
-    if (fHelp || params.size() < 1 || params.size() > 2)
-        throw runtime_error(
-            "setaccount <usdeaddress> <account>\n"
-            "Sets the account associated with the given address.");
-
-    CCoinAddr address(params[0].get_str());
-    if (!address.IsValid())
-        throw JSONRPCError(-5, "Invalid usde address");
 
 
-    string strAccount;
-    if (params.size() > 1)
-        strAccount = AccountFromValue(params[1]);
-
-    // Detect when changing the account of an address that is the 'unused current key' of another account:
-    if (pwalletMain->mapAddressBook.count(address.Get()))
-    {
-        string strOldAccount = pwalletMain->mapAddressBook[address.Get()];
-        if (address == GetAccountAddress(pwalletMain, strOldAccount))
-            GetAccountAddress(pwalletMain, strOldAccount, true);
-    }
-
-    pwalletMain->SetAddressBookName(address.Get(), strAccount);
-
-    return Value::null;
-}
-#endif
-
-
-#if 0
-Value getaccount(const Array& params, bool fHelp)
-{
-    if (fHelp || params.size() != 1)
-        throw runtime_error(
-            "getaccount <usdeaddress>\n"
-            "Returns the account associated with the given address.");
-
-    CCoinAddr address(params[0].get_str());
-    if (!address.IsValid())
-        throw JSONRPCError(-5, "Invalid usde address");
-
-    string strAccount;
-    map<CTxDestination, string>::iterator mi = pwalletMain->mapAddressBook.find(address.Get());
-    if (mi != pwalletMain->mapAddressBook.end() && !(*mi).second.empty())
-        strAccount = (*mi).second;
-    return strAccount;
-}
-#endif
-
-
-#if 0
-Value getaddressesbyaccount(const Array& params, bool fHelp)
-{
-    if (fHelp || params.size() != 1)
-        throw runtime_error(
-            "getaddressesbyaccount <account>\n"
-            "Returns the list of addresses for the given account.");
-
-    string strAccount = AccountFromValue(params[0]);
-
-    // Find all addresses that have the given account
-    Array ret;
-    BOOST_FOREACH(const PAIRTYPE(CCoinAddr, string)& item, pwalletMain->mapAddressBook)
-    {
-        const CCoinAddr& address = item.first;
-        const string& strName = item.second;
-        if (strName == strAccount)
-            ret.push_back(address.ToString());
-    }
-    return ret;
-}
-#endif
 
 Value settxfee(const Array& params, bool fHelp)
 {
@@ -2952,7 +2879,7 @@ Value sendtoaddress(const Array& params, bool fHelp)
 {
     if (fHelp || params.size() < 2 || params.size() > 4)
         throw runtime_error(
-            "sendtoaddress <usdeaddress> <amount> [comment] [comment-to]\n"
+            "sendtoaddress <coin-address> <amount> [comment] [comment-to]\n"
             "<amount> is a real and is rounded to the nearest 0.00000001"
             + HelpRequiringPassphrase());
 
@@ -2986,7 +2913,7 @@ Value signmessage(const Array& params, bool fHelp)
 {
     if (fHelp || params.size() != 2)
         throw runtime_error(
-            "signmessage <usdeaddress> <message>\n"
+            "signmessage <coin-address> <message>\n"
             "Sign a message with the private key of an address");
 
     EnsureWalletIsUnlocked();
@@ -3021,7 +2948,7 @@ Value verifymessage(const Array& params, bool fHelp)
 {
     if (fHelp || params.size() != 3)
         throw runtime_error(
-            "verifymessage <usdeaddress> <signature> <message>\n"
+            "verifymessage <coin-address> <signature> <message>\n"
             "Verify a signed message");
 
     string strAddress  = params[0].get_str();
@@ -3055,85 +2982,8 @@ Value verifymessage(const Array& params, bool fHelp)
 #endif
 
 
-#if 0
-Value getreceivedbyaddress(const Array& params, bool fHelp)
-{
-    if (fHelp || params.size() < 1 || params.size() > 2)
-        throw runtime_error(
-            "getreceivedbyaddress <usdeaddress> [minconf=1]\n"
-            "Returns the total amount received by <usdeaddress> in transactions with at least [minconf] confirmations.");
-
-    // usde address
-    CCoinAddr address = CCoinAddr(params[0].get_str());
-    CScript scriptPubKey;
-    if (!address.IsValid())
-        throw JSONRPCError(-5, "Invalid usde address");
-    scriptPubKey.SetDestination(address.Get());
-    if (!IsMine(*pwalletMain,scriptPubKey))
-        return (double)0.0;
-
-    // Minimum confirmations
-    int nMinDepth = 1;
-    if (params.size() > 1)
-        nMinDepth = params[1].get_int();
-
-    // Tally
-    int64 nAmount = 0;
-    for (map<uint256, CWalletTx>::iterator it = pwalletMain->mapWallet.begin(); it != pwalletMain->mapWallet.end(); ++it)
-    {
-        const CWalletTx& wtx = (*it).second;
-        if (wtx.IsCoinBase() || !wtx.IsFinal())
-            continue;
-
-        BOOST_FOREACH(const CTxOut& txout, wtx.vout)
-            if (txout.scriptPubKey == scriptPubKey)
-                if (wtx.GetDepthInMainChain() >= nMinDepth)
-                    nAmount += txout.nValue;
-    }
-
-    return  ValueFromAmount(nAmount);
-}
-#endif
 
 
-#if 0
-Value getreceivedbyaccount(const Array& params, bool fHelp)
-{
-    if (fHelp || params.size() < 1 || params.size() > 2)
-        throw runtime_error(
-            "getreceivedbyaccount <account> [minconf=1]\n"
-            "Returns the total amount received by addresses with <account> in transactions with at least [minconf] confirmations.");
-
-    // Minimum confirmations
-    int nMinDepth = 1;
-    if (params.size() > 1)
-        nMinDepth = params[1].get_int();
-
-    // Get the set of pub keys assigned to account
-    string strAccount = AccountFromValue(params[0]);
-    set<CTxDestination> setAddress;
-    GetAccountAddresses(strAccount, setAddress);
-
-    // Tally
-    int64 nAmount = 0;
-    for (map<uint256, CWalletTx>::iterator it = pwalletMain->mapWallet.begin(); it != pwalletMain->mapWallet.end(); ++it)
-    {
-        const CWalletTx& wtx = (*it).second;
-        if (wtx.IsCoinBase() || !wtx.IsFinal())
-            continue;
-
-        BOOST_FOREACH(const CTxOut& txout, wtx.vout)
-        {
-            CTxDestination address;
-            if (ExtractDestination(txout.scriptPubKey, address) && IsMine(*pwalletMain, address) && setAddress.count(address))
-                if (wtx.GetDepthInMainChain(ifaceIndex) >= nMinDepth)
-                    nAmount += txout.nValue;
-        }
-    }
-
-    return (double)nAmount / (double)COIN;
-}
-#endif
 
 
 #if 0
@@ -3253,7 +3103,7 @@ Value sendfrom(const Array& params, bool fHelp)
 {
     if (fHelp || params.size() < 3 || params.size() > 6)
         throw runtime_error(
-            "sendfrom <fromaccount> <tousdeaddress> <amount> [minconf=1] [comment] [comment-to]\n"
+            "sendfrom <fromaccount> <to-address> <amount> [minconf=1] [comment] [comment-to]\n"
             "<amount> is a real and is rounded to the nearest 0.00000001"
             + HelpRequiringPassphrase());
 
@@ -3978,36 +3828,6 @@ public:
 };
 #endif
 
-#if 0
-Value validateaddress(const Array& params, bool fHelp)
-{
-    if (fHelp || params.size() != 1)
-        throw runtime_error(
-            "validateaddress <usdeaddress>\n"
-            "Return information about <usdeaddress>.");
-
-    CCoinAddr address(params[0].get_str());
-    bool isValid = address.IsValid();
-
-    Object ret;
-    ret.push_back(Pair("isvalid", isValid));
-    if (isValid)
-    {
-        CTxDestination dest = address.Get();
-        string currentAddress = address.ToString();
-        ret.push_back(Pair("address", currentAddress));
-        bool fMine = IsMine(*pwalletMain, dest);
-        ret.push_back(Pair("ismine", fMine));
-        if (fMine) {
-            Object detail = boost::apply_visitor(DescribeAddressVisitor(), dest);
-            ret.insert(ret.end(), detail.begin(), detail.end());
-        }
-        if (pwalletMain->mapAddressBook.count(dest))
-            ret.push_back(Pair("account", pwalletMain->mapAddressBook[dest]));
-    }
-    return ret;
-}
-#endif
 
 
 
@@ -4611,12 +4431,8 @@ static const CRPCCommand vRPCCommands[] =
 //    { "getmininginfo",          &getmininginfo,          true },
 //    { "getnewaddress",          &getnewaddress,          true },
 //    { "getaccountaddress",      &getaccountaddress,      true },
-//    { "setaccount",             &setaccount,             true },
-//    { "getaccount",             &getaccount,             false },
 //    { "getaddressesbyaccount",  &getaddressesbyaccount,  true },
     { "sendtoaddress",          &sendtoaddress,          false },
-//    { "getreceivedbyaddress",   &getreceivedbyaddress,   false },
-//    { "getreceivedbyaccount",   &getreceivedbyaccount,   false },
 //    { "listreceivedbyaddress",  &listreceivedbyaddress,  false },
 //    { "listreceivedbyaccount",  &listreceivedbyaccount,  false },
 //    { "backupwallet",           &backupwallet,           true },
@@ -4625,7 +4441,6 @@ static const CRPCCommand vRPCCommands[] =
 //    { "walletpassphrasechange", &walletpassphrasechange, false },
 //    { "walletlock",             &walletlock,             true },
 //    { "encryptwallet",          &encryptwallet,          false },
-//    { "validateaddress",        &validateaddress,        true },
 //    { "getbalance",             &getbalance,             false },
     { "move",                   &movecmd,                false },
 //    { "sendfrom",               &sendfrom,               false },

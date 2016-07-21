@@ -161,8 +161,8 @@ void unet_peer_scan(void)
         if (!peers[i])
           break;
 
+        /* The event will de-allocate the peer. */
         uevent_new_peer(mode, peers[i]);
-        shpeer_free(&peers[i]);
       }
       free(peers);
     }
@@ -270,8 +270,8 @@ void unet_peer_fill(int mode)
   i = 0;
   if (peer_list) {
     for (; peer_list[i] && i < MAX_UNET_PEER_SCAN_SIZE; i++) {
+      /* The event will de-allocate the peer. */
       uevent_new_peer(mode, peer_list[i]);
-      shpeer_free(&peer_list[i]);
     }
   }
   free(peer_list);

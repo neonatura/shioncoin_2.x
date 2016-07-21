@@ -285,8 +285,6 @@ bool AddLocal(int ifaceIndex, const CService& addr, int nScore)
   if (IsLimited(addr))
     return false;
 
-  fprintf(stderr, "AddLocal(%s,%i)\n", addr.ToString().c_str(), nScore);
-
   {
     LOCK(cs_mapLocalHost);
     bool fAlready = mapLocalHost.count(addr) > 0;
@@ -473,8 +471,7 @@ int idx;
     CNetAddr addrLocalHost;
     if (GetMyExternalIP(addrLocalHost))
     {
-        fprintf(stderr, "GetMyExternalIP() returned %s\n", addrLocalHost.ToStringIP().c_str());
-for (idx = 0; idx < MAX_COIN_IFACE; idx++)
+      for (idx = 0; idx < MAX_COIN_IFACE; idx++)
         AddLocal(idx, addrLocalHost, LOCAL_HTTP);
     }
 }

@@ -43,7 +43,7 @@ using namespace boost;
 
 extern void IRCDiscover(void);
 extern void PrintPeers(void);
-extern void ListPeers(void);
+//extern void ListPeers(void);
 
 void shcoind_tool_version(void)
 {
@@ -112,10 +112,12 @@ int main(int argc, char *argv[])
     PrintPeers();
     return (0);
   }
+#if 0
   if (argc >= 2 && 0 == strcasecmp(argv[1], "listpeers")) {
     ListPeers();
     return (0);
   }
+#endif
 
   /* perform rpc operation */
   ret = CommandLineRPC(argc, argv);
@@ -197,6 +199,8 @@ void PrintPeers(void)
   shpeer_free(&serv_peer);
 
 }
+
+#if 0
 void ListPeers(void)
 {
   shdb_t *db;
@@ -220,5 +224,6 @@ void ListPeers(void)
   shpeer_free(&serv_peer);
 
 }
+#endif
 
 

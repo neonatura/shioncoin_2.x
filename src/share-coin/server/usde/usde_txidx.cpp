@@ -164,7 +164,6 @@ fprintf(stderr, "DEBUG: usde_FillBlockIndex: stopping at orphan '%s' @ height %d
     lastIndex = pindexNew;
 
     if (checkBest && hash == hashBestChain) {
-fprintf(stderr, "DEBUG: found best hash chain '%s' @ height %d\n", hashBestChain.GetHex().c_str(), nHeight);
       break;
     } 
   }
@@ -380,7 +379,7 @@ bool USDETxDB::LoadBlockIndex()
     if (pindex->nHeight < checkHeight)
       checkHeight = pindex->nHeight;
   }
-if (pindex) fprintf(stderr, "DEBUG: USDE: lowest validated height %d (%s)\n", pindex->nHeight, pindex->GetBlockHash().GetHex().c_str()); 
+//if (pindex) fprintf(stderr, "DEBUG: USDE: lowest validated height %d (%s)\n", pindex->nHeight, pindex->GetBlockHash().GetHex().c_str()); 
   if (pindexFork && !fRequestShutdown)
   {
     // Reorg back to the fork
