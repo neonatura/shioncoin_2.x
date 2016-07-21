@@ -129,9 +129,6 @@ void shc_server_term(void);
 
 void AddAddress(const char *hostname, int port);
 
-int GetRandomAddress(char *hostname, int *port_p);
-
-
 void set_shutdown_timer(void);
 
 void GetMyExternalIP(void);

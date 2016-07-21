@@ -2685,16 +2685,22 @@ void AddAddress(const char *hostname, int port)
   uevent_new_peer(UNET_USDE, peer);
 }
 
-int GetRandomAddress(char *hostname, int *port_p)
+#if 0
+int GetRandomAddress(CIface *iface, char *hostname, int *port_p)
 {
   shpeer_t *self_peer;
   shpeer_t *peer;
+  unet_bind_t *bind;
   char buf[256];
   int err;
 
+  bind = unet_bind_table(ifaceIndex);
+  if (!bind && !bind->peer_db)
+    return (SHERR_INVAL);
+
   sprintf(buf, "127.0.0.1 %d", USDE_COIN_DAEMON_PORT);
-  self_peer = shpeer_init("usde", buf);
-  err = shnet_track_scan(self_peer, &peer);
+  self_peer = shpeer_init(iface->name, buf);
+  peers = shnet_track_scan(bind->peer_db, self_peer, 1);
   shpeer_free(&self_peer);
   if (err)
     return (err);
@@ -2704,6 +2710,7 @@ int GetRandomAddress(char *hostname, int *port_p)
 
   return (0);
 }
+#endif
 
 
 
@@ -2714,18 +2721,24 @@ int GetRandomAddress(char *hostname, int *port_p)
 
 vector <CAddress> GetAddresses(CIface *iface, int max_peer)
 {
+  int ifaceIndex = GetCoinIndex(iface);
   vector<CAddress> vAddr;
   shpeer_t **addr_list;
   shpeer_t *peer;
+  unet_bind_t *bind;
   char hostname[256];
   char buf[256];
   int port;
   int idx;
 
-  sprintf(buf, "127.0.0.1 %d", USDE_COIN_DAEMON_PORT);
-  peer = shpeer_init(iface->name, buf);
-  addr_list = shnet_track_list(peer, max_peer);
-  shpeer_free(&peer);
+  addr_list = NULL;
+  bind = unet_bind_table(ifaceIndex);
+  if (bind && bind->peer_db) {
+    sprintf(buf, "127.0.0.1 %d", USDE_COIN_DAEMON_PORT);
+    peer = shpeer_init(iface->name, buf);
+    addr_list = shnet_track_list(bind->peer_db, peer, max_peer);
+    shpeer_free(&peer);
+  }
   if (!addr_list)
     return (vAddr);
 
@@ -2816,11 +2829,12 @@ int check_ip(char *serv_hostname, struct in_addr *net_addr)
 void GetMyExternalIP(void)
 {
   struct in_addr addr;
+  char *selfip_addr = "91.198.22.70";
   char buf[256];
   int idx;
   int err;
 
-  err = check_ip("91.198.22.70", &addr);
+  err = check_ip(selfip_addr, &addr);
   if (err)
     return;
 
