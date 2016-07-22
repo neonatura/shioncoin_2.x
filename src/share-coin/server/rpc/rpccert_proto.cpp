@@ -137,7 +137,7 @@ Value rpc_cert_list(CIface *iface, const Array& params, bool fHelp)
 
     CCert& cert = tx.certificate;
     if (kwd.length() != 0) {
-      if (!cert.GetLabel().find(kwd))
+      if (cert.GetLabel().find(kwd) == std::string::npos)
         continue;
     }
 

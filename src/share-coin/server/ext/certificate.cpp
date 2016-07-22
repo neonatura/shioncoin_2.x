@@ -71,14 +71,14 @@ int GetTotalCertificates(int ifaceIndex)
   return (certs->size());
 }
 
-bool InsertCertTable(CIface *iface, CTransaction& tx, bool fUpdate)
+bool InsertCertTable(CIface *iface, CTransaction& tx, unsigned int nHeight, bool fUpdate)
 {
   CWallet *wallet = GetWallet(iface);
 
   if (!wallet)
     return (false);
 
-  if (!VerifyCert(tx))
+  if (!VerifyCert(iface, tx, nHeight))
     return (false);
 
   CCert& cert = tx.certificate;
@@ -342,6 +342,11 @@ int64 GetCertOpFee(CIface *iface, int nHeight)
   double nRes = 5100 / base * COIN;
   double nDif = 4982 /base * COIN;
   int64 fee = (int64)(nRes - nDif);
+
+  /* round down */
+  fee /= 1000;
+  fee *= 1000;
+
   return (MAX(iface->min_tx_fee, fee));
 }
 
@@ -548,7 +553,7 @@ fprintf(stderr, "DEBUG: VerifyIdent: invalid hash '%s' vs '%s'\n", ident->GetHas
 /**
  * Verify the integrity of an certificate.
  */
-bool VerifyCert(CTransaction& tx)
+bool VerifyCert(CIface *iface, CTransaction& tx, int nHeight)
 {
   uint160 hashCert;
   int nOut;
@@ -572,6 +577,9 @@ bool VerifyCert(CTransaction& tx)
       mode != OP_EXT_TRANSFER &&
       mode != OP_EXT_REMOVE)
     return (false);
+
+  if (tx.vout[nOut].nValue < GetCertOpFee(iface, nHeight))
+    return error(SHERR_INVAL, "VerifyCert: insufficient fee (%f of %f) for block accepted at height %d.", FormatMoney(tx.vout[nOut].nValue), GetCertOpFee(iface, nHeight));
 
   CCert *cert = &tx.certificate;
   if (hashCert != cert->GetHash())
@@ -1176,7 +1184,7 @@ Object CIdent::ToValue()
   char loc[256];
   shnum_t x, y;
 
-  obj.push_back(Pair("hash", GetHash().GetHex()));
+  obj.push_back(Pair("identhash", GetHash().GetHex()));
 
   shgeo_loc(&geo, &x, &y, NULL);
   sprintf(loc, "%f,%f", (double)x, (double)y);
@@ -1193,10 +1201,9 @@ Object CCert::ToValue()
 {
   Object obj = CIdent::ToValue();
 
-  obj.push_back(Pair("hash", GetHash().GetHex()));
+  obj.push_back(Pair("certhash", GetHash().GetHex()));
   obj.push_back(Pair("issuer", hashIssuer.GetHex()));
   obj.push_back(Pair("serialno", HexStr(vSerial.begin(), vSerial.end()))); 
-  obj.push_back(Pair("coinaddr", stringFromVch(vAddr)));
   obj.push_back(Pair("fee", ValueFromAmount(nFee)));
   obj.push_back(Pair("flags", nFlag));
   obj.push_back(Pair("signature", signature.GetHash().GetHex()));

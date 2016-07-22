@@ -2250,7 +2250,7 @@ bool core_AcceptBlock(CBlock *pblock)
       ifaceIndex == SHC_COIN_IFACE) {
     BOOST_FOREACH(CTransaction& tx, pblock->vtx) {
       if (tx.isFlag(CTransaction::TXF_CERTIFICATE)) {
-        InsertCertTable(iface, tx);
+        InsertCertTable(iface, tx, nHeight);
       }
     }
   }

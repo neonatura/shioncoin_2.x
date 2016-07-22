@@ -412,7 +412,7 @@ class CLicense : public CCert
 class CWalletTx;
 
 
-bool VerifyCert(CTransaction& tx);
+bool VerifyCert(CIface *iface, CTransaction& tx, int nHeight);
 
 int64 GetCertOpFee(CIface *iface, int nHeight);
 
@@ -446,7 +446,7 @@ cert_list *GetLicenseTable(int ifaceIndex);
 
 bool IsCertTx(const CTransaction& tx);
 
-bool InsertCertTable(CIface *iface, CTransaction& tx, bool fUpdate = true);
+bool InsertCertTable(CIface *iface, CTransaction& tx, unsigned int nHeight, bool fUpdate = true);
 
 bool GetCertAccount(CIface *iface, const CTransaction& tx, string& strAccount);
 

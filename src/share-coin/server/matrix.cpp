@@ -111,6 +111,8 @@ bool BlockAcceptValidateMatrix(ValidateMatrix *matrixIn, ValidateMatrix& matrix,
         fCheck = false;
       } else {
         fCheck = true;
+        /* apply new hash to matrix */
+        matrixIn->Append(pindex->nHeight, pindex->GetBlockHash()); 
         Debug("TESTBlock::AcceptBlock: Validate verify success: (seed %s) (new %s)\n", matrixIn->ToString().c_str(), matrix.ToString().c_str());
       }
       return (true); /* matrix was found */

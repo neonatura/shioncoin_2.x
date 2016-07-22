@@ -550,6 +550,7 @@ _TEST(certtx)
   CCoinAddr addr = GetAccountAddress(wallet, strLabel, false);
   _TRUE(addr.IsValid() == true);
 
+unsigned int nBestHeight = GetBestHeight(iface) + 1;
   CWalletTx wtx;
   const char *raw = "test-secret";
   cbuff vchSecret(raw, raw+strlen(raw));
@@ -560,7 +561,7 @@ _TEST(certtx)
  // uint256 hashTx = wtx.GetHash();
 
   _TRUE(wtx.CheckTransaction(TEST_COIN_IFACE)); /* .. */
-  _TRUE(VerifyCert(wtx) == true);
+  _TRUE(VerifyCert(iface, wtx, nBestHeight) == true);
   _TRUE(wtx.IsInMemoryPool(TEST_COIN_IFACE) == true);
 
   /* insert cert into chain + create a coin balance */

@@ -631,21 +631,14 @@ continue;
       }
     }
 
-#if 0
-    nLastBlockTx = nBlockTx;
-    nLastBlockSize = nBlockSize;
-    //printf("CreateNewBlock(): total size %lu\n", nBlockSize);
-#endif
 
   }
 
   int64 reward = shc_GetBlockValue(pindexPrev->nHeight+1, nFees);
 #if 0
-  if (pindexPrev->nHeight >= 100000) {
-   ret = BlockGenerateValidateMatrix(iface, &shc_Validate, pblock->vtx[0], reward);
-      if (!ret) /* spring matrix */
-        ret = BlockGenerateSpringMatrix(iface, pblock->vtx[0], reward);
-  }
+  ret = BlockGenerateValidateMatrix(iface, &shc_Validate, pblock->vtx[0], reward);
+  if (!ret) /* spring matrix */
+    ret = BlockGenerateSpringMatrix(iface, pblock->vtx[0], reward);
 #endif
   pblock->vtx[0].vout[0].nValue = reward; 
 

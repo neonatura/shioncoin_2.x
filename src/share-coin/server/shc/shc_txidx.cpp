@@ -152,7 +152,7 @@ bool shc_FillBlockIndex(txlist& vMatrix, txlist& vSpring, txlist& vCert)
         }
       }
       if (tx.isFlag(CTransaction::TXF_CERTIFICATE)) {
-        if (VerifyCert(tx))
+        if (VerifyCert(iface, tx, nHeight))
           vCert.push_back(pindexNew);
       }
     }
@@ -366,7 +366,7 @@ bool SHCTxDB::LoadBlockIndex()
     CBlock *block = GetBlockByHash(iface, pindex->GetBlockHash());
     BOOST_FOREACH(CTransaction& tx, block->vtx) {
       if (IsCertTx(tx))
-        InsertCertTable(iface, tx);
+        InsertCertTable(iface, tx, pindex->nHeight);
     }
     delete block;
   }
