@@ -5,6 +5,7 @@ TESTS = test_shcoind
 INCLUDES = -I$(top_srcdir)/src/share-ssl-lib/$(OPENSSL_DIR)/include \
 	-I$(top_srcdir)/src/share-lib \
 	-I$(srcdir)/proto \
+	-I$(srcdir)/fractal \
 	-I$(srcdir)/server \
 	-I$(srcdir)/server/ext \
 	-I$(srcdir)/server/blockchain \
@@ -113,6 +114,8 @@ common_sources = \
 	shcoind_opt.c
 server_sources = \
 	$(proto_sources) \
+	fractal/fractal.c \
+	fractal/fractal_bmp.c \
 	server/test/test_wallet.cpp \
 	server/test/test_wallet.h \
 	server/test/test_block.cpp \
@@ -144,7 +147,6 @@ server_sources = \
 	server/rpc/rpcnet.cpp \
 	server/rpc/rpc_proto.cpp \
 	server/rpc/rpcrawtransaction.cpp \
-	server/rpc/rpc_bmp.c \
 	server/block.cpp \
 	server/chain.cpp \
 	server/matrix.cpp \

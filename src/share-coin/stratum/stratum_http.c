@@ -76,6 +76,115 @@ char *stratum_http_response(SOCKET sk, char *url)
   return (ret_html);
 }
 
+void stratum_http_spring_img_html(shbuf_t *buff)
+{
+
+  shbuf_catstr(buff,
+      "<div style=\"margin-top : 64px; height : 0px;\"></div>\n"
+      "\n"
+      "<div style=\"width : 256px; margin-left : auto; margin-right : auto;\">\n"
+      "<div style=\"float : right; margin-right : 32px;\"> <span>Spring Matrix</span> </div>\n"
+      "<div style=\"float : left; background : linear-gradient(to bottom, #1e5799 0%,#2989d8 50%,#207cca 51%,#7db9e8 100%); color : #e8e8e9; border-radius : 6px; padding : 4px 4px 4px 4px; font-family : Georgia; font-size : 12px; font-weight : bold;\">\n"
+      "<span id=\"spring_matrix_lbl\">x1</span>\n"
+      "</div>\n"
+      /* expand */
+      "<div style=\"float : left; margin-left : 16px; background : linear-gradient(to bottom, #1e5799 0%,#2989d8 50%,#207cca 51%,#7db9e8 100%); color : #e8e8e9; border-radius : 6px; padding : 4px 4px 4px 4px; font-family : Georgia; font-size : 12px; font-weight : bold;\"><a href=\"/image/spring_matrix.bmp?span=0.1\" id=\"spring_matrix_ref\"><img src=\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAAAXNSR0IArs4c6QAAAAZiS0dEAP8A/wD/oL2nkwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB+AHFRcvLtjUSsgAAAGqSURBVEhL5ZVBbtRAEEV/VTViMXcB5QZhzwoWSGEBEkJwBKJIiZBAuUOEFNYBzgA3AImDsMoiyL8+i3TPmLGNx4Edb9N2d5W/67e7DOyIpBNtOJmLb/hcwN+ySEDSXMiARQJmNhcyYJHATVgk8E8syszfxj5TFpEEMJ4zEHB3kHzgvntxEQGSD8dy1jNd1wEASD4D8GkQiVmLPpJ8DmwqAnoC7r4i+drM3k1YIWAtMlAyM5jZGck3ZrZq8wUASN6VdO7uezXZJL0CcLvGCcB+T3i/CrWJqxZnZkeZeZ/k04j4BpIHJK8yU5KytoI2bpMza9cXmSL5k+TjUqtob7L8JG2huk+12lsGACT3ALx39zuoFgE4xJZFAO7V+88AvqBnkaRTM5Mkk/QdwJOI+IpGZq5Ivs1MZeZgEyUd9+w4HllXzT3tum69yeuvSNJlRBxJeqHxz7Fv38DKzISkl+5+6O6Xbb60i4ho4xnJH9sPmEPSo1LKBXB9WBujrSIiPvQPS2OiMpBEKeViLGe0VQCbivpM9aJe9YO13RvODVkkMGXRn1gk8H/+0X4B9mM0rhW8WLcAAAAASUVORK5CYII=\" style=\"width : 15px; height : 15px;\" alt=\"Expand Image\"></a></div>\n"
+      "<div style=\"clear : both;\"></div>\n"
+      "<hr style=\"width : 80%;\">\n"
+      "<div id=\"spring_matrix\" name=\"spring_matrix\" style=\"width : 256px; height : 256px; padding : 0 0 0 0; margin : 0 0 0 0; border : 0;\" onclick=\"matrixClick(this)\">\n"
+      "<img id=\"spring_matrix_img\" name=\"spring_matrix_img\" src=\"/image/spring_matrix.bmp\" style=\"width : 256px; height : 256px; border : 0; padding : 0 0 0 0; margin : 0 0 0 0;\">\n"
+      "</div>\n"
+      "</div>\n");
+
+
+  shbuf_catstr(buff,
+      "<script type=\"text/javascript\">\n"
+      "document.getElementById(\"spring_matrix\").addEventListener(\"click\", clickPos, false);\n"
+      "var x_of = 0, y_of = 0;\n"
+      "var mClick = false;\n"
+      "var zoom = 1.0;\n"
+      "function matrixClick(el) {\n"
+      "  x_of = el.offsetLeft;\n"
+      "  y_of = el.offsetTop;\n"
+      "  mClick = true;\n"
+      "  return false;\n"
+      "}\n"
+      "var clientX = 0.0;\n"
+      "var clientY = 0.0;\n"
+      "function clickPos(e) {\n"
+      "  if (mClick) {\n"
+      "    var i = document.getElementById(\"spring_matrix_img\");\n"
+      "    var l = document.getElementById(\"spring_matrix_lbl\");\n"
+      "    if (i != null && l != null) {\n"
+      "      if (zoom == 1.0) {\n"
+      "        clientX = e.clientX - x_of;\n"
+      "        clientY = e.clientY - y_of;\n"
+      "        zoom = 0.5;\n"
+      "        i.src = \"/image/spring_matrix.bmp?y=\" + clientY + \"&x=\" + clientX + \"&zoom=\" + zoom;\n"
+      "      } else if (zoom > 0.001) {\n"
+      "        zoom /= 2;\n"
+      "        i.src = \"/image/spring_matrix.bmp?y=\" + clientY + \"&x=\" + clientX + \"&zoom=\" + zoom;\n"
+      "      } else {\n"
+      "        zoom = 1.0;\n"
+      "        i.src = \"/image/spring_matrix.bmp\";\n"
+      "      }\n"
+      "      l.innerHTML = \"x\" + (1 / zoom);\n"
+      "    }\n"
+      "    mClick = false;\n"
+      "  }\n"
+      "}\n"
+      "</script>\n");
+
+}
+
+void stratum_http_spring_img(char *args, shbuf_t *buff)
+{
+  FILE *fl;
+  struct stat st;
+  double x_of, y_of, zoom;
+  double span;
+  char *data;
+  char str[256];
+  char *ptr;
+
+  zoom = 1.0;
+  ptr = strstr(args, "zoom=");
+  if (ptr)
+    zoom = atof(ptr+5);
+
+  x_of = 0;
+  ptr = strstr(args, "x=");
+  if (ptr)
+    x_of = atof(ptr+2);
+
+  y_of = 0;
+  ptr = strstr(args, "y=");
+  if (ptr)
+    y_of = atoi(ptr+2);
+
+  span = 1.0;
+  ptr = strstr(args, "span=");
+  if (ptr)
+    span = atof(ptr+5);
+
+  spring_render_fractal("/tmp/fractal.bmp", zoom, span, x_of, y_of);
+  stat("/tmp/fractal.bmp", &st);
+
+  shbuf_catstr(buff, "HTTP/1.0 200 OK\r\n"); 
+  shbuf_catstr(buff, "Content-Type: image/bmp\r\n");
+  sprintf(str, "Content-Length: %u\r\n", st.st_size);
+  shbuf_catstr(buff, str);
+  shbuf_catstr(buff, "\r\n"); 
+
+  data = (char *)calloc(st.st_size, sizeof(char));
+  fl = fopen("/tmp/fractal.bmp", "rb");
+  fread(data, sizeof(char), st.st_size, fl);
+  fclose(fl);
+  shbuf_cat(buff, data, st.st_size); 
+  free(data);
+}
+
+#define SPRING_MATRIX_BMP "/image/spring_matrix.bmp"
 void stratum_http_request(SOCKET sk, char *url)
 {
   user_t *user;
@@ -83,6 +192,15 @@ void stratum_http_request(SOCKET sk, char *url)
 char ret_html[4096];
 
   buff = shbuf_init();
+
+  if (0 == strncmp(url, SPRING_MATRIX_BMP, strlen(SPRING_MATRIX_BMP))) {
+    stratum_http_spring_img(url + strlen(SPRING_MATRIX_BMP), buff);
+    unet_write(sk, shbuf_data(buff), shbuf_size(buff));
+    shbuf_free(&buff);
+    unet_shutdown(sk);
+    return;
+  }
+
   shbuf_catstr(buff, "HTTP/1.0 200 OK\r\n"); 
   shbuf_catstr(buff, "Content-Type: text/html\r\n");
   shbuf_catstr(buff, "\r\n"); 
@@ -106,8 +224,11 @@ char ret_html[4096];
         user->block_tot, (unsigned int)user->block_cnt);
     shbuf_catstr(buff, ret_html);
   }
-  shbuf_catstr(buff, "</table>");
+  shbuf_catstr(buff, "</table>\r\n");
 
+
+  /* attach image of current spring matrix fractal */
+  stratum_http_spring_img_html(buff);
 
   shbuf_catstr(buff, "</body></html>\r\n"); 
 

@@ -1,9 +1,29 @@
-#ifndef _BMP_H_
-#define _BMP_H_
 
+/*
+ * @copyright
+ *
+ *  Copyright 2014 Neo Natura
+ *
+ *  This file is part of the Share Library.
+ *  (https://github.com/neonatura/share)
+ *        
+ *  The Share Library is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version. 
+ *
+ *  The Share Library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with The Share Library.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  @endcopyright
+ */  
 
-/**************************************************************
-
+/*
 	QDBMP - Quick n' Dirty BMP
 
 	v1.0.0 - 2007-04-07
@@ -37,11 +57,12 @@
 	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 	THE SOFTWARE.
+*/
 
-**************************************************************/
+#ifndef __FRACTAL__FRACTAL_BMP_H__
+#define __FRACTAL__FRACTAL_BMP_H__
 
 #include <stdio.h>
-
 
 
 /* Type definitions */
@@ -130,4 +151,4 @@ const char*		BMP_GetErrorDescription		();
 		return( return_value );														\
 	}																				\
 
-#endif
+#endif /* ndef __FRACTAL__FRACTAL_BMP_H__ */

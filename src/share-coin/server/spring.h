@@ -87,8 +87,11 @@ int spring_loc_search(double cur_lat, double cur_lon, double *lat_p, double *lon
 /**
  * Render the spring matrix as a fractal BMP image.
  * @param zoom The degree (10.0 - 0.001) to zoom into the center.
+ * @param span The ratio (1.0 is 256x256 pixels) to rende the image.
+ * @param x_of A pixel offset from the left.
+ * @param y_of A pixel offset from the top.
  */
-int spring_render_fractal(char *img_path, double zoom);
+int spring_render_fractal(char *img_path, double zoom, double span, double x_of, double y_of);
 
 /**
  * Mark a particular geo location as no longer available in the spring matrix.

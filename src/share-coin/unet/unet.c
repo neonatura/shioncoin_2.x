@@ -225,7 +225,7 @@ fprintf(stderr, "DEBUG: unet_cycle: shnet_read failure: %s [errno %d]\n", strerr
   /* scan for new service connections */
   if (uevent_type_count(UEVENT_PEER) == 0) {
     time_t now = time(NULL);
-    if (last_scan_t + 5 < now) {
+    if (last_scan_t + 10 < now) {
       unet_peer_scan();
       last_scan_t = now;
     }
@@ -237,7 +237,7 @@ fprintf(stderr, "DEBUG: unet_cycle: shnet_read failure: %s [errno %d]\n", strerr
   memset(&to, 0, sizeof(to));
   diff_t = MAX(0.001, max_t - (shtimef(shtime()) - shtimef(start_t))); /* sec */
   diff_t *= 1000; /* ms */
-  to.tv_usec = MIN(250000, (long)1000 * (long)diff_t); /* usec */
+  to.tv_usec = MAX(25000, MIN(250000, (long)1000 * (long)diff_t)); /* usec */
   err = select(fd_max+1, &r_set, &w_set, &x_set, &to);
   if (err > 0) {
     for (fd = 1; fd <= fd_max; fd++) {

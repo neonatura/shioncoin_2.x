@@ -25,7 +25,7 @@
 
 #include <math.h>
 #include "shcoind.h"
-#include "rpc_bmp.h"
+#include "fractal.h"
 #include "spring.h"
 
 /* see end of file */
@@ -218,13 +218,13 @@ void spring_matrix_compress(uint32_t matrix[3][3])
 
 }
 
-int spring_render_fractal(char *img_path, double zoom)
+#if 0
+int spring_render_fractal(char *img_path, double zoom, double span, double x_of, double y_of)
 {
   static const unsigned int width = 256, height = 256;
   BMP *bmp;
   uint32_t m_seed;
   uint32_t val;
-  shnum_t span = 0.05;
   shnum_t seed;
   shnum_t rate;
   shnum_t K;
@@ -289,6 +289,26 @@ int spring_render_fractal(char *img_path, double zoom)
   BMP_CHECK_ERROR( stdout, -2 );
   BMP_Free( bmp );
   return 0;
+}
+#endif
+int spring_render_fractal(char *img_path, double zoom, double span, double x_of, double y_of)
+{
+  static const int width = 256, height = 256;
+  uint32_t m_seed;
+  double seed;
+  int y, x;
+
+fprintf(stderr, "DEBUG: spring_render_fractal: '%s'\n", img_path);
+
+  m_seed = 0;
+  for (y = 0; y < height; y++) {
+    for (x = 0; x < width; x++) {
+      m_seed += _spring_matrix[y][x];
+    }
+  }
+  seed = (double)m_seed;
+
+  return (fractal_render(img_path, seed, zoom, span, x_of, y_of));
 }
 
 

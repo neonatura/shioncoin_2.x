@@ -113,6 +113,8 @@ void usage_version(void)
       get_libshare_version());
 }
 
+extern bc_t *GetBlockChain(CIface *iface);
+
 int main(int argc, char *argv[])
 {
   CIface *iface;
@@ -191,6 +193,12 @@ int main(int argc, char *argv[])
 
     if (iface->op_init)
       iface->op_init(iface, NULL);
+
+#if 0
+    bc = GetBlockChain(iface);
+    if (bc)
+      bc_idle(bc);
+#endif
   }
 
 #ifdef STRATUM_SERVICE

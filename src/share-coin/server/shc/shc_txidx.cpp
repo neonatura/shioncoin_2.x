@@ -265,9 +265,7 @@ bool SHCTxDB::LoadBlockIndex()
   SHCBlock::bnBestChainWork = pindexBest->bnChainWork;
   pindexBest->pnext = NULL;
 
-  printf("LoadBlockIndex(): SHCBlock::hashBestChain=%s  height=%d  date=%s\n",
-      hashBestChain.ToString().substr(0,20).c_str(), GetBestHeight(iface),
-      DateTimeStrFormat("%x %H:%M:%S", pindexBest->GetBlockTime()).c_str());
+  //printf("LoadBlockIndex(): SHCBlock::hashBestChain=%s  height=%d  date=%s\n", hashBestChain.ToString().substr(0,20).c_str(), GetBestHeight(iface), DateTimeStrFormat("%x %H:%M:%S", pindexBest->GetBlockTime()).c_str());
 
   // Load bnBestInvalidWork, OK if it doesn't exist
   ReadBestInvalidWork(SHCBlock::bnBestInvalidWork);

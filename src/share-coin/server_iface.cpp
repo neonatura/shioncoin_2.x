@@ -1560,7 +1560,7 @@ fprintf(stderr, "DEBUG: usde_server_timer: unet_shutdown()\n");
 
   event_cycle_chain(USDE_COIN_IFACE); /* DEBUG: */
 
-  if (0 == (verify_idx % 100)) {
+  if (0 == (verify_idx % 256)) {
 #if 0
     bc = GetBlockTxChain(iface);
     if (bc)
@@ -1834,7 +1834,7 @@ fprintf(stderr, "DEBUG: shc_server_timer: unet_shutdown()\n");
 
   event_cycle_chain(SHC_COIN_IFACE); /* DEBUG: TODO: uevent */
 
-  if (0 == (verify_idx % 100)) {
+  if (0 == (verify_idx % 256)) {
 #if 0
     bc = GetBlockTxChain(iface);
     if (bc)
