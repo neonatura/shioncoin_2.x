@@ -434,7 +434,7 @@ extern int init_ident_donate_tx(CIface *iface, string strAccount, uint64_t nValu
 
 extern int init_ident_certcoin_tx(CIface *iface, string strAccount, uint64_t nValue, uint160 hashCert, CCoinAddr addrDest, CWalletTx& wtx);
 
-extern bool VerifyIdent(CTransaction& tx);
+extern bool VerifyIdent(CTransaction& tx, int& mode);
 
 int GetTotalCertificates(int ifaceIndex);
 
@@ -457,6 +457,8 @@ bool DisconnectCertificate(CIface *iface, CTransaction& tx);
 bool GetCertByName(CIface *iface, string name, CCert& cert);
 
 bool GetTxOfIdent(CIface *iface, const uint160& hash, CTransaction& tx);
+
+bool InsertIdentTable(CIface *iface, CTransaction& tx);
 
 
 

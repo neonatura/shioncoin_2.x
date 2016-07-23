@@ -462,6 +462,7 @@ _TEST(identtx)
   string strAccount("");
   int64 orig_bal;
   int64 bal;
+  int mode;
   int idx;
   int err;
 
@@ -488,7 +489,7 @@ _TEST(identtx)
   _TRUE(err == 0);
   _TRUE(wtx.CheckTransaction(TEST_COIN_IFACE)); /* .. */
 wtx.print();
-  _TRUE(VerifyIdent(wtx) == true);
+  _TRUE(VerifyIdent(wtx, mode) == true);
   _TRUE(wtx.IsInMemoryPool(TEST_COIN_IFACE) == true);
 
   for (idx = 0; idx < 3; idx++) {
@@ -515,7 +516,7 @@ wtx.print();
 if (err) fprintf(stderr, "DEBUG: IDENT-TX(cert coin): err == %d\n", err);
   _TRUE(err == 0);
   _TRUE(csend_tx.CheckTransaction(TEST_COIN_IFACE)); /* .. */
-  _TRUE(VerifyIdent(csend_tx) == true);
+  _TRUE(VerifyIdent(csend_tx, mode) == true);
 
   for (idx = 0; idx < 3; idx++) {
     CBlock *block = test_GenerateBlock();

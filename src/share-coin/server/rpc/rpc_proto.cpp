@@ -4408,6 +4408,7 @@ static const CRPCCommand vRPCCommands[] =
     { "wallet.csend",         &rpc_wallet_csend},
     { "wallet.set",           &rpc_wallet_set},
     { "wallet.setkey",        &rpc_wallet_setkey},
+    { "wallet.stamp",         &rpc_wallet_stamp},
     { "wallet.tx",            &rpc_wallet_tx},
     { "wallet.unspent",       &rpc_wallet_unspent},
     { "wallet.validate",      &rpc_wallet_validate},

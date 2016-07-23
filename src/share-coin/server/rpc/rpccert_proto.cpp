@@ -338,4 +338,44 @@ Value rpc_wallet_csend(CIface *iface, const Array& params, bool fHelp)
 }
 
 
+Value rpc_wallet_stamp(CIface *iface, const Array& params, bool fHelp) 
+{
+  int ifaceIndex = GetCoinIndex(iface);
+  int64 nBalance;
+  int err;
+
+  if (fHelp || params.size() != 2) {
+    throw runtime_error(
+        "wallet.stamp <account> <comment>\n"
+        "Summary: Create a 'ident stamp' transaction which optionally references a particular geodetic location.\n"
+        "Params: [ <account> The coin account name., <comment> Use the format \"geo:<lat>,<lon>\" to specify a location. ]\n"
+        "\n" 
+        "A single coin reward can be achieved by creating an ident stamp transaction on a location present in the \"spring matrix\". The reward will be given, at most, once per location. A minimum transaction fee will apply and is sub-sequently returned once the transaction has been processed.\n"
+        );
+  }
+
+  if (ifaceIndex != TEST_COIN_IFACE &&
+      ifaceIndex != SHC_COIN_IFACE)
+    throw runtime_error("Unsupported operation for coin service.");
+
+  string strAccount = AccountFromValue(params[0]);
+  string strComment = AccountFromValue(params[1]);
+
+  int64 nValue = iface->min_tx_fee;
+
+  nBalance = GetAccountBalance(ifaceIndex, strAccount, 1);
+  if (nBalance < nValue)
+    throw JSONRPCError(err, "Insufficient funds available for amount specified.");
+
+  CWalletTx wtx;
+  err = init_ident_stamp_tx(iface, strAccount, strComment, wtx);
+  if (err)
+    throw JSONRPCError(err, "Failure initializing transaction.");
+    
+/* DEBUG: */wtx.print();
+  return (wtx.ToValue());
+}
+
+
+
 

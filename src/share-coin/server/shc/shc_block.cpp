@@ -538,9 +538,6 @@ continue;
         int nConf = GetTxDepthInMainChain(iface, txPrev.GetHash());
 
         dPriority += (double)nValueIn * nConf;
-
-        if (fDebug && GetBoolArg("-printpriority"))
-          printf("priority     nValueIn=%-12"PRI64d" nConf=%-5d dPriority=%-20.1f\n", nValueIn, nConf, dPriority);
       }
 
       // Priority is sum(valuein * age) / txsize
@@ -550,14 +547,6 @@ continue;
         porphan->dPriority = dPriority;
       else
         mapPriority.insert(make_pair(-dPriority, &(*mi).second));
-
-      if (fDebug && GetBoolArg("-printpriority"))
-      {
-        printf("priority %-20.1f %s\n%s", dPriority, tx.GetHash().ToString().substr(0,10).c_str(), tx.ToString().c_str());
-        if (porphan)
-          porphan->print();
-        printf("\n");
-      }
     }
 
     // Collect transactions into block
@@ -630,10 +619,9 @@ continue;
         }
       }
     }
-
-
   }
 
+  /* established base reward for miners */
   int64 reward = shc_GetBlockValue(pindexPrev->nHeight+1, nFees);
 #if 0
   ret = BlockGenerateValidateMatrix(iface, &shc_Validate, pblock->vtx[0], reward);
@@ -642,8 +630,7 @@ continue;
 #endif
   pblock->vtx[0].vout[0].nValue = reward; 
 
-
-  // Fill in header
+  /* fill block header */
   pblock->hashPrevBlock  = pindexPrev->GetBlockHash();
   pblock->hashMerkleRoot = pblock->BuildMerkleTree();
   pblock->UpdateTime(pindexPrev);
@@ -1576,7 +1563,7 @@ bool SHCBlock::AcceptBlock()
     } else if (mode == OP_EXT_PAY) {
       bool fHasSprMatrix = BlockAcceptSpringMatrix(iface, vtx[0], fCheck);
       if (fHasSprMatrix && !fCheck)
-        return error(SHERR_ILSEQ, "AcceptBlock: shc_Spring failure: (seed %s) (new %s)", shc_Validate.ToString().c_str(), val_matrix.ToString().c_str());
+        return error(SHERR_ILSEQ, "AcceptBlock: shc_Spring failure: (%s)", val_matrix.ToString().c_str());
     }
   }
 

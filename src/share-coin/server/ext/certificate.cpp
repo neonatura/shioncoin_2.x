@@ -112,6 +112,26 @@ bool InsertCertTable(CIface *iface, CTransaction& tx, unsigned int nHeight, bool
   return (true);
 }
 
+bool InsertIdentTable(CIface *iface, CTransaction& tx)
+{
+  CWallet *wallet = GetWallet(iface);
+  int mode;
+
+  if (!wallet)
+    return (false);
+
+  if (!VerifyIdent(tx, mode))
+    return (false);
+
+  if (mode == OP_EXT_NEW) { /* ident stamp */
+    CIdent& ident = (CIdent&)tx.certificate;
+    const uint160& hIdent = ident.GetHash();
+    wallet->mapIdent[hIdent] = tx.GetHash();
+  }
+
+  return (true);
+}
+
 bool GetCertByName(CIface *iface, string name, CCert& cert)
 {
   CWallet *wallet = GetWallet(iface);
@@ -515,7 +535,7 @@ bool IsLocalIdent(CIface *iface, const CTransaction& tx)
   return (IsLocalCert(iface, tx.vout[nOut]));
 }
 
-bool VerifyIdent(CTransaction& tx)
+bool VerifyIdent(CTransaction& tx, int& mode)
 {
   uint160 hashIdent;
   int nOut;
@@ -529,7 +549,6 @@ bool VerifyIdent(CTransaction& tx)
   if (nOut == -1)
     return (false); /* no extension output */
 
-  int mode;
   if (!DecodeIdentHash(tx.vout[nOut].scriptPubKey, mode, hashIdent))
     return (false); /* no ident hash in output */
 
@@ -1008,11 +1027,8 @@ int init_ident_stamp_tx(CIface *iface, std::string strAccount, std::string strCo
   CReserveKey rkey(wallet);
   wtx.strFromAccount = strAccount;
 
-  CScript scriptPubKeyOrig;
-  scriptPubKeyOrig.SetDestination(addr.Get());
   CScript scriptPubKey;
-  scriptPubKey << OP_EXT_NEW << CScript::EncodeOP_N(OP_IDENT) << OP_HASH160 << hashIdent << OP_2DROP;
-  scriptPubKey += scriptPubKeyOrig;
+  scriptPubKey << OP_EXT_NEW << CScript::EncodeOP_N(OP_IDENT) << OP_HASH160 << hashIdent << OP_2DROP << OP_RETURN;
   int64 nFeeRequired;
   if (!wallet->CreateTransaction(scriptPubKey, nFee, wtx, rkey, nFeeRequired)) {
     return (SHERR_CANCELED);
@@ -1021,8 +1037,6 @@ int init_ident_stamp_tx(CIface *iface, std::string strAccount, std::string strCo
   if (!wallet->CommitTransaction(wtx, rkey)) {
     return (SHERR_CANCELED);
   }
-
-  wallet->mapIdent[hashIdent] = wtx.GetHash(); 
 
   return (0);
 }
@@ -1184,14 +1198,19 @@ Object CIdent::ToValue()
   char loc[256];
   shnum_t x, y;
 
-  obj.push_back(Pair("identhash", GetHash().GetHex()));
+//  obj.push_back(Pair("identhash", GetHash().GetHex()));
 
   shgeo_loc(&geo, &x, &y, NULL);
-  sprintf(loc, "%f,%f", (double)x, (double)y);
-  string strGeo(loc);
+  if (x != 0.0000 || y != 0.0000) {
+    sprintf(loc, "%f,%f", (double)x, (double)y);
+    string strGeo(loc);
+    obj.push_back(Pair("geo", strGeo));
+  }
 
-  obj.push_back(Pair("type", (int64_t)nType));
-  obj.push_back(Pair("geo", strGeo));
+  if (nType != 0) {
+    obj.push_back(Pair("type", (int64_t)nType));
+  }
+
   obj.push_back(Pair("addr", stringFromVch(vAddr)));
 
   return (obj);

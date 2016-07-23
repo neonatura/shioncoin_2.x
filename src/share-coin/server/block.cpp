@@ -2252,6 +2252,9 @@ bool core_AcceptBlock(CBlock *pblock)
       if (tx.isFlag(CTransaction::TXF_CERTIFICATE)) {
         InsertCertTable(iface, tx, nHeight);
       }
+      if (tx.isFlag(CTransaction::TXF_IDENT)) {
+        InsertIdentTable(iface, tx);
+      }
     }
   }
 

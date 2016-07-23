@@ -50,6 +50,7 @@ Value rpc_wallet_donate(CIface *iface, const Array& params, bool fHelp);
 
 Value rpc_wallet_csend(CIface *iface, const Array& params, bool fHelp); 
  
+Value rpc_wallet_stamp(CIface *iface, const Array& params, bool fHelp);
 
 
 #endif /* ndef __SERVER__RPCCERT_PROTO_H__ */

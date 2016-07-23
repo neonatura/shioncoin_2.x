@@ -200,26 +200,20 @@ bool BlockAcceptSpringMatrix(CIface *iface, CTransaction& tx, bool& fCheck)
     if (matrix.GetType() == CTxMatrix::M_SPRING) {
       if (!tx.VerifySpringMatrix(ifaceIndex, matrix, &lat, &lon)) {
         fCheck = false;
-Debug("TESTBlock::AcceptBlock: SPRING: Spring verify failure: (new %s) lat(%f) lon(%f)\n", matrix.ToString().c_str(), lat, lon);
+        Debug("BlockAcceptSpringMatrix: Spring verify failure: (new %s) lat(%f) lon(%f)\n", matrix.ToString().c_str(), lat, lon);
       } else {
         fCheck = true;
-#if 0
-        /* update internal spring validation matrix */
-        matrixIn.nHeight = matrix.nHeight;
-        matrixIn.Append(matrixIn->nHeight, tx.GetHash());
-        matrixIn.hRef = matrix.hRef;
-#endif
         /* remove claim location from spring matrix */
         spring_loc_claim(lat, lon);
         /* erase pending ident tx */
         wallet->mapIdent.erase(matrix.hRef);
-Debug("TESTBlock::AcceptBlock: SPRING: Spring verify success: (new %s) lat(%f) lon(%f)\n", matrix.ToString().c_str(), lat, lon);
+        Debug("BlockAcceptSpringMatrix: Spring verify success: (new %s) lat(%f) lon(%f)\n", matrix.ToString().c_str(), lat, lon);
       }
       return (true); /* matrix was found */
     }
   } else {
 fprintf(stderr, "DEBUG: SPRING: accept failure (mode %d)\n", mode);
-}
+  }
 
   return (false); /* no matrix was present */
 }

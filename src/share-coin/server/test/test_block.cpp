@@ -1605,7 +1605,6 @@ bool TESTBlock::AcceptBlock()
   bool fHasValMatrix = false;
   int mode;
   if (vtx.size() != 0 && VerifyMatrixTx(vtx[0], mode)) {
-fprintf(stderr, "DEBUG: AcceptBlock(): found matrix type %d\n", mode);
     bool fCheck = false;
     if (mode == OP_EXT_VALIDATE) {
       bool fHasValMatrix = BlockAcceptValidateMatrix(&test_Validate, val_matrix, vtx[0], fCheck);
@@ -1614,7 +1613,7 @@ fprintf(stderr, "DEBUG: AcceptBlock(): found matrix type %d\n", mode);
     } else if (mode == OP_EXT_PAY) {
       bool fHasSprMatrix = BlockAcceptSpringMatrix(iface, vtx[0], fCheck);
       if (fHasSprMatrix && !fCheck)
-        return error(SHERR_ILSEQ, "AcceptBlock: test_Spring failure: (seed %s) (new %s)", test_Validate.ToString().c_str(), val_matrix.ToString().c_str());
+        return error(SHERR_ILSEQ, "AcceptBlock: test_Spring failure: (%s) (new %s)", val_matrix.ToString().c_str());
     }
   }
 
