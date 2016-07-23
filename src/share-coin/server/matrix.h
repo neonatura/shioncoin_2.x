@@ -39,7 +39,6 @@ class CTxMatrix
     unsigned int nVersion;
     unsigned int nType;
     unsigned int nHeight; 
-    unsigned int __reserved_0__;
     uint160 hRef;
     uint32_t vData[3][3];
 
@@ -59,7 +58,6 @@ class CTxMatrix
        READWRITE(this->nVersion);
        READWRITE(this->nHeight);
        READWRITE(this->nType);
-       READWRITE(this->__reserved_0__);
        READWRITE(this->hRef);
        READWRITE(FLATDATA(this->vData));
       )
@@ -91,7 +89,6 @@ class CTxMatrix
       nVersion = PROTO_VERSION;
       nHeight = 0;
       nType = 0;
-      __reserved_0__ = 0;
       hRef = 0;
       memset(vData, 0, sizeof(uint32_t) * 9);
     }

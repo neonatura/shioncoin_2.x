@@ -102,8 +102,8 @@ typedef struct task_t
   unsigned int task_id;
 
   int version;
-  char cb1[256];
-  char cb2[256];
+  char cb1[1024];
+  char cb2[1024];
   char prev_hash[256];
   char xnonce2[16];
   char nbits[32];

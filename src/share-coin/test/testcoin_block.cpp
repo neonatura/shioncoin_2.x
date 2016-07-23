@@ -255,6 +255,7 @@ offer.accepts.push_back(acc);
 //_TRUE(offer.accepts.first().GetHash() == cmp_offer.accepts.first().GetHash());
 
   CTransaction mtx;
+  mtx.nFlag |= CTransaction::TXF_MATRIX;
   mtx.matrix.vData[0][0] = 1;
   mtx.matrix.nHeight = 1;
   CTransaction cmp_mtx;
