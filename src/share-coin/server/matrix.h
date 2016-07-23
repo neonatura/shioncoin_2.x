@@ -223,6 +223,11 @@ class ValidateMatrix : public CTxMatrix
       CTxMatrix::Init(b);
     }
 
+    void Init(const CTxMatrix& b)
+    {
+      CTxMatrix::Init(b);
+    }
+
     std::string ToString()
     {
       return (CTxMatrix::ToString());

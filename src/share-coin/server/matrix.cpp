@@ -120,7 +120,7 @@ fprintf(stderr, "DEBUG: BlockAcceptValidateMatrix; (original) %s\n", matrixValid
       } else {
         fCheck = true;
         /* apply new hash to matrix */
-        matrixValidate = matrix;
+        matrixValidate.Init(matrix);
         Debug("BlockAcceptValidateMatrix: Validate verify success: %s\n", matrixValidate.ToString().c_str());
       }
       return (true); /* matrix was found */
@@ -328,11 +328,6 @@ void BlockRetractSpringMatrix(CIface *iface, CTransaction& tx, CBlockIndex *pind
   spring_loc_set(lat, lon);
 }
 
-ValidateMatrix *GetValidateMatrix(CIface *iface)
-{
-  CWallet *wallet = GetWallet(iface);
-  return (&wallet->matrixValidate);
-}
 
 std::string CTxMatrix::ToValue()
 {
@@ -382,11 +377,10 @@ int validate_render_fractal(char *img_path, double zoom, double span, double x_o
 
 fprintf(stderr, "DEBUG: validate_render_fractal: '%s'\n", img_path);
 
-  matrix = GetValidateMatrix(iface);
   m_seed = 0;
   for (y = 0; y < 3; y++) {
     for (x = 0; x < 3; x++) {
-      m_seed += matrix->vData[y][x];
+      m_seed += matrixValidate.vData[y][x];
     }
   }
   seed = (double)m_seed;
