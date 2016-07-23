@@ -184,8 +184,6 @@ void stratum_http_spring_img(char *args, shbuf_t *buff)
   free(data);
 }
 
-extern int validate_render_fractal(char *img_path, double zoom, double span, double x_of, double y_of);
-
 void stratum_http_validate_img(char *args, shbuf_t *buff)
 {
   FILE *fl;
