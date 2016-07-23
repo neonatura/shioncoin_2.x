@@ -622,12 +622,12 @@ continue;
   }
 
   /* established base reward for miners */
+  bool ret = false;
   int64 reward = shc_GetBlockValue(pindexPrev->nHeight+1, nFees);
-  if (pblock->vtx.size() == 1) {
-    bool ret = BlockGenerateValidateMatrix(iface, &shc_Validate, pblock->vtx[0], reward);
-    if (!ret) /* spring matrix */
-      ret = BlockGenerateSpringMatrix(iface, pblock->vtx[0], reward);
-  }
+  if (pblock->vtx.size() == 1)
+    ret = BlockGenerateValidateMatrix(iface, &shc_Validate, pblock->vtx[0], reward);
+  if (!ret)
+    ret = BlockGenerateSpringMatrix(iface, pblock->vtx[0], reward);
   pblock->vtx[0].vout[0].nValue = reward; 
 
   /* fill block header */

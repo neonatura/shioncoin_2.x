@@ -329,7 +329,6 @@ CBlock* test_CreateNewBlock(CReserveKey& reservekey)
 {
   CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
   CBlockIndex* pindexPrev = GetBestBlockIndex(iface);
-  bool ret;
 
   // Create new block
   //auto_ptr<CBlock> pblock(new CBlock());
@@ -515,35 +514,12 @@ fprintf(stderr, "DEBUG: !test_ConnectInputs()\n");
   }
 
 
+  bool ret = false;
   int64 reward = test_GetBlockValue(pindexPrev->nHeight+1, nFees);
-
-  if (pblock->vtx.size() == 1) {
-    /* validation matrix */
+  if (pblock->vtx.size() == 1) /* validation matrix */
     ret = BlockGenerateValidateMatrix(iface, &test_Validate, pblock->vtx[0], reward);
-    if (!ret) /* spring matrix */
-      ret = BlockGenerateSpringMatrix(iface, pblock->vtx[0], reward);
-  }
-
-#if 0
-  /* 'zero transactions' penalty. */  
-  if (pblock->vtx.size() == 1) {
-    int64 nFee = MAX(0, MIN(COIN, reward - iface->min_tx_fee));
-    if (nFee >= iface->min_tx_fee) {
-      CTxMatrix *m = pblock->vtx[0].GenerateMatrix(TEST_COIN_IFACE, &test_Validate);
-      if (m) {
-        int64 min_tx = (int64)iface->min_tx_fee;
-        CScript scriptMatrix;
-        scriptMatrix << OP_EXT_VALIDATE << CScript::EncodeOP_N(OP_MATRIX) << OP_HASH160 << m->GetHash() << OP_2DROP << OP_RETURN;
-        pblock->vtx[0].vout.push_back(CTxOut(nFee, scriptMatrix));
-fprintf(stderr, "DEBUG: CreateNewBlock: test_Validate (matrix hash %s) proposed: %s\n", m->GetHash().GetHex().c_str(), m->ToString().c_str()); 
-
-        /* deduct from reward. */
-        reward -= nFee;
-      }
-    }
-  }
-#endif
-
+  if (!ret) /* spring matrix */
+    ret = BlockGenerateSpringMatrix(iface, pblock->vtx[0], reward);
   pblock->vtx[0].vout[0].nValue = reward;
 
   // Fill in header
