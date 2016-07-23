@@ -2512,7 +2512,8 @@ bool CTransaction::VerifyValidateMatrix(const CTxMatrix& matrix, CBlockIndex *pi
   }
 
   bool ret;
-  ValidateMatrix cmp_matrix(matrixValidate);
+  CTxMatrix cmp_matrix(matrixValidate);
+  cmp_matrix.SetType(CTxMatrix::M_VALIDATE);
   cmp_matrix.Append(pindex->nHeight, pindex->GetBlockHash()); 
   ret = (cmp_matrix == matrix);
 fprintf(stderr, "DEBUG: VerifyValidateMatrix[height %d]: cmp_matrix %s\n", pindex->nHeight, cmp_matrix.ToString().c_str());
@@ -2555,7 +2556,8 @@ CTxMatrix *CTransaction::GenerateValidateMatrix(int ifaceIndex, CBlockIndex *pin
   }
 
   nFlag |= CTransaction::TXF_MATRIX;
-  ValidateMatrix matrixNew(matrixValidate);
+  CTxMatrix matrixNew(matrixValidate);
+  matrixNew.SetType(CTxMatrix::M_VALIDATE);
   matrixNew.Append(pindex->nHeight, pindex->GetBlockHash()); 
   matrix = (CTxMatrix&)matrixNew;
 

@@ -43,8 +43,7 @@ void CTxMatrix::ClearCells()
 }
 #endif
 
-/* there is only one */
-ValidateMatrix matrixValidate;
+CTxMatrix matrixValidate;
 
 
 void CTxMatrix::Append(int heightIn, uint256 hash)
@@ -104,7 +103,7 @@ bool BlockGenerateValidateMatrix(CIface *iface, CTransaction& tx, int64& nReward
 bool BlockAcceptValidateMatrix(CIface *iface, CTransaction& tx, bool& fCheck)
 {
   int ifaceIndex = GetCoinIndex(iface);
-  ValidateMatrix matrix;
+  CTxMatrix matrix;
   bool fMatrix = false;
   int mode;
 
@@ -112,6 +111,7 @@ bool BlockAcceptValidateMatrix(CIface *iface, CTransaction& tx, bool& fCheck)
 fprintf(stderr, "DEBUG: BlockAcceptValidateMatrix; (original) %s\n", matrixValidate.ToString().c_str());
     CBlockIndex *pindex = GetBestBlockIndex(ifaceIndex);
     CTxMatrix& matrix = *tx.GetMatrix();
+fprintf(stderr, "DEBUG: BlockAcceptValidateMatrix: (proposed) %s\n", matrix.ToString().c_str());
     if (matrix.GetType() == CTxMatrix::M_VALIDATE &&
         matrix.GetHeight() > matrixValidate.GetHeight()) {
       if (!tx.VerifyValidateMatrix(matrix, pindex)) {
@@ -120,7 +120,7 @@ fprintf(stderr, "DEBUG: BlockAcceptValidateMatrix; (original) %s\n", matrixValid
       } else {
         fCheck = true;
         /* apply new hash to matrix */
-        matrixValidate.Init(matrix);
+        matrixValidate = matrix;
         Debug("BlockAcceptValidateMatrix: Validate verify success: %s\n", matrixValidate.ToString().c_str());
       }
       return (true); /* matrix was found */
@@ -337,7 +337,6 @@ Object CTxMatrix::ToValue()
   int col;
 
   obj.push_back(Pair("hash", GetHash().GetHex()));
-  obj.push_back(Pair("version", (int)nVersion));
   obj.push_back(Pair("ref", hRef.GetHex()));
   if (nHeight != 0)
     obj.push_back(Pair("height", (int)nHeight));
@@ -369,7 +368,7 @@ extern "C" {
 #endif
 int validate_render_fractal(char *img_path, double zoom, double span, double x_of, double y_of)
 {
-  ValidateMatrix *matrix;
+  CTxMatrix *matrix;
   uint32_t m_seed;
   double seed;
   int y, x;

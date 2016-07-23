@@ -31,12 +31,9 @@
 class CTxMatrix
 {
   public:
-    static const int PROTO_VERSION = 1;
-
     static const int M_VALIDATE = 1;
     static const int M_SPRING = 2;
 
-    unsigned int nVersion;
     unsigned int nType;
     unsigned int nHeight; 
     uint160 hRef;
@@ -55,7 +52,6 @@ class CTxMatrix
 
     IMPLEMENT_SERIALIZE
       (
-       READWRITE(this->nVersion);
        READWRITE(this->nHeight);
        READWRITE(this->nType);
        READWRITE(this->hRef);
@@ -65,11 +61,10 @@ class CTxMatrix
     friend bool operator==(const CTxMatrix& a, const CTxMatrix& b)
     {
       return (
-          a.nVersion == b.nVersion &&
           a.nHeight == b.nHeight &&
           a.nType == b.nType &&
           a.hRef == b.hRef &&
-          0 == memcmp(a.vData, b.vData, sizeof(uint32_t) * 9)
+          a.CompareCells(b)
       );
     }
 
@@ -86,20 +81,18 @@ class CTxMatrix
 
     void SetNull()
     {
-      nVersion = PROTO_VERSION;
       nHeight = 0;
       nType = 0;
       hRef = 0;
-      memset(vData, 0, sizeof(uint32_t) * 9);
+      SetCellsNull();
     }
 
     void Init(const CTxMatrix& b)
     {
-      nVersion = b.nVersion;
       nHeight = b.nHeight;
       nType = b.nType;
       hRef = b.hRef;
-      memcpy(vData, b.vData, sizeof(uint32_t) * 9);
+      InitCells(b);
     }
 
     unsigned int GetHeight()
@@ -125,6 +118,38 @@ class CTxMatrix
     uint160 GetReferenceHash()
     {
       return (hRef);
+    }
+
+    void SetCellsNull()
+    {
+      int row, col;
+      for (row = 0; row < 3; row++) {
+        for (col = 0; col < 3; col++) {
+          vData[row][col] = 0;
+        }
+      }
+    }
+
+    void InitCells(const CTxMatrix& b)
+    {
+      int row, col;
+      for (row = 0; row < 3; row++) {
+        for (col = 0; col < 3; col++) {
+          vData[row][col] = b.vData[row][col];
+        }
+      }
+    }
+
+    bool CompareCells(const CTxMatrix& b) const
+    {
+      int row, col;
+      for (row = 0; row < 3; row++) {
+        for (col = 0; col < 3; col++) {
+          if (vData[row][col] != b.vData[row][col])
+            return (false);
+        }
+      }
+      return (true);
     }
 
     unsigned int GetCell(int row, int col)
@@ -179,69 +204,7 @@ class CTxMatrix
 };
 
 
-class ValidateMatrix : public CTxMatrix
-{
-  public:
-    ValidateMatrix()
-    {
-      CTxMatrix::SetNull();
-      CTxMatrix::SetType(M_VALIDATE);
-    }
-
-    ValidateMatrix(CTxMatrix& matrix)
-    {
-      CTxMatrix::SetNull();
-      CTxMatrix::Init(matrix);
-      CTxMatrix::SetType(M_VALIDATE);
-    }
-
-    IMPLEMENT_SERIALIZE
-    (
-      READWRITE(*(CTxMatrix*)this);
-    )
-
-    friend bool operator==(const ValidateMatrix& a, const ValidateMatrix& b)
-    {
-      return (
-          ((CTxMatrix&) a) == ((CTxMatrix&) b)
-          );
-    }
-
-    friend bool operator!=(const ValidateMatrix& a, const ValidateMatrix& b)
-    {
-      return !(a == b);
-    }
-
-    ValidateMatrix operator=(const ValidateMatrix &b)
-    {
-      Init(b);
-      return (*this);
-    }
-
-    void Init(const ValidateMatrix& b)
-    {
-      CTxMatrix::Init(b);
-    }
-
-    void Init(const CTxMatrix& b)
-    {
-      CTxMatrix::Init(b);
-    }
-
-    std::string ToString()
-    {
-      return (CTxMatrix::ToString());
-    }
-
-    Object ToValue()
-    {
-      return (CTxMatrix::ToValue());
-    }
-
-};
-
-
-extern ValidateMatrix matrixValidate;
+extern CTxMatrix matrixValidate;
 
 class CBlock;
 

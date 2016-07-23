@@ -264,6 +264,9 @@ offer.accepts.push_back(acc);
   _TRUE(mtx.matrix.GetHash() == cmp_mtx.matrix.GetHash());
   _TRUE(mtx.GetHash() == cmp_mtx.GetHash());
 
+  cmp_mtx.matrix.SetNull();
+  cmp_mtx.matrix.Init(mtx.matrix);
+  _TRUE(mtx.matrix.GetHash() == cmp_mtx.matrix.GetHash());
 }
 
 _TEST(signtx)
@@ -813,6 +816,23 @@ bool ret;
     _TRUE(ret == true);
   }
   matrixValidate.SetNull();
+
+}
+
+_TEST(matrixtx)
+{
+  CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
+  CTransaction tx;
+  CTxMatrix *m;
+  double lat, lon;
+bool ret;
+  int idx;
+  int err;
+
+  CBlockIndex *pindex;
+  CBlockIndex *t_pindex;
+  uint256 hashBlock;
+
 
   /* claim a known 'root' location in spring matrix */
   lat = 46.6317; lon = 114.0946;
