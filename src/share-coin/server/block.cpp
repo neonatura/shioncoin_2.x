@@ -2516,11 +2516,11 @@ bool CTransaction::VerifyValidateMatrix(CTxMatrix *seed, const CTxMatrix& matrix
     ValidateMatrix cmp_matrix(*seed);
     cmp_matrix.Append(pindex->nHeight, pindex->GetBlockHash()); 
     ret = (cmp_matrix == matrix);
+fprintf(stderr, "DEBUG: VerifyValidateMatrix[height %d]: cmp_matrix %s\n", pindex->nHeight, cmp_matrix.ToString().c_str());
   } else {
     ValidateMatrix cmp_matrix;
     cmp_matrix.Append(pindex->nHeight, pindex->GetBlockHash()); 
     ret = (cmp_matrix == matrix);
-fprintf(stderr, "DEBUG: VerifyValidateMatrix[height %d]: %s\n", height, cmp_matrix.ToString().c_str());
   }
   return (ret);
 }

@@ -343,8 +343,14 @@ task_t *task_init(void)
 //  sprintf(task->xnonce2, "%-8.8x", shjson_astr(block, "extraNonce", 0));
 //  strncpy(task->xnonce2, ptr + 2, 8); /* template xnonce */
 
-  strcpy(task->cb2, ptr);
-  //strcpy(task->cb2, ptr + 10);
+
+  if (strlen(ptr) >= sizeof(task->cb2)) {
+    fprintf(stderr, "DEBUG: coinbase is too large for stratum\n");
+    return (NULL);
+  }
+  memset(task->cb2, 0, sizeof(task->cb2));
+  strncpy(task->cb2, ptr, sizeof(task->cb2)-1);
+  //strcpy(task->cb2, ptr);
 
   task->merkle_len = shjson_array_count(block, "transactions");
   task->merkle = (char **)calloc(task->merkle_len + 1, sizeof(char *));

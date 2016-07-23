@@ -104,7 +104,7 @@ bool BlockAcceptValidateMatrix(CIface *iface, ValidateMatrix *matrixIn, Validate
   int mode;
 
   if (VerifyMatrixTx(tx, mode) && mode == OP_EXT_VALIDATE) {
-fprintf(stderr, "DEBUG: BlockAcceptValidateMatrix; %s\n", matrix.ToString().c_str());
+fprintf(stderr, "DEBUG: BlockAcceptValidateMatrix; (original) %s\n", matrixIn->ToString().c_str());
     CBlockIndex *pindex = GetBestBlockIndex(ifaceIndex);
     CTxMatrix& matrix = *tx.GetMatrix();
     if (matrix.GetType() == CTxMatrix::M_VALIDATE &&
@@ -115,8 +115,8 @@ fprintf(stderr, "DEBUG: BlockAcceptValidateMatrix; %s\n", matrix.ToString().c_st
       } else {
         fCheck = true;
         /* apply new hash to matrix */
-        matrixIn->Append(pindex->nHeight, pindex->GetBlockHash()); 
-        Debug("BlockAcceptValidateMatrix: Validate verify success: (seed %s) (new %s)\n", matrixIn->ToString().c_str(), matrix.ToString().c_str());
+        Debug("BlockAcceptValidateMatrix: Validate verify success: (prev %s) (new %s)\n", matrixIn->ToString().c_str(), matrix.ToString().c_str());
+        *matrixIn = matrix;
       }
       return (true); /* matrix was found */
     }
