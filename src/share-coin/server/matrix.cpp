@@ -221,11 +221,17 @@ fprintf(stderr, "DEBUG: SPRING: accept failure (mode %d)\n", mode);
 CTxMatrix *CTransaction::GenerateSpringMatrix(int ifaceIndex, CIdent& ident)
 {
   CIface *iface = GetCoinByIndex(ifaceIndex);
-  CWallet *wallet = GetWallet(ifaceIndex);
   shnum_t lat, lon;
   int height;
 
+  if (!iface || !iface->enabled)
+    return (NULL);
+
   if (nFlag & CTransaction::TXF_MATRIX)
+    return (NULL);
+
+  CWallet *wallet = GetWallet(iface);
+  if (!wallet)
     return (NULL);
 
   if (wallet->mapIdent.size() == 0)

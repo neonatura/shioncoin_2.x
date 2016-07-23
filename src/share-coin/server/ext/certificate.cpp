@@ -598,7 +598,7 @@ bool VerifyCert(CIface *iface, CTransaction& tx, int nHeight)
     return (false);
 
   if (tx.vout[nOut].nValue < GetCertOpFee(iface, nHeight))
-    return error(SHERR_INVAL, "VerifyCert: insufficient fee (%f of %f) for block accepted at height %d.", FormatMoney(tx.vout[nOut].nValue), GetCertOpFee(iface, nHeight));
+    return false;//error(SHERR_INVAL, "VerifyCert: insufficient fee (%f of %f) for block accepted at height %d.", FormatMoney(tx.vout[nOut].nValue), GetCertOpFee(iface, nHeight));
 
   CCert *cert = &tx.certificate;
   if (hashCert != cert->GetHash())
