@@ -765,9 +765,9 @@ _TEST(matrix)
 {
   CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
   CTransaction tx;
-  CTxMatrix seed;
   CTxMatrix *m;
   double lat, lon;
+bool ret;
   int idx;
   int err;
 
@@ -780,7 +780,7 @@ _TEST(matrix)
   pindex = new CBlockIndex();
   pindex->phashBlock = &hashBlock;
   pindex->nHeight = 54;
-  m = tx.GenerateValidateMatrix(TEST_COIN_IFACE, NULL, pindex);
+  m = tx.GenerateValidateMatrix(TEST_COIN_IFACE, pindex);
   _TRUE(m == NULL);
 
   /* initial block with no seed */
@@ -789,21 +789,15 @@ _TEST(matrix)
   t_pindex->nHeight = 81;
   t_pindex->pprev = pindex;
   pindex = t_pindex;
-  m = tx.GenerateValidateMatrix(TEST_COIN_IFACE, NULL, pindex);
+  m = tx.GenerateValidateMatrix(TEST_COIN_IFACE, pindex);
   _TRUEPTR(m);
-  bool ret = tx.VerifyValidateMatrix(NULL, *m, pindex);
-if (!ret) {
-  fprintf(stderr, "DEBUG: VerifyValidateMatrix: initial verify failure NEW: %s\n", m->ToString().c_str());
-}
+  ret = tx.VerifyValidateMatrix(*m, pindex);
   _TRUE(ret == true);
 
-  seed = *m;
-  
   for (idx = 108; idx < 351; idx += 27) {
     char buf[256];
     sprintf(buf, "0x%x%x%x%x", idx, idx, idx, idx);
     hashBlock = uint256(buf);
-
 
     t_pindex = new CBlockIndex();
     t_pindex->phashBlock = &hashBlock;
@@ -812,14 +806,13 @@ if (!ret) {
     pindex = t_pindex;
 
     tx.SetNull();
-    m = tx.GenerateValidateMatrix(TEST_COIN_IFACE, &seed, pindex);
+    m = tx.GenerateValidateMatrix(TEST_COIN_IFACE, pindex);
     _TRUEPTR(m);
 
-    ret = tx.VerifyValidateMatrix(&seed, *m, pindex);
+    ret = tx.VerifyValidateMatrix(*m, pindex);
     _TRUE(ret == true);
-    
-    seed = *m;
   }
+  matrixValidate.SetNull();
 
   /* claim a known 'root' location in spring matrix */
   lat = 46.6317; lon = 114.0946;

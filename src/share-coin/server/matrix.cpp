@@ -329,7 +329,7 @@ void BlockRetractSpringMatrix(CIface *iface, CTransaction& tx, CBlockIndex *pind
 }
 
 
-std::string CTxMatrix::ToValue()
+Object CTxMatrix::ToValue()
 {
   Object obj;
   char buf[1024];
@@ -337,10 +337,10 @@ std::string CTxMatrix::ToValue()
   int col;
 
   obj.push_back(Pair("hash", GetHash().GetHex()));
-  obj.push_back(Pair("version", (int64)nVersion));
+  obj.push_back(Pair("version", (int)nVersion));
   obj.push_back(Pair("ref", hRef.GetHex()));
   if (nHeight != 0)
-    obj.push_back(Pair("height", (int64)nHeight));
+    obj.push_back(Pair("height", (int)nHeight));
 
   memset(buf, 0, sizeof(buf));
   for (row = 0; row < 3; row++) {
@@ -369,7 +369,6 @@ extern "C" {
 #endif
 int validate_render_fractal(char *img_path, double zoom, double span, double x_of, double y_of)
 {
-  CIface *iface = GetCoinIndex(SHC_COIN_IFACE);
   ValidateMatrix *matrix;
   uint32_t m_seed;
   double seed;

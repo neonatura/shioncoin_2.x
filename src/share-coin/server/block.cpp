@@ -2700,7 +2700,7 @@ Object CTransaction::ToValue()
     obj.push_back(Pair("ident", ident.ToValue()));
   }
   if (this->nFlag & TXF_MATRIX) {
-    obj.push_back(Pair("matrix", matrix.ToString()));
+    obj.push_back(Pair("matrix", matrix.ToValue()));
   }
 
   return (obj);
