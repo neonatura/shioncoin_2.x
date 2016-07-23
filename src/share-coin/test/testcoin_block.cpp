@@ -257,7 +257,7 @@ offer.accepts.push_back(acc);
   CTransaction mtx;
   mtx.matrix.vData[0][0] = 1;
   mtx.matrix.nHeight = 1;
-  CTransation cmp_mtx;
+  CTransaction cmp_mtx;
   a_ser << mtx;
   a_ser >> cmp_mtx;
   _TRUE(mtx.matrix.GetHash() == cmp_mtx.matrix.GetHash());
