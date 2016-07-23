@@ -184,7 +184,57 @@ void stratum_http_spring_img(char *args, shbuf_t *buff)
   free(data);
 }
 
+extern int validate_render_fractal(char *img_path, double zoom, double span, double x_of, double y_of);
+
+void stratum_http_validate_img(char *args, shbuf_t *buff)
+{
+  FILE *fl;
+  struct stat st;
+  double x_of, y_of, zoom;
+  double span;
+  char *data;
+  char str[256];
+  char *ptr;
+
+  zoom = 1.0;
+  ptr = strstr(args, "zoom=");
+  if (ptr)
+    zoom = atof(ptr+5);
+
+  x_of = 0;
+  ptr = strstr(args, "x=");
+  if (ptr)
+    x_of = atof(ptr+2);
+
+  y_of = 0;
+  ptr = strstr(args, "y=");
+  if (ptr)
+    y_of = atoi(ptr+2);
+
+  span = 1.0;
+  ptr = strstr(args, "span=");
+  if (ptr)
+    span = atof(ptr+5);
+
+  validate_render_fractal("/tmp/validate_fractal.bmp", zoom, span, x_of, y_of);
+  stat("/tmp/validate_fractal.bmp", &st);
+
+  shbuf_catstr(buff, "HTTP/1.0 200 OK\r\n"); 
+  shbuf_catstr(buff, "Content-Type: image/bmp\r\n");
+  sprintf(str, "Content-Length: %u\r\n", st.st_size);
+  shbuf_catstr(buff, str);
+  shbuf_catstr(buff, "\r\n"); 
+
+  data = (char *)calloc(st.st_size, sizeof(char));
+  fl = fopen("/tmp/validate_fractal.bmp", "rb");
+  fread(data, sizeof(char), st.st_size, fl);
+  fclose(fl);
+  shbuf_cat(buff, data, st.st_size); 
+  free(data);
+}
+
 #define SPRING_MATRIX_BMP "/image/spring_matrix.bmp"
+#define VALIDATE_MATRIX_BMP "/image/validate_matrix.bmp"
 void stratum_http_request(SOCKET sk, char *url)
 {
   user_t *user;
@@ -195,6 +245,13 @@ char ret_html[4096];
 
   if (0 == strncmp(url, SPRING_MATRIX_BMP, strlen(SPRING_MATRIX_BMP))) {
     stratum_http_spring_img(url + strlen(SPRING_MATRIX_BMP), buff);
+    unet_write(sk, shbuf_data(buff), shbuf_size(buff));
+    shbuf_free(&buff);
+    unet_shutdown(sk);
+    return;
+  }
+  if (0 == strncmp(url, VALIDATE_MATRIX_BMP, strlen(VALIDATE_MATRIX_BMP))) {
+    stratum_http_validate_img(url + strlen(VALIDATE_MATRIX_BMP), buff);
     unet_write(sk, shbuf_data(buff), shbuf_size(buff));
     shbuf_free(&buff);
     unet_shutdown(sk);

@@ -584,10 +584,8 @@ public:
       if ((this->nFlag & TXF_OFFER) ||
           (this->nFlag & TXF_OFFER_ACCEPT))
         offer = tx.offer;
-#if 0
-      if (this->nFlag & TXF_IDENT)
-        ident = tx.ident;
-#endif
+      if (this->nFlag & TXF_MATRIX)
+        matrix = tx.matrix;
     }
 
     void SetNull()

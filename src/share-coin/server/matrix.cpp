@@ -27,6 +27,7 @@
 #include "block.h"
 #include "wallet.h"
 #include "spring.h"
+#include "fractal.h"
 
 
 #if 0
@@ -321,3 +322,29 @@ void BlockRetractSpringMatrix(CIface *iface, CTransaction& tx, CBlockIndex *pind
   shgeo_loc(&ident.geo, &lat, &lon, NULL);
   spring_loc_set(lat, lon);
 }
+
+extern ValidateMatrix shc_Validate;
+#ifdef __cplusplus
+extern "C" {
+#endif
+int validate_render_fractal(char *img_path, double zoom, double span, double x_of, double y_of)
+{
+  uint32_t m_seed;
+  double seed;
+  int y, x;
+
+fprintf(stderr, "DEBUG: validate_render_fractal: '%s'\n", img_path);
+
+  m_seed = 0;
+  for (y = 0; y < 3; y++) {
+    for (x = 0; x < 3; x++) {
+      m_seed += shc_Validate.vData[y][x];
+    }
+  }
+  seed = (double)m_seed;
+
+  return (fractal_render(img_path, seed, zoom, span, x_of, y_of));
+}
+#ifdef __cplusplus
+}
+#endif
