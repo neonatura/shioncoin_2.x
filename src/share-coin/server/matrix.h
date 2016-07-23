@@ -252,7 +252,7 @@ bool BlockGenerateValidateMatrix(CIface *iface, ValidateMatrix *matrixIn, CTrans
 
 bool BlockGenerateSpringMatrix(CIface *iface, CTransaction& tx, int64& nReward);
 
-bool BlockAcceptValidateMatrix(ValidateMatrix *matrixIn, ValidateMatrix& matrix, CTransaction& tx, bool& fCheck);
+bool BlockAcceptValidateMatrix(CIface *iface, ValidateMatrix *matrixIn, ValidateMatrix& matrix, CTransaction& tx, bool& fCheck);
 
 bool BlockAcceptSpringMatrix(CIface *iface, CTransaction& tx, bool& fCheck);
 

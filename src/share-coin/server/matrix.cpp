@@ -74,12 +74,13 @@ fprintf(stderr, "DEBUG: CTxMatrix::Retract: data[%d][%d] += %d\n", row, col, Get
 /* 'zero transactions' penalty. */
 bool BlockGenerateValidateMatrix(CIface *iface, ValidateMatrix *matrixIn, CTransaction& tx, int64& nReward)
 {
+  int ifaceIndex = GetCoinIndex(iface);
 
   int64 nFee = MAX(0, MIN(COIN, nReward - iface->min_tx_fee));
   if (nFee < iface->min_tx_fee)
     return (false); /* reward too small */
 
-  CTxMatrix *m = tx.GenerateValidateMatrix(TEST_COIN_IFACE, (CTxMatrix *)matrixIn);
+  CTxMatrix *m = tx.GenerateValidateMatrix(ifaceIndex, (CTxMatrix *)matrixIn);
   if (!m)
     return (false); /* not applicable */
 
@@ -97,13 +98,14 @@ bool BlockGenerateValidateMatrix(CIface *iface, ValidateMatrix *matrixIn, CTrans
   return (true);
 }
 
-bool BlockAcceptValidateMatrix(ValidateMatrix *matrixIn, ValidateMatrix& matrix, CTransaction& tx, bool& fCheck)
+bool BlockAcceptValidateMatrix(CIface *iface, ValidateMatrix *matrixIn, ValidateMatrix& matrix, CTransaction& tx, bool& fCheck)
 {
+  int ifaceIndex = GetCoinIndex(iface);
   bool fMatrix = false;
   int mode;
 
   if (VerifyMatrixTx(tx, mode) && mode == OP_EXT_VALIDATE) {
-    CBlockIndex *pindex = GetBestBlockIndex(TEST_COIN_IFACE);
+    CBlockIndex *pindex = GetBestBlockIndex(ifaceIndex);
     CTxMatrix& matrix = *tx.GetMatrix();
     if (matrix.GetType() == CTxMatrix::M_VALIDATE &&
         matrix.GetHeight() > matrixIn->GetHeight()) {
@@ -113,7 +115,7 @@ bool BlockAcceptValidateMatrix(ValidateMatrix *matrixIn, ValidateMatrix& matrix,
         fCheck = true;
         /* apply new hash to matrix */
         matrixIn->Append(pindex->nHeight, pindex->GetBlockHash()); 
-        Debug("TESTBlock::AcceptBlock: Validate verify success: (seed %s) (new %s)\n", matrixIn->ToString().c_str(), matrix.ToString().c_str());
+        Debug("BlockAcceptValidateMatrix: Validate verify success: (seed %s) (new %s)\n", matrixIn->ToString().c_str(), matrix.ToString().c_str());
       }
       return (true); /* matrix was found */
     }
@@ -154,6 +156,7 @@ return (&geo);
 
 bool BlockGenerateSpringMatrix(CIface *iface, CTransaction& tx, int64& nReward)
 {
+  int ifaceIndex = GetCoinIndex(iface);
 
   int64 nFee = MAX(0, MIN(COIN, nReward - iface->min_tx_fee));
   if (nFee < iface->min_tx_fee)
@@ -161,7 +164,7 @@ bool BlockGenerateSpringMatrix(CIface *iface, CTransaction& tx, int64& nReward)
 
 
   CIdent ident;
-  CTxMatrix *m = tx.GenerateSpringMatrix(TEST_COIN_IFACE, ident);
+  CTxMatrix *m = tx.GenerateSpringMatrix(ifaceIndex, ident);
   if (!m)
     return (false); /* not applicable */
 
@@ -195,7 +198,7 @@ bool BlockAcceptSpringMatrix(CIface *iface, CTransaction& tx, bool& fCheck)
   int mode = -1;;
 
   if (VerifyMatrixTx(tx, mode) && mode == OP_EXT_PAY) {
-    CBlockIndex *pindex = GetBestBlockIndex(TEST_COIN_IFACE);
+    CBlockIndex *pindex = GetBestBlockIndex(ifaceIndex);
     CTxMatrix& matrix = *tx.GetMatrix();
     if (matrix.GetType() == CTxMatrix::M_SPRING) {
       if (!tx.VerifySpringMatrix(ifaceIndex, matrix, &lat, &lon)) {
@@ -223,6 +226,7 @@ CTxMatrix *CTransaction::GenerateSpringMatrix(int ifaceIndex, CIdent& ident)
   CIface *iface = GetCoinByIndex(ifaceIndex);
   shnum_t lat, lon;
   int height;
+fprintf(stderr, "DEBUG: GenerateSpringMatrix: ifaceIndex %d\n", ifaceIndex);
 
   if (!iface || !iface->enabled)
     return (NULL);
@@ -295,7 +299,7 @@ fprintf(stderr, "DEBUG: SPRING: VerifySpringMatrix: coinbase %s\n", ToString().c
 
 void BlockRetractSpringMatrix(CIface *iface, CTransaction& tx, CBlockIndex *pindex)
 {
-  int ifaceIndex = GetCoinIndex(iface);
+//  int ifaceIndex = GetCoinIndex(iface);
   const CTxMatrix& matrix = tx.matrix;
 
   if (pindex->nHeight != matrix.nHeight)
