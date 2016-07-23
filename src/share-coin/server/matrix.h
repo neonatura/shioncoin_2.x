@@ -159,25 +159,9 @@ class CTxMatrix
       vData[row][col] -= val;
     }
 
-    string ToString()
-    {
-      char buf[1024];
-      int row;
-      int col;
+   std::string ToString();
 
-      memset(buf, 0, sizeof(buf));
-      sprintf(buf, "CTxMatrix(height %u", this->nHeight);
-      for (row = 0; row < GetSize(); row++) {
-        sprintf(buf+strlen(buf), " [#%d:", (row+1));
-        for (col = 0; col < GetSize(); col++) {
-          sprintf(buf+strlen(buf), " %x", GetCell(row, col));
-        }
-        strcat(buf, "]");
-      }
-      strcat(buf, ")");
-
-      return string(buf);
-    }
+    Object ToValue();
 
     const uint160 GetHash()
     {
@@ -239,17 +223,28 @@ class ValidateMatrix : public CTxMatrix
       CTxMatrix::Init(b);
     }
 
+    std::string ToString()
+    {
+      return (CTxMatrix::ToString());
+    }
+
+    Object ToValue()
+    {
+      return (CTxMatrix::ToValue());
+    }
+
 };
 
 
+extern ValidateMatrix matrixValidate;
 
 class CBlock;
 
-bool BlockGenerateValidateMatrix(CIface *iface, ValidateMatrix *matrixIn, CTransaction& tx, int64& nReward);
+bool BlockGenerateValidateMatrix(CIface *iface, CTransaction& tx, int64& nReward);
 
 bool BlockGenerateSpringMatrix(CIface *iface, CTransaction& tx, int64& nReward);
 
-bool BlockAcceptValidateMatrix(CIface *iface, ValidateMatrix *matrixIn, ValidateMatrix& matrix, CTransaction& tx, bool& fCheck);
+bool BlockAcceptValidateMatrix(CIface *iface, CTransaction& tx, bool& fCheck);
 
 bool BlockAcceptSpringMatrix(CIface *iface, CTransaction& tx, bool& fCheck);
 

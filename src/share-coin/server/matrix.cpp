@@ -43,6 +43,10 @@ void CTxMatrix::ClearCells()
 }
 #endif
 
+/* there is only one */
+ValidateMatrix matrixValidate;
+
+
 void CTxMatrix::Append(int heightIn, uint256 hash)
 {
   nHeight = heightIn;
@@ -71,7 +75,7 @@ void CTxMatrix::Retract(int heightIn, uint256 hash)
 
 
 /* 'zero transactions' penalty. */
-bool BlockGenerateValidateMatrix(CIface *iface, ValidateMatrix *matrixIn, CTransaction& tx, int64& nReward)
+bool BlockGenerateValidateMatrix(CIface *iface, CTransaction& tx, int64& nReward)
 {
   int ifaceIndex = GetCoinIndex(iface);
 
@@ -79,7 +83,7 @@ bool BlockGenerateValidateMatrix(CIface *iface, ValidateMatrix *matrixIn, CTrans
   if (nFee < iface->min_tx_fee)
     return (false); /* reward too small */
 
-  CTxMatrix *m = tx.GenerateValidateMatrix(ifaceIndex, (CTxMatrix *)matrixIn);
+  CTxMatrix *m = tx.GenerateValidateMatrix(ifaceIndex);
   if (!m)
     return (false); /* not applicable */
 
@@ -97,26 +101,27 @@ bool BlockGenerateValidateMatrix(CIface *iface, ValidateMatrix *matrixIn, CTrans
   return (true);
 }
 
-bool BlockAcceptValidateMatrix(CIface *iface, ValidateMatrix *matrixIn, ValidateMatrix& matrix, CTransaction& tx, bool& fCheck)
+bool BlockAcceptValidateMatrix(CIface *iface, CTransaction& tx, bool& fCheck)
 {
   int ifaceIndex = GetCoinIndex(iface);
+  ValidateMatrix matrix;
   bool fMatrix = false;
   int mode;
 
   if (VerifyMatrixTx(tx, mode) && mode == OP_EXT_VALIDATE) {
-fprintf(stderr, "DEBUG: BlockAcceptValidateMatrix; (original) %s\n", matrixIn->ToString().c_str());
+fprintf(stderr, "DEBUG: BlockAcceptValidateMatrix; (original) %s\n", matrixValidate.ToString().c_str());
     CBlockIndex *pindex = GetBestBlockIndex(ifaceIndex);
     CTxMatrix& matrix = *tx.GetMatrix();
     if (matrix.GetType() == CTxMatrix::M_VALIDATE &&
-        matrix.GetHeight() > matrixIn->GetHeight()) {
-      if (!tx.VerifyValidateMatrix(matrixIn, matrix, pindex)) {
+        matrix.GetHeight() > matrixValidate.GetHeight()) {
+      if (!tx.VerifyValidateMatrix(matrix, pindex)) {
         fCheck = false;
         error(SHERR_INVAL, "BlockAcceptValidateMatrix: invalid matrix received: %s", matrix.ToString().c_str());
       } else {
         fCheck = true;
         /* apply new hash to matrix */
-        matrixIn->Init(matrix);
-        Debug("BlockAcceptValidateMatrix: Validate verify success: %s\n", matrixIn->ToString().c_str());
+        matrixValidate = matrix;
+        Debug("BlockAcceptValidateMatrix: Validate verify success: %s\n", matrixValidate.ToString().c_str());
       }
       return (true); /* matrix was found */
     }
@@ -323,22 +328,65 @@ void BlockRetractSpringMatrix(CIface *iface, CTransaction& tx, CBlockIndex *pind
   spring_loc_set(lat, lon);
 }
 
-extern ValidateMatrix shc_Validate;
+ValidateMatrix *GetValidateMatrix(CIface *iface)
+{
+  CWallet *wallet = GetWallet(iface);
+  return (&wallet->matrixValidate);
+}
+
+std::string CTxMatrix::ToValue()
+{
+  Object obj;
+  char buf[1024];
+  int row;
+  int col;
+
+  obj.push_back(Pair("hash", GetHash().GetHex()));
+  obj.push_back(Pair("version", (int64)nVersion));
+  obj.push_back(Pair("ref", hRef.GetHex()));
+  if (nHeight != 0)
+    obj.push_back(Pair("height", (int64)nHeight));
+
+  memset(buf, 0, sizeof(buf));
+  for (row = 0; row < 3; row++) {
+    if (row != 0) strcat(buf, " ");
+    strcat(buf, "(");
+    for (col = 0; col < 3; col++) {
+      sprintf(buf+strlen(buf), " %x", GetCell(row, col));
+    }
+    strcat(buf, ")");
+  }
+  string strMatrix(buf);
+  obj.push_back(Pair("data", strMatrix));
+
+  return obj;
+}
+
+std::string CTxMatrix::ToString()
+{
+  return (write_string(Value(ToValue()), false));
+}
+
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 int validate_render_fractal(char *img_path, double zoom, double span, double x_of, double y_of)
 {
+  CIface *iface = GetCoinIndex(SHC_COIN_IFACE);
+  ValidateMatrix *matrix;
   uint32_t m_seed;
   double seed;
   int y, x;
 
 fprintf(stderr, "DEBUG: validate_render_fractal: '%s'\n", img_path);
 
+  matrix = GetValidateMatrix(iface);
   m_seed = 0;
   for (y = 0; y < 3; y++) {
     for (x = 0; x < 3; x++) {
-      m_seed += shc_Validate.vData[y][x];
+      m_seed += matrix->vData[y][x];
     }
   }
   seed = (double)m_seed;
@@ -348,3 +396,6 @@ fprintf(stderr, "DEBUG: validate_render_fractal: '%s'\n", img_path);
 #ifdef __cplusplus
 }
 #endif
+
+
+

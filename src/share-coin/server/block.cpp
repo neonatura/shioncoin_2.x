@@ -2494,7 +2494,7 @@ CIdent *CTransaction::CreateIdent(int ifaceIndex, CCoinAddr& addr)
   return ((CIdent *)&certificate);
 }
 
-bool CTransaction::VerifyValidateMatrix(CTxMatrix *seed, const CTxMatrix& matrix, CBlockIndex *pindex)
+bool CTransaction::VerifyValidateMatrix(const CTxMatrix& matrix, CBlockIndex *pindex)
 {
   unsigned int height;
 
@@ -2512,23 +2512,18 @@ bool CTransaction::VerifyValidateMatrix(CTxMatrix *seed, const CTxMatrix& matrix
   }
 
   bool ret;
-  if (seed) {
-    ValidateMatrix cmp_matrix(*seed);
-    cmp_matrix.Append(pindex->nHeight, pindex->GetBlockHash()); 
-    ret = (cmp_matrix == matrix);
+  ValidateMatrix cmp_matrix(matrixValidate);
+  cmp_matrix.Append(pindex->nHeight, pindex->GetBlockHash()); 
+  ret = (cmp_matrix == matrix);
 fprintf(stderr, "DEBUG: VerifyValidateMatrix[height %d]: cmp_matrix %s\n", pindex->nHeight, cmp_matrix.ToString().c_str());
-  } else {
-    ValidateMatrix cmp_matrix;
-    cmp_matrix.Append(pindex->nHeight, pindex->GetBlockHash()); 
-    ret = (cmp_matrix == matrix);
-  }
+
   return (ret);
 }
 
 /**
  * @note Verified against previous matrix when the block is accepted.
  */
-CTxMatrix *CTransaction::GenerateValidateMatrix(int ifaceIndex, CTxMatrix *seed, CBlockIndex *pindex)
+CTxMatrix *CTransaction::GenerateValidateMatrix(int ifaceIndex, CBlockIndex *pindex)
 {
   uint32_t best_height;
   int height;
@@ -2550,7 +2545,7 @@ CTxMatrix *CTransaction::GenerateValidateMatrix(int ifaceIndex, CTxMatrix *seed,
   if (height <= 27)
     return (NULL);
 
-  if (seed && seed->GetHeight() >= height)
+  if (matrixValidate.GetHeight() >= height)
     return (NULL);
 
   while (pindex && pindex->pprev && pindex->nHeight > height)
@@ -2560,15 +2555,9 @@ CTxMatrix *CTransaction::GenerateValidateMatrix(int ifaceIndex, CTxMatrix *seed,
   }
 
   nFlag |= CTransaction::TXF_MATRIX;
-  if (seed) {
-    ValidateMatrix matrixNew(*seed);
-    matrixNew.Append(pindex->nHeight, pindex->GetBlockHash()); 
-    matrix = (CTxMatrix&)matrixNew;
-  } else {
-    ValidateMatrix matrixNew;
-    matrixNew.Append(pindex->nHeight, pindex->GetBlockHash()); 
-    matrix = (CTxMatrix&)matrixNew;
-  }
+  ValidateMatrix matrixNew(matrixValidate);
+  matrixNew.Append(pindex->nHeight, pindex->GetBlockHash()); 
+  matrix = (CTxMatrix&)matrixNew;
 
 fprintf(stderr, "DEBUG: GenerateValidateMatrix: success %s\n", matrix.ToString().c_str());
   return (&matrix);

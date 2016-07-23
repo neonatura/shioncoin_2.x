@@ -340,7 +340,8 @@ bool SHCTxDB::LoadBlockIndex()
   BOOST_FOREACH(CBlockIndex *pindex, vMatrix) {
     if (pindex->nHeight > pindexBest->nHeight)
       break;
-    shc_Validate.Append(pindex->nHeight, pindex->GetBlockHash()); 
+    matrixValidate.Append(pindex->nHeight, pindex->GetBlockHash()); 
+fprintf(stderr, "DEBUG: found pre-existing MATRIX @ height %d\n", (int)pindex->nHeight);
   }
 
   /* Spring Matrix */

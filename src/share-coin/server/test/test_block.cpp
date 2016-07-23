@@ -63,7 +63,6 @@ multimap<uint256, TESTBlock*> TEST_mapOrphanBlocksByPrev;
 map<uint256, map<uint256, CDataStream*> > TEST_mapOrphanTransactionsByPrev;
 map<uint256, CDataStream*> TEST_mapOrphanTransactions;
 
-static ValidateMatrix test_Validate;
 
 class TESTOrphan
 {
@@ -517,7 +516,7 @@ fprintf(stderr, "DEBUG: !test_ConnectInputs()\n");
   bool ret = false;
   int64 reward = test_GetBlockValue(pindexPrev->nHeight+1, nFees);
   if (pblock->vtx.size() == 1) /* validation matrix */
-    ret = BlockGenerateValidateMatrix(iface, &test_Validate, pblock->vtx[0], reward);
+    ret = BlockGenerateValidateMatrix(iface, pblock->vtx[0], reward);
   if (!ret) /* spring matrix */
     ret = BlockGenerateSpringMatrix(iface, pblock->vtx[0], reward);
   pblock->vtx[0].vout[0].nValue = reward;
@@ -1577,28 +1576,22 @@ bool TESTBlock::AcceptBlock()
 {
   CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
 
-  ValidateMatrix val_matrix;
-  bool fHasValMatrix = false;
   int mode;
   if (vtx.size() != 0 && VerifyMatrixTx(vtx[0], mode)) {
     bool fCheck = false;
     if (mode == OP_EXT_VALIDATE) {
-      bool fHasValMatrix = BlockAcceptValidateMatrix(iface, &test_Validate, val_matrix, vtx[0], fCheck);
+      bool fHasValMatrix = BlockAcceptValidateMatrix(iface, vtx[0], fCheck);
       if (fHasValMatrix && !fCheck)
-        return error(SHERR_ILSEQ, "AcceptBlock: test_Validate failure: (seed %s) (new %s)", test_Validate.ToString().c_str(), val_matrix.ToString().c_str());
+        return error(SHERR_ILSEQ, "AcceptBlock: test_Validate failure");
 fprintf(stderr, "DEBUG: AcceptBlock: OP_EXT_VALIDATE success\n");
     } else if (mode == OP_EXT_PAY) {
       bool fHasSprMatrix = BlockAcceptSpringMatrix(iface, vtx[0], fCheck);
       if (fHasSprMatrix && !fCheck)
-        return error(SHERR_ILSEQ, "AcceptBlock: test_Spring failure: (%s) (new %s)", val_matrix.ToString().c_str());
+        return error(SHERR_ILSEQ, "AcceptBlock: test_Spring failure");
     }
   }
 
   bool ret = core_AcceptBlock(this);
-
-  if (ret && fHasValMatrix) {
-    test_Validate = val_matrix;
-  }
 
   return (ret);
 }
@@ -1949,7 +1942,7 @@ fprintf(stderr, "DEBUG: DisconnectBlock()\n");
             CTxMatrix& matrix = tx.matrix;
             if (matrix.GetType() == CTxMatrix::M_VALIDATE) {
               /* retract block hash from Validate matrix */
-              test_Validate.Retract(matrix.nHeight, pindex->GetBlockHash());
+              matrixValidate.Retract(matrix.nHeight, pindex->GetBlockHash());
             } else if (matrix.GetType() == CTxMatrix::M_SPRING) {
               BlockRetractSpringMatrix(iface, tx, pindex);
             }

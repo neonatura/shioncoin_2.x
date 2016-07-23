@@ -59,7 +59,6 @@ multimap<uint256, SHCBlock*> SHC_mapOrphanBlocksByPrev;
 map<uint256, map<uint256, CDataStream*> > SHC_mapOrphanTransactionsByPrev;
 map<uint256, CDataStream*> SHC_mapOrphanTransactions;
 
-ValidateMatrix shc_Validate;
 
 class SHCOrphan
 {
@@ -625,7 +624,7 @@ continue;
   bool ret = false;
   int64 reward = shc_GetBlockValue(pindexPrev->nHeight+1, nFees);
   if (pblock->vtx.size() == 1)
-    ret = BlockGenerateValidateMatrix(iface, &shc_Validate, pblock->vtx[0], reward);
+    ret = BlockGenerateValidateMatrix(iface, pblock->vtx[0], reward);
   if (!ret)
     ret = BlockGenerateSpringMatrix(iface, pblock->vtx[0], reward);
   pblock->vtx[0].vout[0].nValue = reward; 
@@ -1550,28 +1549,23 @@ bool shc_AcceptBlock(SHCBlock *pblock)
 bool SHCBlock::AcceptBlock()
 {
   CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);
-  ValidateMatrix val_matrix;
-  bool fValMatrix = false;
   int mode;
 
   if (vtx.size() != 0 && VerifyMatrixTx(vtx[0], mode)) {
     bool fCheck = false;
     if (mode == OP_EXT_VALIDATE) {
-      fValMatrix = BlockAcceptValidateMatrix(iface, &shc_Validate, val_matrix, vtx[0], fCheck);
+      bool fValMatrix = false;
+      fValMatrix = BlockAcceptValidateMatrix(iface, vtx[0], fCheck);
       if (fValMatrix && !fCheck)
-        return error(SHERR_ILSEQ, "AcceptBlock: shc_Validate failure: (seed %s) (new %s)", shc_Validate.ToString().c_str(), val_matrix.ToString().c_str());
+        return error(SHERR_ILSEQ, "AcceptBlock: ValidateMatrix verification failure.");
     } else if (mode == OP_EXT_PAY) {
       bool fHasSprMatrix = BlockAcceptSpringMatrix(iface, vtx[0], fCheck);
       if (fHasSprMatrix && !fCheck)
-        return error(SHERR_ILSEQ, "AcceptBlock: shc_Spring failure: (%s)", val_matrix.ToString().c_str());
+        return error(SHERR_ILSEQ, "AcceptBlock: SpringMatrix verification failure.");
     }
   }
 
   bool ret = core_AcceptBlock(this);
-
-  if (ret && fValMatrix) {
-    shc_Validate = val_matrix;
-  }
 
   return (ret);
 }
@@ -2018,7 +2012,7 @@ bool SHCBlock::DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex)
           CTxMatrix& matrix = tx.matrix;
           if (matrix.GetType() == CTxMatrix::M_VALIDATE) {
             /* retract block hash from Validate matrix */
-            shc_Validate.Retract(pindex->nHeight, pindex->GetBlockHash());
+            matrixValidate.Retract(pindex->nHeight, pindex->GetBlockHash());
           } else if (matrix.GetType() == CTxMatrix::M_SPRING) {
             BlockRetractSpringMatrix(iface, tx, pindex);
           }

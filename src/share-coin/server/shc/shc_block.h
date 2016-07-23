@@ -123,12 +123,6 @@ extern SHC_CTxMemPool SHC_mempool;
 extern CBlockIndex* SHC_pindexBest;
 
 /**
- * A dynamically updated matrix for redundant SHC block-chain integrity. 
- * @see OP_MATRIX
- */
-extern ValidateMatrix shc_Validate;
-
-/**
  * The initial block in the SHC block-chain's index reference.
  */
 extern CBlockIndex* SHC_pindexGenesisBlock;
