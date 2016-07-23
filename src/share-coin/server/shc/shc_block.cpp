@@ -623,11 +623,9 @@ continue;
 
   /* established base reward for miners */
   int64 reward = shc_GetBlockValue(pindexPrev->nHeight+1, nFees);
-#if 0
   ret = BlockGenerateValidateMatrix(iface, &shc_Validate, pblock->vtx[0], reward);
   if (!ret) /* spring matrix */
     ret = BlockGenerateSpringMatrix(iface, pblock->vtx[0], reward);
-#endif
   pblock->vtx[0].vout[0].nValue = reward; 
 
   /* fill block header */
