@@ -124,7 +124,6 @@ bool BlockChainErase(CIface *iface, size_t nHeight)
   err = bc_purge(bc, nHeight);
   if (err)
     return error(err, "TruncateBlockChain[%s]: error truncating @ height %d.", iface->name, nHeight);
-  fprintf(stderr, "DEBUG: TruncateBlockChain[%s]: PURGE @ height %d\n", iface->name, nHeight);
 #endif
   int idx;
   int bestHeight = bc_idx_next(bc) - 1;
@@ -369,7 +368,6 @@ bool CTransaction::WriteTx(int ifaceIndex, uint64_t blockHeight)
       err = bc_idx_clear(bc, txPos);
       if (err)
         return error(err, "WriteTx; error clearing invalid previous hash tx [tx-idx-size %d] [tx-pos %d].", (int)data_len, (int)txPos);
-fprintf(stderr, "DEBUG: WriteTx; CLEAR: cleared tx pos %u\n", (unsigned int)txPos);
 #endif
     }
   }
@@ -388,7 +386,6 @@ fprintf(stderr, "DEBUG: WriteTx; CLEAR: cleared tx pos %u\n", (unsigned int)txPo
     return (false);
   }
 
-//fprintf(stderr, "DEBUG: CTransaction::WriteTx[iface #%d]: wrote tx '%s' for block #%d\n", ifaceIndex, hash.GetHex().c_str(), (int)blockHeight);
   return (true);
 }
 
@@ -423,7 +420,6 @@ bool CTransaction::ReadTx(int ifaceIndex, uint256 txHash, uint256 *hashBlock)
 
   err = bc_idx_find(bc, txHash.GetRaw(), NULL, &txPos); 
   if (err) {
-//fprintf(stderr, "DEBUG: CTransaction::ReadTx[iface #%d]: INFO: tx hash '%s' not found. [tot-tx:%d] [err:%d]\n", ifaceIndex, txHash.GetHex().c_str(), bc_idx_next(bc), err);
     return (false); /* not an error condition */
 }
 
@@ -655,10 +651,8 @@ bool GetTransaction(CIface *iface, const uint256 &hash, CTransaction &tx, uint25
     }
 
     if (tx.ReadTx(GetCoinIndex(iface), hash, hashBlock)) {
-      fprintf(stderr, "DEBUG: GetTransaction: OK: read tx chain '%s'\n", tx.GetHash().GetHex().c_str());
       return (true);
     }
-    fprintf(stderr, "DEBUG: GetTransaction: WARNING: using C++ CTxIndex\n");
 
     CTxDB txdb(ifaceIndex, "r");
     CTxIndex txindex;
@@ -1659,8 +1653,6 @@ bool CBlock::ReadBlock(uint64_t nHeight)
   bc_t *bc;
   int err;
 
-fprintf(stderr, "DEBUG: CBlock::ReadBlock/%s: loading height %d\n", iface->name, (int)nHeight);
-
   bc = GetBlockChain(iface);
   if (!bc)
     return (false);
@@ -2572,14 +2564,13 @@ CTxMatrix *CTransaction::GenerateValidateMatrix(int ifaceIndex, CTxMatrix *seed,
     ValidateMatrix matrixNew(*seed);
     matrixNew.Append(pindex->nHeight, pindex->GetBlockHash()); 
     matrix = (CTxMatrix&)matrixNew;
-fprintf(stderr, "DEBUG: GenerateValidateMatrix[height %d / hash %s / seed]: matrixNew is %s\n", height, pindex->GetBlockHash().GetHex().c_str(), matrixNew.ToString().c_str());
   } else {
     ValidateMatrix matrixNew;
     matrixNew.Append(pindex->nHeight, pindex->GetBlockHash()); 
-fprintf(stderr, "DEBUG: GenerateValidateMatrix[height %d / hash %s / no-seed]: matrixNew is %s\n", height, pindex->GetBlockHash().GetHex().c_str(), matrixNew.ToString().c_str());
     matrix = (CTxMatrix&)matrixNew;
   }
 
+fprintf(stderr, "DEBUG: GenerateValidateMatrix: success %s\n", matrix.ToString().c_str());
   return (&matrix);
 }
 
@@ -2718,6 +2709,9 @@ Object CTransaction::ToValue()
   if (this->nFlag & TXF_IDENT) {
     CIdent& ident = (CIdent&)certificate;
     obj.push_back(Pair("ident", ident.ToValue()));
+  }
+  if (this->nFlag & TXF_MATRIX) {
+    obj.push_back(Pair("matrix", matrix.ToString()));
   }
 
   return (obj);

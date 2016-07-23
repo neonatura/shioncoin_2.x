@@ -254,13 +254,14 @@ offer.accepts.push_back(acc);
   _TRUE(offer.GetHash() == cmp_offer.GetHash());
 //_TRUE(offer.accepts.first().GetHash() == cmp_offer.accepts.first().GetHash());
 
-  CTxMatrix matrix;
-  matrix.vData[0][0] = 1;
-  matrix.nHeight = 1;
-  CTxMatrix cmp_matrix;
-  a_ser << matrix;
-  a_ser >> cmp_matrix;
-  _TRUE(matrix.GetHash() == cmp_matrix.GetHash());
+  CTransaction mtx;
+  mtx.matrix.vData[0][0] = 1;
+  mtx.matrix.nHeight = 1;
+  CTransation cmp_mtx;
+  a_ser << mtx;
+  a_ser >> cmp_mtx;
+  _TRUE(mtx.matrix.GetHash() == cmp_mtx.matrix.GetHash());
+  _TRUE(mtx.GetHash() == cmp_mtx.GetHash());
 
 }
 
@@ -836,7 +837,7 @@ if (!ret) {
 /* DEBUG: TODO: free blockindex's for valgrind mem check */
 
   /* ensure that block processing does not fail past x2 Validate matrix */
-  for (idx = 0; idx < 40; idx++) {
+  for (idx = 0; idx < 67; idx++) {
     CBlock *block = test_GenerateBlock();
     _TRUEPTR(block);
     _TRUE(ProcessBlock(NULL, block) == true);

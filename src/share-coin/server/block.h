@@ -567,6 +567,9 @@ public:
       if ((this->nFlag & TXF_OFFER) ||
           (this->nFlag & TXF_OFFER_ACCEPT))
         READWRITE(offer);
+      if ((this->nFlag & TXF_MATRIX) && 
+          (matrix.nType != CTxMatrix::M_VALIDATE || matrix.nHeight))
+        READWRITE(matrix);
     )
 
     void Init(const CTransaction& tx)

@@ -2218,14 +2218,14 @@ bool VerifyMatrixTx(CTransaction& tx, int& mode)
   /* verify hash in pub-script matches matrix hash */
   nOut = IndexOfExtOutput(tx);
   if (nOut == -1)
-    return (false); /* no extension output */
+    return error(SHERR_INVAL, "no extension output");
 
   if (!DecodeMatrixHash(tx.vout[nOut].scriptPubKey, mode, hashMatrix))
-    return (false); /* no matrix hash in output */
+    return error(SHERR_INVAL, "no matrix hash in output");
 
   CTxMatrix *matrix = (CTxMatrix *)&tx.matrix;
   if (hashMatrix != matrix->GetHash())
-    return (false); /* matrix hash mismatch */
+    return error(SHERR_INVAL, "matrix hash mismatch");
 
   return (true);
 }

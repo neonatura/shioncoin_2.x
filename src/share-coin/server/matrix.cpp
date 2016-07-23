@@ -74,7 +74,7 @@ bool BlockGenerateValidateMatrix(CIface *iface, ValidateMatrix *matrixIn, CTrans
 {
   int ifaceIndex = GetCoinIndex(iface);
 
-  int64 nFee = MAX(0, MIN(COIN, nReward - iface->min_tx_fee));
+  int64 nFee = MAX(0, MIN(COIN, nReward - (int64)iface->min_tx_fee));
   if (nFee < iface->min_tx_fee)
     return (false); /* reward too small */
 
@@ -82,8 +82,8 @@ bool BlockGenerateValidateMatrix(CIface *iface, ValidateMatrix *matrixIn, CTrans
   if (!m)
     return (false); /* not applicable */
 
+  /* define tx op attributes */
   uint160 hashMatrix = m->GetHash();
-  int64 min_tx = (int64)iface->min_tx_fee;
   CScript scriptMatrix;
   scriptMatrix << OP_EXT_VALIDATE << CScript::EncodeOP_N(OP_MATRIX) << OP_HASH160 << hashMatrix << OP_2DROP << OP_RETURN;
   tx.vout.push_back(CTxOut(nFee, scriptMatrix));
@@ -103,12 +103,14 @@ bool BlockAcceptValidateMatrix(CIface *iface, ValidateMatrix *matrixIn, Validate
   int mode;
 
   if (VerifyMatrixTx(tx, mode) && mode == OP_EXT_VALIDATE) {
+fprintf(stderr, "DEBUG: BlockAcceptValidateMatrix; %s\n", matrix.ToString().c_str());
     CBlockIndex *pindex = GetBestBlockIndex(ifaceIndex);
     CTxMatrix& matrix = *tx.GetMatrix();
     if (matrix.GetType() == CTxMatrix::M_VALIDATE &&
         matrix.GetHeight() > matrixIn->GetHeight()) {
       if (!tx.VerifyValidateMatrix(matrixIn, matrix, pindex)) {
         fCheck = false;
+        error(SHERR_INVAL, "BlockAcceptValidateMatrix: invalid matrix received: %s", matrix.ToString().c_str());
       } else {
         fCheck = true;
         /* apply new hash to matrix */

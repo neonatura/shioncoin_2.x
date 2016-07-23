@@ -1610,6 +1610,7 @@ bool TESTBlock::AcceptBlock()
       bool fHasValMatrix = BlockAcceptValidateMatrix(iface, &test_Validate, val_matrix, vtx[0], fCheck);
       if (fHasValMatrix && !fCheck)
         return error(SHERR_ILSEQ, "AcceptBlock: test_Validate failure: (seed %s) (new %s)", test_Validate.ToString().c_str(), val_matrix.ToString().c_str());
+fprintf(stderr, "DEBUG: AcceptBlock: OP_EXT_VALIDATE success\n");
     } else if (mode == OP_EXT_PAY) {
       bool fHasSprMatrix = BlockAcceptSpringMatrix(iface, vtx[0], fCheck);
       if (fHasSprMatrix && !fCheck)
