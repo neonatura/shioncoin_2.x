@@ -115,8 +115,8 @@ fprintf(stderr, "DEBUG: BlockAcceptValidateMatrix; (original) %s\n", matrixIn->T
       } else {
         fCheck = true;
         /* apply new hash to matrix */
-        Debug("BlockAcceptValidateMatrix: Validate verify success: (prev %s) (new %s)\n", matrixIn->ToString().c_str(), matrix.ToString().c_str());
-        *matrixIn = matrix;
+        matrixIn->Init(matrix);
+        Debug("BlockAcceptValidateMatrix: Validate verify success: %s\n", matrixIn->ToString().c_str());
       }
       return (true); /* matrix was found */
     }
