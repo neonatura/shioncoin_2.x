@@ -51,7 +51,6 @@ void CTxMatrix::Append(int heightIn, uint256 hash)
   int col = idx % 3;
   unsigned int crc = (unsigned int)shcrc(hash.GetRaw(), 32);
   AddCell(row, col, crc);
-fprintf(stderr, "DEBUG: CTxMatrix::Append: data[%d][%d] = %x (%x) [hash %s]\n", row, col, GetCell(row, col), crc, hash.GetHex().c_str());
 }
 
 void CTxMatrix::Retract(int heightIn, uint256 hash)
@@ -66,7 +65,6 @@ void CTxMatrix::Retract(int heightIn, uint256 hash)
   int row = (idx / 3) % 3;
   int col = idx % 3;
   SubCell(row, col, (unsigned int)shcrc(hash.GetRaw(), 32));
-fprintf(stderr, "DEBUG: CTxMatrix::Retract: data[%d][%d] += %d\n", row, col, GetCell(row, col));
 }
 
 
@@ -226,7 +224,6 @@ CTxMatrix *CTransaction::GenerateSpringMatrix(int ifaceIndex, CIdent& ident)
   CIface *iface = GetCoinByIndex(ifaceIndex);
   shnum_t lat, lon;
   int height;
-fprintf(stderr, "DEBUG: GenerateSpringMatrix: ifaceIndex %d\n", ifaceIndex);
 
   if (!iface || !iface->enabled)
     return (NULL);
@@ -290,8 +287,6 @@ bool CTransaction::VerifySpringMatrix(int ifaceIndex, const CTxMatrix& matrix, s
   bool ret = (cmp_matrix == matrix);
   if (!ret)
     return error(SHERR_INVAL, "VerifySpringMatrix: matrix integrity failure.");
-
-fprintf(stderr, "DEBUG: SPRING: VerifySpringMatrix: coinbase %s\n", ToString().c_str());
 
   return (true);
 }

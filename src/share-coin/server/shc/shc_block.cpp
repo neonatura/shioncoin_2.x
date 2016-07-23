@@ -623,9 +623,11 @@ continue;
 
   /* established base reward for miners */
   int64 reward = shc_GetBlockValue(pindexPrev->nHeight+1, nFees);
-  bool ret = BlockGenerateValidateMatrix(iface, &shc_Validate, pblock->vtx[0], reward);
-  if (!ret) /* spring matrix */
-    ret = BlockGenerateSpringMatrix(iface, pblock->vtx[0], reward);
+  if (pblock->vtx.size() == 1) {
+    bool ret = BlockGenerateValidateMatrix(iface, &shc_Validate, pblock->vtx[0], reward);
+    if (!ret) /* spring matrix */
+      ret = BlockGenerateSpringMatrix(iface, pblock->vtx[0], reward);
+  }
   pblock->vtx[0].vout[0].nValue = reward; 
 
   /* fill block header */
@@ -1555,7 +1557,7 @@ bool SHCBlock::AcceptBlock()
   if (vtx.size() != 0 && VerifyMatrixTx(vtx[0], mode)) {
     bool fCheck = false;
     if (mode == OP_EXT_VALIDATE) {
-      fValMatrix = BlockAcceptValidateMatrix(&shc_Validate, val_matrix, vtx[0], fCheck);
+      fValMatrix = BlockAcceptValidateMatrix(iface, &shc_Validate, val_matrix, vtx[0], fCheck);
       if (fValMatrix && !fCheck)
         return error(SHERR_ILSEQ, "AcceptBlock: shc_Validate failure: (seed %s) (new %s)", shc_Validate.ToString().c_str(), val_matrix.ToString().c_str());
     } else if (mode == OP_EXT_PAY) {
@@ -2010,23 +2012,20 @@ bool SHCBlock::DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex)
     return (false);
 
   if (pindex->pprev) {
-    if (txdb.ifaceIndex == TEST_COIN_IFACE ||
-        txdb.ifaceIndex == SHC_COIN_IFACE) {
-      BOOST_FOREACH(CTransaction& tx, vtx) {
-        if (tx.IsCoinBase()) {
-          if (tx.isFlag(CTransaction::TXF_MATRIX)) {
-            CTxMatrix& matrix = tx.matrix;
-            if (matrix.GetType() == CTxMatrix::M_VALIDATE) {
-              /* retract block hash from Validate matrix */
-              shc_Validate.Retract(pindex->nHeight, pindex->GetBlockHash());
-            } else if (matrix.GetType() == CTxMatrix::M_SPRING) {
-              BlockRetractSpringMatrix(iface, tx, pindex);
-            }
+    BOOST_FOREACH(CTransaction& tx, vtx) {
+      if (tx.IsCoinBase()) {
+        if (tx.isFlag(CTransaction::TXF_MATRIX)) {
+          CTxMatrix& matrix = tx.matrix;
+          if (matrix.GetType() == CTxMatrix::M_VALIDATE) {
+            /* retract block hash from Validate matrix */
+            shc_Validate.Retract(pindex->nHeight, pindex->GetBlockHash());
+          } else if (matrix.GetType() == CTxMatrix::M_SPRING) {
+            BlockRetractSpringMatrix(iface, tx, pindex);
           }
-        } else {
-          if (tx.isFlag(CTransaction::TXF_CERTIFICATE)) {
-            DisconnectCertificate(iface, tx);
-          }
+        }
+      } else {
+        if (tx.isFlag(CTransaction::TXF_CERTIFICATE)) {
+          DisconnectCertificate(iface, tx);
         }
       }
     }

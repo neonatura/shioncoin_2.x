@@ -1607,7 +1607,7 @@ bool TESTBlock::AcceptBlock()
   if (vtx.size() != 0 && VerifyMatrixTx(vtx[0], mode)) {
     bool fCheck = false;
     if (mode == OP_EXT_VALIDATE) {
-      bool fHasValMatrix = BlockAcceptValidateMatrix(&test_Validate, val_matrix, vtx[0], fCheck);
+      bool fHasValMatrix = BlockAcceptValidateMatrix(iface, &test_Validate, val_matrix, vtx[0], fCheck);
       if (fHasValMatrix && !fCheck)
         return error(SHERR_ILSEQ, "AcceptBlock: test_Validate failure: (seed %s) (new %s)", test_Validate.ToString().c_str(), val_matrix.ToString().c_str());
     } else if (mode == OP_EXT_PAY) {

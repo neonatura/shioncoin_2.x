@@ -80,6 +80,8 @@ double speed[MAX_SPEED_STEP];
 
   double balance[MAX_COIN_IFACE];
 
+  double balance_avg[MAX_COIN_IFACE];
+
   /** the timestamp when the current round started. */
   time_t round_stamp;
 

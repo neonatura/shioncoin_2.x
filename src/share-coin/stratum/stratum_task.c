@@ -168,6 +168,9 @@ static void check_payout(int ifaceIndex)
         reward += (weight * user->block_avg[i]);
       if (reward >= 0.0000001) { 
         user->balance[ifaceIndex] += reward;
+        /* regulate tx # */
+        user->balance_avg[ifaceIndex] = 
+          (user->balance_avg[ifaceIndex] + reward) / 2;
       }
     }
 
@@ -206,11 +209,13 @@ static void commit_payout(int ifaceIndex, int block_height)
       continue; /* public */
 
     coin_val = (double)((uint64_t)user->balance[ifaceIndex] / 5) * 5;
-    if (0 == setblockreward(ifaceIndex, uname, coin_val)) {
-      user->reward_time = time(NULL);
-      user->reward_height = block_height;
-//      user->reward_val[ifaceIndex] += user->balance[ifaceIndex];
-      user->balance[ifaceIndex] = MAX(0.0, user->balance[ifaceIndex] - coin_val);
+    if (coin_val > (user->balance_avg[ifaceIndex] * 4)) {
+      if (0 == setblockreward(ifaceIndex, uname, coin_val)) {
+        user->reward_time = time(NULL);
+        user->reward_height = block_height;
+  //      user->reward_val[ifaceIndex] += user->balance[ifaceIndex];
+        user->balance[ifaceIndex] = MAX(0.0, user->balance[ifaceIndex] - coin_val);
+      }
     }
   }
 }
