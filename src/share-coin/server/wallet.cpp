@@ -598,10 +598,24 @@ void CWalletTx::GetAmounts(int64& nGeneratedImmature, int64& nGeneratedMature, l
 
   if (IsCoinBase())
   {
-    if (GetBlocksToMaturity(ifaceIndex) > 0)
+    if (GetBlocksToMaturity(ifaceIndex) > 0) {
       nGeneratedImmature = pwallet->GetCredit(*this);
-    else
-      nGeneratedMature = GetCredit();
+    } else {
+      int64 nFee = 0;
+      if (vout.size() > 1) { /* non-standard */
+        for (int idx = 1; idx < vout.size(); idx++) {
+          const CTxOut& txout = vout[idx];
+          if (pwallet->IsMine(txout)) {
+            CTxDestination address;
+            if (ExtractDestination(txout.scriptPubKey, address)) {
+              nFee += txout.nValue;
+              listReceived.push_back(make_pair(address, txout.nValue));
+            }
+          }
+        }
+      }
+      nGeneratedMature = GetCredit() - nFee;
+    }
     return;
   }
 

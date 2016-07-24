@@ -1423,10 +1423,29 @@ bool usde_coin_server_recv_msg(CIface *iface, CNode* pfrom)
     return (false);
   }
 
-  bool fRet;
-  {
+  bool fRet = false;
+  try {
     LOCK(cs_main);
     fRet = usde_ProcessMessage(iface, pfrom, strCommand, vRecv);
+  } catch (std::ios_base::failure& e) {
+    if (strstr(e.what(), "end of data"))
+    {
+      // Allow exceptions from underlength message on vRecv
+      error(SHERR_INVAL, "(use) ProcessMessages(%s, %u bytes) : Exception '%s' caught, normally caused by a message being shorter than its stated length\n", strCommand.c_str(), nMessageSize, e.what());
+    }
+    else if (strstr(e.what(), "size too large"))
+    {
+      // Allow exceptions from overlong size
+      error(SHERR_INVAL, "(use) ProcessMessages(%s, %u bytes) : Exception '%s' caught\n", strCommand.c_str(), nMessageSize, e.what());
+    }
+    else
+    {
+      PrintExceptionContinue(&e, "(usde) ProcessMessage");
+    }
+  } catch (std::exception& e) {
+    PrintExceptionContinue(&e, "(usde) ProcessMessage");
+  } catch (...) {
+    PrintExceptionContinue(NULL, "(usde) ProcessMessage");
   }
 
   return (fRet);
@@ -1701,10 +1720,29 @@ bool shc_coin_server_recv_msg(CIface *iface, CNode* pfrom)
     return (false);
   }
 
-  bool fRet;
-  {
+  bool fRet = false;
+  try {
     LOCK(cs_main);
     fRet = shc_ProcessMessage(iface, pfrom, strCommand, vRecv);
+  } catch (std::ios_base::failure& e) {
+    if (strstr(e.what(), "end of data"))
+    {
+      // Allow exceptions from underlength message on vRecv
+      error(SHERR_INVAL, "(shc) ProcessMessages(%s, %u bytes) : Exception '%s' caught, normally caused by a message being shorter than its stated length\n", strCommand.c_str(), nMessageSize, e.what());
+    }
+    else if (strstr(e.what(), "size too large"))
+    {
+      // Allow exceptions from overlong size
+      error(SHERR_INVAL, "(shc) ProcessMessages(%s, %u bytes) : Exception '%s' caught\n", strCommand.c_str(), nMessageSize, e.what());
+    }
+    else
+    {
+      PrintExceptionContinue(&e, "(shc) ProcessMessage");
+    }
+  } catch (std::exception& e) {
+    PrintExceptionContinue(&e, "ProcessMessages()");
+  } catch (...) {
+    PrintExceptionContinue(NULL, "ProcessMessages()");
   }
 
   return (fRet);

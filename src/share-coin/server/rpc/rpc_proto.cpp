@@ -340,7 +340,7 @@ Value addpeer(const Array& params, bool fHelp)
   if (fHelp || params.size() != 1)
     throw runtime_error(
         "addpeer <host>[:<port>]\n"
-        "Attempt to connect to a remote usde server.");
+        "Attempt to connect to a remote coin server.");
 
   CIface *iface = GetCoinByIndex(USDE_COIN_IFACE); 
   string strHost;
@@ -394,7 +394,7 @@ Value stop(const Array& params, bool fHelp)
   if (fHelp || params.size() != 0)
     throw runtime_error(
         "stop\n"
-        "Stop usde server.");
+        "Stop coin server.");
 
   set_shutdown_timer();
 #if 0
@@ -402,7 +402,7 @@ Value stop(const Array& params, bool fHelp)
     StartServerShutdown();
 #endif
 
-  return "usde server has now stopped running!";
+  return "coin server has now stopped running!";
 }
 
 
@@ -431,7 +431,7 @@ Value getdifficulty(const Array& params, bool fHelp)
 #endif
 
 
-// usde: Return average network hashes per second based on last number of blocks.
+// coin: Return average network hashes per second based on last number of blocks.
 Value GetNetworkHashPS(int ifaceIndex, int lookup) 
 {
   CBlockIndex *pindexBest = GetBestBlockIndex(ifaceIndex);
@@ -532,8 +532,19 @@ static Value ListReceived(CWallet *wallet, const Array& params, bool fByAccounts
   {
     const CWalletTx& wtx = (*it).second;
 
+    if (wtx.IsCoinBase()) {
+      if (wtx.vout.size() == 1)
+      continue;
+      nMinDepth = 1;
+    } else {
+      nMinDepth = 1;
+    }
+    if (!wtx.IsFinal(wallet->ifaceIndex))
+      continue;
+#if 0
     if (wtx.IsCoinBase() || !wtx.IsFinal(wallet->ifaceIndex))
       continue;
+#endif
 
     int nDepth = wtx.GetDepthInMainChain(ifaceIndex);
     if (nDepth < nMinDepth)
@@ -1051,10 +1062,10 @@ Value rpc_block_template(CIface *iface, const Array& params, bool fHelp)
 
   if (strMode == "template") {
     if (vNodes.empty())
-      throw JSONRPCError(-9, "usde is not connected!");
+      throw JSONRPCError(-9, "coin is not connected!");
 
     if (IsInitialBlockDownload())
-      throw JSONRPCError(-10, "usde is downloading blocks...");
+      throw JSONRPCError(-10, "coin is downloading blocks...");
 
     static CReserveKey reservekey(pwalletMain);
 
@@ -1263,7 +1274,7 @@ Value rpc_block_work(CIface *iface, const Array& params, bool fHelp)
     result.push_back(Pair("data",     HexStr(BEGIN(pdata), END(pdata))));
     result.push_back(Pair("hash1",    HexStr(BEGIN(phash1), END(phash1)))); // deprecated
     result.push_back(Pair("target",   HexStr(BEGIN(hashTarget), END(hashTarget))));
-    result.push_back(Pair("algorithm", "scrypt:1024,1,1"));  // usde: specify that we should use the scrypt algorithm
+    result.push_back(Pair("algorithm", "scrypt:1024,1,1"));  // specify that we should use the scrypt algorithm
     return result;
   }
   else
@@ -1978,11 +1989,11 @@ Value rpc_wallet_recvbyaddr(CIface *iface, const Array& params, bool fHelp)
         "wallet.recvbyaddr <coin-address> [minconf=1]\n"
         "Returns the total amount received by <coin-address> in transactions with at least [minconf] confirmations.");
 
-  // usde address
   CCoinAddr address = CCoinAddr(params[0].get_str());
-  CScript scriptPubKey;
   if (!address.IsValid())
-    throw JSONRPCError(-5, "Invalid usde address");
+    throw JSONRPCError(-5, "Invalid coin address");
+
+  CScript scriptPubKey;
   scriptPubKey.SetDestination(address.Get());
   if (!IsMine(*pwalletMain,scriptPubKey))
     return (double)0.0;
@@ -1997,13 +2008,24 @@ Value rpc_wallet_recvbyaddr(CIface *iface, const Array& params, bool fHelp)
   for (map<uint256, CWalletTx>::iterator it = pwalletMain->mapWallet.begin(); it != pwalletMain->mapWallet.end(); ++it)
   {
     const CWalletTx& wtx = (*it).second;
-    if (wtx.IsCoinBase() || !wtx.IsFinal(ifaceIndex))
+    if (wtx.IsCoinBase() && wtx.vout.size() == 1)
+      continue;
+    if (!wtx.IsFinal(ifaceIndex))
       continue;
 
-    BOOST_FOREACH(const CTxOut& txout, wtx.vout)
+
+    BOOST_FOREACH(const CTxOut& txout, wtx.vout) {
+      CTxDestination out_addr;
+      ExtractDestination(txout.scriptPubKey, out_addr);
+      if (address.Get() == out_addr)
+        if (wtx.GetDepthInMainChain(ifaceIndex) >= nMinDepth)
+          nAmount += txout.nValue;
+#if 0
       if (txout.scriptPubKey == scriptPubKey)
         if (wtx.GetDepthInMainChain(ifaceIndex) >= nMinDepth)
           nAmount += txout.nValue;
+#endif
+    }
   }
 
   return  ValueFromAmount(nAmount);
@@ -2077,7 +2099,7 @@ Value rpc_wallet_set(CIface *iface, const Array& params, bool fHelp)
 
     CCoinAddr address(params[0].get_str());
     if (!address.IsValid())
-        throw JSONRPCError(-5, "Invalid usde address");
+        throw JSONRPCError(-5, "Invalid coin address");
 
 
     string strAccount;
@@ -2472,7 +2494,7 @@ Value rpc_wallet_multisend(CIface *iface, const Array& params, bool fHelp)
   {
     CCoinAddr address(s.name_);
     if (!address.IsValid())
-      throw JSONRPCError(-5, string("Invalid usde address:")+s.name_);
+      throw JSONRPCError(-5, string("Invalid coin address:")+s.name_);
 
     if (setAddress.count(address))
       throw JSONRPCError(-8, string("Invalid parameter, duplicated address: ")+s.name_);
@@ -2823,7 +2845,7 @@ Value getnewaddress(const Array& params, bool fHelp)
     if (fHelp || params.size() > 1)
         throw runtime_error(
             "getnewaddress [account]\n"
-            "Returns a new usde address for receiving payments.  "
+            "Returns a new coin address for receiving payments.  "
             "If [account] is specified (recommended), it is added to the address book "
             "so payments received with the address will be credited to [account].");
 
@@ -2854,7 +2876,7 @@ Value getaccountaddress(const Array& params, bool fHelp)
     if (fHelp || params.size() != 1)
         throw runtime_error(
             "getaccountaddress <account>\n"
-            "Returns the current usde address for receiving payments to this account.");
+            "Returns the current coin address for receiving payments to this account.");
 
     // Parse the account first so we don't generate a key if there's an error
     string strAccount = AccountFromValue(params[0]);
@@ -2917,7 +2939,7 @@ Value sendtoaddress(const Array& params, bool fHelp)
 
     CCoinAddr address(params[0].get_str());
     if (!address.IsValid())
-        throw JSONRPCError(-5, "Invalid usde address");
+        throw JSONRPCError(-5, "Invalid coin address");
 
     // Amount
     int64 nAmount = AmountFromValue(params[1]);
@@ -3142,7 +3164,7 @@ Value sendfrom(const Array& params, bool fHelp)
     string strAccount = AccountFromValue(params[0]);
     CCoinAddr address(params[1].get_str());
     if (!address.IsValid())
-        throw JSONRPCError(-5, "Invalid usde address");
+        throw JSONRPCError(-5, "Invalid coin address");
     int64 nAmount = AmountFromValue(params[2]);
     int nMinDepth = 1;
     if (params.size() > 3)
@@ -3200,7 +3222,7 @@ Value sendmany(const Array& params, bool fHelp)
     {
         CCoinAddr address(s.name_);
         if (!address.IsValid())
-            throw JSONRPCError(-5, string("Invalid usde address:")+s.name_);
+            throw JSONRPCError(-5, string("Invalid coin address:")+s.name_);
 
         if (setAddress.count(address))
             throw JSONRPCError(-8, string("Invalid parameter, duplicated address: ")+s.name_);
@@ -3247,7 +3269,7 @@ Value addmultisigaddress(const Array& params, bool fHelp)
     {
         string msg = "addmultisigaddress <nrequired> <'[\"key\",\"key\"]'> [account]\n"
             "Add a nrequired-to-sign multisignature address to the wallet\"\n"
-            "each key is a usde address or hex-encoded public key\n"
+            "each key is a coin address or hex-encoded public key\n"
             "If [account] is specified, assign address to [account].";
         throw runtime_error(msg);
     }
@@ -3271,7 +3293,7 @@ Value addmultisigaddress(const Array& params, bool fHelp)
     {
         const std::string& ks = keys[i].get_str();
 
-        // Case 1: usde address and we have full public key:
+        // Case 1: coin address and we have full public key:
         CCoinAddr address(ks);
         if (address.IsValid())
         {
@@ -3819,7 +3841,7 @@ Value encryptwallet(const Array& params, bool fHelp)
     // slack space in .dat files; that is bad if the old data is
     // unencrypted private keys.  So:
     StartServerShutdown();
-    return "wallet encrypted; usde server stopping, restart to run with encrypted wallet";
+    return "wallet encrypted; coin server stopping, restart to run with encrypted wallet";
 }
 #endif
 
@@ -3903,10 +3925,10 @@ Value getblocktemplate(const Array& params, bool fHelp)
                                                                            if (strMode == "template")
                                                                            {
                                                                              if (vNodes.empty())
-                                                                               throw JSONRPCError(-9, "usde is not connected!");
+                                                                               throw JSONRPCError(-9, "coin is not connected!");
 
                                                                              if (IsInitialBlockDownload())
-                                                                               throw JSONRPCError(-10, "usde is downloading blocks...");
+                                                                               throw JSONRPCError(-10, "coin is downloading blocks...");
 
                                                                              static CReserveKey reservekey(pwalletMain);
 
@@ -4228,7 +4250,7 @@ Value rpc_addmultisigaddress(CIface *iface, const Array& params, bool fHelp)
     {
         string msg = "addmultisigaddress <nrequired> <'[\"key\",\"key\"]'> [account]\n"
             "Add a nrequired-to-sign multisignature address to the wallet\"\n"
-            "each key is a usde address or hex-encoded public key\n"
+            "each key is a coin address or hex-encoded public key\n"
             "If [account] is specified, assign address to [account].";
         throw runtime_error(msg);
     }
@@ -4252,7 +4274,7 @@ Value rpc_addmultisigaddress(CIface *iface, const Array& params, bool fHelp)
     {
         const std::string& ks = keys[i].get_str();
 
-        // Case 1: usde address and we have full public key:
+        // Case 1: coin address and we have full public key:
         CCoinAddr address(ks);
         if (address.IsValid())
         {
@@ -4532,7 +4554,7 @@ string HTTPPost(const string& strMsg, const map<string,string>& mapRequestHeader
 {
     ostringstream s;
     s << "POST / HTTP/1.1\r\n"
-      << "User-Agent: usde-json-rpc/" << FormatFullVersion() << "\r\n"
+      << "User-Agent: shcoind-json-rpc/" << FormatFullVersion() << "\r\n"
       << "Host: 127.0.0.1\r\n"
       << "Content-Type: application/json\r\n"
       << "Content-Length: " << strMsg.size() << "\r\n"
@@ -4563,7 +4585,7 @@ static string HTTPReply(int nStatus, const string& strMsg, bool keepalive)
     if (nStatus == 401)
         return strprintf("HTTP/1.0 401 Authorization Required\r\n"
             "Date: %s\r\n"
-            "Server: usde-json-rpc/%s\r\n"
+            "Server: shcoind-json-rpc/%s\r\n"
             "WWW-Authenticate: Basic realm=\"jsonrpc\"\r\n"
             "Content-Type: text/html\r\n"
             "Content-Length: 296\r\n"
@@ -4590,7 +4612,7 @@ static string HTTPReply(int nStatus, const string& strMsg, bool keepalive)
             "Connection: %s\r\n"
             "Content-Length: %d\r\n"
             "Content-Type: application/json\r\n"
-            "Server: usde-json-rpc/%s\r\n"
+            "Server: shcoind-json-rpc/%s\r\n"
             "\r\n"
             "%s",
         nStatus,
@@ -4688,7 +4710,7 @@ bool HTTPAuthorized(map<string, string>& mapHeaders)
 }
 
 //
-// JSON-RPC protocol.  usde speaks version 1.0 for maximum compatibility,
+// JSON-RPC protocol.  coin speaks version 1.0 for maximum compatibility,
 // but uses JSON-RPC 1.1/2.0 standards for parts of the 1.0 standard that were
 // unspecified (HTTP errors and contents of 'error').
 //
