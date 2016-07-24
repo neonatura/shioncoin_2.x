@@ -86,6 +86,8 @@ extern Value rpc_tx_signraw(CIface *iface, const Array& params, bool fHelp);
 extern Value rpc_sendrawtransaction(CIface *iface, const Array& params, bool fHelp);
 extern bool OpenNetworkConnection(const CAddress& addrConnect, const char *strDest = NULL);
 extern json_spirit::Value ValueFromAmount(int64 amount);
+extern bool IsAccountValid(CIface *iface, std::string strAccount);
+
 
 const Object emptyobj;
 
@@ -824,7 +826,7 @@ Value rpc_block_info(CIface *iface, const Array& params, bool fHelp)
   obj.push_back(Pair("walletversion", pwalletMain->GetVersion()));
 
   obj.push_back(Pair("blocks",        (int)GetBestHeight(iface)));
-//  obj.push_back(Pair("difficulty",    (double)GetDifficulty(ifaceIndex)));
+  obj.push_back(Pair("difficulty",    (double)GetDifficulty(ifaceIndex)));
 
   CTxMemPool *pool = GetTxMemPool(iface);
   obj.push_back(Pair("pooledtx",      (uint64_t)pool->size()));
@@ -2182,6 +2184,34 @@ Value rpc_wallet_unspent(CIface *iface, const Array& params, bool fHelp)
   return results;
 }
 
+Value rpc_wallet_unconfirm(CIface *iface, const Array& params, bool fHelp)
+{
+  CWallet *pwalletMain = GetWallet(iface);
+  int ifaceIndex = GetCoinIndex(iface);
+
+  if (fHelp || params.size() != 0)
+    throw runtime_error(
+        "wallet.unconfirm\n"
+        "Display a list of all unconfirmed transactions.\n");
+
+  Array results;
+  {
+    LOCK(pwalletMain->cs_wallet);
+    for (map<uint256, CWalletTx>::const_iterator it = pwalletMain->mapWallet.begin(); it != pwalletMain->mapWallet.end(); ++it)
+    {
+      const CWalletTx& pcoin = (*it).second;
+      if (!pcoin.IsCoinBase()) continue;
+      int depth = pcoin.GetBlocksToMaturity(ifaceIndex);
+      if (depth > 0 && pcoin.GetDepthInMainChain(ifaceIndex) >= 2) {
+        CTransaction& tx = (CTransaction&)pcoin;
+        results.push_back(tx.ToValue());
+      }
+    }
+  }
+
+  return results;
+} 
+
 Value rpc_wallet_validate(CIface *iface, const Array& params, bool fHelp)
 {
   CWallet *pwalletMain = GetWallet(iface);
@@ -2224,6 +2254,8 @@ Value rpc_wallet_list(CIface *iface, const Array& params, bool fHelp)
         "Returns the list of coin addresses for the given account.");
 
   string strAccount = AccountFromValue(params[0]);
+  if (!IsAccountValid(iface, strAccount))
+    throw JSONRPCError(-8, "Invalid account name specified.");
 
   // Find all addresses that have the given account
   Array ret;
@@ -4410,6 +4442,7 @@ static const CRPCCommand vRPCCommands[] =
     { "wallet.setkey",        &rpc_wallet_setkey},
     { "wallet.stamp",         &rpc_wallet_stamp},
     { "wallet.tx",            &rpc_wallet_tx},
+    { "wallet.unconfirm",     &rpc_wallet_unconfirm},
     { "wallet.unspent",       &rpc_wallet_unspent},
     { "wallet.validate",      &rpc_wallet_validate},
 //    { "tx.sendraw",           &rpc_sendrawtransaction},

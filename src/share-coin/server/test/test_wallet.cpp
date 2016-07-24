@@ -63,7 +63,6 @@ int test_UpgradeWallet(void)
   {
     nMaxVersion = CLIENT_VERSION;
     testWallet->SetMinVersion(FEATURE_LATEST); // permanently upgrade the wallet immediately
-    Debug("using wallet version %d", FEATURE_LATEST);
   }
   else
     printf("Allowing wallet upgrade up to %i\n", nMaxVersion);

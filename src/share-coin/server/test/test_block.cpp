@@ -803,9 +803,8 @@ bool TEST_CTxMemPool::accept(CTxDB& txdb, CTransaction &tx, bool fCheckInputs, b
   if (ptxOld)
     test_EraseFromWallets(ptxOld->GetHash());
 
-  Debug("CTxMemPool::accept() : accepted %s (poolsz %u)\n",
-      hash.ToString().substr(0,10).c_str(),
-      mapTx.size());
+  Debug("(test) mempool accepted %s (pool-size %u)\n",
+      hash.ToString().c_str(), mapTx.size());
   return true;
 }
 

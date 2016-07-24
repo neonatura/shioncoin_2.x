@@ -257,6 +257,8 @@ offer.accepts.push_back(acc);
   CTransaction mtx;
   mtx.nFlag |= CTransaction::TXF_MATRIX;
   mtx.matrix.vData[0][0] = 1;
+  mtx.matrix.vData[0][1] = 2;
+  mtx.matrix.vData[1][0] = 3;
   mtx.matrix.nHeight = 1;
   CTransaction cmp_mtx;
   a_ser << mtx;
@@ -264,9 +266,9 @@ offer.accepts.push_back(acc);
   _TRUE(mtx.matrix.GetHash() == cmp_mtx.matrix.GetHash());
   _TRUE(mtx.GetHash() == cmp_mtx.GetHash());
 
-  cmp_mtx.matrix.SetNull();
-  cmp_mtx.matrix.Init(mtx.matrix);
-  _TRUE(mtx.matrix.GetHash() == cmp_mtx.matrix.GetHash());
+  CTxMatrix cmp_matrix;
+  cmp_matrix.Init(mtx.matrix);
+  _TRUE(mtx.matrix.GetHash() == cmp_matrix.GetHash());
 }
 
 _TEST(signtx)

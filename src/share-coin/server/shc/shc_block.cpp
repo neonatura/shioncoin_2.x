@@ -837,9 +837,8 @@ bool SHC_CTxMemPool::accept(CTxDB& txdb, CTransaction &tx, bool fCheckInputs, bo
   if (ptxOld)
     shc_EraseFromWallets(ptxOld->GetHash());
 
-  Debug("CTxMemPool::accept() : accepted %s (poolsz %u)\n",
-      hash.ToString().substr(0,10).c_str(),
-      mapTx.size());
+  Debug("(shc) mempool accepted %s (pool-size %u)\n",
+      hash.ToString().substr(0,10).c_str(), mapTx.size());
   return true;
 }
 

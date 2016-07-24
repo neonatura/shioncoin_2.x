@@ -65,6 +65,7 @@ using namespace boost::assign;
 extern json_spirit::Value ValueFromAmount(int64 amount);
 extern int64 AmountFromValue(const Value& value);
 extern string AccountFromValue(const Value& value);
+extern bool IsAccountValid(CIface *iface, std::string strAccount);
 
 
 
@@ -211,6 +212,8 @@ Value rpc_cert_new(CIface *iface, const Array& params, bool fHelp)
     throw runtime_error("Unsupported operation for coin service.");
 
   string strAccount = AccountFromValue(params[0]);
+  if (!IsAccountValid(iface, strAccount))
+    throw JSONRPCError(SHERR_INVAL, "Invalid account name specified.");
 
   string strTitle = params[1].get_str();
   if (strTitle.length() == 0 || strTitle.length() > 135)
@@ -241,7 +244,6 @@ Value rpc_cert_new(CIface *iface, const Array& params, bool fHelp)
   if (err)
     throw JSONRPCError(err, "Failure initializing transaction.");
 
-/* DEBUG: */wtx.print();
   return (wtx.ToValue());
 }
 
@@ -268,6 +270,8 @@ Value rpc_wallet_donate(CIface *iface, const Array& params, bool fHelp)
     throw runtime_error("Unsupported operation for coin service.");
 
   string strAccount = AccountFromValue(params[0]);
+  if (!IsAccountValid(iface, strAccount))
+    throw JSONRPCError(SHERR_INVAL, "Invalid account name specified.");
 
   int64 nValue = AmountFromValue(params[1]);
   if (nValue < iface->min_tx_fee || nValue >= iface->max_money)
@@ -289,8 +293,7 @@ Value rpc_wallet_donate(CIface *iface, const Array& params, bool fHelp)
   if (err)
     throw JSONRPCError(err, "Failure initializing transaction.");
     
-/* DEBUG: */wtx.print();
-  return (wtx.GetHash().GetHex());
+  return (wtx.ToValue());
 }
 
 Value rpc_wallet_csend(CIface *iface, const Array& params, bool fHelp) 
@@ -310,6 +313,8 @@ Value rpc_wallet_csend(CIface *iface, const Array& params, bool fHelp)
     throw runtime_error("Unsupported operation for coin service.");
 
   string strAccount = AccountFromValue(params[0]);
+  if (!IsAccountValid(iface, strAccount))
+    throw JSONRPCError(SHERR_INVAL, "Invalid account name specified.");
 
   string strAddress = params[1].get_str();
   CCoinAddr addr(strAddress);
@@ -333,8 +338,7 @@ Value rpc_wallet_csend(CIface *iface, const Array& params, bool fHelp)
   if (err)
     throw JSONRPCError(err, "Failure initializing transaction.");
     
-/* DEBUG: */wtx.print();
-  return (wtx.GetHash().GetHex());
+  return (wtx.ToValue());
 }
 
 
@@ -359,18 +363,23 @@ Value rpc_wallet_stamp(CIface *iface, const Array& params, bool fHelp)
     throw runtime_error("Unsupported operation for coin service.");
 
   string strAccount = AccountFromValue(params[0]);
-  string strComment = AccountFromValue(params[1]);
-
+  string strComment = params[1].get_str();
   int64 nValue = iface->min_tx_fee;
+
+  if (!IsAccountValid(iface, strAccount))
+    throw JSONRPCError(SHERR_INVAL, "Invalid account name specified.");
+
+  if (strComment.length() == 0 || strComment.length() > 135)
+    throw JSONRPCError(SHERR_INVAL, "The comment must be between 1 and 135 characters.");
 
   nBalance = GetAccountBalance(ifaceIndex, strAccount, 1);
   if (nBalance < nValue)
-    throw JSONRPCError(err, "Insufficient funds available for amount specified.");
+    throw JSONRPCError(SHERR_AGAIN, "Insufficient funds available for account specified.");
 
   CWalletTx wtx;
   err = init_ident_stamp_tx(iface, strAccount, strComment, wtx);
   if (err)
-    throw JSONRPCError(err, "Failure initializing transaction.");
+    throw JSONRPCError(err, "transaction generation failure");
     
 /* DEBUG: */wtx.print();
   return (wtx.ToValue());

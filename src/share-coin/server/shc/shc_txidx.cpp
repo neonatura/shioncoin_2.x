@@ -40,6 +40,7 @@
 using namespace std;
 using namespace boost;
 
+extern bool IsIdentTx(const CTransaction& tx);
 
 
 bool SHCTxDB::ReadDiskTx(uint256 hash, CTransaction& tx, CTxIndex& txindex)
@@ -92,7 +93,7 @@ CBlockIndex static * InsertBlockIndex(uint256 hash)
 }
 
 typedef vector<CBlockIndex*> txlist;
-bool shc_FillBlockIndex(txlist& vMatrix, txlist& vSpring, txlist& vCert)
+bool shc_FillBlockIndex(txlist& vMatrix, txlist& vSpring, txlist& vCert, txlist& vIdent)
 {
   CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);
   blkidx_t *blockIndex = GetBlockTable(SHC_COIN_IFACE);
@@ -151,6 +152,9 @@ bool shc_FillBlockIndex(txlist& vMatrix, txlist& vSpring, txlist& vCert)
             vSpring.push_back(pindexNew);
         }
       }
+      if (tx.isFlag(CTransaction::TXF_IDENT)) {
+        vIdent.push_back(pindexNew);
+      }
       if (tx.isFlag(CTransaction::TXF_CERTIFICATE)) {
         if (VerifyCert(iface, tx, nHeight))
           vCert.push_back(pindexNew);
@@ -182,6 +186,7 @@ static bool hasGenesisRoot(CBlockIndex *pindexBest)
   return (true);
 }
 
+
 bool SHCTxDB::LoadBlockIndex()
 {
   CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);
@@ -196,7 +201,8 @@ bool SHCTxDB::LoadBlockIndex()
   txlist vSpring;
   txlist vMatrix;
   txlist vCert;
-  if (!shc_FillBlockIndex(vMatrix, vSpring, vCert))
+  txlist vIdent;
+  if (!shc_FillBlockIndex(vMatrix, vSpring, vCert, vIdent))
     return (false);
 
   if (fRequestShutdown)
@@ -252,9 +258,6 @@ bool SHCTxDB::LoadBlockIndex()
     fprintf(stderr, "DEBUG: LoadBlockIndex: falling back to highest block height %d\n", pindexBest->nHeight);
     hashBestChain = pindexBest->GetBlockHash();
   }
-
-
-//  fprintf(stderr, "DEBUG: SHCTxDB::LoadBlockIndex: info: verifying hashBestChain '%s'\n", (hashBestChain).GetHex().c_str());
 
   if (!pindexBest) {
     fprintf(stderr, "DEBUG: SHCTxDB::LoadBlockIndex: error: hashBestChain '%s' not found in block index table\n", (hashBestChain).GetHex().c_str());
@@ -337,14 +340,37 @@ bool SHCTxDB::LoadBlockIndex()
   InitServiceWalletEvent(wallet, checkHeight);
 
   /* Block-chain Validation Matrix */
+  std::reverse(vMatrix.begin(), vMatrix.end());
   BOOST_FOREACH(CBlockIndex *pindex, vMatrix) {
-    if (pindex->nHeight > pindexBest->nHeight)
+    CBlock *block = GetBlockByHash(iface, pindex->GetBlockHash());
+    if (!block) continue;
+
+    CTransaction id_tx;
+    const CTransaction& m_tx = block->vtx[0];
+    const CTxMatrix& matrix = m_tx.matrix;
+
+    if (matrix.nHeight > pindexBest->nHeight)
       break;
-    matrixValidate.Append(pindex->nHeight, pindex->GetBlockHash()); 
-fprintf(stderr, "DEBUG: found pre-existing MATRIX @ height %d\n", (int)pindex->nHeight);
+
+    CBlockIndex *tindex = pindex;
+    while (tindex->pprev && tindex->nHeight > matrix.nHeight)
+      tindex = tindex->pprev;
+
+    matrixValidate.Append(tindex->nHeight, tindex->GetBlockHash()); 
+  }
+
+  /* ident */
+  BOOST_FOREACH(CBlockIndex *pindex, vIdent) {
+    CBlock *block = GetBlockByHash(iface, pindex->GetBlockHash());
+    BOOST_FOREACH(CTransaction& tx, block->vtx) {
+      if (IsIdentTx(tx))
+        InsertIdentTable(iface, tx);
+    }
+    delete block;
   }
 
   /* Spring Matrix */
+  cert_list *idents = GetIdentTable(ifaceIndex);
   BOOST_FOREACH(CBlockIndex *pindex, vSpring) {
     CBlock *block = GetBlockByHash(iface, pindex->GetBlockHash());
     if (!block) continue;
@@ -353,11 +379,18 @@ fprintf(stderr, "DEBUG: found pre-existing MATRIX @ height %d\n", (int)pindex->n
     const CTransaction& m_tx = block->vtx[0];
     if (GetTxOfIdent(iface, m_tx.matrix.hRef, id_tx)) {
       shnum_t lat, lon;
+      int mode;
 
-      /* mark location as claimed */
+      /* remove ident from pending list */
       CIdent& ident = (CIdent&)id_tx.certificate;
-      shgeo_loc(&ident.geo, &lat, &lon, NULL);
-      spring_loc_claim(lat, lon);
+      const uint160& hIdent = ident.GetHash();
+      idents->erase(hIdent);
+
+      if (VerifyIdent(id_tx, mode) && mode == OP_EXT_NEW) {
+        /* mark location as claimed */
+        shgeo_loc(&ident.geo, &lat, &lon, NULL);
+        spring_loc_claim(lat, lon);
+      }
     }
 
     delete block;
@@ -430,7 +463,6 @@ bool SHCTxDB::LoadBlockIndexGuts()
         // Watch for genesis block
         if (SHCBlock::pindexGenesisBlock == NULL && diskindex.GetBlockHash() == shc_hashGenesisBlock) {
           SHCBlock::pindexGenesisBlock = pindexNew;
-fprintf(stderr, "DEBUG: initialized SHCBlock::pindexGenesisBlock (%s)\n", (SHCBlock::pindexGenesisBlock)->GetBlockHash().GetHex().c_str());
 }
 
         if (!pindexNew->CheckIndex())

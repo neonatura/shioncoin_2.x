@@ -2274,3 +2274,23 @@ bool CWalletTx::AcceptWalletTransaction(CTxDB& txdb, bool fCheckInputs)
   return false;
 }
 
+bool IsAccountValid(CIface *iface, std::string strAccount)
+{
+  CWallet *wallet;
+  int total;
+
+  wallet = GetWallet(iface);
+  if (!wallet)
+    return (false);
+
+  total = 0;
+  BOOST_FOREACH(const PAIRTYPE(CCoinAddr, string)& item, wallet->mapAddressBook)
+  {
+    const CCoinAddr& address = item.first;
+    const string& strName = item.second;
+    if (strName == strAccount)
+      total++;
+  }
+
+  return (total != 0);
+}

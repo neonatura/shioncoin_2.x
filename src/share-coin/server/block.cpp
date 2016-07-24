@@ -2250,6 +2250,7 @@ bool core_AcceptBlock(CBlock *pblock)
     }
   }
 
+  STAT_BLOCK_ACCEPTS(iface)++;
   return true;
 }
 
@@ -2516,7 +2517,6 @@ bool CTransaction::VerifyValidateMatrix(const CTxMatrix& matrix, CBlockIndex *pi
   cmp_matrix.SetType(CTxMatrix::M_VALIDATE);
   cmp_matrix.Append(pindex->nHeight, pindex->GetBlockHash()); 
   ret = (cmp_matrix == matrix);
-fprintf(stderr, "DEBUG: VerifyValidateMatrix[height %d]: cmp_matrix %s\n", pindex->nHeight, cmp_matrix.ToString().c_str());
 
   return (ret);
 }
@@ -2561,7 +2561,6 @@ CTxMatrix *CTransaction::GenerateValidateMatrix(int ifaceIndex, CBlockIndex *pin
   matrixNew.Append(pindex->nHeight, pindex->GetBlockHash()); 
   matrix = (CTxMatrix&)matrixNew;
 
-fprintf(stderr, "DEBUG: GenerateValidateMatrix: success %s\n", matrix.ToString().c_str());
   return (&matrix);
 }
 
@@ -2783,7 +2782,10 @@ bool CTransaction::AcceptToMemoryPool(CTxDB& txdb, bool fCheckInputs, bool* pfMi
     return (false);
   }
 
-  return (pool->accept(txdb, *this, fCheckInputs, pfMissingInputs));
+  bool ret = pool->accept(txdb, *this, fCheckInputs, pfMissingInputs);
+  if (ret)
+    STAT_TX_SUBMITS(iface)++;
+  return (ret);
 }
 
 bool CTransaction::IsInMemoryPool(int ifaceIndex)

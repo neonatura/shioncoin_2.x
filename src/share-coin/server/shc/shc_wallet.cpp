@@ -62,7 +62,6 @@ int shc_UpgradeWallet(void)
   {
     nMaxVersion = CLIENT_VERSION;
     shcWallet->SetMinVersion(FEATURE_LATEST); // permanently upgrade the wallet immediately
-    Debug("using wallet version %d", FEATURE_LATEST);
   }
   else
     printf("Allowing wallet upgrade up to %i\n", nMaxVersion);
@@ -207,8 +206,18 @@ void SHCWallet::ReacceptWalletTransactions()
     BOOST_FOREACH(PAIRTYPE(const uint256, CWalletTx)& item, mapWallet)
     {
       CWalletTx& wtx = item.second;
-      if (wtx.IsCoinBase() && wtx.IsSpent(0))
-        continue;
+      if (wtx.IsCoinBase()) {
+        bool fSpent = true;
+        for (unsigned int i = 0; i < wtx.vout.size(); i++) {
+          if (!wtx.IsSpent(i)) {
+            fSpent = false;
+            break;
+          }
+        }
+        if (fSpent)
+          continue;
+      }
+
 
       CTxIndex txindex;
       bool fUpdated = false;

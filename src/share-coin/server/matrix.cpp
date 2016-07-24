@@ -108,10 +108,8 @@ bool BlockAcceptValidateMatrix(CIface *iface, CTransaction& tx, bool& fCheck)
   int mode;
 
   if (VerifyMatrixTx(tx, mode) && mode == OP_EXT_VALIDATE) {
-fprintf(stderr, "DEBUG: BlockAcceptValidateMatrix; (original) %s\n", matrixValidate.ToString().c_str());
     CBlockIndex *pindex = GetBestBlockIndex(ifaceIndex);
     CTxMatrix& matrix = *tx.GetMatrix();
-fprintf(stderr, "DEBUG: BlockAcceptValidateMatrix: (proposed) %s\n", matrix.ToString().c_str());
     if (matrix.GetType() == CTxMatrix::M_VALIDATE &&
         matrix.GetHeight() > matrixValidate.GetHeight()) {
       if (!tx.VerifyValidateMatrix(matrix, pindex)) {
@@ -220,8 +218,6 @@ bool BlockAcceptSpringMatrix(CIface *iface, CTransaction& tx, bool& fCheck)
       }
       return (true); /* matrix was found */
     }
-  } else {
-fprintf(stderr, "DEBUG: SPRING: accept failure (mode %d)\n", mode);
   }
 
   return (false); /* no matrix was present */
@@ -337,6 +333,7 @@ Object CTxMatrix::ToValue()
   int col;
 
   obj.push_back(Pair("hash", GetHash().GetHex()));
+  obj.push_back(Pair("type", (int)nType));
   obj.push_back(Pair("ref", hRef.GetHex()));
   if (nHeight != 0)
     obj.push_back(Pair("height", (int)nHeight));
@@ -346,7 +343,8 @@ Object CTxMatrix::ToValue()
     if (row != 0) strcat(buf, " ");
     strcat(buf, "(");
     for (col = 0; col < 3; col++) {
-      sprintf(buf+strlen(buf), " %x", GetCell(row, col));
+      if (col != 0) strcat(buf, " "); 
+      sprintf(buf+strlen(buf), "%-8.8x", GetCell(row, col));
     }
     strcat(buf, ")");
   }
@@ -372,8 +370,6 @@ int validate_render_fractal(char *img_path, double zoom, double span, double x_o
   uint32_t m_seed;
   double seed;
   int y, x;
-
-fprintf(stderr, "DEBUG: validate_render_fractal: '%s'\n", img_path);
 
   m_seed = 0;
   for (y = 0; y < 3; y++) {
