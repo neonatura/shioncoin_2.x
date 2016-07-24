@@ -385,6 +385,112 @@ Value rpc_wallet_stamp(CIface *iface, const Array& params, bool fHelp)
   return (wtx.ToValue());
 }
 
+Value rpc_cert_export(CIface *iface, const Array& params, bool fHelp) 
+{
+  int ifaceIndex = GetCoinIndex(iface);
+  int64 nBalance;
+  int err;
+
+  if (fHelp || (params.size() != 1 && params.size() != 2)) {
+    throw runtime_error(
+        "cert.export <cert-hash> [<path>]\n"
+        "Summary: Export the credentials neccessary to own a certificate.\n"
+        "Params: [ <cert-hash> The certificate's reference hash. ]\n"
+        "\n" 
+        "Ownership and management of a certificate depends on having specific coin address key(s) in the coin wallet. Exporting a certificate provides JSON formatted content which can be used with \"wallet.import\" command to attain ownership of a certificate.\n"
+        );
+  }
+
+  if (ifaceIndex != SHC_COIN_IFACE)
+    throw runtime_error("Unsupported operation for coin service.");
+
+  uint160 hCert(params[0].get_str().c_str());
+  if (!VerifyCertHash(iface, hCert)) 
+    throw JSONRPCError(err, "Invalid certificate hash specified.");
+
+  CTransaction tx;
+  if (!GetTxOfCert(iface, hCert, tx))
+    throw JSONRPCError(err, "Unable to obtain certificate specified.");
+
+  CWallet *wallet = GetWallet(iface);
+  const CIdent& ident = (CIdent&)tx.certificate;
+  Object obj;
+
+  CCoinAddr cert_addr(stringFromVch(ident.vAddr));
+  if (!cert_addr.IsValid())
+    throw JSONRPCError(err, "Certificate coin address is invalid.");
+
+  if (!IsMine(*wallet, cert_addr.Get()))
+    throw JSONRPCError(err, "Certificate specified references a non-local coin address.");
+
+
+
+  bool fExtAddr = false;
+  CTxDestination ext_addr;
+  int nOut = IndexOfExtOutput(tx);
+  if (nOut != -1) {
+    const CTxOut& txout = tx.vout[nOut];
+    if (ExtractDestination(txout.scriptPubKey, ext_addr) && IsMine(*wallet, ext_addr)) {
+      fExtAddr = true;
+    }
+  }
+  if (!fExtAddr) {
+    throw JSONRPCError(err, "Certificate extended coin address is invalid.");
+  }
+
+
+  Array result;
+  map<string, int64> mapAccountBalances;
+  BOOST_FOREACH(const PAIRTYPE(CTxDestination, string)& entry, wallet->mapAddressBook) {
+    CTxDestination dest = entry.first;
+    string strLabel = entry.second;
+
+    if (!IsMine(*wallet, dest))
+      continue;
+
+    CCoinAddr addr(dest);
+    CKeyID keyID;
+    if (!addr.GetKeyID(keyID))
+      continue;//throw JSONRPCError(-3, "Address does not refer to a key");
+
+    CSecret vchSecret;
+    bool fCompressed;
+    if (!wallet->GetSecret(keyID, vchSecret, fCompressed))
+      continue;//throw JSONRPCError(-4,"Private key for address " + strLabel + " is not known");
+
+    if (dest == cert_addr.Get() || dest == ext_addr) {
+      Object entry;
+      string strKey = CCoinSecret(vchSecret, fCompressed).ToString();
+      entry.push_back(Pair("key", strKey));
+      entry.push_back(Pair("label", strLabel));
+      entry.push_back(Pair("addr", addr.ToString()));
+      result.push_back(entry);
+    }
+  }
+  obj.push_back(Pair(iface->name, result));
+
+  if (params.size() > 1) {
+    string strPath = params[1].get_str(); 
+    string strJson = write_string(Value(obj), false);
+    const char *json = (const char *)strJson.c_str();
+    FILE *fl;
+
+    fl = fopen(strPath.c_str(), "wb");
+    if (!fl)
+      throw JSONRPCError(SHERR_INVAL, "Invalid path specified.");
+    fwrite(json, strlen(json), sizeof(char), fl);
+    fclose(fl);
+
+    Object info;
+    info.push_back(Pair("mode", "cert.export"));
+    info.push_back(Pair("path", strPath.c_str()));
+    info.push_back(Pair("state", "finished")); 
+    return (info);
+  }
+
+  return (obj);
+}
+
 
 
 

@@ -87,6 +87,7 @@ extern Value rpc_sendrawtransaction(CIface *iface, const Array& params, bool fHe
 extern bool OpenNetworkConnection(const CAddress& addrConnect, const char *strDest = NULL);
 extern json_spirit::Value ValueFromAmount(int64 amount);
 extern bool IsAccountValid(CIface *iface, std::string strAccount);
+extern Value rpc_cert_export(CIface *iface, const Array& params, bool fHelp);
 
 
 const Object emptyobj;
@@ -845,8 +846,10 @@ Value rpc_block_info(CIface *iface, const Array& params, bool fHelp)
   CBlockIndex *pindexBest = GetBestBlockIndex(iface);
   if (pindexBest)
     obj.push_back(Pair("currentblockhash",     pindexBest->GetBlockHash().GetHex()));
+#if 0
   obj.push_back(Pair("currentblocksize",(uint64_t)nLastBlockSize));
   obj.push_back(Pair("currentblocktx",(uint64_t)nLastBlockTx));
+#endif
 
   obj.push_back(Pair("errors",        GetWarnings(ifaceIndex, "statusbar")));
 
@@ -2628,15 +2631,18 @@ Value rpc_peer_export(CIface *iface, const Array& params, bool fHelp)
 
 //    serv_peer = shapp_init("shcoind", NULL, SHAPP_LOCAL);
 
-    db = shdb_open(NET_DB_NAME);
+    db = shnet_track_open(iface->name);
+    if (!db) 
+      throw JSONRPCError(-5, "Error opening peer track database.");
     json = shdb_json(db, SHPREF_TRACK, 0, 0);
     text = shjson_print(json);
     shjson_free(&json);
-    shdb_close(db);
+    shnet_track_close(db);
 
     fl = fopen(strPath.c_str(), "wb");
     if (fl) {
-      fwrite(text, sizeof(char), strlen(text), fl);
+      if (text)
+        fwrite(text, sizeof(char), strlen(text), fl);
       fclose(fl);
     }
     free(text);
@@ -4419,6 +4425,7 @@ static const CRPCCommand vRPCCommands[] =
 //    { "block.template",       &rpc_block_template},
     { "block.work",           &rpc_block_work},
     { "block.workex",         &rpc_block_workex},
+    { "cert.export",          &rpc_cert_export},
     { "cert.info",            &rpc_cert_info},
     { "cert.get",             &rpc_cert_get},
     { "cert.list",            &rpc_cert_list},
