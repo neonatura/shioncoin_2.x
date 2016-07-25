@@ -108,7 +108,7 @@ void unet_cycle(double max_t)
   fd_set w_set;
   fd_set x_set;
   SOCKET fd;
-  double diff_t;
+  unsigned long diff;
   ssize_t w_len;
   SOCKET sk;
   int fd_max;
@@ -234,10 +234,12 @@ fprintf(stderr, "DEBUG: unet_cycle: shnet_read failure: %s [errno %d]\n", strerr
   /* purge idle sockets */
   unet_close_idle(); 
 
+  /* wait remainder of max_t */
+  diff = (unsigned long)(max_t - (shtimef(shtime()) - shtimef(start_t)));
+  diff = MAX(100, MIN(500, diff));
+
   memset(&to, 0, sizeof(to));
-  diff_t = MAX(0.001, max_t - (shtimef(shtime()) - shtimef(start_t))); /* sec */
-  diff_t *= 1000; /* ms */
-  to.tv_usec = MAX(25000, MIN(250000, (long)1000 * (long)diff_t)); /* usec */
+  to.tv_usec = 1000 * diff; /* usec */
   err = select(fd_max+1, &r_set, &w_set, &x_set, &to);
   if (err > 0) {
     for (fd = 1; fd <= fd_max; fd++) {

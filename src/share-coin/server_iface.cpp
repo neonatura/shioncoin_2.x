@@ -1403,6 +1403,7 @@ bool usde_coin_server_recv_msg(CIface *iface, CNode* pfrom)
 {
   CDataStream& vRecv = pfrom->vRecv;
   CMessageHeader hdr;
+  shtime_t ts;
 
   if (vRecv.empty())
     return (true);
@@ -1425,8 +1426,11 @@ bool usde_coin_server_recv_msg(CIface *iface, CNode* pfrom)
 
   bool fRet = false;
   try {
+    char *cmd = (char *)strCommand.c_str();
     LOCK(cs_main);
+    timing_init(cmd, &ts);
     fRet = usde_ProcessMessage(iface, pfrom, strCommand, vRecv);
+    timing_term(cmd, &ts);
   } catch (std::ios_base::failure& e) {
     if (strstr(e.what(), "end of data"))
     {
@@ -1502,10 +1506,8 @@ void usde_server_timer(void)
   static int verify_idx;
   CIface *iface = GetCoinByIndex(USDE_COIN_IFACE);
   NodeList &vNodes = GetNodeList(USDE_COIN_IFACE);
+  shtime_t ts;
   bc_t *bc;
-
-//fprintf(stderr, "DEBUG: usde_server_timer()\n");
-
 
   if (fShutdown)
     return;
@@ -1575,7 +1577,9 @@ fprintf(stderr, "DEBUG: usde_server_timer: unet_shutdown()\n");
     }
   }
 
+  timing_init("(usde) MessageHandler", &ts);
   usde_MessageHandler(iface);
+  timing_term("(usde) MessageHandler", &ts);
 
   event_cycle_chain(USDE_COIN_IFACE); /* DEBUG: */
 
@@ -1799,6 +1803,7 @@ void shc_server_timer(void)
   static int verify_idx;
   CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);
   NodeList &vNodes = GetNodeList(SHC_COIN_IFACE);
+  shtime_t ts;
   bc_t *bc;
 
   if (fShutdown)
@@ -1868,7 +1873,9 @@ fprintf(stderr, "DEBUG: shc_server_timer: unet_shutdown()\n");
     }
   }
 
+  timing_init("(shc) MessageHandler", &ts);
   shc_MessageHandler(iface);
+  timing_term("(shc) MessageHandler", &ts);
 
   event_cycle_chain(SHC_COIN_IFACE); /* DEBUG: TODO: uevent */
 
