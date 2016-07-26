@@ -1046,12 +1046,10 @@ bool shc_ProcessBlock(CNode* pfrom, CBlock* pblock)
 
   // Store to disk
 
-  timing_init("AcceptBlock", &ts);
   if (!pblock->AcceptBlock()) {
     iface->net_invalid = time(NULL);
     return error(SHERR_IO, "SHCBlock::AcceptBlock: error adding block '%s'.", pblock->GetHash().GetHex().c_str());
   }
-  timing_term("AcceptBlock", &ts);
   ServiceBlockEventUpdate(SHC_COIN_IFACE);
 
   // Recursively process any orphan blocks that depended on this one

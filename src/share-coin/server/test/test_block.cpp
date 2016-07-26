@@ -1012,12 +1012,10 @@ bool test_ProcessBlock(CNode* pfrom, CBlock* pblock)
 
   // Store to disk
 
-  timing_init("AcceptBlock", &ts);
   if (!pblock->AcceptBlock()) {
     iface->net_invalid = time(NULL);
     return error(SHERR_IO, "TESTBlock::AcceptBlock: error adding block '%s'.", pblock->GetHash().GetHex().c_str());
   }
-  timing_term("AcceptBlock", &ts);
   ServiceBlockEventUpdate(TEST_COIN_IFACE);
 
   // Recursively process any orphan blocks that depended on this one
@@ -1257,16 +1255,31 @@ GetBestBlockChain(iface).ToString().substr(0,20).c_str(), GetBestHeight(TEST_COI
 bool TESTBlock::SetBestChainInner(CTxDB& txdb, CBlockIndex *pindexNew)
 {
   uint256 hash = GetHash();
+  shtime_t ts;
+  bool ret;
 
-  // Adding to current best branch
-  if (!ConnectBlock(txdb, pindexNew) || !txdb.WriteHashBestChain(hash))
-  {
+  timing_init("SetBestChainInner:ConnectBlock", &ts);
+  ret = ConnectBlock(txdb, pindexNew);
+  timing_term(TEST_COIN_IFACE, "SetBestChainInner:ConnectBlock", &ts);
+  if (!ret) {
     txdb.TxnAbort();
     InvalidChainFound(pindexNew);
-    return false;
+    return error(SHERR_INVAL, "connect block failure");
   }
+
+  timing_init("SetBestChainInner:WriteHashBestChain", &ts);
+  ret = txdb.WriteHashBestChain(hash);
+  timing_term(TEST_COIN_IFACE, "SetBestChainInner:WriteHashBestChain", &ts);
+  if (!ret) {
+    txdb.TxnAbort();
+    InvalidChainFound(pindexNew);
+    return error(SHERR_INVAL, "error writing best hash chain");
+  }
+
+  timing_init("SetBestChainInner:TxnCommit", &ts);
   if (!txdb.TxnCommit())
     return error(SHERR_IO, "SetBestChain() : TxnCommit failed");
+  timing_term(TEST_COIN_IFACE, "SetBestChainInner:TxnCommit", &ts);
 
   // Add to current best branch
   pindexNew->pprev->pnext = pindexNew;
@@ -1312,7 +1325,7 @@ bool TESTBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
   shtime_t ts;
   bool ret;
 
-  Debug("TESTBlock::SetBestChain: setting best chain to block '%s' @ height %d.", pindexNew->GetBlockHash().GetHex().c_str(), pindexNew->nHeight);
+//  Debug("TESTBlock::SetBestChain: setting best chain to block '%s' @ height %d.", pindexNew->GetBlockHash().GetHex().c_str(), pindexNew->nHeight);
 
   if (!txdb.TxnBegin())
     return error(SHERR_INVAL, "SetBestChain() : TxnBegin failed");
@@ -1326,8 +1339,10 @@ bool TESTBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
   }
   else if (hashPrevBlock == GetBestBlockChain(iface))
   {
+    timing_init("SetBestChainInner", &ts);
     if (!SetBestChainInner(txdb, pindexNew))
       return error(SHERR_INVAL, "SetBestChain() : SetBestChainInner failed");
+    timing_term(TEST_COIN_IFACE, "SetBestChainInner", &ts);
   }
   else
   {
@@ -1353,9 +1368,7 @@ bool TESTBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
 
     // Switch to new best branch
     
-    timing_init("TEST:Reorganize/SetBestChain", &ts);
     ret = test_Reorganize(txdb, pindexIntermediate, &mempool);
-    timing_term("TEST:Reorganize/SetBestChain", &ts);
     if (!ret) {
       txdb.TxnAbort();
       InvalidChainFound(pindexNew);
@@ -1392,7 +1405,9 @@ fprintf(stderr, "DEBUG: pindexLast = '%s' @ %d, pindexNew = '%s' @ %d\n", lastIn
   if (!fIsInitialDownload)
   {
     const CBlockLocator locator(TEST_COIN_IFACE, pindexNew);
+    timing_init("SetBestChain", &ts);
     TEST_SetBestChain(locator);
+    timing_term(TEST_COIN_IFACE, "SetBestChain", &ts);
   }
 
   // New best block
@@ -1435,141 +1450,6 @@ bool TESTBlock::IsBestChain()
   CBlockIndex *pindexBest = GetBestBlockIndex(TEST_COIN_IFACE);
   return (pindexBest && GetHash() == pindexBest->GetBlockHash());
 }
-
-#if 0
-static double calc_difficulty(unsigned int nBits)
-{
-
-    int nShift = (nBits >> 24) & 0xff;
-
-    double dDiff =
-        (double)0x0000ffff / (double)(nBits & 0x00ffffff);
-
-    while (nShift < 29)
-    {
-        dDiff *= 256.0;
-        nShift++;
-    }
-    while (nShift > 29)
-    {
-        dDiff /= 256.0;
-        nShift--;
-    }
-
-    return dDiff;
-}
-#endif
-
-#if 0
-bool test_AcceptBlock(TESTBlock *pblock)
-{
-  CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
-  int ifaceIndex = TEST_COIN_IFACE;
-  NodeList &vNodes = GetNodeList(ifaceIndex);
-  bc_t *bc = GetBlockChain(GetCoinByIndex(ifaceIndex));
-  blkidx_t *blockIndex = GetBlockTable(ifaceIndex);
-  shtime_t ts;
-  char errbuf[1024];
-  bool ret;
-
-  uint256 hash = pblock->GetHash();
-
-  if (blockIndex->count(hash))
-    return error(SHERR_INVAL, "TESTBlock::AcceptBlock() : block already in block table.");
-#if 0
-  if (0 == bc_find(bc, hash.GetRaw(), NULL)) {
-    return error(SHERR_INVAL, "AcceptBlock() : block already in block table.");
-  }
-#endif
-
-
-  // Get prev block index
-  map<uint256, CBlockIndex*>::iterator mi = blockIndex->find(pblock->hashPrevBlock);
-  if (mi == blockIndex->end())
-    return error(SHERR_INVAL, "AcceptBlock() : prev block '%s' not found.", pblock->hashPrevBlock.GetHex().c_str());
-  CBlockIndex* pindexPrev = (*mi).second;
-  if (!pindexPrev) {
-    return error(SHERR_INVAL, "AcceptBlock() : prev block '%s' not found: block index has NULL record for hash.", pblock->hashPrevBlock.GetHex().c_str());
-  }
-  int nHeight = pindexPrev->nHeight+1;
-
-  // Check proof of work
-  unsigned int nBits = pblock->GetNextWorkRequired(pindexPrev);
-//  if (calc_difficulty(pblock->nBits) < calc_difficulty(nBits))
-  if (pblock->nBits != nBits) {
-    pblock->print();
-    sprintf(errbuf, "AcceptBlock: invalid difficulty (%x) specified (next work required is %x) for block height %d [prev '%s']\n", pblock->nBits, nBits, nHeight, pindexPrev->GetBlockHash().GetHex().c_str());
-    return error(SHERR_INVAL, errbuf);
-  }
-
-  if (!CheckDiskSpace(::GetSerializeSize(*pblock, SER_DISK, CLIENT_VERSION))) {
-    return error(SHERR_IO, "AcceptBlock() : out of disk space");
-  }
-
-  // Check timestamp against prev
-  if (pblock->GetBlockTime() <= pindexPrev->GetMedianTimePast()) {
-    return error(SHERR_INVAL, "AcceptBlock() : block's timestamp is too early");
-  }
-
-  BOOST_FOREACH(const CTransaction& tx, pblock->vtx) {
-#if 0
-    // Check that all inputs exist
-    if (!tx.IsCoinBase()) {
-      BOOST_FOREACH(const CTxIn& txin, tx.vin) {
-        if (txin.prevout.IsNull())
-          return error(SHERR_INVAL, "AcceptBlock(): prevout is null");
-        if (!VerifyTxHash(iface, txin.prevout.hash))
-          return error(SHERR_INVAL, "AcceptBlock(): unknown prevout hash '%s'", txin.prevout.hash.GetHex().c_str());
-      }
-    }
-#endif
-    // Check that all transactions are finalized 
-    if (!tx.IsFinal(TEST_COIN_IFACE, nHeight, pblock->GetBlockTime())) {
-      return error(SHERR_INVAL, "AcceptBlock() : contains a non-final transaction");
-    }
-  }
-
-#if 0
-  if (!pblock->CheckBlock()) {
-    return error(SHERR_INVAL, "AcceptBlock(): block is invalid.");
-  }
-#endif
-
-  // Check that the block chain matches the known block chain up to a checkpoint
-  if (!TEST_Checkpoints::CheckBlock(nHeight, hash)) {
-    return error(SHERR_INVAL, "AcceptBlock() : rejected by checkpoint lockin at %d", nHeight);
-  }
-
-
-
-  timing_init("TEST:AddToBlockIndex/Accept", &ts);
-  ret = pblock->AddToBlockIndex();
-  timing_term("TEST:AddToBlockIndex/Accept", &ts);
-  if (!ret) {
-    return error(SHERR_IO, "AcceptBlock() : AddToBlockIndex failed");
-  }
-
-#if 0
-  timing_init("TEST:WriteBlock/Accept", &ts);
-  ret = pblock->WriteBlock(nHeight);
-  timing_term("TEST:WriteBlock/Accept", &ts);
-  if (!ret) {
-    return error(SHERR_INVAL, "TEST: AcceptBlock(): error writing block to height %d", nHeight);
-  }
-#endif
-
-  /* Relay inventory [but don't relay old inventory during initial block download] */
-  int nBlockEstimate = TEST_Checkpoints::GetTotalBlocksEstimate();
-  if (GetBestBlockChain(iface) == hash) {
-    LOCK(cs_vNodes);
-    BOOST_FOREACH(CNode* pnode, vNodes)
-      if (GetBestHeight(iface) > (pnode->nStartingHeight != -1 ? pnode->nStartingHeight - 2000 : nBlockEstimate))
-        pnode->PushInventory(CInv(TEST_COIN_IFACE, MSG_BLOCK, hash));
-  }
-
-  return true;
-}
-#endif
 
 bool TESTBlock::AcceptBlock()
 {
@@ -1643,9 +1523,11 @@ bool TESTBlock::AddToBlockIndex()
       return false;
   } else {
     if (hashPrevBlock == GetBestBlockChain(iface)) {
+      timing_init("AddToBlockIndex:WriteBlock", &ts);
       if (!WriteBlock(pindexNew->nHeight)) {
         return error(SHERR_INVAL, "USDE: AddToBLocKindex: WriteBlock failure");
       }
+      timing_term(TEST_COIN_IFACE, "AddToBlockIndex:WriteBlock", &ts);
     } else {
       /* usher to the holding cell */
       WriteArchBlock();
@@ -1668,6 +1550,7 @@ bool TESTBlock::AddToBlockIndex()
 
 bool TESTBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)
 {
+  shtime_t ts;
   char errbuf[1024];
 
   /* redundant */
@@ -1773,13 +1656,17 @@ return false;
       fprintf(stderr, "DEBUG: test_ConnectBlock: block-index for hash '%s' height changed from %d to %d.\n", pindex->GetBlockHash().GetHex().c_str(), pindex->nHeight, (pindex->pprev->nHeight + 1));
       pindex->nHeight = pindex->pprev->nHeight + 1;
     }
+    timing_init("WriteBlock", &ts);
     if (!WriteBlock(pindex->nHeight)) {
       return (error(SHERR_INVAL, "test_ConnectBlock: error writing block hash '%s' to height %d\n", GetHash().GetHex().c_str(), pindex->nHeight));
     }
+    timing_term(TEST_COIN_IFACE, "WriteBlock", &ts);
   }
 
+  timing_init("SyncWithWallets", &ts);
   BOOST_FOREACH(CTransaction& tx, vtx)
     SyncWithWallets(iface, tx, this);
+  timing_term(TEST_COIN_IFACE, "SyncWithWallets", &ts);
 
   return true;
 }

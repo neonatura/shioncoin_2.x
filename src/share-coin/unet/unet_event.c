@@ -224,7 +224,7 @@ tot++;
         case UEVENT_PEER:
           timing_init("event_cycle_peer", &ts);
           err = uevent_cycle_peer(e);
-          timing_term("event_cycle_peer", &ts);
+          timing_term(e->mode, "event_cycle_peer", &ts);
           break;
       }
 

@@ -848,9 +848,6 @@ bool ProcessBlock(CNode* pfrom, CBlock* pblock)
     return (false);
   }
 
-  /* reward host for completing a block */
-  pblock->trust(1, "healthy block processed");
-
   return (true);
 }
 
@@ -2009,6 +2006,7 @@ bool CBlock::WriteBlock(uint64_t nHeight)
     tx.WriteTx(ifaceIndex, nHeight); 
   }
 
+  trust(1, "healthy block processed");
   Debug("WriteBlock: %s @ height %u\n", hash.GetHex().c_str(), (unsigned int)nHeight);
 
   return (true);
@@ -2158,11 +2156,9 @@ bool core_AcceptBlock(CBlock *pblock)
 {
   int ifaceIndex = pblock->ifaceIndex;
   CIface *iface = GetCoinByIndex(ifaceIndex);
-  NodeList &vNodes = GetNodeList(ifaceIndex);
-  bc_t *bc = GetBlockChain(GetCoinByIndex(ifaceIndex));
   blkidx_t *blockIndex = GetBlockTable(ifaceIndex);
   uint256 hash = pblock->GetHash();
-  char errbuf[1024];
+  shtime_t ts;
   bool ret;
 
   if (blockIndex->count(hash))
@@ -2230,12 +2226,17 @@ bool core_AcceptBlock(CBlock *pblock)
   /* Relay inventory [but don't relay old inventory during initial block download] */
   int nBlockEstimate = pblock->GetTotalBlocksEstimate();
   if (GetBestBlockChain(iface) == hash) {
-    LOCK(cs_vNodes);
-    BOOST_FOREACH(CNode* pnode, vNodes) {
-      if (GetBestHeight(iface) > (pnode->nStartingHeight != -1 ? pnode->nStartingHeight - 2000 : nBlockEstimate)) {
-        pnode->PushInventory(CInv(ifaceIndex, MSG_BLOCK, hash));
+    timing_init("AcceptBlock:PushInventory", &ts);
+    NodeList &vNodes = GetNodeList(ifaceIndex);
+    {
+      LOCK(cs_vNodes);
+      BOOST_FOREACH(CNode* pnode, vNodes) {
+        if (GetBestHeight(iface) > (pnode->nStartingHeight != -1 ? pnode->nStartingHeight - 2000 : nBlockEstimate)) {
+          pnode->PushInventory(CInv(ifaceIndex, MSG_BLOCK, hash));
+        }
       }
     }
+    timing_term(ifaceIndex, "AcceptBlock:PushInventory", &ts);
   }
 
   if (ifaceIndex == TEST_COIN_IFACE ||

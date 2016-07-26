@@ -312,7 +312,7 @@ fprintf(stderr, "DEBUG: c_processaltblock[iface #%d]: testing alt block..\n");
       if (hash <= hashTarget)
         break; 
     }
-    timing_term("ProcessAltBlock/Nonce", &ts);
+    timing_term(altIndex, "ProcessAltBlock/Nonce", &ts);
     if (idx == MAX_NONCE_SEQUENCE) {
       continue; /* BLKERR_TARGET_LOW */
     }
@@ -485,7 +485,7 @@ int c_submitblock(unsigned int workId, unsigned int nTime, unsigned int nNonce, 
       break;
     }
   }
-  timing_term("ProcessBlock/Nonce", &ts);
+  timing_term(pblock->ifaceIndex, "ProcessBlock/Nonce", &ts);
 
   if (idx == MAX_NONCE_SEQUENCE) {
 #if 0

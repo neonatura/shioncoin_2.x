@@ -43,7 +43,7 @@ void f_shcoind_log(int err_code, const char *tag, const char *text, const char *
 
 
 void timing_init(char *tag, shtime_t *stamp_p);
-void timing_term(char *tag, shtime_t *stamp_p);
+void timing_term(int ifaceIndex, char *tag, shtime_t *stamp_p);
 
 
 #ifdef __cplusplus

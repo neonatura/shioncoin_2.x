@@ -128,6 +128,7 @@ _TEST(reorganize)
   CBlock *chain3;
   CBlock *blocks[40];
   uint256 hashParent;
+shtime_t ts;
   int i;
 
   /* battle1 : start */

@@ -1179,12 +1179,10 @@ pblock->print();
 
   // Store to disk
 
-  timing_init("AcceptBlock", &ts);
   if (!pblock->AcceptBlock()) {
     iface->net_invalid = time(NULL);
     return error(SHERR_INVAL, "ProcessBlock() : AcceptBlock FAILED");
   }
-  timing_term("AcceptBlock", &ts);
   ServiceBlockEventUpdate(USDE_COIN_IFACE);
 
   // Recursively process any orphan blocks that depended on this one
@@ -1682,7 +1680,7 @@ bool USDEBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
     
     timing_init("USDE:Reorganize/SetBestChain", &ts);
     ret = USDE_Reorganize(txdb, pindexIntermediate, &mempool);
-    timing_term("USDE:Reorganize/SetBestChain", &ts);
+    timing_term(USDE_COIN_IFACE, "USDE:Reorganize/SetBestChain", &ts);
     if (!ret) {
       txdb.TxnAbort();
       InvalidChainFound(pindexNew);
@@ -1761,191 +1759,8 @@ bool USDEBlock::IsBestChain()
   return (pindexBest && GetHash() == pindexBest->GetBlockHash());
 }
 
-#if 0
-static double calc_difficulty(unsigned int nBits)
-{
-
-    int nShift = (nBits >> 24) & 0xff;
-
-    double dDiff =
-        (double)0x0000ffff / (double)(nBits & 0x00ffffff);
-
-    while (nShift < 29)
-    {
-        dDiff *= 256.0;
-        nShift++;
-    }
-    while (nShift > 29)
-    {
-        dDiff /= 256.0;
-        nShift--;
-    }
-
-    return dDiff;
-}
-#endif
-
-#if 0
-bool usde_AcceptBlock(USDEBlock *pblock, bool bForce)
-{
-  CIface *iface = GetCoinByIndex(USDE_COIN_IFACE);
-  int ifaceIndex = USDE_COIN_IFACE;
-  NodeList &vNodes = GetNodeList(ifaceIndex);
-  bc_t *bc = GetBlockChain(GetCoinByIndex(ifaceIndex));
-  blkidx_t *blockIndex = GetBlockTable(ifaceIndex);
-  shtime_t ts;
-  char errbuf[1024];
-  bool ret;
-
-  uint256 hash = pblock->GetHash();
-
-  if (blockIndex->count(hash))
-    return error(SHERR_INVAL, "USDEBlock::AcceptBlock() : block already in block table.");
-#if 0
-  if (0 == bc_find(bc, hash.GetRaw(), NULL)) {
-    return error(SHERR_INVAL, "AcceptBlock() : block already in block table.");
-  }
-#endif
-
-
-  // Get prev block index
-  map<uint256, CBlockIndex*>::iterator mi = blockIndex->find(pblock->hashPrevBlock);
-  if (mi == blockIndex->end())
-    return error(SHERR_INVAL, "AcceptBlock() : prev block '%s' not found.", pblock->hashPrevBlock.GetHex().c_str());
-  CBlockIndex* pindexPrev = (*mi).second;
-  if (!pindexPrev) {
-    return error(SHERR_INVAL, "AcceptBlock() : prev block '%s' not found: block index has NULL record for hash.", pblock->hashPrevBlock.GetHex().c_str());
-  }
-  int nHeight = pindexPrev->nHeight+1;
-Debug("ACCEPT: attempting block '%s' for height %d..\n", hash.GetHex().c_str(), nHeight); 
-
-  // Check proof of work
-  unsigned int nBits = pblock->GetNextWorkRequired(pindexPrev);
-//  if (calc_difficulty(pblock->nBits) < calc_difficulty(nBits))
-  if (pblock->nBits != nBits) {
-    pblock->print();
-    sprintf(errbuf, "AcceptBlock: invalid difficulty (%x) specified (next work required is %x) for block height %d [prev '%s']\n", pblock->nBits, nBits, nHeight, pindexPrev->GetBlockHash().GetHex().c_str());
-    return error(SHERR_INVAL, errbuf);
-  }
-
-  if (!CheckDiskSpace(::GetSerializeSize(*pblock, SER_DISK, CLIENT_VERSION))) {
-    return error(SHERR_IO, "AcceptBlock() : out of disk space");
-  }
-
-  // Check timestamp against prev
-  if (pblock->GetBlockTime() <= pindexPrev->GetMedianTimePast()) {
-    return error(SHERR_INVAL, "AcceptBlock() : block's timestamp is too early");
-  }
-
-  BOOST_FOREACH(const CTransaction& tx, pblock->vtx) {
-#if 0
-    // Check that all inputs exist
-    if (!tx.IsCoinBase()) {
-      BOOST_FOREACH(const CTxIn& txin, tx.vin) {
-        if (txin.prevout.IsNull())
-          return error(SHERR_INVAL, "AcceptBlock(): prevout is null");
-        if (!VerifyTxHash(iface, txin.prevout.hash))
-          return error(SHERR_INVAL, "AcceptBlock(): unknown prevout hash '%s'", txin.prevout.hash.GetHex().c_str());
-      }
-    }
-#endif
-    // Check that all transactions are finalized 
-    if (!tx.IsFinal(USDE_COIN_IFACE, nHeight, pblock->GetBlockTime())) {
-      return error(SHERR_INVAL, "AcceptBlock() : contains a non-final transaction");
-    }
-  }
-
-#if 0
-  if (!pblock->CheckBlock()) {
-    return error(SHERR_INVAL, "AcceptBlock(): block is invalid.");
-  }
-#endif
-
-  // Check that the block chain matches the known block chain up to a checkpoint
-  if (!USDE_Checkpoints::CheckBlock(nHeight, hash)) {
-    return error(SHERR_INVAL, "AcceptBlock() : rejected by checkpoint lockin at %d", nHeight);
-  }
-
-#if 0
-  CBlock *origBlock = GetBlockByHeight(iface, nHeight);
-  timing_init("USDE:WriteBlock/Accept", &ts);
-  ret = pblock->WriteBlock(nHeight);
-  timing_term("USDE:WriteBlock/Accept", &ts);
-  if (!ret)
-    return error(SHERR_INVAL, "USDE: AcceptBlock(): error writing block to height %d", nHeight);
-#endif
-
-
-  timing_init("USDE:AddToBlockIndex/Accept", &ts);
-  ret = pblock->AddToBlockIndex();
-  timing_term("USDE:AddToBlockIndex/Accept", &ts);
-  if (!ret) {
-    /* write block directly to arch */
-    return error(SHERR_IO, "USDEBlock::AcceptBlock: error adding hash '%s' to block-index at height %d.", pblock->GetHash().GetHex().c_str(), nHeight);
-  }
-
-/* now writes block after adding to block-index */
-  timing_init("USDE:WriteBlock/Accept", &ts);
-  ret = pblock->WriteBlock(nHeight);
-  timing_term("USDE:WriteBlock/Accept", &ts);
-  if (!ret)
-    return error(SHERR_INVAL, "USDE: AcceptBlock(): error writing block to height %d", nHeight);
-
-#if 0
-  if (origBlock)
-    delete origBlock;
-#endif
-
-  /* Relay inventory, but don't relay old inventory during initial block download */
-  if (GetBestBlockChain(iface) == hash)
-  {
-    int nBlockEstimate = USDE_Checkpoints::GetTotalBlocksEstimate();
-    LOCK(cs_vNodes);
-    BOOST_FOREACH(CNode* pnode, vNodes)
-      if (GetBestHeight(USDE_COIN_IFACE) > (pnode->nStartingHeight != -1 ? pnode->nStartingHeight - 2000 : nBlockEstimate))
-        pnode->PushInventory(CInv(ifaceIndex, MSG_BLOCK, hash));
-  }
-
-  return true;
-}
-#endif
-
 bool USDEBlock::AcceptBlock()
 {
-#if 0
-  shtime_t ts;
-  bool ret;
-
-  timing_init("USDE:AcceptBlock", &ts);
-  ret = usde_AcceptBlock(this, false);
-  timing_term("USDE:AcceptBlock", &ts);
-  if (!ret)
-    return (false);
-
-#if 0
-  /* Recursively process any orphan blocks that depended on this one */
-  uint256 hash = GetHash();
-  vector<uint256> vWorkQueue;
-  vWorkQueue.push_back(hash);
-  for (unsigned int i = 0; i < vWorkQueue.size(); i++)
-  {
-    uint256 hashPrev = vWorkQueue[i];
-    for (multimap<uint256, USDEBlock*>::iterator mi = USDE_mapOrphanBlocksByPrev.lower_bound(hashPrev);
-        mi != USDE_mapOrphanBlocksByPrev.upper_bound(hashPrev);
-        ++mi)
-    {
-      USDEBlock* pblockOrphan = (*mi).second;
-      if (usde_AcceptBlock(pblockOrphan, false))
-        vWorkQueue.push_back(pblockOrphan->GetHash());
-      USDE_mapOrphanBlocks.erase(pblockOrphan->GetHash());
-      delete pblockOrphan;
-    }
-    USDE_mapOrphanBlocksByPrev.erase(hashPrev);
-  }
-#endif
-
-  return true;
-#endif
   return (core_AcceptBlock(this));
 }
 

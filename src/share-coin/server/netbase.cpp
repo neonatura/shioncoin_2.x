@@ -1186,3 +1186,4 @@ void CService::SetPort(unsigned short portIn)
 {
     port = portIn;
 }
+

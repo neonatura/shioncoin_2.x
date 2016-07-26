@@ -148,7 +148,6 @@ void unet_cycle(double max_t)
       size_t w_tot;
       size_t w_of;
 
-      timing_init("shnet_write", &ts);
       w_tot = shbuf_size(t->wbuff);
 #if 0
       for (w_of = 0; w_of < w_tot; w_of += w_len) {
@@ -171,7 +170,6 @@ fprintf(stderr, "DEBUG: unet_cycle: shnet_write failure: %s [errno %d]\n", strer
       } else if (w_len > 0) {
         shbuf_trim(t->wbuff, w_len);
       }
-      timing_term("shnet_write", &ts);
 
       t->stamp = shtime();
     }
@@ -184,30 +182,6 @@ fprintf(stderr, "DEBUG: unet_cycle: shnet_read failure: %s [errno %d]\n", strerr
       unet_close(fd, "read");
       continue;
     }
-
-#if 0
-    buff = shnet_read_buf(fd);
-    timing_term("shnet_read", &ts);
-    if (!buff) {
-      /* connection reset by peer */
-      unet_close(fd, "readbuff");
-      continue;
-    }
-    if (shbuf_size(buff)) {
-      unet_rbuff_add(fd, shbuf_data(buff), shbuf_size(buff));
-      shbuf_clear(buff);
-      t->stamp = shtime();
-    }
-#endif
-
-#if 0
-    /* flush pending writes */
-    w_len = shnet_write_flush(fd);
-    if (w_len == -1) {
-      unet_close(fd);
-      continue;
-    }
-#endif
 
     FD_SET(fd, &r_set);
     FD_SET(fd, &x_set);

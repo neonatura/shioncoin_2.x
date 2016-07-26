@@ -127,8 +127,6 @@ void usde_server_term(void);
 
 void shc_server_term(void);
 
-void AddAddress(const char *hostname, int port);
-
 void set_shutdown_timer(void);
 
 void GetMyExternalIP(void);

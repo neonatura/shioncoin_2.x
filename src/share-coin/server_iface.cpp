@@ -1255,7 +1255,7 @@ void usde_server_accept(int hSocket, struct sockaddr *net_addr)
         LOCK(cs_setservAddNodeAddresses);
         if (!setservAddNodeAddresses.count(addr)) {
       fprintf(stderr, "connection from %s dropped (inbound limit %d exceeded)\n", addr.ToString().c_str(), (opt_max_conn - MAX_OUTBOUND_CONNECTIONS));
-          unet_close(hSocket, "inbound limit");
+          unet_close(hSocket, (char *)"inbound limit");
 #if 0
           closesocket(hSocket);
 #endif
@@ -1430,7 +1430,7 @@ bool usde_coin_server_recv_msg(CIface *iface, CNode* pfrom)
     LOCK(cs_main);
     timing_init(cmd, &ts);
     fRet = usde_ProcessMessage(iface, pfrom, strCommand, vRecv);
-    timing_term(cmd, &ts);
+    timing_term(USDE_COIN_IFACE, cmd, &ts);
   } catch (std::ios_base::failure& e) {
     if (strstr(e.what(), "end of data"))
     {
@@ -1577,9 +1577,9 @@ fprintf(stderr, "DEBUG: usde_server_timer: unet_shutdown()\n");
     }
   }
 
-  timing_init("(usde) MessageHandler", &ts);
+  timing_init("MessageHandler", &ts);
   usde_MessageHandler(iface);
-  timing_term("(usde) MessageHandler", &ts);
+  timing_term(USDE_COIN_IFACE, "MessageHandler", &ts);
 
   event_cycle_chain(USDE_COIN_IFACE); /* DEBUG: */
 
@@ -1704,6 +1704,7 @@ bool shc_coin_server_recv_msg(CIface *iface, CNode* pfrom)
 {
   CDataStream& vRecv = pfrom->vRecv;
   CMessageHeader hdr;
+  shtime_t ts;
 
   if (vRecv.empty())
     return (true);
@@ -1726,8 +1727,13 @@ bool shc_coin_server_recv_msg(CIface *iface, CNode* pfrom)
 
   bool fRet = false;
   try {
-    LOCK(cs_main);
-    fRet = shc_ProcessMessage(iface, pfrom, strCommand, vRecv);
+    char *cmd = (char *)strCommand.c_str();
+    timing_init(cmd, &ts);
+    {
+      LOCK(cs_main);
+      fRet = shc_ProcessMessage(iface, pfrom, strCommand, vRecv);
+    }
+    timing_term(SHC_COIN_IFACE, cmd, &ts);
   } catch (std::ios_base::failure& e) {
     if (strstr(e.what(), "end of data"))
     {
@@ -1873,9 +1879,9 @@ fprintf(stderr, "DEBUG: shc_server_timer: unet_shutdown()\n");
     }
   }
 
-  timing_init("(shc) MessageHandler", &ts);
+  timing_init("MessageHandler", &ts);
   shc_MessageHandler(iface);
-  timing_term("(shc) MessageHandler", &ts);
+  timing_term(SHC_COIN_IFACE, "MessageHandler", &ts);
 
   event_cycle_chain(SHC_COIN_IFACE); /* DEBUG: TODO: uevent */
 
@@ -2707,26 +2713,6 @@ void shared_addr_submit(const char *net_addr)
   shpeer_free(&peer); 
 }
 
-void AddAddress(const char *hostname, int port)
-{
-#if 0
-  shpeer_t *peer;
-  char addr_str[256];
-
-  sprintf(addr_str, "%s %d", hostname, port); 
-  peer = shpeer_init("usde", addr_str);
-  shnet_track_add(peer);
-  shpeer_free(&peer);
-#endif
-
-  shpeer_t *peer;
-  char addr_str[256];
-
-  sprintf(addr_str, "%s %d", hostname, port); 
-  peer = shpeer_init("usde", addr_str);
-  uevent_new_peer(UNET_USDE, peer);
-}
-
 #if 0
 int GetRandomAddress(CIface *iface, char *hostname, int *port_p)
 {
@@ -2871,11 +2857,12 @@ int check_ip(char *serv_hostname, struct in_addr *net_addr)
 void GetMyExternalIP(void)
 {
   struct in_addr addr;
-  char *selfip_addr = "91.198.22.70";
+  char selfip_addr[MAXHOSTNAMELEN+1];
   char buf[256];
   int idx;
   int err;
 
+  strcpy(selfip_addr, "91.198.22.70");
   err = check_ip(selfip_addr, &addr);
   if (err)
     return;
@@ -2892,3 +2879,18 @@ void GetMyExternalIP(void)
 }
 
 
+void AddPeerAddress(CIface *iface, const char *hostname, int port)
+{
+  shpeer_t *peer;
+  char addr_str[256];
+
+  if (!iface || !iface->enabled)
+    return;
+
+  memset(addr_str, 0, sizeof(addr_str));
+  snprintf(addr_str, sizeof(addr_str)-1, "%s %d", hostname, port); 
+
+  /* add peer to tracking database. */
+  peer = shpeer_init(iface->name, addr_str);
+  uevent_new_peer(GetCoinIndex(iface), peer);
+}

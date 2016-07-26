@@ -73,15 +73,18 @@ void timing_init(char *tag, shtime_t *stamp_p)
 
 }
 
-void timing_term(char *tag, shtime_t *stamp_p)
+void timing_term(int ifaceIndex, char *tag, shtime_t *stamp_p)
 {
   shtime_t stamp = *stamp_p;
   double diff = shtime_diff(stamp, shtime());
   char buf[1024];
 
-  if (diff >= 0.2) {
+  if (diff >= 0.25) {
     sprintf(buf, "TIMING[%s]: total %-2.2f seconds.", tag, diff);
-    shcoind_log(buf);
+    if (!ifaceIndex)
+      shcoind_log(buf);
+    else
+      unet_log(ifaceIndex, buf);
   }
 
 }

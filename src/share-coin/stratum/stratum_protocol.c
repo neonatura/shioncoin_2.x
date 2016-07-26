@@ -173,7 +173,7 @@ int stratum_validate_submit(user_t *user, int req_id, shjson_t *json)
   timing_init("submitblock", &ts);
   ret_err = submitblock(task_id, le_ntime, le_nonce, xn_hex,
       submit_hash, &share_diff);
-  timing_term("submitblock", &ts);
+  timing_term(0, "submitblock", &ts);
   if (ret_err)
     return (ret_err);
 
@@ -708,20 +708,20 @@ int stratum_request_message(user_t *user, shjson_t *json)
         if (hash) {
           timing_init("getblockinfo", &ts2);
           json_data = getblockinfo(ifaceIndex, hash);
-          timing_term("getblockinfo", &ts2);
+          timing_term(ifaceIndex, "getblockinfo", &ts2);
         }
         break;
       case 2: /* tx */
         if (hash) {
           timing_init("gettransactioninfo", &ts2);
           json_data = gettransactioninfo(ifaceIndex, hash);
-          timing_term("gettransactioninfo", &ts2);
+          timing_term(ifaceIndex, "gettransactioninfo", &ts2);
         }
         break;
       case 3: /* block by height [or last] */
         timing_init("getlastblockinfo", &ts2);
         json_data = getlastblockinfo(ifaceIndex, shjson_array_num(json, "params", 1));
-        timing_term("getlastblockinfo", &ts2);
+        timing_term(ifaceIndex, "getlastblockinfo", &ts2);
         break;
     }
 
@@ -775,7 +775,7 @@ int stratum_request_message(user_t *user, shjson_t *json)
           shjson_array_astr(json, "params", 1)));
   }
 
-  timing_term(method, &ts);
+  timing_term(ifaceIndex, method, &ts);
 
   /* unknown request in proper JSON format. */
   reply = shjson_init(NULL);

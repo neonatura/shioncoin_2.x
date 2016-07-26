@@ -155,7 +155,7 @@ void unet_peer_scan(void)
 
     timing_init("shnet_track_scan", &ts);
     peers = shnet_track_scan(bind->peer_db, &bind->peer, MAX_UNET_PEER_SCAN_SIZE);
-    timing_term("shnet_track_scan", &ts);
+    timing_term(mode, "shnet_track_scan", &ts);
     if (peers) {
       for (i = 0; i < MAX_UNET_PEER_SCAN_SIZE; i++) {
         if (!peers[i])

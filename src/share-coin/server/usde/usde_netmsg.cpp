@@ -444,11 +444,7 @@ bool usde_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
 
     int cnt = 0;
     BOOST_FOREACH(const CAddress &addr, vAddrOk) {
-      AddAddress(addr.ToStringIP().c_str(), addr.GetPort());
-
-      cnt++;
-      if (cnt > 256)
-        break;
+      AddPeerAddress(iface, addr.ToStringIP().c_str(), addr.GetPort());
     }
 #if 0
     addrman.Add(vAddrOk, pfrom->addr, 2 * 60 * 60);
@@ -481,6 +477,7 @@ bool usde_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
         break;
       }
     }
+
     USDETxDB txdb;
     for (unsigned int nInv = 0; nInv < vInv.size(); nInv++)
     {
@@ -490,6 +487,7 @@ bool usde_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
 
       if (fShutdown)
         return true;
+
       pfrom->AddInventoryKnown(inv);
 
       bool fAlreadyHave = AlreadyHave(iface, txdb, inv);
@@ -511,6 +509,7 @@ Debug("USDE: ProcessMessage: got inventory: %s  %s\n", inv.ToString().c_str(), f
       // Track requests for our stuff
       Inventory(inv.hash);
     }
+    Debug("(usde) ProcessBlock: processed %d inventory items.", vInv.size());
   }
 
 
@@ -719,22 +718,15 @@ Debug("USDE: ProcessMessage: got inventory: %s  %s\n", inv.ToString().c_str(), f
     USDEBlock block;
     vRecv >> block;
 
-    Debug("USDE[block]: received block '%s' from peer '%s'\n", block.GetHash().GetHex().c_str(), pfrom->addr.ToString().c_str());
-
-    timing_init("AddInventoryKnown", &ts);
     CInv inv(ifaceIndex, MSG_BLOCK, block.GetHash());
     pfrom->AddInventoryKnown(inv);
-    timing_term("AddInventoryKnown", &ts);
 
-    char *tag2 = "ProcessBlock";
-    timing_init(tag2, &ts);
     if (ProcessBlock(pfrom, &block))
       mapAlreadyAskedFor.erase(inv);
 #if 0
     if (block.nDoS) 
       pfrom->Misbehaving(block.nDoS);
 #endif
-    timing_term(tag2, &ts);
 
   }
 
@@ -871,131 +863,125 @@ Debug("USDE: ProcessMessage: got inventory: %s  %s\n", inv.ToString().c_str(), f
 
 bool usde_ProcessMessages(CIface *iface, CNode* pfrom)
 {
-static unsigned char USDE_pchMessageStart[4] = { 0xd9, 0xd9, 0xf9, 0xbd };
+  static unsigned char USDE_pchMessageStart[4] = { 0xd9, 0xd9, 0xf9, 0xbd };
 
-shtime_t ts;
-    CDataStream& vRecv = pfrom->vRecv;
-    if (vRecv.empty())
-        return true;
+  shtime_t ts;
+  CDataStream& vRecv = pfrom->vRecv;
+  if (vRecv.empty())
+    return true;
 
-    //
-    // Message format
-    //  (4) message start
-    //  (12) command
-    //  (4) size
-    //  (4) checksum
-    //  (x) data
-    //
+  //
+  // Message format
+  //  (4) message start
+  //  (12) command
+  //  (4) size
+  //  (4) checksum
+  //  (x) data
+  //
 
-    loop
+  loop
+  {
+    // Don't bother if send buffer is too full to respond anyway
+    if (pfrom->vSend.size() >= SendBufferSize())
+      break;
+
+    // Scan for message start
+    CDataStream::iterator pstart = search(vRecv.begin(), vRecv.end(), BEGIN(USDE_pchMessageStart), END(USDE_pchMessageStart));
+    int nHeaderSize = vRecv.GetSerializeSize(CMessageHeader());
+    if (vRecv.end() - pstart < nHeaderSize)
     {
-        // Don't bother if send buffer is too full to respond anyway
-        if (pfrom->vSend.size() >= SendBufferSize())
-            break;
+      if ((int)vRecv.size() > nHeaderSize)
+      {
+        fprintf(stderr, "DEBUG: USDE_PROCESSMESSAGE MESSAGESTART NOT FOUND\n");
+        vRecv.erase(vRecv.begin(), vRecv.end() - nHeaderSize);
+      }
+      break;
+    }
+    if (pstart - vRecv.begin() > 0)
+      fprintf(stderr, "DEBUG: PROCESSMESSAGE SKIPPED %d BYTES\n\n", pstart - vRecv.begin());
+    vRecv.erase(vRecv.begin(), pstart);
 
-        // Scan for message start
-        CDataStream::iterator pstart = search(vRecv.begin(), vRecv.end(), BEGIN(USDE_pchMessageStart), END(USDE_pchMessageStart));
-        int nHeaderSize = vRecv.GetSerializeSize(CMessageHeader());
-        if (vRecv.end() - pstart < nHeaderSize)
-        {
-            if ((int)vRecv.size() > nHeaderSize)
-            {
-                fprintf(stderr, "DEBUG: USDE_PROCESSMESSAGE MESSAGESTART NOT FOUND\n");
-                vRecv.erase(vRecv.begin(), vRecv.end() - nHeaderSize);
-            }
-            break;
-        }
-        if (pstart - vRecv.begin() > 0)
-            fprintf(stderr, "DEBUG: PROCESSMESSAGE SKIPPED %d BYTES\n\n", pstart - vRecv.begin());
-        vRecv.erase(vRecv.begin(), pstart);
+    // Read header
+    vector<char> vHeaderSave(vRecv.begin(), vRecv.begin() + nHeaderSize);
+    CMessageHeader hdr;
+    vRecv >> hdr;
+    if (!hdr.IsValid())
+    {
+      fprintf(stderr, "DEBUG: USDE: PROCESSMESSAGE: ERRORS IN HEADER %s\n", hdr.GetCommand().c_str());
+      continue;
+    }
+    string strCommand = hdr.GetCommand();
 
-        // Read header
-        vector<char> vHeaderSave(vRecv.begin(), vRecv.begin() + nHeaderSize);
-        CMessageHeader hdr;
-        vRecv >> hdr;
-        if (!hdr.IsValid())
-        {
-            fprintf(stderr, "DEBUG: USDE: PROCESSMESSAGE: ERRORS IN HEADER %s\n", hdr.GetCommand().c_str());
-            continue;
-        }
-        string strCommand = hdr.GetCommand();
-
-        // Message size
-        unsigned int nMessageSize = hdr.nMessageSize;
-        if (nMessageSize > MAX_SIZE)
-        {
-            fprintf(stderr, "usde_ProcessMessages(%s, %u bytes) : nMessageSize > MAX_SIZE\n", strCommand.c_str(), nMessageSize);
-            continue;
-        }
-        if (nMessageSize > vRecv.size())
-        {
-//            fprintf(stderr, "DEBUG: info: usde_ProcessMessages(%s, %u bytes) : nMessageSize > vRecv.size(%u)\n", strCommand.c_str(), nMessageSize, (unsigned int)vRecv.size());
-            // Rewind and wait for rest of message
-            vRecv.insert(vRecv.begin(), vHeaderSave.begin(), vHeaderSave.end());
-            break;
-        }
-
-        // Checksum
-        uint256 hash = Hash(vRecv.begin(), vRecv.begin() + nMessageSize);
-        unsigned int nChecksum = 0;
-        memcpy(&nChecksum, &hash, sizeof(nChecksum));
-        if (nChecksum != hdr.nChecksum)
-        {
-            fprintf(stderr, "DEBUG: usde_ProcessMessages(%s, msg is %u bytes, buff is %u bytes) : CHECKSUM ERROR nChecksum=%08x hdr.nChecksum=%08x buff nVersion=%u\n", strCommand.c_str(), nMessageSize, (unsigned int)vRecv.size(), nChecksum, hdr.nChecksum, (unsigned int)vRecv.nVersion);
-            continue;
-        }
-
-        // Copy message to its own buffer
-        CDataStream vMsg(vRecv.begin(), vRecv.begin() + nMessageSize, vRecv.nType, vRecv.nVersion);
-        vRecv.ignore(nMessageSize);
-
-
-        // Process message
-        bool fRet = false;
-        char tag[256];
-        memset(tag, 0, sizeof(tag));
-        sprintf(tag, "ProcessMessage('%s')", strCommand.c_str());
-
-        timing_init(tag, &ts);
-        try
-        {
-            {
-                LOCK(cs_main);
-                fRet = usde_ProcessMessage(iface, pfrom, strCommand, vMsg);
-            }
-            if (fShutdown)
-                return true;
-        }
-        catch (std::ios_base::failure& e)
-        {
-            if (strstr(e.what(), "end of data"))
-            {
-                // Allow exceptions from underlength message on vRecv
-                printf("ProcessMessages(%s, %u bytes) : Exception '%s' caught, normally caused by a message being shorter than its stated length\n", strCommand.c_str(), nMessageSize, e.what());
-            }
-            else if (strstr(e.what(), "size too large"))
-            {
-                // Allow exceptions from overlong size
-                printf("ProcessMessages(%s, %u bytes) : Exception '%s' caught\n", strCommand.c_str(), nMessageSize, e.what());
-            }
-            else
-            {
-                PrintExceptionContinue(&e, "ProcessMessages()");
-            }
-        }
-        catch (std::exception& e) {
-            PrintExceptionContinue(&e, "ProcessMessages()");
-        } catch (...) {
-            PrintExceptionContinue(NULL, "ProcessMessages()");
-        }
-        timing_term(tag, &ts);
-
-        if (!fRet)
-            printf("ProcessMessage(%s, %u bytes) FAILED\n", strCommand.c_str(), nMessageSize);
+    // Message size
+    unsigned int nMessageSize = hdr.nMessageSize;
+    if (nMessageSize > MAX_SIZE)
+    {
+      fprintf(stderr, "usde_ProcessMessages(%s, %u bytes) : nMessageSize > MAX_SIZE\n", strCommand.c_str(), nMessageSize);
+      continue;
+    }
+    if (nMessageSize > vRecv.size())
+    {
+      //            fprintf(stderr, "DEBUG: info: usde_ProcessMessages(%s, %u bytes) : nMessageSize > vRecv.size(%u)\n", strCommand.c_str(), nMessageSize, (unsigned int)vRecv.size());
+      // Rewind and wait for rest of message
+      vRecv.insert(vRecv.begin(), vHeaderSave.begin(), vHeaderSave.end());
+      break;
     }
 
-    vRecv.Compact();
-    return true;
+    // Checksum
+    uint256 hash = Hash(vRecv.begin(), vRecv.begin() + nMessageSize);
+    unsigned int nChecksum = 0;
+    memcpy(&nChecksum, &hash, sizeof(nChecksum));
+    if (nChecksum != hdr.nChecksum)
+    {
+      fprintf(stderr, "DEBUG: usde_ProcessMessages(%s, msg is %u bytes, buff is %u bytes) : CHECKSUM ERROR nChecksum=%08x hdr.nChecksum=%08x buff nVersion=%u\n", strCommand.c_str(), nMessageSize, (unsigned int)vRecv.size(), nChecksum, hdr.nChecksum, (unsigned int)vRecv.nVersion);
+      continue;
+    }
+
+    // Copy message to its own buffer
+    CDataStream vMsg(vRecv.begin(), vRecv.begin() + nMessageSize, vRecv.nType, vRecv.nVersion);
+    vRecv.ignore(nMessageSize);
+
+
+    // Process message
+    bool fRet = false;
+    try
+    {
+      {
+        LOCK(cs_main);
+        fRet = usde_ProcessMessage(iface, pfrom, strCommand, vMsg);
+      }
+      if (fShutdown)
+        return true;
+    }
+    catch (std::ios_base::failure& e)
+    {
+      if (strstr(e.what(), "end of data"))
+      {
+        // Allow exceptions from underlength message on vRecv
+        printf("ProcessMessages(%s, %u bytes) : Exception '%s' caught, normally caused by a message being shorter than its stated length\n", strCommand.c_str(), nMessageSize, e.what());
+      }
+      else if (strstr(e.what(), "size too large"))
+      {
+        // Allow exceptions from overlong size
+        printf("ProcessMessages(%s, %u bytes) : Exception '%s' caught\n", strCommand.c_str(), nMessageSize, e.what());
+      }
+      else
+      {
+        PrintExceptionContinue(&e, "ProcessMessages()");
+      }
+    }
+    catch (std::exception& e) {
+      PrintExceptionContinue(&e, "ProcessMessages()");
+    } catch (...) {
+      PrintExceptionContinue(NULL, "ProcessMessages()");
+    }
+
+    if (!fRet)
+      printf("ProcessMessage(%s, %u bytes) FAILED\n", strCommand.c_str(), nMessageSize);
+  }
+
+  vRecv.Compact();
+  return true;
 }
 
 
