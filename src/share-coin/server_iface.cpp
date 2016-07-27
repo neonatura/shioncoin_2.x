@@ -1304,7 +1304,7 @@ void usde_server_accept(int hSocket, struct sockaddr *net_addr)
 void usde_MessageHandler(CIface *iface)
 {
   NodeList &vNodes = GetNodeList(iface);
-
+  shtime_t ts;
 
   vector<CNode*> vNodesCopy;
   {
@@ -1332,11 +1332,13 @@ void usde_MessageHandler(CIface *iface)
 #endif
 
     // Send messages
+    timing_init("SendMessages", &ts);
     {
       TRY_LOCK(pnode->cs_vSend, lockSend);
       if (lockSend)
         usde_SendMessages(iface, pnode, pnode == pnodeTrickle);
     }
+    timing_term(USDE_COIN_IFACE, "SendMessages", &ts);
     if (fShutdown)
       return;
   }
@@ -1353,6 +1355,7 @@ void usde_MessageHandler(CIface *iface)
 void shc_MessageHandler(CIface *iface)
 {
   NodeList &vNodes = GetNodeList(iface);
+  shtime_t ts;
 
   vector<CNode*> vNodesCopy;
   {
@@ -1382,11 +1385,13 @@ void shc_MessageHandler(CIface *iface)
 #endif
 
     // Send messages
+    timing_init("SendMessages", &ts);
     {
       TRY_LOCK(pnode->cs_vSend, lockSend);
       if (lockSend)
         shc_SendMessages(iface, pnode, pnode == pnodeTrickle);
     }
+    timing_term(SHC_COIN_IFACE, "SendMessages", &ts);
     if (fShutdown)
       return;
   }
