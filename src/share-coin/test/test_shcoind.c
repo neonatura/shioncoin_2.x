@@ -24,6 +24,9 @@ extern TEST_aliastx(CuTest*);
 extern TEST_assettx(CuTest*);
 extern TEST_certtx(CuTest*);
 extern TEST_identtx(CuTest*);
+extern TEST_bloom_create_insert_key(CuTest*);
+extern TEST_bloom_match(CuTest*);
+
 
 extern void test_shcoind_init(void);
 
@@ -38,6 +41,9 @@ int main(int argc, char *argv[])
 
 
   /* test suits */
+  SUITE_ADD_TEST(suite, TEST_bloom_create_insert_key);
+  SUITE_ADD_TEST(suite, TEST_bloom_match);
+#if 0
   SUITE_ADD_TEST(suite, TEST_jsonencap);
   SUITE_ADD_TEST(suite, TEST_coin_key);
   SUITE_ADD_TEST(suite, TEST_wallet);
@@ -55,6 +61,7 @@ int main(int argc, char *argv[])
   SUITE_ADD_TEST(suite, TEST_assettx);
   SUITE_ADD_TEST(suite, TEST_certtx);
   SUITE_ADD_TEST(suite, TEST_identtx);
+#endif
 
   CuSuiteRun(suite);
   CuSuiteSummary(suite, output);

@@ -144,6 +144,12 @@ void CBloomFilter::insert(const uint256& hash)
   insert(data);
 }
 
+void CBloomFilter::insert(const uint160& hash)
+{
+  vector<unsigned char> data(hash.begin(), hash.end());
+  insert(data);
+}
+
 bool CBloomFilter::contains(const vector<unsigned char>& vKey) const
 {
   if (isFull)
@@ -170,6 +176,12 @@ bool CBloomFilter::contains(const COutPoint& outpoint) const
 }
 
 bool CBloomFilter::contains(const uint256& hash) const
+{
+  vector<unsigned char> data(hash.begin(), hash.end());
+  return contains(data);
+}
+
+bool CBloomFilter::contains(const uint160& hash) const
 {
   vector<unsigned char> data(hash.begin(), hash.end());
   return contains(data);
@@ -407,4 +419,28 @@ void CPartialMerkleTree::TraverseAndBuild(int height, unsigned int pos, const st
       TraverseAndBuild(height-1, pos*2+1, vTxid, vMatch);
   }
 }
+
+std::string CBloomFilter::ToString()
+{
+  unsigned char *pn;
+  char *str;
+  int i;
+
+  pn = (unsigned char *)vData.data();
+  if (!pn)
+    return (std::string());
+
+  str = (char *)calloc(vData.size() * 2 + 1, sizeof(char));
+  if (!str)
+    return (std::string());
+
+  for (int i = 0; i < vData.size(); i++)
+    sprintf(str + i*2, "%02x", pn[vData.size() - i - 1]);
+
+  string ret_str(str);
+  free(str);
+  return (ret_str);
+}
+
+
 

@@ -737,6 +737,7 @@ int CWallet::ScanForWalletTransaction(const uint256& hashTx)
 }
 
 
+#if 0
 void CWalletTx::RelayWalletTransaction(CTxDB& txdb)
 {
   BOOST_FOREACH(const CMerkleTx& tx, vtxPrev)
@@ -758,7 +759,7 @@ void CWalletTx::RelayWalletTransaction(CTxDB& txdb)
     }
   }
 }
-
+#endif
 
 
 
@@ -1818,49 +1819,6 @@ void CWalletTx::AddSupportingTransactions(CTxDB& txdb)
   reverse(vtxPrev.begin(), vtxPrev.end());
 }
 
-int CMerkleTx::GetDepthInMainChain(int ifaceIndex, CBlockIndex* &pindexRet) const
-{
-  CIface *iface = GetCoinByIndex(ifaceIndex);
-  blkidx_t *blockIndex = GetBlockTable(ifaceIndex);
-
-  if (hashBlock == 0 || nIndex == -1)
-    return 0;
-
-  // Find the block it claims to be in
-  map<uint256, CBlockIndex*>::iterator mi = blockIndex->find(hashBlock);
-  if (mi == blockIndex->end())
-    return 0;
-  CBlockIndex* pindex = (*mi).second;
-  if (!pindex) {
-    error(SHERR_INVAL, "GetDepthInMainChain: block'%s' not in blockIndex\n", hashBlock.GetHex().c_str());
-    return 0;
-  }
-  if (!pindex->IsInMainChain(ifaceIndex)) {
-    error(SHERR_INVAL, "GetDepthInMainChain: block '%s' (height %u) is not in main chain.", pindex->GetBlockHash().GetHex().c_str(), pindex->nHeight);
-    return 0;
-  }
-
-  // Make sure the merkle branch connects to this block
-  if (!fMerkleVerified)
-  {
-    CBlock *block = GetBlockByHeight(iface, pindex->nHeight);
-    if (!block)
-      return 0;
-    if (block->CheckMerkleBranch(GetHash(), vMerkleBranch, nIndex) != pindex->hashMerkleRoot) {
-delete block;
-      return 0;
-  }
-    fMerkleVerified = true;
-delete block;
-  }
-
-  pindexRet = pindex;
-  CBlockIndex *pindexBest = GetBestBlockIndex(ifaceIndex);
-  if (!pindexBest)
-    return (0);
-  return pindexBest->nHeight - pindex->nHeight + 1;
-}
-
 int CMerkleTx::GetBlocksToMaturity(int ifaceIndex) const
 {
 
@@ -2307,4 +2265,77 @@ bool IsAccountValid(CIface *iface, std::string strAccount)
   }
 
   return (total != 0);
+}
+
+void RelayTransaction(int ifaceIndex, const CTransaction& tx, const uint256& hash)
+{
+  CInv inv(ifaceIndex, MSG_TX, hash);
+
+  LOCK(cs_vNodes);
+  NodeList &vNodes = GetNodeList(ifaceIndex);
+  BOOST_FOREACH(CNode* pnode, vNodes)
+  {
+    if(!pnode->fRelayTxes) {
+      Debug("RelayTransaction[iface #%d]: tx (%s) [suppress]", ifaceIndex, hash.GetHex().c_str());
+      continue;
+    }
+
+    LOCK(pnode->cs_filter);
+    CBloomFilter *filter = pnode->GetBloomFilter();
+    if (filter) {
+      if (filter->IsRelevantAndUpdate(tx, hash)) {
+        pnode->PushInventory(inv);
+        Debug("RelayTransaction[iface #%d]: tx (%s) [bloom]", ifaceIndex, hash.GetHex().c_str());
+      } else {
+        Debug("RelayTransaction[iface #%d]: tx (%s) [suppress/bloom]", ifaceIndex, hash.GetHex().c_str());
+      }
+    } else {
+      pnode->PushInventory(inv);
+      Debug("RelayTransaction[iface #%d]: tx (%s)", ifaceIndex, hash.GetHex().c_str());
+    }
+  }
+
+}
+
+int CMerkleTx::GetDepthInMainChain(int ifaceIndex, CBlockIndex* &pindexRet) const
+{
+  CIface *iface = GetCoinByIndex(ifaceIndex);
+  blkidx_t *blockIndex = GetBlockTable(ifaceIndex);
+
+  if (hashBlock == 0 || nIndex == -1)
+    return 0;
+
+  // Find the block it claims to be in
+  map<uint256, CBlockIndex*>::iterator mi = blockIndex->find(hashBlock);
+  if (mi == blockIndex->end())
+    return 0;
+  CBlockIndex* pindex = (*mi).second;
+  if (!pindex) {
+    error(SHERR_INVAL, "GetDepthInMainChain: block'%s' not in blockIndex\n", hashBlock.GetHex().c_str());
+    return 0;
+  }
+  if (!pindex->IsInMainChain(ifaceIndex)) {
+    error(SHERR_INVAL, "GetDepthInMainChain: block '%s' (height %u) is not in main chain.", pindex->GetBlockHash().GetHex().c_str(), pindex->nHeight);
+    return 0;
+  }
+
+  // Make sure the merkle branch connects to this block
+  if (!fMerkleVerified)
+  {
+    CBlock *block = GetBlockByHeight(iface, pindex->nHeight);
+    if (!block)
+      return 0;
+    if (block->CheckMerkleBranch(GetHash(), vMerkleBranch, nIndex) != pindex->hashMerkleRoot) {
+      delete block;
+      return 0;
+    }
+    fMerkleVerified = true;
+    delete block;
+  }
+
+  pindexRet = pindex;
+  CBlockIndex *pindexBest = GetBestBlockIndex(ifaceIndex);
+  if (!pindexBest)
+    return (0);
+  return pindexBest->nHeight - pindex->nHeight + 1;
 }

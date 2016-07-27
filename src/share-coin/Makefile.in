@@ -301,7 +301,8 @@ am_test_shcoind_OBJECTS = $(am__objects_1) $(am__objects_11) \
 	test_shcoind-testcoin_bignum.$(OBJEXT) \
 	test_shcoind-testcoin_hash.$(OBJEXT) \
 	test_shcoind-testcoin_block.$(OBJEXT) \
-	test_shcoind-testcoin_json.$(OBJEXT)
+	test_shcoind-testcoin_json.$(OBJEXT) \
+	test_shcoind-testcoin_bloom.$(OBJEXT)
 test_shcoind_OBJECTS = $(am_test_shcoind_OBJECTS)
 test_shcoind_DEPENDENCIES =  \
 	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
@@ -1440,7 +1441,8 @@ test_shcoind_SOURCES = \
 	test/testcoin_bignum.cpp \
 	test/testcoin_hash.cpp \
 	test/testcoin_block.cpp \
-	test/testcoin_json.cpp
+	test/testcoin_json.cpp \
+	test/testcoin_bloom.cpp
 
 test_shcoind_LDADD = $(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
 	-lboost_system -lboost_filesystem -lboost_thread -ldb_cxx -ldl \
@@ -1784,6 +1786,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-test_wallet.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-testcoin_bignum.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-testcoin_block.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-testcoin_bloom.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-testcoin_coin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-testcoin_hash.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-testcoin_json.Po@am__quote@
@@ -4497,6 +4500,20 @@ test_shcoind-testcoin_json.obj: test/testcoin_json.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='test/testcoin_json.cpp' object='test_shcoind-testcoin_json.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-testcoin_json.obj `if test -f 'test/testcoin_json.cpp'; then $(CYGPATH_W) 'test/testcoin_json.cpp'; else $(CYGPATH_W) '$(srcdir)/test/testcoin_json.cpp'; fi`
+
+test_shcoind-testcoin_bloom.o: test/testcoin_bloom.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-testcoin_bloom.o -MD -MP -MF $(DEPDIR)/test_shcoind-testcoin_bloom.Tpo -c -o test_shcoind-testcoin_bloom.o `test -f 'test/testcoin_bloom.cpp' || echo '$(srcdir)/'`test/testcoin_bloom.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-testcoin_bloom.Tpo $(DEPDIR)/test_shcoind-testcoin_bloom.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='test/testcoin_bloom.cpp' object='test_shcoind-testcoin_bloom.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-testcoin_bloom.o `test -f 'test/testcoin_bloom.cpp' || echo '$(srcdir)/'`test/testcoin_bloom.cpp
+
+test_shcoind-testcoin_bloom.obj: test/testcoin_bloom.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-testcoin_bloom.obj -MD -MP -MF $(DEPDIR)/test_shcoind-testcoin_bloom.Tpo -c -o test_shcoind-testcoin_bloom.obj `if test -f 'test/testcoin_bloom.cpp'; then $(CYGPATH_W) 'test/testcoin_bloom.cpp'; else $(CYGPATH_W) '$(srcdir)/test/testcoin_bloom.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-testcoin_bloom.Tpo $(DEPDIR)/test_shcoind-testcoin_bloom.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='test/testcoin_bloom.cpp' object='test_shcoind-testcoin_bloom.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-testcoin_bloom.obj `if test -f 'test/testcoin_bloom.cpp'; then $(CYGPATH_W) 'test/testcoin_bloom.cpp'; else $(CYGPATH_W) '$(srcdir)/test/testcoin_bloom.cpp'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo

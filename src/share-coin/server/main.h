@@ -196,8 +196,6 @@ public:
     )
 
 
-    int GetDepthInMainChain(int ifaceIndex, CBlockIndex* &pindexRet) const;
-    int GetDepthInMainChain(int ifaceIndex) const { CBlockIndex *pindexRet; return GetDepthInMainChain(ifaceIndex, pindexRet); }
     bool IsInMainChain(int ifaceIndex) const { return GetDepthInMainChain(ifaceIndex) > 0; }
     bool AcceptToMemoryPool(CTxDB& txdb, bool fCheckInputs=true);
 //    bool AcceptToMemoryPool();
@@ -205,6 +203,14 @@ public:
     int GetBlocksToMaturity(int ifaceIndex) const;
     int SetMerkleBranch(const CBlock* pblock);
     int SetMerkleBranch(int ifaceIndex);
+
+    int GetDepthInMainChain(int ifaceIndex, CBlockIndex* &pindexRet) const;
+
+    int GetDepthInMainChain(int ifaceIndex) const {
+      CBlockIndex *pindexRet;
+      return GetDepthInMainChain(ifaceIndex, pindexRet);
+    }
+
 };
 
 

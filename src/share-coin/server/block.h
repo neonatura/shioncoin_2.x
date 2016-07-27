@@ -926,6 +926,10 @@ public:
 
     std::string ToString();
 
+    int GetDepthInMainChain(int ifaceIndex, CBlockIndex* &pindexRet) const;
+
+    int GetDepthInMainChain(int ifaceIndex) const { CBlockIndex *pindexRet; return GetDepthInMainChain(ifaceIndex, pindexRet); }
+
 
 protected:
     const CTxOut& GetOutputFor(const CTxIn& input, const MapPrevTx& inputs) const;

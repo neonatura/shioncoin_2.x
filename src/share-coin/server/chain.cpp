@@ -323,7 +323,10 @@ bool ServiceBlockEvent(int ifaceIndex)
 
     int idx = (nNodeIndex % vNodes.size());
     pfrom = vNodes[idx];
-//fprintf(stderr, "DEBUG: DownloadBlockChain[iface #%d]: pfrom->PushGetBlocks(%d) to '%s'\n", ifaceIndex, pindexBest->nHeight, pfrom->addr.ToString().c_str());
+
+    if (pfrom->nVersion == 0)
+      return (true); /* not ready yet */
+
     pfrom->PushGetBlocks(pindexBest, uint256(0));
     nNodeIndex++;
 
@@ -374,6 +377,9 @@ bool ServicePeerEvent(int ifaceIndex)
   pfrom = vNodes.front();
   if (pfrom->fGetAddr)
     return (false); /* op already performed against this node */
+
+  if (pfrom->nVersion == 0)
+    return (true); /* not ready yet */
 
   if (unet_peer_total(ifaceIndex) < 500) {
     pfrom->PushMessage("getaddr");

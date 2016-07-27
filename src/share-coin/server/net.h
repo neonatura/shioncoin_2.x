@@ -197,7 +197,12 @@ class CBloomFilter
     // It should generally always be a random value (and is largely only exposed for unit testing)
     // nFlags should be one of the BLOOM_UPDATE_* enums (not _MASK)
     CBloomFilter(int ifaceIndexIn, unsigned int nElements, double nFPRate, unsigned int nTweak, unsigned char nFlagsIn);
-    CBloomFilter(int ifaceIndexIn) : isFull(true) { ifaceIndex = ifaceIndexIn; }
+
+    CBloomFilter(int ifaceIndexIn)
+    {
+      isFull = true; /* disabled to start with */
+      ifaceIndex = ifaceIndexIn;
+    }
 
     IMPLEMENT_SERIALIZE
       (
@@ -209,10 +214,12 @@ class CBloomFilter
 
     void insert(const std::vector<unsigned char>& vKey);
     void insert(const uint256& hash);
+    void insert(const uint160& hash);
 
     bool contains(const std::vector<unsigned char>& vKey) const;
     bool contains(const COutPoint& outpoint) const;
     bool contains(const uint256& hash) const;
+    bool contains(const uint160& hash) const;
 
     // True if the size is <= MAX_BLOOM_FILTER_SIZE and the number of hash functions is <= MAX_HASH_FUNCS
     // (catch a filter which was just deserialized which was too big)
@@ -225,6 +232,8 @@ class CBloomFilter
     void UpdateEmptyFull();
 
     void insert(const COutPoint& outpoint);
+
+    std::string ToString();
 };
 /**
  * @}
@@ -327,9 +336,8 @@ public:
         nMisbehavior = 0;
         setInventoryKnown.max_size(SendBufferSize() / 1000);
 
-        fRelayTxes = true;
+        fRelayTxes = false; /* enabled upon "version" message receival */
         pfilter = NULL;
-//        pfilter = new CBloomFilter();
 
 
         // Be shy and don't send version until we hear
@@ -353,6 +361,42 @@ private:
     void operator=(const CNode&);
 public:
 
+    CBloomFilter *GetBloomFilter()
+    {
+      if (ifaceIndex == USDE_COIN_IFACE)
+        return (NULL); /* not supported */
+
+      {
+        LOCK(cs_filter);
+        if (!pfilter)
+          pfilter = new CBloomFilter(ifaceIndex);
+      }
+
+      return (pfilter);
+    }
+
+    void RemoveBloomFilter()
+    {
+      LOCK(cs_filter);
+      if (pfilter)
+        delete(pfilter);
+      pfilter = NULL;
+    }
+
+    void ClearBloomFilter()
+    {
+      LOCK(cs_filter);
+      RemoveBloomFilter();
+      pfilter = GetBloomFilter();
+    }
+
+    void SetBloomFilter(CBloomFilter& filterIn)
+    {
+      LOCK(cs_filter);
+      RemoveBloomFilter();
+      pfilter = new CBloomFilter(filterIn);
+      pfilter->UpdateEmptyFull();
+    }
 
     int GetRefCount()
     {

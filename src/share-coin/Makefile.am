@@ -209,7 +209,8 @@ test_shcoind_SOURCES = \
 	test/testcoin_bignum.cpp \
 	test/testcoin_hash.cpp \
 	test/testcoin_block.cpp \
-	test/testcoin_json.cpp
+	test/testcoin_json.cpp \
+	test/testcoin_bloom.cpp
 
 test_shcoind_LDADD = $(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
 	-lboost_system -lboost_filesystem -lboost_thread -ldb_cxx -ldl

@@ -168,7 +168,6 @@ void spring_loc_claim(double lat, double lon)
     i_ar[1] &= ~(1 << bits.lon1);
   }
 
-fprintf(stderr, "DEBUG: SPRING CLAIM: lat(%f) lon(%f) [y(%d) x(%d)]\n", lat, lon, bits.y, bits.x);
 }
 
 int spring_loc_search(double cur_lat, double cur_lon, double *lat_p, double *lon_p)
@@ -297,8 +296,6 @@ int spring_render_fractal(char *img_path, double zoom, double span, double x_of,
   uint32_t m_seed;
   double seed;
   int y, x;
-
-fprintf(stderr, "DEBUG: spring_render_fractal: '%s'\n", img_path);
 
   m_seed = 0;
   for (y = 0; y < height; y++) {

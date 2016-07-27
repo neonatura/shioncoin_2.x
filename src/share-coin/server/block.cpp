@@ -2806,5 +2806,34 @@ bool CTransaction::IsInMemoryPool(int ifaceIndex)
   return (pool->exists(GetHash()));
 }
 
+int CTransaction::GetDepthInMainChain(int ifaceIndex, CBlockIndex* &pindexRet) const
+{
+  CIface *iface = GetCoinByIndex(ifaceIndex);
+  blkidx_t *blockIndex = GetBlockTable(ifaceIndex);
+  uint256 hashTx = GetHash();
+  bool ret;
 
+  CBlockIndex *pindexBest = GetBestBlockIndex(ifaceIndex);
+  if (!pindexBest)
+    return (0);
+
+  CBlock *block = GetBlockByTx(iface, hashTx);
+  if (!block)
+    return (0);
+
+  uint256 hashBlock = block->GetHash();
+  delete block;
+
+  map<uint256, CBlockIndex*>::iterator mi = blockIndex->find(hashBlock);
+  if (mi == blockIndex->end())
+    return 0;
+  CBlockIndex* pindex = (*mi).second;
+  if (!pindex)
+    return 0;
+  if (!pindex->IsInMainChain(ifaceIndex))
+    return 0;
+
+  pindexRet = pindex;
+  return pindexBest->nHeight - pindex->nHeight + 1;
+}
 

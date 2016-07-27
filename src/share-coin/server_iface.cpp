@@ -1364,8 +1364,10 @@ void shc_MessageHandler(CIface *iface)
 
   // Poll the connected nodes for messages
   CNode* pnodeTrickle = NULL;
+#if 0
   if (!vNodesCopy.empty())
     pnodeTrickle = vNodesCopy[GetRand(vNodesCopy.size())];
+#endif
   BOOST_FOREACH(CNode* pnode, vNodesCopy)
   {
 #if 0

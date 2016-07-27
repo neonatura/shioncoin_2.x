@@ -55,6 +55,9 @@ SHCWallet *shcWallet;
 CScript SHC_COINBASE_FLAGS;
 
 
+extern void shc_RelayTransaction(const CTransaction& tx, const uint256& hash);
+
+
 int shc_UpgradeWallet(void)
 {
   int nMaxVersion = 0;//GetArg("-upgradewallet", 0);
@@ -146,9 +149,27 @@ bool shc_LoadWallet(void)
 
 void SHCWallet::RelayWalletTransaction(CWalletTx& wtx)
 {
-  SHCTxDB txdb;
-  wtx.RelayWalletTransaction(txdb);
-  txdb.Close(); 
+
+  BOOST_FOREACH(const CMerkleTx& tx, wtx.vtxPrev)
+  {
+    // Important: versions of bitcoin before 0.8.6 had a bug that inserted
+    // empty transactions into the vtxPrev, which will cause the node to be
+    // banned when retransmitted, hence the check for !tx.vin.empty()
+    if (!tx.IsCoinBase() && !tx.vin.empty())
+      if (tx.GetDepthInMainChain(SHC_COIN_IFACE) == 0)
+        shc_RelayTransaction((CTransaction)tx, tx.GetHash());
+  }
+
+  if (!wtx.IsCoinBase())
+  {
+    if (wtx.GetDepthInMainChain(SHC_COIN_IFACE) == 0) {
+      uint256 hash = wtx.GetHash();
+      shc_RelayTransaction((CTransaction)wtx, hash);
+      Debug("(shc) RelayWalletTransactions: wallet tx (%s) relayed.", hash.ToString().c_str());
+    }
+  }
+
+
 }
 
 
@@ -187,7 +208,8 @@ void SHCWallet::ResendWalletTransactions()
     BOOST_FOREACH(PAIRTYPE(const unsigned int, CWalletTx*)& item, mapSorted)
     {
       CWalletTx& wtx = *item.second;
-      wtx.RelayWalletTransaction(txdb);
+//      wtx.RelayWalletTransaction(txdb);
+      RelayWalletTransaction(wtx);
     }
   }
   txdb.Close();
@@ -360,8 +382,10 @@ bool SHCWallet::CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey)
        
     SHCTxDB txdb;
     bool ret = wtxNew.AcceptToMemoryPool(txdb);
-    if (ret)
-      wtxNew.RelayWalletTransaction(txdb);
+    if (ret) {
+//      wtxNew.RelayWalletTransaction(txdb);
+      RelayWalletTransaction(wtxNew);
+    }
     txdb.Close();
     if (!ret) {
       // This must not fail. The transaction has already been signed and recorded.

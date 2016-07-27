@@ -75,6 +75,11 @@ bool static GetTransaction(const uint256& hashTx, CWalletTx& wtx)
     return false;
 }
 
+void shc_RelayTransaction(const CTransaction& tx, const uint256& hash)
+{
+  RelayTransaction(SHC_COIN_IFACE, tx, hash);
+}
+
 
 // notify wallets about an incoming inventory (for request counts)
 void static Inventory(const uint256& hash)
@@ -249,6 +254,8 @@ fprintf(stderr, "DEBUG: ProcessMessage: pfrom->nVersion (already) %d\n", pfrom->
     CAddress addrFrom;
     uint64 nNonce = 1;
     vRecv >> pfrom->nVersion >> pfrom->nServices >> nTime >> addrMe;
+
+#if 0
     if (pfrom->nVersion < MIN_PROTO_VERSION)
     {
       // Since February 20, 2012, the protocol is initiated at version 209,
@@ -257,15 +264,20 @@ fprintf(stderr, "DEBUG: ProcessMessage: pfrom->nVersion (already) %d\n", pfrom->
       pfrom->fDisconnect = true;
       return false;
     }
+#endif
 
-    if (pfrom->nVersion == 10300)
-      pfrom->nVersion = 300;
     if (!vRecv.empty())
       vRecv >> addrFrom >> nNonce;
     if (!vRecv.empty())
       vRecv >> pfrom->strSubVer;
     if (!vRecv.empty())
       vRecv >> pfrom->nStartingHeight;
+
+    /* bloom filter option */
+    if (!vRecv.empty())
+      vRecv >> pfrom->fRelayTxes; // set to true after we get the first filter* message
+    else
+      pfrom->fRelayTxes = true;
 
     if (pfrom->fInbound && addrMe.IsRoutable())
     {
@@ -548,9 +560,9 @@ fprintf(stderr, "DEBUG: ProcessMessage: Must have a version message before anyth
               pfrom->PushMessage("block", block);
             } else if (inv.type == MSG_FILTERED_BLOCK) { /* bloom */
               LOCK(pfrom->cs_filter);
-              if (pfrom->pfilter)
-              {
-                CMerkleBlock merkleBlock(block, *pfrom->pfilter);
+              CBloomFilter *filter = pfrom->GetBloomFilter();
+              if (filter) {
+                CMerkleBlock merkleBlock(block, *filter);
                 pfrom->PushMessage("merkleblock", merkleBlock);
                 typedef std::pair<unsigned int, uint256> PairType;
                 BOOST_FOREACH(PairType& pair, merkleBlock.vMatchedTxn)
@@ -679,8 +691,11 @@ fprintf(stderr, "DEBUG: getheaders %d to %s\n", (pindex ? pindex->nHeight : -1),
     bool fMissingInputs = false;
     if (tx.AcceptToMemoryPool(txdb, true, &fMissingInputs))
     {
-      SyncWithWallets(iface, tx);
-      RelayMessage(inv, vMsg);
+      SyncWithWallets(iface, tx); /* newer scrypt-coins skip this step */
+
+      shc_RelayTransaction(tx, inv.hash);
+//      RelayMessage(inv, vMsg);
+
       mapAlreadyAskedFor.erase(inv);
       vWorkQueue.push_back(inv.hash);
       vEraseQueue.push_back(inv.hash);
@@ -703,7 +718,10 @@ fprintf(stderr, "DEBUG: getheaders %d to %s\n", (pindex ? pindex->nHeight : -1),
           {
             printf("   accepted orphan tx %s\n", inv.hash.ToString().substr(0,10).c_str());
             SyncWithWallets(iface, tx);
-            RelayMessage(inv, vMsg);
+
+            shc_RelayTransaction(tx, inv.hash);
+//            RelayMessage(inv, vMsg);
+
             mapAlreadyAskedFor.erase(inv);
             vWorkQueue.push_back(inv.hash);
             vEraseQueue.push_back(inv.hash);
@@ -829,17 +847,18 @@ fprintf(stderr, "DEBUG: ProcessMessage[tx]: block.nDoS = %d\n", block.nDoS);
       tracker.fn(tracker.param1, vRecv);
   }
 
-  /* exclusively used by bloom filter */
+  /* exclusively used by bloom filter supported coin services, but does not require they have a bloom filter enabled for node. */
   else if (strCommand == "mempool")
   {
     std::vector<uint256> vtxid;
     LOCK2(SHCBlock::mempool.cs, pfrom->cs_filter);
     SHCBlock::mempool.queryHashes(vtxid);
     vector<CInv> vInv;
+    CBloomFilter *filter = pfrom->GetBloomFilter();
     BOOST_FOREACH(uint256& hash, vtxid) {
       CInv inv(SHC_COIN_IFACE, MSG_TX, hash);
-      if ((pfrom->pfilter && pfrom->pfilter->IsRelevantAndUpdate(SHCBlock::mempool.lookup(hash), hash)) ||
-          (!pfrom->pfilter))
+      if ((filter && filter->IsRelevantAndUpdate(SHCBlock::mempool.lookup(hash), hash)) ||
+          (!filter))
         vInv.push_back(inv);
       if (vInv.size() == MAX_INV_SZ)
         break;
@@ -858,11 +877,9 @@ fprintf(stderr, "DEBUG: ProcessMessage[tx]: block.nDoS = %d\n", block.nDoS);
     if (!filter.IsWithinSizeConstraints()) {
       pfrom->Misbehaving(100);
     } else {
-      LOCK(pfrom->cs_filter);
-      delete pfrom->pfilter;
-      pfrom->pfilter = new CBloomFilter(filter);
-      pfrom->pfilter->UpdateEmptyFull();
+      pfrom->SetBloomFilter(filter);
     }
+
     pfrom->fRelayTxes = true;
   }
 
@@ -876,25 +893,22 @@ fprintf(stderr, "DEBUG: ProcessMessage[tx]: block.nDoS = %d\n", block.nDoS);
     // and thus, the maximum size any matched object can have) in a filteradd message
     if (vData.size() > MAX_SCRIPT_ELEMENT_SIZE)
     {
-        pfrom->Misbehaving(100);
+      pfrom->Misbehaving(100);
     } else {
-        LOCK(pfrom->cs_filter);
-        if (pfrom->pfilter)
-            pfrom->pfilter->insert(vData);
-        else
-            pfrom->Misbehaving(100);
+      /* The following will initialize a new bloom filter if none previously existed. */
+      LOCK(pfrom->cs_filter);
+      CBloomFilter *filter = pfrom->GetBloomFilter();
+      if (filter)
+        filter->insert(vData);
     }
   }
 
 
   else if (strCommand == "filterclear")
   {
-    LOCK(pfrom->cs_filter);
-    delete pfrom->pfilter;
-    pfrom->pfilter = new CBloomFilter(SHC_COIN_IFACE);
+    pfrom->ClearBloomFilter();
     pfrom->fRelayTxes = true;
   }
-
 
 
 

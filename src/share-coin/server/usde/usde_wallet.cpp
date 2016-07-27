@@ -146,8 +146,27 @@ bool usde_LoadWallet(void)
 void USDEWallet::RelayWalletTransaction(CWalletTx& wtx)
 {
   USDETxDB txdb;
-  wtx.RelayWalletTransaction(txdb);
-  txdb.Close(); 
+
+  BOOST_FOREACH(const CMerkleTx& tx, wtx.vtxPrev) 
+  { 
+    if (!tx.IsCoinBase())
+    {
+      uint256 hash = tx.GetHash();
+      if (!txdb.ContainsTx(hash))
+        RelayMessage(CInv(ifaceIndex, MSG_TX, hash), (CTransaction)tx);
+    }
+  }
+
+  if (!wtx.IsCoinBase())
+  {
+    uint256 hash = wtx.GetHash();
+    if (!txdb.ContainsTx(hash))
+    {
+      RelayMessage(CInv(ifaceIndex, MSG_TX, hash), (CTransaction)wtx);
+    }
+  }
+
+  txdb.Close();
 }
 
 
@@ -186,7 +205,8 @@ void USDEWallet::ResendWalletTransactions()
     BOOST_FOREACH(PAIRTYPE(const unsigned int, CWalletTx*)& item, mapSorted)
     {
       CWalletTx& wtx = *item.second;
-      wtx.RelayWalletTransaction(txdb);
+//      wtx.RelayWalletTransaction(txdb);
+      RelayWalletTransaction(wtx);
     }
   }
   txdb.Close();
@@ -353,8 +373,10 @@ bool USDEWallet::CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey)
        
     USDETxDB txdb;
     bool ret = wtxNew.AcceptToMemoryPool(txdb);
-    if (ret)
-      wtxNew.RelayWalletTransaction(txdb);
+    if (ret) {
+//      wtxNew.RelayWalletTransaction(txdb);
+      RelayWalletTransaction(wtxNew);
+    }
     txdb.Close();
     if (!ret) {
       // This must not fail. The transaction has already been signed and recorded.

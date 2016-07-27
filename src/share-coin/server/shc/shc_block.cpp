@@ -886,73 +886,6 @@ void SHC_CTxMemPool::queryHashes(std::vector<uint256>& vtxid)
         vtxid.push_back((*mi).first);
 }
 
-
-
-#if 0
-bool shc_InitBlockIndex()
-{
-  CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);
-  blkidx_t *blockIndex = GetBlockTable(SHC_COIN_IFACE);
-  SHCTxDB txdb;
-
-  /* load attributes */
-  if (!txdb.ReadHashBestChain(SHC_hashBestChain))
-  {
-    if (SHC_pindexGenesisBlock == NULL)
-      return true;
-    return error(SHERR_IO, "SHCTxDB::LoadBlockIndex() : hashBestChain not loaded");
-  }
-
-  if (!blockIndex->count(SHC_hashBestChain))
-    return error(SHERR_IO, "SHCTxDB::LoadBlockIndex() : hashBestChain not found in the block index");
-
-  SHC_pindexBest = (*blockIndex)[SHC_hashBestChain];
-  SHC_nBestHeight = SHC_pindexBest->nHeight;
-  SHCBlock::bnBestChainWork = SHC_pindexBest->bnChainWork;
-  txdb.ReadBestInvalidWork(SHCBlock::bnBestInvalidWork);
-
-  txdb.Close();
-
-  /* verify */
-  int nCheckDepth = 2500;
-  if (nCheckDepth > SHC_nBestHeight)
-    nCheckDepth = SHC_nBestHeight;
-
-  CBlockIndex* pindexFork = NULL;
-  map<pair<unsigned int, unsigned int>, CBlockIndex*> mapBlockPos;
-  for (CBlockIndex* pindex = pindexBest; pindex && pindex->pprev; pindex = pindex->pprev)
-  {
-    if (pindex->nHeight < SHC_nBestHeight-nCheckDepth)
-      break;
-
-    CBlock *block = GetBlockByHash(iface, pindex->GetBlockHash());
-    if (!block)
-      return error(SHERR_IO, "LoadBlockIndex() : block.ReadFromDisk failed");
-
-    if (!block->CheckBlock())
-    {
-      printf("LoadBlockIndex() : *** found bad block at %d, hash=%s\n", pindex->nHeight, pindex->GetBlockHash().ToString().c_str());
-      pindexFork = pindex->pprev;
-    }
-
-  }
-
-  /* establish best chain */
-  if (pindexFork) {
-    CBlock *block = GetBlockByHash(iface, pindexFork->GetBlockHash());
-    if (!block)
-      return error(SHERR_IO, "LoadBlockIndex() : block.ReadFromDisk failed");
-    SHCTxDB txdb;
-    block->SetBestChain(txdb, pindexFork);
-    txdb.Close();
-  }
-
-  return (true);
-}
-#endif
-
-
-
 uint256 shc_GetOrphanRoot(const CBlock* pblock)
 {
 
@@ -1577,63 +1510,6 @@ static void shc_UpdatedTransaction(const uint256& hashTx)
   BOOST_FOREACH(CWallet* pwallet, setpwalletRegistered)
     pwallet->UpdatedTransaction(hashTx);
 }
-
-#if 0
-bool SHCBlock::AddToBlockIndex()
-{
-  blkidx_t *blockIndex = GetBlockTable(SHC_COIN_IFACE);
-  CBlockIndex *pindexNew;
-  shtime_t ts;
-
-  uint256 hash = GetHash();
-
-  // Check for duplicate
-  if (blockIndex->count(hash))
-    return error(SHERR_INVAL, "SHC:AddToBlockIndex: block %s already exists", hash.GetHex().c_str());
-
-  /* create new index */
-  pindexNew = new CBlockIndex(*this);
-  if (!pindexNew)
-    return error(SHERR_INVAL, "SHC:AddToBlockIndex: new CBlockIndex failed");
-  map<uint256, CBlockIndex*>::iterator mi = blockIndex->insert(make_pair(hash, pindexNew)).first;
-  pindexNew->phashBlock = &((*mi).first);
-  map<uint256, CBlockIndex*>::iterator miPrev = blockIndex->find(hashPrevBlock);
-  if (miPrev != blockIndex->end())
-  {
-    pindexNew->pprev = (*miPrev).second;
-    pindexNew->nHeight = pindexNew->pprev->nHeight + 1;
-  }
-  pindexNew->bnChainWork = (pindexNew->pprev ? pindexNew->pprev->bnChainWork : 0) + pindexNew->GetBlockWork();
-
-
-#if 0
-  if (!txdb.TxnBegin())
-    return false;
-  txdb.WriteBlockIndex(CDiskBlockIndex(pindexNew));
-  if (!txdb.TxnCommit())
-    return false;
-#endif
-  if (pindexNew->bnChainWork > bnBestChainWork) {
-    SHCTxDB txdb;
-    bool ret = SetBestChain(txdb, pindexNew);
-    txdb.Close();
-    if (!ret) { 
-      fprintf(stderr, "DEBUG: AddToBlockIndex: SetBestChain failure @ height %d\n", pindexNew->nHeight); 
-      return false;
-    }
-  }
-
-  if (pindexNew == GetBestBlockIndex(SHC_COIN_IFACE))
-  {
-    // Notify UI to display prev block's coinbase if it was ours
-    static uint256 hashPrevBestCoinBase;
-    shc_UpdatedTransaction(hashPrevBestCoinBase);
-    hashPrevBestCoinBase = vtx[0].GetHash();
-  }
-
-  return true;
-}
-#endif
 
 bool SHCBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)
 {
