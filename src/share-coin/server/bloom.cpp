@@ -192,7 +192,7 @@ bool CBloomFilter::IsWithinSizeConstraints() const
   return vData.size() <= MAX_BLOOM_FILTER_SIZE && nHashFuncs <= MAX_HASH_FUNCS;
 }
 
-static bool bloom_IsRelevant(const CTransaction& tx, const uint256& hash)
+bool CBloomFilter::IsRelevant(const CTransaction& tx, const uint256& hash, bool fUpdate)
 {
   bool fFound = false;
   // Match if the filter contains the hash of tx
@@ -221,22 +221,46 @@ static bool bloom_IsRelevant(const CTransaction& tx, const uint256& hash)
       if (data.size() != 0 && contains(data))
       {
         fFound = true;
-        if ((nFlags & BLOOM_UPDATE_MASK) == BLOOM_UPDATE_ALL)
-          insert(COutPoint(hash, i));
-        else if ((nFlags & BLOOM_UPDATE_MASK) == BLOOM_UPDATE_P2PUBKEY_ONLY)
-        {
-          txnouttype type;
-          vector<vector<unsigned char> > vSolutions;
-          if (Solver(txout.scriptPubKey, type, vSolutions) &&
-              (type == TX_PUBKEY || type == TX_MULTISIG))
+        if (fUpdate) {
+          if ((nFlags & BLOOM_UPDATE_MASK) == BLOOM_UPDATE_ALL)
             insert(COutPoint(hash, i));
+          else if ((nFlags & BLOOM_UPDATE_MASK) == BLOOM_UPDATE_P2PUBKEY_ONLY)
+          {
+            txnouttype type;
+            vector<vector<unsigned char> > vSolutions;
+            if (Solver(txout.scriptPubKey, type, vSolutions) &&
+                (type == TX_PUBKEY || type == TX_MULTISIG))
+              insert(COutPoint(hash, i));
+          }
         }
         break;
       }
     }
   }
 
-  return (fFound);
+  if (fFound)
+    return (true);
+
+  BOOST_FOREACH(const CTxIn& txin, tx.vin)
+  {
+    // Match if the filter contains an outpoint tx spends
+    if (contains(txin.prevout))
+      return true;
+
+    // Match if the filter contains any arbitrary script data element in any scriptSig in tx
+    CScript::const_iterator pc = txin.scriptSig.begin();
+    vector<unsigned char> data;
+    while (pc < txin.scriptSig.end())
+    {
+      opcodetype opcode;
+      if (!txin.scriptSig.GetOp(pc, opcode, data))
+        break;
+      if (data.size() != 0 && contains(data))
+        return true;
+    }
+  }
+
+  return (false);
 }
 
 bool CBloomFilter::IsRelevantAndUpdate(const CTransaction& tx, const uint256& hash)
@@ -285,32 +309,13 @@ bool CBloomFilter::IsRelevantAndUpdate(const CTransaction& tx, const uint256& ha
   }
 #endif
 
-  bool fFound = bloom_IsRelevant(tx, hash);
+  bool fFound = IsRelevant(tx, hash, true);
   if (IsTest()) {
     Debug("BloomFilter/IsRelevantAndUpdate: TEST: tx hash '%s' %s considered relevant.", hash.GetHex().c_str(), (fFound ? "is" : "is not")); 
     return (true);
   }
   if (fFound)
     return (true); /* winner chicken dinner */
-
-  BOOST_FOREACH(const CTxIn& txin, tx.vin)
-  {
-    // Match if the filter contains an outpoint tx spends
-    if (contains(txin.prevout))
-      return true;
-
-    // Match if the filter contains any arbitrary script data element in any scriptSig in tx
-    CScript::const_iterator pc = txin.scriptSig.begin();
-    vector<unsigned char> data;
-    while (pc < txin.scriptSig.end())
-    {
-      opcodetype opcode;
-      if (!txin.scriptSig.GetOp(pc, opcode, data))
-        break;
-      if (data.size() != 0 && contains(data))
-        return true;
-    }
-  }
 
   return false;
 }
