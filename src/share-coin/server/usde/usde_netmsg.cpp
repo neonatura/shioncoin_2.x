@@ -265,6 +265,9 @@ bool usde_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
     if (!vRecv.empty())
       vRecv >> pfrom->nStartingHeight;
 
+    /* ready to send tx's */
+    pfrom->fRelayTxes = true;
+
     if (pfrom->fInbound && addrMe.IsRoutable())
     {
       pfrom->addrLocal = addrMe;
