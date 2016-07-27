@@ -61,6 +61,17 @@ enum
     LOCAL_MAX
 };
 
+enum bloomflags
+{
+  BLOOM_UPDATE_NONE = 0,
+  BLOOM_UPDATE_ALL = 1,
+  // Only adds outpoints to the filter if the output is a pay-to-pubkey/pay-to-multisig script
+  BLOOM_UPDATE_P2PUBKEY_ONLY = 2,
+  BLOOM_UPDATE_MASK = 3 
+};
+/** Print debug relating to the operation that would normally be performed, but otherwise do not restrict activity from occurring. */
+#define BLOOM_TEST (1 << 7)
+
 void SetLimited(enum Network net, bool fLimited = true);
 bool IsLimited(enum Network net);
 bool IsLimited(const CNetAddr& addr);
@@ -232,6 +243,22 @@ class CBloomFilter
     void UpdateEmptyFull();
 
     void insert(const COutPoint& outpoint);
+
+    /** The bloom filter update mode. (BLOOM_UPDATE_XXX) */
+    int GetMode()
+    {
+      return (nFlags & BLOOM_UPDATE_MASK);
+    }
+
+    int GetFlags()
+    {
+      return ((int)nFlags);
+    }
+
+    bool IsTest()
+    {
+      return (GetFlags() & BLOOM_TEST);
+    }
 
     std::string ToString();
 };

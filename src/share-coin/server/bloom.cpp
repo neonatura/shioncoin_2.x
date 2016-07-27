@@ -192,7 +192,7 @@ bool CBloomFilter::IsWithinSizeConstraints() const
   return vData.size() <= MAX_BLOOM_FILTER_SIZE && nHashFuncs <= MAX_HASH_FUNCS;
 }
 
-bool CBloomFilter::IsRelevantAndUpdate(const CTransaction& tx, const uint256& hash)
+static bool bloom_IsRelevant(const CTransaction& tx, const uint256& hash)
 {
   bool fFound = false;
   // Match if the filter contains the hash of tx
@@ -236,8 +236,62 @@ bool CBloomFilter::IsRelevantAndUpdate(const CTransaction& tx, const uint256& ha
     }
   }
 
-  if (fFound)
+  return (fFound);
+}
+
+bool CBloomFilter::IsRelevantAndUpdate(const CTransaction& tx, const uint256& hash)
+{
+#if 0
+  bool fFound = false;
+  // Match if the filter contains the hash of tx
+  //  for finding tx when they appear in a block
+  if (isFull)
     return true;
+  if (isEmpty)
+    return false;
+  if (contains(hash))
+    fFound = true;
+
+  for (unsigned int i = 0; i < tx.vout.size(); i++)
+  {
+    const CTxOut& txout = tx.vout[i];
+    // Match if the filter contains any arbitrary script data element in any scriptPubKey in tx
+    // If this matches, also add the specific output that was matched.
+    // This means clients don't have to update the filter themselves when a new relevant tx 
+    // is discovered in order to find spending transactions, which avoids round-tripping and race conditions.
+    CScript::const_iterator pc = txout.scriptPubKey.begin();
+    vector<unsigned char> data;
+    while (pc < txout.scriptPubKey.end())
+    {
+      opcodetype opcode;
+      if (!txout.scriptPubKey.GetOp(pc, opcode, data))
+        break;
+      if (data.size() != 0 && contains(data))
+      {
+        fFound = true;
+        if ((nFlags & BLOOM_UPDATE_MASK) == BLOOM_UPDATE_ALL)
+          insert(COutPoint(hash, i));
+        else if ((nFlags & BLOOM_UPDATE_MASK) == BLOOM_UPDATE_P2PUBKEY_ONLY)
+        {
+          txnouttype type;
+          vector<vector<unsigned char> > vSolutions;
+          if (Solver(txout.scriptPubKey, type, vSolutions) &&
+              (type == TX_PUBKEY || type == TX_MULTISIG))
+            insert(COutPoint(hash, i));
+        }
+        break;
+      }
+    }
+  }
+#endif
+
+  bool fFound = bloom_IsRelevant(tx, hash);
+  if (IsTest()) {
+    Debug("BloomFilter/IsRelevantAndUpdate: TEST: tx hash '%s' %s considered relevant.", hash.GetHex().c_str(), (fFound ? "is" : "is not")); 
+    return (true);
+  }
+  if (fFound)
+    return (true); /* winner chicken dinner */
 
   BOOST_FOREACH(const CTxIn& txin, tx.vin)
   {
