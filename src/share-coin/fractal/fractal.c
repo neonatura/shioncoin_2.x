@@ -31,6 +31,8 @@ int fractal_render(char *img_path, double in_seed, double zoom, double span, dou
 {
   static const unsigned int width = 256, height = 256;
   BMP *bmp;
+  shnum_t min_x_cord, max_x_cord;
+  shnum_t min_y_cord, max_y_cord;
   uint32_t val;
   shnum_t seed;
   shnum_t rate;
@@ -58,8 +60,18 @@ fprintf(stderr, "DEBUG: fractal_render: seed %Lf\n", seed);
   rate = (shnum_t)span * (shnum_t)zoom;
   min_cord = (-128 * zoom);
   max_cord = (128 * zoom);
-  for (dy = min_cord; dy <= max_cord; dy += rate) {
-    for (dx = min_cord; dx <= max_cord; dx += rate) {
+
+/* DEBUG: */
+x_of = 0.0;
+y_of = 0.0;
+
+  min_x_cord = min_cord + x_of;
+  min_y_cord = min_cord + y_of;
+  max_x_cord = max_cord + x_of;
+  max_y_cord = max_cord + y_of;
+
+  for (dy = min_y_cord; dy <= max_y_cord; dy += rate) {
+    for (dx = min_x_cord; dx <= max_x_cord; dx += rate) {
       C = (dx * dy) + seed;
 
       Z = 0;
@@ -81,8 +93,8 @@ fprintf(stderr, "DEBUG: fractal_render: seed %Lf\n", seed);
         g = MIN(255, g + idx);
         b = MIN(255, b + idx);
       }
-      x = (int)((dx + max_cord) / rate) % px_width;
-      y = (int)((dy + max_cord) / rate) % px_height;
+      x = (int)(((dx + max_cord) / rate) - x_of) % px_width;
+      y = (int)(((dy + max_cord) / rate) - y_of) % px_height;
       BMP_SetPixelRGB( bmp, x, y, r, g, b);
     }
   }

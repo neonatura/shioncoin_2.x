@@ -143,6 +143,8 @@ void stratum_http_spring_img(char *args, shbuf_t *buff)
   struct stat st;
   double x_of, y_of, zoom;
   double span;
+  char *bmp_path;
+  char tag[256];
   char *data;
   char str[256];
   char *ptr;
@@ -167,8 +169,14 @@ void stratum_http_spring_img(char *args, shbuf_t *buff)
   if (ptr)
     span = atof(ptr+5);
 
-  spring_render_fractal("/tmp/fractal.bmp", zoom, span, x_of, y_of);
-  stat("/tmp/fractal.bmp", &st);
+  x_of = floor(x_of);
+  y_of = floor(y_of);
+
+  sprintf(tag, "spring_bmp:%f,%f,%f,%f", zoom, span, x_of, y_of);
+  bmp_path = shcache_path(tag);
+  if (!shcache_fresh(tag))
+    spring_render_fractal(bmp_path, zoom, span, x_of, y_of);
+  stat(bmp_path, &st);
 
   shbuf_catstr(buff, "HTTP/1.0 200 OK\r\n"); 
   shbuf_catstr(buff, "Content-Type: image/bmp\r\n");
@@ -176,12 +184,15 @@ void stratum_http_spring_img(char *args, shbuf_t *buff)
   shbuf_catstr(buff, str);
   shbuf_catstr(buff, "\r\n"); 
 
+  shfs_mem_read(bmp_path, buff);
+#if 0
   data = (char *)calloc(st.st_size, sizeof(char));
-  fl = fopen("/tmp/fractal.bmp", "rb");
+  fl = fopen(bmp_path, "rb");
   fread(data, sizeof(char), st.st_size, fl);
   fclose(fl);
   shbuf_cat(buff, data, st.st_size); 
   free(data);
+#endif
 }
 
 void stratum_http_validate_img(char *args, shbuf_t *buff)
@@ -190,6 +201,8 @@ void stratum_http_validate_img(char *args, shbuf_t *buff)
   struct stat st;
   double x_of, y_of, zoom;
   double span;
+  char *bmp_path;
+  char tag[256];
   char *data;
   char str[256];
   char *ptr;
@@ -214,8 +227,14 @@ void stratum_http_validate_img(char *args, shbuf_t *buff)
   if (ptr)
     span = atof(ptr+5);
 
-  validate_render_fractal("/tmp/validate_fractal.bmp", zoom, span, x_of, y_of);
-  stat("/tmp/validate_fractal.bmp", &st);
+  x_of = floor(x_of);
+  y_of = floor(y_of);
+
+  sprintf(tag, "validate_bmp:%f,%f,%f,%f", zoom, span, x_of, y_of);
+  bmp_path = shcache_path(tag);
+  if (!shcache_fresh(tag))
+    validate_render_fractal(bmp_path, zoom, span, x_of, y_of);
+  stat(bmp_path, &st);
 
   shbuf_catstr(buff, "HTTP/1.0 200 OK\r\n"); 
   shbuf_catstr(buff, "Content-Type: image/bmp\r\n");
@@ -223,12 +242,15 @@ void stratum_http_validate_img(char *args, shbuf_t *buff)
   shbuf_catstr(buff, str);
   shbuf_catstr(buff, "\r\n"); 
 
+  shfs_mem_read(bmp_path, buff);
+#if 0
   data = (char *)calloc(st.st_size, sizeof(char));
   fl = fopen("/tmp/validate_fractal.bmp", "rb");
   fread(data, sizeof(char), st.st_size, fl);
   fclose(fl);
   shbuf_cat(buff, data, st.st_size); 
   free(data);
+#endif
 }
 
 #define SPRING_MATRIX_BMP "/image/spring_matrix.bmp"
