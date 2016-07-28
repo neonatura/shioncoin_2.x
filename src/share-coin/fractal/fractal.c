@@ -93,8 +93,8 @@ y_of = 0.0;
         g = MIN(255, g + idx);
         b = MIN(255, b + idx);
       }
-      x = (int)(((dx + max_cord) / rate) - x_of) % px_width;
-      y = (int)(((dy + max_cord) / rate) - y_of) % px_height;
+      x = (int)((dx + max_cord) / rate) % px_width;
+      y = (int)((dy + max_cord) / rate) % px_height;
       BMP_SetPixelRGB( bmp, x, y, r, g, b);
     }
   }

@@ -148,6 +148,7 @@ void stratum_http_spring_img(char *args, shbuf_t *buff)
   char *data;
   char str[256];
   char *ptr;
+  int err;
 
   zoom = 1.0;
   ptr = strstr(args, "zoom=");
@@ -169,8 +170,8 @@ void stratum_http_spring_img(char *args, shbuf_t *buff)
   if (ptr)
     span = atof(ptr+5);
 
-  x_of = floor(x_of);
-  y_of = floor(y_of);
+  x_of = floor(x_of / 8) * 8;
+  y_of = floor(y_of / 8) * 8;
 
   sprintf(tag, "spring_bmp:%f,%f,%f,%f", zoom, span, x_of, y_of);
   bmp_path = shcache_path(tag);
@@ -184,7 +185,8 @@ void stratum_http_spring_img(char *args, shbuf_t *buff)
   shbuf_catstr(buff, str);
   shbuf_catstr(buff, "\r\n"); 
 
-  shfs_mem_read(bmp_path, buff);
+  err = shfs_mem_read(bmp_path, buff);
+fprintf(stderr, "DEBUG: %d = shfs_mem_read('%s')\n", err, bmp_path);
 #if 0
   data = (char *)calloc(st.st_size, sizeof(char));
   fl = fopen(bmp_path, "rb");
@@ -206,6 +208,7 @@ void stratum_http_validate_img(char *args, shbuf_t *buff)
   char *data;
   char str[256];
   char *ptr;
+  int err;
 
   zoom = 1.0;
   ptr = strstr(args, "zoom=");
@@ -242,7 +245,8 @@ void stratum_http_validate_img(char *args, shbuf_t *buff)
   shbuf_catstr(buff, str);
   shbuf_catstr(buff, "\r\n"); 
 
-  shfs_mem_read(bmp_path, buff);
+  err = shfs_mem_read(bmp_path, buff);
+fprintf(stderr, "DEBUG: %d = shfs_mem_read('%s')\n", err, bmp_path);
 #if 0
   data = (char *)calloc(st.st_size, sizeof(char));
   fl = fopen("/tmp/validate_fractal.bmp", "rb");
