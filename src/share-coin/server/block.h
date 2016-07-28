@@ -1032,6 +1032,7 @@ class CBlock : public CBlockHeader
       CBlockHeader::SetNull();
       vtx.clear();
       vMerkleTree.clear();
+      originPeer = NULL;
     }
 
     bool IsNull() const
