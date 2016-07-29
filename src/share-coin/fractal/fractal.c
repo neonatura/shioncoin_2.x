@@ -24,6 +24,7 @@
  */  
 
 #include <math.h>
+#include <libgen.h>
 #include "shcoind.h"
 #include "fractal.h"
 
@@ -31,8 +32,8 @@ int fractal_render(char *img_path, double in_seed, double zoom, double span, dou
 {
   static const unsigned int width = 256, height = 256;
   BMP *bmp;
-  shnum_t min_x_cord, max_x_cord;
-  shnum_t min_y_cord, max_y_cord;
+  char path[PATH_MAX+1];
+  char *dir_path;
   uint32_t val;
   shnum_t seed;
   shnum_t rate;
@@ -50,8 +51,6 @@ int fractal_render(char *img_path, double in_seed, double zoom, double span, dou
 
   seed = (shnum_t)in_seed / (shnum_t)65536;
 
-fprintf(stderr, "DEBUG: fractal_render: seed %Lf\n", seed);
-
   px_width = (int)((shnum_t)256 / (shnum_t)span);
   px_height = (int)((shnum_t)256 / (shnum_t)span);
   bmp = BMP_Create(px_width, px_height, 32);
@@ -61,18 +60,12 @@ fprintf(stderr, "DEBUG: fractal_render: seed %Lf\n", seed);
   min_cord = (-128 * zoom);
   max_cord = (128 * zoom);
 
-/* DEBUG: */
-x_of = 0.0;
-y_of = 0.0;
+  x_of = (floor(x_of / 8) * 8) - 128.0;
+  y_of = (floor(y_of / 8) * 8) - 128.0;
 
-  min_x_cord = min_cord + x_of;
-  min_y_cord = min_cord + y_of;
-  max_x_cord = max_cord + x_of;
-  max_y_cord = max_cord + y_of;
-
-  for (dy = min_y_cord; dy <= max_y_cord; dy += rate) {
-    for (dx = min_x_cord; dx <= max_x_cord; dx += rate) {
-      C = (dx * dy) + seed;
+  for (dy = min_cord; dy <= max_cord; dy += rate) {
+    for (dx = min_cord; dx <= max_cord; dx += rate) {
+      C = ((dx + x_of) * (dy + y_of)) + seed;
 
       Z = 0;
       for (idx = 0; idx < 16; idx++) {
@@ -93,14 +86,28 @@ y_of = 0.0;
         g = MIN(255, g + idx);
         b = MIN(255, b + idx);
       }
-      x = (int)((dx + max_cord) / rate) % px_width;
-      y = (int)((dy + max_cord) / rate) % px_height;
+
+#if 0
+      x = (int)((dx + max_x_cord) / rate) % px_width;
+      y = (int)((dy + max_y_cord) / rate) % px_height;
+#endif
+      x = (int)((dx + max_cord) / rate);
+      y = (int)((dy + max_cord) / rate);
+      if (x < 0 || x >= px_width ||
+          y < 0 || y >= px_height)
+        continue;
       BMP_SetPixelRGB( bmp, x, y, r, g, b);
     }
   }
 
+  memset(path, 0, sizeof(img_path));
+  strncpy(path, img_path, sizeof(path)-1);
+  unlink(path);
+  dir_path = dirname(path);
+  mkdir(dir_path, 0777);
+  
   BMP_WriteFile(bmp, img_path);
-  BMP_CHECK_ERROR( stdout, -2 );
+  BMP_CHECK_ERROR(stderr, -2);
   BMP_Free( bmp );
 
   return 0;

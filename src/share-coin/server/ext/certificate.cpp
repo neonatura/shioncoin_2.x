@@ -1016,7 +1016,9 @@ int init_ident_stamp_tx(CIface *iface, std::string strAccount, std::string strCo
   if (strComment.substr(0, 4) == "geo:") { /* geodetic uri */
     shnum_t lat, lon;
     int n = sscanf(strComment.c_str(), "geo:%Lf,%Lf", &lat, &lon);
-    if (n == 2)
+    if (n == 2 &&
+        (lat >= -90 && lat <= 90) &&
+        (lon >= -180 && lon <= 180))
       shgeo_set(&ident->geo, lat, lon, 0);
   }
   ident->SetLabel(strComment);

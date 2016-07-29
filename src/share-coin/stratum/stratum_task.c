@@ -83,7 +83,6 @@ static void check_payout(int ifaceIndex)
   shjson_t *tree;
   shjson_t *block;
   user_t *user;
-  char errbuf[1024];
   char block_hash[512];
   char category[64];
   char uname[256];
@@ -172,10 +171,6 @@ static void check_payout(int ifaceIndex)
         /* regulate tx # */
         user->balance_avg[ifaceIndex] = 
           (user->balance_avg[ifaceIndex] + reward) / 2;
-
-        memset(errbuf, 0, sizeof(errbuf));
-        snprintf(errbuf, sizeof(errbuf)-1, "check_payout: worker '%s' reward %s coin(s).", user->worker, reward);  
-        unet_log(ifaceIndex, errbuf);
       }
     }
 

@@ -88,11 +88,11 @@ void stratum_http_spring_img_html(shbuf_t *buff)
       "<span id=\"spring_matrix_lbl\">x1</span>\n"
       "</div>\n"
       /* expand */
-      "<div style=\"float : left; margin-left : 16px; background : linear-gradient(to bottom, #1e5799 0%,#2989d8 50%,#207cca 51%,#7db9e8 100%); color : #e8e8e9; border-radius : 6px; padding : 4px 4px 4px 4px; font-family : Georgia; font-size : 12px; font-weight : bold;\"><a href=\"/image/spring_matrix.bmp?span=0.1\" id=\"spring_matrix_ref\"><img src=\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAAAXNSR0IArs4c6QAAAAZiS0dEAP8A/wD/oL2nkwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB+AHFRcvLtjUSsgAAAGqSURBVEhL5ZVBbtRAEEV/VTViMXcB5QZhzwoWSGEBEkJwBKJIiZBAuUOEFNYBzgA3AImDsMoiyL8+i3TPmLGNx4Edb9N2d5W/67e7DOyIpBNtOJmLb/hcwN+ySEDSXMiARQJmNhcyYJHATVgk8E8syszfxj5TFpEEMJ4zEHB3kHzgvntxEQGSD8dy1jNd1wEASD4D8GkQiVmLPpJ8DmwqAnoC7r4i+drM3k1YIWAtMlAyM5jZGck3ZrZq8wUASN6VdO7uezXZJL0CcLvGCcB+T3i/CrWJqxZnZkeZeZ/k04j4BpIHJK8yU5KytoI2bpMza9cXmSL5k+TjUqtob7L8JG2huk+12lsGACT3ALx39zuoFgE4xJZFAO7V+88AvqBnkaRTM5Mkk/QdwJOI+IpGZq5Ivs1MZeZgEyUd9+w4HllXzT3tum69yeuvSNJlRBxJeqHxz7Fv38DKzISkl+5+6O6Xbb60i4ho4xnJH9sPmEPSo1LKBXB9WBujrSIiPvQPS2OiMpBEKeViLGe0VQCbivpM9aJe9YO13RvODVkkMGXRn1gk8H/+0X4B9mM0rhW8WLcAAAAASUVORK5CYII=\" style=\"width : 15px; height : 15px;\" alt=\"Expand Image\"></a></div>\n"
+      "<div style=\"float : left; margin-left : 16px; background : linear-gradient(to bottom, #1e5799 0%,#2989d8 50%,#207cca 51%,#7db9e8 100%); color : #e8e8e9; border-radius : 6px; padding : 4px 4px 4px 4px; font-family : Georgia; font-size : 12px; font-weight : bold;\"><a href=\"/image/spring_matrix.bmp?span=0.1&x=128&y=128\" id=\"spring_matrix_ref\"><img src=\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAAAXNSR0IArs4c6QAAAAZiS0dEAP8A/wD/oL2nkwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB+AHFRcvLtjUSsgAAAGqSURBVEhL5ZVBbtRAEEV/VTViMXcB5QZhzwoWSGEBEkJwBKJIiZBAuUOEFNYBzgA3AImDsMoiyL8+i3TPmLGNx4Edb9N2d5W/67e7DOyIpBNtOJmLb/hcwN+ySEDSXMiARQJmNhcyYJHATVgk8E8syszfxj5TFpEEMJ4zEHB3kHzgvntxEQGSD8dy1jNd1wEASD4D8GkQiVmLPpJ8DmwqAnoC7r4i+drM3k1YIWAtMlAyM5jZGck3ZrZq8wUASN6VdO7uezXZJL0CcLvGCcB+T3i/CrWJqxZnZkeZeZ/k04j4BpIHJK8yU5KytoI2bpMza9cXmSL5k+TjUqtob7L8JG2huk+12lsGACT3ALx39zuoFgE4xJZFAO7V+88AvqBnkaRTM5Mkk/QdwJOI+IpGZq5Ivs1MZeZgEyUd9+w4HllXzT3tum69yeuvSNJlRBxJeqHxz7Fv38DKzISkl+5+6O6Xbb60i4ho4xnJH9sPmEPSo1LKBXB9WBujrSIiPvQPS2OiMpBEKeViLGe0VQCbivpM9aJe9YO13RvODVkkMGXRn1gk8H/+0X4B9mM0rhW8WLcAAAAASUVORK5CYII=\" style=\"width : 15px; height : 15px;\" alt=\"Expand Image\"></a></div>\n"
       "<div style=\"clear : both;\"></div>\n"
       "<hr style=\"width : 80%;\">\n"
       "<div id=\"spring_matrix\" name=\"spring_matrix\" style=\"width : 256px; height : 256px; padding : 0 0 0 0; margin : 0 0 0 0; border : 0;\" onclick=\"matrixClick(this)\">\n"
-      "<img id=\"spring_matrix_img\" name=\"spring_matrix_img\" src=\"/image/spring_matrix.bmp\" style=\"width : 256px; height : 256px; border : 0; padding : 0 0 0 0; margin : 0 0 0 0;\">\n"
+      "<img id=\"spring_matrix_img\" name=\"spring_matrix_img\" src=\"\" style=\"width : 256px; height : 256px; border : 0; padding : 0 0 0 0; margin : 0 0 0 0;\">\n"
       "</div>\n"
       "</div>\n");
 
@@ -100,40 +100,68 @@ void stratum_http_spring_img_html(shbuf_t *buff)
   shbuf_catstr(buff,
       "<script type=\"text/javascript\">\n"
       "document.getElementById(\"spring_matrix\").addEventListener(\"click\", clickPos, false);\n"
-      "var x_of = 0, y_of = 0;\n"
-      "var mClick = false;\n"
-      "var zoom = 1.0;\n"
-      "function matrixClick(el) {\n"
-      "  x_of = el.offsetLeft;\n"
-      "  y_of = el.offsetTop;\n"
-      "  mClick = true;\n"
-      "  return false;\n"
-      "}\n"
+      "var offsetX = 0.0;\n"
+      "var offsetY = 0.0;\n"
+      "var mSpringClick = false;\n"
+      "var mValidateClick = false;\n"
+      "var zoom = 0.0;\n"
       "var clientX = 0.0;\n"
       "var clientY = 0.0;\n"
-      "function clickPos(e) {\n"
-      "  if (mClick) {\n"
-      "    var i = document.getElementById(\"spring_matrix_img\");\n"
-      "    var l = document.getElementById(\"spring_matrix_lbl\");\n"
-      "    if (i != null && l != null) {\n"
-      "      if (zoom == 1.0) {\n"
-      "        clientX = e.clientX - x_of;\n"
-      "        clientY = e.clientY - y_of;\n"
-      "        zoom = 0.5;\n"
-      "        i.src = \"/image/spring_matrix.bmp?y=\" + clientY + \"&x=\" + clientX + \"&zoom=\" + zoom;\n"
-      "      } else if (zoom > 0.001) {\n"
-      "        zoom /= 2;\n"
-      "        i.src = \"/image/spring_matrix.bmp?y=\" + clientY + \"&x=\" + clientX + \"&zoom=\" + zoom;\n"
-      "      } else {\n"
-      "        zoom = 1.0;\n"
-      "        i.src = \"/image/spring_matrix.bmp\";\n"
-      "      }\n"
-      "      l.innerHTML = \"x\" + (1 / zoom);\n"
-      "    }\n"
-      "    mClick = false;\n"
-      "  }\n"
+      "function matrixClick(el) {\n"
+      "  offsetX = el.offsetLeft;\n"
+      "  offsetY = el.offsetTop;\n"
+      "  mSpringClick = true;\n"
+      "  return false;\n"
       "}\n"
-      "</script>\n");
+      "function clickPos(e) {\n"
+      "  if (zoom == 0.5) {\n"
+      "    clientX = e.clientX;\n"
+      "    clientY = e.clientY;\n"
+      "  }\n"
+      "  printMatrix();\n"
+      "}\n"
+      "function printMatrix(e)\n"
+      "{\n"
+      "  var i = null, l = null;\n"
+      "  if (mSpringClick) {\n"
+      "    i = document.getElementById(\"spring_matrix_img\");\n"
+      "    l = document.getElementById(\"spring_matrix_lbl\");\n"
+      "  } else if (mValidateClick) {\n"
+      "    i = document.getElementById(\"validate_matrix_img\");\n"
+      "    l = document.getElementById(\"validate_matrix_lbl\");\n"
+      "  }\n"
+      "  mSpringClick = false;\n"
+      "  mValidateClick = false;\n"
+      "  if (i == null || l == null)\n"
+      "    return;\n"
+      "\n"
+      "  var srcX = clientX - offsetX;\n"
+      "  var srcY = clientY - offsetY;\n"
+      "  i.src = \"http://localhost:9448/image/spring_matrix.bmp?y=\" + srcY + \"&x=\" + srcX + \"&zoom=\" + zoom;\n"
+      "  l.innerHTML = \"x\" + (1 / zoom);\n"
+      "\n"
+      "  if (zoom < 0.001) {\n"
+      "    zoom = 1.0;\n"
+      "    clientX = offsetX + 128.0;\n"
+      "    clientY = offsetY + 128.0;\n"
+      "  } else {\n"
+      "    zoom /= 2;\n"
+      "  }\n"
+      "\n"
+      "}\n"
+      "function initMatrix()\n"
+      "{\n"
+      "  zoom = 1.0;\n"
+      "  offsetX = 0.0;\n"
+      "  offsetY = 0.0;\n"
+      "  clientX = 128.0;\n"
+      "  clientY = 128.0;\n"
+      "}\n"
+      "initMatrix();\n"
+      "mSpringClick = true;\n"
+      "printMatrix();\n"
+      "</script>\n"
+      );
 
 }
 
@@ -169,6 +197,7 @@ void stratum_http_spring_img(char *args, shbuf_t *buff)
   ptr = strstr(args, "span=");
   if (ptr)
     span = atof(ptr+5);
+  span = MAX(0.2, span);
 
   x_of = floor(x_of / 8) * 8;
   y_of = floor(y_of / 8) * 8;
@@ -186,7 +215,6 @@ void stratum_http_spring_img(char *args, shbuf_t *buff)
   shbuf_catstr(buff, "\r\n"); 
 
   err = shfs_mem_read(bmp_path, buff);
-fprintf(stderr, "DEBUG: %d = shfs_mem_read('%s')\n", err, bmp_path);
 #if 0
   data = (char *)calloc(st.st_size, sizeof(char));
   fl = fopen(bmp_path, "rb");
@@ -229,6 +257,7 @@ void stratum_http_validate_img(char *args, shbuf_t *buff)
   ptr = strstr(args, "span=");
   if (ptr)
     span = atof(ptr+5);
+  span = MAX(0.2, span);
 
   x_of = floor(x_of);
   y_of = floor(y_of);
@@ -246,7 +275,6 @@ void stratum_http_validate_img(char *args, shbuf_t *buff)
   shbuf_catstr(buff, "\r\n"); 
 
   err = shfs_mem_read(bmp_path, buff);
-fprintf(stderr, "DEBUG: %d = shfs_mem_read('%s')\n", err, bmp_path);
 #if 0
   data = (char *)calloc(st.st_size, sizeof(char));
   fl = fopen("/tmp/validate_fractal.bmp", "rb");
