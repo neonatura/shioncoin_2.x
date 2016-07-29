@@ -33,47 +33,114 @@ static const char *_stratum_user_html_template =
 "Shares: %lu\r\n"
 "Accepted: %u\r\n"
 "\r\n";
-static const char *_stratum_html_template = 
-"<div style=\"font-size : 14px; font-family : Georgia; height : 32px; width : 99%; background : linear-gradient(to bottom, #1e5799 0%,#2989d8 50%,#207cca 51%,#7db9e8 100%); color : #e8e8e9; padding-top : 10px;\">\r\n" /* show ver */
-"<div style=\"float : left; margin-left : 16px; margin-right : 16px; font-size : 16px;\">%s</div>\r\n"
-"<div style=\"float : left; margin-left : 16px;\">Block Height: %lu</div>\r\n"
-"<div style=\"float : left; margin-left : 16px;\">Difficulty: %-4.4f</div>\r\n"
-"<div style=\"float : left; margin-left : 16px;\">Global Speed: %-1.1fkh/s</div>\r\n"
-"<div style=\"float : left; margin-left : 16px;\">Max Coins: %lu</div>\r\n"
-"<div style=\"float : left; margin-left : 16px;\">Maturity: %lu</div>\r\n"
-"<div style=\"clear : both;\"></div>\r\n"
-"</div>\r\n"
-"<hr></hr>\r\n";
 
 
-char *stratum_http_response(SOCKET sk, char *url)
+char *stratum_http_response(SOCKET sk, char *url, int *idx_p)
 {
-  static char ret_html[10240];
+  static shbuf_t *buff; 
+  char html[10240];
   char uname[512];
-
+char ip_addr[MAXHOSTNAMELEN+1]; 
   int idx;
-  for (idx = 1; idx < MAX_COIN_IFACE; idx++) { 
-    CIface *iface = GetCoinByIndex(idx);
-    if (!iface || !iface->enabled) continue;
+int t_sk;
+unet_table_t *t;
 
-    *ret_html = '\0';
-    {
-      shjson_t *json = shjson_init(getmininginfo(idx));
-      unsigned long height = shjson_array_num(json, "result", 0);
-      sprintf(ret_html+strlen(ret_html), _stratum_html_template, 
-          iface->name, height,
-          shjson_array_num(json, "result", 1),
-          shjson_array_num(json, "result", 2),
-          (unsigned long)(iface->max_money / COIN),
-          (unsigned long)iface->coinbase_maturity);
-      shjson_free(&json);
+  if (!buff)
+    buff = shbuf_init();
+  shbuf_clear(buff);
 
-      /* DEBUG: TODO: .. show mem usage .. blockIndex vs mapped files ~ */
+  CIface *iface = NULL;
+  for (idx = 1; idx < MAX_COIN_IFACE; idx++) {
+    iface = GetCoinByIndex(idx);
+    if (0 == strncmp(url+1, iface->name, strlen(iface->name)))
+      break;
+  }
+  if (idx == MAX_COIN_IFACE) {
+    for (idx = 1; idx < MAX_COIN_IFACE; idx++) {
+      iface = GetCoinByIndex(idx);
+      if (iface && iface->enabled)
+        break;
+    }
+  }
+  if (idx_p)
+    *idx_p = idx;
+
+  int next_idx;
+  CIface *next_iface = NULL;
+  for (next_idx = 1; next_idx < MAX_COIN_IFACE; next_idx++) {
+    int nIdx = (idx + next_idx) % MAX_COIN_IFACE;
+    if (nIdx == 0) continue;
+
+    next_iface = GetCoinByIndex(nIdx);
+    if (next_iface && next_iface->enabled)
+      break;
+  }
+  if (next_idx == MAX_COIN_IFACE)
+    next_iface = NULL;
+
+  {
+    shjson_t *json = shjson_init(getmininginfo(idx));
+    unsigned long height = shjson_array_num(json, "result", 0);
+
+    shbuf_catstr(buff,
+        "<div style=\"font-size : 14px; font-family : Georgia; height : 32px; width : 99%; background : linear-gradient(to bottom, #1e5799 0%,#2989d8 50%,#207cca 51%,#7db9e8 100%); color : #e8e8e9; padding-top : 10px;\">\r\n"); 
+
+
+    /* pulldown in order to traverse to other shcoind stratum http pages */
+    shbuf_catstr(buff,
+        "<div style=\"float : right; margin-right : 16px;\">\r\n"
+        "<select onchange=\"window.location.href=this.options[this.selectedIndex].value;\" style=\"font-variant : small-caps; background : linear-gradient(to bottom, #1e5799 0%,#2989d8 50%,#207cca 51%,#7db9e8 100%); color : #e8e8e9; border-radius : 9px; border : 0; -webkit-appearance : none; -moz-appearance : none; text-indent: 0.01px; text-overflow: ''; overflow : none;\">\r\n");
+
+    shbuf_catstr(buff, "<option selected disabled value=\" \" style=\"color : #666; outline : 0;\"> </option>");
+    for (t_sk = 1; t_sk < MAX_UNET_SOCKETS; t_sk++) {
+      t = get_unet_table(t_sk);
+      if (!t || t->fd == UNDEFINED_SOCKET)
+        continue; /* non-active */
+      if (t->mode != SHC_COIN_IFACE)
+        continue; /* irrelevant */
+
+      memset(ip_addr, 0, sizeof(ip_addr));
+      strncpy(ip_addr, shaddr_print(&t->net_addr), sizeof(ip_addr)-1);
+      strtok(ip_addr, ":");
+      sprintf(html, "<option value=\"http://%s:9448/\" style=\"color : #666; outline : 0;\">%s</option>", ip_addr, ip_addr); 
+      shbuf_catstr(buff, html);
+    }
+    shbuf_catstr(buff,
+        "</select>\n"
+        "</div>\n");
+
+
+    if (next_iface) {
+      sprintf(html,
+          "<div style=\"float : right; margin-right : 16px;\">\n"
+          "<form><input type=\"submit\" value=\"%s\" style=\"font-variant : small-caps; background : linear-gradient(to bottom, #1e5799 0%,#2989d8 50%,#207cca 51%,#7db9e8 100%); color : #e8e8e9; border-radius : 9px; border : 0; outline : 0;\" onclick=\"window.location.href='/%s/';return false;\"></form>\n"
+          "</div>\n",
+          next_iface->name, next_iface->name);
+      shbuf_catstr(buff, html);
     }
 
+    sprintf(html,
+        "<div style=\"float : left; margin-left : 16px; margin-right : 16px; font-size : 16px;\">%s</div>\r\n"
+        "<div style=\"float : left; margin-left : 16px;\">Block Height: %lu</div>\r\n"
+        "<div style=\"float : left; margin-left : 16px;\">Difficulty: %-4.4f</div>\r\n"
+        "<div style=\"float : left; margin-left : 16px;\">Global Speed: %-1.1fkh/s</div>\r\n"
+        "<div style=\"float : left; margin-left : 16px;\">Max Coins: %lu</div>\r\n"
+        "<div style=\"float : left; margin-left : 16px;\">Maturity: %lu</div>\r\n"
+        "<div style=\"clear : both;\"></div>\r\n"
+        "</div>\r\n"
+        "<hr></hr>\r\n",
+        iface->name, height,
+        shjson_array_num(json, "result", 1),
+        shjson_array_num(json, "result", 2),
+        (unsigned long)(iface->max_money / COIN),
+        (unsigned long)iface->coinbase_maturity);
+    shbuf_catstr(buff, html);
+    shjson_free(&json);
+
+/* DEBUG: TODO: .. show mem usage .. blockIndex vs mapped files ~ */
   }
 
-  return (ret_html);
+  return (shbuf_data(buff));
 }
 
 void stratum_http_spring_img_html(shbuf_t *buff)
@@ -291,7 +358,8 @@ void stratum_http_request(SOCKET sk, char *url)
 {
   user_t *user;
   shbuf_t *buff;
-char ret_html[4096];
+  char ret_html[4096];
+  int ifaceIndex;
 
   buff = shbuf_init();
 
@@ -314,7 +382,7 @@ char ret_html[4096];
   shbuf_catstr(buff, "Content-Type: text/html\r\n");
   shbuf_catstr(buff, "\r\n"); 
   shbuf_catstr(buff, "<html><body>\r\n"); 
-  shbuf_catstr(buff, stratum_http_response(sk, url));
+  shbuf_catstr(buff, stratum_http_response(sk, url, &ifaceIndex));
 
   shbuf_catstr(buff, 
       "<div style=\"width : 80%; margin-left : auto; margin-right : auto; font-size : 13px; width : 90%;\">" 
@@ -335,9 +403,10 @@ char ret_html[4096];
   }
   shbuf_catstr(buff, "</table>\r\n");
 
-
-  /* attach image of current spring matrix fractal */
-  stratum_http_spring_img_html(buff);
+  if (ifaceIndex == SHC_COIN_IFACE) {
+    /* attach image of current spring matrix fractal */
+    stratum_http_spring_img_html(buff);
+  }
 
   shbuf_catstr(buff, "</body></html>\r\n"); 
 
