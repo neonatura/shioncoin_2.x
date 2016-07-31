@@ -417,7 +417,8 @@ bool CTxDB::EraseTxIndex(const CTransaction& tx)
 {
     assert(!fClient);
     uint256 hash = tx.GetHash();
-fprintf(stderr, "DEBUG: EraseTxIndex: '%s'\n", tx.GetHash().GetHex().c_str());
+
+//    Debug("EraseTxIndex: removing tx '%s' from block-chain.", tx.GetHash().GetHex().c_str());
 
     return Erase(make_pair(string("tx"), hash));
 }

@@ -236,6 +236,7 @@ void unet_peer_fill(int mode);
 
 unsigned int unet_peer_total(int mode);
 
+int unet_peer_find(int mode, struct sockaddr *addr);
 
 
 #ifdef __cplusplus

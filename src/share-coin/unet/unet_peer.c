@@ -26,9 +26,9 @@
 #include "shcoind.h"
 #include "unet_seed.h"
 
-#define MAX_UNET_PEER_SCAN_SIZE 64
+#define MAX_UNET_PEER_SCAN_SIZE 16
 
-int unet_peer_find(struct sockaddr *addr)
+int unet_peer_find(int mode, struct sockaddr *addr)
 {
   sa_family_t in_fam;
   sa_family_t cmp_fam;
@@ -42,6 +42,9 @@ int unet_peer_find(struct sockaddr *addr)
     t = get_unet_table(sk);
     if (!t || t->fd == UNDEFINED_SOCKET)
       continue; /* non-active */
+
+    if (t->mode != mode)
+      continue;
 
     cmp_fam = *((sa_family_t *)&t->net_addr);
     if (cmp_fam != in_fam) {

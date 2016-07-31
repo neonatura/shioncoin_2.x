@@ -2050,10 +2050,11 @@ bool core_DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex, CBlock *pblock)
 {
   CIface *iface = GetCoinByIndex(txdb.ifaceIndex);
   int err;
-fprintf(stderr, "DEBUG: DISCONNECT: height %d\n", pindex->nHeight);
 
-  if (!iface)
-    return error(SHERR_INVAL, "coin iface no available.");
+  if (!iface || !iface->enabled)
+    return error(SHERR_INVAL, "coin interface not enabled.");
+
+  Debug("DisonnectBlock[%s]: disconnect block '%s' (height %d).", iface->name, pindex->GetBlockHash().GetHex().c_str(), (int)pindex->nHeight);
 
   // Disconnect in reverse order
   for (int i = pblock->vtx.size()-1; i >= 0; i--)

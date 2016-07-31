@@ -287,14 +287,10 @@ void c_processaltblock(int altIndex, unsigned int nMinNonce, char *xn_hex)
     
     CBlockIndex *bestIndex = GetBestBlockIndex(iface);
     if (alt_block->hashPrevBlock != bestIndex->GetBlockHash()) {
-      fprintf(stderr, "DEBUG: invalid block submitted[iface #%d]/prev:\n", alt_block->ifaceIndex);
-      alt_block->print();
-continue; /* BLKERR_INVALID_JOB */
+      continue; /* BLKERR_INVALID_JOB */
     }
     if (alt_block->nTime < bestIndex->nTime) {
-      fprintf(stderr, "DEBUG: invalid block submitted[iface #%d]/time:\n", alt_block->ifaceIndex);
-      alt_block->print();
-continue; /* BLKERR_INVALID_BLOCK */
+      continue; /* BLKERR_INVALID_BLOCK */
     }
 
     CNode *pfrom = NULL;
@@ -303,7 +299,6 @@ continue; /* BLKERR_INVALID_BLOCK */
     SetExtraNonce(alt_block, xn_hex);
     alt_block->hashMerkleRoot = alt_block->BuildMerkleTree();
 
-fprintf(stderr, "DEBUG: c_processaltblock[iface #%d]: testing alt block..\n");
     timing_init("ProcessAltBlock/Nonce", &ts);
     uint256 hashTarget = CBigNum().SetCompact(alt_block->nBits).getuint256();
     for (idx = 0; idx < MAX_NONCE_SEQUENCE; idx++) {
@@ -316,34 +311,25 @@ fprintf(stderr, "DEBUG: c_processaltblock[iface #%d]: testing alt block..\n");
     if (idx == MAX_NONCE_SEQUENCE) {
       continue; /* BLKERR_TARGET_LOW */
     }
-fprintf(stderr, "DEBUG: c_processaltblock[iface #%d]: found alt block to submit @ nonce %u.\n", ifaceIndex, (unsigned int)nNonce); 
 
     // Check for duplicate
     uint256 hash = alt_block->GetHash();
     blkidx_t *blockIndex = GetBlockTable(ifaceIndex);
     if (blockIndex->count(hash)) {// || alt_block->IsOrphan())
-fprintf(stderr, "DEBUG: c_processaltblock: alt_block is duplicate\n");
       continue;  // BLKERR_DUPLICATE_BLOCK
     }
 
     /* verify integrity */
     if (!alt_block->CheckBlock()) {
-fprintf(stderr, "DEBUG: c_processaltblock: alt_block checkblock failure\n");
       continue; // BLKERR_CHECKPOINT
     }
 
     // Store to disk
     if (!alt_block->AcceptBlock()) {
-fprintf(stderr, "DEBUG: c_processaltblock: alt_block accept failure\n"); 
       continue; // BLKERR_INVALID_BLOCK
     }
 
     break;
-#if 0
-    /* success */
-fprintf(stderr, "DEBUG: ALT-COIN: c_processaltblock[iface #%d]: found coin via merged mining:\n", ifaceIndex);
-    alt_block->print();
-#endif
   }
 
 }
@@ -360,7 +346,6 @@ int c_processblock(CBlock* pblock)
   CNode *pfrom = NULL;
 
   if (vNodes.empty()) {
-fprintf(stderr, "DEBUG: c_processblock: no connected peers.\n");
     return (0); 
 }
 #if 0 
@@ -387,13 +372,9 @@ fprintf(stderr, "DEBUG: c_processblock: IsInitialBlockDownload()\n");
   }
 
   if (pblock->hashPrevBlock != bestIndex->GetBlockHash()) {
-fprintf(stderr, "DEBUG: invalid block submitted[iface #%d]/prev:\n", pblock->ifaceIndex);
-pblock->print();
     return (BLKERR_INVALID_JOB); /* work not up-to-date */
   }
   if (pblock->nTime < bestIndex->nTime) {
-fprintf(stderr, "DEBUG: invalid block submitted[iface #%d]/time:\n", pblock->ifaceIndex);
-pblock->print();
     return (BLKERR_INVALID_BLOCK);
   }
 

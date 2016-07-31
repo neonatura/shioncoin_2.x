@@ -106,7 +106,7 @@ int uevent_peer_verify(uevent_t *e)
     bind->scan_freq = MAX(0.001, bind->scan_freq * 1.1);
 
     /* initiate service connection. */
-    if (!unet_peer_find(shpeer_addr(peer))) /* x2check */
+    if (!unet_peer_find(e->mode, shpeer_addr(peer))) /* x2check */
       unet_connect(e->mode, shpeer_addr(peer), NULL);
 
     sprintf(buf, "unet_peer_verify: peer '%s' verified.\n", shpeer_print(peer));
@@ -187,7 +187,7 @@ int uevent_cycle_peer(uevent_t *e)
     goto fin;
   }
 
-  if (unet_peer_find(shpeer_addr(peer))) {
+  if (unet_peer_find(e->mode, shpeer_addr(peer))) {
     shnet_track_mark(bind->peer_db, peer, 1); /* give points for being connected */
     goto fin; /* already connected */
   }

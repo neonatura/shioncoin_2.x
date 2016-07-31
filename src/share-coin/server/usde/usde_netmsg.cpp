@@ -1095,8 +1095,6 @@ bool usde_SendMessages(CIface *iface, CNode* pto, bool fSendTrickle)
             if (GetTransaction(inv.hash, wtx)) {
               if (wtx.fFromMe)
                 fTrickleWait = true;
-            } else {
-fprintf(stderr, "DEBUG: USDE: TX-INV: unknown tx '%s'\n", inv.hash.GetHex().c_str()); 
             }
           }
 
