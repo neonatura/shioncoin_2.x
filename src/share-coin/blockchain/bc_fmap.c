@@ -397,6 +397,7 @@ unsigned int bc_fmap_total(bc_t *bc)
   int total;
   int i;
 
+  total = 0;
   for (i = 0; i < bc->data_map_len; i++) {
     map = bc->data_map + i;
     if (map->fd != 0)

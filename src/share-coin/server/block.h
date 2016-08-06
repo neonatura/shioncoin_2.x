@@ -53,12 +53,6 @@ typedef std::vector<uint256> HashList;
 class CTxDB;
 
 
-bc_t *GetBlockChain(CIface *iface);
-
-bc_t *GetBlockTxChain(CIface *iface);;
-
-
-void CloseBlockChains(void);
 
 
 
@@ -1611,8 +1605,6 @@ CBlockIndex *GetBestBlockIndex(CIface *iface);
 
 CBlockIndex *GetBestBlockIndex(int ifaceIndex);
 
-void CloseBlockChain(CIface *iface);
-
 bool VerifyTxHash(CIface *iface, uint256 hashTx);
 
 CBlock *GetArchBlockByHash(CIface *iface, const uint256 hash);
@@ -1624,6 +1616,11 @@ bool core_AcceptBlock(CBlock *pblock);
 CBlockIndex *GetBlockIndexByHeight(int ifaceIndex, unsigned int nHeight);
 
 bool core_DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex, CBlock *pblock);
+
+void CloseBlockChain(CIface *iface);
+
+void CloseBlockChains(void);
+
 
 
 #endif /* ndef __SERVER_BLOCK_H__ */

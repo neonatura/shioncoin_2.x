@@ -807,9 +807,9 @@ Value rpc_sys_info(CIface *iface, const Array& params, bool fHelp)
   obj.push_back(Pair("txaccept",  (int)iface->stat.tot_tx_accept));
 
   bc = GetBlockChain(iface);
-  obj.push_back(Pair("blockfmaps", (int)bc_block_total(bc)));
+  obj.push_back(Pair("blockfmaps", (int)bc_fmap_total(bc)));
   bc = GetBlockTxChain(iface); 
-  obj.push_back(Pair("txfmaps", (int)bc_tx_total(bc)));
+  obj.push_back(Pair("txfmaps", (int)bc_fmap_total(bc)));
 
   if (iface->net_valid) {
     sprintf(tbuf, "%-20.20s", ctime(&iface->net_valid));

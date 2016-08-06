@@ -639,3 +639,59 @@ int bc_arch_write(bc_t *bc, bc_hash_t hash, void *raw_data, int data_len)
 
 
 
+
+/**
+ * Opens a specific database of block records.
+ */
+bc_t *GetBlockChain(CIface *iface)
+{
+
+  if (!iface->bc_block) {
+    char name[4096];
+
+    sprintf(name, "%s_block", iface->name);
+    bc_open(name, &iface->bc_block);
+  }
+
+  return (iface->bc_block);
+}
+
+
+/**
+ * Opens a specific database of block references. 
+ */
+bc_t *GetBlockTxChain(CIface *iface)
+{
+
+  if (!iface->bc_tx) {
+    char name[4096];
+
+    sprintf(name, "%s_tx", iface->name);
+    bc_open(name, &iface->bc_tx);
+  }
+
+  return (iface->bc_tx);
+}
+
+void bc_chain_idle(void)
+{
+#ifdef SHCOIN_SERVER
+  CIface *iface;
+  bc_t *bc;
+  int ifaceIndex;
+
+  for (ifaceIndex = 0; ifaceIndex < MAX_COIN_IFACE; ifaceIndex++) {
+    iface = GetCoinByIndex(ifaceIndex);
+    if (!iface || !iface->enabled)
+      continue;
+
+    bc = GetBlockTxChain(iface);
+    if (bc)
+      bc_idle(bc);
+
+    bc = GetBlockChain(iface);
+    if (bc)
+      bc_idle(bc);
+  }
+#endif
+}

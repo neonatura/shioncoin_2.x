@@ -24,6 +24,7 @@
  */  
 
 #include "shcoind.h"
+#include "coin_proto.h"
 
 static const char *_unet_label[MAX_UNET_MODES] = 
 {
@@ -90,6 +91,7 @@ int unet_mode(SOCKET sk)
   return (t->mode);
 }
 
+void bc_chain_idle(void);
 
 void unet_idle(void)
 {
@@ -100,21 +102,9 @@ void unet_idle(void)
   /* purge idle sockets */
   unet_close_idle(); 
 
-  for (ifaceIndex = 0; ifaceIndex < MAX_COIN_IFACE; ifaceIndex++) {
-    iface = GetCoinByIndex(ifaceIndex);
-    if (!iface || !iface->enabled)
-      continue;
-
-    bc = GetBlockTxChain(iface);
-    if (bc)
-      bc_idle(bc);
-
-    bc = GetBlockChain(iface);
-    if (bc)
-      bc_idle(bc);
-  }
-
+  bc_chain_idle();
 }
+
 
 /**
  * The maximum desired time-span to perform the cycle.
@@ -231,7 +221,7 @@ fprintf(stderr, "DEBUG: unet_cycle: shnet_read failure: %s [errno %d]\n", strerr
 
     unet_idle(); 
 
-    next_t = now + 5;
+    next_t = now + 15;
   }
 
   /* wait remainder of max_t */

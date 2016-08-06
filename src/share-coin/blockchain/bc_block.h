@@ -69,5 +69,7 @@ int bc_arch_write(bc_t *bc, bc_hash_t hash, void *raw_data, int data_len);
 
 int bc_purge(bc_t *bc, bcsize_t pos);
 
+void bc_chain_idle(void);
+
 
 #endif /* ndef __BLOCKCHAIN__BC_BLOCK_H__ */

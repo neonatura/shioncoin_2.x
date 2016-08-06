@@ -203,6 +203,12 @@ coin_iface_t *GetCoin(const char *name);
  * @}
  */
 
+
+bc_t *GetBlockChain(CIface *iface);
+
+bc_t *GetBlockTxChain(CIface *iface);
+
+
 #ifdef __cplusplus
 }
 
@@ -211,6 +217,8 @@ typedef std::vector<CNode *> NodeList;
 NodeList& GetNodeList(int ifaceIndex);
 NodeList& GetNodeList(CIface *iface);
 #endif
+
+
 
 
 #endif /* ndef __COIN_PROTO_H__ */

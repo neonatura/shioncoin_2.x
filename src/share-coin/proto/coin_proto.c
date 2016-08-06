@@ -66,6 +66,31 @@ int GetCoinIndex(coin_iface_t *iface)
 
   return (-1);
 }
+
+int GetCoinAttr(const char *name, char *attr)
+{
+  coin_iface_t *iface;
+
+  if (!attr)
+    return (0);
+
+  iface = GetCoin(name);
+  if (!iface)
+    return (0);
+
+  if (0 == strcasecmp(attr, "max-block-size"))
+    return (iface->max_block_size);
+  if (0 == strcasecmp(attr, "min-tx-fee"))
+    return (iface->min_tx_fee);
+  if (0 == strcasecmp(attr, "min-relay-tx-fee"))
+    return (iface->min_relay_tx_fee);
+  if (0 == strcasecmp(attr, "max-money"))
+    return (iface->max_money);
+  if (0 == strcasecmp(attr, "coinbase-maturity"))
+    return (iface->coinbase_maturity);
+  return (0);
+}
+
 coin_iface_t *GetCoinByIndex(int index)
 {
   if (index < 0 || index >= MAX_COIN_IFACE)
@@ -94,32 +119,6 @@ coin_iface_t *GetCoin(const char *name)
   }
   return (NULL);
 }
-
-int GetCoinAttr(const char *name, char *attr)
-{
-  coin_iface_t *iface;
-
-  if (!attr)
-    return (0);
-
-  iface = GetCoin(name);
-  if (!iface)
-    return (0);
-
-  if (0 == strcasecmp(attr, "max-block-size"))
-    return (iface->max_block_size);
-  if (0 == strcasecmp(attr, "min-tx-fee"))
-    return (iface->min_tx_fee);
-  if (0 == strcasecmp(attr, "min-relay-tx-fee"))
-    return (iface->min_relay_tx_fee);
-  if (0 == strcasecmp(attr, "max-money"))
-    return (iface->max_money);
-  if (0 == strcasecmp(attr, "coinbase-maturity"))
-    return (iface->coinbase_maturity);
-  return (0);
-}
-
-
 
 #ifdef __cplusplus
 }

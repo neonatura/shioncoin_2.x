@@ -52,23 +52,6 @@ blkidx_t *GetBlockTable(int ifaceIndex)
   return (&tableBlockIndex[ifaceIndex]);
 }
 
-
-/**
- * Opens a specific database of block records.
- */
-bc_t *GetBlockChain(CIface *iface)
-{
-
-  if (!iface->bc_block) {
-    char name[4096];
-
-    sprintf(name, "%s_block", iface->name);
-    bc_open(name, &iface->bc_block);
-  }
-
-  return (iface->bc_block);
-}
-
 void CloseBlockChain(CIface *iface)
 {
   if (iface->bc_block) {
@@ -79,22 +62,6 @@ void CloseBlockChain(CIface *iface)
     bc_close(iface->bc_tx);
     iface->bc_tx = NULL;
   }
-}
-
-/**
- * Opens a specific database of block references. 
- */
-bc_t *GetBlockTxChain(CIface *iface)
-{
-
-  if (!iface->bc_tx) {
-    char name[4096];
-
-    sprintf(name, "%s_tx", iface->name);
-    bc_open(name, &iface->bc_tx);
-  }
-
-  return (iface->bc_tx);
 }
 
 CBlockIndex *GetBlockIndexByHeight(int ifaceIndex, unsigned int nHeight)
