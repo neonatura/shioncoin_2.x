@@ -1590,18 +1590,18 @@ fprintf(stderr, "DEBUG: usde_server_timer: unet_shutdown()\n");
 
   event_cycle_chain(USDE_COIN_IFACE); /* DEBUG: */
 
-  if (0 == (verify_idx % 1024)) {
 #if 0
+  if (0 == (verify_idx % 20)) {
     bc = GetBlockTxChain(iface);
     if (bc)
       bc_idle(bc);
-#endif
 
     bc = GetBlockChain(iface);
     if (bc)
       bc_idle(bc);
   }
   verify_idx++;
+#endif
 
 }
 
@@ -1892,18 +1892,19 @@ fprintf(stderr, "DEBUG: shc_server_timer: unet_shutdown()\n");
 
   event_cycle_chain(SHC_COIN_IFACE); /* DEBUG: TODO: uevent */
 
-  if (0 == (verify_idx % 1024)) {
 #if 0
+  if (0 == (verify_idx % 20)) {
     bc = GetBlockTxChain(iface);
     if (bc)
       bc_idle(bc);
-#endif
 
     bc = GetBlockChain(iface);
     if (bc)
       bc_idle(bc);
   }
   verify_idx++;
+#endif
+
 }
 
 void shc_server_accept(int hSocket, struct sockaddr *net_addr)

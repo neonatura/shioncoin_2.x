@@ -957,7 +957,7 @@ uint256 CBlockLocator::GetBlockHash()
     if (mi != blockIndex->end())
     {
       CBlockIndex* pindex = (*mi).second;
-      if (pindex->IsInMainChain(ifaceIndex))
+      if (pindex && pindex->IsInMainChain(ifaceIndex))
         return hash;
     }
   }
@@ -1015,7 +1015,7 @@ CBlockIndex* CBlockLocator::GetBlockIndex()
     if (mi != blockIndex->end())
     {
       CBlockIndex* pindex = (*mi).second;
-      if (pindex->IsInMainChain(ifaceIndex))
+      if (pindex && pindex->IsInMainChain(ifaceIndex))
         return pindex;
     }
   }
@@ -1084,7 +1084,7 @@ int CBlockLocator::GetDistanceBack()
     if (mi != blockIndex->end())
     {
       CBlockIndex* pindex = (*mi).second;
-      if (pindex->IsInMainChain(ifaceIndex))
+      if (pindex && pindex->IsInMainChain(ifaceIndex))
         return nDistance;
     }
     nDistance += nStep;

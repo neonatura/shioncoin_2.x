@@ -91,13 +91,37 @@ int unet_mode(SOCKET sk)
 }
 
 
+void unet_idle(void)
+{
+  CIface *iface;
+  int ifaceIndex;
+  bc_t *bc;
+
+  /* purge idle sockets */
+  unet_close_idle(); 
+
+  for (ifaceIndex = 0; ifaceIndex < MAX_COIN_IFACE; ifaceIndex++) {
+    iface = GetCoinByIndex(ifaceIndex);
+    if (!iface || !iface->enabled)
+      continue;
+
+    bc = GetBlockTxChain(iface);
+    if (bc)
+      bc_idle(bc);
+
+    bc = GetBlockChain(iface);
+    if (bc)
+      bc_idle(bc);
+  }
+
+}
 
 /**
  * The maximum desired time-span to perform the cycle.
  */
 void unet_cycle(double max_t)
 {
-  static int last_scan_t;
+  static int next_t;
   unet_bind_t *bind;
   unet_table_t *t;
   shbuf_t *buff;
@@ -111,6 +135,7 @@ void unet_cycle(double max_t)
   unsigned long diff;
   ssize_t w_len;
   SOCKET sk;
+  time_t now;
   int fd_max;
   int mode;
   int err;
@@ -196,17 +221,18 @@ fprintf(stderr, "DEBUG: unet_cycle: shnet_read failure: %s [errno %d]\n", strerr
   /* events */
   uevent_cycle();
 
-  /* scan for new service connections */
-  if (uevent_type_count(UEVENT_PEER) == 0) {
-    time_t now = time(NULL);
-    if (last_scan_t + 10 < now) {
-      unet_peer_scan();
-      last_scan_t = now;
-    }
-  }
+  now = time(NULL);
 
-  /* purge idle sockets */
-  unet_close_idle(); 
+  if (next_t < now) {
+    /* scan for new service connections */
+    if (uevent_type_count(UEVENT_PEER) == 0) {
+      unet_peer_scan();
+    }
+
+    unet_idle(); 
+
+    next_t = now + 5;
+  }
 
   /* wait remainder of max_t */
   diff = (unsigned long)(max_t - (shtimef(shtime()) - shtimef(start_t)));

@@ -776,6 +776,7 @@ Value rpc_sys_info(CIface *iface, const Array& params, bool fHelp)
 {
   CWallet *pwalletMain = GetWallet(iface);
   int ifaceIndex = GetCoinIndex(iface);
+  bc_t *bc;
   char tbuf[256];
 
   if (fHelp || params.size() != 0)
@@ -804,6 +805,11 @@ Value rpc_sys_info(CIface *iface, const Array& params, bool fHelp)
   obj.push_back(Pair("blockaccept",  (int)iface->stat.tot_block_accept));
   obj.push_back(Pair("txsubmit",  (int)iface->stat.tot_tx_submit));
   obj.push_back(Pair("txaccept",  (int)iface->stat.tot_tx_accept));
+
+  bc = GetBlockChain(iface);
+  obj.push_back(Pair("blockfmaps", (int)bc_block_total(bc)));
+  bc = GetBlockTxChain(iface); 
+  obj.push_back(Pair("txfmaps", (int)bc_tx_total(bc)));
 
   if (iface->net_valid) {
     sprintf(tbuf, "%-20.20s", ctime(&iface->net_valid));

@@ -11,3 +11,6 @@ int bc_map_write(bc_t *bc, bc_map_t *map, bcsize_t of, void *raw_data, bcsize_t 
 int bc_map_trunc(bc_t *bc, bc_map_t *map, bcsize_t len);
 
 shkey_t *get_bcmap_lock(void);
+
+unsigned int bc_fmap_total(bc_t *bc);
+

@@ -91,9 +91,11 @@ int unet_unbind(int mode)
   /* close all accepted sockets */
   unet_close_all(mode);
 
-  /* close net track db */
-  shnet_track_close(_unet_bind[mode].peer_db);
-  _unet_bind[mode].peer_db = NULL;
+  if (_unet_bind[mode].peer_db) {
+    /* close net track db */
+    shnet_track_close(_unet_bind[mode].peer_db);
+    _unet_bind[mode].peer_db = NULL;
+  }
 
   err = unet_close(_unet_bind[mode].fd, "unbind");
   _unet_bind[mode].fd = UNDEFINED_SOCKET;

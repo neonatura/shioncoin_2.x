@@ -31,6 +31,8 @@
 #include <stdio.h>
 #endif
 
+static shkey_t *BCMAP_LOCK_KEY;
+
 char *bc_name(bc_t *bc)
 {
 
@@ -38,6 +40,20 @@ char *bc_name(bc_t *bc)
     return (NULL);
 
   return (bc->name);
+}
+
+shlock_t *bc_lock(void)
+{
+  if (!BCMAP_LOCK_KEY)
+    BCMAP_LOCK_KEY = shkey_str(BCMAP_LOCK);
+  return (shlock_open(BCMAP_LOCK_KEY, 0));
+}
+
+void bc_unlock(void)
+{
+  if (!BCMAP_LOCK_KEY)
+    BCMAP_LOCK_KEY = shkey_str(BCMAP_LOCK);
+  shlock_close(BCMAP_LOCK_KEY);
 }
 
 int bc_open(char *name, bc_t **bc_p)
@@ -193,11 +209,12 @@ int bc_write(bc_t *bc, bcsize_t pos, bc_hash_t hash, void *raw_data, int data_le
 {
   int err;
 
-  if (!shlock_open_str(BCMAP_LOCK, 0))
+  if (!bc_lock())
     return (SHERR_NOLCK);
 
   err = _bc_write(bc, pos, hash, raw_data, data_len);
-  shlock_close_str(BCMAP_LOCK);
+  bc_unlock();
+
   return (err);
 }
 
@@ -291,13 +308,15 @@ fprintf(stderr, "DEBUG: bc_read; invalid crc {map: %x, idx: %x} mismatch at pos 
 
 int bc_read(bc_t *bc, int pos, void *data, bcsize_t data_len)
 {
+  shkey_t *key;
   int err;
+  int lk;
 
-  if (!shlock_open_str(BCMAP_LOCK, 0))
+  if (!bc_lock())
     return (SHERR_NOLCK);
 
   err = _bc_read(bc, pos, data, data_len);
-  shlock_close_str(BCMAP_LOCK);
+  bc_unlock();
 
   return (err);
 }
@@ -478,11 +497,12 @@ int bc_purge(bc_t *bc, bcsize_t pos)
 {
   int err;
 
-  if (!shlock_open_str(BCMAP_LOCK, 0))
+  if (!bc_lock())
     return (SHERR_NOLCK);
 
   err = _bc_purge(bc, pos);
-  shlock_close_str(BCMAP_LOCK);
+  bc_unlock();
+
   return (err);
 }
 
@@ -525,10 +545,13 @@ void bc_idle(bc_t *bc)
   bc_map_t *map;
   int i;
 
-  for (i = 0; i < bc->data_map_len; i++) {
-    map = bc->data_map + i;
-    if (map->fd != 0)
-      bc_map_idle(bc, map);
+  if (bc_lock()) {
+    for (i = 0; i < bc->data_map_len; i++) {
+      map = bc->data_map + i;
+      if (map->fd != 0)
+        bc_map_idle(bc, map);
+    }
+    bc_unlock();
   }
 
 }
@@ -605,10 +628,14 @@ int bc_arch_write(bc_t *bc, bc_hash_t hash, void *raw_data, int data_len)
 {
   int err;
 
-  if (!shlock_open_str(BCMAP_LOCK, 0))
+  if (!bc_lock())
     return (SHERR_NOLCK);
 
   err = _bc_arch_write(bc, hash, raw_data, data_len);
-  shlock_close_str(BCMAP_LOCK);
+  bc_unlock();
+
   return (err);
 }
+
+
+

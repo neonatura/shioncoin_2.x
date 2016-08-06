@@ -391,4 +391,19 @@ void bc_map_idle(bc_t *bc, bc_map_t *map)
     shlock_close_str(BCMAP_LOCK);
 }
 
+unsigned int bc_fmap_total(bc_t *bc)
+{
+  bc_map_t *map;
+  int total;
+  int i;
+
+  for (i = 0; i < bc->data_map_len; i++) {
+    map = bc->data_map + i;
+    if (map->fd != 0)
+      total++;
+  }
+
+  return (total);
+}
+
 
