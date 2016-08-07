@@ -273,6 +273,12 @@ fprintf(stderr, "DEBUG: ProcessMessage: pfrom->nVersion (already) %d\n", pfrom->
     if (!vRecv.empty())
       vRecv >> pfrom->nStartingHeight;
 
+    if (0 != strncmp(pfrom->strSubVer.c_str(), "/SHC", 4)) {
+      error(SHERR_INVAL, "(shc) ProcessMessage: connect from wrong coin interface '%s' (%s), disconnecting\n", pfrom->addr.ToString().c_str(), pfrom->strSubVer.c_str());
+      pfrom->fDisconnect = true;
+      return true;
+    }
+
     /* bloom filter option */
     if (!vRecv.empty())
       vRecv >> pfrom->fRelayTxes; // set to true after we get the first filter* message

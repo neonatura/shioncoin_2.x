@@ -265,6 +265,12 @@ bool usde_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
     if (!vRecv.empty())
       vRecv >> pfrom->nStartingHeight;
 
+    if (0 != strncmp(pfrom->strSubVer.c_str(), "/USDE", 5)) {
+      error(SHERR_INVAL, "(usde) ProcessMessage: connect from wrong coin interface '%s' (%s), disconnecting\n", pfrom->addr.ToString().c_str(), pfrom->strSubVer.c_str());
+      pfrom->fDisconnect = true;
+      return true;
+    }
+
     /* ready to send tx's */
     pfrom->fRelayTxes = true;
 
