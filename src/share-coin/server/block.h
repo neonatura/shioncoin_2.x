@@ -469,6 +469,7 @@ class CTransactionCore
     static const int TXF_ASSET = (1 << 9);
     static const int TXF_IDENT = (1 << 10);
     static const int TXF_MATRIX = (1 << 11);
+    static const int TXF_CHANNEL = (1 << 12);
 
     int nFlag;
     std::vector<CTxIn> vin;
@@ -537,6 +538,7 @@ public:
     CAlias alias;
     COffer offer;
     CTxMatrix matrix;
+    CChannel channel;
 
     CTransaction()
     {
@@ -563,6 +565,8 @@ public:
         READWRITE(offer);
       if (this->nFlag & TXF_MATRIX)
         READWRITE(matrix);
+      if (this->nFlag & TXF_CHANNEL)
+        READWRITE(channel);
     )
 
     void Init(const CTransaction& tx)
@@ -580,6 +584,8 @@ public:
         offer = tx.offer;
       if (this->nFlag & TXF_MATRIX)
         matrix = tx.matrix;
+      if (this->nFlag & TXF_CHANNEL)
+        channel = tx.channel;
     }
 
     void SetNull()
@@ -829,6 +835,28 @@ public:
         return (NULL);
       return (&matrix);
     }
+
+    /**
+     * @param lcl_addr The local coin-addr to pay to.
+     * @param rem_addr The remote coin-addr to pay to.
+     * @param nValue The local contributed channel funding.
+     */
+    CChannel *CreateChannel(CCoinAddr& lcl_addr, CCoinAddr& rem_addr, int64 nValue);
+
+    /**
+     * Complete a funding transaction.
+     * @param nValue The local contributed channel funding.
+     */
+    CChannel *ActivateChannel(const CChannel& channelIn, int64 nValue);
+
+    /**
+     * @param nValue The amount to pay via the channel to a coin addr.
+     */
+    CChannel *PayChannel(const CChannel& channelIn);
+
+    CChannel *GenerateChannel(const CChannel& channelIn);
+
+    CChannel *RemoveChannel(const CChannel& channelIn);
 
     /**
      * Verifies whether a vSpent has been spent.

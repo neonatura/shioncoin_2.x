@@ -39,6 +39,7 @@
 #include "addrman.h"
 #include "util.h"
 #include "chain.h"
+#include "mnemonic.h"
 
 #undef fcntl
 #undef GNULIB_NAMESPACE
@@ -1831,7 +1832,6 @@ FILE *fl;
           pwalletMain->SetAddressBookName(vchAddress, strLabel);
 
           if (!pwalletMain->AddKey(key)) {
-fprintf(stderr, "DEBUG: error adding address '%s' to wallet.\n", addr);
             continue; //throw JSONRPCError(-4,"Error adding key to wallet");
           }
 
@@ -2164,6 +2164,52 @@ Value rpc_wallet_setkey(CIface *iface, const Array& params, bool fHelp)
 
     pwalletMain->ScanForWalletTransactions(GetGenesisBlockIndex(iface), true);
     pwalletMain->ReacceptWalletTransactions();
+  }
+
+  return Value::null;
+}
+
+Value rpc_wallet_setkeyphrase(CIface *iface, const Array& params, bool fHelp)
+{
+  CWallet *wallet = GetWallet(iface);
+  int ifaceIndex = GetCoinIndex(iface);
+
+  if (fHelp || params.size() != 2) {
+    throw runtime_error(
+        "wallet.setkeyphrase \"<phrase>\" <account>\n"
+        "Adds a private key to your wallet from a key phrase..");
+  }
+
+  CCoinSecret vchSecret;
+  bool ret = DecodeMnemonicSecret(params[0].get_str(), vchSecret);
+  if (!ret)
+    throw JSONRPCError(-5, "Invalid private key");
+
+  string strLabel = params[1].get_str();
+  bool fGood = vchSecret.IsValid();
+  if (!fGood) throw JSONRPCError(-5,"Invalid private key");
+
+  CKey key;
+  bool fCompressed;
+  CSecret secret = vchSecret.GetSecret(fCompressed);
+  key.SetSecret(secret, fCompressed);
+  CKeyID vchAddress = key.GetPubKey().GetID();
+  {
+    LOCK2(cs_main, wallet->cs_wallet);
+
+    std::map<CTxDestination, std::string>::iterator mi = wallet->mapAddressBook.find(vchAddress);
+    if (mi != wallet->mapAddressBook.end()) {
+      throw JSONRPCError(SHERR_NOTUNIQ, "Address already exists in wallet.");
+    }
+
+    wallet->MarkDirty();
+    wallet->SetAddressBookName(vchAddress, strLabel);
+
+    if (!wallet->AddKey(key))
+      throw JSONRPCError(-4,"Error adding key to wallet");
+
+    wallet->ScanForWalletTransactions(GetGenesisBlockIndex(iface), true);
+    wallet->ReacceptWalletTransactions();
   }
 
   return Value::null;
@@ -4407,6 +4453,45 @@ Value rpc_wallet_tx(CIface *iface, const Array& params, bool fHelp)
   return entry;
 }
 
+Value rpc_wallet_keyphrase(CIface *iface, const Array& params, bool fHelp)
+{
+  CWallet *pwalletMain = GetWallet(iface);
+
+  if (fHelp || params.size() != 1)
+    throw runtime_error(
+        "wallet.keyphrase <address>\n"
+        "Summary: Reveals the private key corresponding to a public coin address as a phrase of common words..\n"
+        "Params: [ <address> The coin address. ]\n"
+        "\n"
+        "The 'wallet.key' command provides a method to obtain the private key associated\n"
+        "with a particular coin address.\n"
+        "\n"
+        "The coin address must be available in the local wallet in order to print it's pr\n"
+        "ivate address.\n"
+        "\n"
+        "The private coin address can be imported into another system via the 'wallet.setkey' command.\n"
+        "\n"
+        "The entire wallet can be exported to a file via the 'wallet.export' command.\n"
+        );
+
+  string strAddress = params[0].get_str();
+  CCoinAddr address;
+  if (!address.SetString(strAddress))
+    throw JSONRPCError(-5, "Invalid address");
+  CKeyID keyID;
+  if (!address.GetKeyID(keyID))
+    throw JSONRPCError(-3, "Address does not refer to a key");
+  CSecret vchSecret;
+  bool fCompressed;
+  if (!pwalletMain->GetSecret(keyID, vchSecret, fCompressed))
+    throw JSONRPCError(-4,"Private key for address " + strAddress + " is not known");
+
+  CCoinSecret secret(vchSecret, fCompressed);
+  string phrase = EncodeMnemonicSecret(secret);
+
+  return (phrase);
+}
+
 
 
 //
@@ -4462,6 +4547,7 @@ static const CRPCCommand vRPCCommands[] =
     { "wallet.info",          &rpc_wallet_info},
     { "wallet.import",        &rpc_wallet_import},
     { "wallet.key",           &rpc_wallet_key},
+    { "wallet.keyphrase",     &rpc_wallet_keyphrase},
     { "wallet.list",          &rpc_wallet_list},
     { "wallet.listbyaccount", &rpc_wallet_listbyaccount},
     { "wallet.listbyaddr",    &rpc_wallet_listbyaddr},
@@ -4475,6 +4561,7 @@ static const CRPCCommand vRPCCommands[] =
     { "wallet.csend",         &rpc_wallet_csend},
     { "wallet.set",           &rpc_wallet_set},
     { "wallet.setkey",        &rpc_wallet_setkey},
+    { "wallet.setkeyphrase",  &rpc_wallet_setkeyphrase},
     { "wallet.stamp",         &rpc_wallet_stamp},
     { "wallet.tx",            &rpc_wallet_tx},
     { "wallet.unconfirm",     &rpc_wallet_unconfirm},

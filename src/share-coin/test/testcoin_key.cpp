@@ -7,6 +7,7 @@
 #include "base58.h"
 #include "uint256.h"
 #include "util.h"
+#include "mnemonic.h"
 
 using namespace std;
 
@@ -205,6 +206,29 @@ _TEST(coin_key)
 #endif
   }
 
+}
+
+
+
+_TEST(coin_key_phrase)
+{
+  bool fCompressed = false;
+
+  /* generate new coin address key */
+  CKey key;
+  key.MakeNewKey(false);
+  CCoinSecret secret(key.GetSecret(fCompressed), false); 
+  _TRUE(secret.IsValid() == true);
+
+  /* convert to a 'phrase' */
+  string phrase = EncodeMnemonicSecret(secret);
+
+  CCoinSecret cmp_secret;
+  bool ret = DecodeMnemonicSecret(phrase, cmp_secret);
+  _TRUE(ret == true);
+  _TRUE(cmp_secret.IsValid() == true);
+  
+  _TRUE(cmp_secret.GetSecret(fCompressed) == secret.GetSecret(fCompressed));
 }
 
 

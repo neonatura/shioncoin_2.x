@@ -2805,3 +2805,74 @@ int CTransaction::GetDepthInMainChain(int ifaceIndex, CBlockIndex* &pindexRet) c
   return pindexBest->nHeight - pindex->nHeight + 1;
 }
 
+
+CChannel *CTransaction::CreateChannel(CCoinAddr& lcl_addr, CCoinAddr& rem_addr, int64 nValue)
+{
+
+  if (isFlag(CTransaction::TXF_CHANNEL))
+    return (NULL); /* already established */
+
+  nFlag |= CTransaction::TXF_CHANNEL;
+
+  CKeyID lcl_pubkey;
+  if (!lcl_addr.GetKeyID(lcl_pubkey))
+    return (NULL);
+
+  CKeyID rem_pubkey;
+  if (!rem_addr.GetKeyID(rem_pubkey))
+    return (NULL);
+
+  channel.SetNull();
+  channel.lcl_addr = lcl_pubkey;
+  channel.rem_addr = rem_pubkey;
+  channel.lcl_value = nValue;
+
+  return (&channel);
+}
+
+CChannel *CTransaction::ActivateChannel(const CChannel& channelIn, int64 nValue)
+{
+
+  if (isFlag(CTransaction::TXF_CHANNEL))
+    return (NULL); /* already established */
+
+  nFlag |= CTransaction::TXF_CHANNEL;
+
+  channel.Init(channelIn);
+  channel.rem_value = nValue;
+
+  return (&channel);
+}
+
+CChannel *CTransaction::PayChannel(const CChannel& channelIn)
+{
+  if (isFlag(CTransaction::TXF_CHANNEL))
+    return (NULL); /* already established */
+
+  nFlag |= CTransaction::TXF_CHANNEL;
+
+  channel.Init(channelIn);
+  channel.lcl_pubkey = 0;
+  channel.rem_pubkey = 0;
+  return (&channel);
+}
+
+CChannel *CTransaction::GenerateChannel(const CChannel& channelIn)
+{
+
+  if (isFlag(CTransaction::TXF_CHANNEL))
+    return (NULL); /* already established */
+
+  nFlag |= CTransaction::TXF_CHANNEL;
+
+  channel.Init(channelIn);
+
+  return (&channel);
+}
+
+CChannel *CTransaction::RemoveChannel(const CChannel& channelIn)
+{
+
+  return (&channel);
+}
+

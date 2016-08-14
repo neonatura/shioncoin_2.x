@@ -871,24 +871,8 @@ bool USDE_CTxMemPool::accept(CTxDB& txdb, CTransaction &tx, bool fCheckInputs, b
     COutPoint outpoint = tx.vin[i].prevout;
     if (mapNextTx.count(outpoint))
     {
-      // Disable replacement feature for now
+      // usde disallow's replacement of previous tx
       return false;
-
-      // Allow replacing with a newer version of the same transaction
-      if (i != 0)
-        return false;
-      ptxOld = mapNextTx[outpoint].ptx;
-      if (ptxOld->IsFinal(USDE_COIN_IFACE))
-        return false;
-      if (!tx.IsNewerThan(*ptxOld))
-        return false;
-      for (unsigned int i = 0; i < tx.vin.size(); i++)
-      {
-        COutPoint outpoint = tx.vin[i].prevout;
-        if (!mapNextTx.count(outpoint) || mapNextTx[outpoint].ptx != ptxOld)
-          return false;
-      }
-      break;
     }
   }
 

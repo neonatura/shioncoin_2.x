@@ -85,6 +85,7 @@ enum opcodetype
     OP_16 = 0x60,
 
     /* extension ops */
+    OP_CHANNEL = 0x07,
     OP_VAULT = 0x08,
     OP_MATRIX = 0x09,
     OP_ALIAS = 0x0a,

@@ -299,12 +299,14 @@ typedef std::map<std::string, uint256> alias_list;
 typedef map<uint160, uint256> asset_list;
 typedef map<uint160, uint256> cert_list;
 typedef std::map<uint160, uint256> offer_list;
+typedef std::map<uint160, CTransaction> channel_list;
 
 
 #include "certificate.h"
 #include "offer.h"
 #include "asset.h"
 #include "alias.h"
+#include "channel.h"
 
 
 #endif /* ndef __SERVER_TXEXT_H__ */

@@ -94,6 +94,7 @@ common_includes = \
 
 common_sources = \
 	$(blockchain_sources) \
+	server/mnemonic.cpp \
 	unet/unet_accept.c \
 	unet/unet_bind.c \
 	unet/unet_buff.c \
@@ -141,6 +142,7 @@ server_sources = \
 	server/ext/certificate.cpp \
 	server/ext/offer.cpp \
 	server/ext/asset.cpp \
+	server/ext/channel.cpp \
 	server/rpc/rpcalias_proto.cpp \
 	server/rpc/rpccert_proto.cpp \
 	server/rpc/rpcdump.cpp \
@@ -204,7 +206,7 @@ test_shcoind_SOURCES = \
 	test/test_shcoind.c \
 	test/test_shcoind.h \
 	test/test_init.cpp \
-	test/test_key.cpp \
+	test/testcoin_key.cpp \
 	test/testcoin_coin.cpp \
 	test/testcoin_bignum.cpp \
 	test/testcoin_hash.cpp \

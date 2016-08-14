@@ -9,6 +9,7 @@ user_t *client_list;
 
 extern TEST_jsonencap(CuTest*);
 extern TEST_coin_key(CuTest*);
+extern TEST_coin_key_phrase(CuTest*);
 extern TEST_wallet(CuTest*);
 extern TEST_bignum(CuTest*);
 extern TEST_sha256transform(CuTest*);
@@ -45,6 +46,7 @@ int main(int argc, char *argv[])
   SUITE_ADD_TEST(suite, TEST_bloom_match);
   SUITE_ADD_TEST(suite, TEST_jsonencap);
   SUITE_ADD_TEST(suite, TEST_coin_key);
+  SUITE_ADD_TEST(suite, TEST_coin_key_phrase);
   SUITE_ADD_TEST(suite, TEST_wallet);
   SUITE_ADD_TEST(suite, TEST_bignum);
   SUITE_ADD_TEST(suite, TEST_sha256transform);

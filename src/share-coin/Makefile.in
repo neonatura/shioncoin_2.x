@@ -155,15 +155,16 @@ PROGRAMS = $(noinst_PROGRAMS) $(sbin_PROGRAMS)
 am__objects_1 =
 am__objects_2 = shcoind-bc_block.$(OBJEXT) shcoind-bc_index.$(OBJEXT) \
 	shcoind-bc_arch.$(OBJEXT) shcoind-bc_fmap.$(OBJEXT)
-am__objects_3 = $(am__objects_2) shcoind-unet_accept.$(OBJEXT) \
-	shcoind-unet_bind.$(OBJEXT) shcoind-unet_buff.$(OBJEXT) \
-	shcoind-unet.$(OBJEXT) shcoind-unet_close.$(OBJEXT) \
-	shcoind-unet_connect.$(OBJEXT) shcoind-unet_io.$(OBJEXT) \
-	shcoind-unet_timer.$(OBJEXT) shcoind-unet_peer.$(OBJEXT) \
-	shcoind-unet_event.$(OBJEXT) shcoind-protocol.$(OBJEXT) \
-	shcoind-netbase.$(OBJEXT) shcoind-version.$(OBJEXT) \
-	shcoind-util.$(OBJEXT) shcoind-shcoind_rpc.$(OBJEXT) \
-	shcoind-shcoind_log.$(OBJEXT) shcoind-shcoind_opt.$(OBJEXT)
+am__objects_3 = $(am__objects_2) shcoind-mnemonic.$(OBJEXT) \
+	shcoind-unet_accept.$(OBJEXT) shcoind-unet_bind.$(OBJEXT) \
+	shcoind-unet_buff.$(OBJEXT) shcoind-unet.$(OBJEXT) \
+	shcoind-unet_close.$(OBJEXT) shcoind-unet_connect.$(OBJEXT) \
+	shcoind-unet_io.$(OBJEXT) shcoind-unet_timer.$(OBJEXT) \
+	shcoind-unet_peer.$(OBJEXT) shcoind-unet_event.$(OBJEXT) \
+	shcoind-protocol.$(OBJEXT) shcoind-netbase.$(OBJEXT) \
+	shcoind-version.$(OBJEXT) shcoind-util.$(OBJEXT) \
+	shcoind-shcoind_rpc.$(OBJEXT) shcoind-shcoind_log.$(OBJEXT) \
+	shcoind-shcoind_opt.$(OBJEXT)
 am__objects_4 = shcoind-coin_proto.$(OBJEXT) \
 	shcoind-usde_proto.$(OBJEXT) shcoind-shc_proto.$(OBJEXT) \
 	shcoind-test_proto.$(OBJEXT)
@@ -176,7 +177,7 @@ am__objects_5 = $(am__objects_4) shcoind-fractal.$(OBJEXT) \
 	shcoind-shc_txidx.$(OBJEXT) shcoind-txext.$(OBJEXT) \
 	shcoind-alias.$(OBJEXT) shcoind-certificate.$(OBJEXT) \
 	shcoind-offer.$(OBJEXT) shcoind-asset.$(OBJEXT) \
-	shcoind-rpcalias_proto.$(OBJEXT) \
+	shcoind-channel.$(OBJEXT) shcoind-rpcalias_proto.$(OBJEXT) \
 	shcoind-rpccert_proto.$(OBJEXT) shcoind-rpcdump.$(OBJEXT) \
 	shcoind-rpcnet.$(OBJEXT) shcoind-rpc_proto.$(OBJEXT) \
 	shcoind-rpcrawtransaction.$(OBJEXT) shcoind-block.$(OBJEXT) \
@@ -209,7 +210,8 @@ shcoind_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 am__objects_7 = shcointool-bc_block.$(OBJEXT) \
 	shcointool-bc_index.$(OBJEXT) shcointool-bc_arch.$(OBJEXT) \
 	shcointool-bc_fmap.$(OBJEXT)
-am__objects_8 = $(am__objects_7) shcointool-unet_accept.$(OBJEXT) \
+am__objects_8 = $(am__objects_7) shcointool-mnemonic.$(OBJEXT) \
+	shcointool-unet_accept.$(OBJEXT) \
 	shcointool-unet_bind.$(OBJEXT) shcointool-unet_buff.$(OBJEXT) \
 	shcointool-unet.$(OBJEXT) shcointool-unet_close.$(OBJEXT) \
 	shcointool-unet_connect.$(OBJEXT) shcointool-unet_io.$(OBJEXT) \
@@ -233,7 +235,8 @@ shcointool_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 am__objects_10 = test_shcoind-bc_block.$(OBJEXT) \
 	test_shcoind-bc_index.$(OBJEXT) test_shcoind-bc_arch.$(OBJEXT) \
 	test_shcoind-bc_fmap.$(OBJEXT)
-am__objects_11 = $(am__objects_10) test_shcoind-unet_accept.$(OBJEXT) \
+am__objects_11 = $(am__objects_10) test_shcoind-mnemonic.$(OBJEXT) \
+	test_shcoind-unet_accept.$(OBJEXT) \
 	test_shcoind-unet_bind.$(OBJEXT) \
 	test_shcoind-unet_buff.$(OBJEXT) test_shcoind-unet.$(OBJEXT) \
 	test_shcoind-unet_close.$(OBJEXT) \
@@ -266,6 +269,7 @@ am__objects_13 = $(am__objects_12) test_shcoind-fractal.$(OBJEXT) \
 	test_shcoind-alias.$(OBJEXT) \
 	test_shcoind-certificate.$(OBJEXT) \
 	test_shcoind-offer.$(OBJEXT) test_shcoind-asset.$(OBJEXT) \
+	test_shcoind-channel.$(OBJEXT) \
 	test_shcoind-rpcalias_proto.$(OBJEXT) \
 	test_shcoind-rpccert_proto.$(OBJEXT) \
 	test_shcoind-rpcdump.$(OBJEXT) test_shcoind-rpcnet.$(OBJEXT) \
@@ -296,7 +300,7 @@ am_test_shcoind_OBJECTS = $(am__objects_1) $(am__objects_11) \
 	test_shcoind-CuTest.$(OBJEXT) \
 	test_shcoind-test_shcoind.$(OBJEXT) \
 	test_shcoind-test_init.$(OBJEXT) \
-	test_shcoind-test_key.$(OBJEXT) \
+	test_shcoind-testcoin_key.$(OBJEXT) \
 	test_shcoind-testcoin_coin.$(OBJEXT) \
 	test_shcoind-testcoin_bignum.$(OBJEXT) \
 	test_shcoind-testcoin_hash.$(OBJEXT) \
@@ -1337,6 +1341,7 @@ common_includes = \
 
 common_sources = \
 	$(blockchain_sources) \
+	server/mnemonic.cpp \
 	unet/unet_accept.c \
 	unet/unet_bind.c \
 	unet/unet_buff.c \
@@ -1385,6 +1390,7 @@ server_sources = \
 	server/ext/certificate.cpp \
 	server/ext/offer.cpp \
 	server/ext/asset.cpp \
+	server/ext/channel.cpp \
 	server/rpc/rpcalias_proto.cpp \
 	server/rpc/rpccert_proto.cpp \
 	server/rpc/rpcdump.cpp \
@@ -1436,7 +1442,7 @@ test_shcoind_SOURCES = \
 	test/test_shcoind.c \
 	test/test_shcoind.h \
 	test/test_init.cpp \
-	test/test_key.cpp \
+	test/testcoin_key.cpp \
 	test/testcoin_coin.cpp \
 	test/testcoin_bignum.cpp \
 	test/testcoin_hash.cpp \
@@ -1636,6 +1642,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-bloom.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-certificate.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-chain.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-channel.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-coin_proto.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-crypter.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-fractal.Po@am__quote@
@@ -1646,6 +1653,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-keystore.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-main.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-matrix.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-mnemonic.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-netbase.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-offer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-protocol.Po@am__quote@
@@ -1706,6 +1714,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcointool-bc_fmap.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcointool-bc_index.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcointool-clientrpc_iface.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcointool-mnemonic.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcointool-netbase.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcointool-protocol.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcointool-shcoind_log.Po@am__quote@
@@ -1740,6 +1749,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-bloom.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-certificate.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-chain.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-channel.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-coin_proto.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-crypter.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-fractal.Po@am__quote@
@@ -1750,6 +1760,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-keystore.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-main.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-matrix.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-mnemonic.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-netbase.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-offer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-protocol.Po@am__quote@
@@ -1780,7 +1791,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-sync.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-test_block.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-test_init.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-test_key.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-test_proto.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-test_shcoind.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-test_wallet.Po@am__quote@
@@ -1790,6 +1800,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-testcoin_coin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-testcoin_hash.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-testcoin_json.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-testcoin_key.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-txext.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-txidx.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-unet.Po@am__quote@
@@ -2933,6 +2944,20 @@ test_shcoind-test_shcoind.obj: test/test_shcoind.c
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LTCXXCOMPILE) -c -o $@ $<
 
+shcoind-mnemonic.o: server/mnemonic.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-mnemonic.o -MD -MP -MF $(DEPDIR)/shcoind-mnemonic.Tpo -c -o shcoind-mnemonic.o `test -f 'server/mnemonic.cpp' || echo '$(srcdir)/'`server/mnemonic.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-mnemonic.Tpo $(DEPDIR)/shcoind-mnemonic.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/mnemonic.cpp' object='shcoind-mnemonic.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-mnemonic.o `test -f 'server/mnemonic.cpp' || echo '$(srcdir)/'`server/mnemonic.cpp
+
+shcoind-mnemonic.obj: server/mnemonic.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-mnemonic.obj -MD -MP -MF $(DEPDIR)/shcoind-mnemonic.Tpo -c -o shcoind-mnemonic.obj `if test -f 'server/mnemonic.cpp'; then $(CYGPATH_W) 'server/mnemonic.cpp'; else $(CYGPATH_W) '$(srcdir)/server/mnemonic.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-mnemonic.Tpo $(DEPDIR)/shcoind-mnemonic.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/mnemonic.cpp' object='shcoind-mnemonic.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-mnemonic.obj `if test -f 'server/mnemonic.cpp'; then $(CYGPATH_W) 'server/mnemonic.cpp'; else $(CYGPATH_W) '$(srcdir)/server/mnemonic.cpp'; fi`
+
 shcoind-protocol.o: server/protocol.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-protocol.o -MD -MP -MF $(DEPDIR)/shcoind-protocol.Tpo -c -o shcoind-protocol.o `test -f 'server/protocol.cpp' || echo '$(srcdir)/'`server/protocol.cpp
 @am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-protocol.Tpo $(DEPDIR)/shcoind-protocol.Po
@@ -3240,6 +3265,20 @@ shcoind-asset.obj: server/ext/asset.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/ext/asset.cpp' object='shcoind-asset.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-asset.obj `if test -f 'server/ext/asset.cpp'; then $(CYGPATH_W) 'server/ext/asset.cpp'; else $(CYGPATH_W) '$(srcdir)/server/ext/asset.cpp'; fi`
+
+shcoind-channel.o: server/ext/channel.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-channel.o -MD -MP -MF $(DEPDIR)/shcoind-channel.Tpo -c -o shcoind-channel.o `test -f 'server/ext/channel.cpp' || echo '$(srcdir)/'`server/ext/channel.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-channel.Tpo $(DEPDIR)/shcoind-channel.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/ext/channel.cpp' object='shcoind-channel.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-channel.o `test -f 'server/ext/channel.cpp' || echo '$(srcdir)/'`server/ext/channel.cpp
+
+shcoind-channel.obj: server/ext/channel.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-channel.obj -MD -MP -MF $(DEPDIR)/shcoind-channel.Tpo -c -o shcoind-channel.obj `if test -f 'server/ext/channel.cpp'; then $(CYGPATH_W) 'server/ext/channel.cpp'; else $(CYGPATH_W) '$(srcdir)/server/ext/channel.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-channel.Tpo $(DEPDIR)/shcoind-channel.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/ext/channel.cpp' object='shcoind-channel.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-channel.obj `if test -f 'server/ext/channel.cpp'; then $(CYGPATH_W) 'server/ext/channel.cpp'; else $(CYGPATH_W) '$(srcdir)/server/ext/channel.cpp'; fi`
 
 shcoind-rpcalias_proto.o: server/rpc/rpcalias_proto.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-rpcalias_proto.o -MD -MP -MF $(DEPDIR)/shcoind-rpcalias_proto.Tpo -c -o shcoind-rpcalias_proto.o `test -f 'server/rpc/rpcalias_proto.cpp' || echo '$(srcdir)/'`server/rpc/rpcalias_proto.cpp
@@ -3619,6 +3658,20 @@ shcoind-server_iface.obj: server_iface.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-server_iface.obj `if test -f 'server_iface.cpp'; then $(CYGPATH_W) 'server_iface.cpp'; else $(CYGPATH_W) '$(srcdir)/server_iface.cpp'; fi`
 
+shcointool-mnemonic.o: server/mnemonic.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CXXFLAGS) $(CXXFLAGS) -MT shcointool-mnemonic.o -MD -MP -MF $(DEPDIR)/shcointool-mnemonic.Tpo -c -o shcointool-mnemonic.o `test -f 'server/mnemonic.cpp' || echo '$(srcdir)/'`server/mnemonic.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcointool-mnemonic.Tpo $(DEPDIR)/shcointool-mnemonic.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/mnemonic.cpp' object='shcointool-mnemonic.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CXXFLAGS) $(CXXFLAGS) -c -o shcointool-mnemonic.o `test -f 'server/mnemonic.cpp' || echo '$(srcdir)/'`server/mnemonic.cpp
+
+shcointool-mnemonic.obj: server/mnemonic.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CXXFLAGS) $(CXXFLAGS) -MT shcointool-mnemonic.obj -MD -MP -MF $(DEPDIR)/shcointool-mnemonic.Tpo -c -o shcointool-mnemonic.obj `if test -f 'server/mnemonic.cpp'; then $(CYGPATH_W) 'server/mnemonic.cpp'; else $(CYGPATH_W) '$(srcdir)/server/mnemonic.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcointool-mnemonic.Tpo $(DEPDIR)/shcointool-mnemonic.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/mnemonic.cpp' object='shcointool-mnemonic.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CXXFLAGS) $(CXXFLAGS) -c -o shcointool-mnemonic.obj `if test -f 'server/mnemonic.cpp'; then $(CYGPATH_W) 'server/mnemonic.cpp'; else $(CYGPATH_W) '$(srcdir)/server/mnemonic.cpp'; fi`
+
 shcointool-protocol.o: server/protocol.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CXXFLAGS) $(CXXFLAGS) -MT shcointool-protocol.o -MD -MP -MF $(DEPDIR)/shcointool-protocol.Tpo -c -o shcointool-protocol.o `test -f 'server/protocol.cpp' || echo '$(srcdir)/'`server/protocol.cpp
 @am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcointool-protocol.Tpo $(DEPDIR)/shcointool-protocol.Po
@@ -3716,6 +3769,20 @@ shcointool-tool_irc.obj: tool/tool_irc.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='tool/tool_irc.cpp' object='shcointool-tool_irc.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CXXFLAGS) $(CXXFLAGS) -c -o shcointool-tool_irc.obj `if test -f 'tool/tool_irc.cpp'; then $(CYGPATH_W) 'tool/tool_irc.cpp'; else $(CYGPATH_W) '$(srcdir)/tool/tool_irc.cpp'; fi`
+
+test_shcoind-mnemonic.o: server/mnemonic.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-mnemonic.o -MD -MP -MF $(DEPDIR)/test_shcoind-mnemonic.Tpo -c -o test_shcoind-mnemonic.o `test -f 'server/mnemonic.cpp' || echo '$(srcdir)/'`server/mnemonic.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-mnemonic.Tpo $(DEPDIR)/test_shcoind-mnemonic.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/mnemonic.cpp' object='test_shcoind-mnemonic.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-mnemonic.o `test -f 'server/mnemonic.cpp' || echo '$(srcdir)/'`server/mnemonic.cpp
+
+test_shcoind-mnemonic.obj: server/mnemonic.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-mnemonic.obj -MD -MP -MF $(DEPDIR)/test_shcoind-mnemonic.Tpo -c -o test_shcoind-mnemonic.obj `if test -f 'server/mnemonic.cpp'; then $(CYGPATH_W) 'server/mnemonic.cpp'; else $(CYGPATH_W) '$(srcdir)/server/mnemonic.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-mnemonic.Tpo $(DEPDIR)/test_shcoind-mnemonic.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/mnemonic.cpp' object='test_shcoind-mnemonic.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-mnemonic.obj `if test -f 'server/mnemonic.cpp'; then $(CYGPATH_W) 'server/mnemonic.cpp'; else $(CYGPATH_W) '$(srcdir)/server/mnemonic.cpp'; fi`
 
 test_shcoind-protocol.o: server/protocol.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-protocol.o -MD -MP -MF $(DEPDIR)/test_shcoind-protocol.Tpo -c -o test_shcoind-protocol.o `test -f 'server/protocol.cpp' || echo '$(srcdir)/'`server/protocol.cpp
@@ -4024,6 +4091,20 @@ test_shcoind-asset.obj: server/ext/asset.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/ext/asset.cpp' object='test_shcoind-asset.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-asset.obj `if test -f 'server/ext/asset.cpp'; then $(CYGPATH_W) 'server/ext/asset.cpp'; else $(CYGPATH_W) '$(srcdir)/server/ext/asset.cpp'; fi`
+
+test_shcoind-channel.o: server/ext/channel.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-channel.o -MD -MP -MF $(DEPDIR)/test_shcoind-channel.Tpo -c -o test_shcoind-channel.o `test -f 'server/ext/channel.cpp' || echo '$(srcdir)/'`server/ext/channel.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-channel.Tpo $(DEPDIR)/test_shcoind-channel.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/ext/channel.cpp' object='test_shcoind-channel.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-channel.o `test -f 'server/ext/channel.cpp' || echo '$(srcdir)/'`server/ext/channel.cpp
+
+test_shcoind-channel.obj: server/ext/channel.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-channel.obj -MD -MP -MF $(DEPDIR)/test_shcoind-channel.Tpo -c -o test_shcoind-channel.obj `if test -f 'server/ext/channel.cpp'; then $(CYGPATH_W) 'server/ext/channel.cpp'; else $(CYGPATH_W) '$(srcdir)/server/ext/channel.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-channel.Tpo $(DEPDIR)/test_shcoind-channel.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/ext/channel.cpp' object='test_shcoind-channel.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-channel.obj `if test -f 'server/ext/channel.cpp'; then $(CYGPATH_W) 'server/ext/channel.cpp'; else $(CYGPATH_W) '$(srcdir)/server/ext/channel.cpp'; fi`
 
 test_shcoind-rpcalias_proto.o: server/rpc/rpcalias_proto.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-rpcalias_proto.o -MD -MP -MF $(DEPDIR)/test_shcoind-rpcalias_proto.Tpo -c -o test_shcoind-rpcalias_proto.o `test -f 'server/rpc/rpcalias_proto.cpp' || echo '$(srcdir)/'`server/rpc/rpcalias_proto.cpp
@@ -4417,19 +4498,19 @@ test_shcoind-test_init.obj: test/test_init.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-test_init.obj `if test -f 'test/test_init.cpp'; then $(CYGPATH_W) 'test/test_init.cpp'; else $(CYGPATH_W) '$(srcdir)/test/test_init.cpp'; fi`
 
-test_shcoind-test_key.o: test/test_key.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-test_key.o -MD -MP -MF $(DEPDIR)/test_shcoind-test_key.Tpo -c -o test_shcoind-test_key.o `test -f 'test/test_key.cpp' || echo '$(srcdir)/'`test/test_key.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-test_key.Tpo $(DEPDIR)/test_shcoind-test_key.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='test/test_key.cpp' object='test_shcoind-test_key.o' libtool=no @AMDEPBACKSLASH@
+test_shcoind-testcoin_key.o: test/testcoin_key.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-testcoin_key.o -MD -MP -MF $(DEPDIR)/test_shcoind-testcoin_key.Tpo -c -o test_shcoind-testcoin_key.o `test -f 'test/testcoin_key.cpp' || echo '$(srcdir)/'`test/testcoin_key.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-testcoin_key.Tpo $(DEPDIR)/test_shcoind-testcoin_key.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='test/testcoin_key.cpp' object='test_shcoind-testcoin_key.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-test_key.o `test -f 'test/test_key.cpp' || echo '$(srcdir)/'`test/test_key.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-testcoin_key.o `test -f 'test/testcoin_key.cpp' || echo '$(srcdir)/'`test/testcoin_key.cpp
 
-test_shcoind-test_key.obj: test/test_key.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-test_key.obj -MD -MP -MF $(DEPDIR)/test_shcoind-test_key.Tpo -c -o test_shcoind-test_key.obj `if test -f 'test/test_key.cpp'; then $(CYGPATH_W) 'test/test_key.cpp'; else $(CYGPATH_W) '$(srcdir)/test/test_key.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-test_key.Tpo $(DEPDIR)/test_shcoind-test_key.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='test/test_key.cpp' object='test_shcoind-test_key.obj' libtool=no @AMDEPBACKSLASH@
+test_shcoind-testcoin_key.obj: test/testcoin_key.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-testcoin_key.obj -MD -MP -MF $(DEPDIR)/test_shcoind-testcoin_key.Tpo -c -o test_shcoind-testcoin_key.obj `if test -f 'test/testcoin_key.cpp'; then $(CYGPATH_W) 'test/testcoin_key.cpp'; else $(CYGPATH_W) '$(srcdir)/test/testcoin_key.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-testcoin_key.Tpo $(DEPDIR)/test_shcoind-testcoin_key.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='test/testcoin_key.cpp' object='test_shcoind-testcoin_key.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-test_key.obj `if test -f 'test/test_key.cpp'; then $(CYGPATH_W) 'test/test_key.cpp'; else $(CYGPATH_W) '$(srcdir)/test/test_key.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-testcoin_key.obj `if test -f 'test/testcoin_key.cpp'; then $(CYGPATH_W) 'test/testcoin_key.cpp'; else $(CYGPATH_W) '$(srcdir)/test/testcoin_key.cpp'; fi`
 
 test_shcoind-testcoin_coin.o: test/testcoin_coin.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-testcoin_coin.o -MD -MP -MF $(DEPDIR)/test_shcoind-testcoin_coin.Tpo -c -o test_shcoind-testcoin_coin.o `test -f 'test/testcoin_coin.cpp' || echo '$(srcdir)/'`test/testcoin_coin.cpp

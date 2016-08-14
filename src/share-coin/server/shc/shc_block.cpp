@@ -740,8 +740,9 @@ bool SHC_CTxMemPool::accept(CTxDB& txdb, CTransaction &tx, bool fCheckInputs, bo
     COutPoint outpoint = tx.vin[i].prevout;
     if (mapNextTx.count(outpoint))
     {
-      // Disable replacement feature for now
-      return false;
+      if (!tx.isFlag(CTransaction::TXF_CHANNEL)) {
+        return false;
+      }
 
       // Allow replacing with a newer version of the same transaction
       if (i != 0)
@@ -757,6 +758,7 @@ bool SHC_CTxMemPool::accept(CTxDB& txdb, CTransaction &tx, bool fCheckInputs, bo
         if (!mapNextTx.count(outpoint) || mapNextTx[outpoint].ptx != ptxOld)
           return false;
       }
+
       break;
     }
   }

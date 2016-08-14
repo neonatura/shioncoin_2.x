@@ -256,6 +256,7 @@ const char* GetOpName(opcodetype opcode)
     case OP_ASSET                  : return "OP_ASSET";
     case OP_MATRIX                  : return "OP_MATRIX";
     case OP_VAULT                  : return "OP_VAULT";
+    case OP_CHANNEL                  : return "OP_CHANNEL";
 
     /* extension operatives */
     case OP_EXT_NEW                : return "OP_EXT_NEW";

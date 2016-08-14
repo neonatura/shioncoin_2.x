@@ -86,6 +86,13 @@ public:
     mutable std::map<uint160, uint256> mapAsset;
     mutable std::map<uint160, uint256> mapAssetArch;
 
+    /** A vector of open coin-transfer channels. */
+    mutable std::map<uint160, CTransaction> mapChannel;
+    /** A vector of commit transactions for each channel. */
+    mutable std::map<uint160, CTransaction> mapChannelSpent;
+    /** A vector of remedy transactions for each channel. */
+    mutable std::map<uint160, CTransaction> mapChannelRedeem;
+
     /** Incoming TX_NEW : TX_IDENT transactions for the Spring matrix.  */
     mutable std::map<uint160, uint256> mapIdent;
 
