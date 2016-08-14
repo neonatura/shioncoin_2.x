@@ -125,15 +125,13 @@ unet_table_t *t;
         "<div style=\"float : left; margin-left : 16px;\">Difficulty: %-4.4f</div>\r\n"
         "<div style=\"float : left; margin-left : 16px;\">Global Speed: %-1.1fkh/s</div>\r\n"
         "<div style=\"float : left; margin-left : 16px;\">Max Coins: %lu</div>\r\n"
-        "<div style=\"float : left; margin-left : 16px;\">Maturity: %lu</div>\r\n"
         "<div style=\"clear : both;\"></div>\r\n"
         "</div>\r\n"
         "<hr></hr>\r\n",
         iface->name, height,
         shjson_array_num(json, "result", 1),
         shjson_array_num(json, "result", 2),
-        (unsigned long)(iface->max_money / COIN),
-        (unsigned long)iface->coinbase_maturity);
+        (unsigned long)(iface->max_money / COIN));
     shbuf_catstr(buff, html);
     shjson_free(&json);
 
@@ -204,7 +202,7 @@ void stratum_http_spring_img_html(shbuf_t *buff)
       "\n"
       "  var srcX = clientX - offsetX;\n"
       "  var srcY = clientY - offsetY;\n"
-      "  i.src = \"http://localhost:9448/image/spring_matrix.bmp?y=\" + srcY + \"&x=\" + srcX + \"&zoom=\" + zoom;\n"
+      "  i.src = \"/image/spring_matrix.bmp?y=\" + srcY + \"&x=\" + srcX + \"&zoom=\" + zoom;\n"
       "  l.innerHTML = \"x\" + (1 / zoom);\n"
       "\n"
       "  if (zoom < 0.001) {\n"
