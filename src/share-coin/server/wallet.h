@@ -180,7 +180,6 @@ nScanHeight = 0;
     void WalletUpdateSpent(const CTransaction& prevout);
   //  int ScanForWalletTransaction(const uint256& hashTx);
     int ScanForWalletTransaction(const uint256& hashTx);
-    void ResendWalletTransactions() { /* stub */ };
     int64 GetBalance() const;
     int64 GetUnconfirmedBalance() const;
     int64 GetImmatureBalance() const;
@@ -326,6 +325,7 @@ nScanHeight = 0;
     virtual bool CreateTransaction(CScript scriptPubKey, int64 nValue, CWalletTx& wtxNew, CReserveKey& reservekey, int64& nFeeRet) = 0;
     virtual bool CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey) = 0;
     virtual void AddSupportingTransactions(CWalletTx& wtx) = 0;
+    virtual void ResendWalletTransactions() = 0;
 };
 
 /** A key allocated from the key pool. */

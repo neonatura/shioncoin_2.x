@@ -91,8 +91,8 @@ void static Inventory(const uint256& hash)
 // ask wallets to resend their transactions
 void static ResendWalletTransactions()
 {
-    BOOST_FOREACH(CWallet* pwallet, setpwalletRegistered)
-        pwallet->ResendWalletTransactions();
+  CWallet *wallet = GetWallet(SHC_COIN_IFACE);
+  wallet->ResendWalletTransactions();
 }
 
 
@@ -319,7 +319,7 @@ fprintf(stderr, "DEBUG: ProcessMessage: pfrom->nVersion (already) %d\n", pfrom->
         CAddress addr = GetLocalAddress(&pfrom->addr);
         addr.SetPort(iface->port);
         if (addr.IsRoutable()) {
-//fprintf(stderr, "DEBUG: VERACK: Pushing (GetLocalAddress) '%s'..\n", addr.ToString().c_str());
+          Debug("VERACK: Pushing (GetLocalAddress) '%s'..\n", addr.ToString().c_str());
           pfrom->PushAddress(addr);
         }
       }
@@ -364,13 +364,10 @@ fprintf(stderr, "DEBUG: ProcessMessage: pfrom->nVersion (already) %d\n", pfrom->
     if (pindexBest) {
       if (pindexBest->nHeight < pfrom->nStartingHeight) {
         InitServiceBlockEvent(SHC_COIN_IFACE, pfrom->nStartingHeight);
-      } else {
-fprintf(stderr, "DEBUG: pindexBest->nHeight(%d) < pfrom->nStartingHeight(%d)\n", pindexBest->nHeight, pfrom->nStartingHeight);
-}
+      }
     } else {
         InitServiceBlockEvent(SHC_COIN_IFACE, pfrom->nStartingHeight);
-}
-
+    }
 
     // Relay alerts
     {

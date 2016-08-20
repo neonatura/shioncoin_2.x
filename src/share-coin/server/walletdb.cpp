@@ -406,6 +406,7 @@ void ThreadFlushWalletDB(void* parg)
     }
 }
 
+#if 0
 bool BackupWallet(const CWallet& wallet, const string& strDest)
 {
   if (!wallet.fFileBacked)
@@ -445,3 +446,4 @@ bool BackupWallet(const CWallet& wallet, const string& strDest)
   }
   return false;
 }
+#endif

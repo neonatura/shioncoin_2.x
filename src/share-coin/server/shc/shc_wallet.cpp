@@ -167,9 +167,11 @@ void SHCWallet::RelayWalletTransaction(CWalletTx& wtx)
     {
       RelayMessage(CInv(ifaceIndex, MSG_TX, hash), (CTransaction)wtx);
     }
+    Debug("(shc) RelayWalletTransaction: relayed tx '%s'\n", hash.GetHex().c_str());
   }
 
   txdb.Close();
+
 }
 
 #if 0
@@ -207,10 +209,9 @@ void SHCWallet::ResendWalletTransactions()
   static int64 nNextTime;
   if (GetTime() < nNextTime)
     return;
-  bool fFirst = (nNextTime == 0);
+//  bool fFirst = (nNextTime == 0);
   nNextTime = GetTime() + GetRand(30 * 60);
-  if (fFirst)
-    return;
+//  if (fFirst) return;
 
   // Only do it if there's been a new block since last time
   static int64 nLastTime;
@@ -237,6 +238,9 @@ void SHCWallet::ResendWalletTransactions()
       CWalletTx& wtx = *item.second;
 //      wtx.RelayWalletTransaction(txdb);
       RelayWalletTransaction(wtx);
+    }
+    if (mapWallet.size() != 0) {
+      Debug("(shc) ResendWalletTransactions: relayed %d transactions.\n", mapWallet.size());
     }
   }
   txdb.Close();

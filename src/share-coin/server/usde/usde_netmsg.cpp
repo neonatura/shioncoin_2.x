@@ -83,8 +83,8 @@ void static Inventory(const uint256& hash)
 // ask wallets to resend their transactions
 void static ResendWalletTransactions()
 {
-    BOOST_FOREACH(CWallet* pwallet, setpwalletRegistered)
-        pwallet->ResendWalletTransactions();
+  CWallet *wallet = GetWallet(USDE_COIN_IFACE); 
+  wallet->ResendWalletTransactions();
 }
 
 

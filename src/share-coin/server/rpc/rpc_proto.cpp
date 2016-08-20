@@ -46,7 +46,9 @@
 #include <boost/asio.hpp>
 #include <boost/asio/ip/v6_only.hpp>
 #include <boost/bind.hpp>
+#define BOOST_NO_CXX11_SCOPED_ENUMS
 #include <boost/filesystem.hpp>
+#undef BOOST_NO_CXX11_SCOPED_ENUMS
 #include <boost/foreach.hpp>
 #include <boost/iostreams/concepts.hpp>
 #include <boost/iostreams/stream.hpp>
@@ -1645,6 +1647,49 @@ Value rpc_wallet_export(CIface *iface, const Array& params, bool fHelp)
   free(text);
 
   return Value::null;
+}
+
+bool BackupWallet(const CWallet& wallet, const string& strDest)
+{
+  if (!wallet.fFileBacked)
+    return false;
+  while (!fShutdown)
+  {
+    {
+      LOCK(bitdb.cs_db);
+      if (!bitdb.mapFileUseCount.count(wallet.strWalletFile) || bitdb.mapFileUseCount[wallet.strWalletFile] == 0)
+      {
+        // Flush log data to the dat file
+        bitdb.CloseDb(wallet.strWalletFile);
+        bitdb.CheckpointLSN(wallet.strWalletFile);
+        bitdb.mapFileUseCount.erase(wallet.strWalletFile);
+
+        // Copy wallet.dat
+        filesystem::path pathSrc = GetDataDir() / wallet.strWalletFile;
+        filesystem::path pathDest(strDest);
+        if (filesystem::is_directory(pathDest))
+          pathDest /= wallet.strWalletFile;
+
+        try {
+#if 0
+#if BOOST_VERSION >= 104000
+          filesystem::copy_file(pathSrc, pathDest, filesystem::copy_option::overwrite_if_exists);
+#else
+          filesystem::copy_file(pathSrc, pathDest);
+#endif
+#endif
+          filesystem::copy_file(pathSrc, pathDest);
+          printf("copied wallet.dat to %s\n", pathDest.string().c_str());
+          return true;
+        } catch(const filesystem::filesystem_error &e) {
+          printf("error copying wallet.dat to %s - %s\n", pathDest.string().c_str(), e.what());
+          return false;
+        }
+      }
+    }
+    Sleep(100);
+  }
+  return false;
 }
 
 Value rpc_wallet_exportdat(CIface *iface, const Array& params, bool fHelp)
