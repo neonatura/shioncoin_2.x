@@ -313,7 +313,6 @@ fprintf(stderr, "DEBUG: ProcessMessage: pfrom->nVersion (already) %d\n", pfrom->
 
     if (!pfrom->fInbound)
     {
-fprintf(stderr, "DEBUG: received non-inbound version message (init-block-dl = %s)\n", ( IsInitialBlockDownload(SHC_COIN_IFACE) ? "true":"false" ));
       // Advertise our address
       if (/*!fNoListen &&*/ !IsInitialBlockDownload(SHC_COIN_IFACE))
       {
@@ -343,7 +342,6 @@ fprintf(stderr, "DEBUG: received non-inbound version message (init-block-dl = %s
         pfrom->fGetAddr = true;
       }
     } else {
-fprintf(stderr, "DEBUG: received inbound version message (init-block-dl = %s)\n", ( IsInitialBlockDownload(SHC_COIN_IFACE) ? "true":"false" ));
 #if 0
       if (((CNetAddr)pfrom->addr) == (CNetAddr)addrFrom)
       {
@@ -516,8 +514,8 @@ fprintf(stderr, "DEBUG: ProcessMessage: Must have a version message before anyth
       pfrom->AddInventoryKnown(inv);
 
       bool fAlreadyHave = AlreadyHave(iface, txdb, inv);
-      if (fDebug)
-        printf("  got inventory: %s  %s\n", inv.ToString().c_str(), fAlreadyHave ? "have" : "new");
+      Debug("(shc) INVENTORY: %s [%s]", 
+          inv.ToString().c_str(), fAlreadyHave ? "have" : "new");
 
       if (!fAlreadyHave)
         pfrom->AskFor(inv);
@@ -626,16 +624,16 @@ fprintf(stderr, "DEBUG: ProcessMessage: Must have a version message before anyth
     if (pindex)
       pindex = pindex->pnext;
     int nLimit = 500;
-    fprintf(stderr, "DEBUG: getblocks %d to %s limit %d\n", (pindex ? pindex->nHeight : -1), hashStop.ToString().substr(0,20).c_str(), nLimit);
+//fprintf(stderr, "DEBUG: getblocks %d to %s limit %d\n", (pindex ? pindex->nHeight : -1), hashStop.ToString().substr(0,20).c_str(), nLimit);
     for (; pindex; pindex = pindex->pnext)
     {
       if (pindex->GetBlockHash() == hashStop)
       {
-        fprintf(stderr, "DEBUG:  getblocks stopping at %d %s\n", pindex->nHeight, pindex->GetBlockHash().ToString().substr(0,20).c_str());
+//fprintf(stderr, "DEBUG:  getblocks stopping at %d %s\n", pindex->nHeight, pindex->GetBlockHash().ToString().substr(0,20).c_str());
         break;
       }
       pfrom->PushInventory(CInv(ifaceIndex, MSG_BLOCK, pindex->GetBlockHash()));
-fprintf(stderr, "DEBUG: shc_ProcessMessage: PushBlock height %d\n", pindex->nHeight);
+//fprintf(stderr, "DEBUG: shc_ProcessMessage: PushBlock height %d\n", pindex->nHeight);
       if (--nLimit <= 0)
       {
         // When this block is requested, we'll send an inv that'll make them
@@ -1184,59 +1182,65 @@ bool shc_SendMessages(CIface *iface, CNode* pto, bool fSendTrickle)
     //
     // Message: inventory
     //
-    vector<CInv> vInv;
-    vector<CInv> vInvWait;
-    {
-      LOCK(pto->cs_inventory);
-      vInv.reserve(pto->vInventoryToSend.size());
-      vInvWait.reserve(pto->vInventoryToSend.size());
-      BOOST_FOREACH(const CInv& inv, pto->vInventoryToSend)
+    if (pto->vInventoryToSend.size() != 0) {
+      vector<CInv> vInv;
+      vector<CInv> vInvWait;
       {
-        if (pto->setInventoryKnown.count(inv))
-          continue;
-
-        // trickle out tx inv to protect privacy
-        if (inv.type == MSG_TX && !fSendTrickle)
+        LOCK(pto->cs_inventory);
+        vInv.reserve(pto->vInventoryToSend.size());
+        vInvWait.reserve(pto->vInventoryToSend.size());
+        BOOST_FOREACH(const CInv& inv, pto->vInventoryToSend)
         {
-          // 1/4 of tx invs blast to all immediately
-          static uint256 hashSalt;
-          if (hashSalt == 0)
-            hashSalt = GetRandHash();
-          uint256 hashRand = inv.hash ^ hashSalt;
-          hashRand = Hash(BEGIN(hashRand), END(hashRand));
-          bool fTrickleWait = ((hashRand & 3) != 0);
-
-          // always trickle our own transactions
-          if (!fTrickleWait)
-          {
-            CWalletTx wtx;
-            if (GetTransaction(inv.hash, wtx))
-              if (wtx.fFromMe)
-                fTrickleWait = true;
-          }
-
-          if (fTrickleWait)
-          {
-            vInvWait.push_back(inv);
+          if (pto->setInventoryKnown.count(inv)) {
             continue;
           }
-        }
 
-        // returns true if wasn't already contained in the set
-        if (pto->setInventoryKnown.insert(inv).second)
-        {
-          vInv.push_back(inv);
-          if (vInv.size() >= 1000)
+  #if 0
+          // trickle out tx inv to protect privacy
+          if (inv.type == MSG_TX && !fSendTrickle)
           {
-            pto->PushMessage("inv", vInv);
-            vInv.clear();
+            // 1/4 of tx invs blast to all immediately
+            static uint256 hashSalt;
+            if (hashSalt == 0)
+              hashSalt = GetRandHash();
+            uint256 hashRand = inv.hash ^ hashSalt;
+            hashRand = Hash(BEGIN(hashRand), END(hashRand));
+            bool fTrickleWait = ((hashRand & 3) != 0);
+
+            // always trickle our own transactions
+            if (!fTrickleWait)
+            {
+              CWalletTx wtx;
+              if (GetTransaction(inv.hash, wtx))
+                if (wtx.fFromMe)
+                  fTrickleWait = true;
+            }
+
+            if (fTrickleWait)
+            {
+              vInvWait.push_back(inv);
+              continue;
+            }
+          }
+  #endif
+
+          // returns true if wasn't already contained in the set
+          if (pto->setInventoryKnown.insert(inv).second)
+          {
+            vInv.push_back(inv);
+            if (vInv.size() >= 1000)
+            {
+              pto->PushMessage("inv", vInv);
+              vInv.clear();
+            }
           }
         }
+        pto->vInventoryToSend = vInvWait;
       }
-      pto->vInventoryToSend = vInvWait;
+      if (!vInv.empty()) {
+        pto->PushMessage("inv", vInv);
+      }
     }
-    if (!vInv.empty())
-      pto->PushMessage("inv", vInv);
 
 
     //

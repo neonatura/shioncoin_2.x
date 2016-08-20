@@ -931,8 +931,7 @@ bool usde_ProcessMessages(CIface *iface, CNode* pfrom)
     }
     if (nMessageSize > vRecv.size())
     {
-      //            fprintf(stderr, "DEBUG: info: usde_ProcessMessages(%s, %u bytes) : nMessageSize > vRecv.size(%u)\n", strCommand.c_str(), nMessageSize, (unsigned int)vRecv.size());
-      // Rewind and wait for rest of message
+      /* Rewind and wait for rest of message */
       vRecv.insert(vRecv.begin(), vHeaderSave.begin(), vHeaderSave.end());
       break;
     }
@@ -1086,6 +1085,7 @@ bool usde_SendMessages(CIface *iface, CNode* pto, bool fSendTrickle)
         if (pto->setInventoryKnown.count(inv))
           continue;
 
+#if 0
         // trickle out tx inv to protect privacy
         if (inv.type == MSG_TX && !fSendTrickle)
         {
@@ -1113,6 +1113,7 @@ bool usde_SendMessages(CIface *iface, CNode* pto, bool fSendTrickle)
             continue;
           }
         }
+#endif
 
         // returns true if wasn't already contained in the set
         if (pto->setInventoryKnown.insert(inv).second)
@@ -1120,7 +1121,6 @@ bool usde_SendMessages(CIface *iface, CNode* pto, bool fSendTrickle)
           vInv.push_back(inv);
           if (vInv.size() >= 1000)
           {
-//unet_log("sending inventory[iface #%d]: %s\n", inv.ifaceIndex, inv.ToString().c_str());
             pto->PushMessage("inv", vInv);
             vInv.clear();
           }
