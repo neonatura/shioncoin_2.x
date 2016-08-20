@@ -166,8 +166,10 @@ void SHCWallet::RelayWalletTransaction(CWalletTx& wtx)
     if (!txdb.ContainsTx(hash))
     {
       RelayMessage(CInv(ifaceIndex, MSG_TX, hash), (CTransaction)wtx);
+      Debug("(shc) RelayWalletTransaction: relayed tx '%s'\n", hash.GetHex().c_str());
+    } else {
+      Debug("(shc) RelayWalletTransaction: skipped already established tx '%s'\n", hash.GetHex().c_str());
     }
-    Debug("(shc) RelayWalletTransaction: relayed tx '%s'\n", hash.GetHex().c_str());
   }
 
   txdb.Close();
@@ -225,12 +227,24 @@ void SHCWallet::ResendWalletTransactions()
     LOCK(cs_wallet);
     // Sort them in chronological order
     multimap<unsigned int, CWalletTx*> mapSorted;
+int total = 0;
     BOOST_FOREACH(PAIRTYPE(const uint256, CWalletTx)& item, mapWallet)
     {
+
       CWalletTx& wtx = item.second;
+
+      if (wtx.IsCoinBase())
+        continue;
+      if (wtx.vin.empty())
+        continue;
+      if (wtx.GetDepthInMainChain(SHC_COIN_IFACE) != 0)
+        continue;
+total++;
+
       // Don't rebroadcast until it's had plenty of time that
       // it should have gotten in already by now.
-      if (SHCBlock::nTimeBestReceived - (int64)wtx.nTimeReceived > 5 * 60)
+      if (mapSorted.size() < 16 ||
+          SHCBlock::nTimeBestReceived - (int64)wtx.nTimeReceived > 5 * 60)
         mapSorted.insert(make_pair(wtx.nTimeReceived, &wtx));
     }
     BOOST_FOREACH(PAIRTYPE(const unsigned int, CWalletTx*)& item, mapSorted)
