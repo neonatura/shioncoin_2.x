@@ -376,6 +376,8 @@ bool SoftSetBoolArg(const std::string& strArg, bool fValue);
     }
 
 
+
+
 template<typename T1>
 inline uint256 Hash(const T1 pbegin, const T1 pend)
 {
@@ -385,6 +387,15 @@ inline uint256 Hash(const T1 pbegin, const T1 pend)
     uint256 hash2;
     SHA256((unsigned char*)&hash1, sizeof(hash1), (unsigned char*)&hash2);
     return hash2;
+}
+
+inline uint256 Hash(uint160 hash)
+{
+  char buf[64];
+
+  memset(buf, 0, sizeof(buf));
+  memcpy(buf, &hash, sizeof(hash));
+  return (Hash(buf, buf + sizeof(hash)));
 }
 
 class CHashWriter

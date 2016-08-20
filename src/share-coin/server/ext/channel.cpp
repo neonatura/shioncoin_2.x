@@ -400,7 +400,7 @@ std::string CChannel::ToString()
 
 Object CChannel::ToValue()
 {
-  Object obj = CExtCore::ToValue();
+  Object obj;
 
   obj.push_back(Pair("hash", GetHash().GetHex()));
   obj.push_back(Pair("lcl_pubkey", lcl_pubkey.GetHex()));
@@ -549,11 +549,15 @@ int init_channel_tx(CIface *iface, string strAccount, int64 nValue, CCoinAddr& r
   if (!iface || !iface->enabled)
     return (SHERR_INVAL);
 
-  if (nValue <= (iface->min_tx_fee*2))
+  if (nValue <= (iface->min_tx_fee*2)) {
+fprintf(stderr, "DEBUG: init_channel_tx: nValue(%llu) < min-fee*2\n", nValue);
     return (SHERR_INVAL);
+}
 
-  if (!rem_addr.IsValid())
+  if (!rem_addr.IsValid()) {
+fprintf(stderr, "DEBUG: init_channel_tx: !rem_addr.IsValid()\n");
     return (SHERR_INVAL);
+}
 
   /* note: channel tx op re-uses existing addresses in account for payout */
   CCoinAddr addr = GetAccountAddress(wallet, strAccount, false);
@@ -563,8 +567,10 @@ int init_channel_tx(CIface *iface, string strAccount, int64 nValue, CCoinAddr& r
   wtx.SetNull();
   wtx.strFromAccount = strAccount; /* originating account for payment */
   channel = wtx.CreateChannel(addr, rem_addr, nValue - iface->min_tx_fee); 
-  if (!channel)
+  if (!channel) {
+fprintf(stderr, "DEBUG: init_channel_tx:  !wtx.CreateChannel()\n");
     return (SHERR_INVAL);
+}
 
   /* generate funding and transmit public keys for p2sh */
   channel->lcl_pubkey = GenerateChannelPubKey(wallet, strAccount);
@@ -663,9 +669,10 @@ int activate_channel_tx(CIface *iface, CTransaction *txIn, int64 nValue, CWallet
 
   /* insert p2sh output to channel */
   CScript scriptPubKey;
+  int64 nTotalValue = nValue + channel->lcl_value;
   scriptPubKey << OP_EXT_ACTIVATE << CScript::EncodeOP_N(OP_CHANNEL) << OP_DROP;
   scriptPubKey << OP_HASH160 << channel->GetHash() << OP_EQUAL;
-	wtx.vout.push_back(CTxOut(nValue, scriptPubKey)); 
+	wtx.vout.push_back(CTxOut(nTotalValue, scriptPubKey)); 
 
   // relay unsigned transaction
 	uint256 tx_hash = wtx.GetHash();

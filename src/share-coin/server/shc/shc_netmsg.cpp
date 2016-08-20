@@ -77,7 +77,7 @@ bool static GetTransaction(const uint256& hashTx, CWalletTx& wtx)
 
 void shc_RelayTransaction(const CTransaction& tx, const uint256& hash)
 {
-  RelayTransaction(SHC_COIN_IFACE, tx, hash);
+  RelayMessage(CInv(SHC_COIN_IFACE, MSG_TX, hash), (CTransaction)tx);
 }
 
 

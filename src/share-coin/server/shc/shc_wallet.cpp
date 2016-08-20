@@ -55,7 +55,7 @@ SHCWallet *shcWallet;
 CScript SHC_COINBASE_FLAGS;
 
 
-extern void shc_RelayTransaction(const CTransaction& tx, const uint256& hash);
+//extern void shc_RelayTransaction(const CTransaction& tx, const uint256& hash);
 
 
 int shc_UpgradeWallet(void)
@@ -146,7 +146,33 @@ bool shc_LoadWallet(void)
   return (true);
 }
 
+void SHCWallet::RelayWalletTransaction(CWalletTx& wtx)
+{
+  SHCTxDB txdb;
 
+  BOOST_FOREACH(const CMerkleTx& tx, wtx.vtxPrev)
+  {
+    if (!tx.IsCoinBase())
+    {
+      uint256 hash = tx.GetHash();
+      if (!txdb.ContainsTx(hash))
+        RelayMessage(CInv(ifaceIndex, MSG_TX, hash), (CTransaction)tx);
+    }
+  }
+
+  if (!wtx.IsCoinBase())
+  {
+    uint256 hash = wtx.GetHash();
+    if (!txdb.ContainsTx(hash))
+    {
+      RelayMessage(CInv(ifaceIndex, MSG_TX, hash), (CTransaction)wtx);
+    }
+  }
+
+  txdb.Close();
+}
+
+#if 0
 void SHCWallet::RelayWalletTransaction(CWalletTx& wtx)
 {
 
@@ -171,6 +197,7 @@ void SHCWallet::RelayWalletTransaction(CWalletTx& wtx)
 
 
 }
+#endif
 
 
 void SHCWallet::ResendWalletTransactions()

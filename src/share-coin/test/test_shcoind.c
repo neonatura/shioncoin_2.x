@@ -28,6 +28,10 @@ extern TEST_identtx(CuTest*);
 extern TEST_bloom_create_insert_key(CuTest*);
 extern TEST_bloom_match(CuTest*);
 
+extern TEST_coin_hdkey(CuTest*);
+extern TEST_channeltx(CuTest*);
+
+
 
 extern void test_shcoind_init(void);
 
@@ -47,6 +51,7 @@ int main(int argc, char *argv[])
   SUITE_ADD_TEST(suite, TEST_jsonencap);
   SUITE_ADD_TEST(suite, TEST_coin_key);
   SUITE_ADD_TEST(suite, TEST_coin_key_phrase);
+  SUITE_ADD_TEST(suite, TEST_coin_hdkey);
   SUITE_ADD_TEST(suite, TEST_wallet);
   SUITE_ADD_TEST(suite, TEST_bignum);
   SUITE_ADD_TEST(suite, TEST_sha256transform);
@@ -62,6 +67,7 @@ int main(int argc, char *argv[])
   SUITE_ADD_TEST(suite, TEST_assettx);
   SUITE_ADD_TEST(suite, TEST_certtx);
   SUITE_ADD_TEST(suite, TEST_identtx);
+  SUITE_ADD_TEST(suite, TEST_channeltx);
 
   CuSuiteRun(suite);
   CuSuiteSummary(suite, output);

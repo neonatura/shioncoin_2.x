@@ -236,6 +236,9 @@ bool CKey::SetSecret(const CSecret& vchSecret, bool fCompressed)
     return true;
 }
 
+/**
+ * @note Requires the pkey to be defined before-hand 
+*/
 CSecret CKey::GetSecret(bool &fCompressed) const
 {
     CSecret vchRet;

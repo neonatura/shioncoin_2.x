@@ -23,6 +23,7 @@
  *  @endcopyright
  */  
 
+#include <math.h>
 #include "shcoind.h"
 #include "coin_proto.h"
 

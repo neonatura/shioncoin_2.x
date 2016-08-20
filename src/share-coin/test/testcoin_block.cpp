@@ -862,7 +862,94 @@ bool ret;
   }
 }
 
+_TEST(channeltx)
+{
+  CWallet *wallet = GetWallet(TEST_COIN_IFACE);
+  CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
+  CTransaction t_tx;
+  int64 srcValue;
+  int64 destValue;
+  int idx;
+  int err;
+  int i;
 
+  for (i = 0; i < 16; i++) {
+    CBlock *block = test_GenerateBlock();
+    _TRUEPTR(block);
+    _TRUE(ProcessBlock(NULL, block) == true);
+    delete block;
+  }
+
+  string strLabel("");
+
+  /* create a coin balance */
+  {
+    CBlock *block = test_GenerateBlock();
+    _TRUEPTR(block);
+    _TRUE(ProcessBlock(NULL, block) == true);
+    delete block;
+  }
+
+  CCoinAddr addr = GetAccountAddress(wallet, strLabel, true);
+  _TRUE(addr.IsValid() == true);
+
+  CCoinAddr dest_addr = GetAccountAddress(wallet, strLabel, true);
+  _TRUE(dest_addr.IsValid() == true);
+
+  int64 nValue = GetAccountBalance(TEST_COIN_IFACE, strLabel, 1) / 4;
+
+  /* ** Regular Channel Scenerio ** */
+
+  /* request channel funding */
+  CWalletTx fund_wtx;
+  err = init_channel_tx(iface, strLabel, nValue, dest_addr, fund_wtx); 
+fprintf(stderr, "DEBUG: %d = init_channel_tx()\n", err);
+  _TRUE(0 == err);
+  uint160 hChan = fund_wtx.channel.GetHash();
+
+  /* fund channel as counter-party */
+  CWalletTx chan_wtx;
+  err = activate_channel_tx(iface, (CTransaction *)&fund_wtx, nValue, chan_wtx);
+  _TRUE(0 == err);
+
+  _TRUE(chan_wtx.channel.GetHash() == hChan);
+fprintf(stderr, "DEBUG: CHAN OPEN: %s\n", chan_wtx.ToString().c_str());
+
+  /* perform pay operation to counter-party */
+  CWalletTx commit_wtx;
+  err = pay_channel_tx(iface, strLabel, hChan, nValue / 2, commit_wtx);  
+  _TRUE(0 == err);
+
+  /* validate pay op */
+  CWalletTx val_wtx;
+  err = validate_channel_tx(iface, (CTransaction *)&commit_wtx, val_wtx);  
+  _TRUE(0 == err);
+fprintf(stderr, "DEBUG: CHAN PAY: %s\n", val_wtx.ToString().c_str());
+
+#if 0
+  /* perform pay operation from counter-party */
+  CWalletTx commit_wtx;
+  uint160 hChan = chan_wtx.channel.GetHash();
+  err = pay_channel_tx(iface, strLabel, hChan, nValue / 2, commit_wtx);  
+  _TRUE(0 == err);
+#endif
+
+  /* close channel and finalize transaction. */
+  CWalletTx fin_wtx;
+  err = generate_channel_tx(iface, hChan, fin_wtx);
+  _TRUE(0 == err);
+
+  /* ** Abort Channel Scenerio ** */
+
+  /* request channel funding */
+
+  /* fund channel as counter-party */
+
+  /* perform pay operation to counter-party */
+
+  /* abort channel and redeem funds at current state */
+
+}
 
 
 #ifdef __cplusplus

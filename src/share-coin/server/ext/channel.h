@@ -26,7 +26,7 @@
 #ifndef __CHANNEL_H__
 #define __CHANNEL_H__
 
-class CChannel : public CExtCore
+class CChannel
 {
   public:
     uint160 hRedeem;
@@ -45,20 +45,7 @@ class CChannel : public CExtCore
       SetNull();
     }
 
-    CChannel(const CExtCore& certIn)
-    {
-      SetNull();
-      CExtCore::Init(certIn);
-    }
-
-    CChannel(string labelIn)
-    {
-      SetNull();
-      SetLabel(labelIn);
-    }
-
     IMPLEMENT_SERIALIZE (
-      READWRITE(*(CExtCore *)this);
       READWRITE(hRedeem);
       READWRITE(lcl_pubkey);
       READWRITE(rem_pubkey);
@@ -73,7 +60,6 @@ class CChannel : public CExtCore
 
     void SetNull()
     {
-      CExtCore::SetNull();
 
       hRedeem = 0;
       lcl_pubkey = 0;
@@ -89,7 +75,6 @@ class CChannel : public CExtCore
 
     void Init(const CChannel& channelIn)
     {
-      CExtCore::Init(channelIn);
 
       hRedeem = channelIn.hRedeem;
       lcl_pubkey = channelIn.lcl_pubkey;
@@ -106,7 +91,16 @@ class CChannel : public CExtCore
     friend bool operator==(const CChannel &a, const CChannel &b)
     {
       return (
-        ((CExtCore&) a) == ((CExtCore&) b)
+        a.hRedeem == b.hRedeem &&
+        a.lcl_pubkey == b.lcl_pubkey &&
+        a.rem_pubkey == b.rem_pubkey &&
+        a.lcl_npubkey == b.lcl_npubkey &&
+        a.rem_npubkey == b.rem_npubkey &&
+        a.lcl_addr == b.lcl_addr &&
+        a.rem_addr == b.rem_addr &&
+        a.lcl_value == b.lcl_value &&
+        a.rem_value == b.rem_value &&
+        a.nSeq == b.nSeq
       );
     }
 
@@ -172,7 +166,7 @@ int init_channel_tx(CIface *iface, string strAccount, int64 nValue, CCoinAddr& a
 /** 
  * Activate a Channel Funding Transaction from a counter-party.
  */
-int activate_channel_tx(CIface *iface, uint160 peer_pubkey, int64 nValue, CWalletTx& wtx);
+int activate_channel_tx(CIface *iface, CTransaction *txIn, int64 nValue, CWalletTx& wtx);
 
 /**
  * Perform a pay operation "outside the blockchain".
@@ -188,7 +182,7 @@ int validate_channel_tx(CIface *iface, const CTransaction *txIn, CWalletTx& wtx)
 /**
  * Commit the current balances of the channel onto the block-chain.
  */
-int generate_channel_tx(CIface *iface, const uint160& hashChannel, CWalletTx& wtx);
+int generate_channel_tx(CIface *iface, uint160 hChan, CWalletTx& wtx);
 
 /**
  * Forcibly reset the channel to the last established balance.
