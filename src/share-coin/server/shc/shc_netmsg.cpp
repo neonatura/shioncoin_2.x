@@ -313,14 +313,18 @@ fprintf(stderr, "DEBUG: ProcessMessage: pfrom->nVersion (already) %d\n", pfrom->
 
     if (!pfrom->fInbound)
     {
+fprintf(stderr, "DEBUG: received non-inbound version message (init-block-dl = %s)\n", ( IsInitialBlockDownload(SHC_COIN_IFACE) ? "true":"false" ));
       // Advertise our address
-      if (!fNoListen && !IsInitialBlockDownload(SHC_COIN_IFACE))
+      if (/*!fNoListen &&*/ !IsInitialBlockDownload(SHC_COIN_IFACE))
       {
         CAddress addr = GetLocalAddress(&pfrom->addr);
         addr.SetPort(iface->port);
         if (addr.IsRoutable()) {
           Debug("VERACK: Pushing (GetLocalAddress) '%s'..\n", addr.ToString().c_str());
           pfrom->PushAddress(addr);
+          pfrom->addrLocal = addr;
+        } else {
+          Debug("VERACK: Pushing (GetLocalAddress) '%s' NOT ROUTABLE\n", addr.ToString().c_str());
         }
       }
 
@@ -339,6 +343,7 @@ fprintf(stderr, "DEBUG: ProcessMessage: pfrom->nVersion (already) %d\n", pfrom->
         pfrom->fGetAddr = true;
       }
     } else {
+fprintf(stderr, "DEBUG: received inbound version message (init-block-dl = %s)\n", ( IsInitialBlockDownload(SHC_COIN_IFACE) ? "true":"false" ));
 #if 0
       if (((CNetAddr)pfrom->addr) == (CNetAddr)addrFrom)
       {
@@ -782,16 +787,19 @@ fprintf(stderr, "DEBUG: ProcessMessage[tx]: block.nDoS = %d\n", block.nDoS);
   {
     pfrom->vAddrToSend.clear();
 
+#if 0
     /* send our own */
     if (pfrom->fSuccessfullyConnected)
     {
       CAddress addrLocal = GetLocalAddress(&pfrom->addr);
+      addr.SetPort(iface->port);
       if (addrLocal.IsRoutable() && (CService)addrLocal != (CService)pfrom->addrLocal)
       {
         pfrom->PushAddress(addrLocal);
         pfrom->addrLocal = addrLocal;
       }
     }
+#endif
 
 #if 0
     vector<CAddress> vAddr;
@@ -1133,12 +1141,14 @@ bool shc_SendMessages(CIface *iface, CNode* pto, bool fSendTrickle)
             pnode->setAddrKnown.clear();
 
           // Rebroadcast our address
-          if (!fNoListen)
-          {
+//          if (!fNoListen) {
             CAddress addr = GetLocalAddress(&pnode->addr);
-            if (addr.IsRoutable())
+            addr.SetPort(iface->port);
+            if (addr.IsRoutable()) {
               pnode->PushAddress(addr);
-          }
+              pnode->addrLocal = addr;
+            }
+//          }
         }
       }
       nLastRebroadcast = GetTime();

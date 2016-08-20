@@ -303,12 +303,13 @@ bool usde_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
     if (!pfrom->fInbound)
     {
       // Advertise our address
-      if (!fNoListen && !IsInitialBlockDownload(USDE_COIN_IFACE))
+      if (/*!fNoListen &&*/ !IsInitialBlockDownload(USDE_COIN_IFACE))
       {
         CAddress addr = GetLocalAddress(&pfrom->addr);
         addr.SetPort(iface->port);
         if (addr.IsRoutable()) {
           pfrom->PushAddress(addr);
+          pfrom->addrLocal = addr;
         }
       }
 
@@ -1031,12 +1032,14 @@ bool usde_SendMessages(CIface *iface, CNode* pto, bool fSendTrickle)
             pnode->setAddrKnown.clear();
 
           // Rebroadcast our address
-          if (!fNoListen)
-          {
+//          if (!fNoListen) {
             CAddress addr = GetLocalAddress(&pnode->addr);
-            if (addr.IsRoutable())
+            addr.SetPort(iface->port);
+            if (addr.IsRoutable()) {
               pnode->PushAddress(addr);
-          }
+              pnode->addrLocal = addr;
+            }
+//          }
         }
       }
       nLastRebroadcast = GetTime();
