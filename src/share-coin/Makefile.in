@@ -1459,7 +1459,7 @@ test_shcoind_LDADD = $(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
 test_shcoind_CFLAGS = -DSHCOIN_SERVER -g -O0 -DTEST_SHCOIND \
 	$(am__append_3)
 test_shcoind_CXXFLAGS = -DOS_LINUX -DSHCOIN_SERVER -g -O0 \
-	-DTEST_SHCOIND -std=c++0x $(am__append_4)
+	-DTEST_SHCOIND $(am__append_4)
 shcoind_SOURCES = \
 	$(common_includes) $(common_sources) \
 	$(server_sources) $(stratum_sources) \
@@ -1471,8 +1471,7 @@ shcoind_LDADD = $(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
 	$(am__append_5) -lboost_system -lboost_filesystem \
 	-lboost_thread -ldb_cxx -ldl
 shcoind_CFLAGS = -DSHCOIN_SERVER $(am__append_6)
-shcoind_CXXFLAGS = -DOS_LINUX -DSHCOIN_SERVER -std=c++0x \
-	$(am__append_7)
+shcoind_CXXFLAGS = -DOS_LINUX -DSHCOIN_SERVER $(am__append_7)
 shcointool_SOURCES = $(common_includes) $(common_sources) \
 	shcoind_tool.cpp clientrpc_iface.cpp $(tool_sources)
 
@@ -1480,8 +1479,7 @@ shcointool_LDADD = $(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
 	$(am__append_8) -lboost_system -lboost_filesystem \
 	-lboost_thread -ldb_cxx -ldl
 shcointool_CFLAGS = -DSHCOIN_CLIENT $(am__append_9)
-shcointool_CXXFLAGS = -DSHCOIN_CLIENT -DOS_LINUX -std=c++0x \
-	$(am__append_10)
+shcointool_CXXFLAGS = -DSHCOIN_CLIENT -DOS_LINUX $(am__append_10)
 
 #noinst_LIBRARIES = libleveldb.a
 #libleveldb_a_CXXFLAGS = \

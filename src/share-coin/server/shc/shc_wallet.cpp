@@ -239,9 +239,6 @@ void SHCWallet::ResendWalletTransactions()
 //      wtx.RelayWalletTransaction(txdb);
       RelayWalletTransaction(wtx);
     }
-    if (mapWallet.size() != 0) {
-      Debug("(shc) ResendWalletTransactions: relayed %d transactions.\n", mapWallet.size());
-    }
   }
   txdb.Close();
 }

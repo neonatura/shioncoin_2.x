@@ -218,7 +218,7 @@ test_shcoind_SOURCES = \
 test_shcoind_LDADD = $(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
 	-lboost_system -lboost_filesystem -lboost_thread -ldb_cxx -ldl
 test_shcoind_CFLAGS = -DSHCOIN_SERVER -g -O0 -DTEST_SHCOIND
-test_shcoind_CXXFLAGS = -DOS_LINUX -DSHCOIN_SERVER -g -O0 -DTEST_SHCOIND -std=c++0x
+test_shcoind_CXXFLAGS = -DOS_LINUX -DSHCOIN_SERVER -g -O0 -DTEST_SHCOIND
 if STATIC_LIBSHARE
 test_shcoind_LDADD += $(LIBSHARE)/src/share-lib/libshare.a
 test_shcoind_CFLAGS += -I$(LIBSHARE)/include
@@ -238,7 +238,7 @@ shcoind_SOURCES = \
 shcoind_LDADD = \
 	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a
 shcoind_CFLAGS = -DSHCOIN_SERVER
-shcoind_CXXFLAGS = -DOS_LINUX -DSHCOIN_SERVER -std=c++0x
+shcoind_CXXFLAGS = -DOS_LINUX -DSHCOIN_SERVER
 if STATIC_LIBSHARE
 shcoind_LDADD += $(LIBSHARE)/src/share-lib/libshare.a
 shcoind_CFLAGS += -I$(LIBSHARE)/include
@@ -251,7 +251,7 @@ shcointool_SOURCES = $(common_includes) $(common_sources) \
 shcointool_LDADD = \
 	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a 
 shcointool_CFLAGS = -DSHCOIN_CLIENT
-shcointool_CXXFLAGS = -DSHCOIN_CLIENT -DOS_LINUX -std=c++0x
+shcointool_CXXFLAGS = -DSHCOIN_CLIENT -DOS_LINUX
 if STATIC_LIBSHARE
 shcointool_LDADD += $(LIBSHARE)/src/share-lib/libshare.a
 shcointool_CFLAGS += -I$(LIBSHARE)/include
