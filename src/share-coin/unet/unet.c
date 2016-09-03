@@ -125,6 +125,7 @@ void unet_cycle(double max_t)
   unsigned long diff;
   ssize_t w_len;
   SOCKET sk;
+  double wait_t;
   time_t now;
   int fd_max;
   int mode;
@@ -225,8 +226,9 @@ fprintf(stderr, "DEBUG: unet_cycle: shnet_read failure: %s [errno %d]\n", strerr
   }
 
   /* wait remainder of max_t */
-  diff = (unsigned long)(max_t - (shtimef(shtime()) - shtimef(start_t)));
-  diff = MAX(100, MIN(500, diff));
+  wait_t = shtimef(shtime()) - shtimef(start_t);
+  wait_t = MAX(0, max_t - wait_t);
+  diff = MAX(50, MIN(1000, (unsigned long)(wait_t * 1000)));
 
   memset(&to, 0, sizeof(to));
   to.tv_usec = 1000 * diff; /* usec */

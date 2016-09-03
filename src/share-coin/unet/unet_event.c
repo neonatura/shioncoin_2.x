@@ -112,6 +112,11 @@ int uevent_peer_verify(uevent_t *e)
     sprintf(buf, "unet_peer_verify: peer '%s' verified.\n", shpeer_print(peer));
     unet_log(e->mode, buf);
 
+    if (e->fd) {
+      shnet_close(e->fd);
+      e->fd = 0;
+    }
+
     return (0); /* dispose of event */
   }
 
@@ -122,6 +127,11 @@ int uevent_peer_verify(uevent_t *e)
 
     sprintf(buf, "unet_peer_verify: error: peer '%s' (%s) [sherr %d].", shpeer_print(peer), sherrstr(err), err);
     unet_log(e->mode, buf);
+
+    if (e->fd) {
+      shnet_close(e->fd);
+      e->fd = 0;
+    }
 
     return (0); /* dispose of event */
   }
@@ -138,8 +148,10 @@ int uevent_peer_verify(uevent_t *e)
     shnet_track_mark(bind->peer_db, peer, -1);
     bind->scan_freq = MAX(0.001, bind->scan_freq * 0.9);
 
-    shnet_close(e->fd);
-    e->fd = 0;
+    if (e->fd) {
+      shnet_close(e->fd);
+      e->fd = 0;
+    }
 
     return (0); /* dispose of event */
   }
