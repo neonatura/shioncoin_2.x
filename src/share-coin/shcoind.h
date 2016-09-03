@@ -93,7 +93,10 @@ typedef std::vector<unsigned char> cbuff;
 #include "server/block.h"
 #include "server/txidx.h"
 #include "server/global.h"
+
 #endif
+
+
 
 /**
  * @}

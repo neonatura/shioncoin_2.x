@@ -29,6 +29,7 @@
 #include <boost/xpressive/xpressive_dynamic.hpp>
 #include "wallet.h"
 #include "channel.h"
+#include "hdkey.h"
 
 using namespace std;
 using namespace json_spirit;
@@ -60,6 +61,8 @@ bool DecodeChannelHash(const CScript& script, int& mode, uint160& hash)
   opcodetype opcode;
   int op;
 
+  hash = 0;
+
   if (!script.GetOp(pc, opcode)) {
     return false;
   }
@@ -73,10 +76,14 @@ bool DecodeChannelHash(const CScript& script, int& mode, uint160& hash)
   if (opcode < OP_1 || opcode > OP_16) {
     return false;
   }
+
   op = CScript::DecodeOP_N(opcode); /* extension type (channel) */
   if (op != OP_CHANNEL) {
     return false;
   }
+
+  if (mode == OP_EXT_NEW)
+    return (true);
 
   vector<unsigned char> vch;
   if (!script.GetOp(pc, opcode, vch)) {
@@ -291,9 +298,11 @@ fprintf(stderr, "DEBUG: VerifyChannel: !IsChannelTx\n");
       mode != OP_EXT_REMOVE)
     return (false);
 
-  CChannel channel(tx.channel);
-  if (hashChannel != channel.GetHash())
-    return error(SHERR_INVAL, "channel hash mismatch");
+  if (mode != OP_EXT_NEW) {
+    CChannel channel(tx.channel);
+    if (hashChannel != channel.GetHash())
+      return error(SHERR_INVAL, "channel hash mismatch");
+  }
 
   return (true);
 }
@@ -313,11 +322,11 @@ bool GetOpenChannel(int ifaceIndex, uint160 hChan, CTransaction& tx)
 
   const CTransaction& txIn = (*channels)[hChan];
   if (!IsChannelTx(txIn)) 
-    return false;
+    return error(SHERR_INVAL, "GetOpenChannel: !IsChannelTx");
 
   int nOut = IndexOfExtOutput(txIn);
   if (nOut == -1)
-    return (false);
+    return error(SHERR_INVAL, "GetOpenChannel: !ExtOutput");
 
   tx.Init(txIn);
   return (true);
@@ -392,6 +401,23 @@ int GenerateChannelRevocableTx(CIface *iface, uint160 hChan, CTransaction *prevT
 }
 #endif
 
+std::string CChannelKey::ToString()
+{
+  return (write_string(Value(ToValue()), false));
+}
+
+Object CChannelKey::ToValue()
+{
+  Object obj;
+
+  obj.push_back(Pair("addr", addr.GetHex()));
+  obj.push_back(Pair("pubkey", HexStr(pubkey)));
+  obj.push_back(Pair("mpubkey", HexStr(mpubkey)));
+  obj.push_back(Pair("mchain", HexStr(mchain)));
+  obj.push_back(Pair("hdpubkey", HexStr(hdpubkey)));
+
+  return (obj);
+}
 
 std::string CChannel::ToString()
 {
@@ -403,11 +429,9 @@ Object CChannel::ToValue()
   Object obj;
 
   obj.push_back(Pair("hash", GetHash().GetHex()));
-  obj.push_back(Pair("lcl_pubkey", lcl_pubkey.GetHex()));
-  obj.push_back(Pair("rem_pubkey", rem_pubkey.GetHex()));
-  obj.push_back(Pair("lcl_addr", lcl_addr.GetHex()));
-  obj.push_back(Pair("rem_addr", rem_addr.GetHex()));
   obj.push_back(Pair("sequence", (int)nSeq));
+  obj.push_back(Pair("origin", origin.ToValue()));
+  obj.push_back(Pair("peer", peer.ToValue()));
 
   return (obj);
 }
@@ -429,21 +453,33 @@ bool CChannel::SetHash()
   return (true);
 }
 
-void CChannel::GetRedeemScript(CScript& script)
+bool CChannel::GetRedeemScript(CScript& script)
 {
-	vector<uint160> hash_list;
+  CChannelKey *origin = GetOrigin();
+  CChannelKey *peer = GetPeer();
+	vector<cbuff> pubkey_list;
+  cbuff buff;
 
-	hash_list.push_back(lcl_pubkey);
-	hash_list.push_back(rem_pubkey);
-	sort(hash_list.begin(), hash_list.end());
+  /* gather primary pubkey addresses */
+  if (GetOrigin()->pubkey.size() != 0 ||
+      GetPeer()->pubkey.size() != 0)
+    return (false);
+
+  pubkey_list.push_back(GetOrigin()->pubkey);
+  pubkey_list.push_back(GetPeer()->pubkey);
+
+  /* sorted to ensure persistent order. */
+	sort(pubkey_list.begin(), pubkey_list.end());
 
 	script.clear();
 
-	int nRequired = hash_list.size();
+  /* generate script code */
+	int nRequired = pubkey_list.size();
 	script << CScript::EncodeOP_N(nRequired);
-	BOOST_FOREACH(const uint160& hash, hash_list)
-		script << hash;
-	script << CScript::EncodeOP_N(hash_list.size()) << OP_CHECKMULTISIG;
+	BOOST_FOREACH(const cbuff& pubkey, pubkey_list)
+		script << pubkey;
+	script << CScript::EncodeOP_N(pubkey_list.size()) << OP_CHECKMULTISIG;
+  return (true);
 }
 
 bool CChannel::GetChannelTx(int ifaceIndex, CTransaction& tx)
@@ -491,8 +527,10 @@ void SignChannelTx(int ifaceIndex, CWalletTx& wtxNew,
 }
 #endif
 
+#if 0
 uint160 GenerateChannelPubKey(CWallet *wallet, string strAccount)
 {
+
   string strExtAccount = "@" + strAccount;
   CCoinAddr extAddr = GetAccountAddress(wallet, strExtAccount, true);
   CKeyID ext_pubkey;
@@ -500,6 +538,94 @@ uint160 GenerateChannelPubKey(CWallet *wallet, string strAccount)
 
   return ((uint160)ext_pubkey);
 }
+#endif
+
+bool CChannelKey::GenerateMasterKey(CWallet *wallet, string strAccount)
+{
+  bool fCompressed = true;
+  RandAddSeedPerfmon();
+  CKey key;
+  key.MakeNewKey(fCompressed);
+//  wallet->SetMinVersion(FEATURE_COMPRPUBKEY);
+
+  cbuff vchPubKey = key.GetPubKey().Raw();
+  string strExtAccount = "@" + strAccount;
+  wallet->SetAddressBookName(CPubKey(vchPubKey).GetID(), strExtAccount);
+  if (!wallet->AddKey(key))
+    return error(SHERR_INVAL, "GenerateChannelPubKey: AddKey failed");
+
+#if 0
+  CWalletDB walletdb(wallet->strWalletFile);
+  walletdb.ReadAccount(strAccount, account);
+  account.vchPubKey = vchPubKey;
+  wallet->SetAddressBookName(vchPubKey.GetID(), strAccount);
+  walletdb.WriteAccount(strAccount, account);
+#endif
+
+  CSecret secret = key.GetSecret(fCompressed);
+  cbuff buff(secret.begin(), secret.end());
+
+  HDMasterPrivKey privkey;
+  privkey.SetSeed(buff);
+    
+  mpubkey = privkey.GetMasterPubKey().Raw();
+  mchain = privkey.vchChain;
+  return (true);
+}
+
+
+bool CChannelKey::GetMasterKey(CWallet *wallet, HDPrivKey& privkey)
+{
+  CPubKey pubkey(pubkey);
+  CCoinAddr addr(pubkey.GetID());
+
+  CKey key;
+  if (!wallet->GetKey(pubkey.GetID(), key))
+    return (false);
+
+  bool fCompr = true;
+  CSecret secret = key.GetSecret(fCompr);
+  privkey.SetNull();
+  privkey.SetSeed(secret);
+
+  return (true);
+}
+
+bool CChannelKey::VerifyChannelMasterKey(CWallet *wallet)
+{
+  HDPrivKey privkey;
+  if (!GetMasterKey(wallet, privkey))
+    return (false);
+  return (privkey.GetPubKey() == mpubkey);
+}
+
+const CCoinAddr CChannel::GetOriginAddr()
+{
+  CCoinAddr addr;
+  addr.Set(CKeyID(origin.addr));
+  return (addr);
+}
+
+const CCoinAddr CChannel::GetPeerAddr()
+{
+  CCoinAddr addr;
+  addr.Set(CKeyID(peer.addr));
+  return (addr);
+}
+
+bool CChannelKey::GetPubKey(cbuff& ret_buff, int idx)
+{
+  HDPubKey ld_pubkey;
+  HDPubKey l_pubkey(mpubkey, mchain);
+  if (!l_pubkey.derive(ld_pubkey, idx))
+    return (false);
+  
+  ret_buff = ld_pubkey.Raw();
+  return (true);
+}
+
+
+
 
 /**
  * The depth before a revocable channel transaction may be broadcast.
@@ -539,7 +665,47 @@ unsigned int GetChannelTxMaturity(CIface *iface, CTransaction& tx)
 
   return (MAX(0, 1000 - depth + 1));
 }
-  
+
+bool CChannel::GeneratePubKey()
+{
+  CChannelKey *origin = GetOrigin();
+  CChannelKey *peer = GetPeer();
+
+  origin->hdpubkey.clear();
+  peer->hdpubkey.clear();
+
+  if (!origin->GetPubKey(origin->hdpubkey, nSeq))
+    return (false);
+
+  if (!peer->GetPubKey(peer->hdpubkey, nSeq))
+    return (false);
+
+  return (true);
+}
+
+bool CChannel::VerifyPubKey()
+{
+  CChannelKey *origin = GetOrigin();
+  CChannelKey *peer = GetPeer();
+  cbuff buff;
+
+  buff.clear();
+  if (!origin->GetPubKey(buff, nSeq))
+    return (false);
+  if (origin->hdpubkey != buff)
+    return (false);
+
+  buff.clear();
+  if (!peer->GetPubKey(buff, nSeq))
+    return (false);
+  if (peer->hdpubkey != buff)
+    return (false);
+
+  return (true);
+}
+
+
+/* transfer funds to ext account to protect inputs */
 int init_channel_tx(CIface *iface, string strAccount, int64 nValue, CCoinAddr& rem_addr, CWalletTx& wtx)
 {
   CWallet *wallet = GetWallet(iface);
@@ -559,6 +725,9 @@ fprintf(stderr, "DEBUG: init_channel_tx: !rem_addr.IsValid()\n");
     return (SHERR_INVAL);
 }
 
+  
+
+
   /* note: channel tx op re-uses existing addresses in account for payout */
   CCoinAddr addr = GetAccountAddress(wallet, strAccount, false);
   if (!addr.IsValid())
@@ -573,8 +742,10 @@ fprintf(stderr, "DEBUG: init_channel_tx:  !wtx.CreateChannel()\n");
 }
 
   /* generate funding and transmit public keys for p2sh */
-  channel->lcl_pubkey = GenerateChannelPubKey(wallet, strAccount);
-  channel->lcl_npubkey = GenerateChannelPubKey(wallet, strAccount);
+  if (!channel->GetOrigin()->GenerateMasterKey(wallet, strAccount)) {
+    error(SHERR_INVAL, "init_channel_tx: error generating master key.");
+    return (SHERR_INVAL);
+  }
 
   /* generate inputs */
   set<pair<const CWalletTx*,unsigned int> > setCoins; /* coins found */
@@ -593,7 +764,7 @@ fprintf(stderr, "DEBUG: init_channel_tx:  !wtx.CreateChannel()\n");
     wtx.vout.push_back(CTxOut(nValueIn - nValue, scriptRet));
   }
 
-  /* counter-party will insert p2sh output and this output will be removed */
+  /* counter-party will insert p2sh output after this tx */
   CScript scriptPubKey;
   scriptPubKey << OP_EXT_NEW << CScript::EncodeOP_N(OP_CHANNEL) << OP_DROP << OP_RETURN;
 	wtx.vout.push_back(CTxOut(iface->min_tx_fee, scriptPubKey)); 
@@ -603,6 +774,7 @@ fprintf(stderr, "DEBUG: init_channel_tx:  !wtx.CreateChannel()\n");
 	RelayMessage(CInv(ifaceIndex, MSG_TX, tx_hash), (CTransaction)wtx);
 
   wallet->mapChannel[channel->GetHash()] = (CTransaction)wtx;
+  //wallet->mapChannelPending[channel->GetHash()] = (CTransaction)wtx;
 
   Debug("SENT:CHANNELNEW : channelhash=%s, tx=%s\n", channel->GetHash().GetHex().c_str(), wtx.GetHash().GetHex().c_str());
 
@@ -633,8 +805,10 @@ int activate_channel_tx(CIface *iface, CTransaction *txIn, int64 nValue, CWallet
     return (SHERR_INVAL);
 
   /* generate funding and transmit public keys for p2sh */
-  channel->rem_pubkey = GenerateChannelPubKey(wallet, strAccount);
-  channel->rem_npubkey = GenerateChannelPubKey(wallet, strAccount);
+  if (!channel->GetPeer()->GenerateMasterKey(wallet, strAccount)) {
+    error(SHERR_INVAL, "init_channel_tx: error generating master key.");
+    return (SHERR_INVAL);
+  }
 
   wtx.vin = txIn->vin;
   wtx.vout = txIn->vout;
@@ -658,19 +832,22 @@ int activate_channel_tx(CIface *iface, CTransaction *txIn, int64 nValue, CWallet
 /* DEBUG: TODO: must be marked as spent */
   }
 
+#if 0
 
   /* remove OP_EXT_NEW output */
   int nOut = IndexOfExtOutput(wtx);
   if (nOut != -1)
     wtx.vout.erase(wtx.vout.begin() + nOut);
+#endif
 
   /* establish redeem script hash */
   channel->SetHash();
 
   /* insert p2sh output to channel */
   CScript scriptPubKey;
-  int64 nTotalValue = nValue + channel->lcl_value;
-  scriptPubKey << OP_EXT_ACTIVATE << CScript::EncodeOP_N(OP_CHANNEL) << OP_DROP;
+  int64 nTotalValue = nValue + channel->GetOriginValue();
+  uint160 hChan = channel->GetHash();
+//  scriptPubKey << OP_EXT_ACTIVATE << CScript::EncodeOP_N(OP_CHANNEL) << OP_HASH160 << hChan << OP_2DROP;
   scriptPubKey << OP_HASH160 << channel->GetHash() << OP_EQUAL;
 	wtx.vout.push_back(CTxOut(nTotalValue, scriptPubKey)); 
 
@@ -685,7 +862,7 @@ int activate_channel_tx(CIface *iface, CTransaction *txIn, int64 nValue, CWallet
   return (0);
 }
 
-int pay_channel_tx(CIface *iface, string strAccount, uint160 hChan, int64 nValue, CWalletTx& wtx)
+int pay_channel_tx(CIface *iface, string strAccount, uint160 hChan, CCoinAddr pay_dest, int64 nValue, CWalletTx& wtx)
 {
   int ifaceIndex = GetCoinIndex(iface);
   CWallet *wallet = GetWallet(iface);
@@ -699,102 +876,137 @@ int pay_channel_tx(CIface *iface, string strAccount, uint160 hChan, int64 nValue
   if (ifaceIndex != TEST_COIN_IFACE && ifaceIndex != SHC_COIN_IFACE)
     return (SHERR_OPNOTSUPP);
 
-	if (!GetOpenChannel(ifaceIndex, hChan, txIn))
+	if (!GetOpenChannel(ifaceIndex, hChan, txIn)) {
+fprintf(stderr, "DEBUG: GetOpenChannel: failure opening hChan '%s'\n", hChan.GetHex().c_str());
 		return (SHERR_NOENT);
+}
 
-  int nOut = IndexOfExtOutput(txIn);
-  if (nOut != -1)
-    return (SHERR_INVAL);
+fprintf(stderr, "DEBUG: pay_channel_tx: txIn: %s\n", txIn.ToString().c_str());
 
   CChannel& chanIn = txIn.channel;
 
   string strChanAccount;
-  CCoinAddr lcl_addr = chanIn.GetOriginAddr();
-  CCoinAddr rem_addr = chanIn.GetPeerAddr();
-  if (!lcl_addr.IsValid() || !rem_addr.IsValid())
+  CCoinAddr ori_addr = chanIn.GetOriginAddr();
+  CCoinAddr dest_addr = chanIn.GetPeerAddr();
+  if (!ori_addr.IsValid() || !dest_addr.IsValid()) {
+error(SHERR_INVAL, "!ori_addr.IsValid || !dest_addr.IsValid");
     return (SHERR_INVAL);
-  if (GetCoinAddr(wallet, lcl_addr, strChanAccount) &&
-      strChanAccount == strAccount) {
-    addr = lcl_addr; 
-    peer_addr = rem_addr;
-    isOrigin = true;
-  } else if (GetCoinAddr(wallet, rem_addr, strChanAccount) &&
-      strChanAccount == strAccount) {
-    addr = rem_addr;
-    peer_addr = lcl_addr;
-    isOrigin = false;
+}
+  if (ori_addr == pay_dest) {
+    if (!GetCoinAddr(wallet, dest_addr, strChanAccount))
+      return (SHERR_ACCESS);
+    isOrigin = false; /* sending to origin */
+/* .. verify pubkey lookup */
+    addr = dest_addr;
+    peer_addr = ori_addr;
+  } else if (dest_addr == pay_dest) {
+    if (!GetCoinAddr(wallet, ori_addr, strChanAccount))
+      return (SHERR_ACCESS);
+    isOrigin = true; /* sending to dest */
+/* .. verify pubkey lookup */
+    addr = ori_addr;
+    peer_addr = dest_addr;
   } else {
-    return (SHERR_REMOTE);
+error(SHERR_NOENT, "pay_channel_tx: unknown destination address specified.");
+    return (SHERR_NOENT);
   }
+
 
   wtx.SetNull();
   channel = wtx.PayChannel(chanIn);
 
 	if (GetSpentChannel(ifaceIndex, hChan, txSpentIn)) {
     /* adjust counter-party balances */
-    channel->lcl_value = txSpentIn.channel.lcl_value;
-    channel->rem_value = txSpentIn.channel.rem_value;
+    channel->SetOriginValue(txSpentIn.channel.GetOriginValue());
+    channel->SetPeerValue(txSpentIn.channel.GetPeerValue());
 
     /* increment sequence */
     channel->nSeq = txSpentIn.channel.nSeq + 1;
 
+#if 0
     /* iterate to next set of pubkeys */
-    channel->lcl_pubkey = txSpentIn.channel.lcl_npubkey;
-    channel->rem_pubkey = txSpentIn.channel.rem_npubkey;
+    channel->src_pubkey = txSpentIn.channel.lcl_npubkey;
+    channel->dest_pubkey = txSpentIn.channel.rem_npubkey;
+#endif
   } else {
+/* fresh blood */
+#if 0
     /* iterate to initial set of commit pubkeys */
-    channel->lcl_pubkey = chanIn.lcl_npubkey;
-    channel->rem_pubkey = chanIn.rem_npubkey;
+    channel->src_pubkey = chanIn.lcl_npubkey;
+    channel->dest_pubkey = chanIn.rem_npubkey;
+#endif
   }
+  channel->GeneratePubKey();
 
   if (isOrigin) {
-    if (nValue < channel->lcl_value)
+    if (nValue > channel->GetOriginValue()) {
+fprintf(stderr, "DEBUG: pay_channel_tx: (isOrigin) nValue(%lld) < channel->origin-value(%lld)\n", nValue, channel->GetOriginValue());
       return (SHERR_AGAIN);
-    channel->lcl_value -= nValue;
-    channel->rem_value += nValue;
+}
+    channel->SetOriginValue(channel->GetOriginValue() - nValue);
+    channel->SetPeerValue(channel->GetPeerValue() + nValue);
 
+#if 0
     /* generate unique for next commit */
     channel->lcl_npubkey = GenerateChannelPubKey(wallet, strAccount);
+#endif
   } else {
-    if (nValue < channel->rem_value)
+    if (nValue > channel->GetPeerValue()) {
+fprintf(stderr, "DEBUG: pay_channel_tx: (isOrigin) nValue(%lld) < channel->peer-value(%lld)\n", nValue, channel->GetPeerValue());
       return (SHERR_AGAIN);
-    channel->lcl_value += nValue;
-    channel->rem_value -= nValue;
+}
+    channel->SetPeerValue(channel->GetPeerValue() - nValue);
+    channel->SetOriginValue(channel->GetOriginValue() + nValue);
 
+#if 0
     /* generate unique for next commit */
     channel->rem_npubkey = GenerateChannelPubKey(wallet, strAccount);
+#endif
   }
-
+//  channel->GeneratePubKey();
 
   /* create input from funding transaction */
   CScript scriptIn;
+/*
   CScript redeem;
   chanIn.GetRedeemScript(redeem);
-	scriptIn << OP_0 << chanIn.rem_pubkey << chanIn.lcl_pubkey << redeem << OP_HASH160 << chanIn.GetHash() << OP_EQUAL;
+*/
+  int nOut = txIn.vout.size() - 1;
+	scriptIn << OP_0 << chanIn.GetPeer()->addr << chanIn.GetOrigin()->addr << chanIn.GetHash() << OP_HASH160 << chanIn.GetHash() << OP_EQUAL;
   wtx.vin.push_back(CTxIn(txIn.GetHash(), nOut, scriptIn, channel->nSeq));
 
 
-  int64 nTotalValue = channel->lcl_value + channel->rem_value;
+  int64 nTotalValue = channel->GetOriginValue() + channel->GetPeerValue();
   int64 nCounterValue;
   if (isOrigin)
-    nCounterValue = channel->rem_value;
+    nCounterValue = channel->GetPeerValue();
   else
-    nCounterValue = channel->lcl_value;
+    nCounterValue = channel->GetOriginValue();
+
+  CScript scriptExt;
+  scriptExt << OP_EXT_PAY << CScript::EncodeOP_N(OP_CHANNEL) << OP_HASH160 << hChan << OP_2DROP << OP_RETURN;
+	wtx.vout.push_back(CTxOut(iface->min_tx_fee, scriptExt)); 
 
   /* insert p2sh output to channel */
   CScript scriptPubKey;
-  scriptPubKey << OP_EXT_PAY << CScript::EncodeOP_N(OP_CHANNEL) << OP_HASH160 << hChan << OP_2DROP;
   scriptPubKey << OP_HASH160 << channel->GetHash() << OP_EQUAL;
-	wtx.vout.push_back(CTxOut(nTotalValue - nCounterValue, scriptPubKey)); 
+	wtx.vout.push_back(CTxOut(nTotalValue - nCounterValue - iface->min_tx_fee, scriptPubKey)); 
 
   /* append pubkey output to channel of counter-party remainder */
   CScript scriptPeer;
   scriptPeer.SetDestination(peer_addr.Get());
   wtx.vout.push_back(CTxOut(nCounterValue, scriptPeer)); 
 
+#if 0
   /* half-sign input */
-  if (!SignSignature(*wallet, txIn, wtx, 0))
+fprintf(stderr, "DEBUG: TEST: pay/sign: txIn.vout.size() = %d\n", txIn.vout.size());
+fprintf(stderr, "DEBUG: TEST: pay/sign: wtx.vin.size() = %d\n", wtx.vin.size());
+fprintf(stderr, "DEBUG: TEST: pay/sign: wtx.vin[0].prevout.n = %d\n", wtx.vin[0].prevout.n);
+  if (!SignSignature(*wallet, txIn, wtx, 0)) {
+error(SHERR_INVAL, "pay_channel_txt: !SignSignature");
     return (SHERR_INVAL);
+}
+#endif
  
   // relay half-signed transaction
 	uint256 tx_hash = wtx.GetHash();
@@ -812,7 +1024,7 @@ int pay_channel_tx(CIface *iface, string strAccount, uint160 hChan, int64 nValue
 	return (0);
 }
 
-int validate_channel_tx(CIface *iface, const CTransaction *txCommit, CWalletTx& wtx)
+int validate_channel_tx(CIface *iface, CTransaction *txCommit, CWalletTx& wtx)
 {
   int ifaceIndex = GetCoinIndex(iface);
   CWallet *wallet = GetWallet(iface);
@@ -881,58 +1093,60 @@ int validate_channel_tx(CIface *iface, const CTransaction *txCommit, CWalletTx& 
 
 	if (GetSpentChannel(ifaceIndex, hChan, txSpentIn)) {
     if (isOrigin) {
-      if (txCommit->channel.lcl_value < txSpentIn.channel.lcl_value)
+      if (txCommit->channel.GetOriginValue() < txSpentIn.channel.GetOriginValue())
         return (SHERR_INVAL); 
-      if (txCommit->channel.rem_value > txSpentIn.channel.rem_value)
+      if (txCommit->channel.GetPeerValue() > txSpentIn.channel.GetPeerValue())
         return (SHERR_INVAL); 
     } else {
-      if (txCommit->channel.rem_value < txSpentIn.channel.rem_value)
+      if (txCommit->channel.GetPeerValue() < txSpentIn.channel.GetPeerValue())
         return (SHERR_INVAL); 
-      if (txCommit->channel.lcl_value > txSpentIn.channel.lcl_value)
+      if (txCommit->channel.GetOriginValue() > txSpentIn.channel.GetOriginValue())
         return (SHERR_INVAL); 
     }
 
     if (txCommit->channel.nSeq <= txSpentIn.vin[0].nSequence)
       return (SHERR_ILSEQ);
 
+#if 0
     /* retain previous pubkey */
     if (isOrigin)
-      channel->lcl_pubkey = txSpentIn.channel.lcl_pubkey;
+      channel->src_pubkey = txSpentIn.channel.src_pubkey;
     else
-      channel->rem_pubkey = txSpentIn.channel.rem_pubkey;
+      channel->dest_pubkey = txSpentIn.channel.dest_pubkey;
+#endif
   } else {
     if (isOrigin) {
-      if (txCommit->channel.lcl_value < chanIn.lcl_value)
+      if (txCommit->channel.GetOriginValue() < chanIn.GetOriginValue())
         return (SHERR_INVAL); 
-      if (txCommit->channel.rem_value > chanIn.rem_value)
+      if (txCommit->channel.GetPeerValue() > chanIn.GetPeerValue())
         return (SHERR_INVAL); 
     } else {
-      if (txCommit->channel.rem_value < chanIn.rem_value)
+      if (txCommit->channel.GetPeerValue() < chanIn.GetPeerValue())
         return (SHERR_INVAL); 
-      if (txCommit->channel.lcl_value > chanIn.lcl_value)
+      if (txCommit->channel.GetOriginValue() > chanIn.GetOriginValue())
         return (SHERR_INVAL); 
     }
   }
 
   /* update balances */
-  channel->lcl_value = txCommit->channel.lcl_value;
-  channel->rem_value = txCommit->channel.rem_value;
+  channel->SetOriginValue(txCommit->channel.GetOriginValue());
+  channel->SetPeerValue(txCommit->channel.GetPeerValue());
 
   /* define sequence number. */
   channel->nSeq = txCommit->channel.nSeq;
 
-  /* generate unique pubkey for new commit */
-  if (isOrigin) {
-    channel->lcl_npubkey = GenerateChannelPubKey(wallet, strAccount);
-  } else {
-    channel->rem_npubkey = GenerateChannelPubKey(wallet, strAccount);
+  if (!channel->VerifyPubKey()) {
+    error(SHERR_INVAL, "validate_channel_tx: failure verifying pubkey.");
+    return (SHERR_INVAL);
   }
 
   /* create input from funding transaction */
   CScript scriptIn;
+/*
   CScript redeem;
   chanIn.GetRedeemScript(redeem);
-	scriptIn << OP_0 << chanIn.rem_pubkey << chanIn.lcl_pubkey << redeem << OP_HASH160 << chanIn.GetHash() << OP_EQUAL;
+*/
+	scriptIn << OP_0 << chanIn.GetPeer()->addr << chanIn.GetOrigin()->addr << chanIn.GetHash() << OP_HASH160 << chanIn.GetHash() << OP_EQUAL;
   if (!equal(scriptIn.begin(), scriptIn.end(),
         txCommit->vin[0].scriptSig.begin()) ||
       txCommit->vin[0].nSequence != channel->nSeq) {
@@ -944,9 +1158,9 @@ int validate_channel_tx(CIface *iface, const CTransaction *txCommit, CWalletTx& 
 
   int64 nCounterValue;
   if (isOrigin)
-    nCounterValue = channel->rem_value;
+    nCounterValue = channel->GetPeerValue();
   else
-    nCounterValue = channel->lcl_value;
+    nCounterValue = channel->GetOriginValue();
 
   /* insert direct counter-party pubkey payment first */
   CScript scriptCounter;
@@ -955,7 +1169,7 @@ int validate_channel_tx(CIface *iface, const CTransaction *txCommit, CWalletTx& 
 
   /* insert p2sh output to channel */
   CScript scriptPubKey;
-  int64 nTotalValue = channel->lcl_value + channel->rem_value;
+  int64 nTotalValue = channel->GetOriginValue() + channel->GetPeerValue();
   scriptPubKey << OP_EXT_PAY << CScript::EncodeOP_N(OP_CHANNEL) << OP_HASH160 << hChan << OP_2DROP;
   scriptPubKey << OP_HASH160 << channel->GetHash() << OP_EQUAL;
 	wtx.vout.push_back(CTxOut(nTotalValue - nCounterValue, scriptPubKey)); 
@@ -1054,22 +1268,22 @@ int generate_channel_tx(CIface *iface, uint160 hChan, CWalletTx& wtx)
   CScript scriptIn;
   CScript redeem;
   chanIn.GetRedeemScript(redeem);
-	scriptIn << OP_0 << chanIn.rem_pubkey << chanIn.lcl_pubkey << redeem << OP_HASH160 << chanIn.GetHash() << OP_EQUAL;
+	scriptIn << OP_0 << chanIn.GetPeer()->addr << chanIn.GetOrigin()->addr << redeem << OP_HASH160 << chanIn.GetHash() << OP_EQUAL;
   wtx.vin.push_back(CTxIn(txIn.GetHash(), nOut, scriptIn, channel->nSeq));
 
   int64 nCounterValue;
   if (isOrigin)
-    nCounterValue = channel->rem_value;
+    nCounterValue = channel->GetPeerValue();
   else
-    nCounterValue = channel->lcl_value;
+    nCounterValue = channel->GetOriginValue();
 
   CScript scriptOrigin;
   scriptOrigin.SetDestination(channel->GetOriginAddr().Get());
-  wtx.vout.push_back(CTxOut(channel->lcl_value, scriptOrigin));
+  wtx.vout.push_back(CTxOut(channel->GetOriginValue(), scriptOrigin));
 
   CScript scriptPeer;
   scriptPeer.SetDestination(channel->GetPeerAddr().Get());
-  wtx.vout.push_back(CTxOut(channel->rem_value, scriptPeer));
+  wtx.vout.push_back(CTxOut(channel->GetPeerValue(), scriptPeer));
 
   /* half-sign input */
   if (!SignSignature(*wallet, txIn, wtx, 0))
@@ -1244,6 +1458,4 @@ return (SHERR_INVAL);
 
 	return (0);
 }
-
-
 

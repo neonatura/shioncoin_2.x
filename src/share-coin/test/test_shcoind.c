@@ -30,6 +30,8 @@ extern TEST_bloom_match(CuTest*);
 
 extern TEST_coin_hdkey(CuTest*);
 extern TEST_channeltx(CuTest*);
+extern TEST_hdtx(CuTest*);
+extern TEST_exectx(CuTest*);
 
 
 
@@ -67,7 +69,10 @@ int main(int argc, char *argv[])
   SUITE_ADD_TEST(suite, TEST_assettx);
   SUITE_ADD_TEST(suite, TEST_certtx);
   SUITE_ADD_TEST(suite, TEST_identtx);
-  SUITE_ADD_TEST(suite, TEST_channeltx);
+  SUITE_ADD_TEST(suite, TEST_hdtx);
+  SUITE_ADD_TEST(suite, TEST_exectx);
+
+//  SUITE_ADD_TEST(suite, TEST_channeltx);
 
   CuSuiteRun(suite);
   CuSuiteSummary(suite, output);

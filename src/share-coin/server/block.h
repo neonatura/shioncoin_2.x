@@ -36,15 +36,15 @@
 #include "scrypt.h"
 #include "protocol.h"
 #include "net.h"
+#include "json/json_spirit_reader_template.h"
+#include "json/json_spirit_writer_template.h"
+using namespace std;
+using namespace json_spirit;
 #include "script.h"
 #include "coin_proto.h"
 #include "txext.h"
 #include "matrix.h"
 
-#include "json/json_spirit_reader_template.h"
-#include "json/json_spirit_writer_template.h"
-using namespace std;
-using namespace json_spirit;
 
 
 typedef std::vector<uint256> HashList;
@@ -470,6 +470,7 @@ class CTransactionCore
     static const int TXF_IDENT = (1 << 10);
     static const int TXF_MATRIX = (1 << 11);
     static const int TXF_CHANNEL = (1 << 12);
+    static const int TXF_EXEC = (1 << 13);
 
     int nFlag;
     std::vector<CTxIn> vin;
@@ -810,6 +811,11 @@ public:
     CCert *UpdateAsset(const CAsset& assetIn, string strAssetName, string strAssetHash);
     CCert *SignAsset(const CAsset& assetIn, uint160 hashCert);
     CCert *RemoveAsset(const CAsset& assetIn);
+
+    CExec *CreateExec();
+    CExec *UpdateExec(const CExec& execIn);
+    CExec *ActivateExec(const CExec& execIn);
+    CExec *RemoveExec(const CExec& execIn);
 
     CIdent *CreateIdent(CIdent *ident);
 

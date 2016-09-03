@@ -2288,7 +2288,7 @@ CCert *CTransaction::CreateCert(int ifaceIndex, const char *name, CCoinAddr& add
   certificate = CCert(strTitle);
   shgeo_local(&certificate.geo, SHGEO_PREC_DISTRICT);
   certificate.SetActive(true);
-  certificate.SetLicenseFee(nLicenseFee);
+  certificate.SetFee(nLicenseFee);
   certificate.Sign(ifaceIndex, addr, secret);
 
   return (&certificate);
@@ -2661,6 +2661,10 @@ Object CTransaction::ToValue()
     CAsset asset(certificate);
     obj.push_back(Pair("asset", asset.ToValue()));
   }
+  if (this->nFlag & TXF_EXEC) {
+    CExec exec(certificate);
+    obj.push_back(Pair("exec", exec.ToValue()));
+  }
   if (this->nFlag & TXF_OFFER)
     obj.push_back(Pair("offer", offer.ToValue()));
   if (this->nFlag & TXF_OFFER_ACCEPT)
@@ -2671,6 +2675,9 @@ Object CTransaction::ToValue()
   }
   if (this->nFlag & TXF_MATRIX) {
     obj.push_back(Pair("matrix", matrix.ToValue()));
+  }
+  if (this->nFlag & TXF_CHANNEL) {
+    obj.push_back(Pair("channel", channel.ToValue()));
   }
 
   return (obj);
@@ -2806,7 +2813,7 @@ int CTransaction::GetDepthInMainChain(int ifaceIndex, CBlockIndex* &pindexRet) c
 }
 
 
-CChannel *CTransaction::CreateChannel(CCoinAddr& lcl_addr, CCoinAddr& rem_addr, int64 nValue)
+CChannel *CTransaction::CreateChannel(CCoinAddr& src_addr, CCoinAddr& dest_addr, int64 nValue)
 {
 
   if (isFlag(CTransaction::TXF_CHANNEL))
@@ -2815,17 +2822,17 @@ CChannel *CTransaction::CreateChannel(CCoinAddr& lcl_addr, CCoinAddr& rem_addr, 
   nFlag |= CTransaction::TXF_CHANNEL;
 
   CKeyID lcl_pubkey;
-  if (!lcl_addr.GetKeyID(lcl_pubkey))
+  if (!src_addr.GetKeyID(lcl_pubkey))
     return (NULL);
 
   CKeyID rem_pubkey;
-  if (!rem_addr.GetKeyID(rem_pubkey))
+  if (!dest_addr.GetKeyID(rem_pubkey))
     return (NULL);
 
   channel.SetNull();
-  channel.lcl_addr = lcl_pubkey;
-  channel.rem_addr = rem_pubkey;
-  channel.lcl_value = nValue;
+  channel.GetOrigin()->addr = lcl_pubkey;
+  channel.GetPeer()->addr = rem_pubkey;
+  channel.SetOriginValue(nValue);
 
   return (&channel);
 }
@@ -2839,7 +2846,7 @@ CChannel *CTransaction::ActivateChannel(const CChannel& channelIn, int64 nValue)
   nFlag |= CTransaction::TXF_CHANNEL;
 
   channel.Init(channelIn);
-  channel.rem_value = nValue;
+  channel.SetPeerValue(nValue);
 
   return (&channel);
 }
@@ -2852,8 +2859,9 @@ CChannel *CTransaction::PayChannel(const CChannel& channelIn)
   nFlag |= CTransaction::TXF_CHANNEL;
 
   channel.Init(channelIn);
-  channel.lcl_pubkey = 0;
-  channel.rem_pubkey = 0;
+  channel.GetOrigin()->hdpubkey.clear();
+  channel.GetPeer()->hdpubkey.clear();
+
   return (&channel);
 }
 
@@ -2875,4 +2883,70 @@ CChannel *CTransaction::RemoveChannel(const CChannel& channelIn)
 
   return (&channel);
 }
+
+CExec *CTransaction::CreateExec()
+{
+  CExec *exec;
+
+  if (nFlag & CTransaction::TXF_EXEC)
+    return (NULL);
+
+  nFlag |= CTransaction::TXF_EXEC;
+
+  exec = (CExec *)&certificate;
+  exec->SetNull();
+  exec->SetExpireTime(CExec::DEFAULT_EXEC_LIFESPAN);
+  shgeo_local(&exec->geo, SHGEO_PREC_DISTRICT);
+
+  return (exec);
+}
+
+CExec *CTransaction::UpdateExec(const CExec& execIn)
+{
+  CExec *exec;
+
+  if (nFlag & CTransaction::TXF_EXEC)
+    return (NULL);
+
+  nFlag |= CTransaction::TXF_EXEC;
+
+  exec = (CExec *)&certificate;
+  exec->Init(execIn);
+
+  return (exec);
+}
+
+CExec *CTransaction::ActivateExec(const CExec& execIn)
+{
+  CExec *exec;
+
+  if (nFlag & CTransaction::TXF_EXEC)
+    return (NULL);
+
+  nFlag |= CTransaction::TXF_EXEC;
+
+  exec = (CExec *)&certificate;
+  exec->Init(execIn);
+
+  return (exec);
+}
+
+CExec *CTransaction::RemoveExec(const CExec& execIn)
+{
+  CExec *exec;
+
+  if (nFlag & CTransaction::TXF_EXEC)
+    return (NULL);
+
+  nFlag |= CTransaction::TXF_EXEC;
+
+  exec = (CExec *)&certificate;
+  exec->Init(execIn);
+
+  return (exec);
+
+}
+
+
+
 

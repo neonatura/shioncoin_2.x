@@ -52,19 +52,14 @@
 
 #include "hdkey.h"
 
+#define MAX_HD_SEED_INDEX 0xfffffff
 
 using namespace std;
 
 
 void HDPrivKey::MakeNewKey(bool fCompressed)
 {
-  fCompressed = false;
-
-  CKey::MakeNewKey(fCompressed);
-
-  CSecret secret = GetSecret(fCompressed);
-  cbuff seed(secret.begin(), secret.end());
-  SetSeed(seed);
+  /* not supported */
 }
 
 bool HDPrivKey::SetSeed(cbuff seed)
@@ -72,17 +67,19 @@ bool HDPrivKey::SetSeed(cbuff seed)
   char secret_hex[256];
   char m_chain[256];
 
-  if (seed.size() != 32)
-    return (false);
+  string master_seed = Hash(seed.begin(), seed.end()).GetHex();
+  while (master_seed.length() < 64)
+    master_seed = "0" + master_seed;
 
-  string master_seed = HexStr(seed);
   strcpy(secret_hex, shecdsa_hd_seed((char *)master_seed.c_str(), m_chain));
-  vchKey = ParseHex(secret_hex);
 
+  cbuff vchKey = ParseHex(secret_hex);
   CSecret secret(vchKey.begin(), vchKey.end());
   SetSecret(secret, false);
+
   vchChain = ParseHex(m_chain);
 
+  fSet = true;
 
   return (true);
 }
@@ -94,37 +91,151 @@ bool HDPrivKey::derive(HDPrivKey& privkey, cbuff pubkey, uint32_t i)
   char pubkey_hex[256];
   char secret_hex[256];
 
+  if (i > MAX_HD_SEED_INDEX)
+    return (false);
+
+#if 0
+  if (!IsValid())
+    return (false);
+#endif
+
   string hex = HexStr(vchChain);
   memset(chain_hex, 0, sizeof(chain_hex));
   strcpy(chain_hex, hex.c_str());
 
-  strcpy(secret_hex, HexStr(vchKey).c_str());
+  strcpy(secret_hex, HexStr(Raw()).c_str());
 
   strcpy(pubkey_hex, HexStr(pubkey).c_str());
 
-  strcpy(privkey_hex, shecdsa_hd_privkey(pubkey_hex,
-        chain_hex, secret_hex, i));
+  strcpy(privkey_hex, shecdsa_hd_privkey(secret_hex, chain_hex, i));
 
   cbuff secret = ParseHex(privkey_hex); 
+if (secret.size() != 32) fprintf(stderr, "DEBUG: HDPrivKey.derive: derived secret key is not 32 bytes\n");
   privkey = HDPrivKey(*this, secret, ParseHex(chain_hex), i);
+
+  if (!privkey.IsValid())
+    return (false);
 
   return (true);
 }
 
 CPubKey HDPrivKey::GetPubKey() const
 {
-  char m_key[256];
-  char m_chain[256];
+  char secret_hex[256];
+  char pubkey_hex[256];
 
-  strcpy(m_key, HexStr(vchMasterKey).c_str());
-  strcpy(m_chain, HexStr(vchMasterChain).c_str());
-  string ret_hex = shecdsa_hd_priv2pub(m_key, m_chain, index);
+  memset(secret_hex, 0, sizeof(secret_hex));
+  memset(pubkey_hex, 0, sizeof(pubkey_hex));
 
-  cbuff buff = ParseHex(ret_hex);
+  strcpy(secret_hex, HexStr(Raw()).c_str());
+  char *hex = shecdsa_hd_recover_pub(secret_hex);
+  if (hex)
+    strcpy(pubkey_hex, hex); 
+
+  cbuff buff = ParseHex(pubkey_hex);
   CPubKey pubkey(buff);
 
   return (pubkey);
 }
+
+HDPubKey HDPrivKey::GetMasterPubKey() const
+{
+  bool fCompr = false;
+  char *hex;
+
+  hex = shecdsa_hd_recover_pub((char *)HexStr(Raw()).c_str());
+  if (!hex) {
+    error(SHERR_INVAL, "GetMasterPubKey: failure recovering pubkey.");
+    return (HDPubKey());
+  }
+
+  cbuff buff = ParseHex(hex);
+  HDPubKey pubkey(buff, vchChain, depth, index);
+
+  return (pubkey);
+}
+
+bool HDPrivKey::IsValid()
+{
+
+  if (!fSet) {
+    error(SHERR_INVAL, "HDPrivKey.IsValid: fSet == false");
+    return (false);
+  }
+
+  if (Raw().size() != 32) {
+    return error(SHERR_INVAL, "HDPrivKey.IsValid: vchKey.size() != 32");
+  }
+
+  if (vchChain.size() != 32) {
+    return error(SHERR_INVAL, "HDPrivKey.IsValid: vchChain.size() != 32");
+  }
+
+  if (!IsValidKey()) {
+    return error(SHERR_INVAL, "HDPrivKey.IsValid: key is invalid.");
+  }
+
+  return (true);
+}
+
+bool HDPrivKey::IsValidKey()
+{
+  bool fCompr;
+  HDPrivKey key2;
+
+  /* generate clone of this key */
+  key2.Init(*this);
+
+  /* verify secret key integrity */
+  CSecret secret = GetSecret(fCompr);
+  cbuff buff(secret.begin(), secret.end());
+  if (buff != key2.Raw())
+    return error(SHERR_INVAL, "HDPrivKey.IsValidKey: secret encapsulation failure.");
+
+  /* verify pub-key derivative */
+  return GetPubKey() == key2.GetPubKey();
+}
+
+bool HDPrivKey::Sign(uint256 hash, std::vector<unsigned char>& vchSig)
+{
+  char sig_r[256];
+  char sig_s[256];
+  int err;
+
+  string privkey = HexStr(Raw());
+  string hash_hex = HexStr(hash.begin(), hash.end());
+
+memset(sig_r, 0, sizeof(sig_r));
+memset(sig_s, 0, sizeof(sig_s));
+  err = shecdsa_hd_sign((char *)privkey.c_str(), sig_r, sig_s, (char *)hash_hex.c_str());
+  if (err)
+    return (false);
+
+  cbuff bin_r = ParseHex(string(sig_r));
+  cbuff bin_s = ParseHex(string(sig_s));
+
+  if (bin_r.size() != 32 || bin_s.size() != 32)
+    return error(SHERR_INVAL, "HDPrivKey.Sign: invalid signature size.");
+
+  vchSig.clear();
+  vchSig.insert(vchSig.begin(), bin_r.begin(), bin_r.end());
+  vchSig.insert(vchSig.end(), bin_s.begin(), bin_s.end());
+
+
+  return (true);
+}
+
+bool HDPrivKey::SignCompact(uint256 hash, std::vector<unsigned char>& vchSig)
+{
+  return (CKey::SignCompact(hash, vchSig));
+}
+
+
+bool HDPrivKey::SetCompactSignature(uint256 hash, const std::vector<unsigned char>& vchSig)
+{
+  return (false);
+}
+
 
 bool HDPubKey::derive(HDPubKey& pubkey, unsigned int i)
 {
@@ -132,7 +243,13 @@ bool HDPubKey::derive(HDPubKey& pubkey, unsigned int i)
   char m_pubkey[256];
   char *pubkey_hex;
 
+  if (i > MAX_HD_SEED_INDEX)
+    return (false);
+
   if (!IsValid())
+    return (false);
+
+  if (vchChain.size() == 0)
     return (false);
 
   strcpy(m_chain, HexStr(vchChain).c_str());
@@ -146,6 +263,139 @@ bool HDPubKey::derive(HDPubKey& pubkey, unsigned int i)
   return (true);
 }
 
+bool HDPrivKey::VerifyCompact(uint256 hash, const std::vector<unsigned char>& vchSig)
+{
+  return (CKey::VerifyCompact(hash, vchSig));
+}
+
+bool HDPubKey::Verify(uint256 hash, const std::vector<unsigned char>& vchSig)
+{
+  string sig_r = HexStr(vchSig.begin(), vchSig.begin() + 32);
+  string sig_s = HexStr(vchSig.begin() + 32, vchSig.end());
+  string pubkey = HexStr(vchPubKey);
+  string hash_hex = HexStr(hash.begin(), hash.end());
+  int err;
+
+  err = shecdsa_hd_verify((char *)pubkey.c_str(), 
+      (char *)sig_r.c_str(), (char *)sig_s.c_str(), (char *)hash_hex.c_str());
+  if (err)
+    return (false);
+
+  return (true);
+}
+
+void HDMasterPrivKey::MakeNewKey(bool fCompressed)
+{
+
+  RandAddSeedPerfmon();
+
+  CKey t_key;
+  t_key.MakeNewKey(fCompressed);
+  CSecret secret = t_key.GetSecret(fCompressed);
+  SetSeed(secret);
+
+  if (fCompressed)
+    SetCompressedPubKey();
+}
+
+std::string HDPrivKey::ToString()
+{
+  return (write_string(Value(ToValue()), false));
+}
+
+Object HDPrivKey::ToValue()
+{
+  Object obj;
+
+  obj.push_back(Pair("depth", (int)depth));
+  obj.push_back(Pair("index", (int)index));
+  obj.push_back(Pair("chain", HexStr(vchChain)));
+  obj.push_back(Pair("keylen", Raw().size()));
+
+  return (obj);
+}
+
+std::string HDPubKey::ToString()
+{
+  return (write_string(Value(ToValue()), false));
+}
+
+Object HDPubKey::ToValue()
+{
+  Object obj;
+
+  obj.push_back(Pair("depth", (int)depth));
+  obj.push_back(Pair("index", (int)index));
+  obj.push_back(Pair("chain", HexStr(vchChain)));
+  obj.push_back(Pair("pubkey", HexStr(vchPubKey)));
+
+  CCoinAddr addr;
+  addr.Set(GetID());
+  obj.push_back(Pair("addr", addr.ToString()));
+
+  return (obj);
+}
+
+bool HDMasterPrivKey::IsValidKey()
+{
+
+  /* generate clone of key */
+  HDMasterPrivKey key2;
+  key2.Init(*this);
+
+  /* verify secret key integrity */
+  bool fCompr;
+  CSecret secret = GetSecret(fCompr);
+  cbuff buff(secret.begin(), secret.end());
+  if (buff != key2.Raw())
+    return error(SHERR_INVAL, "HDPrivKey.IsValidKey: secret encapsulation failure.");
+
+  /* verify pub-key derivative */
+  return GetPubKey() == key2.GetPubKey();
+}
 
 
+cbuff HDPrivKey::GetChain() const
+{
+  return (vchChain);
+}
 
+string HDPrivKey::GetChainHex()
+{
+  return (HexStr(GetChain()));
+}
+
+string HDPrivKey::GetHex()
+{
+  return (HexStr(Raw()));
+}
+
+bool HDPrivKey::SetChain(cbuff vchChainIn)
+{
+  if (vchChainIn.size() != 32)
+    return error(SHERR_INVAL, "SetChain: invalid size specification.");
+  vchChain = vchChainIn;
+}
+
+bool HDPrivKey::SetChain(string hexChain)
+{
+  SetChain(ParseHex(hexChain));
+}
+
+#if 0
+string HDPrivKey::encode()
+{
+  CDataStream key;
+  char ver[4] = { 0x73, 0x68, 0x68, 0x64 };
+  cbuff verbuff(ver, ver + 4);
+
+  key << verbuff; /* 4b */
+  key << index; /* 4b */
+  key << depth; /* 4b */
+  key << Raw(); /* 32b */
+  key << GetChain(); /* 32b */
+
+  cbuff buff(key.begin(), key.end()); /* 76 bytes */
+  return (EncodeBase58(buff));
+}
+#endif

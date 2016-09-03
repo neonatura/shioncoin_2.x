@@ -236,6 +236,11 @@ class CExtCore
       tExpire = tExpireIn;
     }
 
+    void SetExpireTime(double sec)
+    {
+      tExpire = shtime_adj(shtime(), sec);
+    }
+
     bool IsExpired()
     {
       if (tExpire == SHTIME_UNDEFINED)
@@ -296,8 +301,9 @@ class CExtCore
 
 
 typedef std::map<std::string, uint256> alias_list;
-typedef map<uint160, uint256> asset_list;
-typedef map<uint160, uint256> cert_list;
+typedef std::map<uint160, uint256> asset_list;
+typedef std::map<uint160, uint256> cert_list;
+typedef std::map<uint160, CTransaction> exec_list;
 typedef std::map<uint160, uint256> offer_list;
 typedef std::map<uint160, CTransaction> channel_list;
 
@@ -305,6 +311,7 @@ typedef std::map<uint160, CTransaction> channel_list;
 #include "certificate.h"
 #include "offer.h"
 #include "asset.h"
+#include "exec.h"
 #include "alias.h"
 #include "channel.h"
 

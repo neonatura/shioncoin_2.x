@@ -33,9 +33,7 @@
 #include "offer.h"
 #include "asset.h"
 #include "spring.h"
-
-
-
+#include "hdkey.h"
 
 
 
@@ -880,6 +878,8 @@ _TEST(channeltx)
     delete block;
   }
 
+
+
   string strLabel("");
 
   /* create a coin balance */
@@ -905,26 +905,29 @@ _TEST(channeltx)
   err = init_channel_tx(iface, strLabel, nValue, dest_addr, fund_wtx); 
 fprintf(stderr, "DEBUG: %d = init_channel_tx()\n", err);
   _TRUE(0 == err);
-  uint160 hChan = fund_wtx.channel.GetHash();
+fprintf(stderr, "DEBUG: CHAN INIT: %s\n", fund_wtx.ToString().c_str());
 
   /* fund channel as counter-party */
   CWalletTx chan_wtx;
   err = activate_channel_tx(iface, (CTransaction *)&fund_wtx, nValue, chan_wtx);
   _TRUE(0 == err);
 
-  _TRUE(chan_wtx.channel.GetHash() == hChan);
+  uint160 hChan = chan_wtx.channel.GetHash();
+
 fprintf(stderr, "DEBUG: CHAN OPEN: %s\n", chan_wtx.ToString().c_str());
+//  _TRUE(chan_wtx.channel.GetHash() == hChan);
 
   /* perform pay operation to counter-party */
   CWalletTx commit_wtx;
-  err = pay_channel_tx(iface, strLabel, hChan, nValue / 2, commit_wtx);  
+  err = pay_channel_tx(iface, strLabel, hChan, dest_addr, nValue / 2, commit_wtx);  
+fprintf(stderr, "DEBUG: CHAN PAY[err %d]: %s\n", err, commit_wtx.ToString().c_str());
   _TRUE(0 == err);
 
   /* validate pay op */
   CWalletTx val_wtx;
   err = validate_channel_tx(iface, (CTransaction *)&commit_wtx, val_wtx);  
   _TRUE(0 == err);
-fprintf(stderr, "DEBUG: CHAN PAY: %s\n", val_wtx.ToString().c_str());
+fprintf(stderr, "DEBUG: CHAN VALIDATE: %s\n", val_wtx.ToString().c_str());
 
 #if 0
   /* perform pay operation from counter-party */
@@ -938,6 +941,7 @@ fprintf(stderr, "DEBUG: CHAN PAY: %s\n", val_wtx.ToString().c_str());
   CWalletTx fin_wtx;
   err = generate_channel_tx(iface, hChan, fin_wtx);
   _TRUE(0 == err);
+fprintf(stderr, "DEBUG: CHAN GEN: %s\n", fin_wtx.ToString().c_str());
 
   /* ** Abort Channel Scenerio ** */
 
@@ -950,6 +954,124 @@ fprintf(stderr, "DEBUG: CHAN PAY: %s\n", val_wtx.ToString().c_str());
   /* abort channel and redeem funds at current state */
 
 }
+
+/* test in-script verification of HD sig */
+_TEST(hdtx)
+{
+  CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
+  CWallet *wallet = GetWallet(iface);
+  string strAccount("");
+  int i;
+
+  CTransaction prevTx;
+  {
+    CBlock *block = test_GenerateBlock();
+    _TRUEPTR(block);
+    _TRUE(ProcessBlock(NULL, block) == true);
+    prevTx = block->vtx[0];
+    delete block;
+  }
+
+  /* regular key */
+  CKey key;
+  CKeyID keyid;
+  cbuff vchPubKey;
+  CPubKey pubkey;
+  _TRUE(wallet->GetKeyFromPool(pubkey, false) == true);
+  wallet->SetAddressBookName(pubkey.GetID(), strAccount);
+  _TRUE(wallet->GetKey(pubkey.GetID(), key) == true);
+  _TRUE(key.IsValid());
+
+  /* hd key */
+  HDPrivKey mkey;
+  HDPubKey mpubkey = wallet->GenerateNewHDKey();
+  wallet->SetAddressBookName(mpubkey.GetID(), strAccount);
+//  _TRUE(wallet->HaveKey(mpubkey.GetID() == true));
+  _TRUE(wallet->GetKey(mpubkey.GetID(), mkey) == true);
+fprintf(stderr, "DEBUG: TEST: hdtx: mkey = %s\n", mkey.ToString().c_str());
+  if(mpubkey != mkey.GetPubKey()) fprintf(stderr, "DEBUG: mpubkey != mkey.GetPubKey: mpubkey is %s\n", HexStr(mpubkey.Raw()).c_str());
+  if(mpubkey != mkey.GetPubKey()) fprintf(stderr, "DEBUG: mpubkey != mkey.GetPubKey: mkey.pubkey is %s\n", HexStr(mkey.GetPubKey().Raw()).c_str());
+  _TRUE(key.IsValid());
+  _TRUE(mpubkey == mkey.GetPubKey());
+
+  for (i = 0; i < 16; i++) { /* mature block */
+    CBlock *block = test_GenerateBlock();
+    _TRUEPTR(block);
+    _TRUE(ProcessBlock(NULL, block) == true);
+    delete block;
+  }
+
+
+  {
+    CScript scriptCode;
+    scriptCode.SetDestination(mpubkey.GetID());
+fprintf(stderr, "DEBUG: TEST: hdtx: sending tx to hd key: scriptCode %s\n", scriptCode.ToString().c_str());
+    CWalletTx wtx;
+    wtx.vin.push_back(CTxIn(prevTx.GetHash(), 0));
+    wtx.vout.push_back(CTxOut(1, scriptCode));
+    _TRUE(SignSignature(*wallet, prevTx, wtx, 0) == true);  
+    _TRUE(VerifySignature(prevTx, wtx, 0, false, 0) == true);
+CReserveKey rkey(wallet);
+_TRUE(wallet->CommitTransaction(wtx, rkey) == true);
+
+#if 0
+    CBlock *block = test_GenerateBlock();
+    _TRUEPTR(block);
+    block->vtx.push_back(wtx);
+    block->BuildMerkleTree();
+    _TRUE(ProcessBlock(NULL, block) == true);
+#endif
+
+    prevTx = wtx;
+  }
+
+
+  {
+
+    CScript scriptCode;
+    scriptCode << OP_RETURN;
+//    scriptCode.SetDestination(pubkey.GetID());
+    CWalletTx wtx;
+    wtx.vin.push_back(CTxIn(prevTx.GetHash(), 0));
+    wtx.vout.push_back(CTxOut(1, scriptCode));
+    _TRUE(SignSignature(*wallet, prevTx, wtx, 0, SIGHASH_HDKEY) == true);  
+    _TRUE(VerifySignature(prevTx, wtx, 0, false, SIGHASH_HDKEY) == true);
+  }
+
+}
+
+_TEST(exectx)
+{
+  CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
+  string strPath("/tmp/exectx.sx");
+  string strAccount("");
+  int mode = -1;
+  int idx;
+  int err;
+
+  for (idx = 0; idx < 3; idx++) {
+    CBlock *block = test_GenerateBlock();
+    _TRUEPTR(block);
+    _TRUE(ProcessBlock(NULL, block) == true);
+    delete block;
+  }
+
+  CWalletTx wtx;
+  wtx.SetNull();
+  wtx.strFromAccount = strAccount;
+
+  err = init_exec_tx(iface, strAccount, strPath, 0, wtx); 
+fprintf(stderr, "DEBUG: TEST: EXECTX[status %d]: %s\n", err, wtx.ToString().c_str());
+  _TRUE(err == 0);
+  _TRUE(VerifyExec(wtx, mode) == true);
+  _TRUE(mode == OP_EXT_NEW);
+
+  CExec *exec = &((CExec&)wtx.certificate);
+  _TRUE(exec->VerifyContext());
+
+
+}
+
 
 
 #ifdef __cplusplus

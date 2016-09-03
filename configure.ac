@@ -214,7 +214,7 @@ AC_ARG_WITH([libshare],
   [with_libshare=yes])
 LIBSHARE=
 AS_IF([test "x$with_libshare" = "xyes"],
-  AC_CHECK_LIB([share], [get_libshare_version]))
+  AC_CHECK_LIB([share_sexe], [get_libshare_version]))
 AC_SUBST([LIBSHARE], $with_libshare)
 AM_CONDITIONAL([STATIC_LIBSHARE], test x"$with_libshare" != x"yes") 
 

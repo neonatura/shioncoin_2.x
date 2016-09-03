@@ -24,6 +24,7 @@ enum
     SIGHASH_ALL = 1,
     SIGHASH_NONE = 2,
     SIGHASH_SINGLE = 3,
+    SIGHASH_HDKEY = 0x40,
     SIGHASH_ANYONECANPAY = 0x80,
 };
 
@@ -85,6 +86,7 @@ enum opcodetype
     OP_16 = 0x60,
 
     /* extension ops */
+    OP_EXEC = 0x06,
     OP_CHANNEL = 0x07,
     OP_VAULT = 0x08,
     OP_MATRIX = 0x09,
@@ -251,7 +253,7 @@ inline std::string StackString(const std::vector<std::vector<unsigned char> >& v
 
 
 
-
+class HDPrivKey;
 
 /** Serialized script, used inside transaction inputs and outputs */
 class CScript : public std::vector<unsigned char>
@@ -591,6 +593,10 @@ public:
         }
         return str;
     }
+
+    void SetMultisig(const std::vector<HDPrivKey>& keys);
+
+    void SetMultisig(int nRequired, const std::vector<HDPrivKey>& keys);
 
     void print() const
     {

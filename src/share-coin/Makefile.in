@@ -38,13 +38,13 @@ TESTS = test_shcoind$(EXEEXT)
 noinst_PROGRAMS = test_shcoind$(EXEEXT) shcointool$(EXEEXT)
 sbin_PROGRAMS = shcoind$(EXEEXT)
 @USDE_SERVICE_TRUE@am__append_1 = usde
-@STATIC_LIBSHARE_TRUE@am__append_2 = $(LIBSHARE)/src/share-lib/libshare.a
+@STATIC_LIBSHARE_TRUE@am__append_2 = $(LIBSHARE)/src/sexe/libshare_sexe.a
 @STATIC_LIBSHARE_TRUE@am__append_3 = -I$(LIBSHARE)/include
 @STATIC_LIBSHARE_TRUE@am__append_4 = -I$(LIBSHARE)/include
-@STATIC_LIBSHARE_TRUE@am__append_5 = $(LIBSHARE)/src/share-lib/libshare.a
+@STATIC_LIBSHARE_TRUE@am__append_5 = $(LIBSHARE)/src/sexe/libshare_sexe.a
 @STATIC_LIBSHARE_TRUE@am__append_6 = -I$(LIBSHARE)/include
 @STATIC_LIBSHARE_TRUE@am__append_7 = -I$(LIBSHARE)/include
-@STATIC_LIBSHARE_TRUE@am__append_8 = $(LIBSHARE)/src/share-lib/libshare.a
+@STATIC_LIBSHARE_TRUE@am__append_8 = $(LIBSHARE)/src/sexe/libshare_sexe.a
 @STATIC_LIBSHARE_TRUE@am__append_9 = -I$(LIBSHARE)/include
 @STATIC_LIBSHARE_TRUE@am__append_10 = -I$(LIBSHARE)/include
 @DEBUG_TRUE@am__append_11 = -g3 
@@ -177,7 +177,8 @@ am__objects_5 = $(am__objects_4) shcoind-fractal.$(OBJEXT) \
 	shcoind-shc_txidx.$(OBJEXT) shcoind-txext.$(OBJEXT) \
 	shcoind-alias.$(OBJEXT) shcoind-certificate.$(OBJEXT) \
 	shcoind-offer.$(OBJEXT) shcoind-asset.$(OBJEXT) \
-	shcoind-channel.$(OBJEXT) shcoind-rpcalias_proto.$(OBJEXT) \
+	shcoind-exec.$(OBJEXT) shcoind-channel.$(OBJEXT) \
+	shcoind-rpcalias_proto.$(OBJEXT) \
 	shcoind-rpccert_proto.$(OBJEXT) shcoind-rpcdump.$(OBJEXT) \
 	shcoind-rpcnet.$(OBJEXT) shcoind-rpc_proto.$(OBJEXT) \
 	shcoind-rpcrawtransaction.$(OBJEXT) shcoind-block.$(OBJEXT) \
@@ -270,7 +271,7 @@ am__objects_13 = $(am__objects_12) test_shcoind-fractal.$(OBJEXT) \
 	test_shcoind-alias.$(OBJEXT) \
 	test_shcoind-certificate.$(OBJEXT) \
 	test_shcoind-offer.$(OBJEXT) test_shcoind-asset.$(OBJEXT) \
-	test_shcoind-channel.$(OBJEXT) \
+	test_shcoind-exec.$(OBJEXT) test_shcoind-channel.$(OBJEXT) \
 	test_shcoind-rpcalias_proto.$(OBJEXT) \
 	test_shcoind-rpccert_proto.$(OBJEXT) \
 	test_shcoind-rpcdump.$(OBJEXT) test_shcoind-rpcnet.$(OBJEXT) \
@@ -1392,6 +1393,7 @@ server_sources = \
 	server/ext/certificate.cpp \
 	server/ext/offer.cpp \
 	server/ext/asset.cpp \
+	server/ext/exec.cpp \
 	server/ext/channel.cpp \
 	server/rpc/rpcalias_proto.cpp \
 	server/rpc/rpccert_proto.cpp \
@@ -1648,6 +1650,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-channel.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-coin_proto.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-crypter.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-exec.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-fractal.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-fractal_bmp.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-global.Po@am__quote@
@@ -1756,6 +1759,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-channel.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-coin_proto.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-crypter.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-exec.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-fractal.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-fractal_bmp.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-global.Po@am__quote@
@@ -3271,6 +3275,20 @@ shcoind-asset.obj: server/ext/asset.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-asset.obj `if test -f 'server/ext/asset.cpp'; then $(CYGPATH_W) 'server/ext/asset.cpp'; else $(CYGPATH_W) '$(srcdir)/server/ext/asset.cpp'; fi`
 
+shcoind-exec.o: server/ext/exec.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-exec.o -MD -MP -MF $(DEPDIR)/shcoind-exec.Tpo -c -o shcoind-exec.o `test -f 'server/ext/exec.cpp' || echo '$(srcdir)/'`server/ext/exec.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-exec.Tpo $(DEPDIR)/shcoind-exec.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/ext/exec.cpp' object='shcoind-exec.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-exec.o `test -f 'server/ext/exec.cpp' || echo '$(srcdir)/'`server/ext/exec.cpp
+
+shcoind-exec.obj: server/ext/exec.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-exec.obj -MD -MP -MF $(DEPDIR)/shcoind-exec.Tpo -c -o shcoind-exec.obj `if test -f 'server/ext/exec.cpp'; then $(CYGPATH_W) 'server/ext/exec.cpp'; else $(CYGPATH_W) '$(srcdir)/server/ext/exec.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-exec.Tpo $(DEPDIR)/shcoind-exec.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/ext/exec.cpp' object='shcoind-exec.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-exec.obj `if test -f 'server/ext/exec.cpp'; then $(CYGPATH_W) 'server/ext/exec.cpp'; else $(CYGPATH_W) '$(srcdir)/server/ext/exec.cpp'; fi`
+
 shcoind-channel.o: server/ext/channel.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-channel.o -MD -MP -MF $(DEPDIR)/shcoind-channel.Tpo -c -o shcoind-channel.o `test -f 'server/ext/channel.cpp' || echo '$(srcdir)/'`server/ext/channel.cpp
 @am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-channel.Tpo $(DEPDIR)/shcoind-channel.Po
@@ -4110,6 +4128,20 @@ test_shcoind-asset.obj: server/ext/asset.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/ext/asset.cpp' object='test_shcoind-asset.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-asset.obj `if test -f 'server/ext/asset.cpp'; then $(CYGPATH_W) 'server/ext/asset.cpp'; else $(CYGPATH_W) '$(srcdir)/server/ext/asset.cpp'; fi`
+
+test_shcoind-exec.o: server/ext/exec.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-exec.o -MD -MP -MF $(DEPDIR)/test_shcoind-exec.Tpo -c -o test_shcoind-exec.o `test -f 'server/ext/exec.cpp' || echo '$(srcdir)/'`server/ext/exec.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-exec.Tpo $(DEPDIR)/test_shcoind-exec.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/ext/exec.cpp' object='test_shcoind-exec.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-exec.o `test -f 'server/ext/exec.cpp' || echo '$(srcdir)/'`server/ext/exec.cpp
+
+test_shcoind-exec.obj: server/ext/exec.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-exec.obj -MD -MP -MF $(DEPDIR)/test_shcoind-exec.Tpo -c -o test_shcoind-exec.obj `if test -f 'server/ext/exec.cpp'; then $(CYGPATH_W) 'server/ext/exec.cpp'; else $(CYGPATH_W) '$(srcdir)/server/ext/exec.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-exec.Tpo $(DEPDIR)/test_shcoind-exec.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/ext/exec.cpp' object='test_shcoind-exec.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-exec.obj `if test -f 'server/ext/exec.cpp'; then $(CYGPATH_W) 'server/ext/exec.cpp'; else $(CYGPATH_W) '$(srcdir)/server/ext/exec.cpp'; fi`
 
 test_shcoind-channel.o: server/ext/channel.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-channel.o -MD -MP -MF $(DEPDIR)/test_shcoind-channel.Tpo -c -o test_shcoind-channel.o `test -f 'server/ext/channel.cpp' || echo '$(srcdir)/'`server/ext/channel.cpp

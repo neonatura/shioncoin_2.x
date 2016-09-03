@@ -37,6 +37,17 @@ bool CKeyStore::GetPubKey(const CKeyID &address, CPubKey &vchPubKeyOut) const
     return true;
 }
 
+bool CBasicKeyStore::AddKey(const HDPrivKey& key)
+{
+    bool fCompressed = false;
+    CSecret secret = key.GetSecret(fCompressed);
+    {
+        LOCK(cs_KeyStore);
+        mapKeys[key.GetPubKey().GetID()] = make_pair(secret, fCompressed);
+    }
+    return true;
+}
+
 bool CBasicKeyStore::AddKey(const CKey& key)
 {
     bool fCompressed = false;
@@ -161,6 +172,28 @@ bool CCryptoKeyStore::AddKey(const CKey& key)
     return true;
 }
 
+bool CCryptoKeyStore::AddKey(const HDPrivKey& key)
+{
+  {
+    LOCK(cs_KeyStore);
+    if (!IsCrypted())
+      return CBasicKeyStore::AddKey(key);
+
+    if (IsLocked())
+      return false;
+
+    std::vector<unsigned char> vchCryptedSecret;
+    CPubKey vchPubKey = key.GetPubKey();
+    bool fCompressed;
+    if (!EncryptSecret(vMasterKey, key.GetSecret(fCompressed), vchPubKey.GetHash(), vchCryptedSecret))
+      return false;
+
+    if (!AddCryptedKey(key.GetPubKey(), vchCryptedSecret))
+      return false;
+  }
+  return true;
+}
+
 
 bool CCryptoKeyStore::AddCryptedKey(const CPubKey &vchPubKey, const std::vector<unsigned char> &vchCryptedSecret)
 {
@@ -175,6 +208,30 @@ bool CCryptoKeyStore::AddCryptedKey(const CPubKey &vchPubKey, const std::vector<
 }
 
 bool CCryptoKeyStore::GetKey(const CKeyID &address, CKey& keyOut) const
+{
+    {
+        LOCK(cs_KeyStore);
+        if (!IsCrypted())
+            return CBasicKeyStore::GetKey(address, keyOut);
+
+        CryptedKeyMap::const_iterator mi = mapCryptedKeys.find(address);
+        if (mi != mapCryptedKeys.end())
+        {
+            const CPubKey &vchPubKey = (*mi).second.first;
+            const std::vector<unsigned char> &vchCryptedSecret = (*mi).second.second;
+            CSecret vchSecret;
+            if (!DecryptSecret(vMasterKey, vchCryptedSecret, vchPubKey.GetHash(), vchSecret))
+                return false;
+            if (vchSecret.size() != 32)
+                return false;
+            keyOut.SetPubKey(vchPubKey);
+            keyOut.SetSecret(vchSecret);
+            return true;
+        }
+    }
+    return false;
+}
+bool CCryptoKeyStore::GetKey(const CKeyID &address, HDPrivKey& keyOut) const
 {
     {
         LOCK(cs_KeyStore);

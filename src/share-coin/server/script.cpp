@@ -27,6 +27,7 @@
 #include "main.h"
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
+#include "hdkey.h"
 
 using namespace std;
 using namespace boost;
@@ -248,15 +249,16 @@ const char* GetOpName(opcodetype opcode)
     case OP_NOP9                   : return "OP_NOP9";
     case OP_NOP10                  : return "OP_NOP10";
 
+    case OP_EXEC                   : return "OP_EXEC";
     case OP_ALIAS                  : return "OP_ALIAS";
     case OP_OFFER                  : return "OP_OFFER";
     case OP_IDENT                  : return "OP_IDENT";
     case OP_CERT                   : return "OP_CERT";
     case OP_LICENSE                : return "OP_LICENSE";
     case OP_ASSET                  : return "OP_ASSET";
-    case OP_MATRIX                  : return "OP_MATRIX";
+    case OP_MATRIX                 : return "OP_MATRIX";
     case OP_VAULT                  : return "OP_VAULT";
-    case OP_CHANNEL                  : return "OP_CHANNEL";
+    case OP_CHANNEL                : return "OP_CHANNEL";
 
     /* extension operatives */
     case OP_EXT_NEW                : return "OP_EXT_NEW";
@@ -1209,18 +1211,19 @@ public:
     }
 };
 
-bool CheckSig(vector<unsigned char> vchSig, vector<unsigned char> vchPubKey, CScript scriptCode,
-              const CTransaction& txTo, unsigned int nIn, int nHashType)
+bool CheckSig(vector<unsigned char> vchSig, vector<unsigned char> vchPubKey, CScript scriptCode, const CTransaction& txTo, unsigned int nIn, int nHashType)
 {
     static CSignatureCache signatureCache;
 
     // Hash type is one byte tacked on to the end of the signature
-    if (vchSig.empty())
+    if (vchSig.empty()) {
         return false;
+}
     if (nHashType == 0)
         nHashType = vchSig.back();
-    else if (nHashType != vchSig.back())
+    else if (nHashType != vchSig.back()) {
         return false;
+}
     vchSig.pop_back();
 
     uint256 sighash = SignatureHash(scriptCode, txTo, nIn, nHashType);
@@ -1228,12 +1231,19 @@ bool CheckSig(vector<unsigned char> vchSig, vector<unsigned char> vchPubKey, CSc
     if (signatureCache.Get(sighash, vchSig, vchPubKey))
         return true;
 
-    CKey key;
-    if (!key.SetPubKey(vchPubKey))
+    if (nHashType & SIGHASH_HDKEY) {
+      HDPubKey pubkey(vchPubKey);
+      if (!pubkey.Verify(sighash, vchSig)) {
+        return false;
+}
+    } else {
+      CKey key;
+      if (!key.SetPubKey(vchPubKey))
         return false;
 
-    if (!key.Verify(sighash, vchSig))
+      if (!key.Verify(sighash, vchSig))
         return false;
+    }
 
     signatureCache.Set(sighash, vchSig, vchPubKey);
     return true;
@@ -1387,29 +1397,55 @@ bool Solver(const CScript& scriptPubKey, txnouttype& typeRet, vector<vector<unsi
 
 bool Sign1(const CKeyID& address, const CKeyStore& keystore, uint256 hash, int nHashType, CScript& scriptSigRet)
 {
+
+  if (!(nHashType & SIGHASH_HDKEY)) {
     CKey key;
     if (!keystore.GetKey(address, key))
-        return false;
+      return false;
 
     vector<unsigned char> vchSig;
     if (!key.Sign(hash, vchSig))
-        return false;
+      return false;
     vchSig.push_back((unsigned char)nHashType);
     scriptSigRet << vchSig;
 
-    return true;
+  } else {
+    HDPrivKey key;
+    if (!keystore.GetKey(address, key))
+      return false;
+
+    vector<unsigned char> vchSig;
+    if (!key.Sign(hash, vchSig))
+      return false;
+
+    vchSig.push_back((unsigned char)nHashType);
+    scriptSigRet << vchSig;
+  }
+
+  return true;
 }
 
 bool SignN(const vector<valtype>& multisigdata, const CKeyStore& keystore, uint256 hash, int nHashType, CScript& scriptSigRet)
 {
     int nSigned = 0;
     int nRequired = multisigdata.front()[0];
-    for (unsigned int i = 1; i < multisigdata.size()-1 && nSigned < nRequired; i++)
-    {
-        const valtype& pubkey = multisigdata[i];
-        CKeyID keyID = CPubKey(pubkey).GetID();
-        if (Sign1(keyID, keystore, hash, nHashType, scriptSigRet))
-            ++nSigned;
+
+    if (!(nHashType & SIGHASH_HDKEY)) {
+      for (unsigned int i = 1; i < multisigdata.size()-1 && nSigned < nRequired; i++)
+      {
+          const valtype& pubkey = multisigdata[i];
+          CKeyID keyID = CPubKey(pubkey).GetID();
+          if (Sign1(keyID, keystore, hash, nHashType, scriptSigRet))
+              ++nSigned;
+      }
+    } else {
+      for (unsigned int i = 1; i < multisigdata.size()-1 && nSigned < nRequired; i++)
+      {
+          const valtype& pubkey = multisigdata[i];
+          CKeyID keyID = HDPubKey(pubkey).GetID();
+          if (Sign1(keyID, keystore, hash, nHashType, scriptSigRet))
+              ++nSigned;
+      }
     }
     return nSigned==nRequired;
 }
@@ -1435,17 +1471,28 @@ bool Solver(const CKeyStore& keystore, const CScript& scriptPubKey, uint256 hash
     case TX_NONSTANDARD:
         return false;
     case TX_PUBKEY:
-        keyID = CPubKey(vSolutions[0]).GetID();
+        if (!(nHashType & SIGHASH_HDKEY)) {
+          keyID = CPubKey(vSolutions[0]).GetID();
+          return Sign1(keyID, keystore, hash, nHashType, scriptSigRet);
+        }
+        keyID = HDPubKey(vSolutions[0]).GetID();
         return Sign1(keyID, keystore, hash, nHashType, scriptSigRet);
     case TX_PUBKEYHASH:
-        keyID = CKeyID(uint160(vSolutions[0]));
-        if (!Sign1(keyID, keystore, hash, nHashType, scriptSigRet))
+        if (!(nHashType & SIGHASH_HDKEY)) {
+          keyID = CKeyID(uint160(vSolutions[0]));
+          if (!Sign1(keyID, keystore, hash, nHashType, scriptSigRet))
+              return false;
+          CPubKey vch;
+          keystore.GetPubKey(keyID, vch);
+          scriptSigRet << vch;
+        } else {
+          keyID = CKeyID(uint160(vSolutions[0]));
+          if (!Sign1(keyID, keystore, hash, nHashType, scriptSigRet))
+              return false;
+          HDPrivKey key;
+          if (!keystore.GetKey(keyID, key))
             return false;
-        else
-        {
-            CPubKey vch;
-            keystore.GetPubKey(keyID, vch);
-            scriptSigRet << vch;
+          scriptSigRet << key.GetPubKey().Raw();
         }
         return true;
     case TX_SCRIPTHASH:
@@ -1630,14 +1677,17 @@ bool VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey, const C
 {
   vector<vector<unsigned char> > stack, stackCopy;
 
-  if (!EvalScript(stack, scriptSig, txTo, nIn, nHashType))
+  if (!EvalScript(stack, scriptSig, txTo, nIn, nHashType)) {
     return false;
+}
   if (fValidatePayToScriptHash)
     stackCopy = stack;
-  if (!EvalScript(stack, scriptPubKey, txTo, nIn, nHashType))
+  if (!EvalScript(stack, scriptPubKey, txTo, nIn, nHashType)) {
     return false;
-  if (stack.empty())
+}
+  if (stack.empty()) {
     return false;
+}
 
   if (CastToBool(stack.back()) == false) {
     return false;
@@ -1698,8 +1748,12 @@ bool SignSignature(const CKeyStore &keystore, const CScript& fromPubKey, CTransa
   }
 
   // Test solution
-  bool ret= VerifyScript(txin.scriptSig, fromPubKey, txTo, nIn, true, 0);
-if (!ret) fprintf(stderr, "DEBUG: SignSignature: !VerifyScript()\n");
+  bool ret;
+  if (!(nHashType & SIGHASH_HDKEY)) {
+    ret= VerifyScript(txin.scriptSig, fromPubKey, txTo, nIn, true, 0);
+  } else {
+    ret= VerifyScript(txin.scriptSig, fromPubKey, txTo, nIn, true, nHashType);
+  }
   return (ret);
 }
 
@@ -1942,6 +1996,19 @@ void CScript::SetMultisig(int nRequired, const std::vector<CKey>& keys)
 
     *this << EncodeOP_N(nRequired);
     BOOST_FOREACH(const CKey& key, keys)
+        *this << key.GetPubKey();
+    *this << EncodeOP_N(keys.size()) << OP_CHECKMULTISIG;
+}
+void CScript::SetMultisig(const std::vector<HDPrivKey>& keys)
+{
+  SetMultisig(keys.size(), keys);
+}
+void CScript::SetMultisig(int nRequired, const std::vector<HDPrivKey>& keys)
+{
+    this->clear();
+
+    *this << EncodeOP_N(nRequired);
+    BOOST_FOREACH(const HDPrivKey& key, keys)
         *this << key.GetPubKey();
     *this << EncodeOP_N(keys.size()) << OP_CHECKMULTISIG;
 }

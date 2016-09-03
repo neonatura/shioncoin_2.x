@@ -114,6 +114,34 @@ bool CWallet::AddKey(const CKey& key)
     return true;
 }
 
+HDPubKey CWallet::GenerateNewHDKey()
+{
+  bool fCompressed = CanSupportFeature(FEATURE_COMPRPUBKEY); // default to compressed public keys if we want 0.6.0 wallets
+
+  RandAddSeedPerfmon();
+  HDMasterPrivKey key;
+  key.MakeNewKey(fCompressed);
+
+  // Compressed public keys were introduced in version 0.6.0
+  if (fCompressed)
+    SetMinVersion(FEATURE_COMPRPUBKEY);
+
+  if (!AddKey(key))
+    throw std::runtime_error("CWallet::GenerateNewKey() : AddKey failed");
+  return key.GetMasterPubKey();
+}
+
+bool CWallet::AddKey(const HDPrivKey& key)
+{
+  if (!CCryptoKeyStore::AddKey(key))
+    return false;
+  if (!fFileBacked)
+    return true;
+  if (!IsCrypted())
+    return CWalletDB(strWalletFile).WriteKey(key.GetPubKey(), key.GetPrivKey());
+  return true;
+}
+
 bool CWallet::AddCryptedKey(const CPubKey &vchPubKey, const vector<unsigned char> &vchCryptedSecret)
 {
     if (!CCryptoKeyStore::AddCryptedKey(vchPubKey, vchCryptedSecret))
@@ -1559,149 +1587,6 @@ void CWallet::UpdatedTransaction(const uint256 &hashTx)
             NotifyTransactionChanged(this, hashTx, CT_UPDATED);
     }
 }
-
-#if 0
-int SetTxMerkleBranch(CMerkleTx *tx, const CBlock *pblock)
-{
-  blkidx_t *blockIndex;
-
-  if (!pblock)
-    return (0);
-
-  // Update the tx's hashBlock
-  tx->hashBlock = pblock->GetHash();
-
-  // Locate the transaction
-  for (tx->nIndex = 0; tx->nIndex < (int)pblock->vtx.size(); tx->nIndex++)
-    if (pblock->vtx[tx->nIndex] == *(CTransaction*)tx)
-      break;
-  if (tx->nIndex == (int)pblock->vtx.size())
-  {
-    tx->vMerkleBranch.clear();
-    tx->nIndex = -1;
-    error(SHERR_INVAL, "SetMerkleBranch() : couldn't find tx in block");
-    return 0;
-  }
-
-  // Fill in merkle branch
-  tx->vMerkleBranch = pblock->GetMerkleBranch(tx->nIndex);
-
-  blockIndex = GetBlockTable(pblock->ifaceIndex);
-  if (!blockIndex) {
-    unet_log(pblock->ifaceIndex,
-        "SetMerkleBranch(): error opening block table.");
-    return (0);
-  }
-
-  // Is the tx in a block that's in the main chain
-  CBlockIndex *pindex = (*blockIndex)[tx->hashBlock];
-  if (!pindex || !pindex->IsInMainChain(pblock->ifaceIndex))
-    return (0);
-
-  CBlockIndex *pindexBest = GetBestBlockIndex(pblock->ifaceIndex);
-  if (!pindexBest)
-    return (0);
-  return pindexBest->nHeight - pindex->nHeight + 1;
-}
-#endif
-
-#if 0
-static bool InitBlockChainIndex(CIface *iface)
-{
-  int ifaceIndex = GetCoinIndex(iface);
-  blkidx_t *blockIndex;
-  bc_t *bc;
-  uint256 l_hash; /* = 0 */
-  int height;
-  int max;
-
-  bc = GetBlockChain(iface);
-  if (!bc)
-    return (false);
-
-  blockIndex = GetBlockTable(ifaceIndex);
-
-  max = bc_idx_next(bc);
-  for (height = (max - 1); height >= 0; height--) {
-    USDEBlock block;
-    uint256 hash;
-
-    /* read in entire block */
-    if (!block.ReadBlock(height)) {
-      fprintf(stderr, "DEBUG: InitBlockChainIndex: error reading block at height %d\n", height);
-      return (false);
-    }
-
-    hash = block.GetHash();
-
-    // Construct block index object
-    CBlockIndex* pindexNew = InsertBlockIndex(blockIndex, hash);
-    pindexNew->pprev          = InsertBlockIndex(blockIndex, block.hashPrevBlock);
-    pindexNew->pnext          = InsertBlockIndex(blockIndex, l_hash);
-    pindexNew->nHeight        = height;
-    pindexNew->nVersion       = block.nVersion;
-    pindexNew->hashMerkleRoot = block.hashMerkleRoot;
-    pindexNew->nTime          = block.nTime;
-    pindexNew->nBits          = block.nBits;
-    pindexNew->nNonce         = block.nNonce;
-
-    /*
-       pindexNew->nFile          = diskindex.nFile;
-       pindexNew->nBlockPos      = diskindex.nBlockPos;
-       */
-
-    // Watch for genesis block
-    if (pindexGenesisBlock == NULL && hash == hashGenesisBlock)
-      pindexGenesisBlock = pindexNew;
-
-    if (!pindexNew->CheckIndex())
-      return error(SHERR_IO, "LoadBlockIndex() : CheckIndex failed at %d", pindexNew->nHeight);
-
-    l_hash = hash;
-  }
-
-  return true;
-}
-bool LoadBlockIndex(CIface *iface)
-{
-  int ifaceIndex = GetCoinIndex(iface);
-  blkidx_t *blockIndex;
-
-  blockIndex = GetBlockTable(ifaceIndex);
-  if (!blockIndex) {
-    unet_log(ifaceIndex, "error loading block table.");
-    return (false);
-  }
-
-fprintf(stderr, "DEBUG: loading block chain index for iface #%d\n", ifaceIndex);
-/* DEBUG: height < 1, no nFilePos avail (anexorcate block.ReadFromDisk()) */
-  if (!InitBlockChainIndex(iface)) {
-//    if (!LoadBlockIndexGuts(iface))
-      return false;
-  }
-
-  if (fRequestShutdown)
-    return true;
-
-  // Calculate bnChainWork
-  vector<pair<int, CBlockIndex*> > vSortedByHeight;
-  vSortedByHeight.reserve(blockIndex->size());
-  BOOST_FOREACH(const PAIRTYPE(uint256, CBlockIndex*)& item, (*blockIndex))
-  {
-    CBlockIndex* pindex = item.second;
-    vSortedByHeight.push_back(make_pair(pindex->nHeight, pindex));
-  }
-  sort(vSortedByHeight.begin(), vSortedByHeight.end());
-  BOOST_FOREACH(const PAIRTYPE(int, CBlockIndex*)& item, vSortedByHeight)
-  {
-    CBlockIndex* pindex = item.second;
-    pindex->bnChainWork = (pindex->pprev ? pindex->pprev->bnChainWork : 0) + pindex->GetBlockWork();
-  }
-
-
-  return true;
-}
-#endif
 
 int64 GetTxFee(int ifaceIndex, CTransaction tx)
 {

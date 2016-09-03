@@ -33,8 +33,9 @@
 
 #include "shcoind.h"
 #include "block.h"
-#include "mnemonic.h"
 #include "wallet.h"
+#include "mnemonic.h"
+
 
 
 string common_words[1626] = { 

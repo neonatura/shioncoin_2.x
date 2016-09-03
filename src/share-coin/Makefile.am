@@ -142,6 +142,7 @@ server_sources = \
 	server/ext/certificate.cpp \
 	server/ext/offer.cpp \
 	server/ext/asset.cpp \
+	server/ext/exec.cpp \
 	server/ext/channel.cpp \
 	server/rpc/rpcalias_proto.cpp \
 	server/rpc/rpccert_proto.cpp \
@@ -220,7 +221,7 @@ test_shcoind_LDADD = $(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
 test_shcoind_CFLAGS = -DSHCOIN_SERVER -g -O0 -DTEST_SHCOIND
 test_shcoind_CXXFLAGS = -DOS_LINUX -DSHCOIN_SERVER -g -O0 -DTEST_SHCOIND
 if STATIC_LIBSHARE
-test_shcoind_LDADD += $(LIBSHARE)/src/share-lib/libshare.a
+test_shcoind_LDADD += $(LIBSHARE)/src/sexe/libshare_sexe.a
 test_shcoind_CFLAGS += -I$(LIBSHARE)/include
 test_shcoind_CXXFLAGS += -I$(LIBSHARE)/include
 endif
@@ -240,7 +241,7 @@ shcoind_LDADD = \
 shcoind_CFLAGS = -DSHCOIN_SERVER
 shcoind_CXXFLAGS = -DOS_LINUX -DSHCOIN_SERVER
 if STATIC_LIBSHARE
-shcoind_LDADD += $(LIBSHARE)/src/share-lib/libshare.a
+shcoind_LDADD += $(LIBSHARE)/src/sexe/libshare_sexe.a
 shcoind_CFLAGS += -I$(LIBSHARE)/include
 shcoind_CXXFLAGS += -I$(LIBSHARE)/include
 endif
@@ -253,7 +254,7 @@ shcointool_LDADD = \
 shcointool_CFLAGS = -DSHCOIN_CLIENT
 shcointool_CXXFLAGS = -DSHCOIN_CLIENT -DOS_LINUX
 if STATIC_LIBSHARE
-shcointool_LDADD += $(LIBSHARE)/src/share-lib/libshare.a
+shcointool_LDADD += $(LIBSHARE)/src/sexe/libshare_sexe.a
 shcointool_CFLAGS += -I$(LIBSHARE)/include
 shcointool_CXXFLAGS += -I$(LIBSHARE)/include
 endif

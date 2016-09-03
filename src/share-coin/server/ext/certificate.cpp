@@ -779,7 +779,7 @@ int init_cert_tx(CIface *iface, string strAccount, string strTitle, cbuff vchSec
   uint64_t *raw_val = (uint64_t *)raw_ser;
   raw_val[0] = shrand();
   raw_val[1] = shrand();
-  cert->vSerial = cbuff(raw_val, raw_val + 16);
+  cert->vContext = cbuff(raw_val, raw_val + 16);
 
   int64 nFee = GetCertOpFee(iface, GetBestHeight(iface));
   int64 bal = GetAccountBalance(ifaceIndex, strAccount, 1);
@@ -1223,10 +1223,14 @@ Object CCert::ToValue()
   Object obj = CIdent::ToValue();
 
   obj.push_back(Pair("certhash", GetHash().GetHex()));
-  obj.push_back(Pair("issuer", hashIssuer.GetHex()));
-  obj.push_back(Pair("serialno", HexStr(vSerial.begin(), vSerial.end()))); 
-  obj.push_back(Pair("fee", ValueFromAmount(nFee)));
-  obj.push_back(Pair("flags", nFlag));
+  if (hashIssuer.size() != 0)
+    obj.push_back(Pair("issuer", hashIssuer.GetHex()));
+  if (vContext.size() != 0)
+    obj.push_back(Pair("serialno", GetSerialNumber().c_str()));
+  if (nFee != 0)
+    obj.push_back(Pair("fee", ValueFromAmount(nFee)));
+  if (nFlag != 0)
+    obj.push_back(Pair("flags", nFlag));
   obj.push_back(Pair("signature", signature.GetHash().GetHex()));
   
   return (obj);

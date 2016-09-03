@@ -23663,13 +23663,13 @@ fi
 LIBSHARE=
 if test "x$with_libshare" = "xyes"; then
 
-{ $as_echo "$as_me:$LINENO: checking for get_libshare_version in -lshare" >&5
-$as_echo_n "checking for get_libshare_version in -lshare... " >&6; }
-if test "${ac_cv_lib_share_get_libshare_version+set}" = set; then
+{ $as_echo "$as_me:$LINENO: checking for get_libshare_version in -lshare_sexe" >&5
+$as_echo_n "checking for get_libshare_version in -lshare_sexe... " >&6; }
+if test "${ac_cv_lib_share_sexe_get_libshare_version+set}" = set; then
   $as_echo_n "(cached) " >&6
 else
   ac_check_lib_save_LIBS=$LIBS
-LIBS="-lshare  $LIBS"
+LIBS="-lshare_sexe  $LIBS"
 cat >conftest.$ac_ext <<_ACEOF
 /* confdefs.h.  */
 _ACEOF
@@ -23713,12 +23713,12 @@ $as_echo "$ac_try_echo") >&5
 	 test "$cross_compiling" = yes ||
 	 $as_test_x conftest$ac_exeext
        }; then
-  ac_cv_lib_share_get_libshare_version=yes
+  ac_cv_lib_share_sexe_get_libshare_version=yes
 else
   $as_echo "$as_me: failed program was:" >&5
 sed 's/^/| /' conftest.$ac_ext >&5
 
-	ac_cv_lib_share_get_libshare_version=no
+	ac_cv_lib_share_sexe_get_libshare_version=no
 fi
 
 rm -rf conftest.dSYM
@@ -23726,14 +23726,14 @@ rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
       conftest$ac_exeext conftest.$ac_ext
 LIBS=$ac_check_lib_save_LIBS
 fi
-{ $as_echo "$as_me:$LINENO: result: $ac_cv_lib_share_get_libshare_version" >&5
-$as_echo "$ac_cv_lib_share_get_libshare_version" >&6; }
-if test "x$ac_cv_lib_share_get_libshare_version" = x""yes; then
+{ $as_echo "$as_me:$LINENO: result: $ac_cv_lib_share_sexe_get_libshare_version" >&5
+$as_echo "$ac_cv_lib_share_sexe_get_libshare_version" >&6; }
+if test "x$ac_cv_lib_share_sexe_get_libshare_version" = x""yes; then
   cat >>confdefs.h <<_ACEOF
-#define HAVE_LIBSHARE 1
+#define HAVE_LIBSHARE_SEXE 1
 _ACEOF
 
-  LIBS="-lshare $LIBS"
+  LIBS="-lshare_sexe $LIBS"
 
 fi
 

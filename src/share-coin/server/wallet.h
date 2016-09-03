@@ -1,11 +1,31 @@
-// Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2012 The Bitcoin developers
-// Copyright (c) 2011-2012 Litecoin Developers
-// Copyright (c) 2013 usde Developers
-// Distributed under the MIT/X11 software license, see the accompanying
-// file COPYING or http://www.opensource.org/licenses/mit-license.php.
-#ifndef BITCOIN_WALLET_H
-#define BITCOIN_WALLET_H
+
+/*
+ * @copyright
+ *
+ *  Copyright 2014 Neo Natura
+ *
+ *  This file is part of the Share Library.
+ *  (https://github.com/neonatura/share)
+ *        
+ *  The Share Library is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version. 
+ *
+ *  The Share Library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with The Share Library.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  @endcopyright
+ */  
+
+#ifndef __SERVER__WALLET_H__
+#define __SERVER__WALLET_H__
+
 
 #include "main.h"
 #include "key.h"
@@ -17,6 +37,7 @@ class CWalletTx;
 class CReserveKey;
 class CWalletDB;
 class COutput;
+class HDPubKey;
 
 /** (client) version numbers for particular wallet features */
 enum WalletFeature
@@ -85,6 +106,7 @@ public:
     mutable std::map<uint160, uint256> mapOfferAccept;
     mutable std::map<uint160, uint256> mapAsset;
     mutable std::map<uint160, uint256> mapAssetArch;
+    mutable std::map<uint160, CTransaction> mapExec;
 
     /** A vector of open coin-transfer channels. */
     mutable std::map<uint160, CTransaction> mapChannel;
@@ -155,7 +177,9 @@ nScanHeight = 0;
     // keystore implementation
     // Generate a new key
     CPubKey GenerateNewKey();
+    HDPubKey GenerateNewHDKey();
     // Adds a key to the store, and saves it to disk.
+    bool AddKey(const HDPrivKey& key);
     bool AddKey(const CKey& key);
     // Adds a key to the store, without saving it to disk (used by LoadWallet)
     bool LoadKey(const CKey& key) { return CCryptoKeyStore::AddKey(key); }
@@ -823,4 +847,6 @@ int64 GetAccountBalance(int ifaceIndex, const std::string& strAccount, int nMinD
 bool SyncWithWallets(CIface *iface, CTransaction& tx, CBlock *pblock = NULL);
 #endif
 
-#endif
+
+
+#endif /* ndef __SERVER__WALLET_H__ */

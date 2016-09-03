@@ -16,6 +16,7 @@ class COfferAccept : public CExtCore
     int64 nXferValue;
     uint160 hashOffer;
     uint256 hXferTx;
+    uint256 hChain;
 
     COfferAccept() { 
       SetNull();
@@ -35,6 +36,7 @@ class COfferAccept : public CExtCore
       READWRITE(nXferValue);
       READWRITE(hashOffer);
       READWRITE(hXferTx);
+      READWRITE(hChain);
     )
 
 
@@ -46,7 +48,8 @@ class COfferAccept : public CExtCore
           a.nPayValue == b.nPayValue &&
           a.nXferValue == b.nXferValue && 
           a.hashOffer == b.hashOffer &&
-          a.hXferTx == b.hXferTx
+          a.hXferTx == b.hXferTx &&
+          a.hChain == b.hChain
           );
     }
 
@@ -59,6 +62,7 @@ class COfferAccept : public CExtCore
       nXferValue = b.nXferValue;
       hashOffer = b.hashOffer;
       hXferTx = b.hXferTx;
+      hChain = b.hChain;
     }
 
     COfferAccept operator=(const COfferAccept &b)
@@ -81,6 +85,7 @@ class COfferAccept : public CExtCore
       nXferValue = 0;
       hashOffer = 0;
       hXferTx = 0;
+      hChain = 0;
     }
 
     bool IsNull() const 

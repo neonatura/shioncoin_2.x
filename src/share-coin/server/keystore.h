@@ -1,14 +1,35 @@
-// Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2012 The Bitcoin developers
-// Copyright (c) 2011-2012 Litecoin Developers
-// Distributed under the MIT/X11 software license, see the accompanying
-// file COPYING or http://www.opensource.org/licenses/mit-license.php.
-#ifndef BITCOIN_KEYSTORE_H
-#define BITCOIN_KEYSTORE_H
+
+/*
+ * @copyright
+ *
+ *  Copyright 2014 Neo Natura
+ *
+ *  This file is part of the Share Library.
+ *  (https://github.com/neonatura/share)
+ *        
+ *  The Share Library is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version. 
+ *
+ *  The Share Library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with The Share Library.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  @endcopyright
+ */  
+
+#ifndef __SERVER__KEYSTORE_H__
+#define __SERVER__KEYSTORE_H__
 
 #include "crypter.h"
 #include "sync.h"
 #include <boost/signals2/signal.hpp>
+#include "hdkey.h"
 
 class CScript;
 
@@ -26,6 +47,7 @@ public:
 
     // Check whether a key corresponding to a given address is present in the store.
     virtual bool HaveKey(const CKeyID &address) const =0;
+    virtual bool GetKey(const CKeyID &address, HDPrivKey& keyOut) const =0;
     virtual bool GetKey(const CKeyID &address, CKey& keyOut) const =0;
     virtual void GetKeys(std::set<CKeyID> &setAddress) const =0;
     virtual bool GetPubKey(const CKeyID &address, CPubKey& vchPubKeyOut) const;
@@ -48,6 +70,7 @@ public:
 typedef std::map<CKeyID, std::pair<CSecret, bool> > KeyMap;
 typedef std::map<CScriptID, CScript > ScriptMap;
 
+
 /** Basic key store, that keeps keys in an address->secret map */
 class CBasicKeyStore : public CKeyStore
 {
@@ -56,6 +79,7 @@ protected:
     ScriptMap mapScripts;
 
 public:
+    bool AddKey(const HDPrivKey& key);
     bool AddKey(const CKey& key);
     bool HaveKey(const CKeyID &address) const
     {
@@ -78,6 +102,23 @@ public:
                 mi++;
             }
         }
+    }
+    bool GetKey(const CKeyID &address, HDPrivKey &keyOut) const
+    {
+        {
+            LOCK(cs_KeyStore);
+            KeyMap::const_iterator mi = mapKeys.find(address);
+            if (mi != mapKeys.end())
+            {
+                keyOut = HDPrivKey((*mi).second.first, (*mi).second.second);
+#if 0
+                keyOut.Reset();
+                keyOut.SetSecret((*mi).second.first, (*mi).second.second);
+#endif
+                return true;
+            }
+        }
+        return false;
     }
     bool GetKey(const CKeyID &address, CKey &keyOut) const
     {
@@ -147,6 +188,7 @@ public:
     bool Lock();
 
     virtual bool AddCryptedKey(const CPubKey &vchPubKey, const std::vector<unsigned char> &vchCryptedSecret);
+    bool AddKey(const HDPrivKey& key);
     bool AddKey(const CKey& key);
     bool HaveKey(const CKeyID &address) const
     {
@@ -158,6 +200,7 @@ public:
         }
         return false;
     }
+    bool GetKey(const CKeyID &address, HDPrivKey& keyOut) const;
     bool GetKey(const CKeyID &address, CKey& keyOut) const;
     bool GetPubKey(const CKeyID &address, CPubKey& vchPubKeyOut) const;
     void GetKeys(std::set<CKeyID> &setAddress) const
@@ -182,4 +225,5 @@ public:
     boost::signals2::signal<void (CCryptoKeyStore* wallet)> NotifyStatusChanged;
 };
 
-#endif
+#endif /* ndef __SERVER__KEYSTORE_H__ */
+

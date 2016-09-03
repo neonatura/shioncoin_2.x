@@ -38,6 +38,8 @@ class CIdent : public CExtCore
     cbuff vAddr;
     unsigned int nType;
 
+//    cbuff vChain;
+
     CIdent()
     {
       SetNull();
@@ -166,7 +168,7 @@ class CCert : public CIdent
 
     uint160 hashIssuer;
     CSign signature;
-    cbuff vSerial;
+    cbuff vContext;
     int64 nFee;
     int nFlag;
 
@@ -209,7 +211,7 @@ class CCert : public CIdent
       return (true);
     }
 
-    void SetLicenseFee(int64 nFeeIn)
+    void SetFee(int64 nFeeIn)
     {
       nFee = (uint64_t)nFeeIn; 
     }
@@ -221,14 +223,14 @@ class CCert : public CIdent
 
     void SetSerialNumber(cbuff vSerialIn)
     {
-      vSerial = vSerialIn;
+      vContext = vSerialIn;
     }
 
     IMPLEMENT_SERIALIZE (
         READWRITE(*(CIdent *)this);
         READWRITE(this->hashIssuer);
         READWRITE(this->signature);
-        READWRITE(this->vSerial);
+        READWRITE(this->vContext);
         READWRITE(this->nFee);
         READWRITE(this->nFlag);
     )
@@ -238,7 +240,7 @@ class CCert : public CIdent
       CIdent::Init(b);
       hashIssuer = b.hashIssuer;
       signature = b.signature;
-      vSerial = b.vSerial;
+      vContext = b.vContext;
       nFee = b.nFee;
       nFlag = b.nFlag;
     }
@@ -248,7 +250,7 @@ class CCert : public CIdent
           ((CIdent&) a) == ((CIdent&) b) &&
           a.hashIssuer == b.hashIssuer &&
           a.signature == b.signature &&
-          a.vSerial == b.vSerial &&
+          a.vContext == b.vContext &&
           a.nFee == b.nFee &&
           a.nFlag == b.nFlag
           );
@@ -267,8 +269,7 @@ class CCert : public CIdent
     {
       CIdent::SetNull();
       signature.SetNull();
-
-      vSerial.clear();
+      vContext.clear();
       nFee = 0;
 
       /* x509 prep */
@@ -280,7 +281,7 @@ class CCert : public CIdent
       return (nFlag);
     }
 
-    int64 GetLicenseFee()
+    int64 GetFee()
     {
       return (nFee);
     }
@@ -288,7 +289,7 @@ class CCert : public CIdent
     /* a 128-bit binary context converted into a 160bit hexadecimal number. */
     std::string GetSerialNumber()
     {
-      uint160 hash(vSerial);
+      uint160 hash(vContext);
       return (hash.GetHex());
     }
 
