@@ -37,6 +37,7 @@
 using namespace std;
 
 
+extern CKey MergeKey(const CKey& pkey, cbuff tag);
 
 
 #ifdef __cplusplus
@@ -228,6 +229,22 @@ _TEST(coin_key)
     _TRUE(rkey2C.GetPubKey() == key2C.GetPubKey());
 #endif
   }
+
+  char teststr[64];
+  strcpy(teststr, "test");
+  cbuff tag(teststr, teststr + strlen(teststr));
+  bool fCompr = true;
+  CKey pkey;
+  pkey.MakeNewKey(fCompr);
+  CKey key1 = pkey.MergeKey(tag);
+  CKey key2 = pkey.MergeKey(tag);
+  _TRUE(key1.GetPubKey().GetID() == key2.GetPubKey().GetID());
+  _TRUE(pkey.GetPubKey().GetID() != key2.GetPubKey().GetID());
+
+  strcpy(teststr, "test2");
+  cbuff tag2(teststr, teststr + strlen(teststr));
+  key2 = pkey.MergeKey(tag2);
+  _TRUE(key1.GetPubKey().GetID() != key2.GetPubKey().GetID());
 
 }
 

@@ -2117,6 +2117,9 @@ uint256 GetGenesisBlockHash(int ifaceIndex)
   return (hash);
 }
 
+extern int ProcessExecTx(CIface *iface, CNode *pfrom, CTransaction& tx);
+
+
 /**
  * The core method of accepting a new block onto the block-chain.
  */
@@ -2215,6 +2218,9 @@ bool core_AcceptBlock(CBlock *pblock)
       }
       if (tx.isFlag(CTransaction::TXF_IDENT)) {
         InsertIdentTable(iface, tx);
+      }
+      if (tx.isFlag(CTransaction::TXF_EXEC)) {
+        ProcessExecTx(iface, pblock->originPeer, tx);
       }
     }
   }
@@ -2927,6 +2933,40 @@ CExec *CTransaction::ActivateExec(const CExec& execIn)
 
   exec = (CExec *)&certificate;
   exec->Init(execIn);
+
+  return (exec);
+}
+
+CExec *CTransaction::TransferExec(const CExec& execIn)
+{
+  CExec *exec;
+
+  if (nFlag & CTransaction::TXF_EXEC)
+    return (NULL);
+
+  nFlag |= CTransaction::TXF_EXEC;
+
+  exec = (CExec *)&certificate;
+  exec->Init(execIn);
+
+  return (exec);
+}
+
+CExecCall *CTransaction::GenerateExec(const CExec& execIn, CCoinAddr& sendAddr)
+{
+  CExecCall *exec;
+
+  if (nFlag & CTransaction::TXF_EXEC)
+    return (NULL);
+
+  nFlag |= CTransaction::TXF_EXEC;
+
+  exec = (CExecCall *)&certificate;
+  exec->Init(execIn);
+  exec->signature.SetNull();
+  exec->SetSendAddr(sendAddr);
+  exec->vContext.clear();
+  exec->nFee = 0;
 
   return (exec);
 }

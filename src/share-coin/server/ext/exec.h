@@ -34,8 +34,6 @@ class CExec : public CCert
   public:
     static const double DEFAULT_EXEC_LIFESPAN = MAX_SHARE_SESSION_TIME;
 
-    mutable int indexPool;
-
     CExec()
     {
       SetNull();
@@ -65,7 +63,6 @@ class CExec : public CCert
     void Init(const CExec& execIn)
     {
       CCert::Init(execIn);
-      indexPool = execIn.indexPool;
     }
 
     friend bool operator==(const CExec &a, const CExec &b)
@@ -81,16 +78,21 @@ class CExec : public CCert
       return (*this);
     }
 
-#if 0
-    bool Sign(uint160 sigCertIn);
-    bool VerifySignature();
-#endif
 
-    bool SignContext();
-    bool VerifyContext();
-    bool SetData(cbuff data);
-    bool GetData(cbuff& data);
-    bool LoadData(string path);
+    bool Sign(int ifaceIndex, CCoinAddr& addr);
+
+    bool VerifySignature();
+
+    bool LoadData(string path, cbuff& data);
+
+    bool LoadPersistentData(cbuff& data);
+
+    bool SavePersistentData(const cbuff& data);
+
+    bool RemovePersistentData();
+
+    bool VerifyData(const cbuff& data);
+
 
     const uint160 GetHash()
     {
@@ -100,7 +102,7 @@ class CExec : public CCert
       return Hash160(rawbuf);
     }
 
-    bool SetStack();
+    bool SetStack(const cbuff& data, const CCoinAddr& sendAddr);
 
     bool SetStack(cbuff stack)
     {
@@ -113,6 +115,10 @@ class CExec : public CCert
       return (vContext);
     }
 
+    bool VerifyStack();
+ 
+    bool SetAccount(int ifaceIndex, string& strAccount);
+
     uint160 GetIdentHash()
     {
       return (CIdent::GetHash());
@@ -123,25 +129,106 @@ class CExec : public CCert
       return (CCoinAddr(stringFromVch(vAddr)));
     }
 
-    void SetExecAddr(const CCoinAddr& addr)
+    std::string ToString();
+
+    Object ToValue();
+
+};
+
+class CExecCall : public CExec
+{
+  public:
+    CExecCall()
     {
-      vAddr = vchFromString(addr.ToString()); 
+      SetNull();
     }
 
-    CCoinAddr GetCoinAddr()
+    CExecCall(const CCert& certIn)
     {
-      return (CCoinAddr(stringFromVch(signature.vAddrKey)));
+      SetNull();
+      CExec::Init(certIn);
     }
 
-    void SetCoinAddr(const CCoinAddr& addr)
+    CExecCall(const CExecCall& execIn)
     {
-      signature.vAddrKey = vchFromString(addr.ToString()); 
+      SetNull();
+      Init(execIn);
+    }
+
+    IMPLEMENT_SERIALIZE (
+        READWRITE(*(CExec *)this);
+    )
+
+    void SetNull()
+    {
+      CExec::SetNull();
+    }
+
+    void Init(const CExecCall& execIn)
+    {
+      CExec::Init(execIn);
+    }
+
+    void Init(const CExec& execIn)
+    {
+      CExec::Init(execIn);
+    }
+
+    friend bool operator==(const CExecCall &a, const CExecCall &b)
+    {
+      return (
+          ((CExec&) a) == ((CExec&) b)
+          );
+    }
+
+    CExecCall operator=(const CExecCall &b)
+    {
+      Init(b);
+      return (*this);
+    }
+
+    int64 GetSendValue()
+    {
+      return (nFee);
+    }
+
+    void SetSendValue(int64 nFeeIn)
+    {
+      nFee = nFeeIn;
+    }
+
+    CCoinAddr GetSendAddr()
+    {
+      CCoinAddr addr;
+      addr.Set(CKeyID(hashIssuer));
+      return (addr);
+    }
+
+    bool SetSendAddr(const CCoinAddr& addrIn)
+    {
+      CKeyID k;
+      if (!addrIn.GetKeyID(k))
+        return (false);
+
+      hashIssuer = k;
+      return (true);
+    }
+
+    bool Sign(int ifaceIndex, CCoinAddr& addr);
+
+    bool VerifySignature();
+
+    const uint160 GetHash()
+    {
+      uint256 hashOut = SerializeHash(*this);
+      unsigned char *raw = (unsigned char *)&hashOut;
+      cbuff rawbuf(raw, raw + sizeof(hashOut));
+      return Hash160(rawbuf);
     }
 
     std::string ToString();
 
     Object ToValue();
-
 };
 
 bool VerifyExec(CTransaction& tx, int& mode);
@@ -151,9 +238,13 @@ int init_exec_tx(CIface *iface, string strAccount, string strPath, int64 nExecFe
 
 int update_exec_tx(CIface *iface, const uint160& hashExec, string strPath, CWalletTx& wtx);
 
-int activate_exec_tx(CIface *iface, string strAccount, uint160 hExec, string strFunc, CWalletTx& wtx);
+int generate_exec_tx(CIface *iface, string strAccount, uint160 hExec, string strFunc, CWalletTx& wtx);
 
-int remove_exec_tx(CIface *iface, string strAccount, const uint160& hashExec, CWalletTx& wtx);
+int activate_exec_tx(CIface *iface, uint160 hExec, uint160 hCert, CWalletTx& wtx);
+
+int transfer_exec_tx(CIface *iface, uint160 hExec, string strAccount, CWalletTx& wtx);
+
+int remove_exec_tx(CIface *iface, const uint160& hashExec, CWalletTx& wtx);
 
 
 

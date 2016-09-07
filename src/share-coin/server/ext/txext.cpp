@@ -301,12 +301,14 @@ bool CSign::Sign(int ifaceIndex, CCoinAddr& addr, unsigned char *data, size_t da
   bool ret;
 
   ret = SignContext(data, data_len);
-  if (!ret)
-    return false;
-
+  if (!ret) {
+    return error(SHERR_INVAL, "CSign.Sign: Error signing context.");
+  }
+    
   ret = SignAddress(ifaceIndex, addr, data, data_len);
-  if (!ret)
-    return false;
+  if (!ret) { 
+    return error(SHERR_INVAL, "CSign.Sign: Error signing addr '%s'.", addr.ToString().c_str());
+  }
  
   return true;
 }

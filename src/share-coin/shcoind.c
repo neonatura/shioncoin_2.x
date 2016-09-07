@@ -224,4 +224,7 @@ int main(int argc, char *argv[])
   return (0);
 }
 
-
+shpeer_t *shcoind_peer(void)
+{
+  return (server_peer);
+}

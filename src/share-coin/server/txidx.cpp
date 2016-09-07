@@ -432,7 +432,6 @@ bool CTxDB::ContainsTx(uint256 hash)
 
 bool CTxDB::ReadDiskTx(uint256 hash, CTransaction& tx)
 {
-fprintf(stderr, "DEBUG: ReadDiskTx()\n");
   return (tx.ReadTx(ifaceIndex, hash));
 }
 
@@ -608,7 +607,6 @@ int txdb_hashlist_cb(void *p, int arg_nr, char **args, char **cols)
   if (arg_nr > 0 && *args) {
     hash.SetHex(*args);
     list->push_back(hash);
-fprintf(stderr, "DEBUG: txdb_hashlist_cb: inserted hash '%s'\n", hash.GetHex().c_str());
   }
 
   return (0);

@@ -37,6 +37,12 @@ extern TEST_exectx(CuTest*);
 
 extern void test_shcoind_init(void);
 
+shpeer_t *serv_peer;
+
+shpeer_t *shcoind_peer(void)
+{
+  return (serv_peer);
+}
 
 int main(int argc, char *argv[])
 {
@@ -44,10 +50,13 @@ int main(int argc, char *argv[])
   CuSuite* suite = CuSuiteNew();
   int fails;
 
+  serv_peer = shapp_init("shcoind", NULL, SHAPP_LOCAL);
+
+
   test_shcoind_init();
 
-
   /* test suits */
+#if 0
   SUITE_ADD_TEST(suite, TEST_bloom_create_insert_key);
   SUITE_ADD_TEST(suite, TEST_bloom_match);
   SUITE_ADD_TEST(suite, TEST_jsonencap);
@@ -69,6 +78,7 @@ int main(int argc, char *argv[])
   SUITE_ADD_TEST(suite, TEST_assettx);
   SUITE_ADD_TEST(suite, TEST_certtx);
   SUITE_ADD_TEST(suite, TEST_identtx);
+#endif
   SUITE_ADD_TEST(suite, TEST_hdtx);
   SUITE_ADD_TEST(suite, TEST_exectx);
 
@@ -84,6 +94,8 @@ int main(int argc, char *argv[])
 
   CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
   iface->op_term(iface, NULL);
+
+  shpeer_free(&serv_peer);
 
   return (fails);
 }

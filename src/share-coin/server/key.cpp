@@ -407,3 +407,34 @@ bool CKey::IsValid()
     key2.SetSecret(secret, fCompr);
     return GetPubKey() == key2.GetPubKey();
 }
+
+static void _keyxor(unsigned char *buf, unsigned char *alt, size_t size)
+{
+  int i;
+
+  for (i = 0; i < size; i++) {
+    buf[i] = buf[i] ^ alt[i];
+  }
+
+}
+
+CKey CKey::MergeKey(cbuff tag)
+{
+  bool fCompr;
+  CSecret secret = GetSecret(fCompr);
+  cbuff pbuff(secret.begin(), secret.end());
+  uint160 mkey = Hash160(tag);
+  cbuff mbuff(mkey.begin(), mkey.end());
+  unsigned char raw[32];
+
+  memcpy(raw, pbuff.data(), 32);
+  _keyxor(raw, mbuff.data(), mbuff.size());
+
+  CKey key;
+  cbuff kbuff(raw, raw + 32);
+  CSecret ksec(kbuff.begin(), kbuff.end());
+  key.SetSecret(ksec, fCompr);
+  return (key);
+}
+
+

@@ -1896,6 +1896,9 @@ bool SHCBlock::DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex)
         if (tx.isFlag(CTransaction::TXF_CERTIFICATE)) {
           DisconnectCertificate(iface, tx);
         }
+        if (tx.isFlag(CTransaction::TXF_EXEC)) {
+//          DisconnectExecTx(iface, tx);
+        }
       }
     }
   }

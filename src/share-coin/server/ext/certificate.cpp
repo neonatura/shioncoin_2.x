@@ -1155,7 +1155,7 @@ bool CCert::Sign(int ifaceIndex, CCoinAddr& addr, cbuff vchSecret)
     ret = signature.Sign(ifaceIndex, addr, vchSecret.data(), vchSecret.size());
   }
   if (!ret)
-    return error(SHERR_INVAL, "CSign::Sign: error signing identity.");
+    return error(SHERR_INVAL, "CSign::Sign: error signing with addr '%s'\n", addr.ToString().c_str());
 
   vAddr = vchFromString(addr.ToString());
   return (true);

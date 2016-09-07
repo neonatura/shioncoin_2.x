@@ -1005,7 +1005,7 @@ fprintf(stderr, "DEBUG: TEST: hdtx: mkey = %s\n", mkey.ToString().c_str());
   {
     CScript scriptCode;
     scriptCode.SetDestination(mpubkey.GetID());
-fprintf(stderr, "DEBUG: TEST: hdtx: sending tx to hd key: scriptCode %s\n", scriptCode.ToString().c_str());
+//fprintf(stderr, "DEBUG: TEST: hdtx: sending tx to hd key: scriptCode %s\n", scriptCode.ToString().c_str());
     CWalletTx wtx;
     wtx.vin.push_back(CTxIn(prevTx.GetHash(), 0));
     wtx.vout.push_back(CTxOut(1, scriptCode));
@@ -1043,13 +1043,16 @@ _TRUE(wallet->CommitTransaction(wtx, rkey) == true);
 _TEST(exectx)
 {
   CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
+  CWallet *wallet = GetWallet(iface);
   string strPath("/tmp/exectx.sx");
   string strAccount("");
   int mode = -1;
   int idx;
   int err;
 
-  for (idx = 0; idx < 3; idx++) {
+  (void)GetAccountAddress(wallet, strAccount, true);
+
+  for (idx = 0; idx < 17; idx++) {
     CBlock *block = test_GenerateBlock();
     _TRUEPTR(block);
     _TRUE(ProcessBlock(NULL, block) == true);
@@ -1061,14 +1064,32 @@ _TEST(exectx)
   wtx.strFromAccount = strAccount;
 
   err = init_exec_tx(iface, strAccount, strPath, 0, wtx); 
-fprintf(stderr, "DEBUG: TEST: EXECTX[status %d]: %s\n", err, wtx.ToString().c_str());
+if (err) fprintf(stderr, "DEBUG: TEST: EXECTX[status %d]: %s\n", err, wtx.ToString().c_str());
+  CExec *exec = &((CExec&)wtx.certificate);
+  uint160 hExec = exec->GetIdentHash();
   _TRUE(err == 0);
   _TRUE(VerifyExec(wtx, mode) == true);
   _TRUE(mode == OP_EXT_NEW);
+  _TRUE(exec->VerifySignature());
 
-  CExec *exec = &((CExec&)wtx.certificate);
-  _TRUE(exec->VerifyContext());
+  {
+    CBlock *block = test_GenerateBlock();
+    _TRUEPTR(block);
+    _TRUE(ProcessBlock(NULL, block) == true);
+    delete block;
+  }
 
+  CWalletTx run_tx;
+  err = generate_exec_tx(iface, strAccount, hExec, "buyTicket", wtx);
+if (err) fprintf(stderr, "DEBUG: %d = generate_exec_tx()\n", err);
+  _TRUE(err == 0);
+
+  {
+    CBlock *block = test_GenerateBlock();
+    _TRUEPTR(block);
+    _TRUE(ProcessBlock(NULL, block) == true);
+    delete block;
+  }
 
 }
 

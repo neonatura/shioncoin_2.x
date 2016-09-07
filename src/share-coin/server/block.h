@@ -557,7 +557,8 @@ public:
       if ((this->nFlag & TXF_CERTIFICATE) ||
           (this->nFlag & TXF_LICENSE) ||
           (this->nFlag & TXF_ASSET) ||
-          (this->nFlag & TXF_IDENT))
+          (this->nFlag & TXF_IDENT) ||
+          (this->nFlag & TXF_EXEC))
         READWRITE(certificate);
       if (this->nFlag & TXF_ALIAS)
         READWRITE(alias);
@@ -576,7 +577,8 @@ public:
       if ((this->nFlag & TXF_IDENT) ||
           (this->nFlag & TXF_CERTIFICATE) ||
           (this->nFlag & TXF_LICENSE) ||
-          (this->nFlag & TXF_ASSET))
+          (this->nFlag & TXF_ASSET) ||
+          (this->nFlag & TXF_EXEC))
         certificate = tx.certificate;
       if (this->nFlag & TXF_ALIAS)
         alias = tx.alias;
@@ -815,6 +817,8 @@ public:
     CExec *CreateExec();
     CExec *UpdateExec(const CExec& execIn);
     CExec *ActivateExec(const CExec& execIn);
+    CExecCall *GenerateExec(const CExec& execIn, CCoinAddr& sendAddr);
+    CExec *TransferExec(const CExec& execIn);
     CExec *RemoveExec(const CExec& execIn);
 
     CIdent *CreateIdent(CIdent *ident);

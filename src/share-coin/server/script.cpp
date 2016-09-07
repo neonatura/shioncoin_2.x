@@ -1724,7 +1724,7 @@ bool SignSignature(const CKeyStore &keystore, const CScript& fromPubKey, CTransa
 
   txnouttype whichType;
   if (!Solver(keystore, fromPubKey, hash, nHashType, txin.scriptSig, whichType)) {
-    return false;
+    return (error(SHERR_INVAL, "SignSignature: error solving coin address."));
   }
 
   if (whichType == TX_SCRIPTHASH)
@@ -1754,7 +1754,11 @@ bool SignSignature(const CKeyStore &keystore, const CScript& fromPubKey, CTransa
   } else {
     ret= VerifyScript(txin.scriptSig, fromPubKey, txTo, nIn, true, nHashType);
   }
-  return (ret);
+  if (!ret) {
+    return (error(SHERR_INVAL, "SignSignature: error verifying integrity."));
+  }
+
+  return (true);
 }
 
 bool SignSignature(const CKeyStore &keystore, const CTransaction& txFrom, CTransaction& txTo, unsigned int nIn, int nHashType)

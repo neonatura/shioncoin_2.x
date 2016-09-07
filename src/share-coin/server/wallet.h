@@ -107,6 +107,7 @@ public:
     mutable std::map<uint160, uint256> mapAsset;
     mutable std::map<uint160, uint256> mapAssetArch;
     mutable std::map<uint160, CTransaction> mapExec;
+    mutable std::vector<CWalletTx> mapExecCommit;
 
     /** A vector of open coin-transfer channels. */
     mutable std::map<uint160, CTransaction> mapChannel;
@@ -171,7 +172,10 @@ nScanHeight = 0;
     // check whether we are allowed to upgrade (or already support) to the named feature
     bool CanSupportFeature(enum WalletFeature wf) { return nWalletMaxVersion >= wf; }
 
-    void AvailableCoins(std::vector<COutput>& vCoins, bool fOnlyConfirmed=true) const;
+    void AvailableCoins(std::vector<COutput>& vCoins, bool fOnlyConfirmed =true)  const;
+
+    void AvailableAddrCoins(vector<COutput>& vCoins, const CCoinAddr& filterAddr, int64& nTotalValue, bool fOnlyConfirmed) const;
+
     bool SelectCoinsMinConf(int64 nTargetValue, int nConfMine, int nConfTheirs, std::vector<COutput> vCoins, std::set<std::pair<const CWalletTx*,unsigned int> >& setCoinsRet, int64& nValueRet) const;
 
     // keystore implementation
@@ -330,6 +334,8 @@ nScanHeight = 0;
 
     // get the current wallet format (the oldest client version guaranteed to understand this wallet)
     int GetVersion() { return nWalletVersion; }
+
+    bool GetMergedAddress(string strAccount, const char *tag, CCoinAddr& addrRet);
 
     /** Address book entry changed.
      * @note called with lock cs_wallet held.
@@ -841,10 +847,19 @@ void RelayTransaction(int ifaceIndex, const CTransaction& tx, const uint256& has
  
 
 #ifdef __cplusplus
+
 int64 GetTxFee(int ifaceIndex, CTransaction tx);
+
 int64 GetAccountBalance(int ifaceIndex, CWalletDB& walletdb, const std::string& strAccount, int nMinDepth);
+
 int64 GetAccountBalance(int ifaceIndex, const std::string& strAccount, int nMinDepth);
+
 bool SyncWithWallets(CIface *iface, CTransaction& tx, CBlock *pblock = NULL);
+
+bool SendRemitMoneyTx(CIface *iface, const CCoinAddr& addrFrom, CWalletTx *wtxIn, CWalletTx& wtxNew, vector<pair<CScript, int64> >& vecSend, CScript scriptPubKey);
+
+bool CreateMoneyTx(CIface *iface, CWalletTx& wtxNew, vector<COutput>& vecRecv, vector<CTxOut>& vecSend, CScript scriptPubKey);
+
 #endif
 
 

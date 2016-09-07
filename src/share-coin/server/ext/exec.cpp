@@ -34,6 +34,18 @@
 using namespace std;
 using namespace json_spirit;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+extern shpeer_t *shcoind_peer(void);
+
+#ifdef __cplusplus
+}
+#endif
+
+
+
+#if 0
 shpool_t *pool;
 
 void InitExecPool()
@@ -76,6 +88,25 @@ static unsigned int SetExecPoolData(cbuff vData)
   return (indexPool);
 }
 
+static void ClearExecPoolData(int idx)
+{
+  unsigned char *raw;
+  size_t raw_len;
+  shbuf_t *buff;
+
+  if (idx == 0)
+    return;
+
+  InitExecPool();
+
+  buff = shpool_get_index(pool, idx);
+  if (!buff)
+    return;
+
+  shbuf_clear(buff);
+}
+#endif
+
 exec_list *GetExecTable(int ifaceIndex)
 {
   if (ifaceIndex < 0 || ifaceIndex >= MAX_COIN_IFACE)
@@ -84,6 +115,13 @@ exec_list *GetExecTable(int ifaceIndex)
   if (!wallet)
     return (NULL);
   return (&wallet->mapExec);
+}
+
+static string StripExtAccountName(string strAccount)
+{
+  if (strAccount.length() != 0 && strAccount.at(0) == '@')
+    strAccount = strAccount.substr(1);
+  return (strAccount);
 }
 
 bool DecodeExecHash(const CScript& script, int& mode, uint160& hash)
@@ -137,6 +175,12 @@ string execFromOp(int op) {
 		return "execnew";
 	case OP_EXT_UPDATE:
 		return "execupdate";
+	case OP_EXT_ACTIVATE:
+		return "execactivate";
+	case OP_EXT_GENERATE:
+		return "execgenerate";
+	case OP_EXT_TRANSFER:
+		return "exectransfer";
 	case OP_EXT_REMOVE:
 		return "execremove";
 	default:
@@ -184,6 +228,9 @@ bool DecodeExecScript(const CScript& script, int& op,
 
 	if ((mode == OP_EXT_NEW && vvch.size() == 2) ||
       (mode == OP_EXT_UPDATE && vvch.size() == 2) ||
+      (mode == OP_EXT_ACTIVATE && vvch.size() == 2) ||
+      (mode == OP_EXT_GENERATE && vvch.size() == 2) ||
+      (mode == OP_EXT_TRANSFER && vvch.size() == 2) ||
       (mode == OP_EXT_REMOVE && vvch.size() == 2))
     return (true);
 
@@ -327,8 +374,9 @@ bool VerifyExec(CTransaction& tx, int& mode)
 
   if (mode != OP_EXT_NEW && 
       mode != OP_EXT_ACTIVATE &&
-      mode != OP_EXT_UPDATE &&
+      mode != OP_EXT_GENERATE &&
       mode != OP_EXT_TRANSFER &&
+      mode != OP_EXT_UPDATE &&
       mode != OP_EXT_REMOVE)
     return (false);
 
@@ -350,6 +398,37 @@ Object CExec::ToValue()
 
   if (GetStack().size() != 0) {
     string str((const char *)GetStack().data());
+    obj.push_back(Pair("stack", stringFromVch(GetStack())));
+  }
+
+  if (nFlag != 0)
+    obj.push_back(Pair("flags", nFlag));
+
+  obj.push_back(Pair("signature", signature.GetHash().GetHex()));
+
+#if 0
+/* DEBUG: */
+obj.push_back(Pair("sig_pubkey", stringFromVch(signature.vPubKey).c_str()));
+obj.push_back(Pair("sig_addrkey", stringFromVch(signature.vAddrKey).c_str()));
+if (signature.vSig.size() > 0) obj.push_back(Pair("vsig0", stringFromVch(signature.vSig[0]).c_str()));
+#endif
+
+  obj.push_back(Pair("app", GetIdentHash().GetHex()));
+  obj.push_back(Pair("hash", GetHash().GetHex()));
+  return (obj);
+}
+
+std::string CExecCall::ToString()
+{
+  return (write_string(Value(ToValue()), false));
+}
+
+Object CExecCall::ToValue()
+{
+  Object obj = CIdent::ToValue();
+
+  if (GetStack().size() != 0) {
+    string str((const char *)GetStack().data());
     obj.push_back(Pair("stack", str));
   }
 
@@ -358,86 +437,93 @@ Object CExec::ToValue()
 
   obj.push_back(Pair("signature", signature.GetHash().GetHex()));
 
+  CCoinAddr addr;
+  addr.Set(CKeyID(hashIssuer));
+  obj.push_back(Pair("sender", addr.ToString().c_str())); 
+
+  obj.push_back(Pair("app", GetIdentHash().GetHex()));
   obj.push_back(Pair("hash", GetHash().GetHex()));
+
   return (obj);
 }
 
-#if 0
-bool CExec::Sign(uint160 sigCertIn)
+/**
+ * Sign an app's "bytecode hash" using the extended coin address responsible.
+ * @param addr The extended coin address responsible for this app instance.
+ */
+bool CExec::Sign(int ifaceIndex, CCoinAddr& addr)
 {
-  hashIssuer = sigCertIn;
-  signature.SignContext(hashIssuer);
-  return true;
-}
-bool CExec::VerifySignature()
-{
-  return (signature.VerifyContext(hashIssuer));
-}
-#endif
-bool CExec::SignContext()
-{
-  cbuff data;
-  if (!GetData(data))
-    return (false);
-  return (signature.SignContext(data.data(), data.size()));
-}
-bool CExec::VerifyContext()
-{
-  cbuff data;
-  if (!GetData(data))
-    return (false);
-  return (signature.VerifyContext(data.data(), data.size()));
+  cbuff hbuff(hashIssuer.begin(), hashIssuer.end());
+  return (CCert::Sign(ifaceIndex, addr, hbuff));
 }
 
-bool CExec::SetData(cbuff data)
+/* @todo ensure pubkey in compact sig matches ext coin addr */
+bool CExec::VerifySignature()
 {
-  indexPool = SetExecPoolData(data);
+  bool ret;
+
+  cbuff hbuff(hashIssuer.begin(), hashIssuer.end());
+  ret = CCert::VerifySignature(hbuff);
+  if (!ret) {
+    error(SHERR_ACCESS, "CExec.VerifySignature: verification failure: %s", ToString().c_str());
+    return (false); 
+  }
+
   return (true);
 }
 
-bool CExec::GetData(cbuff& data)
+bool CExec::VerifyData(const cbuff& data)
 {
 
-  data = GetExecPoolData(indexPool);
   if (data.size() == 0)
     return (false);
 
+  uint160 hData = Hash160(data);
+  return (hData == hashIssuer);
+}
+
+static bool SetExecLabel(CExec *exec, sexe_mod_t *mod)
+{
+  if (0 != memcmp(mod->sig, SEXE_SIGNATURE, sizeof(mod->sig)))
+    return (false);
+  exec->SetLabel(string(mod->name));
   return (true);
 }
 
-bool CExec::LoadData(string path)
+bool CExec::LoadData(string path, cbuff& data)
 {
   shbuf_t *buff;
+  char exec_path[PATH_MAX+1];
   int err;
 
+  memset(exec_path, 0, sizeof(exec_path));
+  strncpy(exec_path, path.c_str(), sizeof(exec_path)-1);
+
   buff = shbuf_init();
-  err = shfs_mem_read((char *)path.c_str(), buff);
+  err = shfs_mem_read(exec_path, buff);
   if (err) {
     shbuf_free(&buff);
-    return error(err, "CExec.LoadData: failure loading path \"%s\".", path.c_str());
+    return error(err, "CExec.LoadData: failure loading path \"%s\".", exec_path);
+  }
+  if (shbuf_size(buff) == 0) {
+    return (error(SHERR_INVAL, "CExec.LoadData: no data available."));
+  }
+
+  if (!SetExecLabel(this, (sexe_mod_t *)shbuf_data(buff))) {
+    shbuf_free(&buff);
+    return (error(SHERR_ILSEQ, "SetExecLabel: invalid file format (%s).", exec_path));
   }
 
   unsigned char *raw = shbuf_data(buff);
   size_t raw_len = shbuf_size(buff);
+  data = cbuff(raw, raw + raw_len);
 
-  {
-    sexe_mod_t *mod = (sexe_mod_t *)raw;
-    if (0 != memcmp(mod->sig, SEXE_SIGNATURE, sizeof(mod->sig))) {
-      shbuf_free(&buff);
-      return error(SHERR_ILSEQ, "CExec.LoadData: path \"%s\" has an invalid file format.", path.c_str());
-    }
-
-    SetLabel(string(mod->name));
-  }
-
-  cbuff data(raw, raw + raw_len);
   shbuf_free(&buff);
-
-  return (SetData(data));
+  return (true);
 }
 
 /* run program and call 'init' event to gather external decl var/func. */
-bool CExec::SetStack()
+bool CExec::SetStack(const cbuff& data, const CCoinAddr& sendAddr)
 {
   shjson_t *json;
   shjson_t *def_json;
@@ -445,19 +531,151 @@ bool CExec::SetStack()
   shjson_t *jret;
   shbuf_t *buff;
   sexe_t *S;
-  cbuff data;
   char *str;
   int err;
 
+#if 0
   data = GetExecPoolData(indexPool);
   if (data.size() == 0) {
-    return error(SHERR_NOENT, "CExec.SetStack: pool index #%d has no content.", indexPool);
+    error(SHERR_NOENT, "CExec.SetStack: pool index #%d has no content.", indexPool);
+    return (false);
   }
+#endif
 
   /* prepare args */
   json = shjson_init(NULL);
   shjson_str_add(json, "version", PACKAGE_STRING); 
 
+  /* prepare runtime */
+  buff = shbuf_init();
+  unsigned char *raw = (unsigned char *)data.data();
+  size_t raw_len = (size_t)data.size();
+  shbuf_cat(buff, raw, raw_len);
+  err = sexe_exec_popen(buff, json, &S);
+  shbuf_free(&buff);
+  shjson_free(&json);
+  if (err) {
+    return error(err, "CExec.SetStack: error executing code <%d bytes>.", raw_len);
+  }
+
+  /* load stack */
+  err = sexe_exec_prun(S);
+  if (err) {
+    error(err, "CExec.SetStack: sexe_exec_prun");
+    return (false);
+  }
+
+  /* prep args */
+  int64 sendValue = 0;
+  json = shjson_init(NULL);
+  shjson_str_add(json, "sender", (char *)sendAddr.ToString().c_str());
+  shjson_num_add(json, "value", ((double)sendValue / (double)COIN));
+
+  /* execute method */
+  err = sexe_exec_pcall(S, "init", json);
+  shjson_free(&json);
+  if (err) {
+    error(err, "CExec.SetStack: sexe_exec_pcall");
+    return (false);
+  }
+
+#if 0
+  /* persistent user data */
+  u_json = NULL;
+  err = sexe_exec_pget(S, "userdata", &u_json);
+  if (err) {
+    return error(err, "CExec.SetStack: error obtaining user-data.");
+  }
+fprintf(stderr, "DEBUG: EXEC: USRDATA: \"%s\"\n", shjson_print(u_json));
+  shjson_free(&u_json);
+#endif
+
+  def_json = NULL;
+  err = sexe_exec_pgetdef(S, "userdata", &def_json);
+  sexe_exec_pclose(S);
+  if (err) {
+    return error(err, "CExec.SetStack: error obtaining user-data.");
+  }
+
+  str = shjson_print(def_json);
+  shjson_free(&def_json);
+  if (!str)
+    return error(SHERR_INVAL, "CExec.SetStack: error parsing json");
+  SetStack(cbuff(str, str + strlen(str)));
+  free(str);
+
+  /* non-generate exec tx defines hashIssuer as 20byte hash of exec code. */
+  hashIssuer = Hash160(data);
+
+  return (true);
+}
+
+static int _sexe_tx_commit_iface_index;
+static int _sexe_tx_commit(sexe_t *S)
+{
+  const char *coin_addr = sexe_checkstring(S, 1);
+  double coin_val = sexe_checknumber(S, 2);
+  int64 nValue = (int64)(coin_val * (double)COIN);
+
+  CIface *iface = GetCoinByIndex(_sexe_tx_commit_iface_index);
+  CWallet *wallet = GetWallet(iface);
+
+  CCoinAddr addr(coin_addr);
+  CScript scriptPub;
+  scriptPub.SetDestination(addr.Get());
+
+  CWalletTx wtx;
+  wtx.SetNull();
+  wtx.vout.push_back(CTxOut(nValue, scriptPub));
+  wallet->mapExecCommit.push_back(wtx);
+
+  lua_pushnil(S);
+  return (1); /* 1 nil */
+}
+
+int ProcessExecGenerateTx(CIface *iface, CExec *execIn, CExecCall *exec)
+{
+  CWallet *wallet = GetWallet(iface);
+  int ifaceIndex = GetCoinIndex(iface);
+  shjson_t *json;
+  shbuf_t *buff;
+  sexe_t *S;
+  char method[256];
+  char *str;
+  int err;
+
+#if 0
+  /* establish coin addr */
+  string strAccount;
+  CCoinAddr addr = exec->GetCoinAddr();
+  if (!GetCoinAddr(wallet, addr, strAccount))
+    return (SHERR_NOENT);
+#endif
+
+  /* establish ext coin addr */
+  string strExtAccount;
+  CCoinAddr extAddr = exec->GetExecAddr();
+  if (!GetCoinAddr(wallet, extAddr, strExtAccount))
+    return (SHERR_INVAL);
+
+  /* verify origin sig */
+  if (!execIn->VerifySignature())
+    return (SHERR_ACCESS);
+
+  /* verify peer sig */
+  if (!exec->VerifySignature())
+    return (SHERR_ACCESS);
+
+  /* load sexe code */
+  cbuff data;
+  if (!execIn->LoadPersistentData(data)) {
+    error(SHERR_INVAL, "ProcessExecGenerateTx: error loading sexe bytecode.");
+    return (SHERR_INVAL);
+  }
+
+  /* prepare args */
+  json = shjson_init(NULL);
+  shjson_str_add(json, "version", PACKAGE_STRING); 
   /* prepare runtime */
   buff = shbuf_init();
   shbuf_cat(buff, data.data(), data.size());
@@ -468,90 +686,62 @@ bool CExec::SetStack()
     return error(err, "CExec.SetStack: error executing code.");
   }
 
-  /* load stack */
+#if 0 /* DEBUG: */
+lua_pushcfunction(S, _sexe_tx_commit);
+lua_setglobal(S, "commit");
+#endif
+
+  /* load runtime */
   err = sexe_exec_prun(S);
   if (err) {
     error(err, "CExec.SetStack: sexe_exec_prun");
     return (false);
   }
 
-  CCoinAddr send_addr(stringFromVch(vAddr));
+  /* prep args */
+  str = strchr((char *)exec->vContext.data(), ' ');
+  json = shjson_init(str ? str + 1 : NULL);
+  shjson_str_add(json, "sender", (char *)exec->GetSendAddr().ToString().c_str());
+  shjson_num_add(json, "value", ((double)exec->GetSendValue() / (double)COIN));
+
+  memset(method, 0, sizeof(method));
+  strncpy(method, (char *)exec->vContext.data(), sizeof(method)-1);
+  strtok(method, " ");
+
+fprintf(stderr, "DEBUG: ProcessExecGenerateTx: SEXE_EXEC_CALL[%s]: %s\n", method, shjson_print(json));
 
   /* execute method */
-  json = shjson_init(NULL);
-  shjson_str_add(json, "version", PACKAGE_STRING); 
-  shjson_str_add(json, "sender", (char *)send_addr.ToString().c_str());
-  err = sexe_exec_pcall(S, "init", json);
+  err = sexe_exec_pcall(S, method, json);
   shjson_free(&json);
   if (err) {
-    error(err, "CExec.SetStack: sexe_exec_pcall");
+
+{
+shjson_t *u_json = NULL;
+err = sexe_exec_pget(S, "userdata", &u_json);
+if (err) {
+  error(err, "CExec.SetStack: error obtaining user-data.");
+} else {
+  fprintf(stderr, "DEBUG: GEN-EXEC: USRDATA: \"%s\"\n", shjson_print(u_json));
+  shjson_free(&u_json);
+}
+}
+
+    error(err, "CExec.SetStack: %d = sexe_exec_pcall('%s')", err, method);
     return (false);
   }
 
-  /* persistent user data */
-  u_json = NULL;
-  err = sexe_exec_pget(S, "arg", &u_json);
-  if (err) {
-    return error(err, "CExec.SetStack: error obtaining user-data.");
-  }
-fprintf(stderr, "DEBUG: EXEC: USRDATA: \"%s\"\n", shjson_print(u_json));
-  shjson_free(&u_json);
 
-  def_json = NULL;
-  err = sexe_exec_pgetdef(S, "arg", &def_json);
   sexe_exec_pclose(S);
-  if (err) {
-    return error(err, "CExec.SetStack: error obtaining user-data.");
-  }
-fprintf(stderr, "DEBUG: EXEC: DEFDATA: \"%s\"\n", shjson_print(def_json));
-
-  str = shjson_print(def_json);
-  shjson_free(&def_json);
-  if (!str)
-    return error(SHERR_INVAL, "CExec.SetStack: error parsing json");
-  SetStack(cbuff(str, str + strlen(str)));
-  free(str);
-
-  return (true);
-}
-
-int ProcessExecActivateTx(CIface *iface, CExec *execIn, CExec *exec)
-{
-  CWallet *wallet = GetWallet(iface);
-  int ifaceIndex = GetCoinIndex(iface);
-
-  /* establish coin addr */
-  string strAccount;
-  CCoinAddr addr = exec->GetCoinAddr();
-  if (!GetCoinAddr(wallet, addr, strAccount))
-    return (SHERR_NOENT);
-
-  /* establish ext coin addr */
-  string strExtAccount;
-  CCoinAddr extAddr = exec->GetExecAddr();
-  if (!GetCoinAddr(wallet, addr, strExtAccount))
-    return (SHERR_INVAL);
-
-  /* load sexe code */
-// exec->LoadData();
-
-  /* verify sig */
-  if (!exec->VerifyContext())
-    return (SHERR_ACCESS);
-
-  /* prepare user-data */
-
-  /* execute */
 
   /* post tx commit */
-
-/* push back data to pool, temporary alloc */
 
   return (0);
 }
 
+/* @todo make extern in header */
 int ProcessExecTx(CIface *iface, CNode *pfrom, CTransaction& tx)
 {
+  CWallet *wallet = GetWallet(iface);
   int ifaceIndex = GetCoinIndex(iface);
   CExec& exec = (CExec&)tx.certificate;
   uint160 hExec = exec.GetIdentHash();
@@ -559,58 +749,164 @@ int ProcessExecTx(CIface *iface, CNode *pfrom, CTransaction& tx)
   CKeyID key;
   int err;
 
+
   /* validate */
   int tx_mode;
-  if (!VerifyExec(tx, tx_mode))
+  if (!VerifyExec(tx, tx_mode)) {
+    error(SHERR_INVAL, "ProcessExecTx: error verifying exec tx.");
     return (SHERR_INVAL);
+  }
 
 /* .. metric .. */
 
-  if (tx_mode == OP_EXT_ACTIVATE ||
-      tx_mode == OP_EXT_UPDATE) {
+  if (tx_mode == OP_EXT_UPDATE ||
+      tx_mode == OP_EXT_ACTIVATE ||
+      tx_mode == OP_EXT_TRANSFER) {
     /* only applies to local server */
     if (!IsLocalExec(iface, tx))
       return (SHERR_REMOTE);
   }
 
-  /* obtain 'primary' exec tx */
-  CTransaction txIn;
-  if (!GetTxOfExec(iface, hExec, txIn))
-    return (SHERR_NOENT);
-  CExec& execIn = (CExec&)txIn.certificate;
+  if (wallet->mapExec.count(hExec) == 0) {
+    if (tx_mode != OP_EXT_NEW)
+      return (SHERR_NOENT);
+  } else {
+    /* obtain 'primary' exec tx */
+    CTransaction txIn;
+    if (!GetTxOfExec(iface, hExec, txIn)) {
+      error(SHERR_NOENT, "ProcessExecTx: exec '%s' not registered.", hExec.GetHex().c_str());
+      return (SHERR_NOENT);
+    }
+    CExec& execIn = (CExec&)txIn.certificate;
 
-  execIn.GetCoinAddr().GetKeyID(inkey);
-  exec.GetCoinAddr().GetKeyID(key);
-  if (inkey != key)
-    return (SHERR_INVAL);
+    if (tx_mode != OP_EXT_NEW &&
+        tx_mode != OP_EXT_UPDATE) {
+      execIn.GetExecAddr().GetKeyID(inkey);
+      exec.GetExecAddr().GetKeyID(key);
+      if (inkey != key) {
+        error(SHERR_INVAL, "ProcessExecTx: exec coin addr mismatch.");
+        return (SHERR_INVAL);
+      }
+    }
 
-  if (tx_mode != OP_EXT_UPDATE) {
-    execIn.GetExecAddr().GetKeyID(inkey);
-    exec.GetExecAddr().GetKeyID(key);
-    if (execIn != exec)
-      return (SHERR_INVAL);
-  } 
+    if (tx_mode == OP_EXT_GENERATE) {
+      CExecCall& call = (CExecCall&)tx.certificate;
+      err = ProcessExecGenerateTx(iface, &execIn, &call);
+      if (err)
+        return (err);
+    }
 
-  if (tx_mode == OP_EXT_ACTIVATE) {
-    err = ProcessExecActivateTx(iface, &execIn, &exec);
-    if (err)
-      return (err);
+#if 0
+    if (tx_mode == OP_EXT_REMOVE) {
+      ClearExecPoolData(exec.indexPool);
+    }
+#endif
   }
 
   if (tx_mode == OP_EXT_NEW || 
-      tx_mode == OP_EXT_UPDATE) {
+      tx_mode == OP_EXT_ACTIVATE ||
+      tx_mode == OP_EXT_UPDATE ||
+      tx_mode == OP_EXT_TRANSFER) {
     /* [re]insert into ExecTable */
+    exec.SetActive(true);
+    wallet->mapExec[hExec] = tx;
   } else if (tx_mode == OP_EXT_REMOVE) {
     /* remove from ExecTable */
+    exec.SetActive(false);
+    wallet->mapExec.erase(hExec);
   }
 
   return (0);
+}
+
+bool CExec::VerifyStack()
+{
+  return (true);
+}
+
+bool CExec::LoadPersistentData(cbuff& data)
+{
+  SHFL *fl;
+  shfs_t *fs;
+  char path[PATH_MAX+1];
+  shbuf_t *buff;
+  int err;
+
+  sprintf(path, "/exec/%s.sx", GetIdentHash().GetHex().c_str());
+  fs = shfs_init(shcoind_peer());
+  fl = shfs_file_find(fs, path);
+
+  buff = shbuf_init();
+  err = shfs_read(fl, buff);
+  shfs_free(&fs);
+  if (err) {
+    shbuf_free(&buff);
+    return (error(err, "CExec.LoadPersistentData: error loading bytecode '%s'.", path));
+  }
+  if (shbuf_size(buff) == 0) {
+    shbuf_free(&buff);
+    return (SHERR_INVAL);
+  }
+
+  unsigned char *raw = shbuf_data(buff);
+  unsigned int raw_len = shbuf_size(buff);
+  data = cbuff(raw, raw + raw_len);
+  shbuf_free(&buff);
+
+  return (true);
+}
+
+bool CExec::SavePersistentData(const cbuff& data)
+{
+  SHFL *fl;
+  char path[PATH_MAX+1];
+  shbuf_t *buff;
+  shfs_t *fs;
+  unsigned char *raw;
+  size_t raw_len;
+  int err;
+
+  if (data.size() == 0)
+      return (false);
+
+  buff = shbuf_init();
+  raw = (unsigned char *)data.data();
+  raw_len = (size_t)data.size();
+  shbuf_cat(buff, raw, raw_len);
+
+  sprintf(path, "/exec/%s.sx", GetIdentHash().GetHex().c_str());
+  fs = shfs_init(shcoind_peer());
+  fl = shfs_file_find(fs, path);
+  err = shfs_write(fl, buff);
+  shfs_free(&fs);
+  shbuf_free(&buff);
+  if (err) {
+    return (error(err, "CExec.SavePersistentData: error saving bytecode."));
+  }
+
+  return (true);
+}
+
+bool CExec::RemovePersistentData()
+{
+  return (true);
+}
+
+/* rid of */
+bool CExec::SetAccount(int ifaceIndex, string& strAccount)
+{
+  CWallet *wallet = GetWallet(ifaceIndex);
+
+  strAccount = StripExtAccountName(strAccount);
+//  return (wallet->GetMergedAddress(strAccount, "exec", sendaddr));
+  return (true);
 }
 
 int init_exec_tx(CIface *iface, string strAccount, string strPath, int64 nExecFee, CWalletTx& wtx)
 {
   CWallet *wallet = GetWallet(iface);
   int ifaceIndex = GetCoinIndex(iface);
+  CExec *exec;
 
   int64 nFee = GetExecOpFee(iface, GetBestHeight(iface));
   int64 bal = GetAccountBalance(ifaceIndex, strAccount, 1);
@@ -619,29 +915,43 @@ fprintf(stderr, "DEBUG: init_exec_tx: insufficient balance (%llu) .. %llu requir
     return (SHERR_AGAIN);
   }
 
-  CExec *exec;
+  CCoinAddr sendAddr;
+  if (!wallet->GetMergedAddress(strAccount, "exec", sendAddr)) {
+    error(SHERR_INVAL, "init_exec_tx: error generating merged address.");
+    return (false);
+  }
+
   string strExtAccount = "@" + strAccount;
   CCoinAddr extAddr = GetAccountAddress(wallet, strExtAccount, true);
 
-  /* embed exec content into transaction */
   wtx.SetNull();
-  exec = wtx.CreateExec();
-  exec->vAddr = cbuff(vchFromString(extAddr.ToString()));
-  exec->SetFee(MAX(iface->min_tx_fee, nExecFee));
   wtx.strFromAccount = strAccount; /* originating account for payment */
 
-  if (!exec->LoadData(strPath))
-    return (SHERR_INVAL);
-fprintf(stderr, "DEBUG: EXECTX: LOAD: \"%s\"\n", strPath.c_str());
+  /* embed exec content into transaction */
+  exec = wtx.CreateExec();
+//  exec->SetAccount(ifaceIndex, strAccount);
+  exec->SetFee(MAX(iface->min_tx_fee, nExecFee));
 
+cbuff data;
+  if (!exec->LoadData(strPath, data)) {
+    error(SHERR_INVAL, "init_exec_tx: error loading sexe bytecode.");
+    return (SHERR_NOENT);
+  }
 
-  if (!exec->SetStack()) {
+  if (!exec->SetStack(data, sendAddr)) {
+    error(SHERR_INVAL, "init_exec_tx: error initializing sexe bytecode.");
     return (SHERR_INVAL);
   }
-if (exec->GetStack().size() != 0) fprintf(stderr, "DEBUG: EXECTX: STACK: \"%s\"\n", exec->GetStack().data());
-else fprintf(stderr, "DEBUG: EXECTX: STACK: <empty>\n");
 
-  exec->SignContext();
+  if (!exec->Sign(ifaceIndex, extAddr)) {
+    error(SHERR_INVAL, "init_exec_tx: error signing sexe bytecode.");
+    return (SHERR_INVAL);
+  }
+
+  /* after "IdentHash" has been established. */
+  if (!exec->SavePersistentData(data))
+    return (SHERR_IO);
+
 
   /* send to extended tx storage account */
   CScript scriptPubKeyOrig;
@@ -654,15 +964,23 @@ else fprintf(stderr, "DEBUG: EXECTX: STACK: <empty>\n");
   // send transaction
   string strError = wallet->SendMoney(scriptPubKey, nFee, wtx, false);
   if (strError != "") {
-    error(ifaceIndex, strError.c_str());
+    error(ifaceIndex, "init_exec_tx: %s", strError.c_str());
     return (SHERR_INVAL);
   }
 
-  /* identify tx using hash that does not take into account context */
-  uint160 execHash = exec->GetIdentHash();
-  uint256 txHash = wtx.GetHash();
-  Debug("SENT:EXECNEW : title=%s, exechash=%s, tx=%s\n", exec->GetLabel().c_str(), execHash.ToString().c_str(), txHash.GetHex().c_str());
-  wallet->mapExec[execHash] = wtx;
+
+#if 0
+  /* temporary allocation. */
+  ClearExecPoolData(exec->indexPool);
+#endif
+
+  uint160 hExec = exec->GetHash();
+#if 0
+  /* stow away to retain pool index of data allocated */
+  wallet->mapExec[hExec] = wtx;
+#endif
+
+  Debug("SENT:EXECNEW : title=%s, exechash=%s, tx=%s\n", exec->GetLabel().c_str(), hExec.GetHex().c_str(), wtx.GetHash().GetHex().c_str());
 
   return (0);
 }
@@ -691,18 +1009,15 @@ fprintf(stderr, "DEBUG: update_exec_tx: !IsLocalExec\n");
     return (SHERR_REMOTE);
 }
 
-  /* establish account */
   CExec& execIn = (CExec&)tx.certificate;
 
-  string strAccount;
-  CCoinAddr addr = execIn.GetCoinAddr();
-  if (!GetCoinAddr(wallet, addr, strAccount))
+  /* establish account */
+  string strExtAccount;
+  CCoinAddr extAddr = execIn.GetExecAddr();
+  if (!GetCoinAddr(wallet, extAddr, strExtAccount))
     return (SHERR_NOENT);
 
-  CCoinAddr extAddr = execIn.GetExecAddr();
-  if (!extAddr.IsValid())
-    return (SHERR_INVAL);
-
+  string strAccount = StripExtAccountName(strExtAccount);
   int64 nNetFee = GetExecOpFee(iface, GetBestHeight(iface));
   int64 bal = GetAccountBalance(ifaceIndex, strAccount, 1);
   if (bal < nNetFee) {
@@ -717,21 +1032,30 @@ fprintf(stderr, "DEBUG: update_exec_tx: !IsLocalExec\n");
 
   exec = wtx.UpdateExec(execIn);
 
+  /* establish 'sender' coin addr */
+  CCoinAddr sendAddr;
+  if (!wallet->GetMergedAddress(strAccount, "exec", sendAddr))
+    return (SHERR_INVAL);
+
   /* generate new ext addr */
-  string strExtAccount = "@" + strAccount;
   extAddr = GetAccountAddress(wallet, strExtAccount, true);
-  exec->SetExecAddr(extAddr);
 
   /* load new sexe code */
-  if (!exec->LoadData(strPath))
+  cbuff data;
+  if (!exec->LoadData(strPath, data))
     return (SHERR_INVAL);
 
   /* initialize code */
-  if (!exec->SetStack())
+  if (!exec->SetStack(data, sendAddr))
     return (SHERR_INVAL);
 
   /* sign code */
-  exec->SignContext();
+  if (!exec->Sign(ifaceIndex, extAddr))
+    return (SHERR_NOKEY);
+
+  /* after "IdentHash" has been established. */
+  if (!exec->SavePersistentData(data))
+    return (SHERR_IO);
 
 
   CWalletTx& wtxIn = wallet->mapWallet[wtxInHash];
@@ -749,13 +1073,13 @@ fprintf(stderr, "DEBUG: update_exec_tx: !IsLocalExec\n");
   }
 
   uint160 execHash = exec->GetIdentHash();
-  wallet->mapExec[execHash] = wtx;
+//  wallet->mapExec[execHash] = wtx;
   Debug("SENT:EXECUPDATE : title=%s, exechash=%s, tx=%s\n", exec->GetLabel().c_str(), execHash.ToString().c_str(), wtx.GetHash().GetHex().c_str());
 
 	return (0);
 }
 
-int activate_exec_tx(CIface *iface, string strAccount, uint160 hExec, string strFunc, CWalletTx& wtx)
+int generate_exec_tx(CIface *iface, string strAccount, uint160 hExec, string strFunc, CWalletTx& wtx)
 {
   CWallet *wallet = GetWallet(iface);
   int ifaceIndex = GetCoinIndex(iface);
@@ -768,126 +1092,104 @@ int activate_exec_tx(CIface *iface, string strAccount, uint160 hExec, string str
   CExec& execIn = (CExec&)tx.certificate;
 
   /* ensure sufficient funds are available to invoke call */
-  int64 nFee = execIn.GetFee();
+  int64 nFee = MAX(iface->min_tx_fee, execIn.GetFee() - iface->min_tx_fee);
   int64 bal = GetAccountBalance(ifaceIndex, strAccount, 1);
-  if (bal < nFee) {
-fprintf(stderr, "DEBUG: activate_exec_tx: insufficient balance (%llu) .. %llu required\n", bal, nFee);
+  if (bal < (nFee + (int64)iface->min_tx_fee)) {
+fprintf(stderr, "DEBUG: generate_exec_tx: insufficient balance (%llu) .. %llu required\n", bal, nFee);
     return (SHERR_AGAIN);
   }
 
   /* define "sender" address. */
-  CCoinAddr sendAddr = GetAccountAddress(wallet, strAccount, false);
-  if (!sendAddr.IsValid())
-    return (false);
+  CCoinAddr sendAddr;
+  if (!wallet->GetMergedAddress(strAccount, "exec", sendAddr)) {
+    error(SHERR_INVAL, "generate_exec_tx: invalid sender exec coin addr."); 
+    return (SHERR_INVAL);
+  }
 
   /* define "execution" address. */
   CCoinAddr recvAddr = execIn.GetExecAddr();
-  if (!recvAddr.IsValid())
-    return (false);
+  if (!recvAddr.IsValid()) {
+    error(SHERR_INVAL, "generate_exec_tx: invalid receive exec coin addr: \"%s\".", execIn.vAddr.data());
+    return (SHERR_INVAL);
+  }
 
   /* init tx */
   wtx.SetNull();
   wtx.strFromAccount = strAccount; /* originating account for payment */
-  CExec *exec = wtx.ActivateExec(execIn);
+  CExecCall *exec = wtx.GenerateExec(execIn, sendAddr);
 
   /* set "stack" */
-  sprintf(buf, "%s {\"sender\":\"%s\",\"value\":%s}", strFunc.c_str(), sendAddr.ToString().c_str(), ((double)nFee / (double)COIN));  
-  exec->SetStack(cbuff(buf, buf + strlen(buf)));
-
-  /* send to extended tx storage account */
-  CScript scriptPubKeyOrig;
-  scriptPubKeyOrig.SetDestination(execIn.GetExecAddr().Get());
-
-  CScript scriptPubKey;
-  scriptPubKey << OP_EXT_ACTIVATE << CScript::EncodeOP_N(OP_EXEC) << OP_HASH160 << exec->GetHash() << OP_2DROP;
-  scriptPubKey += scriptPubKeyOrig;
-
-  // send transaction
-  string strError = wallet->SendMoney(scriptPubKey, nFee, wtx, false);
-  if (strError != "") {
-    error(ifaceIndex, strError.c_str());
+  memset(buf, 0, sizeof(buf));
+  sprintf(buf, "%s {\"sender\":\"%s\",\"value\":%-8.8f}", strFunc.c_str(), sendAddr.ToString().c_str(), ((double)nFee / (double)COIN));
+  cbuff sbuff(buf, buf + strlen(buf));
+  if (!exec->SetStack(sbuff)) {
     return (SHERR_INVAL);
   }
 
-  /* identify tx using hash that does not take into account context */
-  uint160 execHash = exec->GetIdentHash();
-  uint256 txHash = wtx.GetHash();
-  Debug("SENT:EXECNEW : title=%s, exechash=%s, tx=%s\n", exec->GetLabel().c_str(), execHash.ToString().c_str(), txHash.GetHex().c_str());
-  wallet->mapExec[execHash] = wtx;
+  /* sign "sender" addr */
+  if (!exec->Sign(ifaceIndex, sendAddr))
+    return (SHERR_NOKEY);
 
-  return (0);
-}
+  CScript scriptPubKey;
+  scriptPubKey << OP_EXT_GENERATE << CScript::EncodeOP_N(OP_EXEC) << OP_HASH160 << exec->GetHash() << OP_2DROP << OP_RETURN;
+
+  /* send to extended tx storage account as non-ext tx output */
+  CScript scriptPubKeyDest;
+  scriptPubKeyDest.SetDestination(execIn.GetExecAddr().Get());
+
+  vector<pair<CScript, int64> > vecSend;
+  vecSend.push_back(make_pair(scriptPubKey, (int64)iface->min_tx_fee));
+  vecSend.push_back(make_pair(scriptPubKeyDest, nFee));
+
+  // send transaction
+  int64 nFeeRet = 0;
+  CReserveKey rkey(wallet);
+  if (!wallet->CreateTransaction(vecSend, wtx, rkey, nFeeRet))
+    return (SHERR_CANCELED);
+//const std::vector<std::pair<CScript, int64> >& vecSend, CWalletTx& wtxNew, CReserveKey& reservekey, int64& nFeeRet))
+
+  if (!wallet->CommitTransaction(wtx, rkey))
+    return (SHERR_CANCELED);
 
 #if 0
-int activate_exec_tx(CIface *iface, string strAccount, string strPath, CWalletTx& wtx)
-{
-  CWallet *wallet = GetWallet(iface);
-  int ifaceIndex = GetCoinIndex(iface);
-
-  int64 nFee = GetExecOpFee(iface, GetBestHeight(iface));
-  int64 bal = GetAccountBalance(ifaceIndex, strAccount, 1);
-  if (bal < nFee) {
-fprintf(stderr, "DEBUG: init_exec_tx: insufficient balance (%llu) .. %llu required\n", bal, nFee);
-    return (SHERR_AGAIN);
-  }
-
-  CExec *exec;
-  string strExtAccount = "@" + strAccount;
-  CCoinAddr extAddr = GetAccountAddress(wallet, strExtAccount, true);
-
-  /* embed exec content into transaction */
-  wtx.SetNull();
-  exec = wtx.CreateExec();
-  exec->vAddr = cbuff(vchFromString(extAddr.ToString()));
-  wtx.strFromAccount = strAccount; /* originating account for payment */
-
-  if (!exec->LoadData(strPath))
-    return (SHERR_INVAL);
-fprintf(stderr, "DEBUG: EXECTX: LOAD: \"%s\"\n", strPath.c_str());
-
-
-  if (!exec->SetStack()) {
-    return (SHERR_INVAL);
-  }
-if (exec->GetStack().size() != 0) fprintf(stderr, "DEBUG: EXECTX: STACK: \"%s\"\n", exec->GetStack().data());
-else fprintf(stderr, "DEBUG: EXECTX: STACK: <empty>\n");
-
-  exec->SignContext();
-
-  /* send to extended tx storage account */
-  CScript scriptPubKeyOrig;
-  scriptPubKeyOrig.SetDestination(extAddr.Get());
-
-  CScript scriptPubKey;
-  scriptPubKey << OP_EXT_NEW << CScript::EncodeOP_N(OP_EXEC) << OP_HASH160 << exec->GetHash() << OP_2DROP;
-  scriptPubKey += scriptPubKeyOrig;
-
-  // send transaction
   string strError = wallet->SendMoney(scriptPubKey, nFee, wtx, false);
   if (strError != "") {
     error(ifaceIndex, strError.c_str());
     return (SHERR_INVAL);
   }
+#endif
 
   /* identify tx using hash that does not take into account context */
   uint160 execHash = exec->GetIdentHash();
   uint256 txHash = wtx.GetHash();
-  Debug("SENT:EXECNEW : title=%s, exechash=%s, tx=%s\n", exec->GetLabel().c_str(), execHash.ToString().c_str(), txHash.GetHex().c_str());
-  wallet->mapExec[execHash] = wtx.GetHash();
+  Debug("SENT:EXECGENERATE : title=%s, exechash=%s, tx=%s\n", exec->GetLabel().c_str(), execHash.ToString().c_str(), txHash.GetHex().c_str());
+//  wallet->mapExec[execHash] = wtx;
 
   return (0);
 }
-#endif
+
+/**
+ * Certify an application.
+ */
+int activate_exec_tx(CIface *iface, uint160 hExec, string hCert, CWalletTx& wtx)
+{
+  return (SHERR_OPNOTSUPP);
+}
+
+int transfer_exec_tx(CIface *iface, uint160 hExec, string strAccount, CWalletTx& wtx)
+{
+  return (SHERR_OPNOTSUPP);
+}
 
 
 /**
  * Removes a pre-existing exec on the block-chain. 
- * @param hashExec The exec hash from it's last tx op.
+ * @param hashExec The exec ident hash from it's initial tx op.
  * @param strAccount The account that has ownership over the exec.
  * @param wtx The new transaction to be filled in.
  * @note The previous exec tx fee is returned to the account, and the current fee is burned.
  */
-int remove_exec_tx(CIface *iface, string strAccount, const uint160& hashExec, CWalletTx& wtx)
+int remove_exec_tx(CIface *iface, const uint160& hashExec, CWalletTx& wtx)
 {
   int ifaceIndex = GetCoinIndex(iface);
   CWallet *wallet = GetWallet(iface);
@@ -898,61 +1200,81 @@ int remove_exec_tx(CIface *iface, string strAccount, const uint160& hashExec, CW
     fprintf(stderr, "DEBUG: update_exec_tx: !GetTxOfExec\n");
     return (SHERR_NOENT);
   }
+
   if(!IsLocalExec(iface, tx)) {
     fprintf(stderr, "DEBUG: update_exec_tx: !IsLocalExec\n");
     return (SHERR_REMOTE);
   }
 
-  /* establish original tx */
-  uint256 wtxInHash = tx.GetHash();
-  if (wallet->mapWallet.count(wtxInHash) == 0) {
-    return (SHERR_REMOTE);
-  }
-
-  /* establish account */
-  CCoinAddr addr;
-
-  addr = GetAccountAddress(wallet, strAccount, false);
-  if (!addr.IsValid()) {
-    fprintf(stderr, "DEBUG: update_exec_tx: !addr.IsValid\n");
+  /* establish user account */
+  string strExtAccount;
+  CExec& execIn = (CExec&)tx.certificate;
+  CCoinAddr extAddr = execIn.GetExecAddr();
+  if (!GetCoinAddr(wallet, extAddr, strExtAccount))
     return (SHERR_NOENT);
-  }
 
-  /* generate tx */
-  CExec *exec;
-	CScript scriptPubKey;
-  wtx.SetNull();
-  exec = wtx.RemoveExec(CExec(tx.certificate));
-  uint160 execHash = exec->GetHash();
-
-  vector<pair<CScript, int64> > vecSend;
-  CWalletTx& wtxIn = wallet->mapWallet[wtxInHash];
-
-  /* generate output script */
-	CScript scriptPubKeyOrig;
-  scriptPubKeyOrig.SetDestination(addr.Get()); /* back to origin */
-	scriptPubKey << OP_EXT_REMOVE << CScript::EncodeOP_N(OP_EXEC) << OP_HASH160 << execHash << OP_2DROP;
-  scriptPubKey += scriptPubKeyOrig;
-
+  string strAccount = StripExtAccountName(strExtAccount);
   int64 nNetFee = GetExecOpFee(iface, GetBestHeight(iface));
   int64 bal = GetAccountBalance(ifaceIndex, strAccount, 1);
   if (bal < nNetFee) {
     return (SHERR_AGAIN);
   }
-  if (nNetFee) { /* supplemental tx payment */
-    CScript scriptFee;
-    scriptFee << OP_EXT_REMOVE << CScript::EncodeOP_N(OP_EXEC) << OP_HASH160 << execHash << OP_2DROP << OP_RETURN;
-    vecSend.push_back(make_pair(scriptFee, nNetFee));
+
+  /* establish user address. */
+  CCoinAddr recvAddr;
+  if (!wallet->GetMergedAddress(strAccount, "exec", recvAddr)) {
+    error(SHERR_NOENT, "remove_exec_tx: error obtaining user coin address.");
+    return (SHERR_NOENT);
   }
 
-  if (!SendMoneyWithExtTx(iface, wtxIn, wtx, scriptPubKey, vecSend)) {
-fprintf(stderr, "DEBUG: update_exec_tx: !SendMoneyWithExtTx\n"); 
-    return (SHERR_INVAL);
-}
+  /* generate tx */
+  CExec *exec;
+  wtx.SetNull();
+  exec = wtx.RemoveExec(CExec(tx.certificate));
 
-  wallet->mapExec[execHash] = wtx;
+	CScript scriptPubKeyDest;
+  scriptPubKeyDest.SetDestination(recvAddr.Get()); /* back to origin */
+
+	CScript scriptExt;
+  uint160 execHash = exec->GetHash();
+	scriptExt << OP_EXT_REMOVE << CScript::EncodeOP_N(OP_EXEC) << OP_HASH160 << execHash << OP_2DROP << OP_RETURN;
+
+  vector<pair<CScript, int64> > vecSend;
+  uint256 wtxInHash = tx.GetHash();
+  CWalletTx& wtxIn = wallet->mapWallet[wtxInHash];
+  vecSend.push_back(make_pair(scriptExt, (int64)iface->min_tx_fee));
+  if (!SendRemitMoneyTx(iface, extAddr, &wtxIn, wtx, vecSend, scriptPubKeyDest)) {
+    return (SHERR_CANCELED);
+  }
 
 	return (0);
 }
 
+
+bool CExecCall::Sign(int ifaceIndex, CCoinAddr& addr)
+{
+
+  if (!signature.SignAddress(ifaceIndex, addr, vContext.data(), vContext.size())) {
+    return (false);
+  }
+
+  CKeyID k;
+  if (!addr.GetKeyID(k))
+    return (false);
+
+  hashIssuer = k;
+  return (true);
+}
+
+bool CExecCall::VerifySignature()
+{
+  CCoinAddr addr;
+
+  addr.Set(CKeyID(hashIssuer));
+  if (!signature.VerifyAddress(addr, vContext.data(), vContext.size())) {
+    return (false);
+  }
+
+  return (true);
+}
 
