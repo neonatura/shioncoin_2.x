@@ -360,7 +360,6 @@ void SetSpentChannel(int ifaceIndex, const uint160& hChan, const CTransaction& t
   channel_list *channels = GetChannelSpentTable(ifaceIndex);
   if (channels) {
     (*channels)[hChan] = tx;
-fprintf(stderr, "DEBUG: validate_channel_tx: wallet->mapChannelSpent[%s] = *txCommit\n", hChan.GetHex().c_str()); 
   }
 }
 
@@ -902,8 +901,6 @@ fprintf(stderr, "DEBUG: GetOpenChannel: failure opening hChan '%s'\n", hChan.Get
 		return (SHERR_NOENT);
 }
 
-fprintf(stderr, "DEBUG: pay_channel_tx: txIn: %s\n", txIn.ToString().c_str());
-
   CChannel& chanIn = txIn.channel;
 
   string strChanAccount;
@@ -966,7 +963,7 @@ return (SHERR_INVAL);
 
   if (isOrigin) {
     if (nValue > channel->GetOriginValue()) {
-fprintf(stderr, "DEBUG: pay_channel_tx: (isOrigin) nValue(%lld) < channel->origin-value(%lld)\n", nValue, channel->GetOriginValue());
+//fprintf(stderr, "DEBUG: pay_channel_tx: (isOrigin) nValue(%lld) < channel->origin-value(%lld)\n", nValue, channel->GetOriginValue());
       return (SHERR_AGAIN);
 }
     channel->SetOriginValue(channel->GetOriginValue() - nValue);
@@ -978,7 +975,7 @@ fprintf(stderr, "DEBUG: pay_channel_tx: (isOrigin) nValue(%lld) < channel->origi
 #endif
   } else {
     if (nValue > channel->GetPeerValue()) {
-fprintf(stderr, "DEBUG: pay_channel_tx: (isOrigin) nValue(%lld) < channel->peer-value(%lld)\n", nValue, channel->GetPeerValue());
+//fprintf(stderr, "DEBUG: pay_channel_tx: (isOrigin) nValue(%lld) < channel->peer-value(%lld)\n", nValue, channel->GetPeerValue());
       return (SHERR_AGAIN);
 }
     channel->SetPeerValue(channel->GetPeerValue() - nValue);
@@ -1024,17 +1021,6 @@ fprintf(stderr, "DEBUG: pay_channel_tx: (isOrigin) nValue(%lld) < channel->peer-
   scriptExt << OP_EXT_PAY << CScript::EncodeOP_N(OP_CHANNEL) << OP_HASH160 << hChan << OP_2DROP << OP_RETURN;
 	wtx.vout.push_back(CTxOut(iface->min_tx_fee, scriptExt)); 
 
-
-#if 0
-  /* half-sign input */
-fprintf(stderr, "DEBUG: TEST: pay/sign: txIn.vout.size() = %d\n", txIn.vout.size());
-fprintf(stderr, "DEBUG: TEST: pay/sign: wtx.vin.size() = %d\n", wtx.vin.size());
-fprintf(stderr, "DEBUG: TEST: pay/sign: wtx.vin[0].prevout.n = %d\n", wtx.vin[0].prevout.n);
-  if (!SignSignature(*wallet, txIn, wtx, 0)) {
-error(SHERR_INVAL, "pay_channel_txt: !SignSignature");
-    return (SHERR_INVAL);
-}
-#endif
  
   // relay half-signed transaction
 	uint256 tx_hash = wtx.GetHash();
@@ -1093,8 +1079,6 @@ int validate_channel_tx(CIface *iface, CTransaction *txCommit, CWalletTx& wtx)
   nOut = IndexOfExtOutput(txIn);
   if (nOut == -1)
     return error(SHERR_INVAL, "validate_channel_tx: no channel output.");
-
-  fprintf(stderr, "DEBUG: validate_channel_tx: txCommit: %s\n", txCommit->ToString().c_str());
 
   /* first output shall be direct remitance to us */
   CTxDestination dest;
@@ -1167,7 +1151,6 @@ int validate_channel_tx(CIface *iface, CTransaction *txCommit, CWalletTx& wtx)
   /* define sequence number. */
   channel->nSeq = txCommit->channel.nSeq;
 
-  fprintf(stderr, "DEBUG: validate_channel_tx: channel: %s\n", channel->ToString().c_str()); 
   //if (!channel->VerifyPubKey()) {
   if (!txCommit->channel.VerifyPubKey()) {
     error(SHERR_INVAL, "validate_channel_tx: failure verifying pubkey.");
@@ -1242,8 +1225,6 @@ int generate_channel_tx(CIface *iface, uint160 hChan, CWalletTx& wtx)
   bool isOrigin;
   int nOut;
 
-  fprintf(stderr, "DEBUG: generate_channel_tx: hChan '%s'\n", hChan.GetHex().c_str());
-
   if (ifaceIndex != TEST_COIN_IFACE && ifaceIndex != SHC_COIN_IFACE)
     return (SHERR_OPNOTSUPP);
 
@@ -1307,7 +1288,6 @@ int generate_channel_tx(CIface *iface, uint160 hChan, CWalletTx& wtx)
 
   wtx.SetNull();
   channel = wtx.GenerateChannel(txSpentIn.channel);
-  fprintf(stderr, "DEBUG: generate_channel_tx: wtx.GenerateChannel(): success\n"); 
 
   if (channel->nSeq != txSpentIn.vin[0].nSequence)
     return (SHERR_ILSEQ);

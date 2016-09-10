@@ -188,8 +188,6 @@ class CExtCore
     cbuff vchLabel;
 //    CSign signature;
 
-    mutable bool fActive;
-
     CExtCore() {
       SetNull();
     }
@@ -211,19 +209,6 @@ class CExtCore
       tExpire = shtime_adj(shtime(), SHARE_DEFAULT_EXPIRE_TIME);
       vchLabel.clear();
 //      signature.SetNull();
-      fActive = false;
-    }
-
-    bool IsActive()
-    {
-      if (IsExpired())
-        return (false);
-      return (fActive);
-    }
-
-    void SetActive(bool active) /* not persistent */
-    {
-      fActive = active;
     }
 
     time_t GetExpireTime()
@@ -254,7 +239,6 @@ class CExtCore
       tExpire = b.tExpire;
       vchLabel = b.vchLabel;
 //      signature = b.signature;
-      fActive = b.fActive;
     }
 
     friend bool operator==(const CExtCore &a, const CExtCore &b)
@@ -279,18 +263,6 @@ class CExtCore
     std::string GetLabel()
     {
       return (stringFromVch(vchLabel)); 
-    }
-
-    void HandleState(int mode)
-    {
-      switch (mode) {
-        case OP_EXT_ACTIVATE:
-          SetActive(true);
-          break;
-        case OP_EXT_REMOVE:
-          SetActive(false);
-          break;
-      }
     }
 
     std::string ToString();

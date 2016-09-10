@@ -406,13 +406,6 @@ Object CExec::ToValue()
 
   obj.push_back(Pair("signature", signature.GetHash().GetHex()));
 
-#if 0
-/* DEBUG: */
-obj.push_back(Pair("sig_pubkey", stringFromVch(signature.vPubKey).c_str()));
-obj.push_back(Pair("sig_addrkey", stringFromVch(signature.vAddrKey).c_str()));
-if (signature.vSig.size() > 0) obj.push_back(Pair("vsig0", stringFromVch(signature.vSig[0]).c_str()));
-#endif
-
   obj.push_back(Pair("app", GetIdentHash().GetHex()));
   obj.push_back(Pair("hash", GetHash().GetHex()));
   return (obj);
@@ -703,7 +696,6 @@ int ProcessExecGenerateTx(CIface *iface, CExec *execIn, CExecCall *exec)
   }
 
 
-/* DEBUG: */
   switch (ifaceIndex) {
     case TEST_COIN_IFACE:
       lua_pushcfunction(S, _sexe_test_tx_commit);
@@ -734,7 +726,7 @@ int ProcessExecGenerateTx(CIface *iface, CExec *execIn, CExecCall *exec)
   strncpy(method, (char *)exec->vContext.data(), sizeof(method)-1);
   strtok(method, " ");
 
-fprintf(stderr, "DEBUG: ProcessExecGenerateTx: SEXE_EXEC_CALL[%s]: %s\n", method, shjson_print(json));
+//fprintf(stderr, "DEBUG: ProcessExecGenerateTx: SEXE_EXEC_CALL[%s]: %s\n", method, shjson_print(json));
 
   /* execute method */
   err = sexe_exec_pcall(S, method, json);
@@ -742,6 +734,7 @@ fprintf(stderr, "DEBUG: ProcessExecGenerateTx: SEXE_EXEC_CALL[%s]: %s\n", method
   if (err) {
 fprintf(stderr, "DEBUG: ProcessExecGenerateTx: %d = sexe_exec_pcall('%s')\n", err, method);
 
+#if 0
 {
 shjson_t *u_json = NULL;
 err = sexe_exec_pget(S, "userdata", &u_json);
@@ -752,6 +745,7 @@ if (err) {
   shjson_free(&u_json);
 }
 }
+#endif
 
     sexe_exec_pclose(S);
     return (false);
@@ -776,10 +770,8 @@ if (err) {
 
     if (!wallet->CommitTransaction(wtx, rkey))
       return (SHERR_CANCELED);
-fprintf(stderr, "DEBUG: ProcessExecGenerateTx: COMMIT: %s\n", wtx.ToString().c_str()); 
+//fprintf(stderr, "DEBUG: ProcessExecGenerateTx: COMMIT: %s\n", wtx.ToString().c_str()); 
   }
-
-fprintf(stderr, "DEBUG: ProcessExecGenerateTx: SUCCESS\n");
 
   return (0);
 }
@@ -854,11 +846,9 @@ int ProcessExecTx(CIface *iface, CNode *pfrom, CTransaction& tx)
       tx_mode == OP_EXT_UPDATE ||
       tx_mode == OP_EXT_TRANSFER) {
     /* [re]insert into ExecTable */
-    exec.SetActive(true);
     wallet->mapExec[hExec] = tx;
   } else if (tx_mode == OP_EXT_REMOVE) {
     /* remove from ExecTable */
-    exec.SetActive(false);
     wallet->mapExec.erase(hExec);
   }
 

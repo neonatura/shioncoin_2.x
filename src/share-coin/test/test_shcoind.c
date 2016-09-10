@@ -56,7 +56,6 @@ int main(int argc, char *argv[])
   test_shcoind_init();
 
   /* test suits */
-#if 0
   SUITE_ADD_TEST(suite, TEST_bloom_create_insert_key);
   SUITE_ADD_TEST(suite, TEST_bloom_match);
   SUITE_ADD_TEST(suite, TEST_jsonencap);
@@ -72,15 +71,14 @@ int main(int argc, char *argv[])
   SUITE_ADD_TEST(suite, TEST_serializetx);
   SUITE_ADD_TEST(suite, TEST_offertx);
   SUITE_ADD_TEST(suite, TEST_matrixtx);
+  SUITE_ADD_TEST(suite, TEST_hdtx);
   SUITE_ADD_TEST(suite, TEST_signtx);
   SUITE_ADD_TEST(suite, TEST_cointx);
   SUITE_ADD_TEST(suite, TEST_aliastx);
   SUITE_ADD_TEST(suite, TEST_assettx);
   SUITE_ADD_TEST(suite, TEST_certtx);
   SUITE_ADD_TEST(suite, TEST_identtx);
-  SUITE_ADD_TEST(suite, TEST_hdtx);
   SUITE_ADD_TEST(suite, TEST_exectx);
-#endif
   SUITE_ADD_TEST(suite, TEST_channeltx);
 
   CuSuiteRun(suite);

@@ -985,7 +985,7 @@ fprintf(stderr, "DEBUG: TEST: hdtx: mkey = %s\n", mkey.ToString().c_str());
   _TRUE(key.IsValid());
   _TRUE(mpubkey == mkey.GetPubKey());
 
-  for (i = 0; i < 16; i++) { /* mature block */
+  for (i = 0; i < 18; i++) { /* mature block */
     CBlock *block = test_GenerateBlock();
     _TRUEPTR(block);
     _TRUE(ProcessBlock(NULL, block) == true);
@@ -1023,6 +1023,7 @@ _TRUE(wallet->CommitTransaction(wtx, rkey) == true);
     scriptCode << OP_RETURN;
 //    scriptCode.SetDestination(pubkey.GetID());
     CWalletTx wtx;
+    wtx.SetNull();
     wtx.vin.push_back(CTxIn(prevTx.GetHash(), 0));
     wtx.vout.push_back(CTxOut(1, scriptCode));
     _TRUE(SignSignature(*wallet, prevTx, wtx, 0, SIGHASH_HDKEY) == true);  
@@ -1040,6 +1041,8 @@ _TEST(exectx)
   int mode = -1;
   int idx;
   int err;
+
+//_init_exectx_sx();
 
   (void)GetAccountAddress(wallet, strAccount, true);
 
@@ -1082,6 +1085,7 @@ if (err) fprintf(stderr, "DEBUG: %d = generate_exec_tx()\n", err);
     delete block;
   }
 
+//  unlink(strPath.c_str());
 }
 
 

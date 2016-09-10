@@ -691,7 +691,6 @@ bool GetTxOfCert(CIface *iface, const uint160& hash, CTransaction& tx)
     return (false);
 }
 
-  tx.certificate.SetActive(true);
   return (true);
 }
 
@@ -712,7 +711,6 @@ bool GetTxOfIdent(CIface *iface, const uint160& hash, CTransaction& tx)
     return (false);
   }
 
-  tx.certificate.SetActive(true);
   return (true);
 }
 
@@ -942,7 +940,6 @@ int init_ident_donate_tx(CIface *iface, string strAccount, uint64_t nValue, uint
     return (SHERR_INVAL);
 
   uint160 hashIdent = ident->GetHash();
-fprintf(stderr, "DEBUG: init_ident_donate_tx: generated ident: %s\n", ident->ToString().c_str());
 
   /* sent to intermediate account. */
   CReserveKey rkey(wallet);

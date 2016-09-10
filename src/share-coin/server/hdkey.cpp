@@ -167,8 +167,9 @@ bool HDPrivKey::IsValid()
     return error(SHERR_INVAL, "HDPrivKey.IsValid: vchKey.size() != 32");
   }
 
-  if (vchChain.size() != 32) {
-    return error(SHERR_INVAL, "HDPrivKey.IsValid: vchChain.size() != 32");
+  if (vchChain.size() != 0 && vchChain.size() != 32) {
+    error(SHERR_INVAL, "HDPrivKey.IsValid: vchChain.size() = %d", vchChain.size());
+    return (false);
   }
 
   if (!IsValidKey()) {

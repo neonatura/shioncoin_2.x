@@ -558,7 +558,6 @@ int init_offer_tx(CIface *iface, std::string strAccount, int64 srcValue, int des
   wtx.SetNull();
   wtx.strFromAccount = strAccount; /* originating account for payment */
   COffer *offer = wtx.CreateOffer();
-  offer->SetActive(true); /* auto-activate */
 
   string strExtAccount = "@" + strAccount;
   CWallet *altWallet = GetWallet(destIndex);
@@ -711,7 +710,6 @@ fprintf(stderr, "DEBUG: bal(%lu) < nFee(%lu)\nn", (unsigned long)bal, (unsigned 
   wtx.SetNull();
   wtx.strFromAccount = strAccount; /* originating account for payment */
   COfferAccept *accept = wtx.AcceptOffer(offer);
-  accept->SetActive(true); /* auto-activate */
 
   string strExtAccount = "@" + strAccount;
   CWallet *altWallet = GetWallet(destIndex);

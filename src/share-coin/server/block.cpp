@@ -2307,11 +2307,6 @@ CCert *CTransaction::CreateLicense(CCert *cert)
 {
   double lic_span;
 
-  if (!cert->IsActive()) {
-    error(SHERR_INVAL, "CTransaction::CreateLicense: !cert->IsActive");
-    return (NULL);
-  }
-
   if (nFlag & CTransaction::TXF_LICENSE)
     return (NULL);
   

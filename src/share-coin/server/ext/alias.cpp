@@ -2274,7 +2274,6 @@ int init_alias_addr_tx(CIface *iface, const char *title, CCoinAddr& addr, CWalle
   /* embed alias content into transaction */
   wtx.SetNull();
   alias = wtx.CreateAlias(strTitle, key_id);
-  alias->SetActive(true); /* auto-activate */
   wtx.strFromAccount = strAccount; /* originating account for payment */
 
   int64 nFee = GetAliasOpFee(iface, GetBestHeight(iface));
