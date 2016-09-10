@@ -332,24 +332,36 @@ bool GetOpenChannel(int ifaceIndex, uint160 hChan, CTransaction& tx)
   return (true);
 }
 
-bool GetSpentChannel(int ifaceIndex, uint160 hChan, CTransaction& tx)
+bool GetSpentChannel(int ifaceIndex, const uint160& hChan, CTransaction& tx)
 {
   channel_list *channels = GetChannelSpentTable(ifaceIndex);
   bool ret;
 
-  if (channels->count(hChan) == 0)
-    return false; 
+  if (channels->count(hChan) == 0) {
+    return false;
+  }
 
   const CTransaction& txIn = (*channels)[hChan];
-  if (!IsChannelTx(txIn)) 
-    return false;
+  if (!IsChannelTx(txIn)) { 
+    return (error(SHERR_INVAL, "GetSpentChannel: tx is not channel."));
+  }
 
   int nOut = IndexOfExtOutput(txIn);
-  if (nOut == -1)
-    return (false);
+  if (nOut == -1) {
+    return (error(SHERR_INVAL, "GetSpentChannel: no ext output index"));
+  }
 
   tx.Init(txIn);
   return (true);
+}
+
+void SetSpentChannel(int ifaceIndex, const uint160& hChan, const CTransaction& tx)
+{
+  channel_list *channels = GetChannelSpentTable(ifaceIndex);
+  if (channels) {
+    (*channels)[hChan] = tx;
+fprintf(stderr, "DEBUG: validate_channel_tx: wallet->mapChannelSpent[%s] = *txCommit\n", hChan.GetHex().c_str()); 
+  }
 }
 
 bool GetChannelDestination(CTransaction *tx, CTxDestination& addr, int64& nValue)
@@ -690,16 +702,25 @@ bool CChannel::VerifyPubKey()
   cbuff buff;
 
   buff.clear();
-  if (!origin->GetPubKey(buff, nSeq))
+  if (!origin->GetPubKey(buff, nSeq)) {
+error(SHERR_INVAL, "!origin->GetPubKey");
     return (false);
-  if (origin->hdpubkey != buff)
+}
+  if (origin->hdpubkey != buff) {
+fprintf(stderr, "DEBUG: CChanel.VerifyPubKey: origin->hdpubkey(%s) != buff(%s)", HexStr(origin->hdpubkey).c_str(), HexStr(buff).c_str());
     return (false);
+}
 
   buff.clear();
-  if (!peer->GetPubKey(buff, nSeq))
+  if (!peer->GetPubKey(buff, nSeq)) {
+return error(SHERR_INVAL, "!peer->GetPubKey");
     return (false);
-  if (peer->hdpubkey != buff)
+}
+  if (peer->hdpubkey != buff) {
     return (false);
+return error(SHERR_INVAL, "peer->hdpubkey != buff");
+}
+
 
   return (true);
 }
@@ -936,7 +957,12 @@ error(SHERR_NOENT, "pay_channel_tx: unknown destination address specified.");
     channel->dest_pubkey = chanIn.rem_npubkey;
 #endif
   }
-  channel->GeneratePubKey();
+
+  if (!channel->GeneratePubKey()) {
+fprintf(stderr, "DEBUG: pay_channel_tx: !channel->GeneratePubKey\n"); 
+return (SHERR_INVAL);
+}
+
 
   if (isOrigin) {
     if (nValue > channel->GetOriginValue()) {
@@ -983,19 +1009,21 @@ fprintf(stderr, "DEBUG: pay_channel_tx: (isOrigin) nValue(%lld) < channel->peer-
   else
     nCounterValue = channel->GetOriginValue();
 
-  CScript scriptExt;
-  scriptExt << OP_EXT_PAY << CScript::EncodeOP_N(OP_CHANNEL) << OP_HASH160 << hChan << OP_2DROP << OP_RETURN;
-	wtx.vout.push_back(CTxOut(iface->min_tx_fee, scriptExt)); 
+
+  /* append pubkey output to channel of counter-party remainder */
+  CScript scriptPeer;
+  scriptPeer.SetDestination(peer_addr.Get());
+  wtx.vout.push_back(CTxOut(nCounterValue, scriptPeer)); 
 
   /* insert p2sh output to channel */
   CScript scriptPubKey;
   scriptPubKey << OP_HASH160 << channel->GetHash() << OP_EQUAL;
 	wtx.vout.push_back(CTxOut(nTotalValue - nCounterValue - iface->min_tx_fee, scriptPubKey)); 
 
-  /* append pubkey output to channel of counter-party remainder */
-  CScript scriptPeer;
-  scriptPeer.SetDestination(peer_addr.Get());
-  wtx.vout.push_back(CTxOut(nCounterValue, scriptPeer)); 
+  CScript scriptExt;
+  scriptExt << OP_EXT_PAY << CScript::EncodeOP_N(OP_CHANNEL) << OP_HASH160 << hChan << OP_2DROP << OP_RETURN;
+	wtx.vout.push_back(CTxOut(iface->min_tx_fee, scriptExt)); 
+
 
 #if 0
   /* half-sign input */
@@ -1049,24 +1077,28 @@ int validate_channel_tx(CIface *iface, CTransaction *txCommit, CWalletTx& wtx)
       txInMode != OP_EXT_PAY)
     return (SHERR_INVAL);
 
-	if (!GetOpenChannel(ifaceIndex, hChan, txIn))
-		return (SHERR_NOENT);
+  if (!GetOpenChannel(ifaceIndex, hChan, txIn))
+    return (SHERR_NOENT);
 
 
+#if 0
   if (txCommit->vin.size() != 1) {
     return error(SHERR_INVAL, "validate_channel_tx: invalid number of inputs specified in commit transaction.");
   }
   if (txCommit->vout.size() != 2) {
     return error(SHERR_INVAL, "validate_channel_tx: invalid number of outputs specified in commit transaction.");
   }
+#endif
 
   nOut = IndexOfExtOutput(txIn);
-  if (nOut != 0)
-    return error(SHERR_INVAL, "validate_channel_tx: invalid output (#1).");
+  if (nOut == -1)
+    return error(SHERR_INVAL, "validate_channel_tx: no channel output.");
 
-  /* second output shall be direct remitance to us */
+  fprintf(stderr, "DEBUG: validate_channel_tx: txCommit: %s\n", txCommit->ToString().c_str());
+
+  /* first output shall be direct remitance to us */
   CTxDestination dest;
-  if (!ExtractDestination(txSpentIn.vout[1].scriptPubKey, dest))
+  if (!ExtractDestination(txCommit->vout[0].scriptPubKey, dest))
     return error(SHERR_INVAL, "validate_channel_tx: invalid out (#2).");
   addr.Set(dest);
   if (!GetCoinAddr(wallet, addr, strAccount))
@@ -1088,10 +1120,10 @@ int validate_channel_tx(CIface *iface, CTransaction *txCommit, CWalletTx& wtx)
   }
 
   wtx.SetNull();
-//  wtx.vin = txCommit->vin;
+  //  wtx.vin = txCommit->vin;
   channel = wtx.PayChannel(chanIn);
 
-	if (GetSpentChannel(ifaceIndex, hChan, txSpentIn)) {
+  if (GetSpentChannel(ifaceIndex, hChan, txSpentIn)) {
     if (isOrigin) {
       if (txCommit->channel.GetOriginValue() < txSpentIn.channel.GetOriginValue())
         return (SHERR_INVAL); 
@@ -1135,18 +1167,20 @@ int validate_channel_tx(CIface *iface, CTransaction *txCommit, CWalletTx& wtx)
   /* define sequence number. */
   channel->nSeq = txCommit->channel.nSeq;
 
-  if (!channel->VerifyPubKey()) {
+  fprintf(stderr, "DEBUG: validate_channel_tx: channel: %s\n", channel->ToString().c_str()); 
+  //if (!channel->VerifyPubKey()) {
+  if (!txCommit->channel.VerifyPubKey()) {
     error(SHERR_INVAL, "validate_channel_tx: failure verifying pubkey.");
     return (SHERR_INVAL);
   }
 
   /* create input from funding transaction */
   CScript scriptIn;
-/*
-  CScript redeem;
-  chanIn.GetRedeemScript(redeem);
-*/
-	scriptIn << OP_0 << chanIn.GetPeer()->addr << chanIn.GetOrigin()->addr << chanIn.GetHash() << OP_HASH160 << chanIn.GetHash() << OP_EQUAL;
+  /*
+     CScript redeem;
+     chanIn.GetRedeemScript(redeem);
+     */
+  scriptIn << OP_0 << chanIn.GetPeer()->addr << chanIn.GetOrigin()->addr << chanIn.GetHash() << OP_HASH160 << chanIn.GetHash() << OP_EQUAL;
   if (!equal(scriptIn.begin(), scriptIn.end(),
         txCommit->vin[0].scriptSig.begin()) ||
       txCommit->vin[0].nSequence != channel->nSeq) {
@@ -1154,7 +1188,7 @@ int validate_channel_tx(CIface *iface, CTransaction *txCommit, CWalletTx& wtx)
     return error(SHERR_INVAL,
         "validate_channel_tx: commit tx has invalid input script.");
   }
-  wtx.vin.push_back(CTxIn(txIn.GetHash(), nOut, scriptIn, channel->nSeq));
+  wtx.vin.push_back(CTxIn(txIn.GetHash(), nOut-1, scriptIn, channel->nSeq));
 
   int64 nCounterValue;
   if (isOrigin)
@@ -1172,18 +1206,18 @@ int validate_channel_tx(CIface *iface, CTransaction *txCommit, CWalletTx& wtx)
   int64 nTotalValue = channel->GetOriginValue() + channel->GetPeerValue();
   scriptPubKey << OP_EXT_PAY << CScript::EncodeOP_N(OP_CHANNEL) << OP_HASH160 << hChan << OP_2DROP;
   scriptPubKey << OP_HASH160 << channel->GetHash() << OP_EQUAL;
-	wtx.vout.push_back(CTxOut(nTotalValue - nCounterValue, scriptPubKey)); 
+  wtx.vout.push_back(CTxOut(nTotalValue - nCounterValue, scriptPubKey)); 
 
   /* half-sign input */
   if (!SignSignature(*wallet, txIn, wtx, 0))
     return (SHERR_INVAL);
 
   // relay our version of half-signed commit transaction
-	uint256 tx_hash = wtx.GetHash();
-	RelayMessage(CInv(ifaceIndex, MSG_TX, tx_hash), (CTransaction)wtx);
+  uint256 tx_hash = wtx.GetHash();
+  RelayMessage(CInv(ifaceIndex, MSG_TX, tx_hash), (CTransaction)wtx);
 
   /* retain counter-party's commit tx as official. */
-  wallet->mapChannelSpent[hChan] = *txCommit;
+  SetSpentChannel(ifaceIndex, hChan, *txCommit); 
 
   /* keep previous spent to remit in case of malicious behaviour */
   wallet->mapChannelRedeem[hChan] = txSpentIn;
@@ -1191,7 +1225,7 @@ int validate_channel_tx(CIface *iface, CTransaction *txCommit, CWalletTx& wtx)
 
   Debug("SENT:CHANNELVALIDATE : channelhash=%s, tx=%s\n", hChan.ToString().c_str(), wtx.GetHash().GetHex().c_str());
 
-	return (0);
+  return (0);
 }
 
 int generate_channel_tx(CIface *iface, uint160 hChan, CWalletTx& wtx)
@@ -1208,40 +1242,53 @@ int generate_channel_tx(CIface *iface, uint160 hChan, CWalletTx& wtx)
   bool isOrigin;
   int nOut;
 
+  fprintf(stderr, "DEBUG: generate_channel_tx: hChan '%s'\n", hChan.GetHex().c_str());
+
   if (ifaceIndex != TEST_COIN_IFACE && ifaceIndex != SHC_COIN_IFACE)
     return (SHERR_OPNOTSUPP);
 
-	if (!GetOpenChannel(ifaceIndex, hChan, txIn))
-		return (SHERR_NOENT);
+  if (!GetOpenChannel(ifaceIndex, hChan, txIn)) {
+    fprintf(stderr, "DEBUG: generate_channel_tx: !GetOpenChannel()\n"); 
+    return (SHERR_NOENT);
+  }
 
-	if (GetSpentChannel(ifaceIndex, hChan, txSpentIn))
+  if (!GetSpentChannel(ifaceIndex, hChan, txSpentIn)) {
+    fprintf(stderr, "DEBUG: generate_channel_tx: !GetSpentChannel(%s)\n", hChan.GetHex().c_str()); 
     return (SHERR_AGAIN); /* nothing has been committed .. use remove instead */
+  }
 
   nOut = IndexOfExtOutput(txSpentIn);
   if (nOut == -1)
     return (SHERR_INVAL);
   if (!DecodeChannelHash(txSpentIn.vout[nOut].scriptPubKey, txInMode, hChan) ||
-      txInMode != OP_EXT_PAY)
+      txInMode != OP_EXT_PAY) {
+    fprintf(stderr, "DEBUG: generate_channel_tx: txInMode(%d) != OP_EXT_PAY\n", txInMode);
     return (SHERR_INVAL);
+  }
 
+#if 0
   if (txSpentIn.vin.size() != 1) {
     return error(SHERR_INVAL, "validate_channel_tx: invalid number of inputs specified in commit transaction.");
   }
   if (txSpentIn.vout.size() != 2) {
     return error(SHERR_INVAL, "validate_channel_tx: invalid number of outputs specified in commit transaction.");
   }
+#endif
 
   nOut = IndexOfExtOutput(txIn);
-  if (nOut != 0)
+  if (nOut == -1)
     return error(SHERR_INVAL, "validate_channel_tx: invalid output (#1).");
 
-  /* second output shall be direct remitance to us */
+  /* first output shall be direct remitance to us */
   CTxDestination dest;
-  if (!ExtractDestination(txSpentIn.vout[1].scriptPubKey, dest))
+  if (!ExtractDestination(txSpentIn.vout[0].scriptPubKey, dest)) {
     return error(SHERR_INVAL, "validate_channel_tx: invalid out (#2).");
+}
   addr.Set(dest);
-  if (!GetCoinAddr(wallet, addr, strAccount))
+  if (!GetCoinAddr(wallet, addr, strAccount)) {
+    fprintf(stderr, "DEBUG: generate_channel_tx: !GetCoinAddr()\n"); 
     return (SHERR_REMOTE);
+  }
 
   CChannel& chanIn = txIn.channel;
   CCoinAddr lcl_addr = chanIn.GetOriginAddr();
@@ -1260,6 +1307,7 @@ int generate_channel_tx(CIface *iface, uint160 hChan, CWalletTx& wtx)
 
   wtx.SetNull();
   channel = wtx.GenerateChannel(txSpentIn.channel);
+  fprintf(stderr, "DEBUG: generate_channel_tx: wtx.GenerateChannel(): success\n"); 
 
   if (channel->nSeq != txSpentIn.vin[0].nSequence)
     return (SHERR_ILSEQ);
@@ -1268,8 +1316,10 @@ int generate_channel_tx(CIface *iface, uint160 hChan, CWalletTx& wtx)
   CScript scriptIn;
   CScript redeem;
   chanIn.GetRedeemScript(redeem);
-	scriptIn << OP_0 << chanIn.GetPeer()->addr << chanIn.GetOrigin()->addr << redeem << OP_HASH160 << chanIn.GetHash() << OP_EQUAL;
-  wtx.vin.push_back(CTxIn(txIn.GetHash(), nOut, scriptIn, channel->nSeq));
+  scriptIn << OP_0 << chanIn.GetPeer()->addr << chanIn.GetOrigin()->addr;
+  scriptIn += redeem;
+  scriptIn << OP_HASH160 << chanIn.GetHash() << OP_EQUAL;
+  wtx.vin.push_back(CTxIn(txIn.GetHash(), nOut + 1, scriptIn, channel->nSeq));
 
   int64 nCounterValue;
   if (isOrigin)
@@ -1290,18 +1340,20 @@ int generate_channel_tx(CIface *iface, uint160 hChan, CWalletTx& wtx)
     return (SHERR_INVAL);
 
   // relay our version of half-signed commit transaction
-	uint256 tx_hash = wtx.GetHash();
-	RelayMessage(CInv(ifaceIndex, MSG_TX, tx_hash), (CTransaction)wtx);
+  uint256 tx_hash = wtx.GetHash();
+  RelayMessage(CInv(ifaceIndex, MSG_TX, tx_hash), (CTransaction)wtx);
 
+#if 0
   /* this is now the 'official' version */
   wallet->mapChannelSpent[hChan] = wtx;
-
+  fprintf(stderr, "DEBUG: channel_validate: wallet->mapChannelSpent[%s]\n", hChan.GetHex().c_str());
   /* keep previous spent to remit in case of malicious behaviour */
   wallet->mapChannelRedeem[hChan] = txSpentIn;
+#endif
 
-  Debug("SENT:CHANNELVALIDATE : channelhash=%s, tx=%s\n", hChan.ToString().c_str(), wtx.GetHash().GetHex().c_str());
+  Debug("SENT:CHANNELGENERATE : channelhash=%s, tx=%s\n", hChan.ToString().c_str(), wtx.GetHash().GetHex().c_str());
 
-	return (0);
+  return (0);
 }
 
 
@@ -1341,7 +1393,7 @@ int generate_channel_tx(CIface *iface, const uint160& hashChannel, CWalletTx& wt
 
   /* generate tx */
   CCert *channel;
-	CScript scriptPubKey;
+  CScript scriptPubKey;
   wtx.SetNull();
   channel = wtx.RemoveChannel(CChannel(tx.certificate));
   uint160 channelHash = channel->GetHash();
@@ -1350,9 +1402,9 @@ int generate_channel_tx(CIface *iface, const uint160& hashChannel, CWalletTx& wt
   CWalletTx& wtxIn = wallet->mapWallet[wtxInHash];
 
   /* generate output script */
-	CScript scriptPubKeyOrig;
+  CScript scriptPubKeyOrig;
   scriptPubKeyOrig.SetDestination(addr.Get()); /* back to origin */
-	scriptPubKey << OP_EXT_REMOVE << CScript::EncodeOP_N(OP_CHANNEL) << OP_HASH160 << channelHash << OP_2DROP;
+  scriptPubKey << OP_EXT_REMOVE << CScript::EncodeOP_N(OP_CHANNEL) << OP_HASH160 << channelHash << OP_2DROP;
   scriptPubKey += scriptPubKeyOrig;
 #endif
 
@@ -1369,14 +1421,14 @@ int generate_channel_tx(CIface *iface, const uint160& hashChannel, CWalletTx& wt
   }
 
   if (!SendMoneyWithExtTx(iface, wtxIn, wtx, scriptPubKey, vecSend)) {
-fprintf(stderr, "DEBUG: update_channel_tx: !SendMoneyWithExtTx\n"); 
+    fprintf(stderr, "DEBUG: update_channel_tx: !SendMoneyWithExtTx\n"); 
     return (SHERR_INVAL);
-}
+  }
 
   wallet->mapChannel[channelHash] = wtx.GetHash();
 #endif
 
-	return (0);
+  return (0);
 }
 #endif
 
@@ -1414,7 +1466,7 @@ int remove_channel_tx(CIface *iface, const uint160& hashChannel, CWalletTx& wtx)
 
   /* generate tx */
   CCert *channel;
-	CScript scriptPubKey;
+  CScript scriptPubKey;
   wtx.SetNull();
   channel = wtx.RemoveChannel(CChannel(tx.certificate));
   uint160 channelHash = channel->GetHash();
@@ -1423,9 +1475,9 @@ int remove_channel_tx(CIface *iface, const uint160& hashChannel, CWalletTx& wtx)
   CWalletTx& wtxIn = wallet->mapWallet[wtxInHash];
 
   /* generate output script */
-	CScript scriptPubKeyOrig;
+  CScript scriptPubKeyOrig;
   scriptPubKeyOrig.SetDestination(addr.Get()); /* back to origin */
-	scriptPubKey << OP_EXT_REMOVE << CScript::EncodeOP_N(OP_CHANNEL) << OP_HASH160 << channelHash << OP_2DROP;
+  scriptPubKey << OP_EXT_REMOVE << CScript::EncodeOP_N(OP_CHANNEL) << OP_HASH160 << channelHash << OP_2DROP;
   scriptPubKey += scriptPubKeyOrig;
 
   int64 nNetFee = GetChannelOpFee(iface, GetBestHeight(iface));
@@ -1440,22 +1492,21 @@ int remove_channel_tx(CIface *iface, const uint160& hashChannel, CWalletTx& wtx)
   }
 
   if (!SendMoneyWithExtTx(iface, wtxIn, wtx, scriptPubKey, vecSend)) {
-fprintf(stderr, "DEBUG: update_channel_tx: !SendMoneyWithExtTx\n"); 
-return (SHERR_INVAL);
+    fprintf(stderr, "DEBUG: update_channel_tx: !SendMoneyWithExtTx\n"); 
+    return (SHERR_INVAL);
   }
 
   CScript scriptFee;
   int nNetFee = iface->min_tx_fee;
   scriptFee << OP_EXT_REMOVE << CScript::EncodeOP_N(OP_CHANNEL) << OP_HASH160 << hashChannel << OP_2DROP << OP_RETURN;
-    vecSend.push_back(make_pair(scriptFee, nNetFee));
-  }
+  vecSend.push_back(make_pair(scriptFee, nNetFee));
 
-  if (!wallet->CommitTransaction(txRemedy, rkey))
-    return (SHERR_INVAL);
+if (!wallet->CommitTransaction(txRemedy, rkey))
+  return (SHERR_INVAL);
 
   wallet->mapChannel.erase(channelHash);
 #endif
 
-	return (0);
+  return (0);
 }
 
