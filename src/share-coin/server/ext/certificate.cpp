@@ -1232,6 +1232,7 @@ Object CCert::ToValue()
   if (nFlag != 0)
     obj.push_back(Pair("flags", nFlag));
   obj.push_back(Pair("signature", signature.GetHash().GetHex()));
+  obj.push_back(Pair("sigpubkey", signature.GetHash().GetHex()));
   
   return (obj);
 }

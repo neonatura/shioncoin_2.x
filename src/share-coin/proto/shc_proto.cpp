@@ -60,16 +60,20 @@ shcWallet = new SHCWallet();
     return (SHERR_INVAL);
 }
 
-  err = unet_bind(SHC_COIN_IFACE, SHC_COIN_DAEMON_PORT);
-  if (err)
+  err = unet_bind(UNET_SHC, SHC_COIN_DAEMON_PORT);
+  if (err) {
+error(err, "error binding SHC socket port");
     return (err);
+}
 
-  unet_timer_set(SHC_COIN_IFACE, shc_server_timer); /* x10/s */
-  unet_connop_set(SHC_COIN_IFACE, shc_server_accept);
-  unet_disconnop_set(SHC_COIN_IFACE, shc_server_close);
+  unet_timer_set(UNET_SHC, shc_server_timer); /* x10/s */
+  unet_connop_set(UNET_SHC, shc_server_accept);
+  unet_disconnop_set(UNET_SHC, shc_server_close);
 
   /* automatically connect to peers of 'shc' service. */
-  unet_bind_flag_set(SHC_COIN_IFACE, UNETF_PEER_SCAN);
+  unet_bind_flag_set(UNET_SHC, UNETF_PEER_SCAN);
+
+  Debug("initialized SHC service on port %d.", (int)SHC_COIN_DAEMON_PORT);
 
 return (0);
 }

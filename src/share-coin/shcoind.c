@@ -191,8 +191,13 @@ int main(int argc, char *argv[])
     }
 #endif
 
-    if (iface->op_init)
-      iface->op_init(iface, NULL);
+    if (iface->op_init) {
+      err = iface->op_init(iface, NULL);
+      if (err) {
+        fprintf(stderr, "critical: unable to initialize %s service (%s).", iface->name, sherrstr(err));
+        exit(1);
+      }
+    }
 
 #if 0
     bc = GetBlockChain(iface);

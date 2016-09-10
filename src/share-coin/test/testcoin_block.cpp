@@ -871,24 +871,15 @@ _TEST(channeltx)
   int err;
   int i;
 
-  for (i = 0; i < 16; i++) {
+  for (i = 0; i < 18; i++) {
     CBlock *block = test_GenerateBlock();
     _TRUEPTR(block);
     _TRUE(ProcessBlock(NULL, block) == true);
     delete block;
   }
-
-
 
   string strLabel("");
 
-  /* create a coin balance */
-  {
-    CBlock *block = test_GenerateBlock();
-    _TRUEPTR(block);
-    _TRUE(ProcessBlock(NULL, block) == true);
-    delete block;
-  }
 
   CCoinAddr addr = GetAccountAddress(wallet, strLabel, true);
   _TRUE(addr.IsValid() == true);
@@ -896,7 +887,7 @@ _TEST(channeltx)
   CCoinAddr dest_addr = GetAccountAddress(wallet, strLabel, true);
   _TRUE(dest_addr.IsValid() == true);
 
-  int64 nValue = GetAccountBalance(TEST_COIN_IFACE, strLabel, 1) / 4;
+  int64 nValue = GetAccountBalance(TEST_COIN_IFACE, strLabel, 1) / 10;
 
   /* ** Regular Channel Scenerio ** */
 
@@ -919,7 +910,7 @@ fprintf(stderr, "DEBUG: CHAN OPEN: %s\n", chan_wtx.ToString().c_str());
 
   /* perform pay operation to counter-party */
   CWalletTx commit_wtx;
-  err = pay_channel_tx(iface, strLabel, hChan, dest_addr, nValue / 2, commit_wtx);  
+  err = pay_channel_tx(iface, strLabel, hChan, dest_addr, nValue / 10, commit_wtx);  
 fprintf(stderr, "DEBUG: CHAN PAY[err %d]: %s\n", err, commit_wtx.ToString().c_str());
   _TRUE(0 == err);
 
@@ -940,8 +931,8 @@ fprintf(stderr, "DEBUG: CHAN VALIDATE: %s\n", val_wtx.ToString().c_str());
   /* close channel and finalize transaction. */
   CWalletTx fin_wtx;
   err = generate_channel_tx(iface, hChan, fin_wtx);
+fprintf(stderr, "DEBUG: CHAN GEN[status %d]: %s\n", err, fin_wtx.ToString().c_str());
   _TRUE(0 == err);
-fprintf(stderr, "DEBUG: CHAN GEN: %s\n", fin_wtx.ToString().c_str());
 
   /* ** Abort Channel Scenerio ** */
 

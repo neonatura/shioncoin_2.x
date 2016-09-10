@@ -543,17 +543,18 @@ bool CExec::SetStack(const cbuff& data, const CCoinAddr& sendAddr)
 #endif
 
   /* prepare args */
-  json = shjson_init(NULL);
-  shjson_str_add(json, "version", PACKAGE_STRING); 
+//json = shjson_init(NULL);
+//shjson_str_add(json, "version", PACKAGE_STRING); 
 
   /* prepare runtime */
   buff = shbuf_init();
   unsigned char *raw = (unsigned char *)data.data();
   size_t raw_len = (size_t)data.size();
   shbuf_cat(buff, raw, raw_len);
-  err = sexe_exec_popen(buff, json, &S);
+//err = sexe_exec_popen(buff, json, &S);
+  err = sexe_exec_popen(buff, NULL, &S);
   shbuf_free(&buff);
-  shjson_free(&json);
+//  shjson_free(&json);
   if (err) {
     return error(err, "CExec.SetStack: error executing code <%d bytes>.", raw_len);
   }
@@ -610,24 +611,38 @@ fprintf(stderr, "DEBUG: EXEC: USRDATA: \"%s\"\n", shjson_print(u_json));
   return (true);
 }
 
-static int _sexe_tx_commit_iface_index;
-static int _sexe_tx_commit(sexe_t *S)
+static int _sexe_shc_tx_commit(sexe_t *S)
 {
   const char *coin_addr = sexe_checkstring(S, 1);
   double coin_val = sexe_checknumber(S, 2);
   int64 nValue = (int64)(coin_val * (double)COIN);
 
-  CIface *iface = GetCoinByIndex(_sexe_tx_commit_iface_index);
+  CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);
   CWallet *wallet = GetWallet(iface);
 
   CCoinAddr addr(coin_addr);
   CScript scriptPub;
   scriptPub.SetDestination(addr.Get());
 
-  CWalletTx wtx;
-  wtx.SetNull();
-  wtx.vout.push_back(CTxOut(nValue, scriptPub));
-  wallet->mapExecCommit.push_back(wtx);
+  wallet->mapExecCommit.push_back(CTxOut(nValue, scriptPub));
+
+  lua_pushnil(S);
+  return (1); /* 1 nil */
+}
+static int _sexe_test_tx_commit(sexe_t *S)
+{
+  const char *coin_addr = sexe_checkstring(S, 1);
+  double coin_val = sexe_checknumber(S, 2);
+  int64 nValue = (int64)(coin_val * (double)COIN);
+
+  CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
+  CWallet *wallet = GetWallet(iface);
+
+  CCoinAddr addr(coin_addr);
+  CScript scriptPub;
+  scriptPub.SetDestination(addr.Get());
+
+  wallet->mapExecCommit.push_back(CTxOut(nValue, scriptPub));
 
   lua_pushnil(S);
   return (1); /* 1 nil */
@@ -674,22 +689,32 @@ int ProcessExecGenerateTx(CIface *iface, CExec *execIn, CExecCall *exec)
   }
 
   /* prepare args */
-  json = shjson_init(NULL);
-  shjson_str_add(json, "version", PACKAGE_STRING); 
+//  json = shjson_init(NULL);
+//  shjson_str_add(json, "version", PACKAGE_STRING); 
   /* prepare runtime */
   buff = shbuf_init();
   shbuf_cat(buff, data.data(), data.size());
-  err = sexe_exec_popen(buff, json, &S);
+//err = sexe_exec_popen(buff, json, &S);
+  err = sexe_exec_popen(buff, NULL, &S);
   shbuf_free(&buff);
-  shjson_free(&json);
+//  shjson_free(&json);
   if (err) {
     return error(err, "CExec.SetStack: error executing code.");
   }
 
-#if 0 /* DEBUG: */
-lua_pushcfunction(S, _sexe_tx_commit);
-lua_setglobal(S, "commit");
-#endif
+
+/* DEBUG: */
+  switch (ifaceIndex) {
+    case TEST_COIN_IFACE:
+      lua_pushcfunction(S, _sexe_test_tx_commit);
+      lua_setglobal(S, "commit");
+      break;
+    case SHC_COIN_IFACE:
+      lua_pushcfunction(S, _sexe_shc_tx_commit);
+      lua_setglobal(S, "commit");
+      break;
+  }
+
 
   /* load runtime */
   err = sexe_exec_prun(S);
@@ -697,6 +722,7 @@ lua_setglobal(S, "commit");
     error(err, "CExec.SetStack: sexe_exec_prun");
     return (false);
   }
+
 
   /* prep args */
   str = strchr((char *)exec->vContext.data(), ' ');
@@ -714,6 +740,7 @@ fprintf(stderr, "DEBUG: ProcessExecGenerateTx: SEXE_EXEC_CALL[%s]: %s\n", method
   err = sexe_exec_pcall(S, method, json);
   shjson_free(&json);
   if (err) {
+fprintf(stderr, "DEBUG: ProcessExecGenerateTx: %d = sexe_exec_pcall('%s')\n", err, method);
 
 {
 shjson_t *u_json = NULL;
@@ -726,7 +753,7 @@ if (err) {
 }
 }
 
-    error(err, "CExec.SetStack: %d = sexe_exec_pcall('%s')", err, method);
+    sexe_exec_pclose(S);
     return (false);
   }
 
@@ -734,6 +761,25 @@ if (err) {
   sexe_exec_pclose(S);
 
   /* post tx commit */
+  vector<pair<CScript, int64> > vecSend;
+  BOOST_FOREACH(CTxOut& out, wallet->mapExecCommit) {
+    vecSend.push_back(make_pair(out.scriptPubKey, out.nValue));
+  }
+
+  if (vecSend.size() != 0) {
+    CWalletTx wtx;
+    int64 nFeeRet = 0;
+    CReserveKey rkey(wallet);
+    wtx.strFromAccount = strExtAccount;
+    if (!wallet->CreateTransaction(vecSend, wtx, rkey, nFeeRet)) 
+      return (SHERR_CANCELED);
+
+    if (!wallet->CommitTransaction(wtx, rkey))
+      return (SHERR_CANCELED);
+fprintf(stderr, "DEBUG: ProcessExecGenerateTx: COMMIT: %s\n", wtx.ToString().c_str()); 
+  }
+
+fprintf(stderr, "DEBUG: ProcessExecGenerateTx: SUCCESS\n");
 
   return (0);
 }
@@ -1079,6 +1125,9 @@ fprintf(stderr, "DEBUG: update_exec_tx: !IsLocalExec\n");
 	return (0);
 }
 
+/**
+ * @todo ensure that called method has been declared in primary exec tx's context definitions
+ */
 int generate_exec_tx(CIface *iface, string strAccount, uint160 hExec, string strFunc, CWalletTx& wtx)
 {
   CWallet *wallet = GetWallet(iface);
@@ -1117,6 +1166,9 @@ fprintf(stderr, "DEBUG: generate_exec_tx: insufficient balance (%llu) .. %llu re
   wtx.SetNull();
   wtx.strFromAccount = strAccount; /* originating account for payment */
   CExecCall *exec = wtx.GenerateExec(execIn, sendAddr);
+
+  /* set fee */
+  exec->SetSendValue(execIn.GetFee());
 
   /* set "stack" */
   memset(buf, 0, sizeof(buf));
@@ -1188,6 +1240,7 @@ int transfer_exec_tx(CIface *iface, uint160 hExec, string strAccount, CWalletTx&
  * @param strAccount The account that has ownership over the exec.
  * @param wtx The new transaction to be filled in.
  * @note The previous exec tx fee is returned to the account, and the current fee is burned.
+ * @todo call "term" method (w/out recognition of return code) on app
  */
 int remove_exec_tx(CIface *iface, const uint160& hashExec, CWalletTx& wtx)
 {

@@ -72,8 +72,10 @@ static int usde_init(CIface *iface, void *_unused_)
   }
 
   err = unet_bind(UNET_USDE, USDE_COIN_DAEMON_PORT);
-  if (err)
+  if (err) { 
+error(err, "error binding USDE socket port");
     return (err);
+}
 
   unet_timer_set(UNET_USDE, usde_server_timer); /* x10/s */
   unet_connop_set(UNET_USDE, usde_server_accept);
@@ -81,6 +83,8 @@ static int usde_init(CIface *iface, void *_unused_)
 
   /* automatically connect to peers of 'usde' service. */
   unet_bind_flag_set(UNET_USDE, UNETF_PEER_SCAN);
+
+  Debug("initialized USDE service on port %d.", (int)SHC_COIN_DAEMON_PORT);
 
   return (0);
 }

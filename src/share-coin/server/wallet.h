@@ -107,7 +107,7 @@ public:
     mutable std::map<uint160, uint256> mapAsset;
     mutable std::map<uint160, uint256> mapAssetArch;
     mutable std::map<uint160, CTransaction> mapExec;
-    mutable std::vector<CWalletTx> mapExecCommit;
+    mutable std::vector<CTxOut> mapExecCommit;
 
     /** A vector of open coin-transfer channels. */
     mutable std::map<uint160, CTransaction> mapChannel;

@@ -1628,12 +1628,14 @@ Value rpc_wallet_export(CIface *iface, const Array& params, bool fHelp)
     bool fCompressed;
     if (!pwalletMain->GetSecret(keyID, vchSecret, fCompressed))
       continue;//throw JSONRPCError(-4,"Private key for address " + strLabel + " is not known");
-    string strKey = CCoinSecret(vchSecret, fCompressed).ToString();
+    CCoinSecret csec(vchSecret, fCompressed);
+    string strKey = csec.ToString();
 
     node = shjson_obj_add(tree, NULL);
     shjson_str_add(node, "key", (char *)strKey.c_str()); 
     shjson_str_add(node, "label", (char *)strLabel.c_str());
     shjson_str_add(node, "addr", (char *)addr.ToString().c_str());
+    shjson_str_add(node, "phrase", (char *)EncodeMnemonicSecret(csec).c_str());
   }
 
   text = shjson_print(json);
