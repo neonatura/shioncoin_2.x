@@ -52,43 +52,46 @@ static int _bc_map_open(bc_t *bc, bc_map_t *map)
 
   sprintf(path, "%s/%s.%s", bc_path_base(), bc_name(bc), map->ext);
   fd = open(path, O_RDWR | O_CREAT, 0777);
-  if (fd == -1)
+  if (fd == -1) {
+perror("bc_map_open [open]");
     return (-errno);
+}
 
+  memset(&st, 0, sizeof(st));
   err = fstat(fd, &st);
-  if (err)
+  if (err) {
+perror("bc_map_open [fstat]");
     return (-errno);
+}
   if (!S_ISREG(st.st_mode)) {
+perror("bc_map_open [!reg]");
     close(fd);
     return (SHERR_ISDIR);
   }
   
-  if (st.st_size == 0) { 
+  memset(&ini_hdr, 0, sizeof(ini_hdr));
+  err = read(fd, &ini_hdr, sizeof(ini_hdr));
+  if (err != sizeof(ini_hdr) ||
+      ini_hdr.magic != SHMEM32_MAGIC) {
+    lseek(fd, 0L, SEEK_SET);
+
     st.st_size = BC_MAP_BLOCK_SIZE;
     err = ftruncate(fd, st.st_size);
-    if (err)
+    if (err) {
+      perror("bc_map_open [truncate]");
       return (-errno);
+    }
 
     lseek(fd, 0L, SEEK_SET);
     memset(&ini_hdr, 0, sizeof(ini_hdr));
     ini_hdr.magic = SHMEM32_MAGIC;
     ini_hdr.stamp = shtime();
     write(fd, &ini_hdr, sizeof(ini_hdr));
-  } else if (!S_ISREG(st.st_mode)) {
-    close(fd);
-    return (SHERR_ISDIR);
-  }
-
-  lseek(fd, 0L, SEEK_SET);
-  memset(&ini_hdr, 0, sizeof(ini_hdr));
-  read(fd, &ini_hdr, sizeof(ini_hdr));
-  if (ini_hdr.magic != SHMEM32_MAGIC) {
-    close(fd);
-    return (SHERR_ILSEQ);
-  }
+  } 
 
   map->fd = fd;
   map->size = st.st_size;
+fprintf(stderr, "DEBUG: _bc_map_open: opened fd %d\n", fd);
 
   return (0);
 }
@@ -255,6 +258,7 @@ static void _bc_map_close(bc_map_t *map)
   bc_map_free(map);
   if (map->fd) {
     close(map->fd);
+fprintf(stderr, "DBEUG: _bc_map_close: fd %d\n", map->fd);
     map->fd = 0;
   }
 

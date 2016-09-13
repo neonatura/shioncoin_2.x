@@ -33,7 +33,7 @@
 
 #define BC_INDEX_EXTENSION "idx"
 
-int bc_idx_open(bc_t *bc)
+static int _bc_idx_open(bc_t *bc)
 {
   int err;
 
@@ -57,7 +57,18 @@ int bc_idx_open(bc_t *bc)
   return (0);
 }
 
-void bc_idx_close(bc_t *bc)
+int bc_idx_open(bc_t *bc)
+{
+  int err;
+
+  bc_lock();
+  err = _bc_idx_open(bc);
+  bc_unlock();
+
+  return (err);
+}
+
+static void _bc_idx_close(bc_t *bc)
 {
 
   if (bc->idx_map.fd != 0) {
@@ -66,12 +77,16 @@ void bc_idx_close(bc_t *bc)
   
 }
 
-uint32_t bc_idx_crc(bc_hash_t hash)
+void bc_idx_close(bc_t *bc)
 {
-  return (shcrc(hash, sizeof(bc_hash_t)));
+
+  bc_lock();
+  _bc_idx_close(bc);
+  bc_unlock();
+
 }
 
-int bc_idx_find(bc_t *bc, bc_hash_t hash, bc_idx_t *ret_idx, int *ret_pos)
+static int _bc_idx_find(bc_t *bc, bc_hash_t hash, bc_idx_t *ret_idx, int *ret_pos)
 {
   bc_hash_t t_hash;
   bc_idx_t *idx;
@@ -125,7 +140,18 @@ int bc_idx_find(bc_t *bc, bc_hash_t hash, bc_idx_t *ret_idx, int *ret_pos)
   return (SHERR_NOENT);
 }
 
-int bc_idx_get(bc_t *bc, bcsize_t pos, bc_idx_t *ret_idx)
+int bc_idx_find(bc_t *bc, bc_hash_t hash, bc_idx_t *ret_idx, int *ret_pos)
+{
+  int err;
+
+  bc_lock();
+  err = _bc_idx_find(bc, hash, ret_idx, ret_pos);
+  bc_unlock();
+
+  return (err);
+}
+
+static int _bc_idx_get(bc_t *bc, bcsize_t pos, bc_idx_t *ret_idx)
 {
   bc_idx_t *idx;
   int err;
@@ -154,25 +180,19 @@ int bc_idx_get(bc_t *bc, bcsize_t pos, bc_idx_t *ret_idx)
   return (0);
 }
 
-/**
- * @returns The next record index.
- */
-bcsize_t bc_idx_next(bc_t *bc)
+int bc_idx_get(bc_t *bc, bcsize_t pos, bc_idx_t *ret_idx)
 {
-  bc_idx_t *idx;
   int err;
 
-  if (!bc)
-    return (SHERR_INVAL);
+  bc_lock();
+  err = _bc_idx_get(bc, pos, ret_idx);
+  bc_unlock();
 
-  err = bc_idx_open(bc);
-  if (err)
-    return (err);
+  return (err);
 
-  return MAX(0, (bc->idx_map.hdr->of / sizeof(bc_idx_t)));
 }
 
-int bc_idx_set(bc_t *bc, bcsize_t pos, bc_idx_t *idx)
+static int _bc_idx_set(bc_t *bc, bcsize_t pos, bc_idx_t *idx)
 {
   bc_idx_t *f_idx;
   bcsize_t of;
@@ -224,10 +244,21 @@ fprintf(stderr, "DEBUG: bc_idx_set: bc_map_alloc <%d bytes> err %d\n", f_len, er
   return (0);
 }
 
+int bc_idx_set(bc_t *bc, bcsize_t pos, bc_idx_t *idx)
+{
+  int err;
+
+  bc_lock();
+  err = _bc_idx_set(bc, pos, idx);
+  bc_unlock();
+
+  return (err);
+}
+
 /**
  * @note (odd) only reduces index count when "pos" is last record in db.
  */
-int bc_idx_clear(bc_t *bc, bcsize_t pos)
+static int _bc_idx_clear(bc_t *bc, bcsize_t pos)
 {
   bc_idx_t *f_idx;
   bc_idx_t blank_idx;
@@ -267,5 +298,39 @@ fprintf(stderr, "DEBUG: bc_idx_clear: (last rec) bc->idx_map.hdr->of = %d\n", bc
   return (0);
 }
 
+int bc_idx_clear(bc_t *bc, bcsize_t pos)
+{
+  int err;
 
+  bc_lock();
+  err = _bc_idx_clear(bc, pos);
+  bc_unlock();
+
+  return (err);
+}
+
+
+
+/**
+ * @returns The next record index.
+ */
+bcsize_t bc_idx_next(bc_t *bc)
+{
+  bc_idx_t *idx;
+  int err;
+
+  if (!bc)
+    return (SHERR_INVAL);
+
+  err = bc_idx_open(bc);
+  if (err)
+    return (err);
+
+  return MAX(0, (bc->idx_map.hdr->of / sizeof(bc_idx_t)));
+}
+
+uint32_t bc_idx_crc(bc_hash_t hash)
+{
+  return (shcrc(hash, sizeof(bc_hash_t)));
+}
 

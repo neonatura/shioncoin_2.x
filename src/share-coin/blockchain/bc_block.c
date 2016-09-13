@@ -56,7 +56,7 @@ void bc_unlock(void)
   shlock_close(BCMAP_LOCK_KEY);
 }
 
-int bc_open(char *name, bc_t **bc_p)
+static int _bc_open(char *name, bc_t **bc_p)
 {
   bc_t *bc;
   int err;
@@ -79,7 +79,18 @@ int bc_open(char *name, bc_t **bc_p)
   return (0);
 }
 
-void bc_close(bc_t *bc)
+int bc_open(char *name, bc_t **bc_p)
+{
+  int err;
+
+  bc_lock();
+  err = _bc_open(name, bc_p);
+  bc_unlock();
+
+  return (err);
+}
+
+static void _bc_close(bc_t *bc)
 {
   bc_map_t *map;
   int i;
@@ -99,6 +110,13 @@ void bc_close(bc_t *bc)
   bc->data_map_len = 0;
 
   free(bc);
+}
+
+void bc_close(bc_t *bc)
+{
+  bc_lock();
+  _bc_close(bc);
+  bc_unlock();
 }
 
 /**
@@ -175,8 +193,10 @@ static int _bc_write(bc_t *bc, bcsize_t pos, bc_hash_t hash, void *raw_data, int
   jrnl = bc_journal(pos);
 
   err = bc_alloc(bc, jrnl);
-  if (err)
+  if (err) {
+fprintf(stderr, "DEBUG: _bc_write: bc_alloc failed\n");
     return (err);
+}
 
   map = bc->data_map + jrnl;
   if (!*map->ext)
@@ -192,12 +212,15 @@ static int _bc_write(bc_t *bc, bcsize_t pos, bc_hash_t hash, void *raw_data, int
 
   /* store fresh block index */
   err = bc_idx_set(bc, pos, &idx);
-  if (err)
+  if (err) { 
+fprintf(stderr, "DEBUG: _bc_write: bc_idx_set failure\n");
     return (err);
+}
 
   /* store serialized block data */
   err = bc_map_append(bc, map, data, data_len);
   if (err) { /* uh oh */
+fprintf(stderr, "DEBUG: _bc_write: bc_map_append failure\n");
     bc_idx_clear(bc, pos);
     return (err);
   }
@@ -221,7 +244,7 @@ int bc_write(bc_t *bc, bcsize_t pos, bc_hash_t hash, void *raw_data, int data_le
 /**
  * @returns The new record position or a negative error code.
  */
-int bc_append(bc_t *bc, bc_hash_t hash, void *data, size_t data_len)
+static int _bc_append(bc_t *bc, bc_hash_t hash, void *data, size_t data_len)
 {
   unsigned char *raw_data = (unsigned char *)data;
   bc_idx_t idx;
@@ -269,6 +292,17 @@ fprintf(stderr, "DEBUG: bc_append: bc_write() err %d <%d bytes>\n", err, data_le
 }
 
   return (pos);
+}
+
+int bc_append(bc_t *bc, bc_hash_t hash, void *data, size_t data_len)
+{
+  int err;
+
+  bc_lock();
+  err = _bc_append(bc, hash, data, data_len);
+  bc_unlock();
+
+  return (err);
 }
 
 /**
@@ -324,7 +358,7 @@ int bc_read(bc_t *bc, int pos, void *data, bcsize_t data_len)
 /**
  * Obtains an allocated binary segment stored at the specified record position. 
  */
-int bc_get(bc_t *bc, bcsize_t pos, unsigned char **data_p, size_t *data_len_p)
+static int _bc_get(bc_t *bc, bcsize_t pos, unsigned char **data_p, size_t *data_len_p)
 {
   bc_idx_t idx;
   unsigned char *data;
@@ -362,6 +396,17 @@ fprintf(stderr, "DEBUG: bc_get[pos %d]: bc_read <%d bytes> error '%s'\n", pos, i
     *data_len_p = idx.size;
 
   return (0);
+}
+
+int bc_get(bc_t *bc, bcsize_t pos, unsigned char **data_p, size_t *data_len_p)
+{
+  int err;
+
+  bc_lock();
+  err = _bc_get(bc, pos, data_p, data_len_p);
+  bc_unlock();
+
+  return (err);
 }
 
 int bc_arch(bc_t *bc, bcsize_t pos, unsigned char **data_p, size_t *data_len_p)
@@ -673,7 +718,7 @@ bc_t *GetBlockTxChain(CIface *iface)
   return (iface->bc_tx);
 }
 
-void bc_chain_idle(void)
+static void _bc_chain_idle(void)
 {
 #ifdef SHCOIN_SERVER
   CIface *iface;
@@ -685,13 +730,20 @@ void bc_chain_idle(void)
     if (!iface || !iface->enabled)
       continue;
 
-    bc = GetBlockTxChain(iface);
+    bc = GetBlockChain(iface);
     if (bc)
       bc_idle(bc);
 
-    bc = GetBlockChain(iface);
+    bc = GetBlockTxChain(iface);
     if (bc)
       bc_idle(bc);
   }
 #endif
+}
+
+void bc_chain_idle(void)
+{
+  bc_lock();
+  _bc_chain_idle();
+  bc_unlock();
 }
