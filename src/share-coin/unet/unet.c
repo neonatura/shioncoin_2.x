@@ -237,9 +237,10 @@ fprintf(stderr, "DEBUG: unet_cycle: shnet_read failure: %s [errno %d]\n", strerr
         continue;
       }
       if (FD_ISSET(fd, &r_set)) {
+read_again:
         memset(data, 0, sizeof(data));
         r_len = shnet_read(fd, data, sizeof(data));
-fprintf(stderr, "DEBUG: %d = shnet_read(fd %d, <%d bytes>)\n", (int)r_len, fd, data);
+fprintf(stderr, "DEBUG: %d = shnet_read(fd %d, <%d bytes>)\n", (int)r_len, fd, sizeof(data));
         if (r_len < 0) {
           if (errno != EAGAIN) {
             sprintf(errbuf, "read fd %d (%s)", fd, sherrstr(r_len));
@@ -248,22 +249,33 @@ fprintf(stderr, "DEBUG: %d = shnet_read(fd %d, <%d bytes>)\n", (int)r_len, fd, d
         } else if (r_len > 0) {
           unet_rbuff_add(fd, data, r_len);
           t->stamp = shtime();
+
+          if (r_len == sizeof(data)) {
+            goto read_again;
+          }
         }
       }
       if (FD_ISSET(fd, &w_set)) {
+write_again:
         t = get_unet_table(fd);
         if (!t) continue;
 
         w_tot = shbuf_size(t->wbuff);
-        w_len = shnet_write(fd, shbuf_data(t->wbuff), w_tot);
-fprintf(stderr, "DEBUG: %d = shnet_write(fd %d, <%d bytes>)\n", (int)w_len, fd, w_tot);
-        if (w_len < 0) {
-          if (errno != EAGAIN) {
-            unet_close(fd, "write");
+        if (w_tot != 0) {
+          w_len = shnet_write(fd, shbuf_data(t->wbuff), w_tot);
+  fprintf(stderr, "DEBUG: %d = shnet_write(fd %d, <%d bytes>)\n", (int)w_len, fd, w_tot);
+          if (w_len < 0) {
+            if (errno != EAGAIN) {
+              unet_close(fd, "write");
+            }
+          } else if (w_len > 0) {
+            shbuf_trim(t->wbuff, w_len);
+            t->stamp = shtime();
+
+            if (w_len < w_tot) {
+              goto write_again;
+            }
           }
-        } else if (w_len > 0) {
-          shbuf_trim(t->wbuff, w_len);
-          t->stamp = shtime();
         }
       }
     }

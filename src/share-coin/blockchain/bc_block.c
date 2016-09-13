@@ -593,8 +593,10 @@ void bc_idle(bc_t *bc)
   if (bc_lock()) {
     for (i = 0; i < bc->data_map_len; i++) {
       map = bc->data_map + i;
-      if (map->fd != 0)
-        bc_map_idle(bc, map);
+      if (map->fd != 0) {
+        if (bc_map_idle(bc, map) == 0)
+          break; /* one at a time */
+      }
     }
     bc_unlock();
   }

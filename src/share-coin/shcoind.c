@@ -178,7 +178,7 @@ int main(int argc, char *argv[])
   shapp_listen(TX_SESSION, server_peer);
   shapp_listen(TX_BOND, server_peer);
 
-  /* initialize coin interfaces */  
+  /* initialize coin interface's block-chain */
   for (idx = 1; idx < MAX_COIN_IFACE; idx++) {
     CIface *iface = GetCoinByIndex(idx);
     if (!iface || !iface->enabled)
@@ -198,12 +198,28 @@ int main(int argc, char *argv[])
         exit(1);
       }
     }
+  }
 
-#if 0
-    bc = GetBlockChain(iface);
-    if (bc)
-      bc_idle(bc);
+  /* initialize coin interface's network service */
+  for (idx = 1; idx < MAX_COIN_IFACE; idx++) {
+    CIface *iface = GetCoinByIndex(idx);
+    if (!iface || !iface->enabled)
+      continue;
+
+#ifndef USDE_SERVICE
+    if (idx == USDE_COIN_IFACE) {
+      iface->enabled = FALSE;
+      continue;
+    }
 #endif
+
+    if (iface->op_init) {
+      err = iface->op_bind(iface, NULL);
+      if (err) {
+        fprintf(stderr, "critical: unable to initialize %s service (%s).", iface->name, sherrstr(err));
+        exit(1);
+      }
+    }
   }
 
 #ifdef STRATUM_SERVICE

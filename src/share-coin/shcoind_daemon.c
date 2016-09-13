@@ -279,7 +279,7 @@ void daemon_server(void)
     }
 
     /* handle network communication. */
-    unet_cycle(0.5); /* max idle 500ms */
+    unet_cycle(0.2); /* max idle 200ms */
 
     /* handle libshare message queue */
     shcoind_poll_msg_queue();

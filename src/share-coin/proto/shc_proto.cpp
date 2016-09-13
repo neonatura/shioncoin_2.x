@@ -43,28 +43,37 @@ CBigNum SHCBlock::bnBestInvalidWork;
 
 static int shc_init(CIface *iface, void *_unused_)
 {
-int ifaceIndex = GetCoinIndex(iface);
-int err;
+  int ifaceIndex = GetCoinIndex(iface);
+  int err;
 
-shcWallet = new SHCWallet();
+  shcWallet = new SHCWallet();
   SetWallet(SHC_COIN_IFACE, shcWallet);
 
 
   if (!shc_InitBlockIndex()) {
-    fprintf(stderr, "error: shc_proto: unable to initialize block index table.\n");
+    error(SHERR_INVAL, "shc_proto: unable to initialize block index table.");
     return (SHERR_INVAL);
   }
 
   if (!shc_LoadWallet()) {
-    fprintf(stderr, "error: shc_proto: unable to open load wallet.\n");
+    error(SHERR_INVAL, "shc_proto: unable to open load wallet.");
     return (SHERR_INVAL);
+  }
+
+  Debug("initialized SHC block-chain.");
+
+  return (0);
 }
+
+static int shc_bind(CIface *iface, void *_unused_)
+{
+  int err;
 
   err = unet_bind(UNET_SHC, SHC_COIN_DAEMON_PORT);
   if (err) {
-error(err, "error binding SHC socket port");
+    error(err, "error binding SHC socket port");
     return (err);
-}
+  }
 
   unet_timer_set(UNET_SHC, shc_server_timer); /* x10/s */
   unet_connop_set(UNET_SHC, shc_server_accept);
@@ -75,7 +84,7 @@ error(err, "error binding SHC socket port");
 
   Debug("initialized SHC service on port %d.", (int)SHC_COIN_DAEMON_PORT);
 
-return (0);
+  return (0);
 }
 
 static int shc_term(CIface *iface, void *_unused_)
@@ -236,6 +245,7 @@ coin_iface_t shc_coin_iface = {
   SHC_COINBASE_MATURITY, 
   SHC_MAX_SIGOPS,
   COINF(shc_init),
+  COINF(shc_bind),
   COINF(shc_term),
   COINF(shc_msg_recv),
   COINF(shc_msg_send),

@@ -45,40 +45,17 @@ int64 TESTBlock::nTargetSpacing = 60; /* one minute */
 
 static int test_init(CIface *iface, void *_unused_)
 {
-  int ifaceIndex = GetCoinIndex(iface);
-  int err;
 
-// testWallet = new TESTWallet();
   SetWallet(TEST_COIN_IFACE, testWallet);
-
-
-
-
-#if 0
-  if (!test_InitBlockIndex()) {
-    fprintf(stderr, "error: test_proto: unable to initialize block index table.\n");
-    return (SHERR_INVAL);
-  }
-
-  if (!test_LoadWallet()) {
-    fprintf(stderr, "error: test_proto: unable to load wallet.\n");
-    return (SHERR_INVAL);
-  }
-
-  err = unet_bind(UNET_TEST, TEST_COIN_DAEMON_PORT);
-  if (err)
-    return (err);
-
-  unet_timer_set(UNET_TEST, test_server_timer); /* x10/s */
-  unet_connop_set(UNET_TEST, test_server_accept);
-  unet_disconnop_set(UNET_TEST, test_server_close);
-
-  /* automatically connect to peers of 'test' service. */
-  unet_bind_flag_set(UNET_TEST, UNETF_PEER_SCAN);
-#endif
-
   return (0);
 }
+
+
+static int test_bind(CIface *iface, void *_unused_)
+{
+  return (0);
+}
+
 static int test_term(CIface *iface, void *_unused_)
 {
   CWallet *wallet = GetWallet(iface);
@@ -208,6 +185,7 @@ coin_iface_t test_coin_iface = {
   TEST_COINBASE_MATURITY, 
   TEST_MAX_SIGOPS,
   COINF(test_init),
+  COINF(test_bind),
   COINF(test_term),
   NULL, /* test_msg_recv() */
   NULL, /* test_msg_send() */

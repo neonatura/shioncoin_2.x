@@ -117,6 +117,7 @@ typedef struct coin_iface_t
 
   /* coin operations */
   coin_f op_init;
+  coin_f op_bind;
   coin_f op_term;
   coin_f op_msg_recv;
   coin_f op_msg_send;

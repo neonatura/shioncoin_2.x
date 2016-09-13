@@ -69,8 +69,8 @@ typedef struct bc_hdr_t
 
 typedef struct bc_map_t
 {
-  int fd;
-  size_t size;
+  volatile int fd;
+  volatile size_t size;
   time_t stamp; 
   char ext[64];
   bc_hdr_t *hdr;

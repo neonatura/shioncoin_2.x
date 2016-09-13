@@ -48,7 +48,7 @@ static int usde_init(CIface *iface, void *_unused_)
   int ifaceIndex = GetCoinIndex(iface);
   int err;
 
- usdeWallet = new USDEWallet();
+  usdeWallet = new USDEWallet();
   SetWallet(USDE_COIN_IFACE, usdeWallet);
 
 
@@ -71,11 +71,20 @@ static int usde_init(CIface *iface, void *_unused_)
     return (SHERR_INVAL);
   }
 
+  Debug("initialized USDE block-chain.");
+
+  return (0);
+}
+
+static int usde_bind(CIface *iface, void *_unused_)
+{
+  int err;
+
   err = unet_bind(UNET_USDE, USDE_COIN_DAEMON_PORT);
   if (err) { 
-error(err, "error binding USDE socket port");
+    error(err, "error binding USDE socket port");
     return (err);
-}
+  }
 
   unet_timer_set(UNET_USDE, usde_server_timer); /* x10/s */
   unet_connop_set(UNET_USDE, usde_server_accept);
@@ -241,6 +250,7 @@ coin_iface_t usde_coin_iface = {
   USDE_COINBASE_MATURITY, 
   USDE_MAX_SIGOPS,
   COINF(usde_init),
+  COINF(usde_bind),
   COINF(usde_term),
   COINF(usde_msg_recv),
   COINF(usde_msg_send),

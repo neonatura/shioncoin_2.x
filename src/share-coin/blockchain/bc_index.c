@@ -41,7 +41,6 @@ static int _bc_idx_open(bc_t *bc)
     return (SHERR_INVAL);
 
   if (bc->idx_map.fd != 0) {
-fprintf(stderr, "DEBUG: _bc_idx_open: using pre-existing fd %d\n", bc->idx_map.fd);
     return (0);
 }
 

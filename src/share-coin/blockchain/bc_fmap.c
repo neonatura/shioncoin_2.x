@@ -47,7 +47,6 @@ static int _bc_map_open(bc_t *bc, bc_map_t *map)
   int fd;
 
   if (map->fd != 0) {
-fprintf(stderr, "DEBUG: using pre-existing fd %d\n", map->fd);
     return (0);
   }
 
@@ -361,26 +360,23 @@ int bc_map_read(bc_t *bc, bc_map_t *map, unsigned char *data, bcsize_t data_of, 
   return (0);
 }
 
-#define BCMAP_IDLE_TIME 300
-void bc_map_idle(bc_t *bc, bc_map_t *map)
+#define BCMAP_IDLE_TIME 100
+int bc_map_idle(bc_t *bc, bc_map_t *map)
 {
   time_t now;
-  int err;
 
   if (!map)
-    return;
+    return (0);
 
   now = time(NULL);
   if ((map->stamp + BCMAP_IDLE_TIME) > now)
-    return;
+    return (1);
 
-  err = 0;
-  if (!shlock_open_str(BCMAP_LOCK, 0))
-    err = SHERR_NOLCK;
-
+  bc_lock();
   bc_map_close(map);
-  if (!err)
-    shlock_close_str(BCMAP_LOCK);
+  bc_unlock();
+
+  return (0);
 }
 
 unsigned int bc_fmap_total(bc_t *bc)
