@@ -242,7 +242,7 @@ read_again:
         r_len = shnet_read(fd, data, sizeof(data));
 fprintf(stderr, "DEBUG: %d = shnet_read(fd %d, <%d bytes>)\n", (int)r_len, fd, sizeof(data));
         if (r_len < 0) {
-          if (errno != EAGAIN) {
+          if (r_len != SHERR_AGAIN) {
             sprintf(errbuf, "read fd %d (%s)", fd, sherrstr(r_len));
             unet_close(fd, errbuf);
           }
@@ -265,8 +265,9 @@ write_again:
           w_len = shnet_write(fd, shbuf_data(t->wbuff), w_tot);
   fprintf(stderr, "DEBUG: %d = shnet_write(fd %d, <%d bytes>)\n", (int)w_len, fd, w_tot);
           if (w_len < 0) {
-            if (errno != EAGAIN) {
-              unet_close(fd, "write");
+            if (w_len != SHERR_AGAIN) {
+              sprintf(errbuf, "write fd %d (%s)", fd, sherrstr(r_len));
+              unet_close(fd, errbuf);
             }
           } else if (w_len > 0) {
             shbuf_trim(t->wbuff, w_len);
