@@ -329,7 +329,7 @@ extern "C" {
 
 /* -- */
 
-    for (idx = 1; idx < 64; idx++) {
+    for (idx = 1; idx < 16; idx++) {
       /* extract child pub key */
       HDPubKey t_pubkey;
       ret = key.derive(t_pubkey, idx);
@@ -355,6 +355,7 @@ extern "C" {
 
       CPubKey b_pubkey(t_pubkey.Raw());
 
+#if 0
       /* test variant derivatives */
       for (idx = 1; idx < 16; idx++) {
         HDPubKey d_pubkey;
@@ -364,6 +365,7 @@ extern "C" {
         _TRUE(privkey.derive(d_privkey, key.Raw(), idx) == true);
   /* check for dups.. */
       }
+#endif
 
 
       /* test hash signing */

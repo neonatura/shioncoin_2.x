@@ -32,8 +32,10 @@ int unet_rbuff_add(int sk, unsigned char *data, size_t data_len)
   int err;
 
   t = get_unet_table(sk);
-  if (!t)
+  if (!t) {
+fprintf(stderr, "DEBUG: unet_rbuff_add: invalid fd %d\n", sk);
     return (SHERR_INVAL);
+}
 
   if (!t->rbuff)
     t->rbuff = shbuf_init();

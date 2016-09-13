@@ -147,7 +147,27 @@ char errbuf[256];
     err = unet_accept(mode, NULL);
   }
 
-  /* process I/O for sockets */
+
+  /* work proc */
+  unet_timer_cycle();
+
+  /* events */
+  uevent_cycle();
+
+  now = time(NULL);
+
+  if (next_t < now) {
+    /* scan for new service connections */
+    if (uevent_type_count(UEVENT_PEER) == 0) {
+      unet_peer_scan();
+    }
+
+    unet_idle(); 
+
+    next_t = now + 10;
+  }
+
+  /* socket I/O */
   fd_max = 1;
   FD_ZERO(&r_set);
   FD_ZERO(&w_set);
@@ -201,25 +221,6 @@ fprintf(stderr, "DEBUG: unet_cycle: shnet_read failure: %s [errno %d]\n", strerr
     fd_max = MAX(fd, fd_max);
   }
 
-  /* work proc */
-  unet_timer_cycle();
-
-  /* events */
-  uevent_cycle();
-
-  now = time(NULL);
-
-  if (next_t < now) {
-    /* scan for new service connections */
-    if (uevent_type_count(UEVENT_PEER) == 0) {
-      unet_peer_scan();
-    }
-
-    unet_idle(); 
-
-    next_t = now + 10;
-  }
-
   /* wait remainder of max_t */
   wait_t = shtimef(shtime()) - shtimef(start_t);
   wait_t = MAX(0, max_t - wait_t);
@@ -238,6 +239,7 @@ fprintf(stderr, "DEBUG: unet_cycle: shnet_read failure: %s [errno %d]\n", strerr
       if (FD_ISSET(fd, &r_set)) {
         memset(data, 0, sizeof(data));
         r_len = shnet_read(fd, data, sizeof(data));
+fprintf(stderr, "DEBUG: %d = shnet_read(fd %d, <%d bytes>)\n", (int)r_len, fd, data);
         if (r_len < 0) {
           if (errno != EAGAIN) {
             sprintf(errbuf, "read fd %d (%s)", fd, sherrstr(r_len));
@@ -249,8 +251,12 @@ fprintf(stderr, "DEBUG: unet_cycle: shnet_read failure: %s [errno %d]\n", strerr
         }
       }
       if (FD_ISSET(fd, &w_set)) {
+        t = get_unet_table(fd);
+        if (!t) continue;
+
         w_tot = shbuf_size(t->wbuff);
         w_len = shnet_write(fd, shbuf_data(t->wbuff), w_tot);
+fprintf(stderr, "DEBUG: %d = shnet_write(fd %d, <%d bytes>)\n", (int)w_len, fd, w_tot);
         if (w_len < 0) {
           if (errno != EAGAIN) {
             unet_close(fd, "write");
