@@ -40,19 +40,25 @@ static int _bc_idx_open(bc_t *bc)
   if (!bc)
     return (SHERR_INVAL);
 
-  if (bc->idx_map.fd != 0)
+  if (bc->idx_map.fd != 0) {
+fprintf(stderr, "DEBUG: _bc_idx_open: using pre-existing fd %d\n", bc->idx_map.fd);
     return (0);
+}
 
   /* set map file extension */
   strncpy(bc->idx_map.ext, BC_INDEX_EXTENSION, sizeof(bc->idx_map.ext)-1);
 
   err = bc_map_open(bc, &bc->idx_map);
-  if (err)
+  if (err) {
+fprintf(stderr, "DEBUG: _bc_idx_open: %d = bc_map_open()\n", err);
     return (err);
+}
 
   err = bc_map_alloc(bc, &bc->idx_map, 0);
-  if (err)
+  if (err) {
+fprintf(stderr, "DEBUG: _bc_idx_open: %d = bc_map_alloc()\n", err);
     return (err);
+}
   
   return (0);
 }

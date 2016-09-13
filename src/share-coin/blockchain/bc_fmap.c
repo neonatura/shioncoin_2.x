@@ -47,6 +47,7 @@ static int _bc_map_open(bc_t *bc, bc_map_t *map)
   int fd;
 
   if (map->fd != 0) {
+fprintf(stderr, "DEBUG: using pre-existing fd %d\n", map->fd);
     return (0);
   }
 
@@ -100,15 +101,11 @@ int bc_map_open(bc_t *bc, bc_map_t *map)
 {
   int err;
 
-  if (!shlock_open_str(BCMAP_LOCK, 0))
-    return (SHERR_NOLCK);
-
+  bc_lock();
   err = _bc_map_open(bc, map);
-  shlock_close_str(BCMAP_LOCK);
-  if (err)
-    return (err);
+  bc_unlock();
 
-  return (0);
+  return (err);
 }
 
 /**
@@ -159,14 +156,18 @@ memset(&st, 0, sizeof(st));
     size = size + (size / 10); /* + 10% */
     size = ((size / BC_MAP_BLOCK_SIZE) + 1) * BC_MAP_BLOCK_SIZE;
     err = ftruncate(map->fd, size);
-    if (err)
+    if (err) {
+fprintf(stderr, "DEBUG: _bc_map_alloc: %d = ftruncate(fd %d, <%d bytes>) [errno %d]\n", err, map->fd, size, errno); 
       return (-errno);
+}
   }
 
   /* map disk to memory */
   raw = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, map->fd, 0); 
-  if (raw == MAP_FAILED)
+  if (raw == MAP_FAILED) {
+fprintf(stderr, "DEBUG: _bc_map_alloc: mmap failed on fd %d\n", map->fd); 
     return (SHERR_NOMEM); 
+}
 
   /* fill in file map structure */
   map->hdr = (bc_hdr_t *)raw;
@@ -180,15 +181,11 @@ int bc_map_alloc(bc_t *bc, bc_map_t *map, bcsize_t len)
 {
   int err;
 
-  if (!shlock_open_str(BCMAP_LOCK, 0))
-    return (SHERR_NOLCK);
-
+  bc_lock();
   err = _bc_map_alloc(bc, map, len);
-  shlock_close_str(BCMAP_LOCK);
-  if (err)
-    return (err);
+  bc_unlock();
 
-  return (0);
+  return (err);
 }
 
 /**
@@ -221,15 +218,11 @@ int bc_map_trunc(bc_t *bc, bc_map_t *map, bcsize_t len)
 {
   int err;
 
-  if (!shlock_open_str(BCMAP_LOCK, 0))
-    return (SHERR_NOLCK);
-
+  bc_lock();
   err = _bc_map_trunc(bc, map, len);
-  shlock_close_str(BCMAP_LOCK);
-  if (err)
-    return (err);
+  bc_unlock();
 
-  return (0);
+  return (err);
 }
 
 void bc_map_free(bc_map_t *map)
@@ -255,10 +248,10 @@ void bc_map_free(bc_map_t *map)
 static void _bc_map_close(bc_map_t *map)
 {
 
+fprintf(stderr, "DBEUG: _bc_map_close: fd %d\n", map->fd);
   bc_map_free(map);
   if (map->fd) {
     close(map->fd);
-fprintf(stderr, "DBEUG: _bc_map_close: fd %d\n", map->fd);
     map->fd = 0;
   }
 
@@ -266,18 +259,13 @@ fprintf(stderr, "DBEUG: _bc_map_close: fd %d\n", map->fd);
 
 void bc_map_close(bc_map_t *map)
 {
-  int err;
 
-  if (!map)
-    return;
+  if (map) {
+    bc_lock();
+    _bc_map_close(map);
+    bc_unlock();
+  }
 
-  err = 0;
-  if (!shlock_open_str(BCMAP_LOCK, 0))
-    err = SHERR_NOLCK;
-
-  _bc_map_close(map);
-  if (!err)
-    shlock_close_str(BCMAP_LOCK);
 }
 
 static int _bc_map_write(bc_t *bc, bc_map_t *map, bcsize_t of, void *raw_data, bcsize_t data_len)
@@ -373,7 +361,7 @@ int bc_map_read(bc_t *bc, bc_map_t *map, unsigned char *data, bcsize_t data_of, 
   return (0);
 }
 
-#define BCMAP_IDLE_TIME 60
+#define BCMAP_IDLE_TIME 300
 void bc_map_idle(bc_t *bc, bc_map_t *map)
 {
   time_t now;

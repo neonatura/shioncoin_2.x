@@ -59,7 +59,7 @@ uevent_t *uevent_new(int umode, int type, void *data)
 
 uevent_t *uevent_new_peer(int umode, shpeer_t *peer)
 {
-fprintf(stderr, "DEBUG: uevent_new_peer[umode %d]: peer '%s'\n", shpeer_print(peer));
+fprintf(stderr, "DEBUG: uevent_new_peer[umode %d]: peer '%s'\n", umode, shpeer_print(peer));
   return (uevent_new(umode, UEVENT_PEER, peer));
 }
 
