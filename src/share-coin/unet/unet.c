@@ -111,27 +111,32 @@ void unet_idle(void)
  */
 void unet_cycle(double max_t)
 {
+  static shtime_t start_t;
   static int next_t;
   unet_bind_t *bind;
   unet_table_t *t;
   shbuf_t *buff;
   struct timeval to;
-  shtime_t start_t;
   shtime_t ts;
   fd_set r_set;
   fd_set w_set;
   fd_set x_set;
   SOCKET fd;
   unsigned long diff;
+  ssize_t w_tot;
   ssize_t w_len;
+  ssize_t r_len;
   SOCKET sk;
+  char data[65536];
+char errbuf[256];
   double wait_t;
   time_t now;
   int fd_max;
   int mode;
   int err;
 
-  start_t = shtime();
+  if (start_t == SHTIME_UNDEFINED)
+    start_t = shtime();
 
   /* add daemon listen sockets to read set for accepting new sockets */
   for (mode = 1; mode < MAX_UNET_MODES; mode++) {
@@ -159,24 +164,13 @@ void unet_cycle(double max_t)
       continue;
     }
 
+#if 0
     /* write outgoing buffer to socket */
     if (shbuf_size(t->wbuff)) {
       size_t w_tot;
       size_t w_of;
 
       w_tot = shbuf_size(t->wbuff);
-#if 0
-      for (w_of = 0; w_of < w_tot; w_of += w_len) {
-        w_len = shnet_write(fd, shbuf_data(t->wbuff)+w_of, w_tot-w_of);
-        if (w_len < 0) {
-          if (errno != EAGAIN) {
-fprintf(stderr, "DEBUG: unet_cycle: shnet_write failure: %s [errno %d]\n", strerror(errno), errno);  
-            unet_close(fd, "write");
-          }
-          break;
-        }
-      }      
-#endif
       w_len = shnet_write(fd, shbuf_data(t->wbuff), w_tot);
       if (w_len < 0) {
         if (errno != EAGAIN) {
@@ -198,6 +192,7 @@ fprintf(stderr, "DEBUG: unet_cycle: shnet_read failure: %s [errno %d]\n", strerr
       unet_close(fd, "read");
       continue;
     }
+#endif
 
     FD_SET(fd, &r_set);
     FD_SET(fd, &x_set);
@@ -222,7 +217,7 @@ fprintf(stderr, "DEBUG: unet_cycle: shnet_read failure: %s [errno %d]\n", strerr
 
     unet_idle(); 
 
-    next_t = now + 15;
+    next_t = now + 10;
   }
 
   /* wait remainder of max_t */
@@ -238,9 +233,37 @@ fprintf(stderr, "DEBUG: unet_cycle: shnet_read failure: %s [errno %d]\n", strerr
       if (FD_ISSET(fd, &x_set)) {
         /* socket is in error state */
         unet_close(fd, "exception");
+        continue;
+      }
+      if (FD_ISSET(fd, &r_set)) {
+        memset(data, 0, sizeof(data));
+        r_len = shnet_read(fd, data, sizeof(data));
+        if (r_len < 0) {
+          if (errno != EAGAIN) {
+            sprintf(errbuf, "read fd %d (%s)", fd, sherrstr(r_len));
+            unet_close(fd, errbuf);
+          }
+        } else if (r_len > 0) {
+          unet_rbuff_add(fd, data, r_len);
+          t->stamp = shtime();
+        }
+      }
+      if (FD_ISSET(fd, &w_set)) {
+        w_tot = shbuf_size(t->wbuff);
+        w_len = shnet_write(fd, shbuf_data(t->wbuff), w_tot);
+        if (w_len < 0) {
+          if (errno != EAGAIN) {
+            unet_close(fd, "write");
+          }
+        } else if (w_len > 0) {
+          shbuf_trim(t->wbuff, w_len);
+          t->stamp = shtime();
+        }
       }
     }
   }
+
+  start_t = shtime();
 
   /* free expunged sockets */
   unet_close_free();
@@ -258,4 +281,19 @@ void unet_shutdown(SOCKET sk)
 
   t->flag |= UNETF_SHUTDOWN;
 }
+
+
+shbuf_t *unet_read_buf(SOCKET sk)
+{
+  unet_table_t *t;
+
+  t = get_unet_table(sk);
+  if (!t || t->fd == UNDEFINED_SOCKET) {
+fprintf(stderr, "DEBUG: unet_read_buf: requested socket %d that is not valid\n", sk);
+    return (NULL);
+}
+
+  return (t->rbuff);
+}
+
 

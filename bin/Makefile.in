@@ -1329,11 +1329,14 @@ uninstall-am:
 @USDE_SERVICE_TRUE@usde:
 @USDE_SERVICE_TRUE@	ln -sf $(top_builddir)/src/share-coin/usde
 
-shcoind:
+shcoind: docs
 	ln -sf $(top_builddir)/src/share-coin/shcoind
 
 shc:
 	ln -sf $(top_builddir)/src/share-coin/shc
+
+docs:
+	ln -sf $(top_builddir)/doc/html/ docs
 
 .notice:
 	@echo > .notice

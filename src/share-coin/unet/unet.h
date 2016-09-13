@@ -132,10 +132,8 @@ typedef struct unet_table_t
   /** The last time that I/O was processed on socket. */
   shtime_t stamp;
 
-#if 0
   /** incoming data buffer */
   shbuf_t *rbuff;
-#endif
 
   /** outgoing data buffer */
   shbuf_t *wbuff;
@@ -237,6 +235,8 @@ void unet_peer_fill(int mode);
 unsigned int unet_peer_total(int mode);
 
 int unet_peer_find(int mode, struct sockaddr *addr);
+
+shbuf_t *unet_read_buf(SOCKET sk);
 
 
 #ifdef __cplusplus

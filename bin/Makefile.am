@@ -9,11 +9,14 @@ usde:
 	ln -sf $(top_builddir)/src/share-coin/usde
 endif
 
-shcoind:
+shcoind: docs
 	ln -sf $(top_builddir)/src/share-coin/shcoind
 
 shc:
 	ln -sf $(top_builddir)/src/share-coin/shc
+
+docs:
+	ln -sf $(top_builddir)/doc/html/ docs
 
 
 .notice:

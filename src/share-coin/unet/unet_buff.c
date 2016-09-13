@@ -26,7 +26,6 @@
 #include "shcoind.h"
 
 
-#if 0
 int unet_rbuff_add(int sk, unsigned char *data, size_t data_len)
 {
   unet_table_t *t;
@@ -40,26 +39,8 @@ int unet_rbuff_add(int sk, unsigned char *data, size_t data_len)
     t->rbuff = shbuf_init();
 
   shbuf_cat(t->rbuff, data, data_len);
+fprintf(stderr, "DEBUG: unet_rbuff_add: <%d bytes> from fd %d\n", data_len, sk);
 
   return (0);
 }
-#endif
 
-#if 0
-int unet_sbuff_add(int sk, unsigned char *data, size_t data_len)
-{
-  unet_table_t *t;
-  int err;
-
-  t = get_unet_table(sk);
-  if (!t) 
-    return (SHERR_INVAL);
-
-  if (!t->rbuff)
-    t->rbuff = shbuf_init();
-
-  shbuf_cat(t->rbuff, data, data_len);
-
-  return (0);
-}
-#endif

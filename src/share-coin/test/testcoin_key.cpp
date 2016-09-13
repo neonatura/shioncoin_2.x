@@ -329,67 +329,67 @@ extern "C" {
 
 /* -- */
 
-    /* extract child pub key */
-    idx = 1;
-    HDPubKey t_pubkey;
-    ret = key.derive(t_pubkey, idx);
-    _TRUE(ret == true);
+    for (idx = 1; idx < 64; idx++) {
+      /* extract child pub key */
+      HDPubKey t_pubkey;
+      ret = key.derive(t_pubkey, idx);
+      _TRUE(ret == true);
 
-    /* extract child priv key */
-    HDPrivKey t_privkey;
-    ret = privkey.derive(t_privkey, key.Raw(), idx);
-    _TRUE(ret == true);
+      /* extract child priv key */
+      HDPrivKey t_privkey;
+      ret = privkey.derive(t_privkey, key.Raw(), idx);
+      _TRUE(ret == true);
 
-  /* -- */
+    /* -- */
 
-    CPubKey t_pubkey2 = t_privkey.GetPubKey();
-if (t_pubkey.Raw().size() != 33 || t_pubkey2.Raw().size() != 33) {
-  fprintf(stderr, "DEBUG: TEST_coin_hdkey: t_pubkey2.Raw().size() = %d\n", t_pubkey2.Raw().size()); 
-  fprintf(stderr, "DEBUG: TEST_coin_hdkey: t_pubkey.Raw().size() = %d\n", t_pubkey.Raw().size()); 
-}
-    _TRUE(t_pubkey2.Raw() == t_pubkey.Raw());
+      CPubKey t_pubkey2 = t_privkey.GetPubKey();
+  if (t_pubkey.Raw().size() != 33 || t_pubkey2.Raw().size() != 33) {
+    fprintf(stderr, "DEBUG: TEST_coin_hdkey: t_pubkey2.Raw().size() = %d\n", t_pubkey2.Raw().size()); 
+    fprintf(stderr, "DEBUG: TEST_coin_hdkey: t_pubkey.Raw().size() = %d\n", t_pubkey.Raw().size()); 
+  }
+      _TRUE(t_pubkey2.Raw() == t_pubkey.Raw());
 
 
 
-/* .. coin compatibility  .. */
+  /* .. coin compatibility  .. */
 
-    CPubKey b_pubkey(t_pubkey.Raw());
+      CPubKey b_pubkey(t_pubkey.Raw());
 
-    /* test variant derivatives */
-    for (idx = 1; idx < 16; idx++) {
-      HDPubKey d_pubkey;
-      _TRUE(key.derive(d_pubkey, idx) == true);
+      /* test variant derivatives */
+      for (idx = 1; idx < 16; idx++) {
+        HDPubKey d_pubkey;
+        _TRUE(key.derive(d_pubkey, idx) == true);
 
-      HDPrivKey d_privkey;
-      _TRUE(privkey.derive(d_privkey, key.Raw(), idx) == true);
-/* check for dups.. */
+        HDPrivKey d_privkey;
+        _TRUE(privkey.derive(d_privkey, key.Raw(), idx) == true);
+  /* check for dups.. */
+      }
+
+
+      /* test hash signing */
+      uint256 hash("0xf4319e4e89b35b5f26ec0363a09d29703402f120cf1bf8e6f535548d5ec3c5cc");
+      uint256 inval_hash("0x54bac4474b4d5e3cef2d38dda11fed32e4459a97fbddf43ff9543b0f31b587fd");
+      cbuff sig;
+      _TRUE(t_privkey.Sign(hash, sig) == true);
+      _TRUE(t_pubkey.Verify(hash, sig) == true);
+      _TRUE(t_privkey.Verify(hash, sig) == true);
+      _TRUE(t_privkey.Verify(inval_hash, sig) == false);
+      cbuff csig;
+      _TRUE(t_privkey.SignCompact(hash, csig) == true);
+      _TRUE(t_privkey.VerifyCompact(hash, csig) == true);
+
+      /* test pub-key hash verification */
+      CKey pk;
+      _TRUE(pk.SetCompactSignature(hash, csig) == true);
+      _TRUE(pk.VerifyCompact(hash, csig) == true);
+      _TRUE(pk.VerifyCompact(inval_hash, csig) == false);
+
+      /* this won't eval since pubkey is variant derivative */
+      CKey pk2;
+      pk2.SetPubKey(t_privkey.GetPubKey());
+      _TRUE(pk2.Verify(hash, csig) == false);
+      _TRUE(pk2.VerifyCompact(hash, csig) == false);
     }
-
-
-    /* test hash signing */
-    uint256 hash("0xf4319e4e89b35b5f26ec0363a09d29703402f120cf1bf8e6f535548d5ec3c5cc");
-    uint256 inval_hash("0x54bac4474b4d5e3cef2d38dda11fed32e4459a97fbddf43ff9543b0f31b587fd");
-    cbuff sig;
-    _TRUE(t_privkey.Sign(hash, sig) == true);
-    _TRUE(t_pubkey.Verify(hash, sig) == true);
-    _TRUE(t_privkey.Verify(hash, sig) == true);
-    _TRUE(t_privkey.Verify(inval_hash, sig) == false);
-    cbuff csig;
-    _TRUE(t_privkey.SignCompact(hash, csig) == true);
-    _TRUE(t_privkey.VerifyCompact(hash, csig) == true);
-
-    /* test pub-key hash verification */
-    CKey pk;
-    _TRUE(pk.SetCompactSignature(hash, csig) == true);
-    _TRUE(pk.VerifyCompact(hash, csig) == true);
-    _TRUE(pk.VerifyCompact(inval_hash, csig) == false);
-
-    /* this won't eval since pubkey is variant derivative */
-    CKey pk2;
-    pk2.SetPubKey(t_privkey.GetPubKey());
-    _TRUE(pk2.Verify(hash, csig) == false);
-    _TRUE(pk2.VerifyCompact(hash, csig) == false);
-
 
   }
 

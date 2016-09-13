@@ -58,8 +58,15 @@ int unet_close(SOCKET sk, char *tag)
       shtime_diff(shtime(), table->cstamp) / 3600,
       tag ? tag : "n/a");
   unet_log(table->mode, buf);
+fprintf(stderr, "DEBUG: unet_close: %s\n", buf);
+
+  if (table->wbuff)
+    shbuf_clear(table->wbuff);
+  if (table->rbuff)
+    shbuf_clear(table->rbuff);
 
   table->fd = UNDEFINED_SOCKET;
+
 
   return (err);
 }
@@ -116,8 +123,8 @@ void unet_close_idle(void)
         continue;
       }
     }
-    if (shbuf_size(t->wbuff) > MAX_SOCKET_BUFFER_SIZE) {
-// || shbuf_size(t->rbuff) > MAX_SOCKET_BUFFER_SIZE) {
+    if (shbuf_size(t->wbuff) > MAX_SOCKET_BUFFER_SIZE ||
+        shbuf_size(t->rbuff) > MAX_SOCKET_BUFFER_SIZE) {
       sprintf(buf, "unet_close_idle: closeing peer '%s' for buffer overflow (write %dk).", shaddr_print(&t->net_addr), shbuf_size(t->wbuff));
       unet_log(t->mode, buf);
       unet_shutdown(t->fd);
@@ -140,7 +147,7 @@ void unet_close_free(void)
       continue; /* already cleared */ 
 
     /* free [user-level] socket buffer */
-//    shbuf_free(&t->rbuff);
+    shbuf_free(&t->rbuff);
     shbuf_free(&t->wbuff);
 
     memset(t, '\000', sizeof(unet_table_t));

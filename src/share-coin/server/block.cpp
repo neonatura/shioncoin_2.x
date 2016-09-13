@@ -336,6 +336,15 @@ bool CTransaction::WriteTx(int ifaceIndex, uint64_t blockHeight)
       if (err)
         return error(err, "WriteTx; error clearing invalid previous hash tx [tx-idx-size %d] [tx-pos %d].", (int)data_len, (int)txPos);
 #endif
+    } else {
+fprintf(stderr, "DEBUG: critical: CTransaction.WriteTx: bc_get error %d\n", err); 
+
+    /* force re-open */
+      CIface *iface = GetCoinByIndex(ifaceIndex);
+      CloseBlockChain(iface);
+      CloseBlockChain(iface);
+
+      return (false);
     }
   }
 #if 0
@@ -2293,7 +2302,6 @@ CCert *CTransaction::CreateCert(int ifaceIndex, const char *name, CCoinAddr& add
   nFlag |= CTransaction::TXF_CERTIFICATE;
   certificate = CCert(strTitle);
   shgeo_local(&certificate.geo, SHGEO_PREC_DISTRICT);
-  certificate.SetActive(true);
   certificate.SetFee(nLicenseFee);
   certificate.Sign(ifaceIndex, addr, secret);
 

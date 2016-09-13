@@ -84,6 +84,8 @@ if (t) {
   if (sk_p)
     *sk_p = cli_fd;
 
+fprintf(stderr, "DEBUG: unet_accept: accepted socket fd %d\n", cli_fd);
+
   return (0);
 }
 

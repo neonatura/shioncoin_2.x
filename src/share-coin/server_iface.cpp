@@ -1537,7 +1537,7 @@ void usde_server_timer(void)
       if (fShutdown)
         return;
 
-      shbuf_t *pchBuf = shnet_read_buf(pnode->hSocket);
+      shbuf_t *pchBuf = unet_read_buf(pnode->hSocket);
       if (pchBuf)
         usde_coin_server_recv(iface, pnode, pchBuf);
 
@@ -1840,7 +1840,7 @@ void shc_server_timer(void)
       if (fShutdown)
         return;
 
-      shbuf_t *pchBuf = shnet_read_buf(pnode->hSocket);
+      shbuf_t *pchBuf = unet_read_buf(pnode->hSocket);
       if (pchBuf)
         shc_coin_server_recv(iface, pnode, pchBuf);
 #if 0

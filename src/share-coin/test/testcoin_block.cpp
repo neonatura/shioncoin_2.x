@@ -1032,6 +1032,53 @@ _TRUE(wallet->CommitTransaction(wtx, rkey) == true);
 
 }
 
+static void _init_exectx_sx(void)
+{
+  const char *src_path = "/tmp/exectx.lua";
+  const char *sx_path = "/tmp/exectx.sx";
+  const char *text = 
+    "function buyTicket(farg)\n"
+    "  if (userdata.rtotal >= userdata.rmax) then\n"
+    "    return 10\n"
+    "  end\n"
+    "  local reg = userdata.register[farg.sender]\n"
+    "  if (reg) then\n"
+    "    return 20\n"
+    "  end\n"
+    "  userdata.register[farg.sender] = farg.value\n"
+    "  userdata.rtotal = userdata.rtotal + 1\n"
+    "  commit(farg.sender, farg.value/2)\n"
+    "  return 0\n"
+    "end\n"
+    "function init(farg)\n"
+    "  userdata.rmax = 3\n"
+    "  userdata.rtotal = 0\n"
+    "  userdata.register = { }\n"
+    "  userdata.owner = farg.sender\n"
+    "  userdata.buyTicket = buyTicket\n"
+    "  userdata.refundTicket = refundTicket\n"
+    "  userdata.setQuota = setQuota\n"
+    "  return 0\n"
+    "end\n"
+    "function term(farg)\n"
+    "  return 0\n"
+    "end\n"
+    "return 0\n";
+
+  shfs_write_mem((char *)src_path, (char *)text, strlen(text));
+  system("sx -o /tmp/exec.sx /tmp/execsx.lua");
+
+}
+
+static void _term_exectx_sx(void)
+{
+  const char *src_path = "/tmp/exectx.lua";
+  const char *sx_path = "/tmp/exectx.sx";
+
+  unlink(src_path);
+  unlink(sx_path);
+}
+
 _TEST(exectx)
 {
   CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
@@ -1042,7 +1089,7 @@ _TEST(exectx)
   int idx;
   int err;
 
-//_init_exectx_sx();
+  _init_exectx_sx();
 
   (void)GetAccountAddress(wallet, strAccount, true);
 
@@ -1085,7 +1132,7 @@ if (err) fprintf(stderr, "DEBUG: %d = generate_exec_tx()\n", err);
     delete block;
   }
 
-//  unlink(strPath.c_str());
+  _term_exectx_sx();
 }
 
 

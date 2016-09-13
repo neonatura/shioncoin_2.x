@@ -147,12 +147,12 @@ static void stratum_timer(void)
     }
 #endif
 
+#if 0
     buff = shnet_read_buf(peer->fd);
     if (!buff) continue;
-#if 0
+#endif
     buff = t->rbuff;
     if (!buff) continue;
-#endif
 
     /* process incoming requests */
     len = shbuf_idx(buff, '\n');
