@@ -718,6 +718,9 @@
 /* Define to 1 if you have the `pthread' library (-lpthread). */
 #undef HAVE_LIBPTHREAD
 
+/* Define to 1 if you have the `share' library (-lshare). */
+#undef HAVE_LIBSHARE
+
 /* Define to 1 if you have the `share_sexe' library (-lshare_sexe). */
 #undef HAVE_LIBSHARE_SEXE
 

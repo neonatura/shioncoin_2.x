@@ -207,6 +207,7 @@ AC_HEADER_STDC
 
 AC_CHECK_LIB([m], [fabs])
 AC_CHECK_LIB([pthread], [pthread_self])
+AC_CHECK_LIB([share], [get_libshare_version]))
 AC_ARG_WITH([libshare],
   [AS_HELP_STRING([--with-libshare],
   [specify a path to the libshare build directory])],
@@ -214,7 +215,7 @@ AC_ARG_WITH([libshare],
   [with_libshare=yes])
 LIBSHARE=
 AS_IF([test "x$with_libshare" = "xyes"],
-  AC_CHECK_LIB([share_sexe], [get_libshare_version]))
+  AC_CHECK_LIB([share_sexe], [sexe_load]))
 AC_SUBST([LIBSHARE], $with_libshare)
 AM_CONDITIONAL([STATIC_LIBSHARE], test x"$with_libshare" != x"yes") 
 
