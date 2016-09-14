@@ -240,7 +240,7 @@ fprintf(stderr, "DEBUG: unet_cycle: shnet_read failure: %s [errno %d]\n", strerr
 read_again:
         memset(data, 0, sizeof(data));
         r_len = shnet_read(fd, data, sizeof(data));
-fprintf(stderr, "DEBUG: %d = shnet_read(fd %d, <%d bytes>)\n", (int)r_len, fd, sizeof(data));
+fprintf(stderr, "DEBUG: %d = shnet_read(fd %d, <%d bytes>) (errno %d)\n", (int)r_len, fd, sizeof(data), errno);
         if (r_len < 0) {
           if (r_len != SHERR_AGAIN) {
             sprintf(errbuf, "read fd %d (%s)", fd, sherrstr(r_len));

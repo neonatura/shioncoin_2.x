@@ -1066,7 +1066,7 @@ static void _init_exectx_sx(void)
     "return 0\n";
 
   shfs_write_mem((char *)src_path, (char *)text, strlen(text));
-  system("sx -o /tmp/exec.sx /tmp/execsx.lua");
+  system("sxc -o /tmp/exec.sx /tmp/execsx.lua");
 
 }
 
