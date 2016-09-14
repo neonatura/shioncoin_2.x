@@ -180,7 +180,7 @@ char errbuf[256];
     if ((t->flag & UNETF_SHUTDOWN) &&
         shbuf_size(t->wbuff) == 0) {
       /* marked for closure and write buffer is empty */
-      unet_close(t->fd, "shutdown");
+      unet_close(fd, "shutdown");
       continue;
     }
 
@@ -243,6 +243,7 @@ fprintf(stderr, "DEBUG: unet_cycle: shnet_read failure: %s [errno %d]\n", strerr
           if (r_len != SHERR_AGAIN) {
             sprintf(errbuf, "read fd %d (%s)", fd, sherrstr(r_len));
             unet_close(fd, errbuf);
+            continue;
           }
         } else if (r_len > 0) {
           unet_rbuff_add(fd, data, r_len);
@@ -260,6 +261,7 @@ fprintf(stderr, "DEBUG: unet_cycle: shnet_read failure: %s [errno %d]\n", strerr
             if (w_len != SHERR_AGAIN) {
               sprintf(errbuf, "write fd %d (%s)", fd, sherrstr(r_len));
               unet_close(fd, errbuf);
+              continue;
             }
           } else if (w_len > 0) {
             shbuf_trim(t->wbuff, w_len);
@@ -268,6 +270,8 @@ fprintf(stderr, "DEBUG: unet_cycle: shnet_read failure: %s [errno %d]\n", strerr
         }
       }
     }
+  } else if (err < 0) {
+fprintf(stderr, "DEBUG: unet_cycle: select errno %d\n", errno);  
   }
 
   start_t = shtime();

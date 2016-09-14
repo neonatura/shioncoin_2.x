@@ -110,15 +110,18 @@ now = shtime();
     sprintf(buf, "unet_peer_verify: peer '%s' verified.\n", shpeer_print(peer));
     unet_log(e->mode, buf);
 
+#if 0
     if (e->fd) {
       shnet_close(e->fd);
       e->fd = 0;
     }
+#endif
 
     /* initiate service connection. */
     if (!unet_peer_find(e->mode, shpeer_addr(peer))) /* x2check */
       unet_connect(e->mode, shpeer_addr(peer), NULL);
 
+    e->fd = 0;
     return (0); /* dispose of event */
   }
 
@@ -130,11 +133,14 @@ now = shtime();
     sprintf(buf, "unet_peer_verify: error: peer '%s' (%s) [sherr %d].", shpeer_print(peer), sherrstr(err), err);
     unet_log(e->mode, buf);
 
+#if 0
     if (e->fd) {
       shnet_close(e->fd);
       e->fd = 0;
     }
+#endif
 
+    e->fd = 0;
     return (0); /* dispose of event */
   }
 
@@ -143,7 +149,7 @@ now = shtime();
     /* async connection socket timeout */
     err = SHERR_TIMEDOUT;
 
-    sprintf(buf, "unet_peer_verify: error: peer '%s' (%s) [wait %-1.1fs] [sherr %d].", shpeer_print(peer), sherrstr(err), shtime_diff(bind->scan_stamp, now), err);
+    sprintf(buf, "unet_peer_verify: error: peer '%s' (%s) [wait %-1.1fs] [sherr %d] [fd %d].", shpeer_print(peer), sherrstr(err), shtime_diff(bind->scan_stamp, now), err, e->fd);
     unet_log(e->mode, buf);
 
     /* error */
