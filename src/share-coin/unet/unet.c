@@ -224,7 +224,7 @@ fprintf(stderr, "DEBUG: unet_cycle: shnet_read failure: %s [errno %d]\n", strerr
   /* wait remainder of max_t */
   wait_t = shtimef(shtime()) - shtimef(start_t);
   wait_t = MAX(0, max_t - wait_t);
-  diff = MAX(50, MIN(1000, (unsigned long)(wait_t * 1000)));
+  diff = MAX(50, MIN(500, (unsigned long)(wait_t * 1000)));
 
   memset(&to, 0, sizeof(to));
   to.tv_usec = 1000 * diff; /* usec */
@@ -237,7 +237,6 @@ fprintf(stderr, "DEBUG: unet_cycle: shnet_read failure: %s [errno %d]\n", strerr
         continue;
       }
       if (FD_ISSET(fd, &r_set)) {
-read_again:
         memset(data, 0, sizeof(data));
         r_len = shnet_read(fd, data, sizeof(data));
         if (r_len < 0) {
@@ -248,14 +247,9 @@ read_again:
         } else if (r_len > 0) {
           unet_rbuff_add(fd, data, r_len);
           t->stamp = shtime();
-
-          if (r_len == sizeof(data)) {
-            goto read_again;
-          }
         }
       }
       if (FD_ISSET(fd, &w_set)) {
-write_again:
         t = get_unet_table(fd);
         if (!t) continue;
 
@@ -270,10 +264,6 @@ write_again:
           } else if (w_len > 0) {
             shbuf_trim(t->wbuff, w_len);
             t->stamp = shtime();
-
-            if (w_len < w_tot) {
-              goto write_again;
-            }
           }
         }
       }

@@ -41,6 +41,7 @@ fprintf(stderr, "DEBUG: unet_rbuff_add: invalid fd %d\n", sk);
     t->rbuff = shbuf_init();
 
   shbuf_cat(t->rbuff, data, data_len);
+fprintf(stderr, "DEBUG: unet_rbuff_add: fd %d <%d bytes>\n", sk, data_len);
 
   return (0);
 }
