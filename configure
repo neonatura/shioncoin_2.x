@@ -23726,7 +23726,7 @@ _ACEOF
   LIBS="-lshare $LIBS"
 
 fi
-)
+
 
 # Check whether --with-libshare was given.
 if test "${with_libshare+set}" = set; then
