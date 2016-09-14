@@ -197,10 +197,8 @@ int bc_arch_set(bc_t *bc, bcsize_t pos, bc_idx_t *arch)
     bcsize_t f_len = (of + sizeof(bc_idx_t)) - bc->arch_map.size;
 
     err = bc_map_alloc(bc, &bc->arch_map, f_len);
-    if (err) {
-fprintf(stderr, "DEBUG: bc_arch_set: bc_map_alloc <%d bytes> err %d\n", f_len, err); 
+    if (err)
       return (err);
-}
   }
 
   /* write to file map */

@@ -59,7 +59,6 @@ uevent_t *uevent_new(int umode, int type, void *data)
 
 uevent_t *uevent_new_peer(int umode, shpeer_t *peer)
 {
-fprintf(stderr, "DEBUG: uevent_new_peer[umode %d]: peer '%s'\n", umode, shpeer_print(peer));
   return (uevent_new(umode, UEVENT_PEER, peer));
 }
 
@@ -91,6 +90,8 @@ int uevent_peer_verify(uevent_t *e)
   char buf[1024];
   int err;
 
+now = shtime();
+
   peer = (shpeer_t *)e->data;
   if (!peer) {
     return (0); /* all done */
@@ -108,7 +109,6 @@ int uevent_peer_verify(uevent_t *e)
 
     sprintf(buf, "unet_peer_verify: peer '%s' verified.\n", shpeer_print(peer));
     unet_log(e->mode, buf);
-fprintf(stderr, "DEBUG: unet_peer_verify[fd %d]: %s\n", e->fd, buf);
 
     if (e->fd) {
       shnet_close(e->fd);
@@ -129,7 +129,6 @@ fprintf(stderr, "DEBUG: unet_peer_verify[fd %d]: %s\n", e->fd, buf);
 
     sprintf(buf, "unet_peer_verify: error: peer '%s' (%s) [sherr %d].", shpeer_print(peer), sherrstr(err), err);
     unet_log(e->mode, buf);
-fprintf(stderr, "DEBUG: unet_peer_verify[fd %d]: %s\n", e->fd, buf);
 
     if (e->fd) {
       shnet_close(e->fd);
@@ -146,7 +145,6 @@ fprintf(stderr, "DEBUG: unet_peer_verify[fd %d]: %s\n", e->fd, buf);
 
     sprintf(buf, "unet_peer_verify: error: peer '%s' (%s) [wait %-1.1fs] [sherr %d].", shpeer_print(peer), sherrstr(err), shtime_diff(bind->scan_stamp, now), err);
     unet_log(e->mode, buf);
-fprintf(stderr, "DEBUG: unet_peer_verify[fd %d]: %s\n", e->fd, buf);
 
     /* error */
     shnet_track_mark(bind->peer_db, peer, -1);

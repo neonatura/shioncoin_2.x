@@ -1515,6 +1515,7 @@ void usde_server_timer(void)
   NodeList &vNodes = GetNodeList(USDE_COIN_IFACE);
   shtime_t ts;
   bc_t *bc;
+  int err;
 
   if (fShutdown)
     return;
@@ -1538,8 +1539,12 @@ void usde_server_timer(void)
         return;
 
       shbuf_t *pchBuf = unet_read_buf(pnode->hSocket);
-      if (pchBuf)
-        usde_coin_server_recv(iface, pnode, pchBuf);
+      if (pchBuf) {
+        err = usde_coin_server_recv(iface, pnode, pchBuf);
+        if (err && err != SHERR_AGAIN) {
+fprintf(stderr, "DEBUG: usde_coin_server_recv: error %d\n", err);
+        }
+      }
 
 #if 0
       /* incoming data */
@@ -1802,7 +1807,7 @@ int shc_coin_server_recv(CIface *iface, CNode *pnode, shbuf_t *buff)
   shbuf_trim(buff, sizeof(hdr) + hdr.size);
 
   bool fRet = shc_coin_server_recv_msg(iface, pnode);
-//fprintf(stderr, "DEBUG: shc_coin_server_recv: shc_coin_server_recv_msg ret'd %s <%u bytes> [%s]\n", fRet ? "true" : "false", hdr.size, hdr.cmd); 
+fprintf(stderr, "DEBUG: shc_coin_server_recv: shc_coin_server_recv_msg ret'd %s <%u bytes> [%s]\n", fRet ? "true" : "false", hdr.size, hdr.cmd); 
 
   vRecv.erase(vRecv.begin(), vRecv.end());
   vRecv.Compact();
@@ -1818,6 +1823,7 @@ void shc_server_timer(void)
   NodeList &vNodes = GetNodeList(SHC_COIN_IFACE);
   shtime_t ts;
   bc_t *bc;
+  int err;
 
   if (fShutdown)
     return;
@@ -1841,8 +1847,12 @@ void shc_server_timer(void)
         return;
 
       shbuf_t *pchBuf = unet_read_buf(pnode->hSocket);
-      if (pchBuf)
-        shc_coin_server_recv(iface, pnode, pchBuf);
+      if (pchBuf) {
+        err = shc_coin_server_recv(iface, pnode, pchBuf);
+        if (err && err != SHERR_AGAIN) {
+fprintf(stderr, "DEBUG: shc_coin_server_recv: error %d\n", err); 
+        }
+      }
 #if 0
       /* incoming data */
       CDataStream& vRecv = pnode->vRecv;

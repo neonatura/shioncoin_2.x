@@ -42,23 +42,23 @@ static int _bc_idx_open(bc_t *bc)
 
   if (bc->idx_map.fd != 0) {
     return (0);
-}
+  }
 
   /* set map file extension */
   strncpy(bc->idx_map.ext, BC_INDEX_EXTENSION, sizeof(bc->idx_map.ext)-1);
 
   err = bc_map_open(bc, &bc->idx_map);
   if (err) {
-fprintf(stderr, "DEBUG: _bc_idx_open: %d = bc_map_open()\n", err);
+    fprintf(stderr, "DEBUG: _bc_idx_open: %d = bc_map_open()\n", err);
     return (err);
-}
+  }
 
   err = bc_map_alloc(bc, &bc->idx_map, 0);
   if (err) {
-fprintf(stderr, "DEBUG: _bc_idx_open: %d = bc_map_alloc()\n", err);
+    fprintf(stderr, "DEBUG: _bc_idx_open: %d = bc_map_alloc()\n", err);
     return (err);
-}
-  
+  }
+
   return (0);
 }
 
@@ -69,6 +69,10 @@ int bc_idx_open(bc_t *bc)
   bc_lock();
   err = _bc_idx_open(bc);
   bc_unlock();
+
+if (err) {
+fprintf(stderr, "DEBUG: bc_idx_open: error  %d [idx-map fd %d]\n", err, bc->idx_map.fd);
+}
 
   return (err);
 }

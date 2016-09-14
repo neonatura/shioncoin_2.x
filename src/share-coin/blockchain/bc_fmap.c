@@ -91,7 +91,6 @@ perror("bc_map_open [!reg]");
 
   map->fd = fd;
   map->size = st.st_size;
-fprintf(stderr, "DEBUG: _bc_map_open: opened fd %d\n", fd);
 
   return (0);
 }
@@ -100,7 +99,9 @@ int bc_map_open(bc_t *bc, bc_map_t *map)
 {
   int err;
 
-  bc_lock();
+  if (!bc_lock())
+    return (SHERR_NOLCK);
+
   err = _bc_map_open(bc, map);
   bc_unlock();
 
@@ -121,13 +122,17 @@ static int _bc_map_alloc(bc_t *bc, bc_map_t *map, bcsize_t len)
 
   /* ensure file map is open */
   err = bc_map_open(bc, map);
-  if (err)
+  if (err) {
+fprintf(stderr, "DEBUG: _bc_map_alloc: bc_map_open error %d\n", err);
     return (err);
+}
 
 memset(&st, 0, sizeof(st));
   err = fstat(map->fd, &st);
-  if (err)
+  if (err) {
+fprintf(stderr, "DEBUG: _bc_map_alloc: fstat errno %d [map fd %d]\n", -errno, map->fd);
     return (-errno);
+}
 
   map_of = 0;
   size = st.st_size / BC_MAP_BLOCK_SIZE * BC_MAP_BLOCK_SIZE;
@@ -180,7 +185,9 @@ int bc_map_alloc(bc_t *bc, bc_map_t *map, bcsize_t len)
 {
   int err;
 
-  bc_lock();
+  if (!bc_lock())
+    return (SHERR_NOLCK);
+
   err = _bc_map_alloc(bc, map, len);
   bc_unlock();
 
@@ -217,7 +224,9 @@ int bc_map_trunc(bc_t *bc, bc_map_t *map, bcsize_t len)
 {
   int err;
 
-  bc_lock();
+  if (!bc_lock())
+    return (SHERR_NOLCK);
+
   err = _bc_map_trunc(bc, map, len);
   bc_unlock();
 
@@ -226,20 +235,16 @@ int bc_map_trunc(bc_t *bc, bc_map_t *map, bcsize_t len)
 
 void bc_map_free(bc_map_t *map)
 {
-  int err;
 
   if (map->hdr) {
-    err = 0;
-    if (!shlock_open_str(BCMAP_LOCK, 0))
-      err = SHERR_NOLCK;
+    if (bc_lock()) {
+      munmap((void *)map->hdr, map->size); 
+      map->hdr = NULL;
+      map->raw = NULL;
+      map->size = 0;
 
-//    msync((void *)map->hdr, map->size, 0);
-    munmap((void *)map->hdr, map->size); 
-    map->hdr = NULL;
-    map->raw = NULL;
-    map->size = 0;
-    if (!err)
-      shlock_close_str(BCMAP_LOCK);
+      bc_unlock();
+    }
   }
 
 }
@@ -260,9 +265,10 @@ void bc_map_close(bc_map_t *map)
 {
 
   if (map) {
-    bc_lock();
-    _bc_map_close(map);
-    bc_unlock();
+    if (bc_lock()) {
+      _bc_map_close(map);
+      bc_unlock();
+    }
   }
 
 }
@@ -289,15 +295,13 @@ int bc_map_write(bc_t *bc, bc_map_t *map, bcsize_t of, void *raw_data, bcsize_t 
 {
   int err;
 
-  if (!shlock_open_str(BCMAP_LOCK, 0))
+  if (!bc_lock())
     return (SHERR_NOLCK);
 
   err = _bc_map_write(bc, map, of, raw_data, data_len);
-  shlock_close_str(BCMAP_LOCK);
-  if (err)
-    return (err);
+  bc_unlock();
 
-  return (0);
+  return (err);
 }
 
 /**
@@ -319,15 +323,13 @@ int bc_map_append(bc_t *bc, bc_map_t *map, void *raw_data, bcsize_t data_len)
 {
   int err;
 
-  if (!shlock_open_str(BCMAP_LOCK, 0))
+  if (!bc_lock())
     return (SHERR_NOLCK);
 
   err = _bc_map_append(bc, map, raw_data, data_len);
-  shlock_close_str(BCMAP_LOCK);
-  if (err)
-    return (err);
+  bc_unlock();
 
-  return (0);
+  return (err);
 }
 
 static int _bc_map_read(bc_t *bc, bc_map_t *map, unsigned char *data, bcsize_t data_of, bcsize_t data_len)
@@ -349,13 +351,12 @@ int bc_map_read(bc_t *bc, bc_map_t *map, unsigned char *data, bcsize_t data_of, 
 {
   int err;
 
-  if (!shlock_open_str(BCMAP_LOCK, 0))
-    return (SHERR_NOLCK);
-
-  err = _bc_map_read(bc, map, data, data_of, data_len);
-  shlock_close_str(BCMAP_LOCK);
-  if (err)
-    return (err);
+  if (bc_lock()) {
+    err = _bc_map_read(bc, map, data, data_of, data_len);
+    bc_unlock();
+    if (err)
+      return (err);
+  }
 
   return (0);
 }
@@ -372,9 +373,10 @@ int bc_map_idle(bc_t *bc, bc_map_t *map)
   if ((map->stamp + BCMAP_IDLE_TIME) > now)
     return (1);
 
-  bc_lock();
-  bc_map_close(map);
-  bc_unlock();
+  if (bc_lock()) {
+    bc_map_close(map);
+    bc_unlock();
+  }
 
   return (0);
 }

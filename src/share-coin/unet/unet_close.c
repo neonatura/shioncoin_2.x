@@ -58,7 +58,6 @@ int unet_close(SOCKET sk, char *tag)
       shtime_diff(shtime(), table->cstamp) / 3600,
       tag ? tag : "n/a");
   unet_log(table->mode, buf);
-fprintf(stderr, "DEBUG: unet_close: %s\n", buf);
 
   if (table->wbuff)
     shbuf_clear(table->wbuff);
@@ -99,8 +98,8 @@ void unet_close_idle(void)
   SOCKET sk;
 
   now = shtime();
-  conn_idle_t = shtime_adj(now, -30);
-  idle_t = shtime_adj(now, -900);
+  conn_idle_t = shtime_adj(now, -60);
+  idle_t = shtime_adj(now, -3600);
 
   for (sk = 1; sk < MAX_UNET_SOCKETS; sk++) {
     t = get_unet_table(sk);

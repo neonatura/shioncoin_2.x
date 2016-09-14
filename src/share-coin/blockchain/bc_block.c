@@ -322,8 +322,10 @@ static int _bc_read(bc_t *bc, int pos, void *data, bcsize_t data_len)
 
   /* ensure journal is allocated */
   err = bc_alloc(bc, idx.jrnl);
-  if (err)
+  if (err) {
+fprintf(stderr, "DEBUG: _bc_read: error %d\n", err);
     return (err);
+}
 
   memset(data, 0, data_len);
   data_len = MIN(data_len, idx.size); 
