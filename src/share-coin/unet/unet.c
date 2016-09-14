@@ -168,7 +168,7 @@ char errbuf[256];
   }
 
   /* socket I/O */
-  fd_max = 1;
+  fd_max = 0;
   FD_ZERO(&r_set);
   FD_ZERO(&w_set);
   FD_ZERO(&x_set);
@@ -213,6 +213,11 @@ fprintf(stderr, "DEBUG: unet_cycle: shnet_read failure: %s [errno %d]\n", strerr
       continue;
     }
 #endif
+
+if (t->fd != fd) {
+fprintf(stderr, "DEBUG: ERROR: unet_cycle: t->fd(%d) != fd(%d)\n", t->fd, fd); 
+continue;
+}
 
     FD_SET(fd, &r_set);
     FD_SET(fd, &x_set);
@@ -271,7 +276,14 @@ fprintf(stderr, "DEBUG: unet_cycle: shnet_read failure: %s [errno %d]\n", strerr
       }
     }
   } else if (err < 0) {
-fprintf(stderr, "DEBUG: unet_cycle: select errno %d\n", errno);  
+fprintf(stderr, "DEBUG: unet_cycle: select errno %d [fd-max %d]\n", errno, fd_max);  
+for (fd = 1; fd < MAX_UNET_SOCKETS; fd++) {
+  t = get_unet_table(fd);
+  if (!t || t->fd == UNDEFINED_SOCKET)
+    continue;
+fprintf(stderr, "DEBUG: unet_cycle: selected fd %d (t->fd %d)\n", fd, t->fd);
+}
+
   }
 
   start_t = shtime();
