@@ -67,6 +67,7 @@ int unet_accept(int mode, SOCKET *sk_p)
     close(cli_fd);
     return (SHERR_AGAIN);
   }
+fprintf(stderr, "DEBUG: unet_accept: accepting socket on fd %d\n", cli_fd); 
 
   unet_add(mode, cli_fd);
 

@@ -53,10 +53,10 @@ int unet_close(SOCKET sk, char *tag)
 #endif
 #endif
 
-  sprintf(buf, "closed connection '%s' (%-2.2fh) [%s].",
+  sprintf(buf, "closed connection '%s' (%-2.2fh) [%s] [fd %d].",
       shaddr_print(&table->net_addr), 
       shtime_diff(shtime(), table->cstamp) / 3600,
-      tag ? tag : "n/a");
+      tag ? tag : "n/a", (int)sk);
   unet_log(table->mode, buf);
 
   if (table->wbuff)

@@ -601,6 +601,7 @@ CNode* ConnectNode(int ifaceIndex, CAddress addrConnect, const char *pszDest, in
         pszDest ? 0 : (double)(GetAdjustedTime() - addrConnect.nTime)/3600.0);
     return (NULL);
   }
+fprintf(stderr, "DEBUG: ConnectNode: opened new socket on fd %d\n", (int)hSocket);
 
   CNode* pnode = FindNode(ifaceIndex, hSocket);
   if (pnode)

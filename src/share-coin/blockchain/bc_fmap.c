@@ -61,6 +61,7 @@ perror("bc_map_open [open]");
   err = fstat(fd, &st);
   if (err) {
 perror("bc_map_open [fstat]");
+    close(fd);
     return (-errno);
 }
   if (!S_ISREG(st.st_mode)) {
@@ -79,6 +80,7 @@ perror("bc_map_open [!reg]");
     err = ftruncate(fd, st.st_size);
     if (err) {
       perror("bc_map_open [truncate]");
+    close(fd);
       return (-errno);
     }
 

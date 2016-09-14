@@ -71,8 +71,8 @@ int unet_add(int mode, SOCKET sk)
     struct sockaddr_in *in = (struct sockaddr_in *)&t->net_addr;
     char buf[256];
 
-    sprintf(buf, "unet_add: new connection '%s' (%s).", 
-        unet_mode_label(mode), inet_ntoa(in->sin_addr));
+    sprintf(buf, "unet_add: new connection '%s' (%s) [fd %d].", 
+        unet_mode_label(mode), inet_ntoa(in->sin_addr), (int)sk);
     unet_log(mode, buf);
   }
 
