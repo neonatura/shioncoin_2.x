@@ -47,11 +47,12 @@ static int _bc_map_open(bc_t *bc, bc_map_t *map)
   int fd;
 
   if (map->fd != 0) {
+    descriptor_mark(map->fd);
     return (0);
   }
 
   sprintf(path, "%s/%s.%s", bc_path_base(), bc_name(bc), map->ext);
-  fd = open(path, O_RDWR | O_CREAT, 0777);
+  fd = open(path, O_RDWR | O_CREAT, 00700);
   if (fd == -1) {
 perror("bc_map_open [open]");
     return (-errno);
@@ -93,6 +94,21 @@ perror("bc_map_open [!reg]");
 
   map->fd = fd;
   map->size = st.st_size;
+
+#ifdef SHCOIN_SERVER
+{
+  char if_name[256];
+  CIface *iface;
+
+  memset(if_name, 0, sizeof(if_name));
+  strncpy(if_name, bc_name(bc), sizeof(if_name)-1);
+  strtok(if_name, "_");
+
+  iface = GetCoin(if_name);
+  if (iface)
+    descriptor_claim(fd, GetCoinIndex(if_name), 0 /* DF_MAP */);
+}
+#endif
 
   return (0);
 }
@@ -257,7 +273,11 @@ static void _bc_map_close(bc_map_t *map)
 fprintf(stderr, "DBEUG: _bc_map_close: fd %d\n", map->fd);
   bc_map_free(map);
   if (map->fd) {
+#ifdef SHCOIN_SERVER
+    descriptor_release(map->fd);
+#else
     close(map->fd);
+#endif
     map->fd = 0;
   }
 
@@ -363,7 +383,7 @@ int bc_map_read(bc_t *bc, bc_map_t *map, unsigned char *data, bcsize_t data_of, 
   return (0);
 }
 
-#define BCMAP_IDLE_TIME 100
+#define BCMAP_IDLE_TIME 300
 int bc_map_idle(bc_t *bc, bc_map_t *map)
 {
   time_t now;

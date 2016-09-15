@@ -44,16 +44,22 @@ shpeer_t *shcoind_peer(void)
   return (serv_peer);
 }
 
+shtime_t server_start_t;
+
 int main(int argc, char *argv[])
 {
   CuString *output = CuStringNew();
   CuSuite* suite = CuSuiteNew();
   int fails;
 
+  server_start_t = shtime();
+
   serv_peer = shapp_init("shcoind", NULL, SHAPP_LOCAL);
 
 
   test_shcoind_init();
+
+descriptor_list_print();
 
   /* test suits */
   SUITE_ADD_TEST(suite, TEST_bloom_create_insert_key);
@@ -66,6 +72,7 @@ int main(int argc, char *argv[])
   SUITE_ADD_TEST(suite, TEST_bignum);
   SUITE_ADD_TEST(suite, TEST_sha256transform);
   SUITE_ADD_TEST(suite, TEST_blockchain);
+descriptor_list_print();
   SUITE_ADD_TEST(suite, TEST_matrix);
   SUITE_ADD_TEST(suite, TEST_reorganize);
   SUITE_ADD_TEST(suite, TEST_serializetx);
@@ -88,6 +95,8 @@ int main(int argc, char *argv[])
   CuStringDelete(output);
   fails = suite->failCount;
   CuSuiteDelete(suite);
+
+descriptor_list_print();
 
   CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
   iface->op_term(iface, NULL);

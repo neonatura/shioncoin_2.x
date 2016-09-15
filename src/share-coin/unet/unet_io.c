@@ -68,9 +68,6 @@ int unet_write(SOCKET sk, char *data, size_t data_len)
 {
   unet_table_t *t;
 
-  if (sk < 1)
-    return (SHERR_BADF);
-
   if (!data_len)
     return (0); /* all done */
 
@@ -78,14 +75,10 @@ int unet_write(SOCKET sk, char *data, size_t data_len)
     return (SHERR_INVAL);
 
   t = get_unet_table(sk);
-  if (!t)
-    return (SHERR_INVAL);
+  if (!t || !(t->flag & DF_SERVICE))
+    return (SHERR_BADF);
 
-  if (!t->wbuff)
-    t->wbuff = shbuf_init();
-  
-  /* append segment to socket buffer */
-  shbuf_cat(t->wbuff, data, data_len);
+  descriptor_wbuff_add(sk, (unsigned char *)data, data_len);
 
   return (0);
 }

@@ -126,7 +126,7 @@ static void stratum_timer(void)
       continue;
 
     t = get_unet_table(peer->fd);
-    if (!t || t->fd == UNDEFINED_SOCKET) {
+    if (!t) {
       continue;
     }
 

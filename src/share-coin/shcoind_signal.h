@@ -2,7 +2,7 @@
 /*
  * @copyright
  *
- *  Copyright 2015 Neo Natura
+ *  Copyright 2014 Neo Natura
  *
  *  This file is part of the Share Library.
  *  (https://github.com/neonatura/share)
@@ -23,26 +23,13 @@
  *  @endcopyright
  */  
 
-#include "shcoind.h"
+#ifndef __SHCOIND_SIGNAL_H__
+#define __SHCOIND_SIGNAL_H__
 
 
-int unet_rbuff_add(int sk, unsigned char *data, size_t data_len)
-{
-  unet_table_t *t;
-  int err;
+void shcoind_signal_init(void);
 
-  t = get_unet_table(sk);
-  if (!t) {
-fprintf(stderr, "DEBUG: unet_rbuff_add: invalid fd %d\n", sk);
-    return (SHERR_INVAL);
-}
 
-  if (!t->rbuff)
-    t->rbuff = shbuf_init();
+#endif /* ndef __SHCOIND_SIGNAL_H__ */
 
-  shbuf_cat(t->rbuff, data, data_len);
-fprintf(stderr, "DEBUG: unet_rbuff_add: fd %d <%d bytes>\n", sk, data_len);
-
-  return (0);
-}
 

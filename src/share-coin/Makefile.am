@@ -90,14 +90,20 @@ common_includes = \
 	shcoind_rpc.h \
 	shcoind_log.h \
 	shcoind_opt.h \
+	shcoind_signal.h \
+	shcoind_descriptor.h \
 	shcoind.h
 
 common_sources = \
 	$(blockchain_sources) \
 	server/mnemonic.cpp \
+	shcoind_rpc.c \
+	shcoind_log.c \
+	shcoind_opt.c \
+	shcoind_signal.c \
+	shcoind_descriptor.c \
 	unet/unet_accept.c \
 	unet/unet_bind.c \
-	unet/unet_buff.c \
 	unet/unet.c \
 	unet/unet_close.c \
 	unet/unet_connect.c \
@@ -109,10 +115,8 @@ common_sources = \
 	server/protocol.cpp \
 	server/netbase.cpp \
 	server/version.cpp \
-	server/util.cpp \
-	shcoind_rpc.c \
-	shcoind_log.c \
-	shcoind_opt.c
+	server/util.cpp
+
 server_sources = \
 	$(proto_sources) \
 	fractal/fractal.c \

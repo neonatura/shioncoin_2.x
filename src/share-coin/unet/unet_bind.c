@@ -49,8 +49,10 @@ int unet_bind(int mode, int port)
     return (-errno);
 
   err = shnet_bindsk(sk, NULL, port);
-  if (err)
+  if (err) {
+fprintf(stderr, "DEBUG: unet_bind: error binding to port %d\n", port);
     return (err);
+}
 
   _unet_bind[mode].fd = sk;
   _unet_bind[mode].port = port;
@@ -63,7 +65,11 @@ int unet_bind(int mode, int port)
   shpeer_free(&peer);
 
   _unet_bind[mode].peer_db = shnet_track_open(unet_mode_label(mode));
-  
+
+  descriptor_claim(sk, mode, DF_LISTEN);
+
+fprintf(stderr, "DEBUG: unet_bind: listening on port %d\n", port);
+ 
   return (0);
 }
 
@@ -88,16 +94,21 @@ int unet_unbind(int mode)
   if (_unet_bind[mode].fd == UNDEFINED_SOCKET)
     return (SHERR_INVAL);
 
-  /* close all accepted sockets */
+fprintf(stderr, "DEBUG: unet_unbind: mode %d\n", mode);
+
+  /* close all accepted sockets for coin service. */
   unet_close_all(mode);
 
+  /* close listen (bind) socket */
+  descriptor_release(_unet_bind[mode].fd);
+
+  /* close net track db */
   if (_unet_bind[mode].peer_db) {
-    /* close net track db */
     shnet_track_close(_unet_bind[mode].peer_db);
     _unet_bind[mode].peer_db = NULL;
   }
 
-  err = unet_close(_unet_bind[mode].fd, "unbind");
+  /* clear variables */
   _unet_bind[mode].fd = UNDEFINED_SOCKET;
 
   return (err);

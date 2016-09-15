@@ -35,8 +35,10 @@ int unet_close(SOCKET sk, char *tag)
   int err;
 
   table = get_unet_table(sk);
-  if (!table || table->fd == UNDEFINED_SOCKET)
+  if (!table) {
+fprintf(stderr, "DEBUG: WARN: unet_close: sk %d requested closure but not mapped.\n", sk);
     return (SHERR_INVAL);
+  }
 
   /* inform user-level of socket closure. */
   bind = unet_bind_table(table->mode);
@@ -44,28 +46,13 @@ int unet_close(SOCKET sk, char *tag)
     (*bind->op_close)(sk, &table->net_addr);
   }
 
-  err = shnet_close(sk);
-#if 0
-#ifdef WIN32
-  err = closesocket(sk);
-#else
-  err = close(sk);
-#endif
-#endif
-
   sprintf(buf, "closed connection '%s' (%-2.2fh) [%s] [fd %d].",
       shaddr_print(&table->net_addr), 
       shtime_diff(shtime(), table->cstamp) / 3600,
       tag ? tag : "n/a", (int)sk);
   unet_log(table->mode, buf);
 
-  if (table->wbuff)
-    shbuf_clear(table->wbuff);
-  if (table->rbuff)
-    shbuf_clear(table->rbuff);
-
-  table->fd = UNDEFINED_SOCKET;
-
+  descriptor_release(sk);
 
   return (err);
 }
@@ -77,17 +64,22 @@ int unet_close_all(int mode)
 
   for (sk = 1; sk < MAX_UNET_SOCKETS; sk++) {
     t = get_unet_table(sk);
-    if (!t || t->fd == UNDEFINED_SOCKET)
+    if (!t)
       continue; /* not active */
     if (t->mode != mode)
       continue; /* wrong mode bra */
+    if (!(t->flag & DF_SERVICE))
+      continue;
 
-    unet_close(t->fd, "terminate");
+    unet_close(sk, "terminate");
   }
 
   return (0);
 }
 
+/**
+ * Applies to all sockets regardless of service.
+ */
 void unet_close_idle(void)
 {
   unet_table_t *t;
@@ -103,38 +95,44 @@ void unet_close_idle(void)
 
   for (sk = 1; sk < MAX_UNET_SOCKETS; sk++) {
     t = get_unet_table(sk);
-    if (!t || t->fd == UNDEFINED_SOCKET)
+    if (!t)
       continue; /* non-active */
+    if (!(t->flag & DF_SOCK))
+      continue; /* sockets */
+    if ((t->flag & DF_LISTEN))
+      continue; /* !bind */
 
     if (t->stamp == UNDEFINED_TIME &&
         shtime_before(shtime_adj(t->cstamp, MAX_CONNECT_IDLE_TIME), now)) {
-      sprintf(buf, "unet_close_idle: closing peer '%s' for no activity for %ds after connect.", shaddr_print(&t->net_addr), MAX_CONNECT_IDLE_TIME);
+      sprintf(buf, "unet_close_idle: closing peer '%s' for no activity for %ds after connect [mode %d] [fd %d] [flag %d].", shaddr_print(&t->net_addr), MAX_CONNECT_IDLE_TIME, t->mode, sk, t->flag);
       unet_log(t->mode, buf);
-      unet_shutdown(t->fd);
+      unet_shutdown(sk);
       continue;
     }
+
     if (t->mode == UNET_STRATUM) {
       if (t->stamp != UNDEFINED_TIME &&
           shtime_before(shtime_adj(t->stamp, MAX_IDLE_TIME), now)) {
         sprintf(buf, "unet_close_idle: closing peer '%s' for being idle %ds.", shaddr_print(&t->net_addr), MAX_IDLE_TIME);
         unet_log(t->mode, buf);
-        unet_shutdown(t->fd);
+        unet_shutdown(sk);
         continue;
       }
     }
+
     if (shbuf_size(t->wbuff) > MAX_SOCKET_BUFFER_SIZE ||
         shbuf_size(t->rbuff) > MAX_SOCKET_BUFFER_SIZE) {
-#if 0
-      sprintf(buf, "unet_close_idle: closeing peer '%s' for buffer overflow (write %dk).", shaddr_print(&t->net_addr), shbuf_size(t->wbuff));
-      unet_log(t->mode, buf);
-#endif
-      unet_close(t->fd, "overflow");
+      unet_close(sk, "overflow");
       continue;
     }
   }
 
 }
 
+#if 0
+/**
+ * Closes and de-allocates resourcs for all socket connections (regardless of service).
+ */
 void unet_close_free(void)
 {
   unet_table_t *t;
@@ -142,17 +140,16 @@ void unet_close_free(void)
 
   for (sk = 1; sk < MAX_UNET_SOCKETS; sk++) {
     t = get_unet_table(sk);
-    if (!t || t->fd != UNDEFINED_SOCKET)
+    if (!t)
       continue; /* active */
     if (t->mode == UNET_NONE)
       continue; /* already cleared */ 
+    if (!(t->flag & DF_SOCK))
+      continue;
 
-    /* free [user-level] socket buffer */
-    shbuf_free(&t->rbuff);
-    shbuf_free(&t->wbuff);
-
-    memset(t, '\000', sizeof(unet_table_t));
+    descriptor_release(sk);
   }
 
 }
+#endif
 

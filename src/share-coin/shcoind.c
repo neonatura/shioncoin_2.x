@@ -25,11 +25,11 @@
 
 #include "shcoind.h"
 #include <signal.h>
-#include "coin_proto.h"
 
 shpeer_t *server_peer;
 int server_msgq;
 shbuf_t *server_msg_buff;
+shtime_t server_start_t;
 
 static int opt_no_fork;
 
@@ -72,21 +72,11 @@ void shcoind_term(void)
 
 }
 
-void daemon_signal(int sig_num)
-{
-  signal(sig_num, SIG_DFL);
-
-  set_shutdown_timer();
-#if 0
-  shcoind_term();
-#endif
-}
-
 void usage_help(void)
 {
   fprintf(stdout,
       "Usage: shcoind [OPTIONS]\n"
-      "USDe currency daemon for the Share Library Suite.\n"
+      "Virtual currency daemon for the Share Library Suite.\n"
       "\n"
       "Network Options:\n"
       "\t--maxconn <#>\tThe maximum number of incoming connections (usde server).\n"
@@ -135,6 +125,8 @@ int main(int argc, char *argv[])
     return (0);
   }
 
+  server_start_t = shtime();
+
   /* always perform 'fresh' tx rescan */
 
   memset(blockfile_path, 0, sizeof(blockfile_path));
@@ -159,14 +151,7 @@ int main(int argc, char *argv[])
   if (!opt_no_fork)
     daemon(0, 1);
 
-  signal(SIGSEGV, SIG_DFL);
-  signal(SIGHUP, SIG_IGN);
-  signal(SIGPIPE, SIG_IGN);
-  signal(SIGUSR1, SIG_IGN);
-  signal(SIGUSR2, SIG_IGN);
-  signal(SIGTERM, daemon_signal);
-  signal(SIGQUIT, daemon_signal);
-  signal(SIGINT, daemon_signal);
+  shcoind_signal_init();
 
   /* initialize libshare */
   server_peer = shapp_init("shcoind", "127.0.0.1:9448", 0);

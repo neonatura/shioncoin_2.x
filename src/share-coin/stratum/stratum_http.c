@@ -95,9 +95,11 @@ unet_table_t *t;
     shbuf_catstr(buff, "<option selected disabled value=\" \" style=\"color : #666; outline : 0;\"> </option>");
     for (t_sk = 1; t_sk < MAX_UNET_SOCKETS; t_sk++) {
       t = get_unet_table(t_sk);
-      if (!t || t->fd == UNDEFINED_SOCKET)
+      if (!t)
         continue; /* non-active */
       if (t->mode != SHC_COIN_IFACE)
+        continue; /* irrelevant */
+      if (!(t->flag & DF_SERVICE))
         continue; /* irrelevant */
 
       memset(ip_addr, 0, sizeof(ip_addr));

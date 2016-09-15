@@ -300,6 +300,7 @@ extern "C" {
     char master_pubkey[256];
     char buf[32];
     bool ret;
+    int idx2;
     int idx;
 
     HDMasterPrivKey privkey;
@@ -356,12 +357,12 @@ extern "C" {
       CPubKey b_pubkey(t_pubkey.Raw());
 
       /* test variant derivatives */
-      for (idx = 1; idx < 3; idx++) {
+      for (idx2 = 5; idx2 < 7; idx2++) {
         HDPubKey d_pubkey;
-        _TRUE(key.derive(d_pubkey, idx) == true);
+        _TRUE(key.derive(d_pubkey, idx2) == true);
 
         HDPrivKey d_privkey;
-        _TRUE(privkey.derive(d_privkey, key.Raw(), idx) == true);
+        _TRUE(privkey.derive(d_privkey, key.Raw(), idx2) == true);
 
         /* TODO: check for dups.. */
       }

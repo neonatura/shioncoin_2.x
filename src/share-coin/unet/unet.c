@@ -50,21 +50,9 @@ int unet_add(int mode, SOCKET sk)
   struct sockaddr *addr;
   sa_family_t in_fam;
 
-  t = get_unet_table(sk);
+  t = descriptor_claim(sk, mode, DF_SERVICE);
   if (!t)
-    return (SHERR_INVAL);
-
-  /* fill network info */
-  t->fd = sk;
-  t->mode = mode;
-  t->cstamp = shtime(); /* init connect time-stamp */
-  t->stamp = 0; /* reset I/O timestamp */
-
-  /* retain remote network addr (ipv4) */
-  memset(&t->net_addr, 0, sizeof(t->net_addr));
-  addr = shaddr(sk);
-  if (addr)
-    memcpy(&t->net_addr, addr, sizeof(struct sockaddr));
+    return (SHERR_IO);
 
   in_fam = *((sa_family_t *)&t->net_addr);
   if (in_fam == AF_INET) {
@@ -85,7 +73,7 @@ int unet_mode(SOCKET sk)
   unet_table_t *t;
 
   t = get_unet_table(sk);
-  if (!t || t->fd == UNDEFINED_SOCKET)
+  if (!t)
     return (UNET_NONE);
 
   return (t->mode);
@@ -111,6 +99,7 @@ void unet_idle(void)
  */
 void unet_cycle(double max_t)
 {
+  static int _printed;
   static shtime_t start_t;
   static int next_t;
   unet_bind_t *bind;
@@ -167,57 +156,24 @@ char errbuf[256];
     next_t = now + 10;
   }
 
-  /* socket I/O */
+  /* mark sockets for I/O */
   fd_max = 0;
   FD_ZERO(&r_set);
   FD_ZERO(&w_set);
   FD_ZERO(&x_set);
   for (fd = 1; fd < MAX_UNET_SOCKETS; fd++) {
     t = get_unet_table(fd);
-    if (!t || t->fd == UNDEFINED_SOCKET)
+    if (!t)
       continue;
-
-    if ((t->flag & UNETF_SHUTDOWN) &&
+    if ((t->flag & DF_SOCK) &&
+        (t->flag & UNETF_SHUTDOWN) &&
         shbuf_size(t->wbuff) == 0) {
       /* marked for closure and write buffer is empty */
       unet_close(fd, "shutdown");
       continue;
     }
-
-#if 0
-    /* write outgoing buffer to socket */
-    if (shbuf_size(t->wbuff)) {
-      size_t w_tot;
-      size_t w_of;
-
-      w_tot = shbuf_size(t->wbuff);
-      w_len = shnet_write(fd, shbuf_data(t->wbuff), w_tot);
-      if (w_len < 0) {
-        if (errno != EAGAIN) {
-fprintf(stderr, "DEBUG: unet_cycle: shnet_write failure: %s [errno %d]\n", strerror(errno), errno);  
-          unet_close(fd, "write");
-        }
-      } else if (w_len > 0) {
-        shbuf_trim(t->wbuff, w_len);
-      }
-
-      t->stamp = shtime();
-    }
-
-    /* handle incoming data */
-    timing_init("shnet_read", &ts);
-    err = shnet_read(fd, NULL, 65536);
-    if (err < 0) {
-fprintf(stderr, "DEBUG: unet_cycle: shnet_read failure: %s [errno %d]\n", strerror(errno), errno);
-      unet_close(fd, "read");
-      continue;
-    }
-#endif
-
-if (t->fd != fd) {
-fprintf(stderr, "DEBUG: ERROR: unet_cycle: t->fd(%d) != fd(%d)\n", t->fd, fd); 
-continue;
-}
+    if (!(t->flag & DF_SERVICE))
+      continue; /* not important */
 
     FD_SET(fd, &r_set);
     FD_SET(fd, &x_set);
@@ -251,13 +207,13 @@ continue;
             continue;
           }
         } else if (r_len > 0) {
-          unet_rbuff_add(fd, data, r_len);
-          t->stamp = shtime();
+          descriptor_rbuff_add(fd, data, r_len);
+          descriptor_mark(fd);
         }
       }
       if (FD_ISSET(fd, &w_set)) {
         t = get_unet_table(fd);
-        if (!t) continue;
+        if (!t || !t->wbuff) continue;
 
         w_tot = shbuf_size(t->wbuff);
         if (w_tot != 0) {
@@ -270,26 +226,28 @@ continue;
             }
           } else if (w_len > 0) {
             shbuf_trim(t->wbuff, w_len);
-            t->stamp = shtime();
+            descriptor_mark(fd);
           }
         }
       }
     }
   } else if (err < 0) {
-fprintf(stderr, "DEBUG: unet_cycle: select errno %d [fd-max %d]\n", errno, fd_max);  
-for (fd = 1; fd < MAX_UNET_SOCKETS; fd++) {
-  t = get_unet_table(fd);
-  if (!t || t->fd == UNDEFINED_SOCKET)
-    continue;
-fprintf(stderr, "DEBUG: unet_cycle: selected fd %d (t->fd %d)\n", fd, t->fd);
-}
+    fprintf(stderr, "DEBUG: unet_cycle: select errno %d [fd-max %d]\n", errno, fd_max);  
+
+    /* BADF */
+    if (errno == EBADF && !_printed) {
+      _printed = 1;
+      descriptor_list_print();
+    }
 
   }
 
   start_t = shtime();
 
+#if 0
   /* free expunged sockets */
   unet_close_free();
+#endif
 
 }
 
@@ -299,24 +257,12 @@ void unet_shutdown(SOCKET sk)
   unet_table_t *t;
 
   t = get_unet_table(sk);
-  if (!t || t->fd == UNDEFINED_SOCKET)
+  if (!t)
     return;
 
   t->flag |= UNETF_SHUTDOWN;
 }
 
 
-shbuf_t *unet_read_buf(SOCKET sk)
-{
-  unet_table_t *t;
-
-  t = get_unet_table(sk);
-  if (!t || t->fd == UNDEFINED_SOCKET) {
-fprintf(stderr, "DEBUG: unet_read_buf: requested socket %d that is not valid\n", sk);
-    return (NULL);
-}
-
-  return (t->rbuff);
-}
 
 

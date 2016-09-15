@@ -43,9 +43,10 @@ extern "C" {
 
 
 
-#define UNETF_SHUTDOWN (1 << 0)
-#define UNETF_PEER_SCAN (1 << 1)
-#define UNETF_INBOUND (1 << 2)
+#define UNETF_SHUTDOWN DF_SHUTDOWN
+#define UNETF_PEER_SCAN DF_PEER_SCAN
+#define UNETF_INBOUND DF_INBOUND
+#define UNETF_LISTEN DF_LISTEN
 
 
 #define UNDEFINED_SOCKET 0
@@ -113,6 +114,7 @@ typedef struct unet_bind_t
   unet_addr_op op_close;
 } unet_bind_t;
 
+#if 0
 /* per client socket connection */
 typedef struct unet_table_t
 {
@@ -141,6 +143,8 @@ typedef struct unet_table_t
   /* remote network address */
   struct sockaddr net_addr;
 } unet_table_t;
+#endif
+typedef struct desc_t unet_table_t;
 
 typedef struct uevent_t
 {
@@ -187,10 +191,6 @@ int unet_close(SOCKET sk, char *tag);
 int unet_close_all(int mode);
 
 
-int unet_sbuff_add(int sk, unsigned char *data, size_t data_len);
-
-int unet_rbuff_add(int sk, unsigned char *data, size_t data_len);
-
 
 int unet_read(SOCKET sk, char *data, size_t *data_len_p);
 
@@ -236,7 +236,6 @@ unsigned int unet_peer_total(int mode);
 
 int unet_peer_find(int mode, struct sockaddr *addr);
 
-shbuf_t *unet_read_buf(SOCKET sk);
 
 
 #ifdef __cplusplus

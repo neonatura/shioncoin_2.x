@@ -59,10 +59,12 @@ extern shbuf_t *server_msg_buff;
 #include "proto.h"
 #include "server_iface.h"
 #include "shcoind_version.h"
+#include "shcoind_signal.h"
 #include "shcoind_opt.h"
 #include "shcoind_log.h"
 #include "shcoind_block.h"
 #include "shcoind_rpc.h"
+#include "shcoind_descriptor.h"
 
 #include "proto/coin_proto.h"
 #include "proto/shc_proto.h"

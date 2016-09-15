@@ -31,7 +31,6 @@
 int unet_connect(int mode, struct sockaddr *net_addr, SOCKET *sk_p)
 {
   unet_bind_t *bind;
-  unet_table_t *table;
   shtime_t ts;
   char buf[256];
   SOCKET cli_fd;
@@ -50,12 +49,6 @@ int unet_connect(int mode, struct sockaddr *net_addr, SOCKET *sk_p)
     /* exceeds supported limit (hard-coded) */
     shnet_close(cli_fd);
     return (SHERR_AGAIN);
-  }
-
-  table = get_unet_table(cli_fd);
-  if (!table) {
-    shnet_close(cli_fd);
-    return (SHERR_INVAL);
   }
 
   shnet_fcntl(cli_fd, F_SETFL, O_NONBLOCK);
@@ -83,15 +76,11 @@ int unet_connect(int mode, struct sockaddr *net_addr, SOCKET *sk_p)
     return (err);
   }
 
-  table->mode = mode;
-  table->fd = cli_fd;
-  table->stamp = 0;
-  memcpy(&table->net_addr, net_addr, sizeof(struct sockaddr));
-
+  /* claim descriptor for coin service. */
   unet_add(mode, cli_fd);
 
-  sprintf(buf, "created new '%s' connection (%s).\n", 
-      unet_mode_label(mode), shaddr_print(net_addr));
+  sprintf(buf, "created new '%s' connection (%s) [fd %d].\n", 
+      unet_mode_label(mode), shaddr_print(net_addr), (int)cli_fd);
   unet_log(mode, buf);
 
   bind = unet_bind_table(mode);
@@ -104,7 +93,8 @@ int unet_connect(int mode, struct sockaddr *net_addr, SOCKET *sk_p)
 
   if (bind->flag & UNETF_PEER_SCAN) {
     /* record successfull connection */
-    shpeer_t *peer = shpeer_init(unet_mode_label(mode), shaddr_print(net_addr));
+    shpeer_t *peer = shpeer_init(
+        (char *)unet_mode_label(mode), (char *)shaddr_print(net_addr));
     shnet_track_mark(bind->peer_db, peer, 1);
     shpeer_free(&peer);
   }

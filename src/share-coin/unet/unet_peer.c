@@ -40,11 +40,14 @@ int unet_peer_find(int mode, struct sockaddr *addr)
   in_fam = *((sa_family_t *)addr);
   for (sk = 1; sk < MAX_UNET_SOCKETS; sk++) {
     t = get_unet_table(sk);
-    if (!t || t->fd == UNDEFINED_SOCKET)
+    if (!t)
       continue; /* non-active */
 
     if (t->mode != mode)
       continue;
+
+    if (!(t->flag & DF_SERVICE))
+      continue; /* not a coin service connection. */
 
     cmp_fam = *((sa_family_t *)&t->net_addr);
     if (cmp_fam != in_fam) {

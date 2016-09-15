@@ -72,7 +72,6 @@ struct LocalServiceInfo {
 bool fClient = false;
 bool fDiscover = true;
 bool fUseUPnP = false;
-int _shutdown_timer;
 uint64 nLocalServices = (fClient ? 0 : NODE_NETWORK);
 static CCriticalSection cs_mapLocalHost;
 static map<CNetAddr, LocalServiceInfo> mapLocalHost;
@@ -82,6 +81,7 @@ static bool vfLimited[NET_MAX] = {};
 uint64 nLocalHostNonce = 0;
 static std::vector<SOCKET> vhListenSocket;
 
+extern int _shutdown_timer;
 
 
 NodeList vServerNodes[MAX_COIN_IFACE];
@@ -1539,7 +1539,7 @@ void usde_server_timer(void)
       if (fShutdown)
         return;
 
-      shbuf_t *pchBuf = unet_read_buf(pnode->hSocket);
+      shbuf_t *pchBuf = descriptor_rbuff(pnode->hSocket);
       if (pchBuf) {
         err = usde_coin_server_recv(iface, pnode, pchBuf);
         if (err && err != SHERR_AGAIN) {
@@ -1847,7 +1847,7 @@ void shc_server_timer(void)
       if (fShutdown)
         return;
 
-      shbuf_t *pchBuf = unet_read_buf(pnode->hSocket);
+      shbuf_t *pchBuf = descriptor_rbuff(pnode->hSocket);
       if (pchBuf) {
         err = shc_coin_server_recv(iface, pnode, pchBuf);
         if (err && err != SHERR_AGAIN) {
@@ -2802,14 +2802,6 @@ vector <CAddress> GetAddresses(CIface *iface, int max_peer)
   return (vAddr);
 }
 
-#define DEFAULT_SHUTDOWN_CYCLES 5
-void set_shutdown_timer(void)
-{
-
-  if (_shutdown_timer == 0)
-    _shutdown_timer = DEFAULT_SHUTDOWN_CYCLES;
-
-}
 
 
 

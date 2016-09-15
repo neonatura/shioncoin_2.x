@@ -25,6 +25,7 @@
 
 #include "shcoind.h"
 
+#if 0
 static unet_table_t _unet_table[MAX_UNET_SOCKETS];
 
 unet_table_t *get_unet_table(SOCKET sk)
@@ -35,13 +36,19 @@ unet_table_t *get_unet_table(SOCKET sk)
 
   return (_unet_table + sk);
 }
+#endif
+
+unet_table_t *get_unet_table(SOCKET sk)
+{
+  return (descriptor_get(sk));
+}
 
 int unet_accept(int mode, SOCKET *sk_p)
 {
   unet_bind_t *bind;
   struct sockaddr_in *addr;
   char buf[256];
-  SOCKET cli_fd;
+  int cli_fd;
 
   bind = unet_bind_table(mode);
   if (!bind) {
@@ -54,8 +61,10 @@ int unet_accept(int mode, SOCKET *sk_p)
   cli_fd = shnet_accept_nb(bind->fd);
   if (cli_fd == 0)
     return (SHERR_AGAIN);
-  if (cli_fd < 0)
+  if (cli_fd < 0) {
+fprintf(stderr, "DEBUG: unet_accept: error %d (errno %d) (bind->fd %d)\n", cli_fd, errno, bind->fd);
     return ((int)cli_fd);
+}
 
   if (cli_fd >= MAX_UNET_SOCKETS) {
     char buf[256];
@@ -64,7 +73,7 @@ int unet_accept(int mode, SOCKET *sk_p)
     unet_log(mode, buf); 
 
     /* exceeds supported limit (hard-coded) */
-    close(cli_fd);
+    shnet_close(cli_fd);
     return (SHERR_AGAIN);
   }
 fprintf(stderr, "DEBUG: unet_accept: accepting socket on fd %d\n", cli_fd); 

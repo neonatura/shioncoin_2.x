@@ -41,6 +41,8 @@
 using namespace std;
 using namespace boost;
 
+shtime_t server_start_t;
+
 extern void IRCDiscover(void);
 extern void PrintPeers(void);
 //extern void ListPeers(void);
@@ -70,12 +72,15 @@ void shcoind_tool_usage(void)
       );
 }
 
+
 int main(int argc, char *argv[])
 {
   char username[256];
   char password[256];
   int ret;
   int i;
+
+  server_start_t = shtime();
 
   /* load rpc credentials */
   get_rpc_cred(username, password);
