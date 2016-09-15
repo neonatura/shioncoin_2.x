@@ -123,8 +123,10 @@ now = shtime();
     shnet_track_mark(bind->peer_db, peer, -1);
     bind->scan_freq = MAX(0.001, bind->scan_freq * 0.9);
 
-    sprintf(buf, "unet_peer_verify: error: peer '%s' (%s) [sherr %d].", shpeer_print(peer), sherrstr(err), err);
-    unet_log(e->mode, buf);
+    if (err != -ECONNREFUSED) { /* SHERR_CONNREFUSED */
+      sprintf(buf, "unet_peer_verify: error: peer '%s' (%s) [sherr %d].", shpeer_print(peer), sherrstr(err), err);
+      unet_log(e->mode, buf);
+    }
 
     e->fd = 0;
     return (0); /* dispose of event */
@@ -135,8 +137,10 @@ now = shtime();
     /* async connection socket timeout */
     err = SHERR_TIMEDOUT;
 
+#if 0
     sprintf(buf, "unet_peer_verify: error: peer '%s' (%s) [wait %-1.1fs] [sherr %d] [fd %d].", shpeer_print(peer), sherrstr(err), shtime_diff(bind->scan_stamp, now), err, e->fd);
     unet_log(e->mode, buf);
+#endif
 
     /* error */
     shnet_track_mark(bind->peer_db, peer, -1);

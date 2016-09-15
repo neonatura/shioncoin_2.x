@@ -33,7 +33,8 @@ const char *_descriptor_flag_label[MAX_DESCRIPTOR_FLAGS] = {
   "shutdown",
   "peer-scan",
   "inbound",
-  "listen"
+  "listen",
+  "map"
 }; 
 
 
@@ -245,7 +246,7 @@ void descriptor_list_print(void)
     strcpy(buf, descriptor_print(fd));
     err = fstat(fd, &st);
     if (err) {
-      sprintf(buf+strlen(buf), " <%s>", strerror(-errno));
+      sprintf(buf+strlen(buf), " <%s>", strerror(errno));
     } else if (S_ISSOCK(st.st_mode)) {
       sprintf(buf+strlen(buf), " <valid socket %s>", shaddr_print(&d->net_addr));
     } else if (S_ISREG(st.st_mode)) {

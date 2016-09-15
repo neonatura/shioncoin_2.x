@@ -1113,9 +1113,9 @@ bool shc_SendMessages(CIface *iface, CNode* pto, bool fSendTrickle)
     if (pto->nVersion == 0)
       return true;
 
-    // Keep-alive ping. We send a nonce of zero because we don't use it anywhere
-    // right now.
-    if (pto->nLastSend && GetTime() - pto->nLastSend > 30 * 60 && pto->vSend.empty()) {
+    /* keep alive ping to prevent disconnect from idle (~ 23min) */
+    if (pto->nLastSend && pto->vSend.empty() &&
+        (GetTime() - pto->nLastSend) > 1400) {
       uint64 nonce = 0;
       if (pto->nVersion > BIP0031_VERSION)
         pto->PushMessage("ping", nonce);

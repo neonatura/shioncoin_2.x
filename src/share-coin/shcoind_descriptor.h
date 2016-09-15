@@ -42,7 +42,8 @@ extern "C" {
 #define DF_PEER_SCAN (1 << 4)
 #define DF_INBOUND (1 << 5)
 #define DF_LISTEN (1 << 6)
-#define MAX_DESCRIPTOR_FLAGS 7
+#define DF_MAP (1 << 7)
+#define MAX_DESCRIPTOR_FLAGS 8
 
 
 #define CLAIM_FD(_fd, _mode, _flag) \
