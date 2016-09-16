@@ -468,10 +468,10 @@ CBlock* shc_CreateNewBlock(CReserveKey& reservekey)
   CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);
   CBlockIndex* pindexPrev = GetBestBlockIndex(iface);
 
-if (!pindexPrev) {
-fprintf(stderr, "DEBUG: error: shc_CreateNewBlock: no Best Block Index established.\n");
-return (NULL);
-}
+  if (!pindexPrev) {
+    shcoind_log("shc_CreateNewBlock: error: no Best Block Index established.");
+    return (NULL);
+  }
 
   // Create new block
   //auto_ptr<CBlock> pblock(new CBlock());
@@ -1114,7 +1114,7 @@ bool static SHC_Reorganize(CTxDB& txdb, CBlockIndex* pindexNew, SHC_CTxMemPool *
 {
   char errbuf[1024];
 
-fprintf(stderr, "DEBUG: SHC_Reorganize: block height %d\n", pindexNew->nHeight);
+  Debug("SHC_Reorganize: block height %u", (unsigned int)pindexNew->nHeight);
 
  // Find the fork
   CBlockIndex* pindexBest = GetBestBlockIndex(SHC_COIN_IFACE);
@@ -1316,8 +1316,9 @@ bool SHCBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
       pindexIntermediate = pindexIntermediate->pprev;
     }
 
-    if (!vpindexSecondary.empty())
+    if (!vpindexSecondary.empty()) {
       Debug("Postponing %i reconnects\n", vpindexSecondary.size());
+    }
 
     // Switch to new best branch
     if (!SHC_Reorganize(txdb, pindexIntermediate, &mempool))
@@ -1362,8 +1363,6 @@ fprintf(stderr, "DEBUG: SHC_Reorganize(): error reorganizing.\n");
   bnBestChainWork = pindexNew->bnChainWork;
   nTimeBestReceived = GetTime();
   STAT_TX_ACCEPTS(iface)++;
-
-  //    Debug("SetBestChain: new best=%s  height=%d  work=%s  date=%s\n", hashBestChain.ToString().substr(0,20).c_str(), nBestHeight, bnBestChainWork.ToString().c_str(), DateTimeStrFormat("%x %H:%M:%S", SHCBlock::pindexBest->GetBlockTime()).c_str());
 
   // Check the version of the last 100 blocks to see if we need to upgrade:
   if (!fIsInitialDownload)

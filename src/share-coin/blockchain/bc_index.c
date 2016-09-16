@@ -35,6 +35,7 @@
 
 static int _bc_idx_open(bc_t *bc)
 {
+  char errbuf[256];
   int err;
 
   if (!bc)
@@ -49,13 +50,15 @@ static int _bc_idx_open(bc_t *bc)
 
   err = bc_map_open(bc, &bc->idx_map);
   if (err) {
-    fprintf(stderr, "DEBUG: _bc_idx_open: %d = bc_map_open()\n", err);
+    sprintf(errbuf, "bc_idx_open: map open error: %s.", sherrstr(err));
+    shcoind_log(errbuf);
     return (err);
   }
 
   err = bc_map_alloc(bc, &bc->idx_map, 0);
   if (err) {
-    fprintf(stderr, "DEBUG: _bc_idx_open: %d = bc_map_alloc()\n", err);
+    sprintf(errbuf, "bc_idx_open: map alloc error: %s.", sherrstr(err));
+    shcoind_log(errbuf);
     return (err);
   }
 
@@ -69,10 +72,6 @@ int bc_idx_open(bc_t *bc)
   bc_lock();
   err = _bc_idx_open(bc);
   bc_unlock();
-
-if (err) {
-fprintf(stderr, "DEBUG: bc_idx_open: error  %d [idx-map fd %d]\n", err, bc->idx_map.fd);
-}
 
   return (err);
 }
@@ -240,9 +239,8 @@ static int _bc_idx_set(bc_t *bc, bcsize_t pos, bc_idx_t *idx)
 
     err = bc_map_alloc(bc, &bc->idx_map, f_len);
     if (err) {
-fprintf(stderr, "DEBUG: bc_idx_set: bc_map_alloc <%d bytes> err %d\n", f_len, err); 
       return (err);
-}
+    }
   }
 
   /* write to file map */
@@ -296,13 +294,6 @@ static int _bc_idx_clear(bc_t *bc, bcsize_t pos)
     if (err)
       return (err);
   }
-
-#if 0
-  if ((pos + 1) == n_pos && bc->idx_map.hdr->of >= sizeof(bc_idx_t)) {
-    bc->idx_map.hdr->of -= sizeof(bc_idx_t);
-fprintf(stderr, "DEBUG: bc_idx_clear: (last rec) bc->idx_map.hdr->of = %d\n", bc->idx_map.hdr->of);
-  }
-#endif
 
   return (0);
 }

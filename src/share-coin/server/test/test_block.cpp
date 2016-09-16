@@ -528,10 +528,6 @@ fprintf(stderr, "DEBUG: !test_ConnectInputs()\n");
   pblock->nBits          = pblock->GetNextWorkRequired(pindexPrev);
   pblock->nNonce         = 0;
 
-if (pblock->vtx[0].isFlag(CTransaction::TXF_MATRIX)) {
-fprintf(stderr, "DEBUG: test_CreateNewBlock: MATRIX block: %s\n", pblock->ToString().c_str()); 
-}
-
   return pblock.release();
 }
 
@@ -636,8 +632,6 @@ wallet->SetAddressBookName(reservekey.GetReservedKey().GetID(), sysAccount);
     }
   }
   nNonceIndex = block->nNonce;
-
-//block->print(); /* DEBUG: */
 
   return (block);
 }
@@ -1066,8 +1060,6 @@ bool static test_Reorganize(CTxDB& txdb, CBlockIndex* pindexNew, TEST_CTxMemPool
 {
   char errbuf[1024];
 
-fprintf(stderr, "DEBUG: test_Reorganize() [height %d]\n", pindexNew->nHeight);
-
   /* find the fork */
   CBlockIndex* pindexBest = GetBestBlockIndex(TEST_COIN_IFACE);
   CBlockIndex* pfork = pindexBest;
@@ -1399,7 +1391,6 @@ bool TESTBlock::AcceptBlock()
       bool fHasValMatrix = BlockAcceptValidateMatrix(iface, vtx[0], fCheck);
       if (fHasValMatrix && !fCheck)
         return error(SHERR_ILSEQ, "AcceptBlock: test_Validate failure");
-fprintf(stderr, "DEBUG: AcceptBlock: OP_EXT_VALIDATE success\n");
     } else if (mode == OP_EXT_PAY) {
       bool fHasSprMatrix = BlockAcceptSpringMatrix(iface, vtx[0], fCheck);
       if (fHasSprMatrix && !fCheck)
@@ -1750,8 +1741,6 @@ uint64_t TESTBlock::GetTotalBlocksEstimate()
 bool TESTBlock::DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex)
 {
   CIface *iface = GetCoinByIndex(txdb.ifaceIndex);
-
-fprintf(stderr, "DEBUG: DisconnectBlock()\n");
 
   if (!core_DisconnectBlock(txdb, pindex, this))
     return (false);

@@ -104,7 +104,7 @@ const char *descriptor_print(int fd)
       }
     }
 
-    sprintf(ret_buf, "[#%-4.4d] %s iface (%s) %s%s.",
+    sprintf(ret_buf, "[#%-4.4d] %s iface (%s) %s%s",
         fd, descriptor_iface_name(d->mode), 
         descriptor_flag_str(d->flag), tbuf1, tbuf2);
   }
@@ -131,6 +131,10 @@ desc_t *descriptor_claim(int fd, int mode, int flag)
   if (d->flag != 0) {
     sprintf(errbuf, "descriptor_claim: warning: in-use descriptor %d claimed (%s).", fd, descriptor_print(fd));
     shcoind_log(errbuf);
+
+    /* reset for 'new' use */
+    shbuf_free(&d->wbuff);
+    shbuf_free(&d->rbuff);
   }
 
   err = fstat(fd, &st);
@@ -205,7 +209,6 @@ void descriptor_release(int fd)
   d = (_descriptor_table + fd);
 
   if (d->flag) {
-fprintf(stderr, "DEBUG: descriptor_release: fd %d\n", fd);
     if (d->flag & DF_SOCK) {
       shnet_close(fd);
     } else {
@@ -290,13 +293,15 @@ desc_t *descriptor_get(int fd)
 void descriptor_rbuff_add(int fd, unsigned char *data, size_t data_len)
 {
   desc_t *d;
+  char errbuf[256];
 
   if (fd >= MAX_UNET_SOCKETS)
     return; 
 
   d = (_descriptor_table + fd);
   if (!d->flag) {
-fprintf(stderr, "DEBUG: descriptor_append: invalid fd %d data append <%d bytes>.\n", fd, data_len);
+    sprintf(errbuf, "descriptor_append: invalid fd %d data append <%d bytes>.\n", fd, data_len);
+    shcoind_log(errbuf);
     return;
   }
  
@@ -308,32 +313,35 @@ fprintf(stderr, "DEBUG: descriptor_append: invalid fd %d data append <%d bytes>.
 void descriptor_wbuff_add(int fd, unsigned char *data, size_t data_len)
 {
   desc_t *d;
+  char errbuf[256];
 
   if (fd >= MAX_DESCRIPTORS)
     return; 
 
   d = (_descriptor_table + fd);
   if (!d->flag) {
-fprintf(stderr, "DEBUG: descriptor_append: invalid fd %d data append <%d bytes>.\n", fd, data_len);
+    sprintf(errbuf, "descriptor_append: invalid fd %d data append <%d bytes>.\n", fd, data_len);
+    shcoind_log(errbuf);
     return;
   }
  
   if (!d->wbuff)
     d->wbuff = shbuf_init();
   shbuf_cat(d->wbuff, data, data_len);
-fprintf(stderr, "DEBUG: descriptor_wbuff_add: <%d bytes> [fd %d]\n", data_len, fd);
 }
 
 shbuf_t *descriptor_rbuff(int fd)
 {
   desc_t *d;
+  char errbuf[256];
 
   if (fd >= MAX_UNET_SOCKETS)
     return; 
 
   d = (_descriptor_table + fd);
   if (!d->flag) {
-fprintf(stderr, "DEBUG: descriptor_rbuff: invalid fd %d.\n", fd);
+    sprintf(errbuf, "descriptor_rbuff: invalid fd %d.", fd);
+    shcoind_log(errbuf);
     return (NULL);
   }
 
@@ -346,13 +354,15 @@ fprintf(stderr, "DEBUG: descriptor_rbuff: invalid fd %d.\n", fd);
 shbuf_t *descriptor_wbuff(int fd)
 {
   desc_t *d;
+  char errbuf[256];
 
   if (fd >= MAX_UNET_SOCKETS)
     return; 
 
   d = (_descriptor_table + fd);
   if (!d->flag) {
-fprintf(stderr, "DEBUG: descriptor_wbuff: invalid fd %d.\n", fd);
+    sprintf(errbuf, "descriptor_wbuff: invalid fd %d.", fd);
+    shcoind_log(errbuf);
     return (NULL);
   }
 

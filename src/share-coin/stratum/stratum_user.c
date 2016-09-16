@@ -78,8 +78,6 @@ void merge_idle_worker(user_t *user)
 
     /* mark idle worker for immediate deletion */
     t_user->work_stamp = 0;
-
-//fprintf(stderr, "DEBUG: merge_idle_worker: found idle dup worker \"%s\".", user->worker); 
   }
 
 }

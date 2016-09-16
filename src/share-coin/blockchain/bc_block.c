@@ -187,6 +187,7 @@ static int _bc_write(bc_t *bc, bcsize_t pos, bc_hash_t hash, void *raw_data, int
   bc_idx_t idx;
   bc_map_t *map;
   char ext[64];
+  char errbuf[256];
   int jrnl;
   int err;
 
@@ -194,9 +195,10 @@ static int _bc_write(bc_t *bc, bcsize_t pos, bc_hash_t hash, void *raw_data, int
 
   err = bc_alloc(bc, jrnl);
   if (err) {
-fprintf(stderr, "DEBUG: _bc_write: bc_alloc failed\n");
+    sprintf(errbuf, "bc_write: error: bc_alloc failed: %s.", sherrstr(err));
+    shcoind_log(errbuf);
     return (err);
-}
+  }
 
   map = bc->data_map + jrnl;
   if (!*map->ext)
@@ -213,14 +215,16 @@ fprintf(stderr, "DEBUG: _bc_write: bc_alloc failed\n");
   /* store fresh block index */
   err = bc_idx_set(bc, pos, &idx);
   if (err) { 
-fprintf(stderr, "DEBUG: _bc_write: bc_idx_set failure\n");
+    sprintf(errbuf, "bc_write: error: bc_idx_set failure: %s.", sherrstr(err));
+    shcoind_log(errbuf);
     return (err);
-}
+  }
 
   /* store serialized block data */
   err = bc_map_append(bc, map, data, data_len);
   if (err) { /* uh oh */
-fprintf(stderr, "DEBUG: _bc_write: bc_map_append failure\n");
+    sprintf(errbuf, "bc_write: error: bc_map_append failure: %s.", sherrstr(err));
+    shcoind_log(errbuf);
     bc_idx_clear(bc, pos);
     return (err);
   }
@@ -248,48 +252,31 @@ static int _bc_append(bc_t *bc, bc_hash_t hash, void *data, size_t data_len)
 {
   unsigned char *raw_data = (unsigned char *)data;
   bc_idx_t idx;
-bc_map_t *map;
+  bc_map_t *map;
+  char errbuf[256];
   int pos;
   int err;
 
   err = bc_idx_open(bc);
   if (err) {
-fprintf(stderr, "DEBUG: bc_append: bc_idx_open() err %d\n", err);
+    sprintf(errbuf, "bc_append: error opening map index: %s.", sherrstr(err));
+    shcoind_log(errbuf);
     return (err);
-}
+  }
 
   pos = bc_idx_next(bc);
   if (pos < 0) {
-fprintf(stderr, "DEBUG: bc_append: bc_idx_next() err %d\n", err);
+    sprintf(errbuf, "bc_append: error positioning map index: %s.", sherrstr(err));
+    shcoind_log(errbuf);
     return (pos);
-}
+  }
 
-#if 0
-  memset(&idx, 0, sizeof(idx));
-  err = bc_idx_get(bc, pos, &idx);
-  if (err)
-    return (err);
-
-  err = bc_alloc(bc, idx.jrnl);
-  if (err)
-    return (err);
-
-  map = bc->data_map + idx.jrnl;
-  idx.of = map->hdr->of;
-  idx.size = data_len;
-  idx.crc = shcrc32(data, data_len);
-
-  err = bc_write(bc, idx.jrnl, data, data_len);
-  if (err)
-    return (err); 
-
-  bc_idx_set(bc, pos, &idx);
-#endif
   err = bc_write(bc, pos, hash, data, data_len);
   if (err) {
-fprintf(stderr, "DEBUG: bc_append: bc_write() err %d <%d bytes>\n", err, data_len);
+    sprintf(errbuf, "bc_append: write error: %s.", sherrstr(err));
+    shcoind_log(errbuf);
     return (err); 
-}
+  }
 
   return (pos);
 }
@@ -312,6 +299,7 @@ static int _bc_read(bc_t *bc, int pos, void *data, bcsize_t data_len)
 {
   bc_map_t *map;
   bc_idx_t idx;
+  char errbuf[256];
   int err;
 
   /* obtain index for record position */
@@ -323,9 +311,10 @@ static int _bc_read(bc_t *bc, int pos, void *data, bcsize_t data_len)
   /* ensure journal is allocated */
   err = bc_alloc(bc, idx.jrnl);
   if (err) {
-fprintf(stderr, "DEBUG: _bc_read: error %d\n", err);
+    sprintf(errbuf, "bc_read: error allocating journal: %s.", sherrstr(err));
+    shcoind_log(errbuf);
     return (err);
-}
+  }
 
   memset(data, 0, data_len);
   data_len = MIN(data_len, idx.size); 
@@ -333,7 +322,8 @@ fprintf(stderr, "DEBUG: _bc_read: error %d\n", err);
   map = bc->data_map + idx.jrnl;
 
   if (shcrc32(map->raw + idx.of, idx.size) != idx.crc) {
-fprintf(stderr, "DEBUG: bc_read; invalid crc {map: %x, idx: %x} mismatch at pos %d\n", shcrc32(map->raw + idx.of, idx.size), idx.crc, pos);
+    sprintf(errbuf, "bc_read: error: invalid crc {map: %x, idx: %x} mismatch at pos %d\n", shcrc32(map->raw + idx.of, idx.size), idx.crc, pos);
+    shcoind_log(errbuf);
     return (SHERR_ILSEQ);
   }
 
@@ -368,15 +358,17 @@ static int _bc_get(bc_t *bc, bcsize_t pos, unsigned char **data_p, size_t *data_
   int err;
 
   if (!data_p) {
-fprintf(stderr, "DEBUG: bc_get: no data pointer specified.\n");
+    sprintf(errbuf, "bc_get: error: no data pointer specified.");
+    shcoind_log(errbuf);
     return (SHERR_INVAL);
-}
+  }
 
   /* obtain index for record position */
   memset(&idx, 0, sizeof(idx));
   err = bc_idx_get(bc, pos, &idx);
   if (err) {
-fprintf(stderr, "DEBUG: bc_get[pos %d]: bc_idx_get error '%s'\n", pos, sherrstr(err));
+    sprintf(errbuf, "bc_get: error obtaining index: %s [pos %d].", sherrstr(err), (int)pos);
+    shcoind_log(errbuf);
     return (err);
   }
 
@@ -389,7 +381,8 @@ fprintf(stderr, "DEBUG: bc_get[pos %d]: bc_idx_get error '%s'\n", pos, sherrstr(
   /* read in serialized binary data */
   err = bc_read(bc, pos, data, idx.size);
   if (err) {
-fprintf(stderr, "DEBUG: bc_get[pos %d]: bc_read <%d bytes> error '%s'\n", pos, idx.size, sherrstr(err));
+    sprintf(errbuf, "bc_get: bc_read <%d bytes> error: %s [pos %d].", idx.size, sherrstr(err), (int)pos);
+    shcoind_log(errbuf);
     return (err); 
   }
 
@@ -417,10 +410,12 @@ int bc_arch(bc_t *bc, bcsize_t pos, unsigned char **data_p, size_t *data_len_p)
   bc_map_t *map;
   unsigned char *data;
   size_t data_len;
+  char errbuf[256];
   int err;
 
   if (!data_p) {
-fprintf(stderr, "DEBUG: bc_arch_get: no data pointer specified.\n");
+    sprintf(errbuf, "bc_arch: no data pointer specified.");
+    shcoind_log(errbuf);
     return (SHERR_INVAL);
   }
 
@@ -432,7 +427,8 @@ fprintf(stderr, "DEBUG: bc_arch_get: no data pointer specified.\n");
   memset(&idx, 0, sizeof(idx));
   err = bc_arch_get(bc, pos, &idx);
   if (err) {
-fprintf(stderr, "DEBUG: bc_arch_get[pos %d]: bc_idx_get error '%s'\n", pos, sherrstr(err));
+    sprintf(errbuf, "bc_arch_get: bc_idx_get error: %s [pos %d].", sherrstr(err), pos);
+    shcoind_log(errbuf);
     return (err);
   }
 
@@ -452,7 +448,8 @@ fprintf(stderr, "DEBUG: bc_arch_get[pos %d]: bc_idx_get error '%s'\n", pos, sher
   map = bc->data_map + idx.jrnl;
 
   if (shcrc32(map->raw + idx.of, idx.size) != idx.crc) {
-fprintf(stderr, "DEBUG: bc_arch: invalid crc {map: %x, idx: %x} mismatch at pos %d\n", shcrc32(map->raw + idx.of, idx.size), idx.crc, pos);
+    sprintf(errbuf, "bc_arch: error: invalid crc {map: %x, idx: %x} mismatch at pos %d\n", shcrc32(map->raw + idx.of, idx.size), idx.crc, pos);
+    shcoind_log(errbuf);
     return (SHERR_ILSEQ);
   }
 
@@ -502,6 +499,7 @@ static int _bc_purge(bc_t *bc, bcsize_t pos)
 {
   bc_map_t *map;
   bc_idx_t idx;
+  char errbuf[256];
   int err;
   int i;
 
@@ -522,7 +520,8 @@ static int _bc_purge(bc_t *bc, bcsize_t pos)
   map = bc->data_map + idx.jrnl;
 
   if (shcrc32(map->raw + idx.of, idx.size) != idx.crc) {
-fprintf(stderr, "DEBUG: bc_read; invalid crc {map: %x, idx: %x} mismatch at pos %d\n", shcrc32(map->raw + idx.of, idx.size), idx.crc, pos);
+    sprintf(errbuf, "bc_purge: invalid crc {map: %x, idx: %x} mismatch at pos %d\n", shcrc32(map->raw + idx.of, idx.size), idx.crc, pos);
+    shcoind_log(errbuf);
     return (SHERR_ILSEQ);
   }
 

@@ -36,7 +36,8 @@ int unet_close(SOCKET sk, char *tag)
 
   table = get_unet_table(sk);
   if (!table) {
-fprintf(stderr, "DEBUG: WARN: unet_close: sk %d requested closure but not mapped.\n", sk);
+    sprintf(buf, "unet_close: warning: sk %d requested closure but not mapped.\n", sk);
+    shcoind_log(buf);
     return (SHERR_INVAL);
   }
 

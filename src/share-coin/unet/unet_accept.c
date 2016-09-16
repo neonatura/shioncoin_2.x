@@ -62,7 +62,8 @@ int unet_accept(int mode, SOCKET *sk_p)
   if (cli_fd == 0)
     return (SHERR_AGAIN);
   if (cli_fd < 0) {
-fprintf(stderr, "DEBUG: unet_accept: error %d (errno %d) (bind->fd %d)\n", cli_fd, errno, bind->fd);
+    sprintf(buf, "unet_accept: warning: error %d (errno %d) (bind->fd %d).", cli_fd, errno, bind->fd);
+    unet_log(mode, buf); 
     return ((int)cli_fd);
 }
 
@@ -76,7 +77,6 @@ fprintf(stderr, "DEBUG: unet_accept: error %d (errno %d) (bind->fd %d)\n", cli_f
     shnet_close(cli_fd);
     return (SHERR_AGAIN);
   }
-fprintf(stderr, "DEBUG: unet_accept: accepting socket on fd %d\n", cli_fd); 
 
   unet_add(mode, cli_fd);
 

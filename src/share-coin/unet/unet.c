@@ -117,7 +117,7 @@ void unet_cycle(double max_t)
   ssize_t r_len;
   SOCKET sk;
   char data[65536];
-char errbuf[256];
+  char errbuf[256];
   double wait_t;
   time_t now;
   int fd_max;
@@ -232,14 +232,16 @@ char errbuf[256];
       }
     }
   } else if (err < 0) {
-    fprintf(stderr, "DEBUG: unet_cycle: select errno %d [fd-max %d]\n", errno, fd_max);  
+    if (errno != EINTR) {
+      sprintf(errbuf, "unet_cycle: warning: select errno %d [fd-max %d]\n", errno, fd_max);  
+      shcoind_log(errbuf);
+    }
 
     /* BADF */
     if (errno == EBADF && !_printed) {
       _printed = 1;
       descriptor_list_print();
     }
-
   }
 
   start_t = shtime();

@@ -38,6 +38,7 @@ int unet_bind(int mode, int port)
 {
   shpeer_t *peer;
   char hostname[MAXHOSTNAMELEN+1];
+  char errbuf[256];
   int err;
   int sk;
 
@@ -50,9 +51,10 @@ int unet_bind(int mode, int port)
 
   err = shnet_bindsk(sk, NULL, port);
   if (err) {
-fprintf(stderr, "DEBUG: unet_bind: error binding to port %d\n", port);
+    sprintf(errbuf, "unet_bind: warning: error binding to port %d\n", port);
+    unet_log(mode, errbuf);
     return (err);
-}
+  }
 
   _unet_bind[mode].fd = sk;
   _unet_bind[mode].port = port;
@@ -68,8 +70,6 @@ fprintf(stderr, "DEBUG: unet_bind: error binding to port %d\n", port);
 
   descriptor_claim(sk, mode, DF_LISTEN);
 
-fprintf(stderr, "DEBUG: unet_bind: listening on port %d\n", port);
- 
   return (0);
 }
 
@@ -93,8 +93,6 @@ int unet_unbind(int mode)
 
   if (_unet_bind[mode].fd == UNDEFINED_SOCKET)
     return (SHERR_INVAL);
-
-fprintf(stderr, "DEBUG: unet_unbind: mode %d\n", mode);
 
   /* close all accepted sockets for coin service. */
   unet_close_all(mode);

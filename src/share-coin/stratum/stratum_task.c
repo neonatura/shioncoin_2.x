@@ -345,7 +345,7 @@ task_t *task_init(void)
 
 
   if (strlen(ptr) >= sizeof(task->cb2)) {
-    fprintf(stderr, "DEBUG: coinbase is too large for stratum\n");
+    shcoind_log("task_init: error: coinbase is too large for stratum\n");
     return (NULL);
   }
   memset(task->cb2, 0, sizeof(task->cb2));

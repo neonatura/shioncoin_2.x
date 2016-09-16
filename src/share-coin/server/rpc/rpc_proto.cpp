@@ -2830,12 +2830,12 @@ Value rpc_peer_import(CIface *iface, const Array& params, bool fHelp)
 }
 
 
-Value rpc_peer_info(CIface *iface, const Array& params, bool fHelp)
+Value rpc_peer_list(CIface *iface, const Array& params, bool fHelp)
 {
 
   if (fHelp || params.size() != 0)
     throw runtime_error(
-        "peer.info\n"
+        "peer.list\n"
         "Statistical and runtime information on network peers.");
 
   vector<CNodeStats> vstats;
@@ -4576,7 +4576,7 @@ static const CRPCCommand vRPCCommands[] =
     { "peer.count",           &rpc_peer_count},
     { "peer.import",          &rpc_peer_import},
     { "peer.importdat",          &rpc_peer_importdat},
-    { "peer.info",            &rpc_peer_info},
+    { "peer.list",            &rpc_peer_list},
     { "peer.export",          &rpc_peer_export},
     { "sys.info",             &rpc_sys_info},
     { "tx.decode",            &rpc_tx_decode},
@@ -5326,14 +5326,26 @@ json_spirit::Value CRPCTable::execute(CIface *iface, const std::string &strMetho
   std::string method;
 
   /* backwards compatibility */
-  if (strMethod == "getinfo")
-    method = string("block.info", strlen("block.info"));
+  if (strMethod == "getblockcount")
+    method = "block.count";
+  else if (strMethod == "getdifficulty")
+    method = "block.difficulty";
+  else if (strMethod == "getinfo")
+    method = "block.info";
   else if (strMethod == "getwork")
     method = "block.work";
   else if (strMethod == "getworkex")
     method = "block.workex";
+  else if (strMethod == "getnetworkhashps")
+    method = "net.hashps";
+  else if (strMethod == "getconnectioncount")
+    method = "peer.count";
+  else if (strMethod == "getpeerinfo")
+    method = "peer.list";
   else if (strMethod == "dumpprivkey")
     method = "wallet.key";
+  else if (strMethod == "sendfrom")
+    method = "wallet.send";
   else if (strMethod == "importprivkey")
     method = "wallet.setkey";
   else

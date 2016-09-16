@@ -51,16 +51,6 @@ void shcoind_term(void)
 #endif
     unet_unbind(idx);
   }
-#if 0
-  /* terminate usde server */
-  usde_server_term();
-  shc_server_term();
-#endif
-
-#if 0
-  /* close sharefs partition */
-  block_close();
-#endif
 
   shpeer_free(&server_peer);
   shbuf_free(&server_msg_buff);
@@ -86,6 +76,8 @@ void usage_help(void)
       "\n"
       "Diagnostic Options:\n"
       "\t-nf\t\tRun daemon in foreground (no fork).\n"
+      "\n"
+      "Note: Run \"shpref shcoind.debug true\" to enable verbose logging.\n"
       "\n"
       "Visit 'http://docs.sharelib.net/' for libshare API documentation."
       "Report bugs to <support@neo-natura.com>.\n"
@@ -116,11 +108,15 @@ int main(int argc, char *argv[])
   int err;
   int i;
 
-  if (argc >= 2 && 0 == strcmp(argv[1], "--help")) {
+  if (argc >= 2 &&
+      0 == strcmp(argv[1], "-h") ||
+      0 == strcmp(argv[1], "--help")) {
     usage_help();
     return (0);
   }
-  if (argc >= 2 && 0 == strcmp(argv[1], "--version")) {
+  if (argc >= 2 &&
+      0 == strcmp(argv[1], "-v") ||
+      0 == strcmp(argv[1], "--version")) {
     usage_version();
     return (0);
   }

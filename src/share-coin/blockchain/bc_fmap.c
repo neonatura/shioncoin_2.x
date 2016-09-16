@@ -136,21 +136,24 @@ static int _bc_map_alloc(bc_t *bc, bc_map_t *map, bcsize_t len)
   bcsize_t size;
   bcsize_t map_alloc;
   bcsize_t map_of;
+  char errbuf[256];
   int err;
 
   /* ensure file map is open */
   err = bc_map_open(bc, map);
   if (err) {
-fprintf(stderr, "DEBUG: _bc_map_alloc: bc_map_open error %d\n", err);
+    sprintf(errbuf, "bc_map_alloc: bc_map_open error: %s.", sherrstr(err));
+    shcoind_log(errbuf);
     return (err);
-}
+  }
 
-memset(&st, 0, sizeof(st));
+  memset(&st, 0, sizeof(st));
   err = fstat(map->fd, &st);
   if (err) {
-fprintf(stderr, "DEBUG: _bc_map_alloc: fstat errno %d [map fd %d]\n", -errno, map->fd);
+    sprintf(errbuf, "bc_map_alloc: fstat errno %d [map fd %d]\n", -errno, map->fd);
+    shcoind_log(errbuf);
     return (-errno);
-}
+  }
 
   map_of = 0;
   size = st.st_size / BC_MAP_BLOCK_SIZE * BC_MAP_BLOCK_SIZE;
@@ -179,17 +182,19 @@ fprintf(stderr, "DEBUG: _bc_map_alloc: fstat errno %d [map fd %d]\n", -errno, ma
     size = ((size / BC_MAP_BLOCK_SIZE) + 1) * BC_MAP_BLOCK_SIZE;
     err = ftruncate(map->fd, size);
     if (err) {
-fprintf(stderr, "DEBUG: _bc_map_alloc: %d = ftruncate(fd %d, <%d bytes>) [errno %d]\n", err, map->fd, size, errno); 
+      sprintf(errbuf, "bc_map_alloc: %d = ftruncate(fd %d, <%d bytes>) [errno %d]\n", err, map->fd, size, errno); 
+      shcoind_log(errbuf);
       return (-errno);
-}
+    }
   }
 
   /* map disk to memory */
   raw = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, map->fd, 0); 
   if (raw == MAP_FAILED) {
-fprintf(stderr, "DEBUG: _bc_map_alloc: mmap failed on fd %d\n", map->fd); 
+    sprintf(errbuf, "bc_map_alloc: error: mmap failed on fd %d\n", map->fd); 
+    shcoind_log(errbuf);
     return (SHERR_NOMEM); 
-}
+  }
 
   /* fill in file map structure */
   map->hdr = (bc_hdr_t *)raw;
@@ -301,10 +306,8 @@ static int _bc_map_write(bc_t *bc, bc_map_t *map, bcsize_t of, void *raw_data, b
   int err;
 
   err = bc_map_alloc(bc, map, data_len);
-  if (err) {
-fprintf(stderr, "DEBUG: bc_map_write: bc_map_alloc %d\n", err);
+  if (err)
     return (err);
-  }
 
   memcpy(map->raw + of, data, data_len);
   map->hdr->of = MAX(map->hdr->of, (of + data_len));
