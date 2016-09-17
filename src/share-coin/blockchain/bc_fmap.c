@@ -275,7 +275,6 @@ void bc_map_free(bc_map_t *map)
 static void _bc_map_close(bc_map_t *map)
 {
 
-fprintf(stderr, "DBEUG: _bc_map_close: fd %d\n", map->fd);
   bc_map_free(map);
   if (map->fd) {
 #ifdef SHCOIN_SERVER

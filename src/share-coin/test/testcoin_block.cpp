@@ -348,7 +348,6 @@ _TEST(cointx)
   for (idx = 0; idx < 3; idx++) {
     // send transaction
     string strError = wallet->SendMoney(scriptPubKey, nFee, wtx, false);
-fprintf(stderr, "DEBUG: TEST: cointx: wallet->SendMoney: error \"%s\"\n", strError.c_str());
     _TRUE(strError == "");
 
     _TRUE(wtx.CheckTransaction(TEST_COIN_IFACE)); /* .. */
@@ -563,6 +562,7 @@ unsigned int nBestHeight = GetBestHeight(iface) + 1;
   cbuff vchSecret(raw, raw+strlen(raw));
   uint160 issuer;
   err = init_cert_tx(iface, strLabel, "test", vchSecret, 1, wtx);
+if (err) fprintf(stderr, "DEBUG: TEST: init_cert_tx: error %d\n", err);
   _TRUE(0 == err);
   uint160 hashCert = wtx.certificate.GetHash();
  // uint256 hashTx = wtx.GetHash();
@@ -644,10 +644,12 @@ if (err) fprintf(stderr, "DEBUG: TEST: OFFER: OFFER-TX: %d = init_offer_tx()\n",
   uint160 hashOffer = wtx.offer.GetHash();
   uint256 hashTx = wtx.GetHash();
 
+#if 0
   {
     int64 t_bal = GetAccountBalance(TEST_COIN_IFACE, strLabel, 1);
 fprintf(stderr, "DEBUG: TEST: OFFER: offer initialized .. bal is now %f\n", ((double)t_bal / COIN));
   }
+#endif
 
   _TRUE(wtx.CheckTransaction(TEST_COIN_IFACE));
   _TRUE(VerifyOffer(wtx) == true);
@@ -685,10 +687,12 @@ if (err) fprintf(stderr, "DEBUG: OFFER-TX: %d = accept_offer_tx()\n", err);
   _TRUE(VerifyOffer(acc_wtx) == true);
   _TRUE(acc_wtx.IsInMemoryPool(TEST_COIN_IFACE) == true);
 
+#if 0
   {
     int64 t_bal = GetAccountBalance(TEST_COIN_IFACE, strLabel, 1);
 fprintf(stderr, "DEBUG: TEST: OFFER: offer accepted .. bal is now %f\n", ((double)t_bal / COIN));
   }
+#endif
 
   {
     CBlock *block = test_GenerateBlock();
@@ -711,10 +715,12 @@ if (err) fprintf(stderr, "DEBUG: %d = generate_offer_tx\n", err);
   _TRUE(VerifyOffer(gen_wtx) == true);
   _TRUE(hashGen == hashOffer);
 
+#if 0
   {
     int64 t_bal = GetAccountBalance(TEST_COIN_IFACE, strLabel, 1);
 fprintf(stderr, "DEBUG: TEST: OFFER: offer generated .. bal is now %f\n", ((double)t_bal / COIN));
   }
+#endif
 
   {
     CBlock *block = test_GenerateBlock();
@@ -737,10 +743,12 @@ if (err) fprintf(stderr, "DEBUG: %d = pay_offer_tx\n", err);
   _TRUE(hashPay == hashAccept);
   _TRUE(pay_wtx.IsInMemoryPool(TEST_COIN_IFACE) == true);
 
+#if 0
   {
     int64 t_bal = GetAccountBalance(TEST_COIN_IFACE, strLabel, 1);
 fprintf(stderr, "DEBUG: TEST: OFFER: offer pay'd .. bal is now %f\n", ((double)t_bal / COIN));
   }
+#endif
 
   for (idx = 0; idx < 3; idx++) {
     CBlock *block = test_GenerateBlock();
@@ -759,7 +767,7 @@ pay_wtx.print();
 
 /* verify payment */
   int64 new_bal = GetAccountBalance(TEST_COIN_IFACE, strLabel, 1);
-fprintf(stderr, "DEBUG: TEST OFFER: offertx: bal %llu < new_bal %llu\n", (unsigned long long)bal, (unsigned long long)new_bal);
+//fprintf(stderr, "DEBUG: TEST OFFER: offertx: bal %llu < new_bal %llu\n", (unsigned long long)bal, (unsigned long long)new_bal);
   _TRUE(new_bal >= bal);
 }
 

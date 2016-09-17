@@ -65,7 +65,7 @@ _TEST(jsonencap)
 
   string strJson = write_string(Value(obj), false);
 //              if (!read_string(strRequest, valRequest))
-fprintf(stderr, "DEBUG: jsonencap: strJson: %s\n", strJson.c_str());
+//fprintf(stderr, "DEBUG: jsonencap: strJson: %s\n", strJson.c_str());
   _TRUE(strJson.size() != 0);
 
 }

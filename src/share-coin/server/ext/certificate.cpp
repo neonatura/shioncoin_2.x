@@ -847,7 +847,8 @@ int init_license_tx(CIface *iface, string strAccount, uint160 hashCert, CWalletT
 }
 
   int64 nCertFee = lic->nFee; 
-  int64 nTxFee = GetCertOpFee(iface, GetBestHeight(iface));
+  int64 nTxFee = (int64)iface->min_tx_fee;
+  //int64 nTxFee = GetCertOpFee(iface, GetBestHeight(iface));
 
   int64 bal = GetAccountBalance(ifaceIndex, strAccount, 1);
   if (bal < (nCertFee + nTxFee))

@@ -59,7 +59,6 @@ int main(int argc, char *argv[])
 
   test_shcoind_init();
 
-descriptor_list_print();
 
   /* test suits */
   SUITE_ADD_TEST(suite, TEST_bloom_create_insert_key);
@@ -72,7 +71,6 @@ descriptor_list_print();
   SUITE_ADD_TEST(suite, TEST_bignum);
   SUITE_ADD_TEST(suite, TEST_sha256transform);
   SUITE_ADD_TEST(suite, TEST_blockchain);
-descriptor_list_print();
   SUITE_ADD_TEST(suite, TEST_matrix);
   SUITE_ADD_TEST(suite, TEST_reorganize);
   SUITE_ADD_TEST(suite, TEST_serializetx);
@@ -82,8 +80,8 @@ descriptor_list_print();
   SUITE_ADD_TEST(suite, TEST_signtx);
   SUITE_ADD_TEST(suite, TEST_cointx);
   SUITE_ADD_TEST(suite, TEST_aliastx);
-  SUITE_ADD_TEST(suite, TEST_assettx);
   SUITE_ADD_TEST(suite, TEST_certtx);
+  SUITE_ADD_TEST(suite, TEST_assettx);
   SUITE_ADD_TEST(suite, TEST_identtx);
   SUITE_ADD_TEST(suite, TEST_exectx);
   SUITE_ADD_TEST(suite, TEST_channeltx);
@@ -96,7 +94,6 @@ descriptor_list_print();
   fails = suite->failCount;
   CuSuiteDelete(suite);
 
-descriptor_list_print();
 
   CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
   iface->op_term(iface, NULL);
