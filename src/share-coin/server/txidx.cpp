@@ -52,6 +52,8 @@ void CDBEnv::EnvShutdown()
     if (!fDbEnvInit)
         return;
 
+fprintf(stderr, "DEBUG: CDBEnv::EnvShutdown: de-allocating database environment.");
+
     fDbEnvInit = false;
     try
     {
@@ -91,7 +93,7 @@ bool CDBEnv::Open(boost::filesystem::path pathEnv_)
     filesystem::path pathLogDir = pathDataDir / "database";
     filesystem::create_directory(pathLogDir);
     filesystem::path pathErrorFile = pathDataDir / "db.log";
-    printf("dbenv.open LogDir=%s ErrorFile=%s\n", pathLogDir.string().c_str(), pathErrorFile.string().c_str());
+//printf("dbenv.open LogDir=%s ErrorFile=%s\n", pathLogDir.string().c_str(), pathErrorFile.string().c_str());
 
     unsigned int nEnvFlags = 0;
     if (GetBoolArg("-privdb", true))

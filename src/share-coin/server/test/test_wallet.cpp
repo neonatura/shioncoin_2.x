@@ -488,7 +488,7 @@ fprintf(stderr, "DEBUG: CreateTransaction: !SelectCoins\n");
         BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setCoins) {
           const CWalletTx *wtx = coin.first;
           if (!SignSignature(*this, *wtx, wtxNew, nIn++)) {
-            error(SHERR_INVAL, "CreateTransaction: !SignSignature(): %s\n", ((CWalletTx *)wtx)->ToString().c_str());
+fprintf(stderr, "DEBUG: CreateTransaction: !SignSignature(): %s\n", ((CWalletTx *)wtx)->ToString().c_str());
             txdb.Close();
             return false;
           }

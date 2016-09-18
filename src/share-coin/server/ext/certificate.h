@@ -367,6 +367,7 @@ class CLicense : public CCert
     void SetNull()
     {
       CCert::SetNull();
+      nFlag |= SHCERT_CERT_LICENSE;
     }
 
     friend bool operator==(const CLicense &a, const CLicense &b) {

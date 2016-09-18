@@ -826,16 +826,23 @@ int init_license_tx(CIface *iface, string strAccount, uint160 hashCert, CWalletT
 
   CTransaction tx;
   bool hasCert = GetTxOfCert(iface, hashCert, tx);
-  if (!hasCert)
+  if (!hasCert) {
     return (SHERR_NOENT);
+}
 
   /* destination (certificate owner) */
   CCoinAddr certAddr(stringFromVch(tx.certificate.vAddr));
-  if (!certAddr.IsValid())
+  if (!certAddr.IsValid()) {
+fprintf(stderr, "DEBUG: init_license_tx: certAddr '%s' is invalid: %s\n", certAddr.ToString().c_str(), tx.certificate.ToString().c_str());
     return (SHERR_INVAL);
+  }
   
   string strExtAccount = "@" + strAccount;
   CCoinAddr extAddr = GetAccountAddress(wallet, strExtAccount, true);
+  if (!extAddr.IsValid()) {
+fprintf(stderr, "DEBUG: error generating ext account addr\n");
+    return (SHERR_INVAL);
+}
 
   /* embed cert content into transaction */
   wtx.SetNull();
@@ -843,28 +850,72 @@ int init_license_tx(CIface *iface, string strAccount, uint160 hashCert, CWalletT
 
   CCert *lic = wtx.CreateLicense(&tx.certificate);
   if (!lic) {
+fprintf(stderr, "DEBUG: !wtx.CreateLicense\n");
     return (SHERR_INVAL);
 }
 
-  int64 nCertFee = lic->nFee; 
-  int64 nTxFee = (int64)iface->min_tx_fee;
-  //int64 nTxFee = GetCertOpFee(iface, GetBestHeight(iface));
+  int64 nCertFee = lic->nFee;
+  int64 nOpFee = MAX(iface->min_tx_fee, 
+      GetCertOpFee(iface, GetBestHeight(iface)));
+  int64 nTxFee =  nOpFee + nCertFee;
+  nTxFee = MAX(iface->min_tx_fee, nTxFee);
 
   int64 bal = GetAccountBalance(ifaceIndex, strAccount, 1);
-  if (bal < (nCertFee + nTxFee))
+  if (bal < nTxFee)
     return (SHERR_AGAIN);
 
   /* send to extended tx storage account */
   uint160 licHash = lic->GetHash();
 
+  /* send license tx to intermediate address */
+  CScript scriptPubKey;
+  scriptPubKey << OP_EXT_NEW << CScript::EncodeOP_N(OP_LICENSE) << OP_HASH160 << licHash << OP_2DROP;
+  if (nCertFee >= (int64)iface->min_tx_fee) {
+    CScript scriptPubKeyDest;
+    scriptPubKeyDest.SetDestination(extAddr.Get());
+    scriptPubKey += scriptPubKeyDest;
+  } else {
+    /* no fee required */
+    scriptPubKey << OP_RETURN;
+  }
+  string certStrError = wallet->SendMoney(scriptPubKey, nTxFee, wtx, false);
+  if (certStrError != "") {
+    error(ifaceIndex, certStrError.c_str());
+    return (SHERR_CANCELED);
+  }
+
+  if (nCertFee >= (int64)iface->min_tx_fee) {
+    int nTxOut = 0; /* tx only had one output */
+    CWalletTx l_wtx;
+    vector<pair<CScript, int64> > vecSend;
+
+    l_wtx.SetNull();
+    l_wtx.strFromAccount = strAccount;
+    CScript scriptPubKeyFee;
+    scriptPubKeyFee.SetDestination(certAddr.Get());
+    vecSend.push_back(make_pair(scriptPubKeyFee, nCertFee));
+
+    CReserveKey rkey(wallet);
+    int64 nRetFee = MAX(iface->min_tx_fee, wtx.vout[0].nValue - nCertFee);
+    if (!CreateTransactionWithInputTx(iface,
+          vecSend, wtx, nTxOut, l_wtx, rkey, nRetFee) ||
+        !wallet->CommitTransaction(l_wtx, rkey)) {
+      error(SHERR_CANCELED, "error paying certificate owner the license fee.");
+      return (SHERR_CANCELED);
+    }
+  }
+
+
+#if 0
   /* send license fee (from cert) to cert owner */
   CWalletTx l_wtx;
+  l_wtx.strFromAccount = strAccount;
   CScript certPubKey;
   certPubKey.SetDestination(certAddr.Get());
   string strError = wallet->SendMoney(certPubKey, nCertFee, l_wtx, false);
   if (strError != "") {
     error(ifaceIndex, strError.c_str());
-    return (SHERR_INVAL);
+    return (SHERR_CANCELED);
   }
 
   /* send license fee (of tx op) to nowhere. */
@@ -873,8 +924,10 @@ int init_license_tx(CIface *iface, string strAccount, uint160 hashCert, CWalletT
   string certStrError = wallet->SendMoney(scriptPubKey, nTxFee, wtx, false);
   if (certStrError != "") {
     error(ifaceIndex, certStrError.c_str());
-    return (SHERR_INVAL);
+    return (SHERR_CANCELED);
   }
+#endif
+
 
 //  wallet->mapLicenseArch[licHash] = tx.GetHash();
   wallet->mapLicense[licHash] = wtx.GetHash();
@@ -898,7 +951,9 @@ void CLicense::NotifySharenet(int ifaceIndex)
 
 /**
  * Submits an amount of coins as a transaction fee.
- * @hashCert An optional certificate reference to associate with the donation.
+ * @param strAccount The account to donate funds from.
+ * @param nValue A coin amount more than 0.0000101.
+ * @param hashCert An optional certificate reference to associate with the donation.
  * @note A block depth of two must be reached before donation occurs.
  */
 int init_ident_donate_tx(CIface *iface, string strAccount, uint64_t nValue, uint160 hashCert, CWalletTx& wtx)
@@ -914,7 +969,7 @@ int init_ident_donate_tx(CIface *iface, string strAccount, uint64_t nValue, uint
     return (SHERR_OPNOTSUPP);
 
   int64 nFee = nValue - iface->min_tx_fee;
-  if (nFee < 0) {
+  if (nFee < iface->min_input) {
     return (SHERR_INVAL);
   }
 

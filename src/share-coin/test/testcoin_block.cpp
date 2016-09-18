@@ -472,14 +472,14 @@ _TEST(identtx)
   int err;
 
   CWalletTx cert_wtx;
-  const char *raw = "test-secret";
+  const char *raw = "ident-test-secret";
   cbuff vchSecret(raw, raw+strlen(raw));
   uint160 issuer;
   err = init_cert_tx(iface, strAccount, "test", vchSecret, 1, cert_wtx);
   _TRUE(0 == err);
   uint160 hashCert = cert_wtx.certificate.GetHash();
 
-  {
+  for (idx = 0; idx < 3; idx++) {
     CBlock *block = test_GenerateBlock();
     _TRUEPTR(block);
     _TRUE(ProcessBlock(NULL, block) == true);
@@ -487,13 +487,14 @@ _TEST(identtx)
   }
 
   orig_bal = GetAccountBalance(TEST_COIN_IFACE, strAccount, 1);
-  _TRUE(orig_bal > (COIN + iface->min_tx_fee));
+  _TRUE(orig_bal > (iface->min_tx_fee * 2));
 
 
-  err = init_ident_donate_tx(iface, strAccount, orig_bal - COIN, hashCert, wtx);  
+  err = init_ident_donate_tx(iface, strAccount, orig_bal/2, hashCert, wtx);  
+if (err) fprintf(stderr, "DEBUG: TEST: init_ident_donate: error %d\n", err);
   _TRUE(err == 0);
   _TRUE(wtx.CheckTransaction(TEST_COIN_IFACE)); /* .. */
-wtx.print();
+//wtx.print();
   _TRUE(VerifyIdent(wtx, mode) == true);
   _TRUE(wtx.IsInMemoryPool(TEST_COIN_IFACE) == true);
 
@@ -556,23 +557,23 @@ _TEST(certtx)
   CCoinAddr addr = GetAccountAddress(wallet, strLabel, false);
   _TRUE(addr.IsValid() == true);
 
-unsigned int nBestHeight = GetBestHeight(iface) + 1;
   CWalletTx wtx;
-  const char *raw = "test-secret";
-  cbuff vchSecret(raw, raw+strlen(raw));
-  uint160 issuer;
-  err = init_cert_tx(iface, strLabel, "test", vchSecret, 1, wtx);
+  unsigned int nBestHeight = GetBestHeight(iface) + 1;
+  {
+    const char *raw = "test-secret";
+    cbuff vchSecret(raw, raw+strlen(raw));
+    err = init_cert_tx(iface, strLabel, "test", vchSecret, 1, wtx);
 if (err) fprintf(stderr, "DEBUG: TEST: init_cert_tx: error %d\n", err);
-  _TRUE(0 == err);
+    _TRUE(0 == err);
+  }
   uint160 hashCert = wtx.certificate.GetHash();
- // uint256 hashTx = wtx.GetHash();
 
   _TRUE(wtx.CheckTransaction(TEST_COIN_IFACE)); /* .. */
   _TRUE(VerifyCert(iface, wtx, nBestHeight) == true);
   _TRUE(wtx.IsInMemoryPool(TEST_COIN_IFACE) == true);
 
   /* insert cert into chain + create a coin balance */
-  for (idx = 0; idx < 10; idx++) {
+  for (idx = 0; idx < 3; idx++) {
     CBlock *block = test_GenerateBlock();
     _TRUEPTR(block);
     _TRUE(ProcessBlock(NULL, block) == true);
@@ -902,9 +903,9 @@ _TEST(channeltx)
   /* request channel funding */
   CWalletTx fund_wtx;
   err = init_channel_tx(iface, strLabel, nValue, dest_addr, fund_wtx); 
-fprintf(stderr, "DEBUG: %d = init_channel_tx()\n", err);
+if (err) fprintf(stderr, "DEBUG: %d = init_channel_tx()\n", err);
   _TRUE(0 == err);
-fprintf(stderr, "DEBUG: CHAN INIT: %s\n", fund_wtx.ToString().c_str());
+//fprintf(stderr, "DEBUG: CHAN INIT: %s\n", fund_wtx.ToString().c_str());
 
   /* fund channel as counter-party */
   CWalletTx chan_wtx;
@@ -913,20 +914,20 @@ fprintf(stderr, "DEBUG: CHAN INIT: %s\n", fund_wtx.ToString().c_str());
 
   uint160 hChan = chan_wtx.channel.GetHash();
 
-fprintf(stderr, "DEBUG: CHAN OPEN: %s\n", chan_wtx.ToString().c_str());
+//fprintf(stderr, "DEBUG: CHAN OPEN: %s\n", chan_wtx.ToString().c_str());
 //  _TRUE(chan_wtx.channel.GetHash() == hChan);
 
   /* perform pay operation to counter-party */
   CWalletTx commit_wtx;
   err = pay_channel_tx(iface, strLabel, hChan, dest_addr, nValue / 10, commit_wtx);  
-fprintf(stderr, "DEBUG: CHAN PAY[err %d]: %s\n", err, commit_wtx.ToString().c_str());
+//fprintf(stderr, "DEBUG: CHAN PAY[err %d]: %s\n", err, commit_wtx.ToString().c_str());
   _TRUE(0 == err);
 
   /* validate pay op */
   CWalletTx val_wtx;
   err = validate_channel_tx(iface, (CTransaction *)&commit_wtx, val_wtx);  
   _TRUE(0 == err);
-fprintf(stderr, "DEBUG: CHAN VALIDATE: %s\n", val_wtx.ToString().c_str());
+//fprintf(stderr, "DEBUG: CHAN VALIDATE: %s\n", val_wtx.ToString().c_str());
 
 #if 0
   /* perform pay operation from counter-party */
@@ -939,7 +940,7 @@ fprintf(stderr, "DEBUG: CHAN VALIDATE: %s\n", val_wtx.ToString().c_str());
   /* close channel and finalize transaction. */
   CWalletTx fin_wtx;
   err = generate_channel_tx(iface, hChan, fin_wtx);
-fprintf(stderr, "DEBUG: CHAN GEN[status %d]: %s\n", err, fin_wtx.ToString().c_str());
+//fprintf(stderr, "DEBUG: CHAN GEN[status %d]: %s\n", err, fin_wtx.ToString().c_str());
   _TRUE(0 == err);
 
   /* ** Abort Channel Scenerio ** */
@@ -987,7 +988,7 @@ _TEST(hdtx)
   wallet->SetAddressBookName(mpubkey.GetID(), strAccount);
 //  _TRUE(wallet->HaveKey(mpubkey.GetID() == true));
   _TRUE(wallet->GetKey(mpubkey.GetID(), mkey) == true);
-fprintf(stderr, "DEBUG: TEST: hdtx: mkey = %s\n", mkey.ToString().c_str());
+
   if(mpubkey != mkey.GetPubKey()) fprintf(stderr, "DEBUG: mpubkey != mkey.GetPubKey: mpubkey is %s\n", HexStr(mpubkey.Raw()).c_str());
   if(mpubkey != mkey.GetPubKey()) fprintf(stderr, "DEBUG: mpubkey != mkey.GetPubKey: mkey.pubkey is %s\n", HexStr(mkey.GetPubKey().Raw()).c_str());
   _TRUE(key.IsValid());

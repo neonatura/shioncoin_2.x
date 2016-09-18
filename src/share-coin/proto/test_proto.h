@@ -44,7 +44,7 @@ static const int TEST_PROTOCOL_VERSION = 1000000;
 
 #define TEST_COIN (uint64_t)100000000
 static const unsigned int TEST_MAX_BLOCK_SIZE = 1000000;
-static const int64 TEST_MIN_INPUT = 0;
+static const int64 TEST_MIN_INPUT = 100;
 static const int64 TEST_MIN_TX_FEE = 10000;
 static const int64 TEST_MIN_RELAY_TX_FEE = 10000;
 static const int64 TEST_MAX_MONEY = 1600000000 * TEST_COIN;
