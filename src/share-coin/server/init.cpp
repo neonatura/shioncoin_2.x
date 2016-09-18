@@ -230,7 +230,7 @@ bool static InitWarning(const std::string &str)
     return true;
 }
 
-
+#if 0
 bool static Bind(const CService &addr, bool fError = true) {
     if (IsLimited(addr))
         return false;
@@ -242,6 +242,7 @@ bool static Bind(const CService &addr, bool fError = true) {
     }
     return true;
 }
+#endif
 
 // Core-specific options shared between UI and daemon
 std::string HelpMessage()
