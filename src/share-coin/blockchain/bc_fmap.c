@@ -106,7 +106,7 @@ perror("bc_map_open [!reg]");
 
   iface = GetCoin(if_name);
   if (iface)
-    descriptor_claim(fd, GetCoinIndex(if_name), DF_MAP);
+    descriptor_claim(fd, GetCoinIndex(iface), DF_MAP);
 }
 #endif
 

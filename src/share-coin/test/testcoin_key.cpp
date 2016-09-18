@@ -330,7 +330,7 @@ extern "C" {
 
 /* -- */
 
-    for (idx = 1; idx < 4; idx++) {
+    for (idx = 1; idx < 8; idx++) {
       /* extract child pub key */
       HDPubKey t_pubkey;
       ret = key.derive(t_pubkey, idx);
