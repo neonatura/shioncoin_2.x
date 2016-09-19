@@ -601,7 +601,6 @@ CNode* ConnectNode(int ifaceIndex, CAddress addrConnect, const char *pszDest, in
         pszDest ? 0 : (double)(GetAdjustedTime() - addrConnect.nTime)/3600.0);
     return (NULL);
   }
-fprintf(stderr, "DEBUG: ConnectNode: opened new socket on fd %d\n", (int)hSocket);
 
   CNode* pnode = FindNode(ifaceIndex, hSocket);
   if (pnode)
@@ -1808,7 +1807,7 @@ int shc_coin_server_recv(CIface *iface, CNode *pnode, shbuf_t *buff)
   shbuf_trim(buff, sizeof(hdr) + hdr.size);
 
   bool fRet = shc_coin_server_recv_msg(iface, pnode);
-fprintf(stderr, "DEBUG: shc_coin_server_recv: shc_coin_server_recv_msg ret'd %s <%u bytes> [%s]\n", fRet ? "true" : "false", hdr.size, hdr.cmd); 
+//fprintf(stderr, "DEBUG: shc_coin_server_recv: shc_coin_server_recv_msg ret'd %s <%u bytes> [%s]\n", fRet ? "true" : "false", hdr.size, hdr.cmd); 
 
   vRecv.erase(vRecv.begin(), vRecv.end());
   vRecv.Compact();
