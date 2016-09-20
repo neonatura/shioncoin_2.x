@@ -1786,7 +1786,7 @@ Value rpc_wallet_info(CIface *iface, const Array& params, bool fHelp)
 
   obj.push_back(Pair("keypoololdest", (boost::int64_t)pwalletMain->GetOldestKeyPoolTime()));
   obj.push_back(Pair("keypoolsize",   pwalletMain->GetKeyPoolSize()));
-  obj.push_back(Pair("txcachecount",   pwalletMain->mapWallet.size()));
+  obj.push_back(Pair("txcachecount",   (int)pwalletMain->mapWallet.size()));
 
   obj.push_back(Pair("errors",        GetWarnings(ifaceIndex, "statusbar")));
 
