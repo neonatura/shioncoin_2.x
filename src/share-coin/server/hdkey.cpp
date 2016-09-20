@@ -311,7 +311,7 @@ Object HDPrivKey::ToValue()
   obj.push_back(Pair("depth", (int)depth));
   obj.push_back(Pair("index", (int)index));
   obj.push_back(Pair("chain", HexStr(vchChain)));
-  obj.push_back(Pair("keylen", Raw().size()));
+  obj.push_back(Pair("keylen", (int)Raw().size()));
 
   return (obj);
 }
