@@ -37,6 +37,21 @@
 
 #define BC_MAP_BLOCK_SIZE 16384
 
+static int bc_iface_index(char *name)
+{
+#ifdef SHCOIN_SERVER
+  int idx;
+
+  for (idx = 1; idx < MAX_COIN_IFACE; idx++) {
+    CIface *iface = GetCoinByIndex(idx);
+    if (0 == strncmp(iface->name, name, strlen(iface->name)))
+      return (idx);
+  }
+#endif
+
+  return (0);
+}
+
 static int _bc_map_open(bc_t *bc, bc_map_t *map)
 {
   bc_hdr_t ini_hdr;
@@ -95,20 +110,7 @@ perror("bc_map_open [!reg]");
   map->fd = fd;
   map->size = st.st_size;
 
-#ifdef SHCOIN_SERVER
-{
-  char if_name[256];
-  CIface *iface;
-
-  memset(if_name, 0, sizeof(if_name));
-  strncpy(if_name, bc_name(bc), sizeof(if_name)-1);
-  strtok(if_name, "_");
-
-  iface = GetCoin(if_name);
-  if (iface)
-    descriptor_claim(fd, GetCoinIndex(iface), DF_MAP);
-}
-#endif
+  descriptor_claim(fd, bc_iface_index(bc->name), DF_MAP);
 
   return (0);
 }
