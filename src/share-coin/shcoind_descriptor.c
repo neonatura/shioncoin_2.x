@@ -205,7 +205,7 @@ void descriptor_release(int fd)
     return; 
 
   if (!_descriptor_table) /* init */
-    _descriptor_table = (desc_t *)calloc(MAX_DESCRIPTORS, sizeof(desc_t));
+    _descriptor_table = (desc_t *)calloc(MAX_DESCRIPTORS + 1, sizeof(desc_t));
 
   d = (_descriptor_table + fd);
 
@@ -220,7 +220,7 @@ void descriptor_release(int fd)
   shbuf_free(&d->wbuff);
   shbuf_free(&d->rbuff);
 
-  memset(d, 0, sizeof(d));
+  memset(d, 0, sizeof(desc_t));
 
   _total_descriptor_release++;
 }
