@@ -362,6 +362,7 @@ bool error(int err_code, const char *pszFormat, ...)
   va_end(arg_ptr);
 
   shcoind_err(err_code, "coin-service", buf);
+  return false;
 }
 
 
