@@ -198,6 +198,7 @@ desc_t *descriptor_mark(int fd)
 
 void descriptor_release(int fd)
 {
+  struct stat st;
   desc_t *d;
 
   if (fd >= MAX_UNET_SOCKETS)
@@ -208,8 +209,8 @@ void descriptor_release(int fd)
 
   d = (_descriptor_table + fd);
 
-  if (d->flag) {
-    if (d->flag & DF_SOCK) {
+  if (0 == fstat(fd, &st)) {
+    if (S_ISSOCK(st.st_mode)) {
       shnet_close(fd);
     } else {
       close(fd);

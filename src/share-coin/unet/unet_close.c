@@ -107,16 +107,14 @@ void unet_close_idle(void)
         shtime_before(shtime_adj(t->cstamp, MAX_CONNECT_IDLE_TIME), now)) {
       sprintf(buf, "unet_close_idle: closing peer '%s' for no activity for %ds after connect [mode %d] [fd %d] [flag %d].", shaddr_print(&t->net_addr), MAX_CONNECT_IDLE_TIME, t->mode, sk, t->flag);
       unet_log(t->mode, buf);
-      unet_shutdown(sk);
+      unet_close(sk, "connect-idle");
       continue;
     }
 
     if (t->mode == UNET_STRATUM) {
       if (t->stamp != UNDEFINED_TIME &&
           shtime_before(shtime_adj(t->stamp, MAX_IDLE_TIME), now)) {
-        sprintf(buf, "unet_close_idle: closing peer '%s' for being idle %ds.", shaddr_print(&t->net_addr), MAX_IDLE_TIME);
-        unet_log(t->mode, buf);
-        unet_shutdown(sk);
+        unet_close(sk, "idle");
         continue;
       }
     }
