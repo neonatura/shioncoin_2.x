@@ -25,4 +25,121 @@
 
 #include "shcoind.h"
 
-int opt_max_conn = 512;
+
+
+static shmap_t *_proc_option_table;
+#define OPT_LIST _proc_option_table
+
+static void opt_set_defaults(void)
+{
+  char buf[256];
+
+  memset(buf, 0, sizeof(buf));
+
+  /** 
+   * Whether to log verbose debugging information.
+   */
+  strncpy(buf, shpref_get("shcoind.debug", ""), sizeof(buf)-1);
+  if (tolower(*buf) == 't')
+    opt_bool_set(OPT_DEBUG, TRUE); 
+  sprintf(buf, "info: option '%s' set to 'true'.", OPT_DEBUG);
+  shcoind_info("persistent option", buf); 
+
+  /**
+   * The maximum number of inbound connections to allow for each coin service.
+   */
+  strncpy(buf, shpref_get("shcoind.net.max", ""), sizeof(buf)-1);
+  if (isdigit(*buf))
+    opt_num_set(OPT_MAX_CONN, MAX(0, atoi(buf)));
+  if (opt_num(OPT_MAX_CONN) == 0)
+    opt_num_set(OPT_MAX_CONN, 512); /* default */
+  sprintf(buf, "info: option '%s' set to '%d'.", 
+      OPT_MAX_CONN, opt_num(OPT_MAX_CONN));
+  shcoind_info("persistent option", buf); 
+
+  strncpy(buf, shpref_get("shcoind.net.seed", ""), sizeof(buf)-1);
+  if (tolower(*buf) == 'f')
+    opt_bool_set(OPT_PEER_SEED, FALSE);
+  else
+    opt_bool_set(OPT_PEER_SEED, TRUE); /* default */
+  sprintf(buf, "info: option '%s' set to '%s'.", 
+      OPT_PEER_SEED, opt_bool(OPT_PEER_SEED) ? "true" : "false");
+  shcoind_info("persistent option", buf); 
+
+  /**
+   * The time-span (in seconds) before a ban is lifted.
+   */
+  strncpy(buf, shpref_get("shcoind.ban.span", ""), sizeof(buf)-1);
+  if (isdigit(*buf))
+    opt_num_set(OPT_BAN_SPAN, MAX(0, atoi(buf)));
+  if (opt_num(OPT_BAN_SPAN) == 0)
+    opt_num_set(OPT_BAN_SPAN, 21600); /* 6-hour default */
+  sprintf(buf, "info: option '%s' set to '%d'.", 
+      OPT_BAN_SPAN, opt_num(OPT_BAN_SPAN));
+  shcoind_info("persistent option", buf); 
+
+  /**
+   * The minimum 'misbehaviour rate' of a coin service connection before it is banned.
+   */
+  strncpy(buf, shpref_get("shcoind.ban.threshold", ""), sizeof(buf)-1);
+  if (isdigit(*buf))
+    opt_num_set(OPT_BAN_THRESHOLD, MAX(0, atoi(buf)));
+  if (opt_num(OPT_BAN_THRESHOLD) == 0)
+    opt_num_set(OPT_BAN_THRESHOLD, 1000); /* default */
+  sprintf(buf, "info: option '%s' set to '%d'.", 
+      OPT_BAN_THRESHOLD, opt_num(OPT_BAN_THRESHOLD));
+  shcoind_info("persistent option", buf); 
+
+}
+
+void opt_init(void)
+{
+  OPT_LIST = shmap_init();
+
+  opt_set_defaults();
+}
+
+void opt_term(void)
+{
+
+  if (!OPT_LIST)
+    return;
+
+  shmap_free(&OPT_LIST);
+  OPT_LIST = NULL;
+}
+
+int opt_num(char *tag)
+{
+  void *v = shmap_get(OPT_LIST, ashkey_str(tag));
+  return ((int)(uint64_t)v);
+}
+
+void opt_num_set(char *tag, int num)
+{
+  void *v = (void *)(uint64_t)num;
+  shmap_set(OPT_LIST, ashkey_str(tag), v);
+}
+
+const char *opt_str(char *tag)
+{
+  char *str = shmap_get_str(OPT_LIST, ashkey_str(tag));
+  return ((const char *)str);
+}
+
+void opt_str_set(char *tag, char *str)
+{
+  shmap_set_astr(OPT_LIST, ashkey_str(tag), str);
+}
+
+int opt_bool(char *tag)
+{
+  int b = !!opt_num(tag);
+}
+
+void opt_bool_set(char *tag, int b)
+{
+  opt_num_set(tag, !!b);
+}
+
+

@@ -26,12 +26,43 @@
 #ifndef __SHCOIND_OPT_H__
 #define __SHCOIND_OPT_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 
-/**
- * The maximum number of inbound connections to allow for the usde server.
- */
-extern int opt_max_conn;
+
+#define OPT_DEBUG "debug"
+#define OPT_MAX_CONN "max-conn"
+#define OPT_PEER_SEED "peer-seed"
+#define OPT_BAN_SPAN "ban-span"
+#define OPT_BAN_THRESHOLD "ban-threshold"
+
+
+
+void opt_init(void);
+
+void opt_term(void);
+
+int opt_num(char *tag);
+
+void opt_num_set(char *tag, int num);
+
+const char *opt_str(char *tag);
+
+void opt_str_set(char *tag, char *str);
+
+int opt_bool(char *tag);
+
+void opt_bool_set(char *tag, int b);
+
+
+
+
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif /* ndef __SHCOIND_OPT_H__ */
 

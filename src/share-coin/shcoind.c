@@ -56,9 +56,12 @@ void shcoind_term(void)
   shbuf_free(&server_msg_buff);
 
   if (_rpc_thread_running) {
-    /* terminate usde server */
+    /* terminate coin server */
     server_shutdown();
   }
+
+  /* de-allocation options */
+  opt_term();
 
 }
 
@@ -69,15 +72,26 @@ void usage_help(void)
       "Virtual currency daemon for the Share Library Suite.\n"
       "\n"
       "Network Options:\n"
-      "\t--maxconn <#>\tThe maximum number of incoming connections (usde server).\n"
+      "\t--max-conn <#>\tThe maximum number of incoming coin-service connections.\n"
+      "\t--no-seed\tPrevent pre-defined seed IP addresses from being used.\n"
+      "\t--check-addr\tRe-verify the external IP address used by this machine.\n"
       "\n"
-      "Block Options:\n"
-      "\t--blockfile <path>\tLoad a blk001.dat file.\n"
+      "Peer Options:\n"
+      "\t--ban-span <#>\tThe number of seconds a peer will be banned for.\n"
+      "\t--ban-threshold <#>\tThe degree of misbehaviour before a peer is disconnected.\n"
       "\n"
       "Diagnostic Options:\n"
+      "\t--debug\t\tLog verbose debugging information.\n"
       "\t-nf\t\tRun daemon in foreground (no fork).\n"
       "\n"
-      "Note: Run \"shpref shcoind.debug true\" to enable verbose logging.\n"
+      "Persistent Preferences:\n"
+      "\tshcoind.debug\t\tSee '--debug' command-line option.\n"
+      "\tshcoind.net.max\t\tSee '--conn-max' command-line option.\n"
+      "\tshcoind.net.seed\tWhether to use pre-defined seed IP addresses.\n"
+      "\tshcoind.ban.span\tSee '--ban-span' command-line option.\n"
+      "\tshcoind.ban.threshold\tSee '--ban-threshold' command-line option.\n"
+      "\n"
+      "Note: Run \"shpref <name> <val>\" to set persistent preferences.\n"
       "\n"
       "Visit 'http://docs.sharelib.net/' for libshare API documentation."
       "Report bugs to <support@neo-natura.com>.\n"
@@ -101,7 +115,6 @@ int main(int argc, char *argv[])
 {
   CIface *iface;
   bc_t *bc;
-  char blockfile_path[PATH_MAX];
   char buf[1024];
   int idx;
   int fd;
@@ -123,19 +136,35 @@ int main(int argc, char *argv[])
 
   server_start_t = shtime();
 
+  /* initialize options */
+  opt_init();
+
   /* always perform 'fresh' tx rescan */
 
-  memset(blockfile_path, 0, sizeof(blockfile_path));
   for (i = 1; i < argc; i++) {
-    if (0 == strcmp(argv[i], "--blockfile")) {
-      if (i + 1 < argc)
-        strncpy(blockfile_path, argv[i], sizeof(blockfile_path)-1);
-    } else if (0 == strcmp(argv[i], "-nf")) {
+    if (0 == strcmp(argv[i], "-nf")) {
       opt_no_fork = TRUE;
-    } else if (0 == strcmp(argv[i], "--maxconn")) {
+    } else if (0 == strcmp(argv[i], "--max-conn")) {
       if (i + 1 < argc && isdigit(argv[i+1][0])) {
         i++;
-        opt_max_conn = MAX(129, atoi(argv[i]));
+        if (isdigit(argv[i][0]))
+          opt_num_set(OPT_MAX_CONN, MAX(0, atoi(argv[i])));
+      }
+    } else if (0 == strcmp(argv[i], "--no-seed")) {
+      opt_bool_set(OPT_PEER_SEED, FALSE);
+    } else if (0 == strcmp(argv[i], "--check-addr")) {
+      shpref_set("shcoind.net.addr", ""); /* clear cached IP addr */
+    } else if (0 == strcmp(argv[i], "--ban-span")) {
+      if (i + 1 < argc && isdigit(argv[i+1][0])) {
+        i++;
+        if (isdigit(argv[i][0]))
+          opt_num_set(OPT_BAN_SPAN, MAX(1, atoi(argv[i])));
+      }
+    } else if (0 == strcmp(argv[i], "--ban-threshold")) {
+      if (i + 1 < argc && isdigit(argv[i+1][0])) {
+        i++;
+        if (isdigit(argv[i][0]))
+          opt_num_set(OPT_BAN_THRESHOLD, MAX(1, atoi(argv[i])));
       }
 #if 0
     } else if (0 == strcmp(argv[i], "--rescan")) {

@@ -33,11 +33,14 @@ void f_shcoind_log(int err_code, const char *tag, const char *text, const char *
   char *date_str;
   char buf[256];
 
-  if (!err_code) {
+  if (!err_code && !opt_num(OPT_DEBUG)) {
+#if 0
     memset(buf, 0, sizeof(buf));
     strncpy(buf, shpref_get("shcoind.debug", ""), sizeof(buf)-1);
     if (*buf != 't' && *buf != 'T')
       return; /* all done */
+#endif
+    return;
   }
 
   if (!buff)
@@ -56,7 +59,7 @@ void f_shcoind_log(int err_code, const char *tag, const char *text, const char *
     shbuf_catstr(buff, origin);
   }
 
-  if (err_code) {
+  if (err_code && err_code != SHERR_INFO) {
     shlog(SHLOG_ERROR, err_code, shbuf_data(buff));
   } else {
     shlog(SHLOG_INFO, 0, shbuf_data(buff));
