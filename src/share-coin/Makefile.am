@@ -25,12 +25,14 @@ blockchain_sources = \
 
 proto_sources = \
 	$(srcdir)/proto/coin_proto.c \
-	$(srcdir)/proto/usde_proto.cpp \
 	$(srcdir)/proto/shc_proto.cpp \
+	$(srcdir)/proto/usde_proto.cpp \
+	$(srcdir)/proto/omni_proto.cpp \
 	$(srcdir)/proto/test_proto.cpp \
 	$(srcdir)/proto/coin_proto.h \
-	$(srcdir)/proto/usde_proto.h \
 	$(srcdir)/proto/shc_proto.h \
+	$(srcdir)/proto/usde_proto.h \
+	$(srcdir)/proto/omni_proto.h \
 	$(srcdir)/proto/test_proto.h
 
 common_includes = \
@@ -125,14 +127,6 @@ server_sources = \
 	server/test/test_wallet.h \
 	server/test/test_block.cpp \
 	server/test/test_block.h \
-	server/usde/usde_netmsg.cpp \
-	server/usde/usde_netmsg.h \
-	server/usde/usde_block.cpp \
-	server/usde/usde_block.h \
-	server/usde/usde_wallet.cpp \
-	server/usde/usde_wallet.h \
-	server/usde/usde_txidx.cpp \
-	server/usde/usde_txidx.h \
 	server/shc/shc_netmsg.cpp \
 	server/shc/shc_netmsg.h \
 	server/shc/shc_block.cpp \
@@ -141,6 +135,22 @@ server_sources = \
 	server/shc/shc_wallet.h \
 	server/shc/shc_txidx.cpp \
 	server/shc/shc_txidx.h \
+	server/usde/usde_netmsg.cpp \
+	server/usde/usde_netmsg.h \
+	server/usde/usde_block.cpp \
+	server/usde/usde_block.h \
+	server/usde/usde_wallet.cpp \
+	server/usde/usde_wallet.h \
+	server/usde/usde_txidx.cpp \
+	server/usde/usde_txidx.h \
+	server/omni/omni_txidx.cpp \
+	server/omni/omni_txidx.h \
+	server/omni/omni_block.cpp \
+	server/omni/omni_block.h \
+	server/omni/omni_wallet.cpp \
+	server/omni/omni_wallet.h \
+	server/omni/omni_netmsg.cpp \
+	server/omni/omni_netmsg.h \
 	server/ext/txext.cpp \
 	server/ext/alias.cpp \
 	server/ext/certificate.cpp \

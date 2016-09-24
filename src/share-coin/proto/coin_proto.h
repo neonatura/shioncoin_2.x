@@ -38,7 +38,8 @@ extern "C" {
 #define TEST_COIN_IFACE 0
 #define SHC_COIN_IFACE 1
 #define USDE_COIN_IFACE 2
-#define MAX_COIN_IFACE 3
+#define OMNI_COIN_IFACE 3
+#define MAX_COIN_IFACE 4 
 
 
 #define COINF_DL_SCAN (1 << 0)

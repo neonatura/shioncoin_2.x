@@ -34,7 +34,7 @@ extern "C" {
 #define UNET_NONE 0
 #define UNET_SHC 1
 #define UNET_USDE 2
-#define UNET_RESERVED_1 3
+#define UNET_OMNI 3
 #define UNET_RESERVED_2 4
 #define UNET_STRATUM 5
 #define UNET_RPC 6

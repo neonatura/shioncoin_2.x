@@ -107,7 +107,7 @@ now = shtime();
     shnet_track_mark(bind->peer_db, peer, 1);
     bind->scan_freq = MAX(0.001, bind->scan_freq * 1.1);
 
-    sprintf(buf, "unet_peer_verify: peer '%s' verified.\n", shpeer_print(peer));
+    sprintf(buf, "unet_peer_verify: peer '%s' verified.", shpeer_print(peer));
     unet_log(e->mode, buf);
 
     /* initiate service connection. */

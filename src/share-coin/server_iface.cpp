@@ -28,12 +28,11 @@
 #include "net.h"
 #include "init.h"
 #include "strlcpy.h"
-//#include "addrman.h"
 #include "ui_interface.h"
 #include "rpc_proto.h"
-//#include "shcoind_rpc.h"
-#include "usde/usde_netmsg.h"
 #include "shc/shc_netmsg.h"
+#include "usde/usde_netmsg.h"
+#include "omni/omni_netmsg.h"
 #include "chain.h"
 
 #ifdef WIN32
@@ -102,10 +101,10 @@ CCriticalSection cs_setservAddNodeAddresses;
 boost::array<int, THREAD_MAX> vnThreadsRunning;
 
 
+static NodeList blankList;
 NodeList& GetNodeList(int ifaceIndex)
 {
   if (ifaceIndex < 0 || ifaceIndex >= MAX_COIN_IFACE) {
-    NodeList blankList;
     return (blankList);
   }
   return (vServerNodes[ifaceIndex]);
@@ -717,30 +716,35 @@ bool CNode::IsBanned(CNetAddr ip)
 
 bool CNode::Misbehaving(int howmuch)
 {
-  static int ban_max;
+  static int ban_span;
+  static time_t ban_max;
 
+  if (!ban_span) {
+    ban_span = MAX(0, opt_num(OPT_BAN_SPAN));
+    if (!ban_span) ban_span = 21600; /* default */
+  }
   if (!ban_max) {
-    ban_max = atoi(shpref_get("shcoind.ban_threshold", "")); 
+    ban_max = (time_t)MAX(0, opt_num(OPT_BAN_THRESHOLD));
     if (!ban_max) ban_max = 1000; /* default */
   }
 
   if (addr.IsLocal())
   {
-    fprintf(stderr, "Warning: local node %s misbehaving\n", addrName.c_str());
+    Debug("warning: local node %s misbehaving.", addrName.c_str());
     return false;
   }
 
   nMisbehavior += howmuch;
   if (nMisbehavior >= ban_max)
   {
-    int64 banTime = GetTime()+GetArg("-bantime", 60*60*6);  // Default 6-hour ban
+    int64 banTime = GetTime() + ban_span;
     {
       LOCK(cs_setBanned);
       if (setBanned[addr] < banTime)
         setBanned[addr] = banTime;
     }
     CloseSocketDisconnect();
-    fprintf(stderr, "Disconnected %s for misbehavior (score=%d)\n", addrName.c_str(), nMisbehavior);
+    error(SHERR_INVAL, "disconnected %s for misbehavior (score=%d).", addrName.c_str(), nMisbehavior);
     return true;
   }
 
@@ -962,7 +966,7 @@ void ThreadSocketHandler2(void* parg)
                 if (WSAGetLastError() != WSAEWOULDBLOCK)
                     fprintf(stderr, "socket error accept failed: %d\n", WSAGetLastError());
             }
-            else if (nInbound >= opt_max_conn - MAX_OUTBOUND_CONNECTIONS)
+            else if (nInbound >= opt_num(OPT_MAX_CONN) - MAX_OUTBOUND_CONNECTIONS)
             {
                 {
                     LOCK(cs_setservAddNodeAddresses);
@@ -1135,6 +1139,7 @@ void usde_server_close(int fd, struct sockaddr *addr)
   }
 
 }
+
 void shc_server_close(int fd, struct sockaddr *addr)
 {
   NodeList &vNodes = GetNodeList(SHC_COIN_IFACE);
@@ -1249,12 +1254,12 @@ void usde_server_accept(int hSocket, struct sockaddr *net_addr)
           nInbound++;
     }
 
-    if (nInbound >= opt_max_conn - MAX_OUTBOUND_CONNECTIONS)
+    if (nInbound >= opt_num(OPT_MAX_CONN) - MAX_OUTBOUND_CONNECTIONS)
     {
       {
         LOCK(cs_setservAddNodeAddresses);
         if (!setservAddNodeAddresses.count(addr)) {
-      fprintf(stderr, "connection from %s dropped (inbound limit %d exceeded)\n", addr.ToString().c_str(), (opt_max_conn - MAX_OUTBOUND_CONNECTIONS));
+      fprintf(stderr, "connection from %s dropped (inbound limit %d exceeded)\n", addr.ToString().c_str(), (opt_num(OPT_MAX_CONN) - MAX_OUTBOUND_CONNECTIONS));
           unet_close(hSocket, (char *)"inbound limit");
 #if 0
           closesocket(hSocket);
@@ -1611,6 +1616,7 @@ fprintf(stderr, "DEBUG: usde_server_timer: unet_shutdown()\n");
 }
 
 
+
 int usde_server_init(void)
 {
   int err;
@@ -1944,12 +1950,12 @@ void shc_server_accept(int hSocket, struct sockaddr *net_addr)
           nInbound++;
     }
 
-    if (nInbound >= opt_max_conn - MAX_OUTBOUND_CONNECTIONS)
+    if (nInbound >= opt_num(OPT_MAX_CONN) - MAX_OUTBOUND_CONNECTIONS)
     {
       {
         LOCK(cs_setservAddNodeAddresses);
         if (!setservAddNodeAddresses.count(addr)) {
-      fprintf(stderr, "connection from %s dropped (inbound limit %d exceeded)\n", addr.ToString().c_str(), (opt_max_conn - MAX_OUTBOUND_CONNECTIONS));
+      fprintf(stderr, "connection from %s dropped (inbound limit %d exceeded)\n", addr.ToString().c_str(), (opt_num(OPT_MAX_CONN) - MAX_OUTBOUND_CONNECTIONS));
           unet_close(hSocket, "inbound limit");
 #if 0
           closesocket(hSocket);
@@ -2567,7 +2573,7 @@ void StartCoinServer(void)
 
   if (semOutbound == NULL) {
     // initialize semaphore
-    int nMaxOutbound = min(MAX_OUTBOUND_CONNECTIONS, opt_max_conn);
+    int nMaxOutbound = min(MAX_OUTBOUND_CONNECTIONS, opt_num(OPT_MAX_CONN));
     semOutbound = new CSemaphore(nMaxOutbound);
   }
 
@@ -2866,25 +2872,47 @@ int check_ip(char *serv_hostname, struct in_addr *net_addr)
 
 void GetMyExternalIP(void)
 {
+  CNetAddr addrLocalHost;
   struct in_addr addr;
   char selfip_addr[MAXHOSTNAMELEN+1];
   char buf[256];
   int idx;
   int err;
 
+  memset(&addr, 0, sizeof(addr));
+
+  /* check for previous cached IP address */
+  memset(buf, 0, sizeof(buf));
+  strncpy(buf, shpref_get("shcoind.net.addr", ""), sizeof(buf)-1);
+  if (*buf && 0 == inet_aton(buf, &addr)) {
+    addrLocalHost = CNetAddr(addr);
+    if (addrLocalHost.IsValid() && addrLocalHost.IsRoutable()) {
+      for (idx = 0; idx < MAX_COIN_IFACE; idx++)
+        AddLocal(idx, addrLocalHost, LOCAL_HTTP);
+
+      sprintf(buf, "info: listening on IP addr '%s' (cached).", inet_ntoa(addr));
+      shcoind_log(buf);
+      return;
+    }
+  }
+
   strcpy(selfip_addr, "91.198.22.70");
   err = check_ip(selfip_addr, &addr);
   if (err)
     return;
 
-  CNetAddr addrLocalHost(addr);
+  addrLocalHost = CNetAddr(addr);
   if (!addrLocalHost.IsValid() || !addrLocalHost.IsRoutable())
     return;
+
+  memset(buf, 0, sizeof(buf));
+  strncpy(buf, inet_ntoa(addr), sizeof(buf)-1);
+  shpref_set("shcoind.net.addr", buf);
 
   for (idx = 0; idx < MAX_COIN_IFACE; idx++)
     AddLocal(idx, addrLocalHost, LOCAL_HTTP);
 
-  sprintf(buf, "GetMyExternalIP: listening on IP addr '%s'.", inet_ntoa(addr));
+  sprintf(buf, "info: listening on IP addr '%s'.", buf);
   shcoind_log(buf);
 }
 
@@ -2904,3 +2932,385 @@ void AddPeerAddress(CIface *iface, const char *hostname, int port)
   peer = shpeer_init(iface->name, addr_str);
   uevent_new_peer(GetCoinIndex(iface), peer);
 }
+
+
+
+
+void omni_close_free(void)
+{
+  NodeList &vNodes = GetNodeList(OMNI_COIN_IFACE);
+
+  LOCK(cs_vNodes);
+  vector<CNode*> vNodesCopy = vNodes;
+
+  // Disconnect unused nodes
+  BOOST_FOREACH(CNode* pnode, vNodesCopy)
+  {
+    if (pnode->fDisconnect ||
+        (pnode->GetRefCount() <= 0 && pnode->vRecv.empty() && pnode->vSend.empty()))
+    {
+      // remove from vNodes
+      vNodes.erase(remove(vNodes.begin(), vNodes.end(), pnode), vNodes.end());
+
+      // release outbound grant (if any)
+      pnode->grantOutbound.Release();
+
+      /* socket is closed by underlying 'unet' network engine pnode->CloseSocketDisconnect(); */
+      pnode->Cleanup();
+
+      // hold in disconnected pool until all refs are released
+      pnode->nReleaseTime = max(pnode->nReleaseTime, GetTime() + 15 * 60);
+      if (pnode->fNetworkNode || pnode->fInbound)
+        pnode->Release();
+      vNodesDisconnected.push_back(pnode);
+    }
+  }
+
+  // Delete disconnected nodes
+  list<CNode*> vNodesDisconnectedCopy = vNodesDisconnected;
+  BOOST_FOREACH(CNode* pnode, vNodesDisconnectedCopy)
+  {
+    bool fDelete = false;
+    {
+      TRY_LOCK(pnode->cs_vSend, lockSend);
+      if (lockSend)
+      {
+        TRY_LOCK(pnode->cs_vRecv, lockRecv);
+        if (lockRecv)
+        {
+          TRY_LOCK(pnode->cs_mapRequests, lockReq);
+          if (lockReq)
+          {
+            TRY_LOCK(pnode->cs_inventory, lockInv);
+            if (lockInv)
+              fDelete = true;
+          }
+        }
+      }
+    }
+    if (fDelete)
+    {
+      vNodesDisconnected.remove(pnode);
+      delete pnode;
+    }
+  }
+
+}
+
+void omni_server_accept(int hSocket, struct sockaddr *net_addr)
+{
+  NodeList &vNodes = GetNodeList(OMNI_COIN_IFACE);
+#ifdef USE_IPV6
+  struct sockaddr_storage sockaddr;
+#else
+  struct sockaddr sockaddr;
+#endif
+  CAddress addr;
+  int nInbound = 0;
+  bool inBound = false;
+  unet_table_t *t = get_unet_table(hSocket);
+
+  if (t && (t->flag & UNETF_INBOUND))
+    inBound = true;
+
+  if (!addr.SetSockAddr(net_addr))
+    fprintf(stderr, "warning: unknown socket family\n");
+
+  if (inBound) {
+    {
+      LOCK(cs_vNodes);
+      BOOST_FOREACH(CNode* pnode, vNodes)
+        if (pnode->fInbound)
+          nInbound++;
+    }
+
+    if (nInbound >= opt_num(OPT_MAX_CONN) - MAX_OUTBOUND_CONNECTIONS)
+    {
+      {
+        LOCK(cs_setservAddNodeAddresses);
+        if (!setservAddNodeAddresses.count(addr)) {
+      fprintf(stderr, "connection from %s dropped (inbound limit %d exceeded)\n", addr.ToString().c_str(), (opt_num(OPT_MAX_CONN) - MAX_OUTBOUND_CONNECTIONS));
+          unet_close(hSocket, (char *)"inbound limit");
+#if 0
+          closesocket(hSocket);
+#endif
+        }
+      }
+    }
+
+    if (CNode::IsBanned(addr))
+    {
+      fprintf(stderr, "connection from %s dropped (banned)\n", addr.ToString().c_str());
+      unet_close(hSocket, "banned");
+      return;
+    }
+  } else {
+    if (CNode::IsBanned(addr)) {
+      /* force clear ban list due to manual connection initiation. */
+      CNode::ClearBanned();
+    }
+  }
+
+  if (inBound) {
+    fprintf(stderr, "omni: accepted connection %s\n", addr.ToString().c_str());
+  } else {
+    fprintf(stderr, "omni: initialized connection %s\n", addr.ToString().c_str());
+  }
+
+
+  CNode* pnode = new CNode(OMNI_COIN_IFACE, hSocket, addr, 
+      shaddr_print(shaddr(hSocket)), inBound);
+
+  //if (inBound)
+    pnode->AddRef();
+
+  if (!inBound)
+    pnode->fNetworkNode = true;
+
+  {
+    LOCK(cs_vNodes);
+    vNodes.push_back(pnode);
+  }
+
+  /* submit address to shared daemon */
+  shared_addr_submit(shaddr_print(net_addr));
+}
+
+void omni_server_close(int fd, struct sockaddr *addr)
+{
+  NodeList &vNodes = GetNodeList(OMNI_COIN_IFACE);
+
+  LOCK(cs_vNodes);
+  vector<CNode*> vNodesCopy = vNodes;
+  BOOST_FOREACH(CNode* pnode, vNodesCopy)
+  {
+    if (pnode->hSocket == fd) {
+      pnode->fDisconnect = true;
+    }
+  }
+
+}
+
+extern bool omni_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataStream& vRecv);
+bool omni_coin_server_recv_msg(CIface *iface, CNode* pfrom)
+{
+  CDataStream& vRecv = pfrom->vRecv;
+  CMessageHeader hdr;
+  shtime_t ts;
+
+  if (vRecv.empty())
+    return (true);
+
+  vRecv >> hdr;
+
+  /* check checksum */
+  string strCommand = hdr.GetCommand();
+  unsigned int nMessageSize = hdr.nMessageSize;
+
+  /* verify checksum */
+  uint256 hash = Hash(vRecv.begin(), vRecv.begin() + nMessageSize);
+  unsigned int nChecksum = 0;
+  memcpy(&nChecksum, &hash, sizeof(nChecksum));
+  if (nChecksum != hdr.nChecksum) {
+    fprintf(stderr, "DEBUG: ProcessMessages(%s, %u bytes) : CHECKSUM ERROR nChecksum=%08x hdr.nChecksum=%08x\n",
+        strCommand.c_str(), nMessageSize, nChecksum, hdr.nChecksum);
+    return (false);
+  }
+
+  bool fRet = false;
+  try {
+    char *cmd = (char *)strCommand.c_str();
+    LOCK(cs_main);
+    timing_init(cmd, &ts);
+    fRet = omni_ProcessMessage(iface, pfrom, strCommand, vRecv);
+    timing_term(OMNI_COIN_IFACE, cmd, &ts);
+  } catch (std::ios_base::failure& e) {
+    if (strstr(e.what(), "end of data"))
+    {
+      // Allow exceptions from underlength message on vRecv
+      error(SHERR_INVAL, "(use) ProcessMessages(%s, %u bytes) : Exception '%s' caught, normally caused by a message being shorter than its stated length\n", strCommand.c_str(), nMessageSize, e.what());
+    }
+    else if (strstr(e.what(), "size too large"))
+    {
+      // Allow exceptions from overlong size
+      error(SHERR_INVAL, "(use) ProcessMessages(%s, %u bytes) : Exception '%s' caught\n", strCommand.c_str(), nMessageSize, e.what());
+    }
+    else
+    {
+      PrintExceptionContinue(&e, "(omni) ProcessMessage");
+    }
+  } catch (std::exception& e) {
+    PrintExceptionContinue(&e, "(omni) ProcessMessage");
+  } catch (...) {
+    PrintExceptionContinue(NULL, "(omni) ProcessMessage");
+  }
+
+  return (fRet);
+}
+
+int omni_coin_server_recv(CIface *iface, CNode *pnode, shbuf_t *buff)
+{
+  coinhdr_t hdr;
+  unsigned char *data;
+  int size;
+
+  size = shbuf_size(buff);
+  if (size < SIZEOF_COINHDR_T)
+    return (SHERR_AGAIN);
+
+  if (pnode->vSend.size() >= SendBufferSize()) /* wait for output to flush */
+    return (SHERR_AGAIN);
+
+  data = (unsigned char *)shbuf_data(buff);
+  mempcpy(&hdr, data, SIZEOF_COINHDR_T);
+
+  /* verify magic sequence */
+  if (0 != memcmp(hdr.magic, iface->hdr_magic, 4)) {
+    shbuf_clear(buff);
+    return (SHERR_ILSEQ);
+  }
+
+  if (hdr.size > MAX_SIZE) {
+    shbuf_clear(buff);
+    return (SHERR_INVAL);
+  }
+
+  if (hdr.size > sizeof(hdr) + size)
+    return (SHERR_AGAIN);
+
+  /* transfer to cli buffer */
+  CDataStream& vRecv = pnode->vRecv;
+  vRecv.resize(sizeof(hdr) + hdr.size);
+  memcpy(&vRecv[0], data, sizeof(hdr) + hdr.size);
+  shbuf_trim(buff, sizeof(hdr) + hdr.size);
+
+  bool fRet = omni_coin_server_recv_msg(iface, pnode);
+fprintf(stderr, "DEBUG: omni_coin_server_recv: omni_coin_server_recv_msg ret'd %s <%u bytes> [%s]\n", fRet ? "true" : "false", hdr.size, hdr.cmd); 
+
+  vRecv.erase(vRecv.begin(), vRecv.end());
+  vRecv.Compact();
+
+  pnode->nLastRecv = GetTime();
+  return (0);
+}
+
+void omni_MessageHandler(CIface *iface)
+{
+  NodeList &vNodes = GetNodeList(iface);
+  shtime_t ts;
+
+  vector<CNode*> vNodesCopy;
+  {
+    LOCK(cs_vNodes);
+    vNodesCopy = vNodes;
+    BOOST_FOREACH(CNode* pnode, vNodesCopy)
+      pnode->AddRef();
+  }
+
+  // Poll the connected nodes for messages
+  CNode* pnodeTrickle = NULL;
+  if (!vNodesCopy.empty())
+    pnodeTrickle = vNodesCopy[GetRand(vNodesCopy.size())];
+  BOOST_FOREACH(CNode* pnode, vNodesCopy)
+  {
+#if 0
+    // Receive messages
+    {
+      TRY_LOCK(pnode->cs_vRecv, lockRecv);
+      if (lockRecv)
+        omni_ProcessMessages(iface, pnode);
+    }
+    if (fShutdown)
+      return;
+#endif
+
+    // Send messages
+    timing_init("SendMessages", &ts);
+    {
+      TRY_LOCK(pnode->cs_vSend, lockSend);
+      if (lockSend)
+        omni_SendMessages(iface, pnode, pnode == pnodeTrickle);
+    }
+    timing_term(OMNI_COIN_IFACE, "SendMessages", &ts);
+    if (fShutdown)
+      return;
+  }
+
+  {
+    LOCK(cs_vNodes);
+    BOOST_FOREACH(CNode* pnode, vNodesCopy)
+      pnode->Release();
+  }
+
+
+}
+
+void omni_server_timer(void)
+{
+  static int verify_idx;
+  CIface *iface = GetCoinByIndex(OMNI_COIN_IFACE);
+  NodeList &vNodes = GetNodeList(OMNI_COIN_IFACE);
+  shtime_t ts;
+  bc_t *bc;
+  int err;
+
+  if (fShutdown)
+    return;
+
+  omni_close_free();
+
+  //
+  // Service each socket
+  {
+    vector<CNode*> vNodesCopy;
+    {
+      LOCK(cs_vNodes);
+      vNodesCopy = vNodes;
+      BOOST_FOREACH(CNode* pnode, vNodesCopy)
+        pnode->AddRef();
+    }
+
+    BOOST_FOREACH(CNode* pnode, vNodesCopy)
+    {
+      if (fShutdown)
+        return;
+
+      shbuf_t *pchBuf = descriptor_rbuff(pnode->hSocket);
+      if (pchBuf) {
+        err = omni_coin_server_recv(iface, pnode, pchBuf);
+        if (err && err != SHERR_AGAIN) {
+fprintf(stderr, "DEBUG: omni_coin_server_recv: error %d\n", err);
+        }
+      }
+
+      {
+        LOCK(pnode->cs_vSend);
+        /* transmit pending outgoing data */
+        CDataStream& vSend = pnode->vSend;
+        if (!vSend.empty())
+        {
+          size_t nBytes = vSend.size();
+          int err = unet_write(pnode->hSocket, &vSend[0], nBytes);
+          if (!err) {
+            vSend.erase(vSend.begin(), vSend.begin() + nBytes);
+            pnode->nLastSend = GetTime();
+          }
+        }
+      }
+    }
+
+    {
+      LOCK(cs_vNodes);
+      BOOST_FOREACH(CNode* pnode, vNodesCopy)
+        pnode->Release();
+    }
+  }
+
+  timing_init("MessageHandler", &ts);
+  omni_MessageHandler(iface);
+  timing_term(OMNI_COIN_IFACE, "MessageHandler", &ts);
+
+  event_cycle_chain(OMNI_COIN_IFACE); /* DEBUG: */
+
+}
+

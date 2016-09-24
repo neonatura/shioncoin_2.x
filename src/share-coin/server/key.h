@@ -94,8 +94,13 @@ protected:
     friend class CKey;
 
 public:
-    CPubKey() { }
+    CPubKey()
+    {
+      SetNull();
+    }
+
     CPubKey(const std::vector<unsigned char> &vchPubKeyIn) : vchPubKey(vchPubKeyIn) { }
+
     friend bool operator==(const CPubKey &a, const CPubKey &b) { return a.vchPubKey == b.vchPubKey; }
     friend bool operator!=(const CPubKey &a, const CPubKey &b) { return a.vchPubKey != b.vchPubKey; }
     friend bool operator<(const CPubKey &a, const CPubKey &b) { return a.vchPubKey < b.vchPubKey; }
@@ -112,6 +117,11 @@ public:
         return Hash(vchPubKey.begin(), vchPubKey.end());
     }
 
+    void SetNull()
+    {
+      vchPubKey.clear();
+    }
+
     bool IsValid() const {
         return vchPubKey.size() == 33 || vchPubKey.size() == 65;
     }
@@ -120,9 +130,26 @@ public:
         return vchPubKey.size() == 33;
     }
 
-    std::vector<unsigned char> Raw() const {
+    std::vector<unsigned char> Raw() const 
+    {
         return vchPubKey;
     }
+
+    // Compute the length of a pubkey with a given first byte.
+    unsigned int static GetLen(unsigned char chHeader) 
+    {
+      if (chHeader == 2 || chHeader == 3)
+        return 33;
+      if (chHeader == 4 || chHeader == 6 || chHeader == 7)
+        return 65;
+      return 0;
+    }
+
+    void Invalidate()
+    {
+      SetNull();
+    }
+
 };
 
 

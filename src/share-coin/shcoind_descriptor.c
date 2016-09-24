@@ -273,7 +273,7 @@ void descriptor_list_print(void)
   sprintf(buf, 
       "[average : open(%-4.4f/s) access(%-4.4f/s) open/access(%-1.1f%%)]", 
       openf, accessf, (accessf / 100.0 * openf));
-  shcoind_log(buf);
+  shcoind_info("descript_list_print", buf);
 
 }
 

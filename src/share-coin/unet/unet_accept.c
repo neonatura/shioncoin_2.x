@@ -78,14 +78,25 @@ int unet_accept(int mode, SOCKET *sk_p)
     return (SHERR_AGAIN);
   }
 
+  /* unique per mode? */
+  if ((mode == UNET_SHC || mode == UNET_USDE || mode == UNET_OMNI) &&
+      unet_peer_find(mode, shaddr(cli_fd))) {
+    sprintf(buf, "unet_accept: disconnecting non-unique IP origin: %s", shaddr_print(shaddr(cli_fd))); 
+    unet_log(mode, buf);
+
+    /* only one IP origin address per coin service allowed */
+    shnet_close(cli_fd);
+    return (SHERR_NOTUNIQ);
+  }
+
   unet_add(mode, cli_fd);
 
-{
-unet_table_t *t = get_unet_table(cli_fd);
-if (t) {
-  t->flag |= UNETF_INBOUND; 
-}
-}
+  {
+    unet_table_t *t = get_unet_table(cli_fd);
+    if (t) {
+      t->flag |= UNETF_INBOUND; 
+    }
+  }
 
   if (bind->op_accept) {
     (*bind->op_accept)(cli_fd, shaddr(cli_fd));

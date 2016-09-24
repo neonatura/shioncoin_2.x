@@ -31,7 +31,7 @@ static const char *_unet_label[MAX_UNET_MODES] =
   "!NONE!",
   "shc",
   "usde",
-  "!RESERVED!",
+  "omni",
   "!RESERVED!",
   "stratum",
   "rpc",
@@ -153,7 +153,7 @@ void unet_cycle(double max_t)
 
     unet_idle(); 
 
-    next_t = now + 10;
+    next_t = now + 15;
   }
 
   /* mark sockets for I/O */

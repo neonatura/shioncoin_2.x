@@ -28,6 +28,51 @@
 
 #define MAX_UNET_PEER_SCAN_SIZE 16
 
+const char *unet_netaddr_str(struct sockaddr *addr)
+{
+  static char ret_buf[256];
+  sa_family_t in_fam;
+  unsigned char *raw = (unsigned char *)addr;
+
+  in_fam = *((sa_family_t *)addr);
+  memset(ret_buf, 0, sizeof(ret_buf));
+  inet_ntop(in_fam, raw + 4, ret_buf, sizeof(ret_buf)-1);
+ 
+  return (ret_buf);
+}
+
+int unet_peer_find(int mode, struct sockaddr *addr)
+{
+  struct sockaddr cmp_addr;
+  unet_table_t *t;
+  char peer_ip[512];
+  socklen_t addr_len;
+  int sk;
+
+  strcpy(peer_ip, unet_netaddr_str(addr)); 
+
+  for (sk = 1; sk < MAX_UNET_SOCKETS; sk++) {
+    t = get_unet_table(sk);
+    if (!t)
+      continue; /* non-active */
+
+    if (t->mode != mode)
+      continue;
+
+    if (!(t->flag & DF_SERVICE))
+      continue; /* not a coin service connection. */
+
+    addr_len = sizeof(cmp_addr);
+    memset(&cmp_addr, 0, sizeof(cmp_addr));
+    getpeername(sk, &cmp_addr, &addr_len);
+    if (0 == strcmp(peer_ip, unet_netaddr_str(&cmp_addr)))
+      return (sk);
+  }
+
+  return (0);
+}
+
+#if 0
 int unet_peer_find(int mode, struct sockaddr *addr)
 {
   sa_family_t in_fam;
@@ -35,9 +80,15 @@ int unet_peer_find(int mode, struct sockaddr *addr)
   unet_table_t *t;
   char hostname[MAXHOSTNAMELEN+1];
   char buf[256];
+char ipaddr[256];
+char cmp_ipaddr[256];
   int sk;
 
   in_fam = *((sa_family_t *)addr);
+
+memset(ipaddr, 0, sizeof(ipaddr));
+inet_ntop(in_fam, addr, ipaddr, sizeof(ipaddr));
+
   for (sk = 1; sk < MAX_UNET_SOCKETS; sk++) {
     t = get_unet_table(sk);
     if (!t)
@@ -53,6 +104,15 @@ int unet_peer_find(int mode, struct sockaddr *addr)
     if (cmp_fam != in_fam) {
       continue; /* different network family */
     }
+
+if (in_fam == AF_INET) {
+  struct sockaddr_in in;
+  socklen_t len = sizeof(in);
+  getpeername(sk, (struct sockaddr *)&in, &len);
+  memset(cmp_ipaddr, 0, sizeof(cmp_ipaddr));
+  inet_ntop(in_fam, &in, cmp_ipaddr, sizeof(cmp_ipaddr));
+  fprintf(stderr, "DEBUG: unet_peer_find: cmp addr '%s'\n", cmp_ipaddr); 
+}
 
     if (in_fam == AF_INET) {
       struct sockaddr_in *addr4 = (struct sockaddr_in *)addr;
@@ -71,6 +131,7 @@ int unet_peer_find(int mode, struct sockaddr *addr)
   
   return (0);
 }
+#endif
 
 #if 0
 void unet_peer_verify(int mode)
@@ -130,7 +191,7 @@ int unet_peer_wait(unet_bind_t *bind)
 {
   double dur;
 
-  dur = MAX(10, MIN(600, 600 * bind->scan_freq));
+  dur = MAX(4, MIN(600, 600 * bind->scan_freq));
   if (shtime_after(shtime(), shtime_adj(bind->scan_stamp, dur)))
     return (FALSE);
 
@@ -240,22 +301,31 @@ void unet_peer_fill_seed(int mode)
     return;
 
   memset(hostname, 0, sizeof(hostname));
-  if (mode == UNET_USDE) {
-    for (i = 0; i < USDE_SEED_LIST_SIZE; i++) {
-      sprintf(hostname, "%s %d", usde_seed_list[i], bind->port);
-      peer = shpeer_init((char *)unet_mode_label(mode), hostname); 
-      uevent_new_peer(mode, peer);
-
-      sprintf(buf, "unet_peer_fill_seed: seeding peer '%s'.", shpeer_print(peer));
-      unet_log(mode, buf);
-    }
-  } else if (mode == UNET_SHC) {
+  if (mode == UNET_SHC) {
     for (i = 0; i < SHC_SEED_LIST_SIZE; i++) {
       sprintf(hostname, "%s %d", shc_seed_list[i], bind->port);
       peer = shpeer_init((char *)unet_mode_label(mode), hostname); 
       uevent_new_peer(mode, peer);
 
-      sprintf(buf, "unet_peer_fill_seed: seeding peer '%s'.", shpeer_print(peer));
+      sprintf(buf, "unet_peer_fill_seed: seeding SHC peer '%s'.", shpeer_print(peer));
+      unet_log(mode, buf);
+    }
+  } else if (mode == UNET_USDE) {
+    for (i = 0; i < USDE_SEED_LIST_SIZE; i++) {
+      sprintf(hostname, "%s %d", usde_seed_list[i], bind->port);
+      peer = shpeer_init((char *)unet_mode_label(mode), hostname); 
+      uevent_new_peer(mode, peer);
+
+      sprintf(buf, "unet_peer_fill_seed: seeding USDE peer '%s'.", shpeer_print(peer));
+      unet_log(mode, buf);
+    }
+  } else if (mode == UNET_OMNI) {
+    for (i = 0; i < OMNI_SEED_LIST_SIZE; i++) {
+      sprintf(hostname, "%s %d", omni_seed_list[i], bind->port);
+      peer = shpeer_init((char *)unet_mode_label(mode), hostname); 
+      uevent_new_peer(mode, peer);
+
+      sprintf(buf, "unet_peer_fill_seed: seeding OMNI peer '%s'.", shpeer_print(peer));
       unet_log(mode, buf);
     }
   }
@@ -286,7 +356,8 @@ void unet_peer_fill(int mode)
     sprintf(buf, "unet_peer_fill: fresh peer database [%s].", shpeer_print(&bind->peer)); 
     unet_log(mode, buf);
 
-    unet_peer_fill_seed(mode);
+    if (opt_bool(OPT_PEER_SEED))
+      unet_peer_fill_seed(mode);
   }
 
 }

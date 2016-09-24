@@ -159,6 +159,14 @@ void start_rpc_server(void);
 
 void ResetTemplateWeight(void);
 
+void omni_server_timer(void);
+
+void omni_server_accept(int hSocket, struct sockaddr *net_addr);
+
+void omni_server_close(int fd, struct sockaddr *addr);
+
+
+
 
 #ifdef __cplusplus
 }
