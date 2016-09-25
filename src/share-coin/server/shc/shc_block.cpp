@@ -1301,6 +1301,7 @@ bool SHCBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
 /* reorg will attempt to read this block from db */
     WriteArchBlock();
 
+#if 0
     // the first block in the new chain that will cause it to become the new best chain
     CBlockIndex *pindexIntermediate = pindexNew;
 
@@ -1345,6 +1346,14 @@ fprintf(stderr, "DEBUG: SHC_Reorganize(): error reorganizing.\n");
       // errors now are not fatal, we still did a reorganisation to a new chain in a valid way
       if (!block.SetBestChainInner(txdb, pindex))
         break;
+    }
+#endif
+
+    if (!SHC_Reorganize(txdb, pindexNew, &mempool))
+    {
+      txdb.TxnAbort();
+      InvalidChainFound(pindexNew);
+      return error(SHERR_INVAL, "SetBestChain() : Reorganize failed");
     }
   }
 

@@ -1577,6 +1577,7 @@ bool USDEBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
 /* DEBUG: 060316 - reorg will try to load this block from db. */
     WriteArchBlock();
 
+#if 0
     //Reindex(pindexNew);
     // the first block in the new chain that will cause it to become the new best chain
     CBlockIndex *pindexIntermediate = pindexNew;
@@ -1622,6 +1623,14 @@ bool USDEBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
       // errors now are not fatal, we still did a reorganisation to a new chain in a valid way
       if (!block.SetBestChainInner(txdb, pindex))
         break;
+    }
+#endif
+
+    ret = USDE_Reorganize(txdb, pindexNew, &mempool);
+    if (!ret) {
+      txdb.TxnAbort();
+      InvalidChainFound(pindexNew);
+      return error(SHERR_INVAL, "SetBestChain() : Reorganize failed");
     }
   }
 

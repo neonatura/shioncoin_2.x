@@ -82,7 +82,7 @@ static int shc_bind(CIface *iface, void *_unused_)
   /* automatically connect to peers of 'shc' service. */
   unet_bind_flag_set(UNET_SHC, UNETF_PEER_SCAN);
 
-  Debug("initialized SHC service on port %d.", (int)SHC_COIN_DAEMON_PORT);
+  Debug("initialized SHC service on port %d.", (int)iface->port);
 
   return (0);
 }

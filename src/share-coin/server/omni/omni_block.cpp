@@ -165,11 +165,10 @@ unsigned int OMNIBlock::GetNextWorkRequired(const CBlockIndex* pindexLast)
 
 int64 omni_GetBlockValue(int nHeight, int64 nFees)
 {
+  if (nHeight == 0) return (88 * COIN);
+
   int64 nSubsidy = 66.85 * COIN;
-
-  // Subsidy halving
-  nSubsidy >>= (nHeight / 100010);
-
+  nSubsidy >>= (nHeight / 100010); // Subsidy halving
   return nSubsidy + nFees;
 }
 
@@ -243,81 +242,6 @@ namespace OMNI_Checkpoints
 
 }
 
-#if 0
-bool omni_FetchInputs(CTransaction *tx, CTxDB& txdb, const map<uint256, CTxIndex>& mapTestPool, bool fBlock, bool fMiner, MapPrevTx& inputsRet, bool& fInvalid)
-{
-  // FetchInputs can return false either because we just haven't seen some inputs
-  // (in which case the transaction should be stored as an orphan)
-  // or because the transaction is malformed (in which case the transaction should
-  // be dropped).  If tx is definitely invalid, fInvalid will be set to true.
-  fInvalid = false;
-
-  if (tx->IsCoinBase())
-    return true; // Coinbase transactions have no inputs to fetch.
-
-  for (unsigned int i = 0; i < tx->vin.size(); i++)
-  {
-    COutPoint prevout = tx->vin[i].prevout;
-    if (inputsRet.count(prevout.hash))
-      continue; // Got it already
-
-    // Read txindex
-    CTxIndex& txindex = inputsRet[prevout.hash].first;
-    bool fFound = true;
-    if ((fBlock || fMiner) && mapTestPool.count(prevout.hash))
-    {
-      // Get txindex from current proposed changes
-      txindex = mapTestPool.find(prevout.hash)->second;
-    }
-    else
-    {
-      // Read txindex from txdb
-      fFound = txdb.ReadTxIndex(prevout.hash, txindex);
-    }
-    if (!fFound && (fBlock || fMiner))
-      return fMiner ? false : error(SHERR_INVAL, "FetchInputs() : %s prev tx %s index entry not found", tx->GetHash().ToString().substr(0,10).c_str(),  prevout.hash.ToString().substr(0,10).c_str());
-
-    // Read txPrev
-    CTransaction& txPrev = inputsRet[prevout.hash].second;
-    if (!fFound || txindex.pos == CDiskTxPos(0,0,0))
-    {
-      // Get prev tx from single transactions in memory
-      {
-        LOCK(OMNIBlock::mempool.cs);
-        if (!OMNIBlock::mempool.exists(prevout.hash))
-          return error(SHERR_INVAL, "FetchInputs() : %s OMNIBlock::mempool Tx prev not found %s", tx->GetHash().ToString().substr(0,10).c_str(),  prevout.hash.ToString().substr(0,10).c_str());
-        txPrev = OMNIBlock::mempool.lookup(prevout.hash);
-      }
-      if (!fFound)
-        txindex.vSpent.resize(txPrev.vout.size());
-    }
-    else
-    {
-      // Get prev tx from disk
-      if (!txPrev.ReadFromDisk(txindex.pos))
-        return error(SHERR_INVAL, "FetchInputs() : %s ReadFromDisk prev tx %s failed", tx->GetHash().ToString().substr(0,10).c_str(),  prevout.hash.ToString().substr(0,10).c_str());
-    }
-  }
-
-  // Make sure all prevout.n's are valid:
-  for (unsigned int i = 0; i < tx->vin.size(); i++)
-  {
-    const COutPoint prevout = tx->vin[i].prevout;
-    assert(inputsRet.count(prevout.hash) != 0);
-    const CTxIndex& txindex = inputsRet[prevout.hash].first;
-    const CTransaction& txPrev = inputsRet[prevout.hash].second;
-    if (prevout.n >= txPrev.vout.size() || prevout.n >= txindex.vSpent.size())
-    {
-      // Revisit this if/when transaction replacement is implemented and allows
-      // adding inputs:
-      fInvalid = true;
-      return error(SHERR_INVAL, "FetchInputs() : %s prevout.n out of range %d %d %d prev tx %s\n%s", tx->GetHash().ToString().substr(0,10).c_str(), prevout.n, txPrev.vout.size(), txindex.vSpent.size(), prevout.hash.ToString().substr(0,10).c_str(), txPrev.ToString().c_str());
-    }
-  }
-
-  return true;
-}
-#endif
 
 static bool omni_ConnectInputs(CTransaction *tx, MapPrevTx inputs, map<uint256, CTxIndex>& mapTestPool, const CDiskTxPos& posThisTx, const CBlockIndex* pindexBlock, bool fBlock, bool fMiner, bool fStrictPayToScriptHash=true)
 {
@@ -606,27 +530,27 @@ bool omni_CreateGenesisBlock()
   if (blockIndex->count(omni_hashGenesisBlock) != 0)
     return (true); /* already created */
 
-  // Genesis block
-  const char* pszTimestamp = "OMNI founded 1/1/2014";
+  /* Genesis block */
+  const char* pszTimestamp = "Leafondo";
   CTransaction txNew;
   txNew.vin.resize(1);
   txNew.vout.resize(1);
   txNew.vin[0].scriptSig = CScript() << 486604799 << CBigNum(4) << vector<unsigned char>((const unsigned char*)pszTimestamp, (const unsigned char*)pszTimestamp + strlen(pszTimestamp));
-  txNew.vout[0].nValue = 50 * COIN;
-  txNew.vout[0].scriptPubKey = CScript() << ParseHex("04a5814813115273a109cff99907ba4a05d951873dae7acb6c973d0c9e7c88911a3dbc9aa600deac241b91707e7b4ffb30ad91c8e56e695a1ddf318592988afe0a") << OP_CHECKSIG;
+  txNew.vout[0].nValue = 88 * COIN;
+  txNew.vout[0].scriptPubKey = CScript() << ParseHex("040184710fa689ad5023690c80f3a49c8f13f8d45b8c857fbcbc8bc4a8e4d3eb4b10f4d4604fa08dce601aaf0f470216fe1b51850b4acf21b179c45070ac7b03a9") << OP_CHECKSIG;
   OMNIBlock block;
   block.vtx.push_back(txNew);
   block.hashPrevBlock = 0;
   block.hashMerkleRoot = block.BuildMerkleTree();
   block.nVersion = 1;
-  block.nTime    = 1365048244;
+  block.nTime    = 1388880557;
   block.nBits    = 0x1e0ffff0;
-  block.nNonce   = 134453;
+  block.nNonce   = 751211697;
 
   block.print();
   if (block.GetHash() != omni_hashGenesisBlock)
     return (false);
-  if (block.hashMerkleRoot != uint256("0x1f42509b6d35a6aa60af4ec9b98d8ce4ffbe46c076d4c2da933e87550ab775f2"))
+  if (block.hashMerkleRoot != uint256("0x35e6a0e897ed76cd5f08b75d118fb7c99aec7cdd297b96c21dc6671d2034c953"))
     return (false);
 
   if (!block.WriteBlock(0)) {
@@ -1417,6 +1341,7 @@ bool OMNIBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
 /* DEBUG: 060316 - reorg will try to load this block from db. */
     WriteArchBlock();
 
+#if 0
     //Reindex(pindexNew);
     // the first block in the new chain that will cause it to become the new best chain
     CBlockIndex *pindexIntermediate = pindexNew;
@@ -1460,6 +1385,14 @@ bool OMNIBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
       // errors now are not fatal, we still did a reorganisation to a new chain in a valid way
       if (!block.SetBestChainInner(txdb, pindex))
         break;
+    }
+#endif
+
+    ret = OMNI_Reorganize(txdb, pindexNew, &mempool);
+    if (!ret) {
+      txdb.TxnAbort();
+      InvalidChainFound(pindexNew);
+      return error(SHERR_INVAL, "SetBestChain() : Reorganize failed");
     }
   }
 

@@ -1923,14 +1923,14 @@ pwalletMain->ReacceptWalletTransactions();
   return Value::null;
 }
 
-Value rpc_wallet_accounts(CIface *iface, const Array& params, bool fHelp)
+Value rpc_wallet_list(CIface *iface, const Array& params, bool fHelp)
 {
   CWallet *pwalletMain = GetWallet(iface);
   int ifaceIndex = GetCoinIndex(iface);
 
   if (fHelp || params.size() > 1)
     throw runtime_error(
-        "wallet.accounts [minconf=1]\n"
+        "wallet.list [minconf=1]\n"
         "Returns Object that has account names as keys, account balances as values.");
 
   int nMinDepth = 1;
@@ -2369,12 +2369,12 @@ Value rpc_wallet_validate(CIface *iface, const Array& params, bool fHelp)
   return ret;
 }
 
-Value rpc_wallet_list(CIface *iface, const Array& params, bool fHelp)
+Value rpc_wallet_addrlist(CIface *iface, const Array& params, bool fHelp)
 {
   CWallet *pwalletMain = GetWallet(iface);
   if (fHelp || params.size() != 1)
     throw runtime_error(
-        "wallet.list <account>\n"
+        "wallet.addrlist <account>\n"
         "Returns the list of coin addresses for the given account.");
 
   string strAccount = AccountFromValue(params[0]);
@@ -4539,6 +4539,69 @@ Value rpc_wallet_keyphrase(CIface *iface, const Array& params, bool fHelp)
   return (phrase);
 }
 
+Value core_block_verify(CIface *iface, int nDepth)
+{
+  char errbuf[1024];
+  uint64_t nBestHeight = GetBestHeight(iface);
+  uint64_t nHeight;
+  int idx;
+  bool fRet;
+
+  if (nDepth < 0 || nDepth > nBestHeight)
+    throw runtime_error("Block depth out of range.");
+
+  if (nDepth == 0)
+    nDepth = 1024; /* default */
+
+  Object result;
+  int invalid = 0;
+  uint256 lastHash = 0;
+  uint256 hash;
+
+  nHeight = MAX(0, nBestHeight - nDepth);
+  result.push_back(Pair("height", (boost::int64_t)nHeight));
+
+  for (idx = 0; idx < nDepth; idx++) {
+    CBlock *block = GetBlockByHeight(iface, nHeight);
+    if (!block) throw runtime_error("Block not found in block-chain.");
+    fRet = block->CheckBlock();
+    if (!fRet)
+      hash = block->GetHash();
+    delete block;
+
+    if (!fRet) {
+      invalid++;
+      lastHash = hash;
+
+      sprintf(errbuf, "invalid '%s' block detected '%s' at height %u.", iface->name, hash.GetHex().c_str(), (unsigned int)nHeight);
+      shcoind_info("database error", errbuf);
+    }
+
+    nHeight++;
+  }
+
+  result.push_back(Pair("invalid", (int)invalid));
+  if (invalid) {
+    result.push_back(Pair("invalhash", lastHash.GetHex()));
+  }
+
+  return (result);
+}
+
+Value rpc_block_verify(CIface *iface, const Array& params, bool fHelp)
+{
+
+  if (fHelp || params.size() >= 2)
+    throw runtime_error(
+        "block.verify <block depth>\n"
+        "Verify a set of blocks from the end of the block-chain. (default: 1024).\n");
+
+  int nDepth = 1024;
+  if (params.size() > 0)
+    nDepth = params[0].get_int();
+  return (core_block_verify(iface, nDepth));
+}
+
 
 
 //
@@ -4561,6 +4624,7 @@ static const CRPCCommand vRPCCommands[] =
     { "block.listsince",      &rpc_block_listsince},
     { "block.purge",          &rpc_block_purge},
 //    { "block.template",       &rpc_block_template},
+    { "block.verify",         &rpc_block_verify},
     { "block.work",           &rpc_block_work},
     { "block.workex",         &rpc_block_workex},
     { "cert.export",          &rpc_cert_export},
@@ -4585,7 +4649,7 @@ static const CRPCCommand vRPCCommands[] =
     { "tx.list",              &rpc_tx_list},
     { "tx.pool",              &rpc_tx_pool},
     { "wallet.addr",          &rpc_wallet_addr},
-    { "wallet.accounts",      &rpc_wallet_accounts},
+    { "wallet.addrlist",      &rpc_wallet_addrlist},
     { "wallet.balance",       &rpc_wallet_balance},
     { "wallet.donate",        &rpc_wallet_donate},
     { "wallet.export",        &rpc_wallet_export},

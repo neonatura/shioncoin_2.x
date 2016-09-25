@@ -501,7 +501,6 @@ bool usde_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
       pfrom->AddInventoryKnown(inv);
 
       bool fAlreadyHave = AlreadyHave(iface, txdb, inv);
-Debug("USDE: ProcessMessage: got inventory: %s  %s\n", inv.ToString().c_str(), fAlreadyHave ? "have" : "new");
 
       if (!fAlreadyHave)
         pfrom->AskFor(inv);

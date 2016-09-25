@@ -40,7 +40,7 @@
 
 #define OMNI_MAX_SIGOPS 20000
 
-static const int OMNI_PROTOCOL_VERSION = 1000400;
+static const int OMNI_PROTOCOL_VERSION = 80007;
 
 #define OMNI_COIN (uint64_t)100000000
 static const unsigned int OMNI_MAX_BLOCK_SIZE = 1000000;

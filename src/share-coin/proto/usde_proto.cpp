@@ -93,7 +93,7 @@ static int usde_bind(CIface *iface, void *_unused_)
   /* automatically connect to peers of 'usde' service. */
   unet_bind_flag_set(UNET_USDE, UNETF_PEER_SCAN);
 
-  Debug("initialized USDE service on port %d.", (int)SHC_COIN_DAEMON_PORT);
+  Debug("initialized USDE service on port %d.", (int)iface->port);
 
   return (0);
 }

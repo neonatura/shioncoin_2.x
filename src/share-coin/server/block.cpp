@@ -165,8 +165,10 @@ void FreeBlockTable(CIface *iface)
     delete pindex;
   }
 
-  sprintf(errbuf, "FreeBlockTable: deallocated %d records (%d bytes) in block-index.", count, memsize);
-  unet_log(ifaceIndex, errbuf);
+  if (iface->enabled) {
+    sprintf(errbuf, "FreeBlockTable: deallocated %d records (%d bytes) in block-index.", count, memsize);
+    unet_log(ifaceIndex, errbuf);
+  }
 
 }
 

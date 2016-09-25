@@ -1278,6 +1278,7 @@ bool TESTBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
 /* reorg will attempt to read this block from db */
     WriteArchBlock();
 
+#if 0
     // the first block in the new chain that will cause it to become the new best chain
     CBlockIndex *pindexIntermediate = pindexNew;
 
@@ -1326,6 +1327,14 @@ bool TESTBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
     }
     if (lastIndex && lastIndex != pindexNew) {
 fprintf(stderr, "DEBUG: pindexLast = '%s' @ %d, pindexNew = '%s' @ %d\n", lastIndex->GetBlockHash().GetHex().c_str(), lastIndex->nHeight, pindexNew->GetBlockHash().GetHex().c_str(), pindexNew->nHeight);
+    }
+#endif
+
+    ret = test_Reorganize(txdb, pindexNew, &mempool);
+    if (!ret) {
+      txdb.TxnAbort();
+      InvalidChainFound(pindexNew);
+      return error(SHERR_INVAL, "SetBestChain() : Reorganize failed");
     }
   }
 

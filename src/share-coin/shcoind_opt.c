@@ -30,6 +30,31 @@
 static shmap_t *_proc_option_table;
 #define OPT_LIST _proc_option_table
 
+void opt_print(void)
+{
+  char buf[512];
+
+  sprintf(buf, "info: option '%s' set to 'true'.", OPT_DEBUG);
+  shcoind_info("config", buf); 
+
+  sprintf(buf, "info: option '%s' set to '%d'.", 
+      OPT_MAX_CONN, opt_num(OPT_MAX_CONN));
+  shcoind_info("config", buf); 
+
+  sprintf(buf, "info: option '%s' set to '%s'.", 
+      OPT_PEER_SEED, opt_bool(OPT_PEER_SEED) ? "true" : "false");
+  shcoind_info("config", buf); 
+
+  sprintf(buf, "info: option '%s' set to '%d'.", 
+      OPT_BAN_SPAN, opt_num(OPT_BAN_SPAN));
+  shcoind_info("config", buf); 
+
+  sprintf(buf, "info: option '%s' set to '%d'.", 
+      OPT_BAN_THRESHOLD, opt_num(OPT_BAN_THRESHOLD));
+  shcoind_info("config", buf); 
+
+}
+
 static void opt_set_defaults(void)
 {
   char buf[256];
@@ -42,8 +67,6 @@ static void opt_set_defaults(void)
   strncpy(buf, shpref_get("shcoind.debug", ""), sizeof(buf)-1);
   if (tolower(*buf) == 't')
     opt_bool_set(OPT_DEBUG, TRUE); 
-  sprintf(buf, "info: option '%s' set to 'true'.", OPT_DEBUG);
-  shcoind_info("persistent option", buf); 
 
   /**
    * The maximum number of inbound connections to allow for each coin service.
@@ -53,18 +76,12 @@ static void opt_set_defaults(void)
     opt_num_set(OPT_MAX_CONN, MAX(0, atoi(buf)));
   if (opt_num(OPT_MAX_CONN) == 0)
     opt_num_set(OPT_MAX_CONN, 512); /* default */
-  sprintf(buf, "info: option '%s' set to '%d'.", 
-      OPT_MAX_CONN, opt_num(OPT_MAX_CONN));
-  shcoind_info("persistent option", buf); 
 
   strncpy(buf, shpref_get("shcoind.net.seed", ""), sizeof(buf)-1);
   if (tolower(*buf) == 'f')
     opt_bool_set(OPT_PEER_SEED, FALSE);
   else
     opt_bool_set(OPT_PEER_SEED, TRUE); /* default */
-  sprintf(buf, "info: option '%s' set to '%s'.", 
-      OPT_PEER_SEED, opt_bool(OPT_PEER_SEED) ? "true" : "false");
-  shcoind_info("persistent option", buf); 
 
   /**
    * The time-span (in seconds) before a ban is lifted.
@@ -74,9 +91,6 @@ static void opt_set_defaults(void)
     opt_num_set(OPT_BAN_SPAN, MAX(0, atoi(buf)));
   if (opt_num(OPT_BAN_SPAN) == 0)
     opt_num_set(OPT_BAN_SPAN, 21600); /* 6-hour default */
-  sprintf(buf, "info: option '%s' set to '%d'.", 
-      OPT_BAN_SPAN, opt_num(OPT_BAN_SPAN));
-  shcoind_info("persistent option", buf); 
 
   /**
    * The minimum 'misbehaviour rate' of a coin service connection before it is banned.
@@ -86,9 +100,36 @@ static void opt_set_defaults(void)
     opt_num_set(OPT_BAN_THRESHOLD, MAX(0, atoi(buf)));
   if (opt_num(OPT_BAN_THRESHOLD) == 0)
     opt_num_set(OPT_BAN_THRESHOLD, 1000); /* default */
-  sprintf(buf, "info: option '%s' set to '%d'.", 
-      OPT_BAN_THRESHOLD, opt_num(OPT_BAN_THRESHOLD));
-  shcoind_info("persistent option", buf); 
+
+#ifndef USDE_SERVICE
+  opt_bool_set(OPT_SERV_USDE, FALSE);
+#else
+  strncpy(buf, shpref_get(OPT_SERV_USDE, ""), sizeof(buf)-1);
+  if (tolower(*buf) == 'f')
+    opt_bool_set(OPT_SERV_USDE, FALSE);
+  else
+    opt_bool_set(OPT_SERV_USDE, TRUE); /* default */
+#endif
+
+#ifndef OMNI_SERVICE
+  opt_bool_set(OPT_SERV_OMNI, FALSE);
+#else
+  strncpy(buf, shpref_get(OPT_SERV_OMNI, ""), sizeof(buf)-1);
+  if (tolower(*buf) == 'f')
+    opt_bool_set(OPT_SERV_OMNI, FALSE);
+  else
+    opt_bool_set(OPT_SERV_OMNI, TRUE); /* default */
+#endif
+
+#ifndef STRATUM_SERVICE
+  opt_bool_set(OPT_SERV_STRATUM, FALSE);
+#else
+  strncpy(buf, shpref_get(OPT_SERV_STRATUM, ""), sizeof(buf)-1);
+  if (tolower(*buf) == 'f')
+    opt_bool_set(OPT_SERV_STRATUM, FALSE);
+  else
+    opt_bool_set(OPT_SERV_STRATUM, TRUE); /* default */
+#endif
 
 }
 
@@ -134,12 +175,13 @@ void opt_str_set(char *tag, char *str)
 
 int opt_bool(char *tag)
 {
-  int b = !!opt_num(tag);
+  int b = opt_num(tag) ? TRUE : FALSE;
+  return (b);
 }
 
 void opt_bool_set(char *tag, int b)
 {
-  opt_num_set(tag, !!b);
+  opt_num_set(tag, b ? TRUE : FALSE);
 }
 
 

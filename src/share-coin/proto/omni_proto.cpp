@@ -95,7 +95,7 @@ static int omni_bind(CIface *iface, void *_unused_)
   /* automatically connect to peers of 'omni' service. */
   unet_bind_flag_set(UNET_OMNI, UNETF_PEER_SCAN);
 
-  Debug("initialized OMNI service on port %d.", (int)SHC_COIN_DAEMON_PORT);
+  Debug("initialized OMNI service on port %d.", (int)iface->port);
 
   return (0);
 }
@@ -236,10 +236,10 @@ extern "C" {
 
 coin_iface_t omni_coin_iface = {
   "omni",
-  FALSE,
+  TRUE,
   COIN_IFACE_VERSION(OMNI_VERSION_MAJOR, OMNI_VERSION_MINOR,
       OMNI_VERSION_REVISION, OMNI_VERSION_BUILD), /* cli ver */
-  1, /* block version */
+  2, /* block version */
   OMNI_PROTOCOL_VERSION, /* network protocol version */ 
   OMNI_COIN_DAEMON_PORT,
   { 0xd4, 0xcb, 0xa1, 0xef },

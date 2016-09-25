@@ -35,6 +35,8 @@ static int opt_no_fork;
 
 static int _rpc_thread_running;
 
+extern bc_t *GetBlockChain(CIface *iface);
+extern void opt_print(void);
 
 
 void shcoind_term(void)
@@ -75,6 +77,9 @@ void usage_help(void)
       "\t--max-conn <#>\tThe maximum number of incoming coin-service connections.\n"
       "\t--no-seed\tPrevent pre-defined seed IP addresses from being used.\n"
       "\t--check-addr\tRe-verify the external IP address used by this machine.\n"
+      "\t--no-usde\tDisable the USDE coin service.\n"
+      "\t--no-omni\tDisable the OMNI coin service.\n"
+      "\t--no-stratum\tDisable the stratum service.\n"
       "\n"
       "Peer Options:\n"
       "\t--ban-span <#>\tThe number of seconds a peer will be banned for.\n"
@@ -109,7 +114,7 @@ void usage_version(void)
       get_libshare_version());
 }
 
-extern bc_t *GetBlockChain(CIface *iface);
+
 
 int main(int argc, char *argv[])
 {
@@ -152,6 +157,12 @@ int main(int argc, char *argv[])
       }
     } else if (0 == strcmp(argv[i], "--no-seed")) {
       opt_bool_set(OPT_PEER_SEED, FALSE);
+    } else if (0 == strcmp(argv[i], "--no-usde")) {
+      opt_bool_set(OPT_SERV_USDE, FALSE);
+    } else if (0 == strcmp(argv[i], "--no-omni")) {
+      opt_bool_set(OPT_SERV_OMNI, FALSE);
+    } else if (0 == strcmp(argv[i], "--no-stratum")) {
+      opt_bool_set(OPT_SERV_STRATUM, FALSE);
     } else if (0 == strcmp(argv[i], "--check-addr")) {
       shpref_set("shcoind.net.addr", ""); /* clear cached IP addr */
     } else if (0 == strcmp(argv[i], "--ban-span")) {
@@ -183,6 +194,9 @@ int main(int argc, char *argv[])
   server_msgq = shmsgget(NULL); /* shared server msg-queue */
   server_msg_buff = shbuf_init();
 
+  if (opt_bool(OPT_DEBUG))
+    opt_print();
+
   shapp_listen(TX_APP, server_peer);
   shapp_listen(TX_IDENT, server_peer);
   shapp_listen(TX_SESSION, server_peer);
@@ -213,15 +227,26 @@ int main(int argc, char *argv[])
   /* initialize coin interface's network service */
   for (idx = 1; idx < MAX_COIN_IFACE; idx++) {
     CIface *iface = GetCoinByIndex(idx);
-    if (!iface || !iface->enabled)
+    if (!iface)
       continue;
 
-#ifndef USDE_SERVICE
     if (idx == USDE_COIN_IFACE) {
+#ifndef USDE_SERVICE
       iface->enabled = FALSE;
-      continue;
-    }
 #endif
+      if (!opt_bool(OPT_SERV_USDE))
+        iface->enabled = FALSE;
+    }
+
+    if (idx == OMNI_COIN_IFACE) {
+#ifndef OMNI_SERVICE
+      iface->enabled = FALSE;
+#endif
+      if (!opt_bool(OPT_SERV_OMNI))
+        iface->enabled = FALSE;
+    }
+    if (!iface->enabled)
+      continue;
 
     if (iface->op_init) {
       err = iface->op_bind(iface, NULL);
@@ -233,11 +258,13 @@ int main(int argc, char *argv[])
   }
 
 #ifdef STRATUM_SERVICE
-  /* initialize stratum server */
-  err = stratum_init();
-  if (err) {
-    fprintf(stderr, "critical: init stratum: %s. [sherr %d]", sherrstr(err), err);
-    raise(SIGTERM);
+  if (opt_bool(OPT_SERV_STRATUM)) {
+    /* initialize stratum server */
+    err = stratum_init();
+    if (err) {
+      fprintf(stderr, "critical: init stratum: %s. [sherr %d]", sherrstr(err), err);
+      raise(SIGTERM);
+    }
   }
 #endif
 

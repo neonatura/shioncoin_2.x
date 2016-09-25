@@ -49,6 +49,9 @@
 using namespace std;
 using namespace boost;
 
+static const unsigned int MAX_SCRIPT_ELEMENT_SIZE = 520; /* (bytes) */
+static const unsigned int MAX_INV_SZ = 50000;
+
 
 extern CMedianFilter<int> cPeerBlockCounts;
 extern map<uint256, CAlert> mapAlerts;
@@ -265,14 +268,18 @@ bool omni_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
     if (!vRecv.empty())
       vRecv >> pfrom->nStartingHeight;
 
+#if 0 /* DEBUG: verify & implement if warranted */
     if (0 != strncmp(pfrom->strSubVer.c_str(), "/OMNI", 5)) {
       error(SHERR_INVAL, "(omni) ProcessMessage: connect from wrong coin interface '%s' (%s), disconnecting\n", pfrom->addr.ToString().c_str(), pfrom->strSubVer.c_str());
       pfrom->fDisconnect = true;
       return true;
     }
+#endif
 
-    /* ready to send tx's */
-    pfrom->fRelayTxes = true;
+    if (!vRecv.empty())
+      vRecv >> pfrom->fRelayTxes; // set to true after we get the first filter* message
+    else
+      pfrom->fRelayTxes = true;
 
     if (pfrom->fInbound && addrMe.IsRoutable())
     {
@@ -367,7 +374,7 @@ bool omni_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
 
     pfrom->fSuccessfullyConnected = true;
 
-    printf("receive version message: version %d, blocks=%d, us=%s, them=%s, peer=%s\n", pfrom->nVersion, pfrom->nStartingHeight, addrMe.ToString().c_str(), addrFrom.ToString().c_str(), pfrom->addr.ToString().c_str());
+    Debug("received OMNI version message: version %d, blocks=%d, us=%s, them=%s, peer=%s\n", pfrom->nVersion, pfrom->nStartingHeight, addrMe.ToString().c_str(), addrFrom.ToString().c_str(), pfrom->addr.ToString().c_str());
 
     cPeerBlockCounts.input(pfrom->nStartingHeight);
   }
@@ -501,7 +508,6 @@ bool omni_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
       pfrom->AddInventoryKnown(inv);
 
       bool fAlreadyHave = AlreadyHave(iface, txdb, inv);
-Debug("OMNI: ProcessMessage: got inventory: %s  %s\n", inv.ToString().c_str(), fAlreadyHave ? "have" : "new");
 
       if (!fAlreadyHave)
         pfrom->AskFor(inv);
@@ -539,9 +545,7 @@ Debug("OMNI: ProcessMessage: got inventory: %s  %s\n", inv.ToString().c_str(), f
         return true;
 
       inv.ifaceIndex = OMNI_COIN_IFACE;
-      if (inv.type == MSG_BLOCK)
-      {
-        // Send block from disk
+      if (inv.type == MSG_BLOCK || inv.type == MSG_FILTERED_BLOCK) {
         map<uint256, CBlockIndex*>::iterator mi = blockIndex->find(inv.hash);
         if (mi != blockIndex->end())
         {
@@ -549,7 +553,20 @@ Debug("OMNI: ProcessMessage: got inventory: %s  %s\n", inv.ToString().c_str(), f
           OMNIBlock block;
           if (block.ReadFromDisk(pindex) && block.CheckBlock() &&
               pindex->nHeight <= GetBestHeight(OMNI_COIN_IFACE)) {
-            pfrom->PushMessage("block", block);
+            if (inv.type == MSG_BLOCK) {
+              pfrom->PushMessage("block", block);
+            } else if (inv.type == MSG_FILTERED_BLOCK) { /* bloom */
+              LOCK(pfrom->cs_filter);
+              CBloomFilter *filter = pfrom->GetBloomFilter();
+              if (filter) {
+                CMerkleBlock merkleBlock(block, *filter);
+                pfrom->PushMessage("merkleblock", merkleBlock);
+                typedef std::pair<unsigned int, uint256> PairType;
+                BOOST_FOREACH(PairType& pair, merkleBlock.vMatchedTxn)
+                  if (!pfrom->setInventoryKnown.count(CInv(OMNI_COIN_IFACE, MSG_TX, pair.second)))
+                    pfrom->PushMessage("tx", block.vtx[pair.first]);
+              }
+            } 
           } else {
             Debug("OMNI: WARN: failure validating requested block '%s' at height %d\n", block.GetHash().GetHex().c_str(), pindex->nHeight);
             block.print();
@@ -571,12 +588,32 @@ Debug("OMNI: ProcessMessage: got inventory: %s  %s\n", inv.ToString().c_str(), f
       else if (inv.IsKnownType())
       {
         // Send stream from relay memory
+        bool pushed = false;
         {
           LOCK(cs_mapRelay);
           map<CInv, CDataStream>::iterator mi = mapRelay.find(inv);
-          if (mi != mapRelay.end())
+          if (mi != mapRelay.end()) {
             pfrom->PushMessage(inv.GetCommand(), (*mi).second);
+            pushed = true;
+          }
         }
+        if (!pushed && inv.type == MSG_TX) {
+          LOCK(OMNIBlock::mempool.cs);
+          if (OMNIBlock::mempool.exists(inv.hash)) {
+            CTransaction tx = OMNIBlock::mempool.lookup(inv.hash);
+            CDataStream ss(SER_NETWORK, OMNI_PROTOCOL_VERSION);
+            ss.reserve(1000);
+            ss << tx;
+            pfrom->PushMessage("tx", ss);
+            pushed = true;
+          }
+        }
+
+#if 0
+        if (!pushed) {
+          vNotFound.push_back(inv);
+        }
+#endif
       }
 
       // Track requests for our stuff
@@ -768,52 +805,26 @@ Debug("OMNI: ProcessMessage: got inventory: %s  %s\n", inv.ToString().c_str(), f
 
   }
 
-
-  else if (strCommand == "checkorder")
+  /* exclusively used by bloom filter supported coin services, but does not require they have a bloom filter enabled for node. */
+  else if (strCommand == "mempool")
   {
-    uint256 hashReply;
-    vRecv >> hashReply;
-
-    if (!GetBoolArg("-allowreceivebyip"))
-    {
-      pfrom->PushMessage("reply", hashReply, (int)2, string(""));
-      return true;
+    std::vector<uint256> vtxid;
+    LOCK2(OMNIBlock::mempool.cs, pfrom->cs_filter);
+    OMNIBlock::mempool.queryHashes(vtxid);
+    vector<CInv> vInv;
+    CBloomFilter *filter = pfrom->GetBloomFilter();
+    BOOST_FOREACH(uint256& hash, vtxid) {
+      CInv inv(OMNI_COIN_IFACE, MSG_TX, hash);
+      if ((filter && filter->IsRelevantAndUpdate(OMNIBlock::mempool.lookup(hash), hash)) ||
+          (!filter))
+        vInv.push_back(inv);
+      if (vInv.size() == MAX_INV_SZ)
+        break;
     }
-
-    CWalletTx order;
-    vRecv >> order;
-
-    /// we have a chance to check the order here
-
-    // Keep giving the same key to the same ip until they use it
-    if (!mapReuseKey.count(pfrom->addr))
-      pwalletMain->GetKeyFromPool(mapReuseKey[pfrom->addr], true);
-
-    // Send back approval of order and pubkey to use
-    CScript scriptPubKey;
-    scriptPubKey << mapReuseKey[pfrom->addr] << OP_CHECKSIG;
-    pfrom->PushMessage("reply", hashReply, (int)0, scriptPubKey);
+    if (vInv.size() > 0)
+      pfrom->PushMessage("inv", vInv);
   }
 
-
-  else if (strCommand == "reply")
-  {
-    uint256 hashReply;
-    vRecv >> hashReply;
-
-    CRequestTracker tracker;
-    {
-      LOCK(pfrom->cs_mapRequests);
-      map<uint256, CRequestTracker>::iterator mi = pfrom->mapRequests.find(hashReply);
-      if (mi != pfrom->mapRequests.end())
-      {
-        tracker = (*mi).second;
-        pfrom->mapRequests.erase(mi);
-      }
-    }
-    if (!tracker.IsNull())
-      tracker.fn(tracker.param1, vRecv);
-  }
 
 
   else if (strCommand == "ping")
@@ -854,6 +865,50 @@ Debug("OMNI: ProcessMessage: got inventory: %s  %s\n", inv.ToString().c_str(), f
       }
     }
   }
+
+  /* exclusively used by bloom filter */
+  else if (strCommand == "filterload")
+  {
+    CBloomFilter filter(OMNI_COIN_IFACE);
+    vRecv >> filter;
+
+    if (!filter.IsWithinSizeConstraints()) {
+      pfrom->Misbehaving(100);
+    } else {
+      pfrom->SetBloomFilter(filter);
+    }
+
+    pfrom->fRelayTxes = true;
+  }
+
+
+  else if (strCommand == "filteradd")
+  {
+    vector<unsigned char> vData;
+    vRecv >> vData;
+
+    // Nodes must NEVER send a data item > 520 bytes (the max size for a script data object,
+    // and thus, the maximum size any matched object can have) in a filteradd message
+    if (vData.size() > MAX_SCRIPT_ELEMENT_SIZE)
+    {
+      pfrom->Misbehaving(100);
+    } else {
+      /* The following will initialize a new bloom filter if none previously existed. */
+      LOCK(pfrom->cs_filter);
+      CBloomFilter *filter = pfrom->GetBloomFilter();
+      if (filter)
+        filter->insert(vData);
+    }
+  }
+
+
+  else if (strCommand == "filterclear")
+  {
+    pfrom->ClearBloomFilter();
+    pfrom->fRelayTxes = true;
+  }
+
+
 
 
   else

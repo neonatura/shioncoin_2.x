@@ -211,6 +211,13 @@ usde: shcointool
 	cp -f shcointool usde
 endif
 
+if OMNI_SERVICE
+bin_SCRIPTS += omni
+
+omni: shcointool
+	cp -f shcointool omni
+endif
+
 shc: shcointool
 	cp -f shcointool shc
 
@@ -298,7 +305,7 @@ if HAVE_INITD_DIR
 EXTRA_DIST = $(top_builddir)/scripts/initd/shcoind
 
 install-exec-hook:
-	[ "`grep ^usde /etc/services`" != "" ] || echo "usde            54449/tcp       shcoind usded   # usdE virtual currency" >> /etc/services
+	[ "`grep ^shc /etc/services`" != "" ] || echo "shc            24104/tcp       shcoind   # SHC virtual currency" >> /etc/services
 	rm -f $(INITD_DIR)/init.d/shcoind  
 	rm -f $(INITD_DIR)/rc3.d/S87shcoind  
 	rm -f $(INITD_DIR)/rc3.d/K87shcoind  
@@ -324,7 +331,7 @@ uninstall-hook:
 	rm -f $(INITD_DIR)/rc5.d/K87shcoind  
 else
 install-exec-hook:
-	[ "`grep ^usde /etc/services`" != "" ] || echo "usde            54449/tcp       shcoind usded   # usdE virtual currency" >> /etc/services
+	[ "`grep ^shc /etc/services`" != "" ] || echo "shc            24104/tcp       shcoind    # SHC virtual currency" >> /etc/services
 endif
 
 
