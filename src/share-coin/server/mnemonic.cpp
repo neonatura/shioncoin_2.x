@@ -1767,7 +1767,7 @@ const string DecodeMnemonic(const string_list& words)
   return (ret_str);
 }
 
-bool DecodeMnemonicSecret(const string phrase, CCoinSecret& addr)
+bool DecodeMnemonicSecret(int ifaceIndex, const string phrase, CCoinSecret& addr)
 {
   std::vector<std::string> words;
   boost::split(words, phrase, boost::is_any_of(", "), boost::token_compress_on);
@@ -1778,7 +1778,7 @@ bool DecodeMnemonicSecret(const string phrase, CCoinSecret& addr)
     return (false);
   CSecret t_buff(secret.begin(), secret.begin() + 32);
 
-  addr = CCoinSecret(t_buff, false);
+  addr = CCoinSecret(ifaceIndex, t_buff, false);
   return (true);
 }
 

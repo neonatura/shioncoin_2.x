@@ -22,12 +22,11 @@ static char *shc_seed_list[SHC_SEED_LIST_SIZE] = {
   "45.79.195.108" /* coin2.sharelib.net */
 };
 
-#define OMNI_SEED_LIST_SIZE 4
-static char *omni_seed_list[OMNI_SEED_LIST_SIZE] = {
+#define EMC2_SEED_LIST_SIZE 3
+static char *emc2_seed_list[EMC2_SEED_LIST_SIZE] = {
   "45.79.197.174", /* coin1.sharelib.net */
   "45.79.195.108", /* coin2.sharelib.net */
-  "192.99.42.164",
-  "192.99.42.206"
+  "98.115.147.74",
 };
 
 

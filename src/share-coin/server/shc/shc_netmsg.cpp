@@ -56,6 +56,7 @@ extern CMedianFilter<int> cPeerBlockCounts;
 extern map<uint256, CAlert> mapAlerts;
 extern vector <CAddress> GetAddresses(CIface *iface, int max_peer);
 
+#define SHC_COIN_HEADER_SIZE SIZEOF_COINHDR_T
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -1000,11 +1001,9 @@ bool shc_ProcessMessages(CIface *iface, CNode* pfrom)
       break;
 
     // Scan for message start
-    CDataStream::iterator pstart = search(vRecv.begin(), vRecv.end(), BEGIN(pchMessageStart), END(pchMessageStart));
-    int nHeaderSize = vRecv.GetSerializeSize(CMessageHeader());
-    if (nHeaderSize != 24) {
-      fprintf(stderr, "DEBUG: nHeaderSize = %d\n", nHeaderSize);
-    }
+    CDataStream::iterator pstart = search(vRecv.begin(), vRecv.end(),
+        BEGIN(iface->hdr_magic), END(iface->hdr_magic));
+    int nHeaderSize = SHC_COIN_HEADER_SIZE;
     if (vRecv.end() - pstart < nHeaderSize)
     {
       if ((int)vRecv.size() > nHeaderSize)

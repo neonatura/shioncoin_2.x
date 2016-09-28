@@ -28,9 +28,9 @@
 #include "init.h"
 #include "strlcpy.h"
 #include "ui_interface.h"
-#include "omni_block.h"
-#include "omni_txidx.h"
-#include "omni_wallet.h"
+#include "emc2_block.h"
+#include "emc2_txidx.h"
+#include "emc2_wallet.h"
 #include "chain.h"
 
 #ifdef WIN32
@@ -54,28 +54,32 @@ using namespace std;
 using namespace boost;
 
 
-uint256 omni_hashGenesisBlock("0x721abe3814e15f1ab50514c8b7fffa7578c1f35aa915275ee91f4cb8d02be5c4");
-static CBigNum omni_bnStartDifficulty(~uint256(0) >> 26);
-static CBigNum omni_bnProofOfWorkLimit(~uint256(0) >> 20);
-static const int64 omni_nTargetTimespan = 4 * 60 * 60;
-static const int64 omni_nTargetSpacing = 3 * 60;
-
-
-map<uint256, OMNIBlock*> OMNI_mapOrphanBlocks;
-multimap<uint256, OMNIBlock*> OMNI_mapOrphanBlocksByPrev;
-map<uint256, map<uint256, CDataStream*> > OMNI_mapOrphanTransactionsByPrev;
-map<uint256, CDataStream*> OMNI_mapOrphanTransactions;
+uint256 emc2_hashGenesisBlock("0x4e56204bb7b8ac06f860ff1c845f03f984303b5b97eb7b42868f714611aed94b");
+static CBigNum emc2_bnProofOfWorkLimit(~uint256(0) >> 20);
+static const int64 emc2_nTargetTimespan = 3.5 * 24 * 60 * 60; // Einsteinium: 3.5 days
+static const int64 emc2_nTargetTimespanNEW = 60;
+static const int64 emc2_nTargetSpacing = 60; // Einsteinium: one minute
+static const int64 emc2_nInterval = emc2_nTargetTimespan / emc2_nTargetSpacing;
+static const int64 emc2_nDiffChangeTarget = 56000; // Patch effective @ block 56000
 
 
 
-class OMNIOrphan
+map<uint256, EMC2Block*> EMC2_mapOrphanBlocks;
+multimap<uint256, EMC2Block*> EMC2_mapOrphanBlocksByPrev;
+map<uint256, map<uint256, CDataStream*> > EMC2_mapOrphanTransactionsByPrev;
+map<uint256, CDataStream*> EMC2_mapOrphanTransactions;
+
+extern CScript EMC2_CHARITY_SCRIPT;
+
+
+class EMC2Orphan
 {
   public:
     CTransaction* ptx;
     set<uint256> setDependsOn;
     double dPriority;
 
-    OMNIOrphan(CTransaction* ptxIn)
+    EMC2Orphan(CTransaction* ptxIn)
     {
       ptx = ptxIn;
       dPriority = 0;
@@ -83,96 +87,201 @@ class OMNIOrphan
 
     void print() const
     {
-      printf("OMNIOrphan(hash=%s, dPriority=%.1f)\n", ptx->GetHash().ToString().substr(0,10).c_str(), dPriority);
+      printf("EMC2Orphan(hash=%s, dPriority=%.1f)\n", ptx->GetHash().ToString().substr(0,10).c_str(), dPriority);
       BOOST_FOREACH(uint256 hash, setDependsOn)
         printf("   setDependsOn %s\n", hash.ToString().substr(0,10).c_str());
     }
 };
 
 
-unsigned int static KimotoGravityWell(const CBlockIndex* pindexLast, const CBlockHeader *pblock, uint64 TargetBlocksSpacingSeconds, uint64 PastBlocksMin, uint64 PastBlocksMax) 
-{
-	const CBlockIndex  *BlockLastSolved				= pindexLast;
-	const CBlockIndex  *BlockReading				= pindexLast;
-	const CBlockHeader *BlockCreating				= pblock;
-						BlockCreating				= BlockCreating;
-	uint64				PastBlocksMass				= 0;
-	int64				PastRateActualSeconds		= 0;
-	int64				PastRateTargetSeconds		= 0;
-	double				PastRateAdjustmentRatio		= double(1);
-	CBigNum				PastDifficultyAverage;
-	CBigNum				PastDifficultyAveragePrev;
-	double				EventHorizonDeviation;
-	double				EventHorizonDeviationFast;
-	double				EventHorizonDeviationSlow;
-	
-    if (BlockLastSolved == NULL || BlockLastSolved->nHeight == 0 || (uint64)BlockLastSolved->nHeight < PastBlocksMin) { return omni_bnProofOfWorkLimit.GetCompact(); }
-	
-	for (unsigned int i = 1; BlockReading && BlockReading->nHeight > 0; i++) {
-		if (PastBlocksMax > 0 && i > PastBlocksMax) { break; }
-		PastBlocksMass++;
-		
-		if (i == 1)	{ PastDifficultyAverage.SetCompact(BlockReading->nBits); }
-		else		{ PastDifficultyAverage = ((CBigNum().SetCompact(BlockReading->nBits) - PastDifficultyAveragePrev) / i) + PastDifficultyAveragePrev; }
-		PastDifficultyAveragePrev = PastDifficultyAverage;
-		
-		PastRateActualSeconds			= BlockLastSolved->GetBlockTime() - BlockReading->GetBlockTime();
-		PastRateTargetSeconds			= TargetBlocksSpacingSeconds * PastBlocksMass;
-		PastRateAdjustmentRatio			= double(1);
-		if (PastRateActualSeconds < 0) { PastRateActualSeconds = 0; }
-		if (PastRateActualSeconds != 0 && PastRateTargetSeconds != 0) {
-		PastRateAdjustmentRatio			= double(PastRateTargetSeconds) / double(PastRateActualSeconds);
-		}
-		EventHorizonDeviation			= 1 + (0.7084 * pow((double(PastBlocksMass)/double(28.2)), -1.228));
-		EventHorizonDeviationFast		= EventHorizonDeviation;
-		EventHorizonDeviationSlow		= 1 / EventHorizonDeviation;
-		
-		if (PastBlocksMass >= PastBlocksMin) {
-			if ((PastRateAdjustmentRatio <= EventHorizonDeviationSlow) || (PastRateAdjustmentRatio >= EventHorizonDeviationFast)) { assert(BlockReading); break; }
-		}
-		if (BlockReading->pprev == NULL) { assert(BlockReading); break; }
-		BlockReading = BlockReading->pprev;
-	}
-	
-	CBigNum bnNew(PastDifficultyAverage);
-	if (PastRateActualSeconds != 0 && PastRateTargetSeconds != 0) {
-		bnNew *= PastRateActualSeconds;
-		bnNew /= PastRateTargetSeconds;
-	}
-  if (bnNew > omni_bnProofOfWorkLimit) { bnNew = omni_bnProofOfWorkLimit; }
 
-	return bnNew.GetCompact();
+
+static unsigned int emc2_KimotoGravityWell(const CBlockIndex* pindexLast, const CBlockHeader *pblock, uint64 TargetBlocksSpacingSeconds, uint64 PastBlocksMin, uint64 PastBlocksMax)
+{
+  /* current difficulty formula - kimoto gravity well */
+  const CBlockIndex *BlockLastSolved                                = pindexLast;
+  const CBlockIndex *BlockReading                                = pindexLast;
+  const CBlockHeader *BlockCreating                                = pblock;
+  BlockCreating                                = BlockCreating;
+  uint64                                PastBlocksMass                                = 0;
+  int64                                PastRateActualSeconds                = 0;
+  int64                                PastRateTargetSeconds                = 0;
+  double                                PastRateAdjustmentRatio                = double(1);
+  CBigNum                                PastDifficultyAverage;
+  CBigNum                                PastDifficultyAveragePrev;
+  double                                EventHorizonDeviation;
+  double                                EventHorizonDeviationFast;
+  double                                EventHorizonDeviationSlow;
+
+  if (BlockLastSolved == NULL || BlockLastSolved->nHeight == 0 || (uint64)BlockLastSolved->nHeight < PastBlocksMin) { return emc2_bnProofOfWorkLimit.GetCompact(); }
+
+  for (unsigned int i = 1; BlockReading && BlockReading->nHeight > 0; i++) {
+    if (PastBlocksMax > 0 && i > PastBlocksMax) { break; }
+    PastBlocksMass++;
+
+    if (i == 1)        { PastDifficultyAverage.SetCompact(BlockReading->nBits); }
+    else                { PastDifficultyAverage = ((CBigNum().SetCompact(BlockReading->nBits) - PastDifficultyAveragePrev) / i) + PastDifficultyAveragePrev; }
+    PastDifficultyAveragePrev = PastDifficultyAverage;
+
+    PastRateActualSeconds                        = BlockLastSolved->GetBlockTime() - BlockReading->GetBlockTime();
+    PastRateTargetSeconds                        = TargetBlocksSpacingSeconds * PastBlocksMass;
+    PastRateAdjustmentRatio                        = double(1);
+    if (PastRateActualSeconds < 0) { PastRateActualSeconds = 0; }
+    if (PastRateActualSeconds != 0 && PastRateTargetSeconds != 0) {
+      PastRateAdjustmentRatio                        = double(PastRateTargetSeconds) / double(PastRateActualSeconds);
+    }
+    EventHorizonDeviation                        = 1 + (0.7084 * pow((double(PastBlocksMass)/double(144)), -1.228));
+    EventHorizonDeviationFast                = EventHorizonDeviation;
+    EventHorizonDeviationSlow                = 1 / EventHorizonDeviation;
+
+    if (PastBlocksMass >= PastBlocksMin) {
+      if ((PastRateAdjustmentRatio <= EventHorizonDeviationSlow) || (PastRateAdjustmentRatio >= EventHorizonDeviationFast)) { assert(BlockReading); break; }
+    }
+    if (BlockReading->pprev == NULL) { assert(BlockReading); break; }
+    BlockReading = BlockReading->pprev;
+  }
+
+  CBigNum bnNew(PastDifficultyAverage);
+  if (PastRateActualSeconds != 0 && PastRateTargetSeconds != 0) {
+    bnNew *= PastRateActualSeconds;
+    bnNew /= PastRateTargetSeconds;
+  }
+  if (bnNew > emc2_bnProofOfWorkLimit) { bnNew = emc2_bnProofOfWorkLimit; }
+
+  return bnNew.GetCompact();
+}
+
+static unsigned int emc2_DigiShield(const CBlockIndex* pindexLast, const CBlockHeader *pblock)
+{
+  int64 retargetTimespan = emc2_nTargetTimespanNEW;
+  int64 retargetInterval = emc2_nTargetTimespanNEW / emc2_nTargetSpacing;
+
+  // Only change once per interval
+  if ((pindexLast->nHeight+1) % retargetInterval != 0)
+  {
+    return pindexLast->nBits;
+  }
+
+  // Einsteinium: This fixes an issue where a 51% attack can change difficulty at will.
+  // Go back the full period unless it's the first retarget after genesis. Code courtesy of Art Forz
+  int blockstogoback = retargetInterval-1;
+  if ((pindexLast->nHeight+1) != retargetInterval)
+    blockstogoback = retargetInterval;
+
+  // Go back by what we want to be 14 days worth of blocks
+  const CBlockIndex* pindexFirst = pindexLast;
+  for (int i = 0; pindexFirst && i < blockstogoback; i++)
+    pindexFirst = pindexFirst->pprev;
+  assert(pindexFirst);
+
+  // Limit adjustment step
+  int64 nActualTimespan = pindexLast->GetBlockTime() - pindexFirst->GetBlockTime();
+  printf(" nActualTimespan = %"PRI64d" before bounds\n", nActualTimespan);
+
+  CBigNum bnNew;
+  bnNew.SetCompact(pindexLast->nBits);
+
+  //DigiShield implementation - thanks to RealSolid & WDC for this code
+  // amplitude filter - thanks to daft27 for this code
+  nActualTimespan = retargetTimespan + (nActualTimespan - retargetTimespan)/8;
+  printf("DIGISHIELD RETARGET\n");
+  if (nActualTimespan < (retargetTimespan - (retargetTimespan/4)) ) nActualTimespan = (retargetTimespan - (retargetTimespan/4));
+  if (nActualTimespan > (retargetTimespan + (retargetTimespan/2)) ) nActualTimespan = (retargetTimespan + (retargetTimespan/2));
+  // Retarget
+
+  bnNew *= nActualTimespan;
+  bnNew /= retargetTimespan;
+
+  if (bnNew > emc2_bnProofOfWorkLimit)
+    bnNew = emc2_bnProofOfWorkLimit;
+
+  /// debug print
+  printf("GetNextWorkRequired: DIGISHIELD RETARGET\n");
+  printf("emc2_nTargetTimespan = %"PRI64d" nActualTimespan = %"PRI64d"\n", retargetTimespan, nActualTimespan);
+  printf("Before: %08x %s\n", pindexLast->nBits, CBigNum().SetCompact(pindexLast->nBits).getuint256().ToString().c_str());
+  printf("After: %08x %s\n", bnNew.GetCompact(), bnNew.getuint256().ToString().c_str());
+
+  return bnNew.GetCompact();
+}
+
+unsigned int EMC2Block::GetNextWorkRequired(const CBlockIndex* pindexLast)
+{
+  int nHeight = pindexLast->nHeight + 1;
+  bool fNewDifficultyProtocol = (nHeight >= emc2_nDiffChangeTarget);
+
+  if (fNewDifficultyProtocol) {
+    return emc2_DigiShield(pindexLast, this);
+  }
+  else {
+
+    static const int64           BlocksTargetSpacing       = 60; // 1 minute
+    unsigned int                       TimeDaySeconds                                = 60 * 60 * 24;
+    int64                                PastSecondsMin                                = TimeDaySeconds * 0.25;
+    int64                                PastSecondsMax                                = TimeDaySeconds * 7;
+    uint64                                PastBlocksMin                                = PastSecondsMin / BlocksTargetSpacing;
+    uint64                                PastBlocksMax                                = PastSecondsMax / BlocksTargetSpacing;
+
+    return emc2_KimotoGravityWell(pindexLast, this, BlocksTargetSpacing, PastBlocksMin, PastBlocksMax);
+  }
 }
 
 
 
-unsigned int OMNIBlock::GetNextWorkRequired(const CBlockIndex* pindexLast)
+#include <boost/random/mersenne_twister.hpp>
+#include <boost/random/uniform_int.hpp>
+#include <boost/random/variate_generator.hpp>
+
+static int emc2_generateMTRandom(unsigned int s, int range)
 {
-  if (pindexLast->nHeight == 160)
-    return omni_bnStartDifficulty.GetCompact();
-
-  static const int64  BlocksTargetSpacing     = 3 * 60;
-  unsigned int    TimeDaySeconds        = 60 * 60 * 24;
-  int64       PastSecondsMin        = TimeDaySeconds * 3 * 0.1;
-  int64       PastSecondsMax        = TimeDaySeconds * 3 * 2.8;
-  uint64        PastBlocksMin       = PastSecondsMin / BlocksTargetSpacing;
-  uint64        PastBlocksMax       = PastSecondsMax / BlocksTargetSpacing;
-
-  return KimotoGravityWell(pindexLast, this, BlocksTargetSpacing, PastBlocksMin, PastBlocksMax);
+  boost::mt19937 gen(s);
+  boost::uniform_int<> dist(1, range);
+  return dist(gen);
 }
 
-
-
-int64 omni_GetBlockValue(int nHeight, int64 nFees)
+int64 emc2_GetBlockValue(int nHeight, int64 nFees)
 {
-  if (nHeight == 0) return (88 * COIN);
 
-  int64 nSubsidy = 66.85 * COIN;
-  nSubsidy >>= (nHeight / 100010); // Subsidy halving
+  if (nHeight == 0)
+    return (50 * COIN);
+
+  int64 nSubsidy = 0;
+  int StartOffset;
+  int WormholeStartBlock;
+  int mod = nHeight % 36000;
+  if (mod != 0) mod = 1;
+
+  int epoch = (nHeight / 36000) + mod;
+  long wseed = 5299860 * epoch; // Discovered: 1952, Atomic number: 99 Melting Point: 860
+
+  StartOffset = emc2_generateMTRandom(wseed, 35820);
+  WormholeStartBlock = StartOffset + ((epoch - 1)  * 36000); // Wormholes start from Epoch 2
+
+
+  if(epoch > 1 && epoch < 148 && nHeight >= WormholeStartBlock && nHeight < WormholeStartBlock + 180)  
+  {   
+    nSubsidy = 2973 * COIN;
+  }       
+  else
+  {
+    if (nHeight == 1) nSubsidy = 10747 * COIN;
+    else if (nHeight <= 72000) nSubsidy = 1024 * COIN;
+    else if(nHeight <= 144000) nSubsidy = 512 * COIN;
+    else if(nHeight <= 288000) nSubsidy = 256 * COIN;
+    else if(nHeight <= 432000) nSubsidy = 128 * COIN;
+    else if(nHeight <= 576000) nSubsidy = 64 * COIN;
+    else if(nHeight <= 864000) nSubsidy = 32 * COIN;
+    else if(nHeight <= 1080000) nSubsidy = 16 * COIN;
+    else if (nHeight <= 1584000) nSubsidy = 8 * COIN;
+    else if (nHeight <= 2304000) nSubsidy = 4 * COIN;
+    else if (nHeight <= 5256000) nSubsidy = 2 * COIN;
+    else if (nHeight <= 26280000) nSubsidy = 1 * COIN;
+
+  }
+
   return nSubsidy + nFees;
 }
 
-namespace OMNI_Checkpoints
+namespace EMC2_Checkpoints
 {
   typedef std::map<int, uint256> MapCheckpoints;
 
@@ -185,29 +294,11 @@ namespace OMNI_Checkpoints
   //
   static MapCheckpoints mapCheckpoints =
     boost::assign::map_list_of
-    ( 0, uint256("0x721abe3814e15f1ab50514c8b7fffa7578c1f35aa915275ee91f4cb8d02be5c4") )
-/*
-    ( 1, uint256("0xec9c4d88a04ede4cd777234ac504084c36cb25080c45b4741e2cfc0d5994359a"))
-    ( 50, uint256("0x253e145aae6b516ac47b9f6855675bea6f589922b74195cee77b31df1ebbc8c7"))
-    ( 3000, uint256("0xb0bf45beaad4446c666158baee04488267e622fabc49e6686b798ccd122018fe"))
-    ( 8000, uint256("0xde808d01865606385726824fd9f1466aacb94f233cd9713dc989333bcea15312"))
-    ( 10000, uint256("0xb5bab4cfa3e92985302a95afeb1b42755d6c240e73af61deb2599cb72aba991e"))
-    ( 20000, uint256("0x2f35019fbf04de7287aaa18b4010d2317779aac0a875183ff52934b8a3fee685"))
-    ( 135798, uint256("0xbd8423b7e21e1422953008db6ab7197b71b4cfabb9d9e69cc0cbcdcd7dd86b30"))
-    ( 1000, uint256("0xa59b03d739edd29c98cf563a1f7b57e7da8306abcae4e18397bd1e320fa79007"))
-    ( 100000, uint256("0x9376d399b8b3f34549d05b6858f4cba534e78cba2306c414117dcaa057c23081"))
-    ( 250000, uint256("0x7e86b4d451fcfdf4c59e7f0a8081b33366a50a82b276073c55b758d7769333bf"))
-    ( 444444, uint256("0xd4b76e38fe481aef65e4dcc52703f34187aff8dcd037b1ab7abe7b7429af7d95"))
-    ( 500000, uint256("0x17a3060325e40e311b42763d44574b3f63a3525f1f7644588fe00ca824c7b21e"))
-    ( 750000, uint256("0xa3b1c4f90225299fef3a43851be960b49ca70e8500d1891612e2836cfbeed188"))
-    ( 888888, uint256("0x96d7bf79871c8d6d887e098c444071cfda4548e502d1965e255b1b0e71c93c7a"))
-    ( 1000000, uint256("0xd444bebec6a7f1345e6bee094d913bdfff0b7ae833c3e3f17b90c98fdc899aa4"))
-    ( 1047382, uint256("0x7489d8515228bc90bf43ca09af944e5b3e13f43f1a15f80ae5f211533a26e791"))
-    ( 1084324, uint256("0x59e7296adef10db8f517c1e05cc10b1d83925ebe53d81608a5f929ca3b98d94b"))
-    ( 1087716, uint256("0xfd322ca21f75bb01a92d903fd435a48a70fc416b2f439d3eadfbd4385138b5b7"))
-    ( 1087717, uint256("0x23fad9f5b12079dea9362a51d77e70f49a4d484ad93ca3b0e97fac38fd0addc5"))
-    ( 1087718, uint256("0xa5c0965a380a1a5f99065472da29f5a3f1fc4c9713072597e63e402f87f1812e"))
-*/
+    (       0, uint256("0x4e56204bb7b8ac06f860ff1c845f03f984303b5b97eb7b42868f714611aed94b"))
+    (   14871, uint256("0x5dedc3dd860f008c717d69b8b00f0476de8bc6bdac8d543fb58c946f32f982fa"))
+    (   36032, uint256("0xff37468190b2801f2e72eb1762ca4e53cda6c075af48343f28a32b649512e9a8"))
+    (   51365, uint256("0x702b407c68091f3c97a587a8d92684666bb622f6821944424b850964b366e42c"))
+    (  621000, uint256("0xe2bf6d219cff9d6d7661b7964a05bfea3128265275c3673616ae71fed7072981"))
     ;
 
 
@@ -243,7 +334,7 @@ namespace OMNI_Checkpoints
 }
 
 
-static bool omni_ConnectInputs(CTransaction *tx, MapPrevTx inputs, map<uint256, CTxIndex>& mapTestPool, const CDiskTxPos& posThisTx, const CBlockIndex* pindexBlock, bool fBlock, bool fMiner, bool fStrictPayToScriptHash=true)
+static bool emc2_ConnectInputs(CTransaction *tx, MapPrevTx inputs, map<uint256, CTxIndex>& mapTestPool, const CDiskTxPos& posThisTx, const CBlockIndex* pindexBlock, bool fBlock, bool fMiner, bool fStrictPayToScriptHash=true)
 {
 
   if (tx->IsCoinBase())
@@ -251,7 +342,7 @@ static bool omni_ConnectInputs(CTransaction *tx, MapPrevTx inputs, map<uint256, 
 
   // Take over previous transactions' spent pointers
   // fBlock is true when this is called from AcceptBlock when a new best-block is added to the blockchain
-  // fMiner is true when called from the internal omni miner
+  // fMiner is true when called from the internal emc2 miner
   // ... both are false when called from CTransaction::AcceptToMemoryPool
 
   int64 nValueIn = 0;
@@ -264,18 +355,18 @@ static bool omni_ConnectInputs(CTransaction *tx, MapPrevTx inputs, map<uint256, 
     CTransaction& txPrev = inputs[prevout.hash].second;
 
     if (prevout.n >= txPrev.vout.size() || prevout.n >= txindex.vSpent.size())
-      return error(SHERR_INVAL, "ConnectInputs() : %s prevout.n out of range %d %d %d prev tx %s\n%s", tx->GetHash().ToString().substr(0,10).c_str(), prevout.n, txPrev.vout.size(), txindex.vSpent.size(), prevout.hash.ToString().substr(0,10).c_str(), txPrev.ToString().c_str());
+      return error(SHERR_INVAL, "ConnectInputs() : %s prevout.n out of range %d %d %d prev tx %s", tx->GetHash().ToString().substr(0,10).c_str(), prevout.n, txPrev.vout.size(), txindex.vSpent.size(), prevout.hash.ToString().substr(0,10).c_str());
 
     // If prev is coinbase, check that it's matured
     if (txPrev.IsCoinBase())
-      for (const CBlockIndex* pindex = pindexBlock; pindex && pindexBlock->nHeight - pindex->nHeight < OMNI_COINBASE_MATURITY; pindex = pindex->pprev)
+      for (const CBlockIndex* pindex = pindexBlock; pindex && pindexBlock->nHeight - pindex->nHeight < EMC2_COINBASE_MATURITY; pindex = pindex->pprev)
         //if (pindex->nBlockPos == txindex.pos.nBlockPos && pindex->nFile == txindex.pos.nFile)
         if (pindex->nHeight == txindex.pos.nBlockPos)// && pindex->nFile == txindex.pos.nFile)
           return error(SHERR_INVAL, "ConnectInputs() : tried to spend coinbase at depth %d", pindexBlock->nHeight - pindex->nHeight);
 
     // Check for negative or overflow input values
     nValueIn += txPrev.vout[prevout.n].nValue;
-    if (!MoneyRange(OMNI_COIN_IFACE, txPrev.vout[prevout.n].nValue) || !MoneyRange(OMNI_COIN_IFACE, nValueIn))
+    if (!MoneyRange(EMC2_COIN_IFACE, txPrev.vout[prevout.n].nValue) || !MoneyRange(EMC2_COIN_IFACE, nValueIn))
       return error(SHERR_INVAL, "ConnectInputs() : txin values out of range");
 
   }
@@ -292,13 +383,13 @@ static bool omni_ConnectInputs(CTransaction *tx, MapPrevTx inputs, map<uint256, 
     /* this coin has been marked as spent. ensure this is not a re-write of the same transaction. */
     if (tx->IsSpentTx(txindex.vSpent[prevout.n])) {
       if (fMiner) return false;
-      return error(SHERR_INVAL, "(omni) ConnectInputs: %s prev tx (%s) already used at %s", tx->GetHash().GetHex().c_str(), txPrev.GetHash().GetHex().c_str(), txindex.vSpent[prevout.n].ToString().c_str());
+      return error(SHERR_INVAL, "(emc2) ConnectInputs: %s prev tx (%s) already used at %s", tx->GetHash().GetHex().c_str(), txPrev.GetHash().GetHex().c_str(), txindex.vSpent[prevout.n].ToString().c_str());
     }
 
     // Skip ECDSA signature verification when connecting blocks (fBlock=true)
     // before the last blockchain checkpoint. This is safe because block merkle hashes are
     // still computed and checked, and any change will be caught at the next checkpoint.
-    if (!(fBlock && (GetBestHeight(OMNI_COIN_IFACE < OMNI_Checkpoints::GetTotalBlocksEstimate()))))
+    if (!(fBlock && (GetBestHeight(EMC2_COIN_IFACE < EMC2_Checkpoints::GetTotalBlocksEstimate()))))
     {
       // Verify signature
       if (!VerifySignature(txPrev, *tx, i, fStrictPayToScriptHash, 0))
@@ -330,29 +421,30 @@ static bool omni_ConnectInputs(CTransaction *tx, MapPrevTx inputs, map<uint256, 
   if (nTxFee < 0)
     return error(SHERR_INVAL, "ConnectInputs() : %s nTxFee < 0", tx->GetHash().ToString().substr(0,10).c_str());
   nFees += nTxFee;
-  if (!MoneyRange(OMNI_COIN_IFACE, nFees))
+  if (!MoneyRange(EMC2_COIN_IFACE, nFees))
     return error(SHERR_INVAL, "ConnectInputs() : nFees out of range");
 
   return true;
 }
 
-CBlock* omni_CreateNewBlock(CReserveKey& reservekey)
+CBlock* emc2_CreateNewBlock(CReserveKey& reservekey)
 {
-  CIface *iface = GetCoinByIndex(OMNI_COIN_IFACE);
+  CIface *iface = GetCoinByIndex(EMC2_COIN_IFACE);
   CBlockIndex* pindexPrev = GetBestBlockIndex(iface);
 
   // Create new block
   //auto_ptr<CBlock> pblock(new CBlock());
-  auto_ptr<OMNIBlock> pblock(new OMNIBlock());
+  auto_ptr<EMC2Block> pblock(new EMC2Block());
   if (!pblock.get())
     return NULL;
 
-  // Create coinbase tx
+  /* create emc2 coinbase tx */
   CTransaction txNew;
   txNew.vin.resize(1);
   txNew.vin[0].prevout.SetNull();
-  txNew.vout.resize(1);
-  txNew.vout[0].scriptPubKey << reservekey.GetReservedKey() << OP_CHECKSIG;
+  txNew.vout.resize(2);
+  txNew.vout[0].scriptPubKey = EMC2_CHARITY_SCRIPT;
+  txNew.vout[1].scriptPubKey << reservekey.GetReservedKey() << OP_CHECKSIG;
 
   // Add our coinbase tx as first transaction
   pblock->vtx.push_back(txNew);
@@ -360,31 +452,31 @@ CBlock* omni_CreateNewBlock(CReserveKey& reservekey)
   // Collect memory pool transactions into the block
   int64 nFees = 0;
   {
-    LOCK2(cs_main, OMNIBlock::mempool.cs);
-    OMNITxDB txdb; 
+    LOCK2(cs_main, EMC2Block::mempool.cs);
+    EMC2TxDB txdb; 
 
     // Priority order to process transactions
-    list<OMNIOrphan> vOrphan; // list memory doesn't move
-    map<uint256, vector<OMNIOrphan*> > mapDependers;
+    list<EMC2Orphan> vOrphan; // list memory doesn't move
+    map<uint256, vector<EMC2Orphan*> > mapDependers;
     multimap<double, CTransaction*> mapPriority;
-    for (map<uint256, CTransaction>::iterator mi = OMNIBlock::mempool.mapTx.begin(); mi != OMNIBlock::mempool.mapTx.end(); ++mi)
+    for (map<uint256, CTransaction>::iterator mi = EMC2Block::mempool.mapTx.begin(); mi != EMC2Block::mempool.mapTx.end(); ++mi)
     {
       CTransaction& tx = (*mi).second;
-      if (tx.IsCoinBase() || !tx.IsFinal(OMNI_COIN_IFACE))
+      if (tx.IsCoinBase() || !tx.IsFinal(EMC2_COIN_IFACE))
         continue;
 
-      OMNIOrphan* porphan = NULL;
+      EMC2Orphan* porphan = NULL;
       double dPriority = 0;
       BOOST_FOREACH(const CTxIn& txin, tx.vin)
       {
         // Read prev transaction
         CTransaction txPrev;
-        if (!txPrev.ReadTx(OMNI_COIN_IFACE, txin.prevout.hash)) {
+        if (!txPrev.ReadTx(EMC2_COIN_IFACE, txin.prevout.hash)) {
           // Has to wait for dependencies
           if (!porphan)
           {
             // Use list for automatic deletion
-            vOrphan.push_back(OMNIOrphan(&tx));
+            vOrphan.push_back(EMC2Orphan(&tx));
             porphan = &vOrphan.back();
           }
           mapDependers[txin.prevout.hash].push_back(porphan);
@@ -393,7 +485,7 @@ CBlock* omni_CreateNewBlock(CReserveKey& reservekey)
         }
 
 if (txPrev.vout.size() <= txin.prevout.n) {
-fprintf(stderr, "DEBUG: omni_CreateNewBlock: txPrev.vout.size() %d <= txin.prevout.n %d [tx %s]\n", 
+fprintf(stderr, "DEBUG: emc2_CreateNewBlock: txPrev.vout.size() %d <= txin.prevout.n %d [tx %s]\n", 
  txPrev.vout.size(),
  txin.prevout.n,
 txPrev.GetHash().GetHex().c_str());
@@ -413,13 +505,14 @@ continue;
       }
 
       // Priority is sum(valuein * age) / txsize
-      dPriority /= ::GetSerializeSize(tx, SER_NETWORK, OMNI_PROTOCOL_VERSION);
+      dPriority /= ::GetSerializeSize(tx, SER_NETWORK, EMC2_PROTOCOL_VERSION);
 
       if (porphan)
         porphan->dPriority = dPriority;
       else
         mapPriority.insert(make_pair(-dPriority, &(*mi).second));
 
+#if 0
       if (fDebug && GetBoolArg("-printpriority"))
       {
         printf("priority %-20.1f %s\n%s", dPriority, tx.GetHash().ToString().substr(0,10).c_str(), tx.ToString().c_str());
@@ -427,6 +520,7 @@ continue;
           porphan->print();
         printf("\n");
       }
+#endif
     }
 
     // Collect transactions into block
@@ -442,7 +536,7 @@ continue;
       mapPriority.erase(mapPriority.begin());
 
       // Size limits
-      unsigned int nTxSize = ::GetSerializeSize(tx, SER_NETWORK, OMNI_PROTOCOL_VERSION);
+      unsigned int nTxSize = ::GetSerializeSize(tx, SER_NETWORK, EMC2_PROTOCOL_VERSION);
       if (nBlockSize + nTxSize >= MAX_BLOCK_SIZE_GEN(iface))
         continue;
 
@@ -452,7 +546,7 @@ continue;
         continue;
 
       // Transaction fee required depends on block size
-      // omnid: Reduce the exempted free transactions to 500 bytes (from Bitcoin's 3000 bytes)
+      // emc2d: Reduce the exempted free transactions to 500 bytes (from Bitcoin's 3000 bytes)
       bool fAllowFree = (nBlockSize + nTxSize < 1500 || CTransaction::AllowFree(dPriority));
       int64 nMinFee = tx.GetMinFee(nBlockSize, fAllowFree, GMF_BLOCK);
 
@@ -472,7 +566,7 @@ continue;
       if (nBlockSigOps + nTxSigOps >= MAX_BLOCK_SIGOPS(iface))
         continue;
 
-      if (!omni_ConnectInputs(&tx, mapInputs, mapTestPoolTmp, CDiskTxPos(0,0,0), pindexPrev, false, true))
+      if (!emc2_ConnectInputs(&tx, mapInputs, mapTestPoolTmp, CDiskTxPos(0,0,0), pindexPrev, false, true))
         continue;
       mapTestPoolTmp[tx.GetHash()] = CTxIndex(CDiskTxPos(0,0,0), tx.vout.size());
       swap(mapTestPool, mapTestPoolTmp);
@@ -488,7 +582,7 @@ continue;
       uint256 hash = tx.GetHash();
       if (mapDependers.count(hash))
       {
-        BOOST_FOREACH(OMNIOrphan* porphan, mapDependers[hash])
+        BOOST_FOREACH(EMC2Orphan* porphan, mapDependers[hash])
         {
           if (!porphan->setDependsOn.empty())
           {
@@ -509,7 +603,12 @@ continue;
 #endif
 
   }
-  pblock->vtx[0].vout[0].nValue = omni_GetBlockValue(pindexPrev->nHeight+1, nFees);
+
+  /* assign reward(s) */
+  int64 nReward = emc2_GetBlockValue(pindexPrev->nHeight+1, 0);
+  int64 nCharity = nReward * 2.5 / 100;
+  pblock->vtx[0].vout[0].nValue = nCharity;
+  pblock->vtx[0].vout[1].nValue = (nReward - nCharity) + nFees;
 
   // Fill in header
   pblock->hashPrevBlock  = pindexPrev->GetBlockHash();
@@ -517,41 +616,44 @@ continue;
   pblock->UpdateTime(pindexPrev);
   pblock->nBits          = pblock->GetNextWorkRequired(pindexPrev);
   pblock->nNonce         = 0;
+  pblock->vtx[0].vin[0].scriptSig = CScript() << OP_0 << OP_0;
 
   return pblock.release();
 }
 
 
-bool omni_CreateGenesisBlock()
+bool emc2_CreateGenesisBlock()
 {
-  blkidx_t *blockIndex = GetBlockTable(OMNI_COIN_IFACE);
+  blkidx_t *blockIndex = GetBlockTable(EMC2_COIN_IFACE);
   bool ret;
 
-  if (blockIndex->count(omni_hashGenesisBlock) != 0)
+  if (blockIndex->count(emc2_hashGenesisBlock) != 0)
     return (true); /* already created */
 
   /* Genesis block */
-  const char* pszTimestamp = "Leafondo";
+  const char* pszTimestamp = "NY Times 19/Feb/2014 North Korea Arrests Christian Missionary From Australia";
   CTransaction txNew;
   txNew.vin.resize(1);
   txNew.vout.resize(1);
   txNew.vin[0].scriptSig = CScript() << 486604799 << CBigNum(4) << vector<unsigned char>((const unsigned char*)pszTimestamp, (const unsigned char*)pszTimestamp + strlen(pszTimestamp));
-  txNew.vout[0].nValue = 88 * COIN;
-  txNew.vout[0].scriptPubKey = CScript() << ParseHex("040184710fa689ad5023690c80f3a49c8f13f8d45b8c857fbcbc8bc4a8e4d3eb4b10f4d4604fa08dce601aaf0f470216fe1b51850b4acf21b179c45070ac7b03a9") << OP_CHECKSIG;
-  OMNIBlock block;
+  txNew.vout[0].nValue = 50 * COIN;
+  txNew.vout[0].scriptPubKey = EMC2_CHARITY_SCRIPT;
+  EMC2Block block;
   block.vtx.push_back(txNew);
   block.hashPrevBlock = 0;
   block.hashMerkleRoot = block.BuildMerkleTree();
   block.nVersion = 1;
-  block.nTime    = 1388880557;
+  block.nTime    = 1392841423;
   block.nBits    = 0x1e0ffff0;
-  block.nNonce   = 751211697;
+  block.nNonce   = 3236648;
+
 
   block.print();
-  if (block.GetHash() != omni_hashGenesisBlock)
+  if (block.GetHash() != emc2_hashGenesisBlock)
     return (false);
-  if (block.hashMerkleRoot != uint256("0x35e6a0e897ed76cd5f08b75d118fb7c99aec7cdd297b96c21dc6671d2034c953"))
-    return (false);
+  if (block.hashMerkleRoot != uint256("0xb3e47e8776012ee4352acf603e6b9df005445dcba85c606697f422be3cc26f9b")) {
+    return (error(SHERR_INVAL, "emc2_CreateGenesisBlock: invalid merkle root generated."));
+  }
 
   if (!block.WriteBlock(0)) {
     return (false);
@@ -561,8 +663,8 @@ bool omni_CreateGenesisBlock()
   if (!ret)
     return (false);
 
-  OMNITxDB txdb;
-  block.SetBestChain(txdb, (*blockIndex)[omni_hashGenesisBlock]);
+  EMC2TxDB txdb;
+  block.SetBestChain(txdb, (*blockIndex)[emc2_hashGenesisBlock]);
   txdb.Close();
 
   return (true);
@@ -578,7 +680,7 @@ bool omni_CreateGenesisBlock()
 
 
 
-static bool omni_IsFromMe(CTransaction& tx)
+static bool emc2_IsFromMe(CTransaction& tx)
 {
   BOOST_FOREACH(CWallet* pwallet, setpwalletRegistered)
     if (pwallet->IsFromMe(tx))
@@ -586,18 +688,18 @@ static bool omni_IsFromMe(CTransaction& tx)
   return false;
 }
 
-static void omni_EraseFromWallets(uint256 hash)
+static void emc2_EraseFromWallets(uint256 hash)
 {
   BOOST_FOREACH(CWallet* pwallet, setpwalletRegistered)
     pwallet->EraseFromWallet(hash);
 }
 
-bool OMNI_CTxMemPool::accept(CTxDB& txdb, CTransaction &tx, bool fCheckInputs, bool* pfMissingInputs)
+bool EMC2_CTxMemPool::accept(CTxDB& txdb, CTransaction &tx, bool fCheckInputs, bool* pfMissingInputs)
 {
   if (pfMissingInputs)
     *pfMissingInputs = false;
 
-  if (!tx.CheckTransaction(OMNI_COIN_IFACE))
+  if (!tx.CheckTransaction(EMC2_COIN_IFACE))
     return error(SHERR_INVAL, "CTxMemPool::accept() : CheckTransaction failed");
 
   // Coinbase is only valid in a block, not as a loose transaction
@@ -630,7 +732,7 @@ bool OMNI_CTxMemPool::accept(CTxDB& txdb, CTransaction &tx, bool fCheckInputs, b
     COutPoint outpoint = tx.vin[i].prevout;
     if (mapNextTx.count(outpoint))
     {
-      // omni disallow's replacement of previous tx
+      // emc2 disallow's replacement of previous tx
       return false;
     }
   }
@@ -658,7 +760,7 @@ bool OMNI_CTxMemPool::accept(CTxDB& txdb, CTransaction &tx, bool fCheckInputs, b
     // reasonable number of ECDSA signature verifications.
 
     int64 nFees = tx.GetValueIn(mapInputs)-tx.GetValueOut();
-    unsigned int nSize = ::GetSerializeSize(tx, SER_NETWORK, OMNI_PROTOCOL_VERSION);
+    unsigned int nSize = ::GetSerializeSize(tx, SER_NETWORK, EMC2_PROTOCOL_VERSION);
 
     // Don't accept it if it can't get into a block
     if (nFees < tx.GetMinFee(1000, true, GMF_RELAY))
@@ -667,7 +769,7 @@ bool OMNI_CTxMemPool::accept(CTxDB& txdb, CTransaction &tx, bool fCheckInputs, b
     // Continuously rate-limit free transactions
     // This mitigates 'penny-flooding' -- sending thousands of free transactions just to
     // be annoying or make other's transactions take longer to confirm.
-    if (nFees < OMNI_MIN_RELAY_TX_FEE)
+    if (nFees < EMC2_MIN_RELAY_TX_FEE)
     {
       static CCriticalSection cs;
       static double dFreeCount;
@@ -681,7 +783,7 @@ bool OMNI_CTxMemPool::accept(CTxDB& txdb, CTransaction &tx, bool fCheckInputs, b
         nLastTime = nNow;
         // -limitfreerelay unit is thousand-bytes-per-minute
         // At default rate it would take over a month to fill 1GB
-        if (dFreeCount > GetArg("-limitfreerelay", 15)*10*1000 && !omni_IsFromMe(tx))
+        if (dFreeCount > GetArg("-limitfreerelay", 15)*10*1000 && !emc2_IsFromMe(tx))
           return error(SHERR_INVAL, "CTxMemPool::accept() : free transaction rejected by rate limiter");
         Debug("Rate limit dFreeCount: %g => %g\n", dFreeCount, dFreeCount+nSize);
         dFreeCount += nSize;
@@ -691,7 +793,7 @@ bool OMNI_CTxMemPool::accept(CTxDB& txdb, CTransaction &tx, bool fCheckInputs, b
     // Check against previous transactions
     // This is done last to help prevent CPU exhaustion denial-of-service attacks.
 
-    if (!omni_ConnectInputs(&tx, mapInputs, mapUnused, CDiskTxPos(0,0,0), GetBestBlockIndex(OMNI_COIN_IFACE), false, false))
+    if (!emc2_ConnectInputs(&tx, mapInputs, mapUnused, CDiskTxPos(0,0,0), GetBestBlockIndex(EMC2_COIN_IFACE), false, false))
     {
       return error(SHERR_INVAL, "CTxMemPool::accept() : ConnectInputs failed %s", hash.ToString().substr(0,10).c_str());
     }
@@ -711,16 +813,16 @@ bool OMNI_CTxMemPool::accept(CTxDB& txdb, CTransaction &tx, bool fCheckInputs, b
   ///// are we sure this is ok when loading transactions or restoring block txes
   // If updated, erase old tx from wallet
   if (ptxOld)
-    omni_EraseFromWallets(ptxOld->GetHash());
+    emc2_EraseFromWallets(ptxOld->GetHash());
 
-  Debug("(omni) mempool accepted %s (pool-size %u)\n",
+  Debug("(emc2) mempool accepted %s (pool-size %u)\n",
       hash.ToString().c_str(), mapTx.size());
   return true;
 }
 
-bool OMNI_CTxMemPool::addUnchecked(const uint256& hash, CTransaction &tx)
+bool EMC2_CTxMemPool::addUnchecked(const uint256& hash, CTransaction &tx)
 {
-  CIface *iface = GetCoinByIndex(OMNI_COIN_IFACE);
+  CIface *iface = GetCoinByIndex(EMC2_COIN_IFACE);
 
   // Add to memory pool without checking anything.  Don't call this directly,
   // call CTxMemPool::accept to properly check the transaction first.
@@ -734,9 +836,9 @@ bool OMNI_CTxMemPool::addUnchecked(const uint256& hash, CTransaction &tx)
 }
 
 
-bool OMNI_CTxMemPool::remove(CTransaction &tx)
+bool EMC2_CTxMemPool::remove(CTransaction &tx)
 {
-  CIface *iface = GetCoinByIndex(OMNI_COIN_IFACE);
+  CIface *iface = GetCoinByIndex(EMC2_COIN_IFACE);
 
   // Remove transaction from memory pool
   {
@@ -753,7 +855,7 @@ bool OMNI_CTxMemPool::remove(CTransaction &tx)
   return true;
 }
 
-void OMNI_CTxMemPool::queryHashes(std::vector<uint256>& vtxid)
+void EMC2_CTxMemPool::queryHashes(std::vector<uint256>& vtxid)
 {
     vtxid.clear();
 
@@ -763,12 +865,12 @@ void OMNI_CTxMemPool::queryHashes(std::vector<uint256>& vtxid)
         vtxid.push_back((*mi).first);
 }
 
-uint256 omni_GetOrphanRoot(const CBlock* pblock)
+uint256 emc2_GetOrphanRoot(const CBlock* pblock)
 {
 
   // Work back to the first block in the orphan chain
-  while (OMNI_mapOrphanBlocks.count(pblock->hashPrevBlock))
-    pblock = OMNI_mapOrphanBlocks[pblock->hashPrevBlock];
+  while (EMC2_mapOrphanBlocks.count(pblock->hashPrevBlock))
+    pblock = EMC2_mapOrphanBlocks[pblock->hashPrevBlock];
   return pblock->GetHash();
 
 }
@@ -776,30 +878,33 @@ uint256 omni_GetOrphanRoot(const CBlock* pblock)
 
 
 /** minimum amount of work that could possibly be required nTime after minimum work required was nBase */
-unsigned int omni_ComputeMinWork(unsigned int nBase, int64 nTime)
+unsigned int emc2_ComputeMinWork(unsigned int nBase, int64 nTime)
 {
-  // Testnet has min-difficulty blocks
-  // after omni_nTargetSpacing*2 time between blocks:
-  if (fTestNet && nTime > omni_nTargetSpacing*2)
-    return omni_bnProofOfWorkLimit.GetCompact();
-
   CBigNum bnResult;
   bnResult.SetCompact(nBase);
-  while (nTime > 0 && bnResult < omni_bnProofOfWorkLimit)
+  while (nTime > 0 && bnResult < emc2_bnProofOfWorkLimit)
   {
-    // Maximum 400% adjustment...
-    bnResult *= 4;
-    // ... in best-case exactly 4-times-normal target time
-    nTime -= omni_nTargetTimespan*4;
+    if(GetBestHeight(EMC2_COIN_IFACE)+1<emc2_nDiffChangeTarget){
+      // Maximum 400% adjustment...
+      bnResult *= 4;
+      // ... in best-case exactly 4-times-normal target time
+      nTime -= emc2_nTargetTimespan*4;
+    } else {
+      // Maximum 10% adjustment...
+      bnResult = (bnResult * 110) / 100;
+      // ... in best-case exactly 4-times-normal target time
+      nTime -= emc2_nTargetTimespanNEW*4;
+    }
   }
-  if (bnResult > omni_bnProofOfWorkLimit)
-    bnResult = omni_bnProofOfWorkLimit;
+  if (bnResult > emc2_bnProofOfWorkLimit)
+    bnResult = emc2_bnProofOfWorkLimit;
   return bnResult.GetCompact();
 }
 
-bool omni_ProcessBlock(CNode* pfrom, CBlock* pblock)
+
+bool emc2_ProcessBlock(CNode* pfrom, CBlock* pblock)
 {
-  int ifaceIndex = OMNI_COIN_IFACE;
+  int ifaceIndex = EMC2_COIN_IFACE;
   CIface *iface = GetCoinByIndex(ifaceIndex);
   blkidx_t *blockIndex = GetBlockTable(ifaceIndex); 
   shtime_t ts;
@@ -809,7 +914,7 @@ bool omni_ProcessBlock(CNode* pfrom, CBlock* pblock)
 
   if (blockIndex->count(hash))
     return Debug("ProcessBlock() : already have block %s", hash.GetHex().c_str());
-  if (OMNI_mapOrphanBlocks.count(hash))
+  if (EMC2_mapOrphanBlocks.count(hash))
     return Debug("ProcessBlock() : already have block (orphan) %s", hash.ToString().substr(0,20).c_str());
 
   // Preliminary checks
@@ -818,7 +923,7 @@ pblock->print();
     return error(SHERR_INVAL, "ProcessBlock() : CheckBlock FAILED");
   }
 
-  CBlockIndex* pcheckpoint = OMNI_Checkpoints::GetLastCheckpoint(*blockIndex);
+  CBlockIndex* pcheckpoint = EMC2_Checkpoints::GetLastCheckpoint(*blockIndex);
   if (pcheckpoint && pblock->hashPrevBlock != GetBestBlockChain(iface))
   {
     // Extra checks to prevent "fill up memory by spamming with bogus blocks"
@@ -833,7 +938,7 @@ pblock->print();
     CBigNum bnNewBlock;
     bnNewBlock.SetCompact(pblock->nBits);
     CBigNum bnRequired;
-    bnRequired.SetCompact(omni_ComputeMinWork(pcheckpoint->nBits, deltaTime));
+    bnRequired.SetCompact(emc2_ComputeMinWork(pcheckpoint->nBits, deltaTime));
     if (bnNewBlock > bnRequired)
     {
       if (pfrom)
@@ -845,16 +950,16 @@ pblock->print();
 
   /* block is considered orphan when previous block or one of the transaction's input hashes is unknown. */
   if (!blockIndex->count(pblock->hashPrevBlock) ||
-      !pblock->CheckTransactionInputs(OMNI_COIN_IFACE)) {
-    error(SHERR_INVAL, "(omni) ProcessBlock: warning: ORPHAN BLOCK, prev=%s\n", pblock->hashPrevBlock.GetHex().c_str());
+      !pblock->CheckTransactionInputs(EMC2_COIN_IFACE)) {
+    error(SHERR_INVAL, "(emc2) ProcessBlock: warning: ORPHAN BLOCK, prev=%s\n", pblock->hashPrevBlock.GetHex().c_str());
 
-    OMNIBlock* pblock2 = new OMNIBlock(*pblock);
-    OMNI_mapOrphanBlocks.insert(make_pair(hash, pblock2));
-    OMNI_mapOrphanBlocksByPrev.insert(make_pair(pblock2->hashPrevBlock, pblock2));
+    EMC2Block* pblock2 = new EMC2Block(*pblock);
+    EMC2_mapOrphanBlocks.insert(make_pair(hash, pblock2));
+    EMC2_mapOrphanBlocksByPrev.insert(make_pair(pblock2->hashPrevBlock, pblock2));
 
     // Ask this guy to fill in what we're missing
     if (pfrom) {
-      pfrom->PushGetBlocks(GetBestBlockIndex(OMNI_COIN_IFACE), omni_GetOrphanRoot(pblock2));
+      pfrom->PushGetBlocks(GetBestBlockIndex(EMC2_COIN_IFACE), emc2_GetOrphanRoot(pblock2));
 }
 
     return true;
@@ -866,7 +971,7 @@ pblock->print();
     iface->net_invalid = time(NULL);
     return error(SHERR_INVAL, "ProcessBlock() : AcceptBlock FAILED");
   }
-  ServiceBlockEventUpdate(OMNI_COIN_IFACE);
+  ServiceBlockEventUpdate(EMC2_COIN_IFACE);
 
   // Recursively process any orphan blocks that depended on this one
   vector<uint256> vWorkQueue;
@@ -874,31 +979,31 @@ pblock->print();
   for (unsigned int i = 0; i < vWorkQueue.size(); i++)
   {
     uint256 hashPrev = vWorkQueue[i];
-    for (multimap<uint256, OMNIBlock*>::iterator mi = OMNI_mapOrphanBlocksByPrev.lower_bound(hashPrev);
-        mi != OMNI_mapOrphanBlocksByPrev.upper_bound(hashPrev);
+    for (multimap<uint256, EMC2Block*>::iterator mi = EMC2_mapOrphanBlocksByPrev.lower_bound(hashPrev);
+        mi != EMC2_mapOrphanBlocksByPrev.upper_bound(hashPrev);
         ++mi)
     {
       CBlock* pblockOrphan = (*mi).second;
       if (pblockOrphan->AcceptBlock())
         vWorkQueue.push_back(pblockOrphan->GetHash());
 
-      OMNI_mapOrphanBlocks.erase(pblockOrphan->GetHash());
+      EMC2_mapOrphanBlocks.erase(pblockOrphan->GetHash());
 
       delete pblockOrphan;
     }
-    OMNI_mapOrphanBlocksByPrev.erase(hashPrev);
+    EMC2_mapOrphanBlocksByPrev.erase(hashPrev);
   }
 
   return true;
 }
 
-bool omni_CheckProofOfWork(uint256 hash, unsigned int nBits)
+bool emc2_CheckProofOfWork(uint256 hash, unsigned int nBits)
 {
   CBigNum bnTarget;
   bnTarget.SetCompact(nBits);
 
   /* Check range */
-  if (bnTarget <= 0 || bnTarget > omni_bnProofOfWorkLimit)
+  if (bnTarget <= 0 || bnTarget > emc2_bnProofOfWorkLimit)
     return error(SHERR_INVAL, "CheckProofOfWork() : nBits below minimum work");
 
   /* Check proof of work matches claimed amount */
@@ -911,34 +1016,34 @@ bool omni_CheckProofOfWork(uint256 hash, unsigned int nBits)
 /**
  * @note These are checks that are independent of context that can be verified before saving an orphan block.
  */
-bool OMNIBlock::CheckBlock()
+bool EMC2Block::CheckBlock()
 {
-  CIface *iface = GetCoinByIndex(OMNI_COIN_IFACE);
+  CIface *iface = GetCoinByIndex(EMC2_COIN_IFACE);
 
   if (vtx.empty()) {
-    return (trust(-100, "(omni) CheckBlock: block submitted with zero transactions"));
+    return (trust(-100, "(emc2) CheckBlock: block submitted with zero transactions"));
   }
-  if (vtx.size() > OMNI_MAX_BLOCK_SIZE) {
-    return (trust(-100, "(omni) CheckBlock: vtx.size (%d) > %d", vtx.size(), OMNI_MAX_BLOCK_SIZE));
+  if (vtx.size() > EMC2_MAX_BLOCK_SIZE) {
+    return (trust(-100, "(emc2) CheckBlock: vtx.size (%d) > %d", vtx.size(), EMC2_MAX_BLOCK_SIZE));
   }
-  size_t ser_len = ::GetSerializeSize(*this, SER_NETWORK, OMNI_PROTOCOL_VERSION);
-  if (ser_len > OMNI_MAX_BLOCK_SIZE) {
-    return (trust(-100, "(omni) CheckBlock: block size (%d) > max-block-size (%d)", ser_len, OMNI_MAX_BLOCK_SIZE));
+  size_t ser_len = ::GetSerializeSize(*this, SER_NETWORK, EMC2_PROTOCOL_VERSION);
+  if (ser_len > EMC2_MAX_BLOCK_SIZE) {
+    return (trust(-100, "(emc2) CheckBlock: block size (%d) > max-block-size (%d)", ser_len, EMC2_MAX_BLOCK_SIZE));
   }
 #if 0
-  if (vtx.empty() || vtx.size() > OMNI_MAX_BLOCK_SIZE || ::GetSerializeSize(*this, SER_NETWORK, OMNI_PROTOCOL_VERSION) > OMNI_MAX_BLOCK_SIZE) {
+  if (vtx.empty() || vtx.size() > EMC2_MAX_BLOCK_SIZE || ::GetSerializeSize(*this, SER_NETWORK, EMC2_PROTOCOL_VERSION) > EMC2_MAX_BLOCK_SIZE) {
 print();
-    return error(SHERR_INVAL, "OMNI::CheckBlock: size limits failed");
+    return error(SHERR_INVAL, "EMC2::CheckBlock: size limits failed");
   }
 #endif
 
   if (!vtx[0].IsCoinBase()) {
-    return (trust(-100, "(omni) ChecKBlock: first transaction is not coin base"));
+    return (trust(-100, "(emc2) ChecKBlock: first transaction is not coin base"));
   }
 
   // Check proof of work matches claimed amount
-  if (!omni_CheckProofOfWork(GetPoWHash(), nBits)) {
-    return (trust(-50, "(omni) CheckBlock: proof of work failed"));
+  if (!emc2_CheckProofOfWork(GetPoWHash(), nBits)) {
+    return (trust(-50, "(emc2) CheckBlock: proof of work failed"));
   }
 
   // Check timestamp
@@ -949,14 +1054,14 @@ print();
   // First transaction must be coinbase, the rest must not be
   for (unsigned int i = 1; i < vtx.size(); i++) {
     if (vtx[i].IsCoinBase()) {
-      return (trust(-100, "(omni) CheckBlock: more than one coinbase in transaction"));
+      return (trust(-100, "(emc2) CheckBlock: more than one coinbase in transaction"));
     }
   }
 
   // Check transactions
   BOOST_FOREACH(CTransaction& tx, vtx) {
-    if (!tx.CheckTransaction(OMNI_COIN_IFACE)) {
-      return (trust(-1, "(omni) ChecKBlock: transaction verification failure"));
+    if (!tx.CheckTransaction(EMC2_COIN_IFACE)) {
+      return (trust(-1, "(emc2) ChecKBlock: transaction verification failure"));
     }
   }
 
@@ -968,7 +1073,7 @@ print();
     uniqueTx.insert(tx.GetHash());
   }
   if (uniqueTx.size() != vtx.size()) {
-    return (trust(-100, "(omni) CheckBlock: duplicate transactions"));
+    return (trust(-100, "(emc2) CheckBlock: duplicate transactions"));
   }
 
   unsigned int nSigOps = 0;
@@ -977,12 +1082,12 @@ print();
     nSigOps += tx.GetLegacySigOpCount();
   }
   if (nSigOps > MAX_BLOCK_SIGOPS(iface)) {
-    return (trust(-100, "(omni) CheckBlock: out-of-bounds SigOpCount"));
+    return (trust(-100, "(emc2) CheckBlock: out-of-bounds SigOpCount"));
   }
 
   // Check merkleroot
   if (hashMerkleRoot != BuildMerkleTree()) {
-    return (trust(-100, "(omni0 CheckBlock: invalid merkle root hash"));
+    return (trust(-100, "(emc20 CheckBlock: invalid merkle root hash"));
   }
 
   return true;
@@ -991,12 +1096,12 @@ print();
 
 
 
-bool static OMNI_Reorganize(CTxDB& txdb, CBlockIndex* pindexNew, OMNI_CTxMemPool *mempool)
+bool static EMC2_Reorganize(CTxDB& txdb, CBlockIndex* pindexNew, EMC2_CTxMemPool *mempool)
 {
   char errbuf[1024];
 
  // Find the fork
-  CBlockIndex* pindexBest = GetBestBlockIndex(OMNI_COIN_IFACE);
+  CBlockIndex* pindexBest = GetBestBlockIndex(EMC2_COIN_IFACE);
   CBlockIndex* pfork = pindexBest;
   CBlockIndex* plonger = pindexNew;
   while (pfork != plonger)
@@ -1007,7 +1112,7 @@ bool static OMNI_Reorganize(CTxDB& txdb, CBlockIndex* pindexNew, OMNI_CTxMemPool
     if (pfork == plonger)
       break;
     if (!pfork->pprev) {
-      sprintf(errbuf, "OMNI_Reorganize: no previous chain for '%s' height %d\n", pfork->GetBlockHash().GetHex().c_str(), pfork->nHeight); 
+      sprintf(errbuf, "EMC2_Reorganize: no previous chain for '%s' height %d\n", pfork->GetBlockHash().GetHex().c_str(), pfork->nHeight); 
       return error(SHERR_INVAL, errbuf);
     }
     pfork = pfork->pprev;
@@ -1016,7 +1121,7 @@ bool static OMNI_Reorganize(CTxDB& txdb, CBlockIndex* pindexNew, OMNI_CTxMemPool
 
   // List of what to disconnect
   vector<CBlockIndex*> vDisconnect;
-  for (CBlockIndex* pindex = GetBestBlockIndex(OMNI_COIN_IFACE); pindex != pfork; pindex = pindex->pprev)
+  for (CBlockIndex* pindex = GetBestBlockIndex(EMC2_COIN_IFACE); pindex != pfork; pindex = pindex->pprev)
     vDisconnect.push_back(pindex);
 
   // List of what to connect
@@ -1025,7 +1130,7 @@ bool static OMNI_Reorganize(CTxDB& txdb, CBlockIndex* pindexNew, OMNI_CTxMemPool
     vConnect.push_back(pindex);
   reverse(vConnect.begin(), vConnect.end());
 
-pindexBest = GetBestBlockIndex(OMNI_COIN_IFACE);
+pindexBest = GetBestBlockIndex(EMC2_COIN_IFACE);
 Debug("REORGANIZE: Disconnect %i blocks; %s..%s\n", vDisconnect.size(), pfork->GetBlockHash().ToString().substr(0,20).c_str(), pindexBest->GetBlockHash().ToString().substr(0,20).c_str());
 Debug("REORGANIZE: Connect %i blocks; %s..%s\n", vConnect.size(), pfork->GetBlockHash().ToString().substr(0,20).c_str(), pindexNew->GetBlockHash().ToString().substr(0,20).c_str());
 
@@ -1033,10 +1138,10 @@ Debug("REORGANIZE: Connect %i blocks; %s..%s\n", vConnect.size(), pfork->GetBloc
   vector<CTransaction> vResurrect;
   BOOST_FOREACH(CBlockIndex* pindex, vDisconnect)
   {
-    OMNIBlock block;
+    EMC2Block block;
     if (!block.ReadFromDisk(pindex)) {
       if (!block.ReadArchBlock(pindex->GetBlockHash()))
-        return error(SHERR_IO, "OMNI_Reorganize: Disconnect: block hash '%s' [height %d] could not be loaded.", pindex->GetBlockHash().GetHex().c_str(), pindex->nHeight);
+        return error(SHERR_IO, "EMC2_Reorganize: Disconnect: block hash '%s' [height %d] could not be loaded.", pindex->GetBlockHash().GetHex().c_str(), pindex->nHeight);
     }
     if (!block.DisconnectBlock(txdb, pindex))
       return error(SHERR_INVAL, "Reorganize() : DisconnectBlock %s failed", pindex->GetBlockHash().ToString().c_str());
@@ -1052,10 +1157,10 @@ Debug("REORGANIZE: Connect %i blocks; %s..%s\n", vConnect.size(), pfork->GetBloc
   for (unsigned int i = 0; i < vConnect.size(); i++)
   {
     CBlockIndex* pindex = vConnect[i];
-    OMNIBlock block;
+    EMC2Block block;
     if (!block.ReadFromDisk(pindex)) {
       if (!block.ReadArchBlock(pindex->GetBlockHash()))
-        return error(SHERR_IO, "OMNI_Reorganize: Connect: block hash '%s' [height %d] could not be loaded.", pindex->GetBlockHash().GetHex().c_str(), pindex->nHeight);
+        return error(SHERR_IO, "EMC2_Reorganize: Connect: block hash '%s' [height %d] could not be loaded.", pindex->GetBlockHash().GetHex().c_str(), pindex->nHeight);
     }
 
     if (!block.ConnectBlock(txdb, pindex))
@@ -1097,30 +1202,30 @@ Debug("REORGANIZE: Connect %i blocks; %s..%s\n", vConnect.size(), pfork->GetBloc
   return true;
 }
 
-void OMNIBlock::InvalidChainFound(CBlockIndex* pindexNew)
+void EMC2Block::InvalidChainFound(CBlockIndex* pindexNew)
 {
-  CIface *iface = GetCoinByIndex(OMNI_COIN_IFACE);
+  CIface *iface = GetCoinByIndex(EMC2_COIN_IFACE);
 
   if (pindexNew->bnChainWork > bnBestInvalidWork)
   {
     bnBestInvalidWork = pindexNew->bnChainWork;
-    OMNITxDB txdb;
+    EMC2TxDB txdb;
     txdb.WriteBestInvalidWork(bnBestInvalidWork);
     txdb.Close();
     //    uiInterface.NotifyBlocksChanged();
   }
-  error(SHERR_INVAL, "OMNI: InvalidChainFound: invalid block=%s  height=%d  work=%s  date=%s\n",
+  error(SHERR_INVAL, "EMC2: InvalidChainFound: invalid block=%s  height=%d  work=%s  date=%s\n",
       pindexNew->GetBlockHash().ToString().substr(0,20).c_str(), pindexNew->nHeight,
       pindexNew->bnChainWork.ToString().c_str(), DateTimeStrFormat("%x %H:%M:%S",
         pindexNew->GetBlockTime()).c_str());
-  CBlockIndex *pindexBest = GetBestBlockIndex(OMNI_COIN_IFACE); 
+  CBlockIndex *pindexBest = GetBestBlockIndex(EMC2_COIN_IFACE); 
   fprintf(stderr, "critical: InvalidChainFound:  current best=%s  height=%d  work=%s  date=%s\n", 
-GetBestBlockChain(iface).ToString().substr(0,20).c_str(), GetBestHeight(OMNI_COIN_IFACE), bnBestChainWork.ToString().c_str(), DateTimeStrFormat("%x %H:%M:%S", pindexBest->GetBlockTime()).c_str());
+GetBestBlockChain(iface).ToString().substr(0,20).c_str(), GetBestHeight(EMC2_COIN_IFACE), bnBestChainWork.ToString().c_str(), DateTimeStrFormat("%x %H:%M:%S", pindexBest->GetBlockTime()).c_str());
   if (pindexBest && bnBestInvalidWork > bnBestChainWork + pindexBest->GetBlockWork() * 6)
-    unet_log(OMNI_COIN_IFACE, "InvalidChainFound: WARNING: Displayed transactions may not be correct!  You may need to upgrade, or other nodes may need to upgrade.\n");
+    unet_log(EMC2_COIN_IFACE, "InvalidChainFound: WARNING: Displayed transactions may not be correct!  You may need to upgrade, or other nodes may need to upgrade.\n");
 }
 
-bool OMNIBlock::SetBestChainInner(CTxDB& txdb, CBlockIndex *pindexNew)
+bool EMC2Block::SetBestChainInner(CTxDB& txdb, CBlockIndex *pindexNew)
 {
   uint256 hash = GetHash();
 
@@ -1145,7 +1250,7 @@ bool OMNIBlock::SetBestChainInner(CTxDB& txdb, CBlockIndex *pindexNew)
 }
 
 // notify wallets about a new best chain
-void static OMNI_SetBestChain(const CBlockLocator& loc)
+void static EMC2_SetBestChain(const CBlockLocator& loc)
 {
     BOOST_FOREACH(CWallet* pwallet, setpwalletRegistered)
         pwallet->SetBestChain(loc);
@@ -1153,10 +1258,10 @@ void static OMNI_SetBestChain(const CBlockLocator& loc)
 
 #if 0
 /* if block is over one day old than consider it history. */
-static bool OMNI_IsInitialBlockDownload()
+static bool EMC2_IsInitialBlockDownload()
 {
 
-  if (pindexBest == NULL || GetBestHeight(OMNI_COIN_IFACE) < OMNI_Checkpoints::GetTotalBlocksEstimate())
+  if (pindexBest == NULL || GetBestHeight(EMC2_COIN_IFACE) < EMC2_Checkpoints::GetTotalBlocksEstimate())
     return true;
 
   static int64 nLastUpdate;
@@ -1173,9 +1278,9 @@ static bool OMNI_IsInitialBlockDownload()
 
 #if 0
 /* not currently used */
-bool omni_Reindex(CTxDB& txdb, CBlockIndex *pindexNew)
+bool emc2_Reindex(CTxDB& txdb, CBlockIndex *pindexNew)
 {
-  CIface *iface = GetCoinByIndex(OMNI_COIN_IFACE);
+  CIface *iface = GetCoinByIndex(EMC2_COIN_IFACE);
   bc_t *bc = GetBlockChain(iface);
   vector<CTransaction> vResurrect;
   vector<CTransaction> vDelete;
@@ -1192,10 +1297,10 @@ bool omni_Reindex(CTxDB& txdb, CBlockIndex *pindexNew)
   unsigned int nUnlinkHeight;
   unsigned int nStartHeight;
 
-  CBlockIndex* pindexBest = GetBestBlockIndex(OMNI_COIN_IFACE);
+  CBlockIndex* pindexBest = GetBestBlockIndex(EMC2_COIN_IFACE);
   if (!pindexBest)
     return error(SHERR_INVAL, "no established block-chain.");
-  fprintf(stderr, "DEBUG: OMNIBlock::Reindex: block height %d\n", pindexNew->nHeight);
+  fprintf(stderr, "DEBUG: EMC2Block::Reindex: block height %d\n", pindexNew->nHeight);
 
   while (pindexIntermediate->pprev && 
       pindexIntermediate->pprev->bnChainWork > pindexBest->bnChainWork)
@@ -1214,7 +1319,7 @@ bool omni_Reindex(CTxDB& txdb, CBlockIndex *pindexNew)
     if (pfork == plonger)
       break;
     if (!pfork->pprev) {
-      sprintf(errbuf, "OMNI_Reorganize: no previous chain for '%s' height %d\n", pfork->GetBlockHash().GetHex().c_str(), pfork->nHeight); 
+      sprintf(errbuf, "EMC2_Reorganize: no previous chain for '%s' height %d\n", pfork->GetBlockHash().GetHex().c_str(), pfork->nHeight); 
       return error(SHERR_INVAL, errbuf);
     }
     pfork = pfork->pprev;
@@ -1230,7 +1335,7 @@ bool omni_Reindex(CTxDB& txdb, CBlockIndex *pindexNew)
     CBlock *block = GetBlockByHeight(iface, nHeight);
     if (!block) {
       sprintf(errbuf, "no block height %d established in block-chain.");
-      unet_log(OMNI_COIN_IFACE, errbuf);
+      unet_log(EMC2_COIN_IFACE, errbuf);
       continue;
     }
     mUnlinkBlock[nHeight] = block;
@@ -1253,7 +1358,7 @@ bool omni_Reindex(CTxDB& txdb, CBlockIndex *pindexNew)
 
 #if 0
     if (!block)
-      return error(SHERR_INVAL, "OMNI::Reindex/Connect: unable to load block hash '%s' for new chain height %d.", dis_pindex->GetBlockHash().c_str(), nHeight);
+      return error(SHERR_INVAL, "EMC2::Reindex/Connect: unable to load block hash '%s' for new chain height %d.", dis_pindex->GetBlockHash().c_str(), nHeight);
 #endif
 
     mLinkBlock[nHeight] = block;
@@ -1295,7 +1400,7 @@ bool omni_Reindex(CTxDB& txdb, CBlockIndex *pindexNew)
   }
 
   if (!txdb.WriteHashBestChain(pindex->GetBlockHash()))
-    return error(SHERR_INVAL, "OMNI:Reindex: WriteHashBestChain failed");
+    return error(SHERR_INVAL, "EMC2:Reindex: WriteHashBestChain failed");
 
   if (!txdb.TxnCommit())
     return error(SHERR_INVAL, "Reorganize() : TxnCommit failed");
@@ -1306,30 +1411,30 @@ bool omni_Reindex(CTxDB& txdb, CBlockIndex *pindexNew)
 
   // Delete redundant memory transactions that are in the connected branch
   BOOST_FOREACH(CTransaction& tx, vDelete)
-    OMNIBlock::mempool.remove(tx);
+    EMC2Block::mempool.remove(tx);
 
   return true;
 }
 #endif
 
-bool OMNIBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
+bool EMC2Block::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
 {
-  CIface *iface = GetCoinByIndex(OMNI_COIN_IFACE);
+  CIface *iface = GetCoinByIndex(EMC2_COIN_IFACE);
   uint256 hash = GetHash();
   shtime_t ts;
   bool ret;
 
-  Debug("OMNIBlock::SetBestChain: setting best chain to block '%s' @ height %d.", pindexNew->GetBlockHash().GetHex().c_str(), pindexNew->nHeight);
+  Debug("EMC2Block::SetBestChain: setting best chain to block '%s' @ height %d.", pindexNew->GetBlockHash().GetHex().c_str(), pindexNew->nHeight);
 
   if (!txdb.TxnBegin())
     return error(SHERR_INVAL, "SetBestChain() : TxnBegin failed");
 
-  if (OMNIBlock::pindexGenesisBlock == NULL && hash == omni_hashGenesisBlock)
+  if (EMC2Block::pindexGenesisBlock == NULL && hash == emc2_hashGenesisBlock)
   {
     txdb.WriteHashBestChain(hash);
     if (!txdb.TxnCommit())
       return error(SHERR_INVAL, "SetBestChain() : TxnCommit failed");
-    OMNIBlock::pindexGenesisBlock = pindexNew;
+    EMC2Block::pindexGenesisBlock = pindexNew;
   }
   else if (hashPrevBlock == GetBestBlockChain(iface))
   {
@@ -1351,7 +1456,7 @@ bool OMNIBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
 
     // Reorganize is costly in terms of db load, as it works in a single db transaction.
     // Try to limit how much needs to be done inside
-    while (pindexIntermediate->pprev && pindexIntermediate->pprev->bnChainWork > GetBestBlockIndex(OMNI_COIN_IFACE)->bnChainWork)
+    while (pindexIntermediate->pprev && pindexIntermediate->pprev->bnChainWork > GetBestBlockIndex(EMC2_COIN_IFACE)->bnChainWork)
     {
       vpindexSecondary.push_back(pindexIntermediate);
       pindexIntermediate = pindexIntermediate->pprev;
@@ -1362,7 +1467,7 @@ bool OMNIBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
 
     // Switch to new best branch
     
-    ret = OMNI_Reorganize(txdb, pindexIntermediate, &mempool);
+    ret = EMC2_Reorganize(txdb, pindexIntermediate, &mempool);
     if (!ret) {
       txdb.TxnAbort();
       InvalidChainFound(pindexNew);
@@ -1372,7 +1477,7 @@ bool OMNIBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
     // Connect futher blocks
     BOOST_REVERSE_FOREACH(CBlockIndex *pindex, vpindexSecondary)
     {
-      OMNIBlock block;
+      EMC2Block block;
       if (!block.ReadFromDisk(pindex) &&
           !block.ReadArchBlock(pindex->GetBlockHash())) {
         error(SHERR_IO, "SetBestChain() : ReadFromDisk failed\n");
@@ -1388,7 +1493,7 @@ bool OMNIBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
     }
 #endif
 
-    ret = OMNI_Reorganize(txdb, pindexNew, &mempool);
+    ret = EMC2_Reorganize(txdb, pindexNew, &mempool);
     if (!ret) {
       txdb.TxnAbort();
       InvalidChainFound(pindexNew);
@@ -1397,28 +1502,28 @@ bool OMNIBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
   }
 
   // Update best block in wallet (so we can detect restored wallets)
-  bool fIsInitialDownload = IsInitialBlockDownload(OMNI_COIN_IFACE);
+  bool fIsInitialDownload = IsInitialBlockDownload(EMC2_COIN_IFACE);
   if (!fIsInitialDownload)
   {
-    const CBlockLocator locator(OMNI_COIN_IFACE, pindexNew);
-    OMNI_SetBestChain(locator);
+    const CBlockLocator locator(EMC2_COIN_IFACE, pindexNew);
+    EMC2_SetBestChain(locator);
   }
 
   // New best block
-//  OMNIBlock::hashBestChain = hash;
-  SetBestBlockIndex(OMNI_COIN_IFACE, pindexNew);
+//  EMC2Block::hashBestChain = hash;
+  SetBestBlockIndex(EMC2_COIN_IFACE, pindexNew);
 //  SetBestHeight(iface, pindexNew->nHeight);
   bnBestChainWork = pindexNew->bnChainWork;
   nTimeBestReceived = GetTime();
   STAT_TX_ACCEPTS(iface)++;
 
-//fprintf(stderr, "DEBUG: OMNI/SetBestChain: new best=%s  height=%d  work=%s  date=%s\n", hashBestChain.ToString().substr(0,20).c_str(), nBestHeight, bnBestChainWork.ToString().c_str(), DateTimeStrFormat("%x %H:%M:%S", OMNIBlock::pindexBest->GetBlockTime()).c_str());
+//fprintf(stderr, "DEBUG: EMC2/SetBestChain: new best=%s  height=%d  work=%s  date=%s\n", hashBestChain.ToString().substr(0,20).c_str(), nBestHeight, bnBestChainWork.ToString().c_str(), DateTimeStrFormat("%x %H:%M:%S", EMC2Block::pindexBest->GetBlockTime()).c_str());
 
   // Check the version of the last 100 blocks to see if we need to upgrade:
   if (!fIsInitialDownload)
   {
     int nUpgraded = 0;
-    const CBlockIndex* pindex = GetBestBlockIndex(OMNI_COIN_IFACE);
+    const CBlockIndex* pindex = GetBestBlockIndex(EMC2_COIN_IFACE);
     for (int i = 0; i < 100 && pindex != NULL; i++)
     {
       if (pindex->nVersion > CURRENT_VERSION)
@@ -1443,29 +1548,29 @@ bool OMNIBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
   return true;
 }
 
-bool OMNIBlock::IsBestChain()
+bool EMC2Block::IsBestChain()
 {
-  CBlockIndex *pindexBest = GetBestBlockIndex(OMNI_COIN_IFACE);
+  CBlockIndex *pindexBest = GetBestBlockIndex(EMC2_COIN_IFACE);
   return (pindexBest && GetHash() == pindexBest->GetBlockHash());
 }
 
-bool OMNIBlock::AcceptBlock()
+bool EMC2Block::AcceptBlock()
 {
   return (core_AcceptBlock(this));
 }
 
-CScript OMNIBlock::GetCoinbaseFlags()
+CScript EMC2Block::GetCoinbaseFlags()
 {
-  return (OMNI_COINBASE_FLAGS);
+  return (EMC2_COINBASE_FLAGS);
 }
 
-static void omni_UpdatedTransaction(const uint256& hashTx)
+static void emc2_UpdatedTransaction(const uint256& hashTx)
 {
   BOOST_FOREACH(CWallet* pwallet, setpwalletRegistered)
     pwallet->UpdatedTransaction(hashTx);
 }
 
-bool OMNIBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)
+bool EMC2Block::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)
 {
   char errbuf[1024];
 
@@ -1475,9 +1580,9 @@ bool OMNIBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)
     return false;
 #endif
 
-  CIface *iface = GetCoinByIndex(OMNI_COIN_IFACE);
+  CIface *iface = GetCoinByIndex(EMC2_COIN_IFACE);
   bc_t *bc = GetBlockTxChain(iface);
-  unsigned int nFile = OMNI_COIN_IFACE;
+  unsigned int nFile = EMC2_COIN_IFACE;
   unsigned int nBlockPos = pindex->nHeight;;
   bc_hash_t b_hash;
   int err;
@@ -1511,30 +1616,30 @@ bool OMNIBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)
       if (txdb.ReadTxIndex(hashTx, txindexOld)) {
         BOOST_FOREACH(CDiskTxPos &pos, txindexOld.vSpent)
           if (tx.IsSpentTx(pos))
-            return error(SHERR_INVAL, "OMNIBlock::ConnectBlock: BIP30 enforced at height %d\n", pindex->nHeight);
+            return error(SHERR_INVAL, "EMC2Block::ConnectBlock: BIP30 enforced at height %d\n", pindex->nHeight);
       }
     }
 
     nSigOps += tx.GetLegacySigOpCount();
     if (nSigOps > MAX_BLOCK_SIGOPS(iface)) {
-      return (trust(-100, "(omni) ConnectBlock: too many sigops (%d > %d)", nSigOps, MAX_BLOCK_SIGOPS(iface)));
+      return (trust(-100, "(emc2) ConnectBlock: too many sigops (%d > %d)", nSigOps, MAX_BLOCK_SIGOPS(iface)));
     }
 
 #if 0
     memcpy(b_hash, tx.GetHash().GetRaw(), sizeof(bc_hash_t));
     err = bc_find(bc, b_hash, &nTxPos); 
     if (err) {
-      return error(SHERR_INVAL, "OMNIBlock::ConncetBlock: error finding tx hash.");
+      return error(SHERR_INVAL, "EMC2Block::ConncetBlock: error finding tx hash.");
     }
 #endif
 
     MapPrevTx mapInputs;
-    CDiskTxPos posThisTx(OMNI_COIN_IFACE, nBlockPos, nTxPos);
+    CDiskTxPos posThisTx(EMC2_COIN_IFACE, nBlockPos, nTxPos);
     if (!tx.IsCoinBase())
     {
       bool fInvalid;
       if (!tx.FetchInputs(txdb, mapQueuedChanges, this, false, mapInputs, fInvalid)) {
-        sprintf(errbuf, "OMNI::ConnectBlock: FetchInputs failed for tx '%s' @ height %u\n", tx.GetHash().GetHex().c_str(), (unsigned int)nBlockPos);
+        sprintf(errbuf, "EMC2::ConnectBlock: FetchInputs failed for tx '%s' @ height %u\n", tx.GetHash().GetHex().c_str(), (unsigned int)nBlockPos);
         return error(SHERR_INVAL, errbuf);
       }
 
@@ -1545,14 +1650,14 @@ bool OMNIBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)
         // an incredibly-expensive-to-validate block.
         nSigOps += tx.GetP2SHSigOpCount(mapInputs);
         if (nSigOps > MAX_BLOCK_SIGOPS(iface)) {
-          return (trust(-100, "(omni) ConnectBlock: too many sigops (%d > %d)", nSigOps, MAX_BLOCK_SIGOPS(iface)));
+          return (trust(-100, "(emc2) ConnectBlock: too many sigops (%d > %d)", nSigOps, MAX_BLOCK_SIGOPS(iface)));
         }
       }
 
       nFees += tx.GetValueIn(mapInputs)-tx.GetValueOut();
 
-      if (!omni_ConnectInputs(&tx, mapInputs, mapQueuedChanges, posThisTx, pindex, true, false, fStrictPayToScriptHash)) {
-        return error(SHERR_INVAL, "OMNIBlock::ConnectBlock: error connecting inputs.");
+      if (!emc2_ConnectInputs(&tx, mapInputs, mapQueuedChanges, posThisTx, pindex, true, false, fStrictPayToScriptHash)) {
+        return error(SHERR_INVAL, "EMC2Block::ConnectBlock: error connecting inputs.");
       }
     }
 
@@ -1569,16 +1674,22 @@ bool OMNIBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)
 
 #if 0
   if (vtx.size() == 0) {
-    return error(SHERR_INVAL, "OMNIBlock::ConnectBlock: vtx.size() == 0");
+    return error(SHERR_INVAL, "EMC2Block::ConnectBlock: vtx.size() == 0");
   }
 #endif
   
-  int64 nValue = omni_GetBlockValue(pindex->nHeight, nFees);
-  if (vtx[0].GetValueOut() > omni_GetBlockValue(pindex->nHeight, nFees)) {
-    sprintf(errbuf, "OMNI::ConnectBlock: coinbase output (%d coins) higher than expected block value @ height %d (%d coins) [block %s].\n", FormatMoney(vtx[0].GetValueOut()).c_str(), pindex->nHeight, FormatMoney(nValue).c_str(), pindex->GetBlockHash().GetHex().c_str());
+  int64 nValue = emc2_GetBlockValue(pindex->nHeight, 0);
+  if (vtx[0].GetValueOut() > (nValue + nFees)) {
+    sprintf(errbuf, "EMC2_ConnectBlock: coinbase output (%d coins) higher than expected block value @ height %d (%d coins) [block %s].\n", FormatMoney(vtx[0].GetValueOut()).c_str(), pindex->nHeight, FormatMoney(nValue).c_str(), pindex->GetBlockHash().GetHex().c_str());
     return error(SHERR_INVAL, errbuf);
   }
-
+  if (vtx[0].vout[0].scriptPubKey != EMC2_CHARITY_SCRIPT) {
+    return error(SHERR_INVAL, "EMC2_ConnectBlock() : coinbase does not pay to the charity.");
+  }
+  int64 nCharity = nValue * 2.5 / 100; 
+  if (vtx[0].vout[0].nValue < nCharity) {
+    return error(SHERR_INVAL, "EMC2_ConnectBlock() : coinbase does not pay enough to the charity (actual=%llu vs required=%llu)", (unsigned long long)vtx[0].vout[0].nValue, (unsigned long long)nCharity);
+  }
 
   if (pindex->pprev)
   {
@@ -1607,9 +1718,9 @@ Debug("CONNECT: hash '%s' to height %d\n", GetHash().GetHex().c_str(), pindex->n
   return true;
 }
 
-bool OMNIBlock::ReadBlock(uint64_t nHeight)
+bool EMC2Block::ReadBlock(uint64_t nHeight)
 {
-int ifaceIndex = OMNI_COIN_IFACE;
+int ifaceIndex = EMC2_COIN_IFACE;
   CIface *iface = GetCoinByIndex(ifaceIndex);
   CDataStream sBlock(SER_DISK, CLIENT_VERSION);
   size_t sBlockLen;
@@ -1654,7 +1765,7 @@ int ifaceIndex = OMNI_COIN_IFACE;
     bc_hash_t ret_hash;
     err = bc_get_hash(bc, nHeight, ret_hash);
     if (err) {
-      return error(err, "OMNIBlock::ReadBlock: error obtaining block-chain height %d.", nHeight);
+      return error(err, "EMC2Block::ReadBlock: error obtaining block-chain height %d.", nHeight);
     }
     db_hash.SetRaw((unsigned int *)ret_hash);
 
@@ -1678,9 +1789,9 @@ int ifaceIndex = OMNI_COIN_IFACE;
   return (true);
 }
 
-bool OMNIBlock::ReadArchBlock(uint256 hash)
+bool EMC2Block::ReadArchBlock(uint256 hash)
 {
-  int ifaceIndex = OMNI_COIN_IFACE;
+  int ifaceIndex = EMC2_COIN_IFACE;
   CIface *iface = GetCoinByIndex(ifaceIndex);
   CDataStream sBlock(SER_DISK, CLIENT_VERSION);
   size_t sBlockLen;
@@ -1723,25 +1834,25 @@ Debug("ARCH: loaded block '%s'\n", GetHash().GetHex().c_str());
   return (true);
 }
 
-bool OMNIBlock::IsOrphan()
+bool EMC2Block::IsOrphan()
 {
-  blkidx_t *blockIndex = GetBlockTable(OMNI_COIN_IFACE);
+  blkidx_t *blockIndex = GetBlockTable(EMC2_COIN_IFACE);
   uint256 hash = GetHash();
 
   if (blockIndex->count(hash))
     return (false);
 
-  if (!OMNI_mapOrphanBlocks.count(hash))
+  if (!EMC2_mapOrphanBlocks.count(hash))
     return (false);
 
   return (true);
 }
 
 
-bool omni_Truncate(uint256 hash)
+bool emc2_Truncate(uint256 hash)
 {
-  blkidx_t *blockIndex = GetBlockTable(OMNI_COIN_IFACE);
-  CIface *iface = GetCoinByIndex(OMNI_COIN_IFACE);
+  blkidx_t *blockIndex = GetBlockTable(EMC2_COIN_IFACE);
+  CIface *iface = GetCoinByIndex(EMC2_COIN_IFACE);
   CBlockIndex *pBestIndex;
   CBlockIndex *cur_index;
   CBlockIndex *pindex;
@@ -1765,10 +1876,10 @@ bool omni_Truncate(uint256 hash)
   unsigned int nMinHeight = cur_index->nHeight;
   unsigned int nMaxHeight = (bc_idx_next(bc)-1);
     
-  OMNITxDB txdb; /* OPEN */
+  EMC2TxDB txdb; /* OPEN */
 
   for (nHeight = nMaxHeight; nHeight > nMinHeight; nHeight--) {
-    OMNIBlock block;
+    EMC2Block block;
     if (block.ReadBlock(nHeight)) {
       uint256 t_hash = block.GetHash();
       if (hash == cur_index->GetBlockHash())
@@ -1792,24 +1903,24 @@ bool omni_Truncate(uint256 hash)
   cur_index->pnext = NULL;
   return (true);
 }
-bool OMNIBlock::Truncate()
+bool EMC2Block::Truncate()
 {
-  return (omni_Truncate(GetHash()));
+  return (emc2_Truncate(GetHash()));
 }
 
-bool OMNIBlock::VerifyCheckpoint(int nHeight)
+bool EMC2Block::VerifyCheckpoint(int nHeight)
 {
-  return (OMNI_Checkpoints::CheckBlock(nHeight, GetHash()));
+  return (EMC2_Checkpoints::CheckBlock(nHeight, GetHash()));
 }
-uint64_t OMNIBlock::GetTotalBlocksEstimate()
+uint64_t EMC2Block::GetTotalBlocksEstimate()
 {
-  return ((uint64_t)OMNI_Checkpoints::GetTotalBlocksEstimate());
+  return ((uint64_t)EMC2_Checkpoints::GetTotalBlocksEstimate());
 }
 
-bool OMNIBlock::AddToBlockIndex()
+bool EMC2Block::AddToBlockIndex()
 {
-CIface *iface = GetCoinByIndex(OMNI_COIN_IFACE);
-  blkidx_t *blockIndex = GetBlockTable(OMNI_COIN_IFACE);
+CIface *iface = GetCoinByIndex(EMC2_COIN_IFACE);
+  blkidx_t *blockIndex = GetBlockTable(EMC2_COIN_IFACE);
   uint256 hash = GetHash();
   CBlockIndex *pindexNew;
   shtime_t ts;
@@ -1834,7 +1945,7 @@ CIface *iface = GetCoinByIndex(OMNI_COIN_IFACE);
   pindexNew->bnChainWork = (pindexNew->pprev ? pindexNew->pprev->bnChainWork : 0) + pindexNew->GetBlockWork();
 
   if (pindexNew->bnChainWork > bnBestChainWork) {
-    OMNITxDB txdb;
+    EMC2TxDB txdb;
     bool ret = SetBestChain(txdb, pindexNew);
     txdb.Close();
     if (!ret)
@@ -1843,18 +1954,18 @@ CIface *iface = GetCoinByIndex(OMNI_COIN_IFACE);
     /* usher to the holding cell */
     if (hashPrevBlock == GetBestBlockChain(iface)) {
       if (!WriteBlock(pindexNew->nHeight)) {
-        return error(SHERR_INVAL, "OMNI: AddToBLocKindex: WriteBlock failure");
+        return error(SHERR_INVAL, "EMC2: AddToBLocKindex: WriteBlock failure");
       }
     } else {
       WriteArchBlock();
-      Debug("OMNIBlock::AddToBlockIndex: skipping block (%s) SetBestChain() since pindexNew->bnChainWork(%s) <= bnBestChainWork(%s)", pindexNew->GetBlockHash().GetHex().c_str(), pindexNew->bnChainWork.ToString().c_str(), bnBestChainWork.ToString().c_str());
+      Debug("EMC2Block::AddToBlockIndex: skipping block (%s) SetBestChain() since pindexNew->bnChainWork(%s) <= bnBestChainWork(%s)", pindexNew->GetBlockHash().GetHex().c_str(), pindexNew->bnChainWork.ToString().c_str(), bnBestChainWork.ToString().c_str());
     }
   }
 
   return true;
 }
 
-bool OMNIBlock::DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex)
+bool EMC2Block::DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex)
 {
   return (core_DisconnectBlock(txdb, pindex, this));
 }

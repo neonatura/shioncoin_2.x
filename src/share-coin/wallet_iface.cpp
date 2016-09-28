@@ -116,7 +116,7 @@ static uint256 get_private_key_hash(CWallet *wallet, CKeyID keyId)
   if (!wallet->GetSecret(keyId, vchSecret, fCompressed))
     return (phash);
 
-  string secret = CCoinSecret(vchSecret, fCompressed).ToString();
+  string secret = CCoinSecret(wallet->ifaceIndex, vchSecret, fCompressed).ToString();
 
   unsigned char *secret_str = (unsigned char *)secret.c_str();
   size_t secret_len = secret.length();
@@ -153,7 +153,7 @@ Object JSONAddressInfo(int ifaceIndex, CCoinAddr address, bool show_priv)
       throw JSONRPCError(STERR_ACCESS_UNAVAIL,
           "Private key for address " + currentAddress + " is not known");
     }
-    result.push_back(Pair("secret", CCoinSecret(vchSecret, fCompressed).ToString()));
+    result.push_back(Pair("secret", CCoinSecret(ifaceIndex, vchSecret, fCompressed).ToString()));
   }
 
 //    bool fMine = IsMine(*pwalletMain, dest);
@@ -316,15 +316,15 @@ const char *json_getnewaddress(int ifaceIndex, const char *account)
 
 CCoinAddr GetAddressByAccount(CWallet *wallet, const char *accountName, bool& found)
 {
-  CCoinAddr address;
+  CCoinAddr address(wallet->ifaceIndex);
   string strAccount(accountName);
   Array ret;
 
   // Find all addresses that have the given account
   found = false;
-  BOOST_FOREACH(const PAIRTYPE(CCoinAddr, string)& item, wallet->mapAddressBook)
+  BOOST_FOREACH(const PAIRTYPE(CTxDestination, string)& item, wallet->mapAddressBook)
   {
-    const CCoinAddr& acc_address = item.first;
+    const CCoinAddr& acc_address = CCoinAddr(wallet->ifaceIndex, item.first);
     const string& strName = item.second;
     if (strName == strAccount) {
       address = acc_address;
@@ -421,7 +421,6 @@ static int c_wallet_account_transfer(int ifaceIndex, const char *sourceAccountNa
     return (-14);
 
   CWalletDB walletdb(pwalletMain->strWalletFile);
-  CCoinAddr address;
   string strMainAccount(sourceAccountName);
   string strAccount(accountName);
   string strComment(comment);
@@ -438,9 +437,10 @@ static int c_wallet_account_transfer(int ifaceIndex, const char *sourceAccountNa
   }
 
   // Find all addresses that have the given account
-  BOOST_FOREACH(const PAIRTYPE(CCoinAddr, string)& item, pwalletMain->mapAddressBook)
+  CCoinAddr address(ifaceIndex);
+  BOOST_FOREACH(const PAIRTYPE(CTxDestination, string)& item, pwalletMain->mapAddressBook)
   {
-    const CCoinAddr& acc_address = item.first;
+    const CCoinAddr& acc_address = CCoinAddr(ifaceIndex, item.first);
     const string& strName = item.second;
     if (strName == strAccount) {
       address = acc_address;
@@ -516,9 +516,9 @@ static bool valid_pkey_hash(string strAccount, uint256 in_pkey)
     if (!wallet) 
       continue;
 
-    BOOST_FOREACH(const PAIRTYPE(CCoinAddr, string)& item, wallet->mapAddressBook)
+    BOOST_FOREACH(const PAIRTYPE(CTxDestination, string)& item, wallet->mapAddressBook)
     {
-      const CCoinAddr& address = item.first;
+      const CCoinAddr& address = CCoinAddr(ifaceIndex, item.first);
       const string& strName = item.second;
       CKeyID keyID;
 
@@ -667,9 +667,9 @@ const char *json_getaddressinfo(int ifaceIndex, const char *addr_hash, const cha
 
 bool VerifyLocalAddress(CWallet *wallet, CKeyID vchAddress)
 {
-  BOOST_FOREACH(const PAIRTYPE(CCoinAddr, string)& item, wallet->mapAddressBook)
+  BOOST_FOREACH(const PAIRTYPE(CTxDestination, string)& item, wallet->mapAddressBook)
   {
-    const CCoinAddr& address = item.first;
+    const CCoinAddr& address = CCoinAddr(wallet->ifaceIndex, item.first);
     const string& strName = item.second;
     CKeyID keyID;
     address.GetKeyID(keyID);
@@ -799,12 +799,11 @@ static const char *c_stratum_account_transfer(int ifaceIndex, char *account, cha
 
     vector<pair<CScript, int64> > vecSend;
     bool bankAddressFound = false;
-    CCoinAddr bankAddress;
     CScript scriptPubKey;
     CReserveKey keyChange(pwalletMain);
 
     /* send fee to main account */
-    bankAddress = GetAddressByAccount(pwalletMain, "", bankAddressFound);
+    CCoinAddr bankAddress = GetAddressByAccount(pwalletMain, "", bankAddressFound);
     if (!bankAddressFound || !bankAddress.IsValid()) {
       nFee = 0;
     }
@@ -853,7 +852,6 @@ static const char *c_stratum_account_info(int ifaceIndex, const char *acc_name, 
   uint256 in_pkey;
   Object result;
   Array addr_list;
-  CCoinAddr address;
   uint256 phash;
 
   try {
@@ -872,9 +870,9 @@ static const char *c_stratum_account_info(int ifaceIndex, const char *acc_name, 
     result.push_back(Pair("unconfirmed", ValueFromAmount(nUnconfirm)));
 
     // Find all addresses that have the given account
-    BOOST_FOREACH(const PAIRTYPE(CCoinAddr, string)& item, pwalletMain->mapAddressBook)
+    BOOST_FOREACH(const PAIRTYPE(CTxDestination, string)& item, pwalletMain->mapAddressBook)
     {
-      const CCoinAddr& acc_address = item.first;
+      const CCoinAddr& acc_address = CCoinAddr(ifaceIndex, item.first);
       const string& strName = item.second;
       if (strName == strAccount) {
         addr_list.push_back(JSONAddressInfo(ifaceIndex, acc_address, false));

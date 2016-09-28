@@ -617,7 +617,7 @@ bool VerifyLicense(CTransaction& tx)
 
   /* core verification */
   if (!IsLicenseTx(tx)) {
-tx.print();
+//tx.print();
     return (false); /* tx not flagged as cert */
 }
 

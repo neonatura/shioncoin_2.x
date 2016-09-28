@@ -27,12 +27,12 @@ proto_sources = \
 	$(srcdir)/proto/coin_proto.c \
 	$(srcdir)/proto/shc_proto.cpp \
 	$(srcdir)/proto/usde_proto.cpp \
-	$(srcdir)/proto/omni_proto.cpp \
+	$(srcdir)/proto/emc2_proto.cpp \
 	$(srcdir)/proto/test_proto.cpp \
 	$(srcdir)/proto/coin_proto.h \
 	$(srcdir)/proto/shc_proto.h \
 	$(srcdir)/proto/usde_proto.h \
-	$(srcdir)/proto/omni_proto.h \
+	$(srcdir)/proto/emc2_proto.h \
 	$(srcdir)/proto/test_proto.h
 
 common_includes = \
@@ -114,7 +114,8 @@ common_sources = \
 	unet/unet_timer.c \
 	unet/unet_peer.c \
 	unet/unet_event.c \
-	server/protocol.cpp \
+	unet/unet_local.c \
+	server/base58.cpp \
 	server/netbase.cpp \
 	server/version.cpp \
 	server/util.cpp
@@ -143,14 +144,14 @@ server_sources = \
 	server/usde/usde_wallet.h \
 	server/usde/usde_txidx.cpp \
 	server/usde/usde_txidx.h \
-	server/omni/omni_txidx.cpp \
-	server/omni/omni_txidx.h \
-	server/omni/omni_block.cpp \
-	server/omni/omni_block.h \
-	server/omni/omni_wallet.cpp \
-	server/omni/omni_wallet.h \
-	server/omni/omni_netmsg.cpp \
-	server/omni/omni_netmsg.h \
+	server/emc2/emc2_txidx.cpp \
+	server/emc2/emc2_txidx.h \
+	server/emc2/emc2_block.cpp \
+	server/emc2/emc2_block.h \
+	server/emc2/emc2_wallet.cpp \
+	server/emc2/emc2_wallet.h \
+	server/emc2/emc2_netmsg.cpp \
+	server/emc2/emc2_netmsg.h \
 	server/ext/txext.cpp \
 	server/ext/alias.cpp \
 	server/ext/certificate.cpp \
@@ -164,12 +165,12 @@ server_sources = \
 	server/rpc/rpcnet.cpp \
 	server/rpc/rpc_proto.cpp \
 	server/rpc/rpcrawtransaction.cpp \
+	server/protocol.cpp \
 	server/block.cpp \
 	server/chain.cpp \
 	server/matrix.cpp \
 	server/spring.c \
 	server/bloom.cpp \
-	server/base58.cpp \
 	server/global.cpp \
 	server/block_merkle.cpp \
 	server/crypter.cpp \
@@ -211,11 +212,11 @@ usde: shcointool
 	cp -f shcointool usde
 endif
 
-if OMNI_SERVICE
-bin_SCRIPTS += omni
+if EMC2_SERVICE
+bin_SCRIPTS += emc2
 
-omni: shcointool
-	cp -f shcointool omni
+emc2: shcointool
+	cp -f shcointool emc2
 endif
 
 shc: shcointool

@@ -41,8 +41,8 @@ extern "C" {
 /** An option indicating whether to enable the USDE coin service. */
 #define OPT_SERV_USDE "shcoind.net.usde"
 
-/** An option indicating whether to enable the OMNI coin service. */
-#define OPT_SERV_OMNI "shcoind.net.omni"
+/** An option indicating whether to enable the EMC2 coin service. */
+#define OPT_SERV_EMC2 "shcoind.net.emc2"
 
 /** An option indicating whether to enable the stratum service. */
 #define OPT_SERV_STRATUM "shcoind.net.stratum"

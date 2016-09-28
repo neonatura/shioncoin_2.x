@@ -241,6 +241,7 @@ coin_iface_t usde_coin_iface = {
   USDE_PROTOCOL_VERSION, /* network protocol version */ 
   USDE_COIN_DAEMON_PORT,
   { 0xd9, 0xd9, 0xf9, 0xbd },
+  NODE_NETWORK,
   USDE_MIN_INPUT,
   USDE_MAX_BLOCK_SIZE,
   USDE_MAX_ORPHAN_TRANSACTIONS,

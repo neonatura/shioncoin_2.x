@@ -25,13 +25,13 @@
 
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2009-2012 The Bitcoin developers
-// Copyright (c) 2011-2013 omni Developers
+// Copyright (c) 2011-2013 emc2 Developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 
-#ifndef __OMNI_NETMGSG_H__
-#define __OMNI_NETMGSG_H__
+#ifndef __EMC2_NETMGSG_H__
+#define __EMC2_NETMGSG_H__
 
 
 
@@ -49,13 +49,13 @@ extern "C"
 //extern map<uint256, CDataStream*> mapOrphanTransactions;
 //extern map<uint256, CBlock*> mapOrphanBlocks;
 
-bool omni_ProcessMessages(CIface *iface, CNode* pfrom);
-bool omni_SendMessages(CIface *iface, CNode* pto, bool fSendTrickle);
+bool emc2_ProcessMessages(CIface *iface, CNode* pfrom);
+bool emc2_SendMessages(CIface *iface, CNode* pto, bool fSendTrickle);
 
-bool omni_AddOrphanTx(const CDataStream& vMsg);
+bool emc2_AddOrphanTx(const CDataStream& vMsg);
 
-unsigned int omni_LimitOrphanTxSize(unsigned int nMaxOrphans);
+unsigned int emc2_LimitOrphanTxSize(unsigned int nMaxOrphans);
 
 
 
-#endif /* ndef __OMNI_NETMGSG_H__ */
+#endif /* ndef __EMC2_NETMGSG_H__ */

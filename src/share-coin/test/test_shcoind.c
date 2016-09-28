@@ -11,6 +11,7 @@ extern TEST_jsonencap(CuTest*);
 extern TEST_coin_key(CuTest*);
 extern TEST_coin_key_phrase(CuTest*);
 extern TEST_wallet(CuTest*);
+extern TEST_coinaddr(CuTest*);
 extern TEST_bignum(CuTest*);
 extern TEST_sha256transform(CuTest*);
 extern TEST_blockchain(CuTest*);
@@ -59,8 +60,8 @@ int main(int argc, char *argv[])
 
   test_shcoind_init();
 
-
   /* test suits */
+  SUITE_ADD_TEST(suite, TEST_coinaddr);
   SUITE_ADD_TEST(suite, TEST_bloom_create_insert_key);
   SUITE_ADD_TEST(suite, TEST_bloom_match);
   SUITE_ADD_TEST(suite, TEST_jsonencap);

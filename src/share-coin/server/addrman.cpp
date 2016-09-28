@@ -566,6 +566,7 @@ CAddrDB::CAddrDB(const char *path)
 
 bool CAddrDB::Write(const CAddrMan& addr)
 {
+#if 0
     // Generate random temporary filename
     unsigned short randv = 0;
     RAND_bytes((unsigned char *)&randv, sizeof(randv));
@@ -599,6 +600,7 @@ bool CAddrDB::Write(const CAddrMan& addr)
     if (!RenameOver(pathTmp, pathAddr))
         return error(SHERR_IO, "CAddrman::Write() : Rename-into-place failed");
 
+#endif
     return true;
 }
 
@@ -644,9 +646,11 @@ bool CAddrDB::Read(CAddrMan& addr)
         return error(SHERR_IO, "CAddrman::Read() : I/O error or stream data corrupted");
     }
 
+#if 0
     // finally, verify the network matches ours
     if (memcmp(pchMsgTmp, pchMessageStart, sizeof(pchMsgTmp)))
         return error(SHERR_IO, "CAddrman::Read() : invalid network magic  number");
+#endif
 
     return true;
 }

@@ -319,13 +319,13 @@ void unet_peer_fill_seed(int mode)
       sprintf(buf, "unet_peer_fill_seed: seeding USDE peer '%s'.", shpeer_print(peer));
       unet_log(mode, buf);
     }
-  } else if (mode == UNET_OMNI) {
-    for (i = 0; i < OMNI_SEED_LIST_SIZE; i++) {
-      sprintf(hostname, "%s %d", omni_seed_list[i], bind->port);
+  } else if (mode == UNET_EMC2) {
+    for (i = 0; i < EMC2_SEED_LIST_SIZE; i++) {
+      sprintf(hostname, "%s %d", emc2_seed_list[i], bind->port);
       peer = shpeer_init((char *)unet_mode_label(mode), hostname); 
       uevent_new_peer(mode, peer);
 
-      sprintf(buf, "unet_peer_fill_seed: seeding OMNI peer '%s'.", shpeer_print(peer));
+      sprintf(buf, "unet_peer_fill_seed: seeding EMC2 peer '%s'.", shpeer_print(peer));
       unet_log(mode, buf);
     }
   }

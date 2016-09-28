@@ -1307,7 +1307,7 @@ bool CWallet::SetAddressBookName(const CTxDestination& address, const string& st
     NotifyAddressBookChanged(this, address, strName, ::IsMine(*this, address), (mi == mapAddressBook.end()) ? CT_NEW : CT_UPDATED);
     if (!fFileBacked)
         return false;
-    return CWalletDB(strWalletFile).WriteName(CCoinAddr(address).ToString(), strName);
+    return CWalletDB(strWalletFile).WriteName(CCoinAddr(ifaceIndex, address).ToString(), strName);
 }
 
 bool CWallet::DelAddressBookName(const CTxDestination& address)
@@ -1316,7 +1316,7 @@ bool CWallet::DelAddressBookName(const CTxDestination& address)
     NotifyAddressBookChanged(this, address, "", ::IsMine(*this, address), CT_DELETED);
     if (!fFileBacked)
         return false;
-    return CWalletDB(strWalletFile).EraseName(CCoinAddr(address).ToString());
+    return CWalletDB(strWalletFile).EraseName(CCoinAddr(ifaceIndex, address).ToString());
 }
 
 
@@ -1805,13 +1805,13 @@ CCoinAddr GetAccountAddress(CWallet *wallet, string strAccount, bool bForceNew)
   if (!account.vchPubKey.IsValid() || bForceNew || bKeyUsed)
   {
     if (!wallet->GetKeyFromPool(account.vchPubKey, false))
-      return CCoinAddr();//throw JSONRPCError(-12, "Error: Keypool ran out, please call keypoolrefill first");
+      return CCoinAddr(wallet->ifaceIndex);//throw JSONRPCError(-12, "Error: Keypool ran out, please call keypoolrefill first");
 
     wallet->SetAddressBookName(account.vchPubKey.GetID(), strAccount);
     walletdb.WriteAccount(strAccount, account);
   }
 
-  return CCoinAddr(account.vchPubKey.GetID());
+  return CCoinAddr(wallet->ifaceIndex, account.vchPubKey.GetID());
 }
 
 bool CWallet::GetMergedAddress(string strAccount, const char *tag, CCoinAddr& addrRet)
@@ -1852,7 +1852,7 @@ bool CWallet::GetMergedAddress(string strAccount, const char *tag, CCoinAddr& ad
     walletdb.WriteAccount(strAccount, account);
   }
 
-  addrRet = CCoinAddr(pubkey.GetID());
+  addrRet = CCoinAddr(ifaceIndex, pubkey.GetID());
   return (true);
 }
 
@@ -1978,7 +1978,6 @@ bool CreateTransactionWithInputTx(CIface *iface,
 
   }
 
-  Debug("CreateTransactionWithInputTx: commit '%s'", wtxNew.ToString().c_str());
   return true;
 }
 
@@ -2048,12 +2047,18 @@ bool SendMoneyWithExtTx(CIface *iface,
 
 bool GetCoinAddr(CWallet *wallet, CCoinAddr& addrAccount, string& strAccount)
 {
+  bool fIsScript = addrAccount.IsScript();
 
-  BOOST_FOREACH(const PAIRTYPE(CCoinAddr, string)& item, wallet->mapAddressBook)
+  BOOST_FOREACH(const PAIRTYPE(CTxDestination, string)& item, wallet->mapAddressBook)
   {
-    const CCoinAddr& address = item.first;
+    const CCoinAddr& address = CCoinAddr(wallet->ifaceIndex, item.first);
     const string& account = item.second;
-    if (address == addrAccount) {
+
+    if (fIsScript && !address.IsScript())
+      continue;
+
+    /* DEBUG: does not compare coinaddr version */
+    if (address.Get() == addrAccount.Get()) {
       addrAccount = address;
       strAccount = account;
       return (true);
@@ -2171,6 +2176,7 @@ bool CWalletTx::AcceptWalletTransaction(CTxDB& txdb, bool fCheckInputs)
 
 bool IsAccountValid(CIface *iface, std::string strAccount)
 {
+  int ifaceIndex = GetCoinIndex(iface);
   CWallet *wallet;
   int total;
 
@@ -2179,9 +2185,9 @@ bool IsAccountValid(CIface *iface, std::string strAccount)
     return (false);
 
   total = 0;
-  BOOST_FOREACH(const PAIRTYPE(CCoinAddr, string)& item, wallet->mapAddressBook)
+  BOOST_FOREACH(const PAIRTYPE(CTxDestination, string)& item, wallet->mapAddressBook)
   {
-    const CCoinAddr& address = item.first;
+    const CCoinAddr& address = CCoinAddr(ifaceIndex, item.first);
     const string& strName = item.second;
     if (strName == strAccount)
       total++;
@@ -2315,7 +2321,7 @@ void CWallet::AvailableAddrCoins(vector<COutput>& vCoins, const CCoinAddr& filte
           continue;
         CKeyID k1;
         CKeyID k2;
-        if (!CCoinAddr(dest).GetKeyID(k1) || 
+        if (!CCoinAddr(ifaceIndex, dest).GetKeyID(k1) || 
             !filterAddr.GetKeyID(k2) || 
             k1 != k2)
           continue; /* wrong coin address */

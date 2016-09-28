@@ -43,6 +43,36 @@ unet_table_t *get_unet_table(SOCKET sk)
   return (descriptor_get(sk));
 }
 
+static const char *unet_hostname(struct sockaddr *addr)
+{
+  static char ipaddr[256];
+  sa_family_t in_fam;
+
+  in_fam = *((sa_family_t *)addr);
+  memset(ipaddr, 0, sizeof(ipaddr));
+  if (in_fam == AF_INET) {
+    struct sockaddr_in *sin = (struct sockaddr_in *)addr;
+    inet_ntop(AF_INET, &sin->sin_addr, ipaddr, sizeof(ipaddr)-1); 
+  } else if (in_fam == AF_INET6) {
+    struct sockaddr_in6 *sin = (struct sockaddr_in6 *)addr;
+    inet_ntop(AF_INET6, &sin->sin6_addr, ipaddr, sizeof(ipaddr)-1); 
+  }
+
+  return ((const char *)ipaddr);
+}
+
+int unet_local_verify_fd(int fd)
+{
+  struct sockaddr addr;
+  socklen_t len;
+
+  len = sizeof(addr);
+  memset(&addr, 0, sizeof(addr));
+  getpeername(fd, &addr, &len);
+
+  return (unet_local_verify((char *)unet_hostname(&addr)));
+}
+
 int unet_accept(int mode, SOCKET *sk_p)
 {
   unet_bind_t *bind;
@@ -65,7 +95,7 @@ int unet_accept(int mode, SOCKET *sk_p)
     sprintf(buf, "unet_accept: warning: error %d (errno %d) (bind->fd %d).", cli_fd, errno, bind->fd);
     unet_log(mode, buf); 
     return ((int)cli_fd);
-}
+  }
 
   if (cli_fd >= MAX_UNET_SOCKETS) {
     char buf[256];
@@ -78,15 +108,23 @@ int unet_accept(int mode, SOCKET *sk_p)
     return (SHERR_AGAIN);
   }
 
-  /* unique per mode? */
-  if ((mode == UNET_SHC || mode == UNET_USDE || mode == UNET_OMNI) &&
-      unet_peer_find(mode, shaddr(cli_fd))) {
-    sprintf(buf, "unet_accept: disconnecting non-unique IP origin: %s", shaddr_print(shaddr(cli_fd))); 
-    unet_log(mode, buf);
+  if (mode < MAX_UNET_COIN_MODES) {
+    if (unet_peer_find(mode, shaddr(cli_fd))) {
+      sprintf(buf, "unet_accept: disconnecting non-unique IP origin: %s", shaddr_print(shaddr(cli_fd))); 
+      unet_log(mode, buf);
 
-    /* only one IP origin address per coin service allowed */
-    shnet_close(cli_fd);
-    return (SHERR_NOTUNIQ);
+      /* only one IP origin address per coin service allowed */
+      shnet_close(cli_fd);
+      return (SHERR_NOTUNIQ);
+    }
+    if (unet_local_verify_fd(cli_fd)) {
+      sprintf(buf, "unet_accept: disconnecting loopback IP origin: %s", shaddr_print(shaddr(cli_fd))); 
+      unet_log(mode, buf);
+
+      /* only non-local IP address permitted. */
+      shnet_close(cli_fd);
+      return (SHERR_NOTUNIQ);
+    }
   }
 
   unet_add(mode, cli_fd);

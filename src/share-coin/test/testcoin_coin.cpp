@@ -307,6 +307,67 @@ _TEST(wallet)
 }
 
 
+class TestAddr : public CCoinAddr
+{
+  public:
+    TestAddr(int nVersionIn, unsigned char *raw) : CCoinAddr(0)
+    {
+      SetData(nVersionIn, raw, 20);
+    }
+
+};
+ 
+_TEST(coinaddr)
+{
+  CWallet *wallet = GetWallet(TEST_COIN_IFACE);
+  unsigned char key[20];
+  string strAccount("");
+  int i;
+
+  {
+    CCoinAddr e_addr("EKnqTC9XEuucZEhD3miDGnbJxBptcxhByA");
+    _TRUE(e_addr.IsValid());
+//fprintf(stderr, "DEBUG: TEST: coinaddr: '%s' has nVersion '%d'\n", "EKnqTC9XEuucZEhD3miDGnbJxBptcxhByA", e_addr.GetVersion());
+  }
+
+  {
+    CCoinAddr s_addr("GSje1VrcG7uT55sL41sze9aL5qM7GaN5Bf");
+    _TRUE(s_addr.IsValid());
+//fprintf(stderr, "DEBUG: TEST: coinaddr: '%s' has nVersion '%d'\n", "GSje1VrcG7uT55sL41sze9aL5qM7GaN5Bf", s_addr.GetVersion());
+  }
+
+  {
+    CKey skey;
+    skey.MakeNewKey(true);
+    CPubKey spubkey = skey.GetPubKey();
+    CKeyID keyid = spubkey.GetID();
+    CCoinAddr s_addr(EMC2_COIN_IFACE);
+    s_addr.Set(keyid);
+    _TRUE(s_addr.IsValid());
+
+    wallet->mapAddressBook[keyid] = strAccount;
+    CWalletDB wdb(wallet->strWalletFile);
+    wdb.WriteName(s_addr.ToString(), strAccount);
+
+    bool fRet;
+    fRet = GetCoinAddr(wallet, s_addr, strAccount);
+    _TRUE(fRet);
+//fprintf(stderr, "DEBUG: fRet = %s\n", (fRet ? "true" : "false"));
+  }
+
+#if 0
+  BOOST_FOREACH(const PAIRTYPE(CTxDestination, string)& item, wallet->mapAddressBook)
+  {
+    const CCoinAddr& address = CCoinAddr(wallet->ifaceIndex, item.first);
+    const string& account = item.second;
+fprintf(stderr, "DEBUG: TEST: found addr '%s' for account '%s'\n", address.ToString().c_str(), account.c_str());
+  }
+#endif
+
+
+
+}
+
 
 
 

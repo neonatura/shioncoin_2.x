@@ -430,9 +430,11 @@ Object CExecCall::ToValue()
 
   obj.push_back(Pair("signature", signature.GetHash().GetHex()));
 
-  CCoinAddr addr;
+#if 0
+  CCoinAddr addr(ifaceIndex);
   addr.Set(CKeyID(hashIssuer));
   obj.push_back(Pair("sender", addr.ToString().c_str())); 
+#endif
 
   obj.push_back(Pair("app", GetIdentHash().GetHex()));
   obj.push_back(Pair("hash", GetHash().GetHex()));
@@ -671,7 +673,7 @@ int ProcessExecGenerateTx(CIface *iface, CExec *execIn, CExecCall *exec)
     return (SHERR_ACCESS);
 
   /* verify peer sig */
-  if (!exec->VerifySignature())
+  if (!exec->VerifySignature(ifaceIndex))
     return (SHERR_ACCESS);
 
   /* load sexe code */
@@ -719,7 +721,7 @@ int ProcessExecGenerateTx(CIface *iface, CExec *execIn, CExecCall *exec)
   /* prep args */
   str = strchr((char *)exec->vContext.data(), ' ');
   json = shjson_init(str ? str + 1 : NULL);
-  shjson_str_add(json, "sender", (char *)exec->GetSendAddr().ToString().c_str());
+  shjson_str_add(json, "sender", (char *)exec->GetSendAddr(ifaceIndex).ToString().c_str());
   shjson_num_add(json, "value", ((double)exec->GetSendValue() / (double)COIN));
 
   memset(method, 0, sizeof(method));
@@ -951,7 +953,7 @@ fprintf(stderr, "DEBUG: init_exec_tx: insufficient balance (%llu) .. %llu requir
     return (SHERR_AGAIN);
   }
 
-  CCoinAddr sendAddr;
+  CCoinAddr sendAddr(ifaceIndex);
   if (!wallet->GetMergedAddress(strAccount, "exec", sendAddr)) {
     error(SHERR_INVAL, "init_exec_tx: error generating merged address.");
     return (false);
@@ -1069,7 +1071,7 @@ fprintf(stderr, "DEBUG: update_exec_tx: !IsLocalExec\n");
   exec = wtx.UpdateExec(execIn);
 
   /* establish 'sender' coin addr */
-  CCoinAddr sendAddr;
+  CCoinAddr sendAddr(ifaceIndex);
   if (!wallet->GetMergedAddress(strAccount, "exec", sendAddr))
     return (SHERR_INVAL);
 
@@ -1139,7 +1141,7 @@ fprintf(stderr, "DEBUG: generate_exec_tx: insufficient balance (%llu) .. %llu re
   }
 
   /* define "sender" address. */
-  CCoinAddr sendAddr;
+  CCoinAddr sendAddr(ifaceIndex);
   if (!wallet->GetMergedAddress(strAccount, "exec", sendAddr)) {
     error(SHERR_INVAL, "generate_exec_tx: invalid sender exec coin addr."); 
     return (SHERR_INVAL);
@@ -1264,7 +1266,7 @@ int remove_exec_tx(CIface *iface, const uint160& hashExec, CWalletTx& wtx)
   }
 
   /* establish user address. */
-  CCoinAddr recvAddr;
+  CCoinAddr recvAddr(ifaceIndex);
   if (!wallet->GetMergedAddress(strAccount, "exec", recvAddr)) {
     error(SHERR_NOENT, "remove_exec_tx: error obtaining user coin address.");
     return (SHERR_NOENT);
@@ -1309,9 +1311,9 @@ bool CExecCall::Sign(int ifaceIndex, CCoinAddr& addr)
   return (true);
 }
 
-bool CExecCall::VerifySignature()
+bool CExecCall::VerifySignature(int ifaceIndex)
 {
-  CCoinAddr addr;
+  CCoinAddr addr(ifaceIndex);
 
   addr.Set(CKeyID(hashIssuer));
   if (!signature.VerifyAddress(addr, vContext.data(), vContext.size())) {

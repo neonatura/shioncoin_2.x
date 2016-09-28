@@ -560,7 +560,8 @@ static Value ListReceived(CWallet *wallet, const Array& params, bool fByAccounts
       if (!ExtractDestination(txout.scriptPubKey, address) || !IsMine(*wallet, address))
         continue;
 
-      tallyitem& item = mapTally[address];
+      CCoinAddr c_addr(wallet->ifaceIndex, address);
+      tallyitem& item = mapTally[c_addr];
       item.nAmount += txout.nValue;
       item.nConf = min(item.nConf, nDepth);
     }
@@ -569,9 +570,9 @@ static Value ListReceived(CWallet *wallet, const Array& params, bool fByAccounts
   // Reply
   Array ret;
   map<string, tallyitem> mapAccountTally;
-  BOOST_FOREACH(const PAIRTYPE(CCoinAddr, string)& item, wallet->mapAddressBook)
+  BOOST_FOREACH(const PAIRTYPE(CTxDestination, string)& item, wallet->mapAddressBook)
   {
-    const CCoinAddr& address = item.first;
+    const CCoinAddr& address = CCoinAddr(ifaceIndex, item.first);
     const string& strAccount = item.second;
     map<CCoinAddr, tallyitem>::iterator it = mapTally.find(address);
     if (it == mapTally.end() && !fIncludeEmpty)
@@ -657,7 +658,7 @@ void ListTransactions(int ifaceIndex, const CWalletTx& wtx, const string& strAcc
     {
       Object entry;
       entry.push_back(Pair("account", strSentAccount));
-      entry.push_back(Pair("address", CCoinAddr(s.first).ToString()));
+      entry.push_back(Pair("address", CCoinAddr(ifaceIndex, s.first).ToString()));
       entry.push_back(Pair("category", "send"));
       entry.push_back(Pair("amount", ValueFromAmount(-s.second)));
       entry.push_back(Pair("fee", ValueFromAmount(-nFee)));
@@ -679,7 +680,7 @@ void ListTransactions(int ifaceIndex, const CWalletTx& wtx, const string& strAcc
       {
         Object entry;
         entry.push_back(Pair("account", account));
-        entry.push_back(Pair("address", CCoinAddr(r.first).ToString()));
+        entry.push_back(Pair("address", CCoinAddr(ifaceIndex, r.first).ToString()));
         entry.push_back(Pair("category", "receive"));
         entry.push_back(Pair("amount", ValueFromAmount(r.second)));
         if (fLong)
@@ -1477,7 +1478,10 @@ Value rpc_msg_sign(CIface *iface, const Array& params, bool fHelp)
     throw JSONRPCError(-4, "Private key not available");
 
   string strMessageMagic;
-  strMessage.append(iface->name);
+  if (0 == strcasecmp(iface->name, "emc2"))
+    strMessage.append("Einsteinium");
+  else
+    strMessage.append(iface->name);
   strMessage.append(" Signed Message:\n");
 //const string strMessageMagic = "usde Signed Message:\n";
 
@@ -1519,7 +1523,10 @@ Value rpc_msg_verify(CIface *iface, const Array& params, bool fHelp)
     throw JSONRPCError(-5, "Malformed base64 encoding");
 
   string strMessageMagic;
-  strMessage.append(iface->name);
+  if (0 == strcasecmp(iface->name, "emc2"))
+    strMessage.append("Einsteinium");
+  else
+    strMessage.append(iface->name);
   strMessage.append(" Signed Message:\n");
 
   CDataStream ss(SER_GETHASH, 0);
@@ -1598,6 +1605,7 @@ Value rpc_wallet_export(CIface *iface, const Array& params, bool fHelp)
 
   std::string strPath = params[0].get_str();
 
+  int ifaceIndex = GetCoinIndex(iface);
   shjson_t *json = shjson_init(NULL);
   shjson_t *tree = shjson_array_add(json, iface->name);
   shjson_t *node;
@@ -1619,7 +1627,7 @@ Value rpc_wallet_export(CIface *iface, const Array& params, bool fHelp)
       continue;//throw JSONRPCError(-5, "Invalid address");
 #endif
 
-    CCoinAddr addr(dest);
+    CCoinAddr addr(ifaceIndex, dest);
     CKeyID keyID;
     if (!addr.GetKeyID(keyID))
       continue;//throw JSONRPCError(-3, "Address does not refer to a key");
@@ -1628,7 +1636,7 @@ Value rpc_wallet_export(CIface *iface, const Array& params, bool fHelp)
     bool fCompressed;
     if (!pwalletMain->GetSecret(keyID, vchSecret, fCompressed))
       continue;//throw JSONRPCError(-4,"Private key for address " + strLabel + " is not known");
-    CCoinSecret csec(vchSecret, fCompressed);
+    CCoinSecret csec(ifaceIndex, vchSecret, fCompressed);
     string strKey = csec.ToString();
 
     node = shjson_obj_add(tree, NULL);
@@ -1734,7 +1742,6 @@ Value rpc_wallet_get(CIface *iface, const Array& params, bool fHelp)
 
 Value rpc_wallet_key(CIface *iface, const Array& params, bool fHelp)
 {
-  CWallet *pwalletMain = GetWallet(iface);
 
   if (fHelp || params.size() != 1)
     throw runtime_error(
@@ -1753,9 +1760,12 @@ Value rpc_wallet_key(CIface *iface, const Array& params, bool fHelp)
         "The entire wallet can be exported to a file via the 'wallet.export' command.\n"
         );
 
+  CWallet *pwalletMain = GetWallet(iface);
+  int ifaceIndex = GetCoinIndex(iface);
+
   string strAddress = params[0].get_str();
-  CCoinAddr address;
-  if (!address.SetString(strAddress))
+  CCoinAddr address(strAddress);
+  if (!address.IsValid())
     throw JSONRPCError(-5, "Invalid address");
   CKeyID keyID;
   if (!address.GetKeyID(keyID))
@@ -1764,7 +1774,7 @@ Value rpc_wallet_key(CIface *iface, const Array& params, bool fHelp)
   bool fCompressed;
   if (!pwalletMain->GetSecret(keyID, vchSecret, fCompressed))
     throw JSONRPCError(-4,"Private key for address " + strAddress + " is not known");
-  return CCoinSecret(vchSecret, fCompressed).ToString();
+  return CCoinSecret(ifaceIndex, vchSecret, fCompressed).ToString();
 }
 
 Value rpc_wallet_info(CIface *iface, const Array& params, bool fHelp)
@@ -2114,10 +2124,16 @@ Value rpc_wallet_send(CIface *iface, const Array& params, bool fHelp)
         "<amount> is a real and is rounded to the nearest 0.00000001"
         + HelpRequiringPassphrase());
 
+  /* originating account  */
   string strAccount = AccountFromValue(params[0]);
+
+  /* destination coin address */
   CCoinAddr address(params[1].get_str());
   if (!address.IsValid())
     throw JSONRPCError(-5, "Invalid coin address");
+  if (address.GetVersion() == CCoinAddr::GetCoinAddrVersion(ifaceIndex))
+    throw JSONRPCError(-5, "Invalid address for coin service.");
+
   int64 nAmount = AmountFromValue(params[2]);
   int nMinDepth = 1;
   if (params.size() > 3)
@@ -2218,8 +2234,6 @@ Value rpc_wallet_setkey(CIface *iface, const Array& params, bool fHelp)
 
 Value rpc_wallet_setkeyphrase(CIface *iface, const Array& params, bool fHelp)
 {
-  CWallet *wallet = GetWallet(iface);
-  int ifaceIndex = GetCoinIndex(iface);
 
   if (fHelp || params.size() != 2) {
     throw runtime_error(
@@ -2228,7 +2242,9 @@ Value rpc_wallet_setkeyphrase(CIface *iface, const Array& params, bool fHelp)
   }
 
   CCoinSecret vchSecret;
-  bool ret = DecodeMnemonicSecret(params[0].get_str(), vchSecret);
+  CWallet *wallet = GetWallet(iface);
+  int ifaceIndex = GetCoinIndex(iface);
+  bool ret = DecodeMnemonicSecret(ifaceIndex, params[0].get_str(), vchSecret);
   if (!ret)
     throw JSONRPCError(-5, "Invalid private key");
 
@@ -2328,7 +2344,7 @@ Value rpc_wallet_unconfirm(CIface *iface, const Array& params, bool fHelp)
       int depth = pcoin.GetBlocksToMaturity(ifaceIndex);
       if (depth > 0 && pcoin.GetDepthInMainChain(ifaceIndex) >= 2) {
         CTransaction& tx = (CTransaction&)pcoin;
-        results.push_back(tx.ToValue());
+        results.push_back(tx.ToValue(ifaceIndex));
       }
     }
   }
@@ -2371,21 +2387,22 @@ Value rpc_wallet_validate(CIface *iface, const Array& params, bool fHelp)
 
 Value rpc_wallet_addrlist(CIface *iface, const Array& params, bool fHelp)
 {
-  CWallet *pwalletMain = GetWallet(iface);
   if (fHelp || params.size() != 1)
     throw runtime_error(
         "wallet.addrlist <account>\n"
         "Returns the list of coin addresses for the given account.");
 
+  CWallet *pwalletMain = GetWallet(iface);
+  int ifaceIndex = GetCoinIndex(iface);
   string strAccount = AccountFromValue(params[0]);
   if (!IsAccountValid(iface, strAccount))
     throw JSONRPCError(-8, "Invalid account name specified.");
 
   // Find all addresses that have the given account
   Array ret;
-  BOOST_FOREACH(const PAIRTYPE(CCoinAddr, string)& item, pwalletMain->mapAddressBook)
+  BOOST_FOREACH(const PAIRTYPE(CTxDestination, string)& item, pwalletMain->mapAddressBook)
   {
-    const CCoinAddr& address = item.first;
+    const CCoinAddr& address = CCoinAddr(ifaceIndex, item.first);
     const string& strName = item.second;
     if (strName == strAccount)
       ret.push_back(address.ToString());
@@ -4232,8 +4249,8 @@ Value rpc_tx_decode(CIface *iface, const Array& params, bool fHelp)
         "tx.decode <hex string>\n"
         "Return a JSON object representing the serialized, hex-encoded transaction.");
 
+  int ifaceIndex = GetCoinIndex(iface);
   RPCTypeCheck(params, list_of(str_type));
-
   vector<unsigned char> txData(ParseHex(params[0].get_str()));
   CDataStream ssData(txData, SER_NETWORK, PROTOCOL_VERSION(iface));
   CTransaction tx;
@@ -4244,7 +4261,7 @@ Value rpc_tx_decode(CIface *iface, const Array& params, bool fHelp)
     throw JSONRPCError(-22, "TX decode failed");
   }
 
-  return (tx.ToValue());
+  return (tx.ToValue(ifaceIndex));
 }
 
 Value rpc_tx_list(CIface *iface, const Array& params, bool fHelp)
@@ -4350,6 +4367,7 @@ Value rpc_tx_pool(CIface *iface, const Array& params, bool fHelp)
 Value rpc_addmultisigaddress(CIface *iface, const Array& params, bool fHelp)
 {
   CWallet *pwalletMain = GetWallet(iface);
+  int ifaceIndex = GetCoinIndex(iface);
 
     if (fHelp || params.size() < 2 || params.size() > 3)
     {
@@ -4440,7 +4458,7 @@ Value rpc_tx_get(CIface *iface, const Array& params, bool fHelp)
   if (!tx.ReadTx(ifaceIndex, hash, &hashBlock))
     throw JSONRPCError(-5, "Invalid transaction id");
 
-  Object entry = tx.ToValue();
+  Object entry = tx.ToValue(ifaceIndex);
 
   if (hashBlock != 0)
   {
@@ -4502,7 +4520,6 @@ Value rpc_wallet_tx(CIface *iface, const Array& params, bool fHelp)
 
 Value rpc_wallet_keyphrase(CIface *iface, const Array& params, bool fHelp)
 {
-  CWallet *pwalletMain = GetWallet(iface);
 
   if (fHelp || params.size() != 1)
     throw runtime_error(
@@ -4521,8 +4538,10 @@ Value rpc_wallet_keyphrase(CIface *iface, const Array& params, bool fHelp)
         "The entire wallet can be exported to a file via the 'wallet.export' command.\n"
         );
 
+  CWallet *pwalletMain = GetWallet(iface);
+  int ifaceIndex = GetCoinIndex(iface);
   string strAddress = params[0].get_str();
-  CCoinAddr address;
+  CCoinAddr address(ifaceIndex);
   if (!address.SetString(strAddress))
     throw JSONRPCError(-5, "Invalid address");
   CKeyID keyID;
@@ -4533,7 +4552,7 @@ Value rpc_wallet_keyphrase(CIface *iface, const Array& params, bool fHelp)
   if (!pwalletMain->GetSecret(keyID, vchSecret, fCompressed))
     throw JSONRPCError(-4,"Private key for address " + strAddress + " is not known");
 
-  CCoinSecret secret(vchSecret, fCompressed);
+  CCoinSecret secret(ifaceIndex, vchSecret, fCompressed);
   string phrase = EncodeMnemonicSecret(secret);
 
   return (phrase);
@@ -4561,7 +4580,7 @@ Value core_block_verify(CIface *iface, int nDepth)
   nHeight = MAX(0, nBestHeight - nDepth);
   result.push_back(Pair("height", (boost::int64_t)nHeight));
 
-  for (idx = 0; idx < nDepth; idx++) {
+  for (idx = 0; idx < nDepth && nHeight < nBestHeight; idx++) {
     CBlock *block = GetBlockByHeight(iface, nHeight);
     if (!block) throw runtime_error("Block not found in block-chain.");
     fRet = block->CheckBlock();

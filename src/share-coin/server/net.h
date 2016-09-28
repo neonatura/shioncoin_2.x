@@ -508,7 +508,7 @@ public:
         if (nHeaderStart != -1)
             AbortMessage();
         nHeaderStart = vSend.size();
-        vSend << CMessageHeader(pszCommand, 0);
+        vSend << CMessageHeader(ifaceIndex, pszCommand, 0);
         nMessageStart = vSend.size();
         if (fDebug)
             printf("sending: %s ", pszCommand);
@@ -833,7 +833,7 @@ void RelayMessage(const CInv& inv, const T& a)
 {
   CIface *iface = GetCoinByIndex(inv.ifaceIndex);
   CDataStream ss(SER_NETWORK, PROTOCOL_VERSION(iface));
-  ss.reserve(10000);
+  ss.reserve(4096);
   ss << a;
   RelayMessage(inv, ss);
 }

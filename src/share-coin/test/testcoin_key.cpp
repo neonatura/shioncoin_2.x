@@ -76,8 +76,8 @@ _TEST(coin_key)
   _TRUE(fCompressed == false);
   CSecret secret4  = bsecret4.GetSecret (fCompressed);
   _TRUE(fCompressed == false);
-  bsecret3C.SetSecret(secret3, true);
-  bsecret4C.SetSecret(secret4, true);
+  bsecret3C.SetSecret(TEST_COIN_IFACE, secret3, true);
+  bsecret4C.SetSecret(TEST_COIN_IFACE, secret4, true);
   CSecret secret3C = bsecret3C.GetSecret(fCompressed);
   _TRUE(fCompressed == true);
   CSecret secret4C = bsecret4C.GetSecret(fCompressed);
@@ -257,14 +257,14 @@ _TEST(coin_key_phrase)
   /* generate new coin address key */
   CKey key;
   key.MakeNewKey(false);
-  CCoinSecret secret(key.GetSecret(fCompressed), false); 
+  CCoinSecret secret(TEST_COIN_IFACE, key.GetSecret(fCompressed), false); 
   _TRUE(secret.IsValid() == true);
 
   /* convert to a 'phrase' */
   string phrase = EncodeMnemonicSecret(secret);
 
   CCoinSecret cmp_secret;
-  bool ret = DecodeMnemonicSecret(phrase, cmp_secret);
+  bool ret = DecodeMnemonicSecret(TEST_COIN_IFACE, phrase, cmp_secret);
   _TRUE(ret == true);
   _TRUE(cmp_secret.IsValid() == true);
   

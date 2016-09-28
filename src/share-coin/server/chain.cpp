@@ -129,7 +129,6 @@ void ServiceWalletEventUpdate(CWallet *wallet, const CBlock *pblock)
 
 bool LoadExternalBlockchainFile()
 {
-  static unsigned char pchMessageStart[4] = { 0xd9, 0xd9, 0xf9, 0xbd };
   static int nIndex = 0;
   CIface *iface = GetCoinByIndex(chain.ifaceIndex);
   int err;
@@ -158,19 +157,19 @@ bool LoadExternalBlockchainFile()
 #endif
             return false;
           }
-          void* nFind = memchr(pchData, pchMessageStart[0], nRead+1-sizeof(pchMessageStart));
+          void* nFind = memchr(pchData, iface->hdr_magic[0], nRead+1-sizeof(iface->hdr_magic));
           if (nFind)
           {
-            if (memcmp(nFind, pchMessageStart, sizeof(pchMessageStart))==0)
+            if (memcmp(nFind, iface->hdr_magic, sizeof(iface->hdr_magic))==0)
             {
-              chain.pos += ((unsigned char*)nFind - pchData) + sizeof(pchMessageStart);
+              chain.pos += ((unsigned char*)nFind - pchData) + sizeof(iface->hdr_magic);
               break;
             }
             chain.pos += ((unsigned char*)nFind - pchData) + 1;
           }
           else {
 fprintf(stderr, "DEBUG: pchMessage not found\n");
-            chain.pos += sizeof(pchData) - sizeof(pchMessageStart) + 1;
+            chain.pos += sizeof(pchData) - sizeof(iface->hdr_magic) + 1;
 }
         } while(!fRequestShutdown);
         if (chain.pos == (unsigned int)-1)
@@ -245,7 +244,6 @@ fprintf(stderr, "DEBUG: ProcessBlock info: fseek(blkdat, %d, SEEK_SET)\n", chain
 
 bool SaveExternalBlockchainFile()
 {
-  static unsigned char pchMessageStart[4] = { 0xd9, 0xd9, 0xf9, 0xbd };
   CIface *iface = GetCoinByIndex(chain.ifaceIndex);
   int64 idx;
 
@@ -266,7 +264,7 @@ bool SaveExternalBlockchainFile()
         if (!pblock) continue; /* uh oh */
         /* hdr */
         unsigned int nSize = blkdat.GetSerializeSize(*pblock);
-        blkdat << FLATDATA(pchMessageStart) << nSize;
+        blkdat << FLATDATA(iface->hdr_magic) << nSize;
         /* content */
         blkdat << *pblock;
         delete pblock;

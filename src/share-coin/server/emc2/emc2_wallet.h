@@ -25,15 +25,15 @@
 
 
 
-#ifndef __OMNI_WALLET_H__
-#define __OMNI_WALLET_H__
+#ifndef __EMC2_WALLET_H__
+#define __EMC2_WALLET_H__
 
-extern CScript OMNI_COINBASE_FLAGS;
+extern CScript EMC2_COINBASE_FLAGS;
 
-class OMNIWallet : public CWallet
+class EMC2Wallet : public CWallet
 {
   public:
-    OMNIWallet() : CWallet(OMNI_COIN_IFACE, "omni_wallet.dat") { };  
+    EMC2Wallet() : CWallet(EMC2_COIN_IFACE, "emc2_wallet.dat") { };  
 
     void RelayWalletTransaction(CWalletTx& wtx);
     void ResendWalletTransactions();
@@ -48,11 +48,11 @@ class OMNIWallet : public CWallet
 
 };
 
-extern OMNIWallet *omniWallet;
+extern EMC2Wallet *emc2Wallet;
 
-bool omni_LoadWallet(void);
-
-
+bool emc2_LoadWallet(void);
 
 
-#endif /* ndef __OMNI_WALLET_H__ */
+
+
+#endif /* ndef __EMC2_WALLET_H__ */

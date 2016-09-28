@@ -20,7 +20,6 @@
 
 
 
-extern unsigned char pchMessageStart[4];
 
 /** Message header.
  * (4) message start.
@@ -31,8 +30,10 @@ extern unsigned char pchMessageStart[4];
 class CMessageHeader
 {
     public:
+        mutable int ifaceIndex;
+
         CMessageHeader();
-        CMessageHeader(const char* pszCommand, unsigned int nMessageSizeIn);
+        CMessageHeader(int ifaceIndex, const char* pszCommand, unsigned int nMessageSizeIn);
 
         std::string GetCommand() const;
         bool IsValid() const;
@@ -48,7 +49,7 @@ class CMessageHeader
     // TODO: make private (improves encapsulation)
     public:
         enum {
-            MESSAGE_START_SIZE=sizeof(::pchMessageStart),
+            MESSAGE_START_SIZE=4,
             COMMAND_SIZE=12,
             MESSAGE_SIZE_SIZE=sizeof(int),
             CHECKSUM_SIZE=sizeof(int),
@@ -65,44 +66,57 @@ class CMessageHeader
 /** nServices flags */
 enum
 {
-    NODE_NETWORK = (1 << 0),
+  NODE_NETWORK = (1 << 0),
+  NODE_BLOOM = (1 << 1)
 };
 
 /** A CService with information about it as peer */
 class CAddress : public CService
 {
-    public:
-        CAddress();
-        explicit CAddress(CService ipIn, uint64 nServicesIn=NODE_NETWORK);
+  public:
+    uint64 nServices;
 
-        void Init();
+    // disk and network only
+    unsigned int nTime;
 
-        IMPLEMENT_SERIALIZE
-            (
-             CAddress* pthis = const_cast<CAddress*>(this);
-             CService* pip = (CService*)pthis;
-             if (fRead)
-                 pthis->Init();
-             if (nType & SER_DISK)
-                 READWRITE(nVersion);
-             if ((nType & SER_DISK) ||
-                 (nVersion >= CADDR_TIME_VERSION && !(nType & SER_GETHASH)))
-                 READWRITE(nTime);
-             READWRITE(nServices);
-             READWRITE(*pip);
-            )
+    // memory only
+    mutable int64 nLastTry;
 
-        void print() const;
+    CAddress() : CService()
+    {
+      Init();
+    }
 
-    // TODO: make private (improves encapsulation)
-    public:
-        uint64 nServices;
+    explicit CAddress(CService ipIn, uint64 nServicesIn = NODE_NETWORK) : CService(ipIn)
+    {
+      Init();
+      nServices = nServicesIn;
+    }
 
-        // disk and network only
-        unsigned int nTime;
+    void Init()
+    {
+      nServices = NODE_NETWORK;
+      nTime = 100000000;
+      nLastTry = 0;
+    }
 
-        // memory only
-        int64 nLastTry;
+    IMPLEMENT_SERIALIZE
+        (
+           CAddress* pthis = const_cast<CAddress*>(this);
+           CService* pip = (CService*)pthis;
+           if (fRead)
+               pthis->Init();
+           if (nType & SER_DISK)
+               READWRITE(nVersion);
+           if ((nType & SER_DISK) ||
+               (nVersion >= CADDR_TIME_VERSION && !(nType & SER_GETHASH)))
+               READWRITE(nTime);
+           READWRITE(nServices);
+           READWRITE(*pip);
+        )
+
+    void print() const;
+
 };
 
 /** inv message data */
@@ -130,5 +144,6 @@ class CInv
     std::string ToString() const;
     void print() const;
 };
+
 
 #endif // __INCLUDED_PROTOCOL_H__

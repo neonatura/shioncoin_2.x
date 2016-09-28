@@ -32,7 +32,7 @@
 #include "rpc_proto.h"
 #include "shc/shc_netmsg.h"
 #include "usde/usde_netmsg.h"
-#include "omni/omni_netmsg.h"
+#include "emc2/emc2_netmsg.h"
 #include "chain.h"
 
 #ifdef WIN32
@@ -71,7 +71,6 @@ struct LocalServiceInfo {
 bool fClient = false;
 bool fDiscover = true;
 bool fUseUPnP = false;
-uint64 nLocalServices = (fClient ? 0 : NODE_NETWORK);
 static CCriticalSection cs_mapLocalHost;
 static map<CNetAddr, LocalServiceInfo> mapLocalHost;
 static bool vfReachable[NET_MAX] = {};
@@ -181,6 +180,7 @@ bool GetLocal(CService& addr, const CNetAddr *paddrPeer)
 // get best local address for a particular peer as a CAddress
 CAddress GetLocalAddress(const CNetAddr *paddrPeer)
 {
+#if 0
     CAddress ret(CService("0.0.0.0",0),0);
     CService addr;
     if (GetLocal(addr, paddrPeer))
@@ -190,6 +190,11 @@ CAddress GetLocalAddress(const CNetAddr *paddrPeer)
         ret.nTime = GetAdjustedTime();
     }
     return ret;
+#endif
+    const char *ipaddr = unet_local_host();
+fprintf(stderr, "DEBUG: GetLocalAddress: '%s'\n", ipaddr);
+    CAddress addr(CService(ipaddr, 0), 0);
+    return (addr);
 }
 
 bool RecvLine(SOCKET hSocket, string& strLine)
@@ -295,6 +300,7 @@ bool AddLocal(int ifaceIndex, const CService& addr, int nScore)
     SetReachable(addr.GetNetwork());
   }
 
+fprintf(stderr, "DEBUG: AddLocal: would of added '%s'\n", addr.ToString().c_str()); 
   AdvertizeLocal(ifaceIndex);
 
   return true;
@@ -669,20 +675,23 @@ void CNode::PushVersion()
 {
   CIface *iface = GetCoinByIndex(ifaceIndex);
 
-  /// when NTP implemented, change to just nTime = GetAdjustedTime()
   int64 nTime = (fInbound ? GetAdjustedTime() : GetTime());
+
   CAddress addrYou = (addr.IsRoutable() && !IsProxy(addr) ? addr : CAddress(CService("0.0.0.0",0)));
+
   CAddress addrMe = GetLocalAddress(&addr);
+
   RAND_bytes((unsigned char*)&nLocalHostNonce, sizeof(nLocalHostNonce));
+
+
+  PushMessage("version", PROTOCOL_VERSION(iface), COIN_SERVICES(iface), nTime, addrYou, addrMe, nLocalHostNonce, FormatSubVersion(GetClientName(iface), IFACE_VERSION(iface), std::vector<string>()), GetBestHeight(ifaceIndex));
 
   {
     char buf[256];
-    sprintf(buf, "PushVersion: version %d, blocks=%d, us=%s, them=%s, peer=%s", PROTOCOL_VERSION(iface), GetBestHeight(ifaceIndex), addrMe.ToString().c_str(), addrYou.ToString().c_str(), addr.ToString().c_str());
-    unet_log(ifaceIndex, buf);
+    sprintf(buf, "PushVersion: version (proto %d / client %d), blocks=%d, us=%s, them=%s, peer=%s", PROTOCOL_VERSION(iface), IFACE_VERSION(iface), GetBestHeight(ifaceIndex), addrMe.ToString().c_str(), addrYou.ToString().c_str(), addr.ToString().c_str());
+  //  unet_log(ifaceIndex, buf);
+fprintf(stderr, "DEBUG: %s\n", buf);
   }
-
-  PushMessage("version", PROTOCOL_VERSION(iface), nLocalServices, nTime, addrYou, addrMe,
-      nLocalHostNonce, FormatSubVersion(GetClientName(iface), CLIENT_VERSION, std::vector<string>()), GetBestHeight(ifaceIndex));
 }
 
 
@@ -1414,12 +1423,12 @@ extern bool usde_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, 
 bool usde_coin_server_recv_msg(CIface *iface, CNode* pfrom)
 {
   CDataStream& vRecv = pfrom->vRecv;
-  CMessageHeader hdr;
   shtime_t ts;
 
   if (vRecv.empty())
     return (true);
 
+  CMessageHeader hdr;
   vRecv >> hdr;
 
   /* check checksum */
@@ -1485,10 +1494,12 @@ int usde_coin_server_recv(CIface *iface, CNode *pnode, shbuf_t *buff)
 
   /* verify magic sequence */
   if (0 != memcmp(hdr.magic, iface->hdr_magic, 4)) {
+fprintf(stderr, "DEBUG: invalid header magic: {%-2.2x} {%-2.2x} {%-2.2x} {%-2.2x}\n", data[0], data[1], data[2], data[3]);
     shbuf_clear(buff);
     return (SHERR_ILSEQ);
   }
 
+fprintf(stderr, "DEBUG: USDE: hdr.size = %d\n", (int)hdr.size); 
   if (hdr.size > MAX_SIZE) {
     shbuf_clear(buff);
     return (SHERR_INVAL);
@@ -1497,17 +1508,23 @@ int usde_coin_server_recv(CIface *iface, CNode *pnode, shbuf_t *buff)
   if (hdr.size > sizeof(hdr) + size)
     return (SHERR_AGAIN);
 
-  /* transfer to cli buffer */
   CDataStream& vRecv = pnode->vRecv;
+
+  /* clear previous contents */
+  vRecv.clear();
+
+  /* transfer to cli buffer */
   vRecv.resize(sizeof(hdr) + hdr.size);
   memcpy(&vRecv[0], data, sizeof(hdr) + hdr.size);
   shbuf_trim(buff, sizeof(hdr) + hdr.size);
 
   bool fRet = usde_coin_server_recv_msg(iface, pnode);
-//fprintf(stderr, "DEBUG: usde_coin_server_recv: usde_coin_server_recv_msg ret'd %s <%u bytes> [%s]\n", fRet ? "true" : "false", hdr.size, hdr.cmd); 
+fprintf(stderr, "DEBUG: usde_coin_server_recv: usde_coin_server_recv_msg ret'd %s <%u bytes> [%s]\n", fRet ? "true" : "false", hdr.size, hdr.cmd); 
 
+#if 0
   vRecv.erase(vRecv.begin(), vRecv.end());
   vRecv.Compact();
+#endif
 
   pnode->nLastRecv = GetTime();
   return (0);
@@ -1720,13 +1737,14 @@ static void shc_close_free(void)
 extern bool shc_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataStream& vRecv);
 bool shc_coin_server_recv_msg(CIface *iface, CNode* pfrom)
 {
+  int ifaceIndex = GetCoinIndex(iface);
   CDataStream& vRecv = pfrom->vRecv;
-  CMessageHeader hdr;
   shtime_t ts;
 
   if (vRecv.empty())
     return (true);
 
+  CMessageHeader hdr;
   vRecv >> hdr;
 
   /* check checksum */
@@ -1798,6 +1816,7 @@ int shc_coin_server_recv(CIface *iface, CNode *pnode, shbuf_t *buff)
     return (SHERR_ILSEQ);
   }
 
+fprintf(stderr, "DEBUG: USDE: hdr.size = %d\n", (int)hdr.size); 
   if (hdr.size > MAX_SIZE) {
     shbuf_clear(buff);
     return (SHERR_INVAL);
@@ -1806,17 +1825,23 @@ int shc_coin_server_recv(CIface *iface, CNode *pnode, shbuf_t *buff)
   if (hdr.size > sizeof(hdr) + size)
     return (SHERR_AGAIN);
 
-  /* transfer to cli buffer */
   CDataStream& vRecv = pnode->vRecv;
+
+  /* clear previous contents */
+  vRecv.clear();
+
+  /* transfer to cli buffer */
   vRecv.resize(sizeof(hdr) + hdr.size);
   memcpy(&vRecv[0], data, sizeof(hdr) + hdr.size);
   shbuf_trim(buff, sizeof(hdr) + hdr.size);
 
   bool fRet = shc_coin_server_recv_msg(iface, pnode);
-//fprintf(stderr, "DEBUG: shc_coin_server_recv: shc_coin_server_recv_msg ret'd %s <%u bytes> [%s]\n", fRet ? "true" : "false", hdr.size, hdr.cmd); 
+fprintf(stderr, "DEBUG: shc_coin_server_recv: shc_coin_server_recv_msg ret'd %s <%u bytes> [%s]\n", fRet ? "true" : "false", hdr.size, hdr.cmd); 
 
+#if 0
   vRecv.erase(vRecv.begin(), vRecv.end());
   vRecv.Compact();
+#endif
 
   pnode->nLastRecv = GetTime();
   return (0);
@@ -2529,7 +2554,10 @@ for (idx = 0; idx < MAX_COIN_IFACE; idx++)
 #endif
 
     //CreateThread(ThreadGetMyExternalIP, NULL);
-    GetMyExternalIP();
+
+  unet_local_init();
+
+    GetMyExternalIP(); /* DEBUG: deprecate */
 }
 
 bool static Bind(int ifaceIndex, const CService &addr, bool fError = true) {
@@ -2936,9 +2964,9 @@ void AddPeerAddress(CIface *iface, const char *hostname, int port)
 
 
 
-void omni_close_free(void)
+void emc2_close_free(void)
 {
-  NodeList &vNodes = GetNodeList(OMNI_COIN_IFACE);
+  NodeList &vNodes = GetNodeList(EMC2_COIN_IFACE);
 
   LOCK(cs_vNodes);
   vector<CNode*> vNodesCopy = vNodes;
@@ -2997,9 +3025,9 @@ void omni_close_free(void)
 
 }
 
-void omni_server_accept(int hSocket, struct sockaddr *net_addr)
+void emc2_server_accept(int hSocket, struct sockaddr *net_addr)
 {
-  NodeList &vNodes = GetNodeList(OMNI_COIN_IFACE);
+  NodeList &vNodes = GetNodeList(EMC2_COIN_IFACE);
 #ifdef USE_IPV6
   struct sockaddr_storage sockaddr;
 #else
@@ -3052,13 +3080,13 @@ void omni_server_accept(int hSocket, struct sockaddr *net_addr)
   }
 
   if (inBound) {
-    fprintf(stderr, "omni: accepted connection %s\n", addr.ToString().c_str());
+    fprintf(stderr, "emc2: accepted connection %s\n", addr.ToString().c_str());
   } else {
-    fprintf(stderr, "omni: initialized connection %s\n", addr.ToString().c_str());
+    fprintf(stderr, "emc2: initialized connection %s\n", addr.ToString().c_str());
   }
 
 
-  CNode* pnode = new CNode(OMNI_COIN_IFACE, hSocket, addr, 
+  CNode* pnode = new CNode(EMC2_COIN_IFACE, hSocket, addr, 
       shaddr_print(shaddr(hSocket)), inBound);
 
   //if (inBound)
@@ -3076,9 +3104,9 @@ void omni_server_accept(int hSocket, struct sockaddr *net_addr)
   shared_addr_submit(shaddr_print(net_addr));
 }
 
-void omni_server_close(int fd, struct sockaddr *addr)
+void emc2_server_close(int fd, struct sockaddr *addr)
 {
-  NodeList &vNodes = GetNodeList(OMNI_COIN_IFACE);
+  NodeList &vNodes = GetNodeList(EMC2_COIN_IFACE);
 
   LOCK(cs_vNodes);
   vector<CNode*> vNodesCopy = vNodes;
@@ -3091,16 +3119,17 @@ void omni_server_close(int fd, struct sockaddr *addr)
 
 }
 
-extern bool omni_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataStream& vRecv);
-bool omni_coin_server_recv_msg(CIface *iface, CNode* pfrom)
+extern bool emc2_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataStream& vRecv);
+bool emc2_coin_server_recv_msg(CIface *iface, CNode* pfrom)
 {
+  int ifaceIndex = GetCoinIndex(iface);
   CDataStream& vRecv = pfrom->vRecv;
-  CMessageHeader hdr;
   shtime_t ts;
 
   if (vRecv.empty())
     return (true);
 
+  CMessageHeader hdr;
   vRecv >> hdr;
 
   /* check checksum */
@@ -3122,8 +3151,8 @@ bool omni_coin_server_recv_msg(CIface *iface, CNode* pfrom)
     char *cmd = (char *)strCommand.c_str();
     LOCK(cs_main);
     timing_init(cmd, &ts);
-    fRet = omni_ProcessMessage(iface, pfrom, strCommand, vRecv);
-    timing_term(OMNI_COIN_IFACE, cmd, &ts);
+    fRet = emc2_ProcessMessage(iface, pfrom, strCommand, vRecv);
+    timing_term(EMC2_COIN_IFACE, cmd, &ts);
   } catch (std::ios_base::failure& e) {
     if (strstr(e.what(), "end of data"))
     {
@@ -3137,18 +3166,18 @@ bool omni_coin_server_recv_msg(CIface *iface, CNode* pfrom)
     }
     else
     {
-      PrintExceptionContinue(&e, "(omni) ProcessMessage");
+      PrintExceptionContinue(&e, "(emc2) ProcessMessage");
     }
   } catch (std::exception& e) {
-    PrintExceptionContinue(&e, "(omni) ProcessMessage");
+    PrintExceptionContinue(&e, "(emc2) ProcessMessage");
   } catch (...) {
-    PrintExceptionContinue(NULL, "(omni) ProcessMessage");
+    PrintExceptionContinue(NULL, "(emc2) ProcessMessage");
   }
 
   return (fRet);
 }
 
-int omni_coin_server_recv(CIface *iface, CNode *pnode, shbuf_t *buff)
+int emc2_coin_server_recv(CIface *iface, CNode *pnode, shbuf_t *buff)
 {
   coinhdr_t hdr;
   unsigned char *data;
@@ -3184,8 +3213,8 @@ int omni_coin_server_recv(CIface *iface, CNode *pnode, shbuf_t *buff)
   memcpy(&vRecv[0], data, sizeof(hdr) + hdr.size);
   shbuf_trim(buff, sizeof(hdr) + hdr.size);
 
-  bool fRet = omni_coin_server_recv_msg(iface, pnode);
-fprintf(stderr, "DEBUG: omni_coin_server_recv: omni_coin_server_recv_msg ret'd %s <%u bytes> [%s]\n", fRet ? "true" : "false", hdr.size, hdr.cmd); 
+  bool fRet = emc2_coin_server_recv_msg(iface, pnode);
+fprintf(stderr, "DEBUG: emc2_coin_server_recv: emc2_coin_server_recv_msg ret'd %s <%u bytes> [%s]\n", fRet ? "true" : "false", hdr.size, hdr.cmd); 
 
   vRecv.erase(vRecv.begin(), vRecv.end());
   vRecv.Compact();
@@ -3194,7 +3223,7 @@ fprintf(stderr, "DEBUG: omni_coin_server_recv: omni_coin_server_recv_msg ret'd %
   return (0);
 }
 
-void omni_MessageHandler(CIface *iface)
+void emc2_MessageHandler(CIface *iface)
 {
   NodeList &vNodes = GetNodeList(iface);
   shtime_t ts;
@@ -3218,7 +3247,7 @@ void omni_MessageHandler(CIface *iface)
     {
       TRY_LOCK(pnode->cs_vRecv, lockRecv);
       if (lockRecv)
-        omni_ProcessMessages(iface, pnode);
+        emc2_ProcessMessages(iface, pnode);
     }
     if (fShutdown)
       return;
@@ -3229,9 +3258,9 @@ void omni_MessageHandler(CIface *iface)
     {
       TRY_LOCK(pnode->cs_vSend, lockSend);
       if (lockSend)
-        omni_SendMessages(iface, pnode, pnode == pnodeTrickle);
+        emc2_SendMessages(iface, pnode, pnode == pnodeTrickle);
     }
-    timing_term(OMNI_COIN_IFACE, "SendMessages", &ts);
+    timing_term(EMC2_COIN_IFACE, "SendMessages", &ts);
     if (fShutdown)
       return;
   }
@@ -3245,11 +3274,11 @@ void omni_MessageHandler(CIface *iface)
 
 }
 
-void omni_server_timer(void)
+void emc2_server_timer(void)
 {
   static int verify_idx;
-  CIface *iface = GetCoinByIndex(OMNI_COIN_IFACE);
-  NodeList &vNodes = GetNodeList(OMNI_COIN_IFACE);
+  CIface *iface = GetCoinByIndex(EMC2_COIN_IFACE);
+  NodeList &vNodes = GetNodeList(EMC2_COIN_IFACE);
   shtime_t ts;
   bc_t *bc;
   int err;
@@ -3257,7 +3286,7 @@ void omni_server_timer(void)
   if (fShutdown)
     return;
 
-  omni_close_free();
+  emc2_close_free();
 
   //
   // Service each socket
@@ -3277,9 +3306,9 @@ void omni_server_timer(void)
 
       shbuf_t *pchBuf = descriptor_rbuff(pnode->hSocket);
       if (pchBuf) {
-        err = omni_coin_server_recv(iface, pnode, pchBuf);
+        err = emc2_coin_server_recv(iface, pnode, pchBuf);
         if (err && err != SHERR_AGAIN) {
-fprintf(stderr, "DEBUG: omni_coin_server_recv: error %d\n", err);
+fprintf(stderr, "DEBUG: emc2_coin_server_recv: error %d\n", err);
         }
       }
 
@@ -3307,10 +3336,10 @@ fprintf(stderr, "DEBUG: omni_coin_server_recv: error %d\n", err);
   }
 
   timing_init("MessageHandler", &ts);
-  omni_MessageHandler(iface);
-  timing_term(OMNI_COIN_IFACE, "MessageHandler", &ts);
+  emc2_MessageHandler(iface);
+  timing_term(EMC2_COIN_IFACE, "MessageHandler", &ts);
 
-  event_cycle_chain(OMNI_COIN_IFACE); /* DEBUG: */
+  event_cycle_chain(EMC2_COIN_IFACE); /* DEBUG: */
 
 }
 

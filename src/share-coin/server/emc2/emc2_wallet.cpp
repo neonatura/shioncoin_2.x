@@ -43,42 +43,42 @@
 #include <boost/array.hpp>
 #include <share.h>
 #include "walletdb.h"
-#include "omni/omni_block.h"
-#include "omni/omni_wallet.h"
-#include "omni/omni_txidx.h"
+#include "emc2/emc2_block.h"
+#include "emc2/emc2_wallet.h"
+#include "emc2/emc2_txidx.h"
 #include "chain.h"
 
 using namespace std;
 using namespace boost;
 
-OMNIWallet *omniWallet;
-CScript OMNI_COINBASE_FLAGS;
+EMC2Wallet *emc2Wallet;
+CScript EMC2_COINBASE_FLAGS;
 
 
-int omni_UpgradeWallet(void)
+int emc2_UpgradeWallet(void)
 {
   int nMaxVersion = 0;//GetArg("-upgradewallet", 0);
   if (nMaxVersion == 0) // the -upgradewallet without argument case
   {
     nMaxVersion = CLIENT_VERSION;
-    omniWallet->SetMinVersion(FEATURE_LATEST); // permanently upgrade the wallet immediately
+    emc2Wallet->SetMinVersion(FEATURE_LATEST); // permanently upgrade the wallet immediately
   }
   else
     printf("Allowing wallet upgrade up to %i\n", nMaxVersion);
 
-  if (nMaxVersion > omniWallet->GetVersion()) {
-    omniWallet->SetMaxVersion(nMaxVersion);
+  if (nMaxVersion > emc2Wallet->GetVersion()) {
+    emc2Wallet->SetMaxVersion(nMaxVersion);
   }
 
 }
 
-bool omni_LoadWallet(void)
+bool emc2_LoadWallet(void)
 {
-  CIface *iface = GetCoinByIndex(OMNI_COIN_IFACE);
+  CIface *iface = GetCoinByIndex(EMC2_COIN_IFACE);
   std::ostringstream strErrors;
 
   const char* pszP2SH = "/P2SH/";
-  OMNI_COINBASE_FLAGS << std::vector<unsigned char>(pszP2SH, pszP2SH+strlen(pszP2SH));
+  EMC2_COINBASE_FLAGS << std::vector<unsigned char>(pszP2SH, pszP2SH+strlen(pszP2SH));
 
 #if 0
   if (!bitdb.Open(GetDataDir()))
@@ -94,7 +94,7 @@ bool omni_LoadWallet(void)
 #endif
 
   bool fFirstRun = true;
-  omniWallet->LoadWallet(fFirstRun);
+  emc2Wallet->LoadWallet(fFirstRun);
 
   if (fFirstRun)
   {
@@ -103,50 +103,50 @@ bool omni_LoadWallet(void)
     RandAddSeedPerfmon();
 
     CPubKey newDefaultKey;
-    if (!omniWallet->GetKeyFromPool(newDefaultKey, false))
+    if (!emc2Wallet->GetKeyFromPool(newDefaultKey, false))
       strErrors << _("Cannot initialize keypool") << "\n";
-    omniWallet->SetDefaultKey(newDefaultKey);
-    if (!omniWallet->SetAddressBookName(omniWallet->vchDefaultKey.GetID(), ""))
+    emc2Wallet->SetDefaultKey(newDefaultKey);
+    if (!emc2Wallet->SetAddressBookName(emc2Wallet->vchDefaultKey.GetID(), ""))
       strErrors << _("Cannot write default address") << "\n";
   }
 
   printf("%s", strErrors.str().c_str());
 
-  RegisterWallet(omniWallet);
+  RegisterWallet(emc2Wallet);
 
-  CBlockIndex *pindexRescan = GetBestBlockIndex(OMNI_COIN_IFACE);
+  CBlockIndex *pindexRescan = GetBestBlockIndex(EMC2_COIN_IFACE);
   if (GetBoolArg("-rescan"))
-    pindexRescan = OMNIBlock::pindexGenesisBlock;
+    pindexRescan = EMC2Block::pindexGenesisBlock;
   else
   {
-    CWalletDB walletdb("omni_wallet.dat");
+    CWalletDB walletdb("emc2_wallet.dat");
     CBlockLocator locator(GetCoinIndex(iface));
     if (walletdb.ReadBestBlock(locator))
       pindexRescan = locator.GetBlockIndex();
   }
-  CBlockIndex *pindexBest = GetBestBlockIndex(OMNI_COIN_IFACE);
+  CBlockIndex *pindexBest = GetBestBlockIndex(EMC2_COIN_IFACE);
   if (pindexBest != pindexRescan && pindexBest && pindexRescan && pindexBest->nHeight > pindexRescan->nHeight)
   {
     int64 nStart;
 
     printf("Rescanning last %i blocks (from block %i)...\n", pindexBest->nHeight - pindexRescan->nHeight, pindexRescan->nHeight);
     nStart = GetTimeMillis();
-    omniWallet->ScanForWalletTransactions(pindexRescan, true);
+    emc2Wallet->ScanForWalletTransactions(pindexRescan, true);
     printf(" rescan      %15"PRI64d"ms\n", GetTimeMillis() - nStart);
   }
 
-  omni_UpgradeWallet();
+  emc2_UpgradeWallet();
 
   // Add wallet transactions that aren't already in a block to mapTransactions
-  omniWallet->ReacceptWalletTransactions(); 
+  emc2Wallet->ReacceptWalletTransactions(); 
 
   return (true);
 }
 
 
-void OMNIWallet::RelayWalletTransaction(CWalletTx& wtx)
+void EMC2Wallet::RelayWalletTransaction(CWalletTx& wtx)
 {
-  OMNITxDB txdb;
+  EMC2TxDB txdb;
 
   BOOST_FOREACH(const CMerkleTx& tx, wtx.vtxPrev) 
   { 
@@ -171,7 +171,7 @@ void OMNIWallet::RelayWalletTransaction(CWalletTx& wtx)
 }
 
 
-void OMNIWallet::ResendWalletTransactions()
+void EMC2Wallet::ResendWalletTransactions()
 {
   // Do this infrequently and randomly to avoid giving away
   // that these are our transactions.
@@ -185,12 +185,12 @@ void OMNIWallet::ResendWalletTransactions()
 
   // Only do it if there's been a new block since last time
   static int64 nLastTime;
-  if (OMNIBlock::nTimeBestReceived < nLastTime)
+  if (EMC2Block::nTimeBestReceived < nLastTime)
     return;
   nLastTime = GetTime();
 
   // Rebroadcast any of our txes that aren't in a block yet
-  OMNITxDB txdb;
+  EMC2TxDB txdb;
   {
     LOCK(cs_wallet);
     // Sort them in chronological order
@@ -200,7 +200,7 @@ void OMNIWallet::ResendWalletTransactions()
       CWalletTx& wtx = item.second;
       // Don't rebroadcast until it's had plenty of time that
       // it should have gotten in already by now.
-      if (OMNIBlock::nTimeBestReceived - (int64)wtx.nTimeReceived > 5 * 60)
+      if (EMC2Block::nTimeBestReceived - (int64)wtx.nTimeReceived > 5 * 60)
         mapSorted.insert(make_pair(wtx.nTimeReceived, &wtx));
     }
     BOOST_FOREACH(PAIRTYPE(const unsigned int, CWalletTx*)& item, mapSorted)
@@ -213,9 +213,9 @@ void OMNIWallet::ResendWalletTransactions()
   txdb.Close();
 }
 
-void OMNIWallet::ReacceptWalletTransactions()
+void EMC2Wallet::ReacceptWalletTransactions()
 {
-  OMNITxDB txdb;
+  EMC2TxDB txdb;
   bool fRepeat = true;
 
   while (fRepeat)
@@ -272,14 +272,14 @@ fprintf(stderr, "DEBUG: !wtx.AcceptWalletTransaction()\n");
     if (!vMissingTx.empty())
     {
       // TODO: optimize this to scan just part of the block chain?
-      if (ScanForWalletTransactions(OMNIBlock::pindexGenesisBlock))
+      if (ScanForWalletTransactions(EMC2Block::pindexGenesisBlock))
         fRepeat = true;  // Found missing transactions: re-do Reaccept.
     }
   }
   txdb.Close();
 }
 
-int OMNIWallet::ScanForWalletTransactions(CBlockIndex* pindexStart, bool fUpdate)
+int EMC2Wallet::ScanForWalletTransactions(CBlockIndex* pindexStart, bool fUpdate)
 {
     int ret = 0;
 
@@ -289,7 +289,7 @@ int OMNIWallet::ScanForWalletTransactions(CBlockIndex* pindexStart, bool fUpdate
         LOCK(cs_wallet);
         while (pindex)
         {
-            OMNIBlock block;
+            EMC2Block block;
             block.ReadFromDisk(pindex, true);
             BOOST_FOREACH(CTransaction& tx, block.vtx)
             {
@@ -307,7 +307,7 @@ int OMNIWallet::ScanForWalletTransactions(CBlockIndex* pindexStart, bool fUpdate
     return ret;
 }
 
-int64 OMNIWallet::GetTxFee(CTransaction tx)
+int64 EMC2Wallet::GetTxFee(CTransaction tx)
 {
   map<uint256, CTxIndex> mapQueuedChanges;
   MapPrevTx inputs;
@@ -317,10 +317,10 @@ int64 OMNIWallet::GetTxFee(CTransaction tx)
   if (tx.IsCoinBase())
     return (0);
 
-  CIface *iface = GetCoinByIndex(OMNI_COIN_IFACE);
+  CIface *iface = GetCoinByIndex(EMC2_COIN_IFACE);
   CBlock *pblock = GetBlockByTx(iface, tx.GetHash());
 
-  OMNITxDB txdb;
+  EMC2TxDB txdb;
 
   nFees = 0;
   bool fInvalid = false;
@@ -334,11 +334,11 @@ int64 OMNIWallet::GetTxFee(CTransaction tx)
 }
 
 
-bool OMNIWallet::CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey)
+bool EMC2Wallet::CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey)
 {
   {
     LOCK2(cs_main, cs_wallet);
-    Debug("CommitTransaction:\n%s", wtxNew.ToString().c_str());
+//    Debug("CommitTransaction:\n%s", wtxNew.ToString().c_str());
     {
       // This is only to keep the database open to defeat the auto-flush for the
       // duration of this scope.  This is the only place where this optimization
@@ -372,7 +372,7 @@ bool OMNIWallet::CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey)
 
     // Broadcast
        
-    OMNITxDB txdb;
+    EMC2TxDB txdb;
     bool ret = wtxNew.AcceptToMemoryPool(txdb);
     if (ret) {
 //      wtxNew.RelayWalletTransaction(txdb);
@@ -388,9 +388,9 @@ bool OMNIWallet::CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey)
   return true;
 }
 
-bool OMNIWallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend, CWalletTx& wtxNew, CReserveKey& reservekey, int64& nFeeRet)
+bool EMC2Wallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend, CWalletTx& wtxNew, CReserveKey& reservekey, int64& nFeeRet)
 {
-  CIface *iface = GetCoinByIndex(OMNI_COIN_IFACE);
+  CIface *iface = GetCoinByIndex(EMC2_COIN_IFACE);
   int64 nValue = 0;
 
   BOOST_FOREACH (const PAIRTYPE(CScript, int64)& s, vecSend)
@@ -407,7 +407,7 @@ bool OMNIWallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend,
   {
     LOCK2(cs_main, cs_wallet);
     // txdb must be opened before the mapWallet lock
-    OMNITxDB txdb;
+    EMC2TxDB txdb;
     {
       nFeeRet = nTransactionFee;
       loop
@@ -437,9 +437,9 @@ bool OMNIWallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend,
         // if sub-cent change is required, the fee must be raised to at least MIN_TX_FEE
         // or until nChange becomes zero
         // NOTE: this depends on the exact behaviour of GetMinFee
-        if (nFeeRet < OMNI_MIN_TX_FEE && nChange > 0 && nChange < CENT)
+        if (nFeeRet < EMC2_MIN_TX_FEE && nChange > 0 && nChange < CENT)
         {
-          int64 nMoveToFee = min(nChange, OMNI_MIN_TX_FEE - nFeeRet);
+          int64 nMoveToFee = min(nChange, EMC2_MIN_TX_FEE - nFeeRet);
           nChange -= nMoveToFee;
           nFeeRet += nMoveToFee;
         }
@@ -483,7 +483,7 @@ bool OMNIWallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend,
           }
 
         // Limit size
-        unsigned int nBytes = ::GetSerializeSize(*(CTransaction*)&wtxNew, SER_NETWORK, OMNI_PROTOCOL_VERSION);
+        unsigned int nBytes = ::GetSerializeSize(*(CTransaction*)&wtxNew, SER_NETWORK, EMC2_PROTOCOL_VERSION);
         if (nBytes >= MAX_BLOCK_SIZE_GEN(iface)/5) {
           txdb.Close();
           return false;
@@ -493,7 +493,7 @@ bool OMNIWallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend,
         // Check that enough fee is included
         int64 nPayFee = nTransactionFee * (1 + (int64)nBytes / 1000);
         bool fAllowFree = CTransaction::AllowFree(dPriority);
-        int64 nMinFee = wtxNew.GetMinFee(OMNI_COIN_IFACE, 1, fAllowFree, GMF_SEND);
+        int64 nMinFee = wtxNew.GetMinFee(EMC2_COIN_IFACE, 1, fAllowFree, GMF_SEND);
         if (nFeeRet < max(nPayFee, nMinFee))
         {
           nFeeRet = max(nPayFee, nMinFee);
@@ -512,16 +512,16 @@ bool OMNIWallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend,
   return true;
 }
 
-bool OMNIWallet::CreateTransaction(CScript scriptPubKey, int64 nValue, CWalletTx& wtxNew, CReserveKey& reservekey, int64& nFeeRet)
+bool EMC2Wallet::CreateTransaction(CScript scriptPubKey, int64 nValue, CWalletTx& wtxNew, CReserveKey& reservekey, int64& nFeeRet)
 {
     vector< pair<CScript, int64> > vecSend;
     vecSend.push_back(make_pair(scriptPubKey, nValue));
     return CreateTransaction(vecSend, wtxNew, reservekey, nFeeRet);
 }
 
-void OMNIWallet::AddSupportingTransactions(CWalletTx& wtx)
+void EMC2Wallet::AddSupportingTransactions(CWalletTx& wtx)
 {
-  OMNITxDB txdb;
+  EMC2TxDB txdb;
   wtx.AddSupportingTransactions(txdb);
   txdb.Close();
 }

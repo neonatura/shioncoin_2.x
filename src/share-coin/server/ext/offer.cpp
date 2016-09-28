@@ -376,8 +376,6 @@ bool GenerateOffers(CIface *iface, COffer *offer)
     COfferAccept& accept = ((COfferAccept&) tx.offer);
     if (accept.hashOffer != hashOffer) {
 fprintf(stderr, "DEBUG: wrong offer '%s' for accept '%s'\n", accept.hashOffer.GetHex().c_str(), hashAccept.GetHex().c_str());
-tx.print();
-fprintf(stderr, "DEBUG: --\n");
       continue; /* wrong offer */
 }
 
@@ -436,7 +434,7 @@ fprintf(stderr, "DEBUG: FindOfferTxOut: no local tx '%s'\n", hashTx.GetHex().c_s
     if (!ret)
       continue;
 
-    CCoinAddr cmp_addr(addr);
+    CCoinAddr cmp_addr(ifaceIndex, addr);
     if (cmp_addr == payAddr)
       return (nOut);
   }
@@ -489,7 +487,6 @@ std::string OfferHoldAltCoin(CIface *iface, string strAccount, COfferAccept *off
 {
   CWallet *wallet = GetWallet(iface);
   int ifaceIndex = GetCoinIndex(iface);
-  CCoinAddr xferAddr;
   CWalletTx wtx;
   char errbuf[1024];
 
@@ -503,7 +500,7 @@ std::string OfferHoldAltCoin(CIface *iface, string strAccount, COfferAccept *off
     return string("insufficient funds to perform transaction.");
 
   string strExtAccount = "@" + strAccount;
-  xferAddr = GetAccountAddress(wallet, strExtAccount, true);
+  CCoinAddr xferAddr = GetAccountAddress(wallet, strExtAccount, true);
   if (!xferAddr.IsValid())
     return string("error generating holding account");
 
@@ -562,9 +559,9 @@ int init_offer_tx(CIface *iface, std::string strAccount, int64 srcValue, int des
   string strExtAccount = "@" + strAccount;
   CWallet *altWallet = GetWallet(destIndex);
 
-  CCoinAddr payAddr;
-  CCoinAddr xferAddr;
-  CCoinAddr extAddr;
+  CCoinAddr payAddr(ifaceIndex);
+  CCoinAddr xferAddr(ifaceIndex);
+  CCoinAddr extAddr(ifaceIndex);
   if (destValue > 0) { /* request SHC */
     /* The exchanged (shc) coin payment address. */
     payAddr = GetAccountAddress(wallet, strAccount, false);
@@ -714,9 +711,9 @@ fprintf(stderr, "DEBUG: bal(%lu) < nFee(%lu)\nn", (unsigned long)bal, (unsigned 
   string strExtAccount = "@" + strAccount;
   CWallet *altWallet = GetWallet(destIndex);
 
-  CCoinAddr payAddr;
-  CCoinAddr xferAddr;
-  CCoinAddr extAddr;
+  CCoinAddr payAddr(ifaceIndex);
+  CCoinAddr xferAddr(ifaceIndex);
+  CCoinAddr extAddr(ifaceIndex);
   if (offer->nPayCoin != GetCoinIndex(iface)) {// if (srcValue < 0) { /* requesting SHC */
     /* The exchanged (shc) coin payment address. */
     payAddr = GetAccountAddress(wallet, strAccount, false);
@@ -786,7 +783,7 @@ fprintf(stderr, "DEBUG: accept_offer_tx: (%s) offer->hXferTx '%s'\n", strError.c
   string strError = wallet->SendMoney(scriptPubKey, nFee, wtx, false);
   if (strError != "") {
 /* .. send back alt_wtx */
-    wtx.print();
+    wtx.print(ifaceIndex);
     error(ifaceIndex, strError.c_str());
     return (SHERR_INVAL);
   }
@@ -840,7 +837,7 @@ return (SHERR_NOENT);
   if (!GenerateOffers(iface, offer))
     return (SHERR_AGAIN);
 
-  CCoinAddr payAddr;
+  CCoinAddr payAddr(ifaceIndex);
   string strPayAccount;
   vector<pair<CScript, int64> > vecSend;
   if (offer->nPayCoin != ifaceIndex ||
@@ -855,7 +852,7 @@ return (SHERR_NOENT);
       int nValue = MAX(0, (-1 * accept.nPayValue));
 
       /* output - send SHC to accept addr */
-      CCoinAddr destAddr;
+      CCoinAddr destAddr(ifaceIndex);
       if (!accept.GetPayAddr(ifaceIndex, destAddr))
         continue; /* print error */
 
@@ -868,7 +865,7 @@ return (SHERR_NOENT);
       if (nFeeValue < 0) {
         error(SHERR_CANCELED, "generate_offer_tx: "
             "miscalculation on accept offer payments:");
-        wtx.print(); 
+        wtx.print(ifaceIndex); 
         return (SHERR_CANCELED);
       }
     }
@@ -904,7 +901,7 @@ int calcFee;
       int nValue = MAX(0, (-1 * accept.nPayValue));
 
       /* output - send alt-coin to accept addr */
-      CCoinAddr destAddr;
+      CCoinAddr destAddr(ifaceIndex);
       if (!accept.GetPayAddr(altIndex, destAddr))
         continue; /* print error */
 
@@ -1000,7 +997,7 @@ int pay_offer_tx(CIface *iface, uint160 hashAccept, CWalletTx& wtx)
     return (SHERR_INVAL);
   }
 
-  CCoinAddr payAddr;
+  CCoinAddr payAddr(ifaceIndex);
   string strPayAccount;
   vector<pair<CScript, int64> > vecSend;
   if (offer->nPayCoin == ifaceIndex) {
@@ -1015,7 +1012,7 @@ if (nValue <= iface->min_tx_fee) return (SHERR_INVAL); /* DEBUG: redundant */
 
 
     /* output - send SHC to accept addr */
-    CCoinAddr destAddr;
+    CCoinAddr destAddr(ifaceIndex);
     if (!accept.GetPayAddr(ifaceIndex, destAddr)) {
       /* print error */
       return (SHERR_INVAL);
@@ -1030,7 +1027,7 @@ if (nValue <= iface->min_tx_fee) return (SHERR_INVAL); /* DEBUG: redundant */
     if (nFeeValue < 0) {
       error(SHERR_CANCELED, "pay_offer_tx: "
           "miscalculation on accept offer payments:");
-      wtx.print(); 
+      wtx.print(ifaceIndex); 
       return (SHERR_CANCELED);
     }
 
@@ -1062,9 +1059,9 @@ int nAltFeeValue = alt_wtxIn.vout[nTxOut].nValue;
 //fprintf(stderr, "DEBUG: pay_tx_fee: accept sending alt-coin: nValue %lld\n", (long long)nValue);
 
     /* output - send alt-coin to accept addr */
-    CCoinAddr destAddr;
+    CCoinAddr destAddr(ifaceIndex);
     if (!accept.GetPayAddr(altIndex, destAddr)) {
-      error(SHERR_INVAL, "pay_tx_fee: !GetPayAddr '%s'. (%s)", destAddr.ToString().c_str(), wtx.ToString().c_str());
+      error(SHERR_INVAL, "pay_tx_fee: !GetPayAddr '%s'.", destAddr.ToString().c_str());
       return (SHERR_INVAL);
     }
 
@@ -1077,7 +1074,7 @@ int nAltFeeValue = alt_wtxIn.vout[nTxOut].nValue;
     if (nAltFeeValue < 0) {
       error(SHERR_CANCELED, "pay_offer_tx: "
           "miscalculation on accept offer payments:");
-      wtx.print(); 
+      wtx.print(ifaceIndex); 
       return (SHERR_CANCELED);
     }
 

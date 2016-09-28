@@ -197,9 +197,9 @@ class CExecCall : public CExec
       nFee = nFeeIn;
     }
 
-    CCoinAddr GetSendAddr()
+    CCoinAddr GetSendAddr(int ifaceIndex)
     {
-      CCoinAddr addr;
+      CCoinAddr addr(ifaceIndex);
       addr.Set(CKeyID(hashIssuer));
       return (addr);
     }
@@ -216,7 +216,7 @@ class CExecCall : public CExec
 
     bool Sign(int ifaceIndex, CCoinAddr& addr);
 
-    bool VerifySignature();
+    bool VerifySignature(int ifaceIndex);
 
     const uint160 GetHash()
     {

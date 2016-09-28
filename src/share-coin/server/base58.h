@@ -32,102 +32,16 @@
 #include "key.h"
 #include "script.h"
 
-static const char* pszBase58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
 // Encode a byte sequence as a base58-encoded string
-inline std::string EncodeBase58(const unsigned char* pbegin, const unsigned char* pend)
-{
-    CAutoBN_CTX pctx;
-    CBigNum bn58 = 58;
-    CBigNum bn0 = 0;
+std::string EncodeBase58(const unsigned char* pbegin, const unsigned char* pend);
 
-    // Convert big endian data to little endian
-    // Extra zero at the end make sure bignum will interpret as a positive number
-    std::vector<unsigned char> vchTmp(pend-pbegin+1, 0);
-    reverse_copy(pbegin, pend, vchTmp.begin());
 
-    // Convert little endian data to bignum
-    CBigNum bn;
-    bn.setvch(vchTmp);
-
-    // Convert bignum to std::string
-    std::string str;
-    // Expected size increase from base58 conversion is approximately 137%
-    // use 138% to be safe
-    str.reserve((pend - pbegin) * 138 / 100 + 1);
-    CBigNum dv;
-    CBigNum rem;
-    while (bn > bn0)
-    {
-        if (!BN_div(&dv, &rem, &bn, &bn58, pctx))
-            throw bignum_error("EncodeBase58 : BN_div failed");
-        bn = dv;
-        unsigned int c = rem.getulong();
-        str += pszBase58[c];
-    }
-
-    // Leading zeroes encoded as base58 zeros
-    for (const unsigned char* p = pbegin; p < pend && *p == 0; p++)
-        str += pszBase58[0];
-
-    // Convert little endian std::string to big endian
-    reverse(str.begin(), str.end());
-    return str;
-}
-
-// Encode a byte vector as a base58-encoded string
-inline std::string EncodeBase58(const std::vector<unsigned char>& vch)
-{
-    return EncodeBase58(&vch[0], &vch[0] + vch.size());
-}
 
 // Decode a base58-encoded string psz into byte vector vchRet
 // returns true if decoding is successful
-inline bool DecodeBase58(const char* psz, std::vector<unsigned char>& vchRet)
-{
-    CAutoBN_CTX pctx;
-    vchRet.clear();
-    CBigNum bn58 = 58;
-    CBigNum bn = 0;
-    CBigNum bnChar;
-    while (isspace(*psz))
-        psz++;
+bool DecodeBase58(const char* psz, std::vector<unsigned char>& vchRet);
 
-    // Convert big endian string to bignum
-    for (const char* p = psz; *p; p++)
-    {
-        const char* p1 = strchr(pszBase58, *p);
-        if (p1 == NULL)
-        {
-            while (isspace(*p))
-                p++;
-            if (*p != '\0')
-                return false;
-            break;
-        }
-        bnChar.setulong(p1 - pszBase58);
-        if (!BN_mul(&bn, &bn, &bn58, pctx))
-            throw bignum_error("DecodeBase58 : BN_mul failed");
-        bn += bnChar;
-    }
-
-    // Get bignum as little endian data
-    std::vector<unsigned char> vchTmp = bn.getvch();
-
-    // Trim off sign byte if present
-    if (vchTmp.size() >= 2 && vchTmp.end()[-1] == 0 && vchTmp.end()[-2] >= 0x80)
-        vchTmp.erase(vchTmp.end()-1);
-
-    // Restore leading zeros
-    int nLeadingZeros = 0;
-    for (const char* p = psz; *p == pszBase58[0]; p++)
-        nLeadingZeros++;
-    vchRet.assign(nLeadingZeros + vchTmp.size(), 0);
-
-    // Convert little endian data to big endian
-    reverse_copy(vchTmp.begin(), vchTmp.end(), vchRet.end() - vchTmp.size());
-    return true;
-}
 
 // Decode a base58-encoded string str into byte vector vchRet
 // returns true if decoding is successful
@@ -136,6 +50,11 @@ inline bool DecodeBase58(const std::string& str, std::vector<unsigned char>& vch
     return DecodeBase58(str.c_str(), vchRet);
 }
 
+// Encode a byte vector as a base58-encoded string
+inline std::string EncodeBase58(const std::vector<unsigned char>& vch)
+{
+    return EncodeBase58(&vch[0], &vch[0] + vch.size());
+}
 
 
 
@@ -233,6 +152,8 @@ fprintf(stderr, "DEBUG: CBase58Data: DecodeBase58Check failed\n");
         vchData.resize(vchTemp.size() - 1);
         if (!vchData.empty())
             memcpy(&vchData[0], &vchTemp[1], vchData.size());
+
+        /* wipe physical memory. note OPENSSL_cleanse() is an alternative. */
         memset(&vchTemp[0], 0, vchTemp.size());
         return true;
     }
@@ -240,6 +161,11 @@ fprintf(stderr, "DEBUG: CBase58Data: DecodeBase58Check failed\n");
     bool SetString(const std::string& str)
     {
         return SetString(str.c_str());
+    }
+
+    int GetVersion() const
+    {
+      return (nVersion);
     }
 
     std::string ToString() const
@@ -279,9 +205,9 @@ public:
 };
 
 /** base58-encoded coin addresses.
- * Public-key-hash-addresses have version 0 (or 111 testnet).
+ * Public-key-hash-addresses have various versions per coin.
  * The data vector contains RIPEMD160(SHA256(pubkey)), where pubkey is the serialized public key.
- * Script-hash-addresses have version 5 (or 196 testnet).
+ * Script-hash-addresses have version 5 for all coin services.
  * The data vector contains RIPEMD160(SHA256(cscript)), where cscript is the serialized redemption script.
  */
 class CCoinAddr : public CBase58Data
@@ -290,18 +216,39 @@ public:
     enum
     {
         PUBKEY_ADDRESS = 38,
+        PUBKEY_E_ADDRESS = 33,
+        PUBKEY_S_ADDRESS = 62,
         SCRIPT_ADDRESS = 5,
         PUBKEY_ADDRESS_TEST = 111,
         SCRIPT_ADDRESS_TEST = 196,
     };
 
+    mutable int ifaceIndex;
+
+    static int GetCoinAddrVersion(int ifaceIndex)
+    {
+
+      switch (ifaceIndex) {
+        case SHC_COIN_IFACE:
+          return (PUBKEY_S_ADDRESS);
+        case EMC2_COIN_IFACE:
+          return (PUBKEY_E_ADDRESS);
+      }
+
+      return (PUBKEY_ADDRESS);
+    }
+
     bool Set(const CKeyID &id) {
-        SetData(fTestNet ? PUBKEY_ADDRESS_TEST : PUBKEY_ADDRESS, &id, 20);
+        int ver = PUBKEY_ADDRESS;
+        if (ifaceIndex != 0) ver = GetCoinAddrVersion(ifaceIndex);
+        SetData(ver, &id, 20);
+        //SetData(GetCoinAddrVersion(ifaceIndex), &id, 20);
+        //SetData(fTestNet ? PUBKEY_ADDRESS_TEST : PUBKEY_ADDRESS, &id, 20);
         return true;
     }
 
     bool Set(const CScriptID &id) {
-        SetData(fTestNet ? SCRIPT_ADDRESS_TEST : SCRIPT_ADDRESS, &id, 20);
+        SetData(SCRIPT_ADDRESS, &id, 20);
         return true;
     }
 
@@ -310,126 +257,116 @@ public:
         return boost::apply_visitor(CCoinAddrVisitor(this), dest);
     }
 
-    bool IsValid() const
+    bool IsValid() const;
+
+    CCoinAddr(int ifaceIndexIn)
     {
-        unsigned int nExpectedSize = 20;
-        bool fExpectTestNet = false;
-        switch(nVersion)
-        {
-            case PUBKEY_ADDRESS:
-                nExpectedSize = 20; // Hash of public key
-                fExpectTestNet = false;
-                break;
-            case SCRIPT_ADDRESS:
-                nExpectedSize = 20; // Hash of CScript
-                fExpectTestNet = false;
-                break;
-
-            case PUBKEY_ADDRESS_TEST:
-                nExpectedSize = 20;
-                fExpectTestNet = true;
-                break;
-            case SCRIPT_ADDRESS_TEST:
-                nExpectedSize = 20;
-                fExpectTestNet = true;
-                break;
-
-            default:
-                return false;
-        }
-if (vchData.size() != nExpectedSize) {
-fprintf(stderr, "DEBUG: CCoinSecret: vchData.size() %d, nExpectedSize %d\n", vchData.size(), nExpectedSize);
-}
-        return fExpectTestNet == fTestNet && vchData.size() == nExpectedSize;
+      ifaceIndex = ifaceIndexIn;
     }
 
-    CCoinAddr()
+    CCoinAddr(int ifaceIndexIn, const CTxDestination &dest)
     {
+      ifaceIndex = ifaceIndexIn;
+      Set(dest);
     }
 
-    CCoinAddr(const CTxDestination &dest)
+    CCoinAddr(const CScriptID& scriptIn)
     {
-        Set(dest);
+      ifaceIndex = 0;
+      Set(scriptIn);
     }
 
     CCoinAddr(const std::string& strAddress)
     {
-        SetString(strAddress);
+      ifaceIndex = 0;
+      SetString(strAddress);
     }
 
     CCoinAddr(const char* pszAddress)
     {
-        SetString(pszAddress);
+      ifaceIndex = 0;
+      SetString(pszAddress);
     }
 
-    CTxDestination Get() const {
-        if (!IsValid())
-            return CNoDestination();
-        switch (nVersion) {
-        case PUBKEY_ADDRESS:
-        case PUBKEY_ADDRESS_TEST: {
-            uint160 id;
-            memcpy(&id, &vchData[0], 20);
-            return CKeyID(id);
-        }
+    CTxDestination Get() const;
+    bool GetKeyID(CKeyID &keyID) const;
+
+    bool IsScript() const 
+    {
+      if (!IsValid())
+        return false;
+      switch (nVersion) {
         case SCRIPT_ADDRESS:
         case SCRIPT_ADDRESS_TEST: {
-            uint160 id;
-            memcpy(&id, &vchData[0], 20);
-            return CScriptID(id);
-        }
-        }
-        return CNoDestination();
+                                    return true;
+                                  }
+        default: return false;
+      }
     }
 
-    bool GetKeyID(CKeyID &keyID) const {
-        if (!IsValid())
-            return false;
-        switch (nVersion) {
-        case PUBKEY_ADDRESS:
-        case PUBKEY_ADDRESS_TEST: {
-            uint160 id;
-            memcpy(&id, &vchData[0], 20);
-            keyID = CKeyID(id);
-            return true;
-        }
-        default: return false;
-        }
-    }
-
-    bool IsScript() const {
-        if (!IsValid())
-            return false;
-        switch (nVersion) {
-        case SCRIPT_ADDRESS:
-        case SCRIPT_ADDRESS_TEST: {
-            return true;
-        }
-        default: return false;
-        }
-    }
 };
 
 bool inline CCoinAddrVisitor::operator()(const CKeyID &id) const         { return addr->Set(id); }
 bool inline CCoinAddrVisitor::operator()(const CScriptID &id) const      { return addr->Set(id); }
 bool inline CCoinAddrVisitor::operator()(const CNoDestination &id) const { return false; }
 
+class EMC2CoinAddr : public CCoinAddr
+{
+  public:
+    EMC2CoinAddr() : CCoinAddr(EMC2_COIN_IFACE)
+    {
+    }
+
+    EMC2CoinAddr(const CTxDestination &dest) : CCoinAddr(EMC2_COIN_IFACE)
+    {
+      Set(dest);
+    }
+};
+class SHCCoinAddr : public CCoinAddr
+{
+  public:
+    SHCCoinAddr() : CCoinAddr(SHC_COIN_IFACE)
+    {
+    }
+
+    SHCCoinAddr(const CTxDestination &dest) : CCoinAddr(SHC_COIN_IFACE)
+    {
+      Set(dest);
+    }
+};
+class USDECoinAddr : public CCoinAddr
+{
+  public:
+    USDECoinAddr() : CCoinAddr(USDE_COIN_IFACE)
+    {
+    }
+
+    USDECoinAddr(const CTxDestination &dest) : CCoinAddr(USDE_COIN_IFACE)
+    {
+      Set(dest);
+    }
+};
+
 /** A base58-encoded secret key */
 class CCoinSecret : public CBase58Data
 {
 public:
+#if 0
     enum
     {
         PRIVKEY_ADDRESS = CCoinAddr::PUBKEY_ADDRESS + 128,
         PRIVKEY_ADDRESS_TEST = CCoinAddr::PUBKEY_ADDRESS_TEST + 128,
     };
+#endif
 
-    void SetSecret(const CSecret& vchSecret, bool fCompressed)
+    void SetSecret(int ifaceIndex, const CSecret& vchSecret, bool fCompressed)
     { 
-        assert(vchSecret.size() == 32);
-        SetData(fTestNet ? PRIVKEY_ADDRESS_TEST : PRIVKEY_ADDRESS, &vchSecret[0], vchSecret.size());
-        if (fCompressed)
-            vchData.push_back(1);
+      int PRIVKEY_ADDRESS = (CCoinAddr::GetCoinAddrVersion(ifaceIndex) + 128);
+      assert(vchSecret.size() == 32);
+      SetData(PRIVKEY_ADDRESS, &vchSecret[0], vchSecret.size());
+      //SetData(fTestNet ? PRIVKEY_ADDRESS_TEST : PRIVKEY_ADDRESS, &vchSecret[0], vchSecret.size());
+      if (fCompressed)
+        vchData.push_back(1);
     }
 
     CSecret GetSecret(bool &fCompressedOut)
@@ -447,6 +384,7 @@ public:
 
     bool IsValid() const
     {
+#if 0
         bool fExpectTestNet = false;
         switch(nVersion)
         {
@@ -460,13 +398,19 @@ public:
             default:
                 return false;
         }
-        return fExpectTestNet == fTestNet && (vchData.size() == 32 || (vchData.size() == 33 && vchData[32] == 1));
+#endif
+
+        if (nVersion <= 128)
+          return (false);
+        return (vchData.size() == 32 || (vchData.size() == 33 && vchData[32] == 1));
+
+        //return fExpectTestNet == fTestNet && (vchData.size() == 32 || (vchData.size() == 33 && vchData[32] == 1));
     }
 
 
-    CCoinSecret(const CSecret& vchSecret, bool fCompressed)
+    CCoinSecret(int ifaceIndex, const CSecret& vchSecret, bool fCompressed)
     {
-        SetSecret(vchSecret, fCompressed);
+        SetSecret(ifaceIndex, vchSecret, fCompressed);
     }
 
     CCoinSecret()

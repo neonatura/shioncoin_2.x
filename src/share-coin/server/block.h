@@ -521,9 +521,9 @@ class CTransactionCore
       return (false);
     }
 
-    std::string ToString();
+    std::string ToString(int ifaceIndex);
 
-    Object ToValue();
+    Object ToValue(int ifaceIndex);
 
 };
 
@@ -921,9 +921,9 @@ public:
     }
 #endif
 
-    void print()
+    void print(int ifaceIndex)
     {
-      shcoind_log(ToString().c_str());
+      shcoind_log(ToString(ifaceIndex).c_str());
     }
 
 
@@ -952,11 +952,11 @@ public:
 
     bool IsInMemoryPool(int ifaceIndex);
 
-    Object ToValue();
+    Object ToValue(int ifaceIndex);
 
     Object ToValue(CBlock *pblock);
 
-    std::string ToString();
+    std::string ToString(int ifaceIndex);
 
     int GetDepthInMainChain(int ifaceIndex, CBlockIndex* &pindexRet) const;
 

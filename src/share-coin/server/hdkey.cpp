@@ -330,9 +330,11 @@ Object HDPubKey::ToValue()
   obj.push_back(Pair("chain", HexStr(vchChain)));
   obj.push_back(Pair("pubkey", HexStr(vchPubKey)));
 
+#if 0
   CCoinAddr addr;
   addr.Set(GetID());
   obj.push_back(Pair("addr", addr.ToString()));
+#endif
 
   return (obj);
 }

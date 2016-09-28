@@ -46,28 +46,28 @@ extern Value ValueFromAmount(int64 amount);
 extern std::string HelpRequiringPassphrase();
 extern void EnsureWalletIsUnlocked();
 
-void ScriptPubKeyToJSON(const CScript& scriptPubKey, Object& out)
+void ScriptPubKeyToJSON(int ifaceIndex, const CScript& scriptPubKey, Object& out)
 {
-    txnouttype type;
-    vector<CTxDestination> addresses;
-    int nRequired;
+  txnouttype type;
+  vector<CTxDestination> addresses;
+  int nRequired;
 
-    out.push_back(Pair("asm", scriptPubKey.ToString()));
-//    out.push_back(Pair("hex", HexStr(scriptPubKey.begin(), scriptPubKey.end())));
+  out.push_back(Pair("script", scriptPubKey.ToString()));
+  //    out.push_back(Pair("hex", HexStr(scriptPubKey.begin(), scriptPubKey.end())));
 
-    if (!ExtractDestinations(scriptPubKey, type, addresses, nRequired))
-    {
-        out.push_back(Pair("type", GetTxnOutputType(TX_NONSTANDARD)));
-        return;
-    }
+  if (!ExtractDestinations(scriptPubKey, type, addresses, nRequired))
+  {
+    out.push_back(Pair("type", GetTxnOutputType(TX_NONSTANDARD)));
+    return;
+  }
 
-    out.push_back(Pair("reqSigs", nRequired));
-    out.push_back(Pair("type", GetTxnOutputType(type)));
+  out.push_back(Pair("reqSigs", nRequired));
+  out.push_back(Pair("type", GetTxnOutputType(type)));
 
-    Array a;
-    BOOST_FOREACH(const CTxDestination& addr, addresses)
-        a.push_back(CCoinAddr(addr).ToString());
-    out.push_back(Pair("addresses", a));
+  Array a;
+  BOOST_FOREACH(const CTxDestination& addr, addresses)
+    a.push_back(CCoinAddr(ifaceIndex, addr).ToString());
+  out.push_back(Pair("addresses", a));
 }
 
 #if 0
@@ -149,6 +149,7 @@ Value rpc_getrawtransaction(CIface *iface, const Array& params, bool fHelp)
   if (params.size() > 1)
     fVerbose = (params[1].get_int() != 0);
 
+  int ifaceIndex = GetCoinIndex(iface);
   CTransaction tx;
   uint256 hashBlock;
   if (!GetTransaction(iface, hash, tx, &hashBlock))
@@ -161,7 +162,7 @@ Value rpc_getrawtransaction(CIface *iface, const Array& params, bool fHelp)
   if (!fVerbose)
     return strHex;
 
-  Object result = tx.ToValue();
+  Object result = tx.ToValue(ifaceIndex);
   result.push_back(Pair("hex", strHex));
 //  TxToJSON(iface, tx, hashBlock, result);
   return result;

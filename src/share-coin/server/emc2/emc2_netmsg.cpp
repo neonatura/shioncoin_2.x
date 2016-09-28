@@ -29,8 +29,8 @@
 #include "strlcpy.h"
 #include "ui_interface.h"
 #include "chain.h"
-#include "omni_block.h"
-#include "omni_txidx.h"
+#include "emc2_block.h"
+#include "emc2_txidx.h"
 
 #ifdef WIN32
 #include <string.h>
@@ -56,6 +56,10 @@ static const unsigned int MAX_INV_SZ = 50000;
 extern CMedianFilter<int> cPeerBlockCounts;
 extern map<uint256, CAlert> mapAlerts;
 extern vector <CAddress> GetAddresses(CIface *iface, int max_peer);
+
+#define MIN_EMC2_PROTO_VERSION 70002
+#define EMC2_COIN_HEADER_SIZE SIZEOF_COINHDR_T
+
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -86,7 +90,7 @@ void static Inventory(const uint256& hash)
 // ask wallets to resend their transactions
 void static ResendWalletTransactions()
 {
-  CWallet *wallet = GetWallet(OMNI_COIN_IFACE); 
+  CWallet *wallet = GetWallet(EMC2_COIN_IFACE); 
   wallet->ResendWalletTransactions();
 }
 
@@ -95,15 +99,15 @@ void static ResendWalletTransactions()
 
 //////////////////////////////////////////////////////////////////////////////
 //
-// OMNI_mapOrphanTransactions
+// EMC2_mapOrphanTransactions
 //
 
-bool omni_AddOrphanTx(const CDataStream& vMsg)
+bool emc2_AddOrphanTx(const CDataStream& vMsg)
 {
     CTransaction tx;
     CDataStream(vMsg) >> tx;
     uint256 hash = tx.GetHash();
-    if (OMNI_mapOrphanTransactions.count(hash))
+    if (EMC2_mapOrphanTransactions.count(hash))
         return false;
 
     CDataStream* pvMsg = new CDataStream(vMsg);
@@ -122,42 +126,42 @@ bool omni_AddOrphanTx(const CDataStream& vMsg)
         return false;
     }
 
-    OMNI_mapOrphanTransactions[hash] = pvMsg;
+    EMC2_mapOrphanTransactions[hash] = pvMsg;
     BOOST_FOREACH(const CTxIn& txin, tx.vin)
-        OMNI_mapOrphanTransactionsByPrev[txin.prevout.hash].insert(make_pair(hash, pvMsg));
+        EMC2_mapOrphanTransactionsByPrev[txin.prevout.hash].insert(make_pair(hash, pvMsg));
 
     printf("stored orphan tx %s (mapsz %u)\n", hash.ToString().substr(0,10).c_str(),
-        OMNI_mapOrphanTransactions.size());
+        EMC2_mapOrphanTransactions.size());
     return true;
 }
 
 void static EraseOrphanTx(uint256 hash)
 {
-    if (!OMNI_mapOrphanTransactions.count(hash))
+    if (!EMC2_mapOrphanTransactions.count(hash))
         return;
-    const CDataStream* pvMsg = OMNI_mapOrphanTransactions[hash];
+    const CDataStream* pvMsg = EMC2_mapOrphanTransactions[hash];
     CTransaction tx;
     CDataStream(*pvMsg) >> tx;
     BOOST_FOREACH(const CTxIn& txin, tx.vin)
     {
-        OMNI_mapOrphanTransactionsByPrev[txin.prevout.hash].erase(hash);
-        if (OMNI_mapOrphanTransactionsByPrev[txin.prevout.hash].empty())
-            OMNI_mapOrphanTransactionsByPrev.erase(txin.prevout.hash);
+        EMC2_mapOrphanTransactionsByPrev[txin.prevout.hash].erase(hash);
+        if (EMC2_mapOrphanTransactionsByPrev[txin.prevout.hash].empty())
+            EMC2_mapOrphanTransactionsByPrev.erase(txin.prevout.hash);
     }
     delete pvMsg;
-    OMNI_mapOrphanTransactions.erase(hash);
+    EMC2_mapOrphanTransactions.erase(hash);
 }
 
-unsigned int omni_LimitOrphanTxSize(unsigned int nMaxOrphans)
+unsigned int emc2_LimitOrphanTxSize(unsigned int nMaxOrphans)
 {
     unsigned int nEvicted = 0;
-    while (OMNI_mapOrphanTransactions.size() > nMaxOrphans)
+    while (EMC2_mapOrphanTransactions.size() > nMaxOrphans)
     {
         // Evict a random orphan:
         uint256 randomhash = GetRandHash();
-        map<uint256, CDataStream*>::iterator it = OMNI_mapOrphanTransactions.lower_bound(randomhash);
-        if (it == OMNI_mapOrphanTransactions.end())
-            it = OMNI_mapOrphanTransactions.begin();
+        map<uint256, CDataStream*>::iterator it = EMC2_mapOrphanTransactions.lower_bound(randomhash);
+        if (it == EMC2_mapOrphanTransactions.end())
+            it = EMC2_mapOrphanTransactions.begin();
         EraseOrphanTx(it->first);
         ++nEvicted;
     }
@@ -173,7 +177,7 @@ unsigned int omni_LimitOrphanTxSize(unsigned int nMaxOrphans)
 //
 
 
-static bool AlreadyHave(CIface *iface, OMNITxDB& txdb, const CInv& inv)
+static bool AlreadyHave(CIface *iface, EMC2TxDB& txdb, const CInv& inv)
 {
   int ifaceIndex = GetCoinIndex(iface);
 
@@ -183,18 +187,18 @@ static bool AlreadyHave(CIface *iface, OMNITxDB& txdb, const CInv& inv)
       {
         bool txInMap = false;
         {
-          LOCK(OMNIBlock::mempool.cs);
-          txInMap = (OMNIBlock::mempool.exists(inv.hash));
+          LOCK(EMC2Block::mempool.cs);
+          txInMap = (EMC2Block::mempool.exists(inv.hash));
         }
         return txInMap ||
-          OMNI_mapOrphanTransactions.count(inv.hash) ||
+          EMC2_mapOrphanTransactions.count(inv.hash) ||
           txdb.ContainsTx(inv.hash);
       }
 
     case MSG_BLOCK:
       blkidx_t *blockIndex = GetBlockTable(ifaceIndex); 
       return blockIndex->count(inv.hash) ||
-        OMNI_mapOrphanBlocks.count(inv.hash);
+        EMC2_mapOrphanBlocks.count(inv.hash);
   }
 
   // Don't know what it is, just say we already got one
@@ -210,7 +214,7 @@ static bool AlreadyHave(CIface *iface, OMNITxDB& txdb, const CInv& inv)
 // The characters are rarely used upper ascii, not valid as UTF-8, and produce
 // a large 4-byte int at any alignment.
 
-bool omni_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataStream& vRecv)
+bool emc2_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataStream& vRecv)
 {
   NodeList &vNodes = GetNodeList(iface);
   static map<CService, CPubKey> mapReuseKey;
@@ -219,7 +223,7 @@ bool omni_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
   blkidx_t *blockIndex;
   shtime_t ts;
 
-//fprintf(stderr, "OMNI:ProcessMessage: received '%s' (%d bytes from %s)\n", strCommand.c_str(), vRecv.size(), pfrom->addr.ToString().c_str());
+fprintf(stderr, "EMC2:ProcessMessage: received '%s' (%d bytes from %s)\n", strCommand.c_str(), vRecv.size(), pfrom->addr.ToString().c_str());
 
 
   RandAddSeedPerfmon();
@@ -250,11 +254,9 @@ bool omni_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
     CAddress addrFrom;
     uint64 nNonce = 1;
     vRecv >> pfrom->nVersion >> pfrom->nServices >> nTime >> addrMe;
-    if (pfrom->nVersion < MIN_PROTO_VERSION)
+    if (pfrom->nVersion < MIN_EMC2_PROTO_VERSION)
     {
-      // Since February 20, 2012, the protocol is initiated at version 209,
-      // and earlier versions are no longer supported
-      printf("partner %s using obsolete version %i; disconnecting\n", pfrom->addr.ToString().c_str(), pfrom->nVersion);
+      printf("peer %s using obsolete version %i; disconnecting\n", pfrom->addr.ToString().c_str(), pfrom->nVersion);
       pfrom->fDisconnect = true;
       return false;
     }
@@ -269,8 +271,8 @@ bool omni_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
       vRecv >> pfrom->nStartingHeight;
 
 #if 0 /* DEBUG: verify & implement if warranted */
-    if (0 != strncmp(pfrom->strSubVer.c_str(), "/OMNI", 5)) {
-      error(SHERR_INVAL, "(omni) ProcessMessage: connect from wrong coin interface '%s' (%s), disconnecting\n", pfrom->addr.ToString().c_str(), pfrom->strSubVer.c_str());
+    if (0 != strncmp(pfrom->strSubVer.c_str(), "/EMC2", 5)) {
+      error(SHERR_INVAL, "(emc2) ProcessMessage: connect from wrong coin interface '%s' (%s), disconnecting\n", pfrom->addr.ToString().c_str(), pfrom->strSubVer.c_str());
       pfrom->fDisconnect = true;
       return true;
     }
@@ -305,12 +307,13 @@ bool omni_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
 
     // Change version
     pfrom->PushMessage("verack");
-    pfrom->vSend.SetVersion(min(pfrom->nVersion, OMNI_PROTOCOL_VERSION));
+    pfrom->vSend.SetVersion(min(pfrom->nVersion, EMC2_PROTOCOL_VERSION));
+fprintf(stderr, "DEBUG: EMC2: PushMessage('verack')\n");
 
     if (!pfrom->fInbound)
     {
       // Advertise our address
-      if (/*!fNoListen &&*/ !IsInitialBlockDownload(OMNI_COIN_IFACE))
+      if (/*!fNoListen &&*/ !IsInitialBlockDownload(EMC2_COIN_IFACE))
       {
         CAddress addr = GetLocalAddress(&pfrom->addr);
         addr.SetPort(iface->port);
@@ -331,6 +334,7 @@ bool omni_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
 #endif
 
       if (pfrom->fOneShot || pfrom->nVersion >= CADDR_TIME_VERSION || (int)vNodes.size() == 1) {
+fprintf(stderr, "DEBUG: EMC2: PushMessage('getaddr')\n");
         pfrom->PushMessage("getaddr");
         pfrom->fGetAddr = true;
       }
@@ -353,14 +357,14 @@ bool omni_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
         (nAskedForBlocks < 1 || vNodes.size() <= 1))
     {
       nAskedForBlocks++;
-      pfrom->PushGetBlocks(GetBestBlockIndex(OMNI_COIN_IFACE), uint256(0));
+      pfrom->PushGetBlocks(GetBestBlockIndex(EMC2_COIN_IFACE), uint256(0));
     }
 #endif
 
-    CBlockIndex *pindexBest = GetBestBlockIndex(OMNI_COIN_IFACE);
+    CBlockIndex *pindexBest = GetBestBlockIndex(EMC2_COIN_IFACE);
     if (pindexBest) {
       if (pindexBest->nHeight < pfrom->nStartingHeight) {
-        InitServiceBlockEvent(OMNI_COIN_IFACE, pfrom->nStartingHeight);
+        InitServiceBlockEvent(EMC2_COIN_IFACE, pfrom->nStartingHeight);
       }
     }
 
@@ -374,7 +378,7 @@ bool omni_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
 
     pfrom->fSuccessfullyConnected = true;
 
-    Debug("received OMNI version message: version %d, blocks=%d, us=%s, them=%s, peer=%s\n", pfrom->nVersion, pfrom->nStartingHeight, addrMe.ToString().c_str(), addrFrom.ToString().c_str(), pfrom->addr.ToString().c_str());
+    Debug("received EMC2 version message: version %d, blocks=%d, us=%s, them=%s, peer=%s\n", pfrom->nVersion, pfrom->nStartingHeight, addrMe.ToString().c_str(), addrFrom.ToString().c_str(), pfrom->addr.ToString().c_str());
 
     cPeerBlockCounts.input(pfrom->nStartingHeight);
   }
@@ -390,7 +394,7 @@ bool omni_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
 
   else if (strCommand == "verack")
   {
-    pfrom->vRecv.SetVersion(min(pfrom->nVersion, OMNI_PROTOCOL_VERSION));
+    pfrom->vRecv.SetVersion(min(pfrom->nVersion, EMC2_PROTOCOL_VERSION));
   }
 
 
@@ -495,12 +499,12 @@ bool omni_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
       }
     }
 
-    OMNITxDB txdb;
+    EMC2TxDB txdb;
     for (unsigned int nInv = 0; nInv < vInv.size(); nInv++)
     {
       const CInv &inv = vInv[nInv];
 
-      inv.ifaceIndex = OMNI_COIN_IFACE;
+      inv.ifaceIndex = EMC2_COIN_IFACE;
 
       if (fShutdown)
         return true;
@@ -511,13 +515,13 @@ bool omni_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
 
       if (!fAlreadyHave)
         pfrom->AskFor(inv);
-      else if (inv.type == MSG_BLOCK && OMNI_mapOrphanBlocks.count(inv.hash)) {
-        pfrom->PushGetBlocks(GetBestBlockIndex(OMNI_COIN_IFACE), omni_GetOrphanRoot(OMNI_mapOrphanBlocks[inv.hash]));
+      else if (inv.type == MSG_BLOCK && EMC2_mapOrphanBlocks.count(inv.hash)) {
+        pfrom->PushGetBlocks(GetBestBlockIndex(EMC2_COIN_IFACE), emc2_GetOrphanRoot(EMC2_mapOrphanBlocks[inv.hash]));
       } else if (nInv == nLastBlock) {
         // In case we are on a very long side-chain, it is possible that we already have
         // the last block in an inv bundle sent in response to getblocks. Try to detect
         // this situation and push another getblocks to continue.
-        std::vector<CInv> vGetData(OMNI_COIN_IFACE, inv);
+        std::vector<CInv> vGetData(EMC2_COIN_IFACE, inv);
         blkidx_t blkidx = *blockIndex;
         pfrom->PushGetBlocks(blkidx[inv.hash], uint256(0));
       }
@@ -525,7 +529,7 @@ bool omni_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
       // Track requests for our stuff
       Inventory(inv.hash);
     }
-    Debug("(omni) ProcessBlock: processed %d inventory items.", vInv.size());
+    Debug("(emc2) ProcessBlock: processed %d inventory items.", vInv.size());
   }
 
 
@@ -544,15 +548,15 @@ bool omni_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
       if (fShutdown)
         return true;
 
-      inv.ifaceIndex = OMNI_COIN_IFACE;
+      inv.ifaceIndex = EMC2_COIN_IFACE;
       if (inv.type == MSG_BLOCK || inv.type == MSG_FILTERED_BLOCK) {
         map<uint256, CBlockIndex*>::iterator mi = blockIndex->find(inv.hash);
         if (mi != blockIndex->end())
         {
           CBlockIndex *pindex = (*mi).second;
-          OMNIBlock block;
+          EMC2Block block;
           if (block.ReadFromDisk(pindex) && block.CheckBlock() &&
-              pindex->nHeight <= GetBestHeight(OMNI_COIN_IFACE)) {
+              pindex->nHeight <= GetBestHeight(EMC2_COIN_IFACE)) {
             if (inv.type == MSG_BLOCK) {
               pfrom->PushMessage("block", block);
             } else if (inv.type == MSG_FILTERED_BLOCK) { /* bloom */
@@ -563,12 +567,12 @@ bool omni_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
                 pfrom->PushMessage("merkleblock", merkleBlock);
                 typedef std::pair<unsigned int, uint256> PairType;
                 BOOST_FOREACH(PairType& pair, merkleBlock.vMatchedTxn)
-                  if (!pfrom->setInventoryKnown.count(CInv(OMNI_COIN_IFACE, MSG_TX, pair.second)))
+                  if (!pfrom->setInventoryKnown.count(CInv(EMC2_COIN_IFACE, MSG_TX, pair.second)))
                     pfrom->PushMessage("tx", block.vtx[pair.first]);
               }
             } 
           } else {
-            Debug("OMNI: WARN: failure validating requested block '%s' at height %d\n", block.GetHash().GetHex().c_str(), pindex->nHeight);
+            Debug("EMC2: WARN: failure validating requested block '%s' at height %d\n", block.GetHash().GetHex().c_str(), pindex->nHeight);
             block.print();
           }
 
@@ -598,10 +602,10 @@ bool omni_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
           }
         }
         if (!pushed && inv.type == MSG_TX) {
-          LOCK(OMNIBlock::mempool.cs);
-          if (OMNIBlock::mempool.exists(inv.hash)) {
-            CTransaction tx = OMNIBlock::mempool.lookup(inv.hash);
-            CDataStream ss(SER_NETWORK, OMNI_PROTOCOL_VERSION);
+          LOCK(EMC2Block::mempool.cs);
+          if (EMC2Block::mempool.exists(inv.hash)) {
+            CTransaction tx = EMC2Block::mempool.lookup(inv.hash);
+            CDataStream ss(SER_NETWORK, EMC2_PROTOCOL_VERSION);
             ss.reserve(1000);
             ss << tx;
             pfrom->PushMessage("tx", ss);
@@ -693,7 +697,7 @@ bool omni_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
     vector<uint256> vWorkQueue;
     vector<uint256> vEraseQueue;
     CDataStream vMsg(vRecv);
-    OMNITxDB txdb;
+    EMC2TxDB txdb;
     CTransaction tx;
     vRecv >> tx;
 
@@ -713,8 +717,8 @@ bool omni_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
       for (unsigned int i = 0; i < vWorkQueue.size(); i++)
       {
         uint256 hashPrev = vWorkQueue[i];
-        for (map<uint256, CDataStream*>::iterator mi = OMNI_mapOrphanTransactionsByPrev[hashPrev].begin();
-            mi != OMNI_mapOrphanTransactionsByPrev[hashPrev].end();
+        for (map<uint256, CDataStream*>::iterator mi = EMC2_mapOrphanTransactionsByPrev[hashPrev].begin();
+            mi != EMC2_mapOrphanTransactionsByPrev[hashPrev].end();
             ++mi)
         {
           const CDataStream& vMsg = *((*mi).second);
@@ -746,10 +750,10 @@ bool omni_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
     }
     else if (fMissingInputs)
     {
-      omni_AddOrphanTx(vMsg);
+      emc2_AddOrphanTx(vMsg);
 
-      // DoS prevention: do not allow OMNI_mapOrphanTransactions to grow unbounded
-      unsigned int nEvicted = omni_LimitOrphanTxSize(MAX_ORPHAN_TRANSACTIONS(iface));
+      // DoS prevention: do not allow EMC2_mapOrphanTransactions to grow unbounded
+      unsigned int nEvicted = emc2_LimitOrphanTxSize(MAX_ORPHAN_TRANSACTIONS(iface));
       if (nEvicted > 0)
         printf("mapOrphan overflow, removed %u tx\n", nEvicted);
     }
@@ -762,7 +766,7 @@ bool omni_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
 
   else if (strCommand == "block")
   {
-    OMNIBlock block;
+    EMC2Block block;
     vRecv >> block;
 
     CInv inv(ifaceIndex, MSG_BLOCK, block.GetHash());
@@ -799,7 +803,7 @@ bool omni_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
     vector<CAddress> vAddr;
     vector<CAddress> vAddr = addrman.GetAddr();
 #endif
-    vector<CAddress> vAddr = GetAddresses(iface, OMNI_MAX_GETADDR);
+    vector<CAddress> vAddr = GetAddresses(iface, EMC2_MAX_GETADDR);
     BOOST_FOREACH(const CAddress &addr, vAddr)
       pfrom->PushAddress(addr);
 
@@ -809,13 +813,13 @@ bool omni_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
   else if (strCommand == "mempool")
   {
     std::vector<uint256> vtxid;
-    LOCK2(OMNIBlock::mempool.cs, pfrom->cs_filter);
-    OMNIBlock::mempool.queryHashes(vtxid);
+    LOCK2(EMC2Block::mempool.cs, pfrom->cs_filter);
+    EMC2Block::mempool.queryHashes(vtxid);
     vector<CInv> vInv;
     CBloomFilter *filter = pfrom->GetBloomFilter();
     BOOST_FOREACH(uint256& hash, vtxid) {
-      CInv inv(OMNI_COIN_IFACE, MSG_TX, hash);
-      if ((filter && filter->IsRelevantAndUpdate(OMNIBlock::mempool.lookup(hash), hash)) ||
+      CInv inv(EMC2_COIN_IFACE, MSG_TX, hash);
+      if ((filter && filter->IsRelevantAndUpdate(EMC2Block::mempool.lookup(hash), hash)) ||
           (!filter))
         vInv.push_back(inv);
       if (vInv.size() == MAX_INV_SZ)
@@ -869,7 +873,7 @@ bool omni_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
   /* exclusively used by bloom filter */
   else if (strCommand == "filterload")
   {
-    CBloomFilter filter(OMNI_COIN_IFACE);
+    CBloomFilter filter(EMC2_COIN_IFACE);
     vRecv >> filter;
 
     if (!filter.IsWithinSizeConstraints()) {
@@ -926,9 +930,8 @@ bool omni_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
   return true;
 }
 
-bool omni_ProcessMessages(CIface *iface, CNode* pfrom)
+bool emc2_ProcessMessages(CIface *iface, CNode* pfrom)
 {
-  static unsigned char OMNI_pchMessageStart[4] = { 0xd9, 0xd9, 0xf9, 0xbd };
 
   shtime_t ts;
   CDataStream& vRecv = pfrom->vRecv;
@@ -951,13 +954,14 @@ bool omni_ProcessMessages(CIface *iface, CNode* pfrom)
       break;
 
     // Scan for message start
-    CDataStream::iterator pstart = search(vRecv.begin(), vRecv.end(), BEGIN(OMNI_pchMessageStart), END(OMNI_pchMessageStart));
-    int nHeaderSize = vRecv.GetSerializeSize(CMessageHeader());
+    CDataStream::iterator pstart = search(vRecv.begin(), vRecv.end(),
+        BEGIN(iface->hdr_magic), END(iface->hdr_magic));
+    int nHeaderSize = EMC2_COIN_HEADER_SIZE;
     if (vRecv.end() - pstart < nHeaderSize)
     {
       if ((int)vRecv.size() > nHeaderSize)
       {
-        fprintf(stderr, "DEBUG: OMNI_PROCESSMESSAGE MESSAGESTART NOT FOUND\n");
+        fprintf(stderr, "DEBUG: EMC2_PROCESSMESSAGE MESSAGESTART NOT FOUND\n");
         vRecv.erase(vRecv.begin(), vRecv.end() - nHeaderSize);
       }
       break;
@@ -972,7 +976,7 @@ bool omni_ProcessMessages(CIface *iface, CNode* pfrom)
     vRecv >> hdr;
     if (!hdr.IsValid())
     {
-      fprintf(stderr, "DEBUG: OMNI: PROCESSMESSAGE: ERRORS IN HEADER %s\n", hdr.GetCommand().c_str());
+      fprintf(stderr, "DEBUG: EMC2: PROCESSMESSAGE: ERRORS IN HEADER %s\n", hdr.GetCommand().c_str());
       continue;
     }
     string strCommand = hdr.GetCommand();
@@ -981,7 +985,7 @@ bool omni_ProcessMessages(CIface *iface, CNode* pfrom)
     unsigned int nMessageSize = hdr.nMessageSize;
     if (nMessageSize > MAX_SIZE)
     {
-      fprintf(stderr, "omni_ProcessMessages(%s, %u bytes) : nMessageSize > MAX_SIZE\n", strCommand.c_str(), nMessageSize);
+      fprintf(stderr, "emc2_ProcessMessages(%s, %u bytes) : nMessageSize > MAX_SIZE\n", strCommand.c_str(), nMessageSize);
       continue;
     }
     if (nMessageSize > vRecv.size())
@@ -997,7 +1001,7 @@ bool omni_ProcessMessages(CIface *iface, CNode* pfrom)
     memcpy(&nChecksum, &hash, sizeof(nChecksum));
     if (nChecksum != hdr.nChecksum)
     {
-      fprintf(stderr, "DEBUG: omni_ProcessMessages(%s, msg is %u bytes, buff is %u bytes) : CHECKSUM ERROR nChecksum=%08x hdr.nChecksum=%08x buff nVersion=%u\n", strCommand.c_str(), nMessageSize, (unsigned int)vRecv.size(), nChecksum, hdr.nChecksum, (unsigned int)vRecv.nVersion);
+      fprintf(stderr, "DEBUG: emc2_ProcessMessages(%s, msg is %u bytes, buff is %u bytes) : CHECKSUM ERROR nChecksum=%08x hdr.nChecksum=%08x buff nVersion=%u\n", strCommand.c_str(), nMessageSize, (unsigned int)vRecv.size(), nChecksum, hdr.nChecksum, (unsigned int)vRecv.nVersion);
       continue;
     }
 
@@ -1012,7 +1016,7 @@ bool omni_ProcessMessages(CIface *iface, CNode* pfrom)
     {
       {
         LOCK(cs_main);
-        fRet = omni_ProcessMessage(iface, pfrom, strCommand, vMsg);
+        fRet = emc2_ProcessMessage(iface, pfrom, strCommand, vMsg);
       }
       if (fShutdown)
         return true;
@@ -1049,7 +1053,7 @@ bool omni_ProcessMessages(CIface *iface, CNode* pfrom)
 }
 
 
-bool omni_SendMessages(CIface *iface, CNode* pto, bool fSendTrickle)
+bool emc2_SendMessages(CIface *iface, CNode* pto, bool fSendTrickle)
 {
   NodeList &vNodes = GetNodeList(iface);
   int ifaceIndex = GetCoinIndex(iface);
@@ -1075,7 +1079,7 @@ bool omni_SendMessages(CIface *iface, CNode* pto, bool fSendTrickle)
 
     // Address refresh broadcast
     static int64 nLastRebroadcast;
-    if (!IsInitialBlockDownload(OMNI_COIN_IFACE) && (GetTime() - nLastRebroadcast > 24 * 60 * 60))
+    if (!IsInitialBlockDownload(EMC2_COIN_IFACE) && (GetTime() - nLastRebroadcast > 24 * 60 * 60))
     {
       {
         LOCK(cs_vNodes);
@@ -1193,7 +1197,7 @@ bool omni_SendMessages(CIface *iface, CNode* pto, bool fSendTrickle)
     //
     vector<CInv> vGetData;
     int64 nNow = GetTime() * 1000000;
-    OMNITxDB txdb;
+    EMC2TxDB txdb;
     while (!pto->mapAskFor.empty() && (*pto->mapAskFor.begin()).first <= nNow)
     {
       const CInv& inv = (*pto->mapAskFor.begin()).second;

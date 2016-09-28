@@ -69,7 +69,7 @@ extern shbuf_t *server_msg_buff;
 #include "proto/coin_proto.h"
 #include "proto/shc_proto.h"
 #include "proto/usde_proto.h"
-#include "proto/omni_proto.h"
+#include "proto/emc2_proto.h"
 #include "proto/test_proto.h"
 
 #include "stratum/stratum.h"

@@ -399,10 +399,8 @@ fprintf(stderr, "DEBUG: update_asset_tx: !IsLocalAsset\n");
 }
 
   /* establish account */
-  CCoinAddr addr;
-  CCoinAddr extAddr;
+  CCoinAddr addr = GetAccountAddress(wallet, strAccount, false);
 
-  addr = GetAccountAddress(wallet, strAccount, false);
   if (!addr.IsValid()) {
     fprintf(stderr, "DEBUG: update_asset_tx: !addr.IsValid\n");
     return (SHERR_NOENT);
@@ -410,7 +408,7 @@ fprintf(stderr, "DEBUG: update_asset_tx: !IsLocalAsset\n");
 
   /* generate new coin address */
   string strExtAccount = "@" + strAccount;
-  extAddr = GetAccountAddress(wallet, strExtAccount, true);
+  CCoinAddr extAddr = GetAccountAddress(wallet, strExtAccount, true);
   if (!extAddr.IsValid()) {
     fprintf(stderr, "DEBUG: update_asset_tx: !extAddr.IsValid\n");
     return (SHERR_INVAL);
@@ -476,10 +474,7 @@ int activate_asset_tx(CIface *iface, string strAccount, const uint160& hashAsset
   }
 
   /* establish account */
-  CCoinAddr addr;
-  CCoinAddr extAddr;
-
-  addr = GetAccountAddress(wallet, strAccount, false);
+  CCoinAddr addr = GetAccountAddress(wallet, strAccount, false);
   if (!addr.IsValid()) {
     fprintf(stderr, "DEBUG: update_asset_tx: !addr.IsValid\n");
     return (SHERR_NOENT);
@@ -487,7 +482,7 @@ int activate_asset_tx(CIface *iface, string strAccount, const uint160& hashAsset
 
   /* generate new coin address */
   string strExtAccount = "@" + strAccount;
-  extAddr = GetAccountAddress(wallet, strExtAccount, true);
+  CCoinAddr extAddr = GetAccountAddress(wallet, strExtAccount, true);
   if (!extAddr.IsValid()) {
     fprintf(stderr, "DEBUG: update_asset_tx: !extAddr.IsValid\n");
     return (SHERR_INVAL);
@@ -560,9 +555,7 @@ int remove_asset_tx(CIface *iface, string strAccount, const uint160& hashAsset, 
   }
 
   /* establish account */
-  CCoinAddr addr;
-
-  addr = GetAccountAddress(wallet, strAccount, false);
+  CCoinAddr addr = GetAccountAddress(wallet, strAccount, false);
   if (!addr.IsValid()) {
     fprintf(stderr, "DEBUG: update_asset_tx: !addr.IsValid\n");
     return (SHERR_NOENT);

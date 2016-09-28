@@ -24,37 +24,37 @@
  *  @endcopyright
  */
 
-#ifndef __OMNI_PROTO_H__
-#define __OMNI_PROTO_H__
+#ifndef __EMC2_PROTO_H__
+#define __EMC2_PROTO_H__
 
-#define OMNI_VERSION_MAJOR       0
-#define OMNI_VERSION_MINOR       8
-#define OMNI_VERSION_REVISION    6
-#define OMNI_VERSION_BUILD       2
+#define EMC2_VERSION_MAJOR       0
+#define EMC2_VERSION_MINOR       9
+#define EMC2_VERSION_REVISION    0
+#define EMC2_VERSION_BUILD       0
 
-#define OMNI_COIN_DAEMON_PORT 33813
+#define EMC2_COIN_DAEMON_PORT 41878
 
-#define OMNI_MAX_GETADDR 500
+#define EMC2_MAX_GETADDR 500
 
-#define OMNI_MAX_ORPHAN_TRANSACTIONS 10000
+#define EMC2_MAX_ORPHAN_TRANSACTIONS 10000
 
-#define OMNI_MAX_SIGOPS 20000
+#define EMC2_MAX_SIGOPS 20000
 
-static const int OMNI_PROTOCOL_VERSION = 80007;
+static const int EMC2_PROTOCOL_VERSION = 70004;
 
-#define OMNI_COIN (uint64_t)100000000
-static const unsigned int OMNI_MAX_BLOCK_SIZE = 1000000;
-static const int64 OMNI_MIN_INPUT = 10000;
-static const int64 OMNI_MIN_TX_FEE = 10000;
-static const int64 OMNI_MIN_RELAY_TX_FEE = 10000;
-static const int64 OMNI_MAX_MONEY = 13371337 * OMNI_COIN;
+#define EMC2_COIN (uint64_t)100000000
+static const unsigned int EMC2_MAX_BLOCK_SIZE = 1000000;
+static const int64 EMC2_MIN_INPUT = 100000;
+static const int64 EMC2_MIN_TX_FEE = 100000;
+static const int64 EMC2_MIN_RELAY_TX_FEE = 1000;
+static const int64 EMC2_MAX_MONEY = 299792458 * EMC2_COIN;
 
-/** The official OMNI maturity is 40 depth. */
-static const int OMNI_COINBASE_MATURITY = 40;
+/** The official EMC2 maturity is 40 depth. */
+static const int EMC2_COINBASE_MATURITY = 100;
 
 
 
-#endif /* __OMNI_PROTO_H__ */
+#endif /* __EMC2_PROTO_H__ */
 
 
 

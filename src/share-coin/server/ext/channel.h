@@ -220,9 +220,9 @@ class CChannel
  
     bool GetChannelTx(int ifaceIndex, CTransaction& tx);
 
-    const CCoinAddr GetOriginAddr();
+    const CCoinAddr GetOriginAddr(int ifaceIndex);
 
-    const CCoinAddr GetPeerAddr();
+    const CCoinAddr GetPeerAddr(int ifaceIndex);
 
     bool GeneratePubKey();
 

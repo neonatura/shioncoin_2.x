@@ -29,8 +29,8 @@
 #include "init.h"
 #include "strlcpy.h"
 #include "ui_interface.h"
-#include "omni_block.h"
-#include "omni_txidx.h"
+#include "emc2_block.h"
+#include "emc2_txidx.h"
 #include "chain.h"
 #include "spring.h"
 
@@ -41,7 +41,7 @@
 
 using namespace std;
 
-
+CScript EMC2_CHARITY_SCRIPT;
 
 
 #if 0
@@ -101,49 +101,49 @@ bool CCoinsViewDB::BatchWrite(const std::map<uint256, CCoins> &mapCoins, CBlockI
     return db.WriteBatch(batch);
 }
 
-OMNITxDB::OMNITxDB(size_t nCacheSize, bool fMemory, bool fWipe) : CLevelDB(GetDataDir() / "blocks" / "index", nCacheSize, fMemory, fWipe) {
+EMC2TxDB::EMC2TxDB(size_t nCacheSize, bool fMemory, bool fWipe) : CLevelDB(GetDataDir() / "blocks" / "index", nCacheSize, fMemory, fWipe) {
 }
 
-bool OMNITxDB::WriteBlockIndex(const CDiskBlockIndex& blockindex)
+bool EMC2TxDB::WriteBlockIndex(const CDiskBlockIndex& blockindex)
 {
     return Write(make_pair('b', blockindex.GetBlockHash()), blockindex);
 }
 
-bool OMNITxDB::ReadBestInvalidWork(CBigNum& bnBestInvalidWork)
+bool EMC2TxDB::ReadBestInvalidWork(CBigNum& bnBestInvalidWork)
 {
     return Read('I', bnBestInvalidWork);
 }
 
-bool OMNITxDB::WriteBestInvalidWork(const CBigNum& bnBestInvalidWork)
+bool EMC2TxDB::WriteBestInvalidWork(const CBigNum& bnBestInvalidWork)
 {
     return Write('I', bnBestInvalidWork);
 }
 
-bool OMNITxDB::WriteBlockFileInfo(int nFile, const CBlockFileInfo &info) {
+bool EMC2TxDB::WriteBlockFileInfo(int nFile, const CBlockFileInfo &info) {
     return Write(make_pair('f', nFile), info);
 }
 
-bool OMNITxDB::ReadBlockFileInfo(int nFile, CBlockFileInfo &info) {
+bool EMC2TxDB::ReadBlockFileInfo(int nFile, CBlockFileInfo &info) {
     return Read(make_pair('f', nFile), info);
 }
 
-bool OMNITxDB::WriteLastBlockFile(int nFile) {
+bool EMC2TxDB::WriteLastBlockFile(int nFile) {
     return Write('l', nFile);
 }
 
-bool OMNITxDB::WriteReindexing(bool fReindexing) {
+bool EMC2TxDB::WriteReindexing(bool fReindexing) {
     if (fReindexing)
         return Write('R', '1');
     else
         return Erase('R');
 }
 
-bool OMNITxDB::ReadReindexing(bool &fReindexing) {
+bool EMC2TxDB::ReadReindexing(bool &fReindexing) {
     fReindexing = Exists('R');
     return true;
 }
 
-bool OMNITxDB::ReadLastBlockFile(int &nFile) {
+bool EMC2TxDB::ReadLastBlockFile(int &nFile) {
     return Read('l', nFile);
 }
 
@@ -200,11 +200,11 @@ bool CCoinsViewDB::GetStats(CCoinsStats &stats) {
 #endif
 
 #if 0
-bool OMNITxDB::ReadTxIndex(const uint256 &txid, CDiskTxPos &pos) {
+bool EMC2TxDB::ReadTxIndex(const uint256 &txid, CDiskTxPos &pos) {
   return Read(make_pair('t', txid), pos);
 }
 
-bool OMNITxDB::WriteTxIndex(const std::vector<std::pair<uint256, CDiskTxPos> >&vect) {
+bool EMC2TxDB::WriteTxIndex(const std::vector<std::pair<uint256, CDiskTxPos> >&vect) {
   CLevelDBBatch batch;
   for (std::vector<std::pair<uint256,CDiskTxPos> >::const_iterator it=vect.begin(); it!=vect.end(); it++)
     batch.Write(make_pair('t', it->first), it->second);
@@ -214,7 +214,7 @@ bool OMNITxDB::WriteTxIndex(const std::vector<std::pair<uint256, CDiskTxPos> >&v
 
 
 #if 0
-bool OMNITxDB::LoadBlockIndexGuts()
+bool EMC2TxDB::LoadBlockIndexGuts()
 {
     leveldb::Iterator *pcursor = NewIterator();
 
@@ -276,7 +276,7 @@ bool OMNITxDB::LoadBlockIndexGuts()
 
 
 
-bool OMNITxDB::ReadDiskTx(uint256 hash, CTransaction& tx, CTxIndex& txindex)
+bool EMC2TxDB::ReadDiskTx(uint256 hash, CTransaction& tx, CTxIndex& txindex)
 {
   tx.SetNull();
   if (!ReadTxIndex(hash, txindex))
@@ -284,18 +284,18 @@ bool OMNITxDB::ReadDiskTx(uint256 hash, CTransaction& tx, CTxIndex& txindex)
   return (tx.ReadFromDisk(txindex.pos));
 }
 
-bool OMNITxDB::ReadDiskTx(uint256 hash, CTransaction& tx)
+bool EMC2TxDB::ReadDiskTx(uint256 hash, CTransaction& tx)
 {
   CTxIndex txindex;
   return ReadDiskTx(hash, tx, txindex);
 }
 
-bool OMNITxDB::ReadDiskTx(COutPoint outpoint, CTransaction& tx, CTxIndex& txindex)
+bool EMC2TxDB::ReadDiskTx(COutPoint outpoint, CTransaction& tx, CTxIndex& txindex)
 {
   return ReadDiskTx(outpoint.hash, tx, txindex);
 }
 
-bool OMNITxDB::ReadDiskTx(COutPoint outpoint, CTransaction& tx)
+bool EMC2TxDB::ReadDiskTx(COutPoint outpoint, CTransaction& tx)
 {
   CTxIndex txindex;
   return ReadDiskTx(outpoint.hash, tx, txindex);
@@ -310,7 +310,7 @@ CBlockIndex static * InsertBlockIndex(uint256 hash)
     return NULL;
 
   // Return existing
-  blkidx_t *mapBlockIndex = GetBlockTable(OMNI_COIN_IFACE);
+  blkidx_t *mapBlockIndex = GetBlockTable(EMC2_COIN_IFACE);
   map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex->find(hash);
   if (mi != mapBlockIndex->end())
     return (*mi).second;
@@ -328,19 +328,19 @@ CBlockIndex static * InsertBlockIndex(uint256 hash)
 
 
 
-bool omni_FillBlockIndex()
+bool emc2_FillBlockIndex()
 {
-  CIface *iface = GetCoinByIndex(OMNI_COIN_IFACE);
-  blkidx_t *blockIndex = GetBlockTable(OMNI_COIN_IFACE);
+  CIface *iface = GetCoinByIndex(EMC2_COIN_IFACE);
+  blkidx_t *blockIndex = GetBlockTable(EMC2_COIN_IFACE);
   bc_t *bc = GetBlockChain(iface);
   CBlockIndex *lastIndex;
-  OMNIBlock block;
+  EMC2Block block;
   uint256 hash;
   int nHeight;
 
   bool checkBest = false;
   uint256 hashBestChain;
-  OMNITxDB txdb;
+  EMC2TxDB txdb;
   if (txdb.ReadHashBestChain(hashBestChain))
     checkBest = true;
   txdb.Close();
@@ -352,24 +352,24 @@ bool omni_FillBlockIndex()
     if (0 != bc_idx_get(bc, nHeight, NULL))
       break;
     if (!block.ReadBlock(nHeight)) {
-fprintf(stderr, "DEBUG: omni_FillBlockIndex: error reading block height %d in main chain.\n", nHeight);
+fprintf(stderr, "DEBUG: emc2_FillBlockIndex: error reading block height %d in main chain.\n", nHeight);
       break;
     }
     hash = block.GetHash();
 
     if (nHeight == 0) {
-      if (hash != omni_hashGenesisBlock) {
-fprintf(stderr, "DEBUG: omni_FillBlockIndex: stopping at invalid genesis '%s' @ height %d\n", hash.GetHex().c_str(), nHeight);
+      if (hash != emc2_hashGenesisBlock) {
+fprintf(stderr, "DEBUG: emc2_FillBlockIndex: stopping at invalid genesis '%s' @ height %d\n", hash.GetHex().c_str(), nHeight);
         break; /* invalid genesis */
       }
     } else if (blockIndex->count(block.hashPrevBlock) == 0) {
-fprintf(stderr, "DEBUG: omni_FillBlockIndex: stopping at orphan '%s' @ height %d\n", hash.GetHex().c_str(), nHeight);
+fprintf(stderr, "DEBUG: emc2_FillBlockIndex: stopping at orphan '%s' @ height %d\n", hash.GetHex().c_str(), nHeight);
       break;
     }
 
     CBlockIndex* pindexNew = InsertBlockIndex(blockIndex, hash);
     if (nHeight == 0) {
-      OMNIBlock::pindexGenesisBlock = pindexNew;
+      EMC2Block::pindexGenesisBlock = pindexNew;
     }
     pindexNew->pprev = lastIndex;//InsertBlockIndex(blockIndex, block.hashPrevBlock);
     if (lastIndex) lastIndex->pnext = pindexNew;
@@ -385,8 +385,8 @@ fprintf(stderr, "DEBUG: omni_FillBlockIndex: stopping at orphan '%s' @ height %d
     if (!pindexNew->CheckIndex())
       return error(SHERR_INVAL, "LoadBlockIndex() : CheckIndex failed at height %d", pindexNew->nHeight);
 
-    if (nHeight == 0 && pindexNew->GetBlockHash() == omni_hashGenesisBlock)
-      OMNIBlock::pindexGenesisBlock = pindexNew;
+    if (nHeight == 0 && pindexNew->GetBlockHash() == emc2_hashGenesisBlock)
+      EMC2Block::pindexGenesisBlock = pindexNew;
 
     lastIndex = pindexNew;
 
@@ -411,20 +411,20 @@ static bool hasGenesisRoot(CBlockIndex *pindexBest)
     return (false);
 
   if (pindex->nHeight != 0 || 
-      pindex->GetBlockHash() != omni_hashGenesisBlock)
+      pindex->GetBlockHash() != emc2_hashGenesisBlock)
     return (false);
 
   return (true);
 }
 
 
-bool OMNITxDB::LoadBlockIndex()
+bool EMC2TxDB::LoadBlockIndex()
 {
-  CIface *iface = GetCoinByIndex(OMNI_COIN_IFACE);
-  blkidx_t *mapBlockIndex = GetBlockTable(OMNI_COIN_IFACE);
+  CIface *iface = GetCoinByIndex(EMC2_COIN_IFACE);
+  blkidx_t *mapBlockIndex = GetBlockTable(EMC2_COIN_IFACE);
   char errbuf[1024];
 
-  if (!omni_FillBlockIndex())
+  if (!emc2_FillBlockIndex())
     return (false);
 
   if (fRequestShutdown)
@@ -445,15 +445,15 @@ bool OMNITxDB::LoadBlockIndex()
     pindex->bnChainWork = (pindex->pprev ? pindex->pprev->bnChainWork : 0) + pindex->GetBlockWork();
   }
 
-  // Load OMNIBlock::hashBestChain pointer to end of best chain
+  // Load EMC2Block::hashBestChain pointer to end of best chain
   uint256 hashBestChain;
   if (!ReadHashBestChain(hashBestChain))
   {
-    if (OMNIBlock::pindexGenesisBlock == NULL) {
-      fprintf(stderr, "DEBUG: OMNITxDB::LoadBlockIndex() : OMNIBlock::hashBestChain not loaded, but pindexGenesisBlock == NULL");
+    if (EMC2Block::pindexGenesisBlock == NULL) {
+      fprintf(stderr, "DEBUG: EMC2TxDB::LoadBlockIndex() : EMC2Block::hashBestChain not loaded, but pindexGenesisBlock == NULL");
       return true;
     }
-    //    return error(SHERR_INVAL, "OMNITxDB::LoadBlockIndex() : OMNIBlock::hashBestChain not loaded");
+    //    return error(SHERR_INVAL, "EMC2TxDB::LoadBlockIndex() : EMC2Block::hashBestChain not loaded");
   }
 
   CBlockIndex *pindexBest = (*mapBlockIndex)[hashBestChain];
@@ -467,24 +467,24 @@ bool OMNITxDB::LoadBlockIndex()
   if (!ok) {
     pindexBest = GetBestBlockIndex(iface);
     if (!pindexBest)
-      return error(SHERR_INVAL, "OMNITxDB::LoadBlockIndex() : OMNIBlock::hashBestChain not found in the block index");
+      return error(SHERR_INVAL, "EMC2TxDB::LoadBlockIndex() : EMC2Block::hashBestChain not found in the block index");
     fprintf(stderr, "DEBUG: LoadBlockIndex: falling back to highest block height %d\n", pindexBest->nHeight);
     hashBestChain = pindexBest->GetBlockHash();
   }
 
   if (!pindexBest) {
-    fprintf(stderr, "DEBUG: OMNITxDB::LoadBlockIndex: error: hashBestChain '%s' not found in block index table\n", (hashBestChain).GetHex().c_str());
+    fprintf(stderr, "DEBUG: EMC2TxDB::LoadBlockIndex: error: hashBestChain '%s' not found in block index table\n", (hashBestChain).GetHex().c_str());
   }
 
-  SetBestBlockIndex(OMNI_COIN_IFACE, pindexBest);
+  SetBestBlockIndex(EMC2_COIN_IFACE, pindexBest);
   //  SetBestHeight(iface, pindexBest->nHeight);
-  OMNIBlock::bnBestChainWork = pindexBest->bnChainWork;
+  EMC2Block::bnBestChainWork = pindexBest->bnChainWork;
   pindexBest->pnext = NULL;
 
-  //printf("LoadBlockIndex(): OMNIBlock::hashBestChain=%s  height=%d  date=%s\n", hashBestChain.ToString().substr(0,20).c_str(), GetBestHeight(iface), DateTimeStrFormat("%x %H:%M:%S", pindexBest->GetBlockTime()).c_str());
+  //printf("LoadBlockIndex(): EMC2Block::hashBestChain=%s  height=%d  date=%s\n", hashBestChain.ToString().substr(0,20).c_str(), GetBestHeight(iface), DateTimeStrFormat("%x %H:%M:%S", pindexBest->GetBlockTime()).c_str());
 
   // Load bnBestInvalidWork, OK if it doesn't exist
-  ReadBestInvalidWork(OMNIBlock::bnBestInvalidWork);
+  ReadBestInvalidWork(EMC2Block::bnBestInvalidWork);
 
 #if 0
   // Verify blocks in the best chain
@@ -492,12 +492,12 @@ bool OMNITxDB::LoadBlockIndex()
   int nCheckDepth = GetArg( "-checkblocks", 10000);
   if (nCheckDepth == 0)
     nCheckDepth = 1000000000; // suffices until the year 19000
-  if (nCheckDepth > GetBestHeight(OMNI_COIN_IFACE))
-    nCheckDepth = GetBestHeight(OMNI_COIN_IFACE);
+  if (nCheckDepth > GetBestHeight(EMC2_COIN_IFACE))
+    nCheckDepth = GetBestHeight(EMC2_COIN_IFACE);
   printf("Verifying last %i blocks at level %i\n", nCheckDepth, nCheckLevel);
 #endif
 
-  int nCheckDepth = (GetBestHeight(OMNI_COIN_IFACE) / 100) + 2500;
+  int nCheckDepth = (GetBestHeight(EMC2_COIN_IFACE) / 100) + 2500;
   int total = 0;
   int invalid = 0;
   int maxHeight = 0;
@@ -507,19 +507,19 @@ bool OMNITxDB::LoadBlockIndex()
   map<pair<unsigned int, unsigned int>, CBlockIndex*> mapBlockPos;
   for (CBlockIndex* pindex = pindexBest; pindex && pindex->pprev; pindex = pindex->pprev)
   {
-    if (fRequestShutdown || pindex->nHeight < GetBestHeight(OMNI_COIN_IFACE) - nCheckDepth)
+    if (fRequestShutdown || pindex->nHeight < GetBestHeight(EMC2_COIN_IFACE) - nCheckDepth)
       break;
-    OMNIBlock block;
+    EMC2Block block;
     if (!block.ReadFromDisk(pindex)) {
-      fprintf(stderr, "DEBUG: OMNIBlock::LoadBlockIndex() : block.ReadFromDisk failed");
+      fprintf(stderr, "DEBUG: EMC2Block::LoadBlockIndex() : block.ReadFromDisk failed");
       pindexFork = pindex->pprev;
       continue;
     }
     total++;
 
     if (!block.CheckBlock() ||
-        !block.CheckTransactionInputs(OMNI_COIN_IFACE)) {
-      error (SHERR_INVAL, "(omni) LoadBlockIndex: critical: found bad block at %d, hash=%s\n", pindex->nHeight, pindex->GetBlockHash().ToString().c_str());
+        !block.CheckTransactionInputs(EMC2_COIN_IFACE)) {
+      error (SHERR_INVAL, "(emc2) LoadBlockIndex: critical: found bad block at %d, hash=%s\n", pindex->nHeight, pindex->GetBlockHash().ToString().c_str());
 
       pindexFork = pindex->pprev;
       invalid++;
@@ -535,10 +535,10 @@ bool OMNITxDB::LoadBlockIndex()
   {
     // Reorg back to the fork
     fprintf(stderr, "DEBUG: LoadBlockIndex() : *** moving best chain pointer back to block %d '%s'\n", pindexFork->nHeight, pindexFork->GetBlockHash().GetHex().c_str());
-    OMNIBlock block;
+    EMC2Block block;
     if (!block.ReadFromDisk(pindexFork))
       return error(SHERR_INVAL, "LoadBlockIndex() : block.ReadFromDisk failed");
-    OMNITxDB txdb;
+    EMC2TxDB txdb;
     block.SetBestChain(txdb, pindexFork);
     txdb.Close();
 
@@ -546,38 +546,41 @@ bool OMNITxDB::LoadBlockIndex()
   }
 
   maxHeight++;
-  sprintf(errbuf, "OMNI::LoadBlockIndex: Verified %-2.2f%% of %d total blocks: %d total invalid blocks found.", (double)(100 / (double)maxHeight * (double)total), maxHeight, invalid);
-  unet_log(OMNI_COIN_IFACE, errbuf);
+  sprintf(errbuf, "EMC2::LoadBlockIndex: Verified %-2.2f%% of %d total blocks: %d total invalid blocks found.", (double)(100 / (double)maxHeight * (double)total), maxHeight, invalid);
+  unet_log(EMC2_COIN_IFACE, errbuf);
 
-  CWallet *wallet = GetWallet(OMNI_COIN_IFACE);
+  CWallet *wallet = GetWallet(EMC2_COIN_IFACE);
   InitServiceWalletEvent(wallet, checkHeight);
 
   return true;
 }
 
 
-bool omni_InitBlockIndex()
+bool emc2_InitBlockIndex()
 {
   bool ret;
 
-  OMNITxDB txdb("cr");
+#define CHARITY_ADDRESS "1cec44c9f9b769ae08ebf9d694c7611a16edf615"
+  EMC2_CHARITY_SCRIPT << OP_DUP << OP_HASH160 << ParseHex(CHARITY_ADDRESS) << OP_EQUALVERIFY << OP_CHECKSIG;
+
+  EMC2TxDB txdb("cr");
   ret = txdb.LoadBlockIndex();
   txdb.Close();
   if (!ret)
     return (false);
 
-  if (!omni_CreateGenesisBlock())
+  if (!emc2_CreateGenesisBlock())
     return (false);
 
   return (true);
 }
    
-bool OMNITxDB::WriteFlag(const std::string &name, bool fValue) 
+bool EMC2TxDB::WriteFlag(const std::string &name, bool fValue) 
 {
   return Write(std::make_pair('F', name), fValue ? '1' : '0');
 }
 
-bool OMNITxDB::ReadFlag(const std::string &name, bool &fValue) 
+bool EMC2TxDB::ReadFlag(const std::string &name, bool &fValue) 
 {
   char ch;
   if (!Read(std::make_pair('F', name), ch))

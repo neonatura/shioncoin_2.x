@@ -236,6 +236,7 @@ coin_iface_t shc_coin_iface = {
   SHC_PROTOCOL_VERSION, /* network proto ver */
   SHC_COIN_DAEMON_PORT,
   { 0xd9, 0xd9, 0xf9, 0xbd },
+  NODE_NETWORK | NODE_BLOOM,
   SHC_MIN_INPUT,
   SHC_MAX_BLOCK_SIZE,
   SHC_MAX_ORPHAN_TRANSACTIONS,

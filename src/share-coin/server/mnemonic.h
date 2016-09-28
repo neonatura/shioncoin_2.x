@@ -41,7 +41,7 @@ typedef vector<string> string_list;
 
 const string DecodeMnemonic(const string_list& words);
 
-bool DecodeMnemonicSecret(const string phrase, CCoinSecret& addr);
+bool DecodeMnemonicSecret(int ifaceIndex, const string phrase, CCoinSecret& addr);
 
 
 string_list EncodeMnemonic(string& seed);

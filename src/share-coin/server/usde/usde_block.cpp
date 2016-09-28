@@ -505,7 +505,7 @@ static bool usde_ConnectInputs(CTransaction *tx, MapPrevTx inputs, map<uint256, 
     CTransaction& txPrev = inputs[prevout.hash].second;
 
     if (prevout.n >= txPrev.vout.size() || prevout.n >= txindex.vSpent.size())
-      return error(SHERR_INVAL, "ConnectInputs() : %s prevout.n out of range %d %d %d prev tx %s\n%s", tx->GetHash().ToString().substr(0,10).c_str(), prevout.n, txPrev.vout.size(), txindex.vSpent.size(), prevout.hash.ToString().substr(0,10).c_str(), txPrev.ToString().c_str());
+      return error(SHERR_INVAL, "ConnectInputs() : %s prevout.n out of range %d %d %d prev tx %s", tx->GetHash().ToString().substr(0,10).c_str(), prevout.n, txPrev.vout.size(), txindex.vSpent.size(), prevout.hash.ToString().substr(0,10).c_str());
 
     // If prev is coinbase, check that it's matured
     if (txPrev.IsCoinBase())
@@ -663,7 +663,7 @@ continue;
 
       if (fDebug && GetBoolArg("-printpriority"))
       {
-        printf("priority %-20.1f %s\n%s", dPriority, tx.GetHash().ToString().substr(0,10).c_str(), tx.ToString().c_str());
+        printf("priority %-20.1f %s", dPriority, tx.GetHash().ToString().substr(0,10).c_str());
         if (porphan)
           porphan->print();
         printf("\n");

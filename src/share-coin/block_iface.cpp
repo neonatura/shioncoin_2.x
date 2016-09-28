@@ -66,7 +66,7 @@ string transactioninfo_json;
 
 extern std::string HexBits(unsigned int nBits);
 extern string JSONRPCReply(const Value& result, const Value& error, const Value& id);
-extern void ScriptPubKeyToJSON(const CScript& scriptPubKey, Object& out);
+extern void ScriptPubKeyToJSON(int ifaceIndex, const CScript& scriptPubKey, Object& out);
 extern Value ValueFromAmount(int64 amount);
 extern void WalletTxToJSON(int ifaceIndex, const CWalletTx& wtx, Object& entry);
 
@@ -1111,7 +1111,7 @@ const char *c_gettransactioninfo(int ifaceIndex, const char *tx_id)
     Object out;
     out.push_back(Pair("value", ValueFromAmount(txout.nValue)));
     out.push_back(Pair("n", (boost::int64_t)i));
-    ScriptPubKeyToJSON(txout.scriptPubKey, out);
+    ScriptPubKeyToJSON(ifaceIndex, txout.scriptPubKey, out);
     vout.push_back(out);
   }
   result.push_back(Pair("vout", vout));

@@ -23,8 +23,8 @@
  *  @endcopyright
  */
 
-#ifndef __OMNI__OMNI_TXIDX_H__ 
-#define __OMNI__OMNI_TXIDX_H__ 
+#ifndef __EMC2__EMC2_TXIDX_H__ 
+#define __EMC2__EMC2_TXIDX_H__ 
 
 
 #if 0
@@ -46,13 +46,13 @@ public:
 };
 
 /** Access to the block database (blocks/index/) */
-class OMNITxDB : public CLevelDB
+class EMC2TxDB : public CLevelDB
 {
 public:
-    OMNITxDB(size_t nCacheSize, bool fMemory = false, bool fWipe = false);
+    EMC2TxDB(size_t nCacheSize, bool fMemory = false, bool fWipe = false);
 private:
-    OMNITxDB(const OMNITxDB&);
-    void operator=(const OMNITxDB&);
+    EMC2TxDB(const EMC2TxDB&);
+    void operator=(const EMC2TxDB&);
 public:
     bool WriteBlockIndex(const CDiskBlockIndex& blockindex);
     bool ReadBestInvalidWork(CBigNum& bnBestInvalidWork);
@@ -75,10 +75,10 @@ public:
 
 
 
-class OMNITxDB : public CTxDB
+class EMC2TxDB : public CTxDB
 {
   public:
-    OMNITxDB(const char *fileMode = "r+") : CTxDB("omni_tx.dat", OMNI_COIN_IFACE, fileMode) { }
+    EMC2TxDB(const char *fileMode = "r+") : CTxDB("emc2_tx.dat", EMC2_COIN_IFACE, fileMode) { }
     bool ReadDiskTx(uint256 hash, CTransaction& tx, CTxIndex& txindex);
     bool ReadDiskTx(uint256 hash, CTransaction& tx);
     bool ReadDiskTx(COutPoint outpoint, CTransaction& tx, CTxIndex& txindex);
@@ -89,22 +89,22 @@ class OMNITxDB : public CTxDB
     bool ReadFlag(const std::string &name, bool &fValue);
 
   private:
-    OMNITxDB(const OMNITxDB&);
-    void operator=(const OMNITxDB&);
+    EMC2TxDB(const EMC2TxDB&);
+    void operator=(const EMC2TxDB&);
     bool LoadBlockIndexGuts();
 };
 
 
 static bool IsChainFile(std::string strFile)
 {
-    if (strFile == "omni_tx.dat")
+    if (strFile == "emc2_tx.dat")
         return true;
 
     return false;
 }
 
-bool omni_InitBlockIndex();
+bool emc2_InitBlockIndex();
 
 
 
-#endif /** __OMNI__OMNI_TXIDX_H__ */
+#endif /** __EMC2__EMC2_TXIDX_H__ */

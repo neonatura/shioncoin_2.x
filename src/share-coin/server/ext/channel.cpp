@@ -588,7 +588,7 @@ bool CChannelKey::GenerateMasterKey(CWallet *wallet, string strAccount)
 bool CChannelKey::GetMasterKey(CWallet *wallet, HDPrivKey& privkey)
 {
   CPubKey pubkey(pubkey);
-  CCoinAddr addr(pubkey.GetID());
+  CCoinAddr addr(wallet->ifaceIndex, pubkey.GetID());
 
   CKey key;
   if (!wallet->GetKey(pubkey.GetID(), key))
@@ -610,16 +610,16 @@ bool CChannelKey::VerifyChannelMasterKey(CWallet *wallet)
   return (privkey.GetPubKey() == mpubkey);
 }
 
-const CCoinAddr CChannel::GetOriginAddr()
+const CCoinAddr CChannel::GetOriginAddr(int ifaceIndex)
 {
-  CCoinAddr addr;
+  CCoinAddr addr(ifaceIndex);
   addr.Set(CKeyID(origin.addr));
   return (addr);
 }
 
-const CCoinAddr CChannel::GetPeerAddr()
+const CCoinAddr CChannel::GetPeerAddr(int ifaceIndex)
 {
-  CCoinAddr addr;
+  CCoinAddr addr(ifaceIndex);
   addr.Set(CKeyID(peer.addr));
   return (addr);
 }
@@ -814,7 +814,7 @@ int activate_channel_tx(CIface *iface, CTransaction *txIn, int64 nValue, CWallet
     return (SHERR_INVAL);
 
   string strAccount;
-  CCoinAddr addr = txIn->channel.GetPeerAddr();
+  CCoinAddr addr = txIn->channel.GetPeerAddr(ifaceIndex);
   if (!GetCoinAddr(wallet, addr, strAccount))
     return (SHERR_NOENT);
 
@@ -889,8 +889,6 @@ int pay_channel_tx(CIface *iface, string strAccount, uint160 hChan, CCoinAddr pa
   CTransaction txSpentIn;
   CTransaction txIn;
   CChannel *channel;
-  CCoinAddr addr;
-  CCoinAddr peer_addr;
   bool isOrigin;
 
   if (ifaceIndex != TEST_COIN_IFACE && ifaceIndex != SHC_COIN_IFACE)
@@ -903,9 +901,11 @@ fprintf(stderr, "DEBUG: GetOpenChannel: failure opening hChan '%s'\n", hChan.Get
 
   CChannel& chanIn = txIn.channel;
 
+  CCoinAddr addr(ifaceIndex);
+  CCoinAddr peer_addr(ifaceIndex);
   string strChanAccount;
-  CCoinAddr ori_addr = chanIn.GetOriginAddr();
-  CCoinAddr dest_addr = chanIn.GetPeerAddr();
+  CCoinAddr ori_addr = chanIn.GetOriginAddr(ifaceIndex);
+  CCoinAddr dest_addr = chanIn.GetPeerAddr(ifaceIndex);
   if (!ori_addr.IsValid() || !dest_addr.IsValid()) {
 error(SHERR_INVAL, "!ori_addr.IsValid || !dest_addr.IsValid");
     return (SHERR_INVAL);
@@ -1045,8 +1045,6 @@ int validate_channel_tx(CIface *iface, CTransaction *txCommit, CWalletTx& wtx)
   CTransaction txSpentIn;
   CTransaction txIn;
   CChannel *channel;
-  CCoinAddr peer_addr;
-  CCoinAddr addr;
   string strAccount;
   uint160 hChan;
   int txInMode;
@@ -1084,13 +1082,15 @@ int validate_channel_tx(CIface *iface, CTransaction *txCommit, CWalletTx& wtx)
   CTxDestination dest;
   if (!ExtractDestination(txCommit->vout[0].scriptPubKey, dest))
     return error(SHERR_INVAL, "validate_channel_tx: invalid out (#2).");
+  CCoinAddr addr(ifaceIndex);
   addr.Set(dest);
   if (!GetCoinAddr(wallet, addr, strAccount))
     return (SHERR_REMOTE);
 
+  CCoinAddr peer_addr(ifaceIndex);
   CChannel& chanIn = txIn.channel;
-  CCoinAddr lcl_addr = chanIn.GetOriginAddr();
-  CCoinAddr rem_addr = chanIn.GetPeerAddr();
+  CCoinAddr lcl_addr = chanIn.GetOriginAddr(ifaceIndex);
+  CCoinAddr rem_addr = chanIn.GetPeerAddr(ifaceIndex);
   if (!lcl_addr.IsValid() || !rem_addr.IsValid())
     return (SHERR_INVAL);
   if (lcl_addr.Get() == addr.Get()) { 
@@ -1218,8 +1218,6 @@ int generate_channel_tx(CIface *iface, uint160 hChan, CWalletTx& wtx)
   CTransaction txSpentIn;
   CTransaction txIn;
   CChannel *channel;
-  CCoinAddr peer_addr;
-  CCoinAddr addr;
   string strAccount;
   int txInMode;
   bool isOrigin;
@@ -1265,15 +1263,18 @@ int generate_channel_tx(CIface *iface, uint160 hChan, CWalletTx& wtx)
   if (!ExtractDestination(txSpentIn.vout[0].scriptPubKey, dest)) {
     return error(SHERR_INVAL, "validate_channel_tx: invalid out (#2).");
 }
+
+  CCoinAddr addr(ifaceIndex);
   addr.Set(dest);
   if (!GetCoinAddr(wallet, addr, strAccount)) {
     fprintf(stderr, "DEBUG: generate_channel_tx: !GetCoinAddr()\n"); 
     return (SHERR_REMOTE);
   }
 
+  CCoinAddr peer_addr(ifaceIndex);
   CChannel& chanIn = txIn.channel;
-  CCoinAddr lcl_addr = chanIn.GetOriginAddr();
-  CCoinAddr rem_addr = chanIn.GetPeerAddr();
+  CCoinAddr lcl_addr = chanIn.GetOriginAddr(ifaceIndex);
+  CCoinAddr rem_addr = chanIn.GetPeerAddr(ifaceIndex);
   if (!lcl_addr.IsValid() || !rem_addr.IsValid())
     return (SHERR_INVAL);
   if (lcl_addr.Get() == addr.Get()) { 
@@ -1308,11 +1309,11 @@ int generate_channel_tx(CIface *iface, uint160 hChan, CWalletTx& wtx)
     nCounterValue = channel->GetOriginValue();
 
   CScript scriptOrigin;
-  scriptOrigin.SetDestination(channel->GetOriginAddr().Get());
+  scriptOrigin.SetDestination(channel->GetOriginAddr(ifaceIndex).Get());
   wtx.vout.push_back(CTxOut(channel->GetOriginValue(), scriptOrigin));
 
   CScript scriptPeer;
-  scriptPeer.SetDestination(channel->GetPeerAddr().Get());
+  scriptPeer.SetDestination(channel->GetPeerAddr(ifaceIndex).Get());
   wtx.vout.push_back(CTxOut(channel->GetPeerValue(), scriptPeer));
 
   /* half-sign input */

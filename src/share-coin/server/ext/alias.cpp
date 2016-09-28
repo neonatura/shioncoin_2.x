@@ -2249,9 +2249,9 @@ int init_alias_addr_tx(CIface *iface, const char *title, CCoinAddr& addr, CWalle
 
   bool found = false;
   string strAccount;
-  BOOST_FOREACH(const PAIRTYPE(CCoinAddr, string)& item, wallet->mapAddressBook)
+  BOOST_FOREACH(const PAIRTYPE(CTxDestination, string)& item, wallet->mapAddressBook)
   {
-    const CCoinAddr& address = item.first;
+    const CCoinAddr& address = CCoinAddr(ifaceIndex, item.first);
     const string& account = item.second;
     if (address == addr) {
       addr = address;
@@ -2347,14 +2347,13 @@ int update_alias_addr_tx(CIface *iface, const char *title, CCoinAddr& addr, CWal
     return (SHERR_REMOTE);
 
   /* establish account */
-  CCoinAddr extAddr;
   string strAccount;
   if (!GetCoinAddr(wallet, addr, strAccount)) 
     return (SHERR_INVAL);
 
   /* generate new coin address */
   string strExtAccount = "@" + strAccount;
-  extAddr = GetAccountAddress(wallet, strExtAccount, true);
+  CCoinAddr extAddr = GetAccountAddress(wallet, strExtAccount, true);
 
   /* generate tx */
   CAlias *alias;

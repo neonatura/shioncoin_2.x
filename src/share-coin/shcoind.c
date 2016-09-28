@@ -78,7 +78,7 @@ void usage_help(void)
       "\t--no-seed\tPrevent pre-defined seed IP addresses from being used.\n"
       "\t--check-addr\tRe-verify the external IP address used by this machine.\n"
       "\t--no-usde\tDisable the USDE coin service.\n"
-      "\t--no-omni\tDisable the OMNI coin service.\n"
+      "\t--no-emc2\tDisable the EMC2 coin service.\n"
       "\t--no-stratum\tDisable the stratum service.\n"
       "\n"
       "Peer Options:\n"
@@ -159,8 +159,8 @@ int main(int argc, char *argv[])
       opt_bool_set(OPT_PEER_SEED, FALSE);
     } else if (0 == strcmp(argv[i], "--no-usde")) {
       opt_bool_set(OPT_SERV_USDE, FALSE);
-    } else if (0 == strcmp(argv[i], "--no-omni")) {
-      opt_bool_set(OPT_SERV_OMNI, FALSE);
+    } else if (0 == strcmp(argv[i], "--no-emc2")) {
+      opt_bool_set(OPT_SERV_EMC2, FALSE);
     } else if (0 == strcmp(argv[i], "--no-stratum")) {
       opt_bool_set(OPT_SERV_STRATUM, FALSE);
     } else if (0 == strcmp(argv[i], "--check-addr")) {
@@ -238,11 +238,11 @@ int main(int argc, char *argv[])
         iface->enabled = FALSE;
     }
 
-    if (idx == OMNI_COIN_IFACE) {
-#ifndef OMNI_SERVICE
+    if (idx == EMC2_COIN_IFACE) {
+#ifndef EMC2_SERVICE
       iface->enabled = FALSE;
 #endif
-      if (!opt_bool(OPT_SERV_OMNI))
+      if (!opt_bool(OPT_SERV_EMC2))
         iface->enabled = FALSE;
     }
     if (!iface->enabled)

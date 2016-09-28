@@ -340,7 +340,7 @@ bool TESTWallet::CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey)
 {
   {
     LOCK2(cs_main, cs_wallet);
-    Debug("CommitTransaction:\n%s", wtxNew.ToString().c_str());
+//    Debug("CommitTransaction:\n%s", wtxNew.ToString().c_str());
     {
       // This is only to keep the database open to defeat the auto-flush for the
       // duration of this scope.  This is the only place where this optimization
@@ -488,7 +488,7 @@ fprintf(stderr, "DEBUG: CreateTransaction: !SelectCoins\n");
         BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setCoins) {
           const CWalletTx *wtx = coin.first;
           if (!SignSignature(*this, *wtx, wtxNew, nIn++)) {
-fprintf(stderr, "DEBUG: CreateTransaction: !SignSignature(): %s\n", ((CWalletTx *)wtx)->ToString().c_str());
+//fprintf(stderr, "DEBUG: CreateTransaction: !SignSignature(): %s\n", ((CWalletTx *)wtx)->ToString().c_str());
             txdb.Close();
             return false;
           }

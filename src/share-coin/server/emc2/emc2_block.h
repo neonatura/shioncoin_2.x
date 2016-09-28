@@ -23,12 +23,12 @@
  *  @endcopyright
  */  
 
-#ifndef __OMNI_BLOCK_H__
-#define __OMNI_BLOCK_H__
+#ifndef __EMC2_BLOCK_H__
+#define __EMC2_BLOCK_H__
 
 
 /**
- * @ingroup sharecoin_omni
+ * @ingroup sharecoin_emc2
  * @{
  */
 
@@ -40,7 +40,7 @@
 
 
 
-class OMNI_CTxMemPool : public CTxMemPool
+class EMC2_CTxMemPool : public CTxMemPool
 {
 
   public:
@@ -51,34 +51,34 @@ class OMNI_CTxMemPool : public CTxMemPool
 
 };
 
-class OMNIBlock : public CBlock
+class EMC2Block : public CBlock
 {
 public:
     // header
     static const int CURRENT_VERSION=2;
-    static OMNI_CTxMemPool mempool; 
+    static EMC2_CTxMemPool mempool; 
     static CBlockIndex *pindexBest;
     static CBlockIndex *pindexGenesisBlock;
     static CBigNum bnBestChainWork;
     static CBigNum bnBestInvalidWork;
     static int64 nTimeBestReceived;
 
-    OMNIBlock()
+    EMC2Block()
     {
-        ifaceIndex = OMNI_COIN_IFACE;
+        ifaceIndex = EMC2_COIN_IFACE;
         SetNull();
     }
 
-    OMNIBlock(const CBlock &block)
+    EMC2Block(const CBlock &block)
     {
-        ifaceIndex = OMNI_COIN_IFACE;
+        ifaceIndex = EMC2_COIN_IFACE;
         SetNull();
         *((CBlock*)this) = block;
     }
 
     void SetNull()
     {
-      nVersion = OMNIBlock::CURRENT_VERSION;
+      nVersion = EMC2Block::CURRENT_VERSION;
       CBlock::SetNull();
     }
 
@@ -108,34 +108,34 @@ public:
 /**
  * A memory pool where an inventory of pending block transactions are stored.
  */
-extern OMNI_CTxMemPool OMNI_mempool;
+extern EMC2_CTxMemPool EMC2_mempool;
 
 /**
- * The best known tail of the OMNI block-chain.
+ * The best known tail of the EMC2 block-chain.
  */
-extern CBlockIndex* OMNI_pindexBest;
+extern CBlockIndex* EMC2_pindexBest;
 
 /**
- * The initial block in the OMNI block-chain's index reference.
+ * The initial block in the EMC2 block-chain's index reference.
  */
-extern CBlockIndex* OMNI_pindexGenesisBlock;
+extern CBlockIndex* EMC2_pindexGenesisBlock;
 
 /**
- * The block hash of the initial block in the OMNI block-chain.
+ * The block hash of the initial block in the EMC2 block-chain.
  */
-extern uint256 omni_hashGenesisBlock;
+extern uint256 emc2_hashGenesisBlock;
 
 
-extern int OMNI_nBestHeight;
-extern CBigNum OMNI_bnBestChainWork;
-extern CBigNum OMNI_bnBestInvalidWork;
-extern uint256 OMNI_hashBestChain;
-extern int64 OMNI_nTimeBestReceived;
+extern int EMC2_nBestHeight;
+extern CBigNum EMC2_bnBestChainWork;
+extern CBigNum EMC2_bnBestInvalidWork;
+extern uint256 EMC2_hashBestChain;
+extern int64 EMC2_nTimeBestReceived;
 
-extern std::map<uint256, OMNIBlock*> OMNI_mapOrphanBlocks;
-extern std::multimap<uint256, OMNIBlock*> OMNI_mapOrphanBlocksByPrev;
-extern std::map<uint256, std::map<uint256, CDataStream*> > OMNI_mapOrphanTransactionsByPrev;
-extern std::map<uint256, CDataStream*> OMNI_mapOrphanTransactions;
+extern std::map<uint256, EMC2Block*> EMC2_mapOrphanBlocks;
+extern std::multimap<uint256, EMC2Block*> EMC2_mapOrphanBlocksByPrev;
+extern std::map<uint256, std::map<uint256, CDataStream*> > EMC2_mapOrphanTransactionsByPrev;
+extern std::map<uint256, CDataStream*> EMC2_mapOrphanTransactions;
 
 
 
@@ -143,27 +143,27 @@ extern std::map<uint256, CDataStream*> OMNI_mapOrphanTransactions;
 /**
  * Create a block template with pending inventoried transactions.
  */
-CBlock* omni_CreateNewBlock(CReserveKey& reservekey);
+CBlock* emc2_CreateNewBlock(CReserveKey& reservekey);
 
 /**
- * Generate the inital OMNI block in the block-chain.
+ * Generate the inital EMC2 block in the block-chain.
  */
-bool omni_CreateGenesisBlock();
+bool emc2_CreateGenesisBlock();
 
 /**
  * Set the best known block hash.
  */
-bool omni_SetBestChain(CBlock *block);
+bool emc2_SetBestChain(CBlock *block);
 
 /**
- * Attempt to process an incoming block from a remote OMNI coin service.
+ * Attempt to process an incoming block from a remote EMC2 coin service.
  */
-bool omni_ProcessBlock(CNode* pfrom, CBlock* pblock);
+bool emc2_ProcessBlock(CNode* pfrom, CBlock* pblock);
 
 /**
  * Get the first block in the best "alternate" chain not currently in the main block-chain.
  */
-uint256 omni_GetOrphanRoot(const CBlock* pblock);
+uint256 emc2_GetOrphanRoot(const CBlock* pblock);
 
 
 
@@ -171,4 +171,4 @@ uint256 omni_GetOrphanRoot(const CBlock* pblock);
  * @}
  */
 
-#endif /* ndef __OMNI_BLOCK_H__ */
+#endif /* ndef __EMC2_BLOCK_H__ */

@@ -34,12 +34,15 @@ extern "C" {
 #define UNET_NONE 0
 #define UNET_SHC 1
 #define UNET_USDE 2
-#define UNET_OMNI 3
-#define UNET_RESERVED_2 4
-#define UNET_STRATUM 5
-#define UNET_RPC 6
-//#define UNET_COIN 3
-#define MAX_UNET_MODES 7
+#define UNET_EMC2 3
+#define UNET_RESERVED_1 4
+#define UNET_RESERVED_2 5
+#define UNET_RESERVED_3 6
+#define UNET_RESERVED_4 7
+#define UNET_STRATUM 8 
+#define UNET_RPC 9 
+#define MAX_UNET_COIN_MODES 8
+#define MAX_UNET_MODES 10
 
 
 
@@ -235,6 +238,14 @@ void unet_peer_fill(int mode);
 unsigned int unet_peer_total(int mode);
 
 int unet_peer_find(int mode, struct sockaddr *addr);
+
+void unet_local_init(void);
+
+int unet_local_verify(char *ipaddr);
+
+void unet_local_add(char *ipaddr);
+
+const char *unet_local_host(void);
 
 
 

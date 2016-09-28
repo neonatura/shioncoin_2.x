@@ -9,6 +9,13 @@ usde:
 	ln -sf $(top_builddir)/src/share-coin/usde
 endif
 
+if EMC2_SERVICE
+noinst_PROGRAMS += emc2
+
+emc2:
+	ln -sf $(top_builddir)/src/share-coin/emc2
+endif
+
 shcoind: docs
 	ln -sf $(top_builddir)/src/share-coin/shcoind
 

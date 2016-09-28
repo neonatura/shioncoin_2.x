@@ -31,7 +31,10 @@ static const char *_unet_label[MAX_UNET_MODES] =
   "!NONE!",
   "shc",
   "usde",
-  "omni",
+  "emc2",
+  "!RESERVED!",
+  "!RESERVED!",
+  "!RESERVED!",
   "!RESERVED!",
   "stratum",
   "rpc",
@@ -126,16 +129,6 @@ void unet_cycle(double max_t)
 
   if (start_t == SHTIME_UNDEFINED)
     start_t = shtime();
-
-  /* add daemon listen sockets to read set for accepting new sockets */
-  for (mode = 1; mode < MAX_UNET_MODES; mode++) {
-    bind = unet_bind_table(mode);
-    if (!bind || bind->fd == UNDEFINED_SOCKET)
-      continue;
-
-    err = unet_accept(mode, NULL);
-  }
-
 
   /* work proc */
   unet_timer_cycle();
@@ -243,6 +236,16 @@ void unet_cycle(double max_t)
       descriptor_list_print();
     }
   }
+
+  /* perform socket accept after I/O in order to clear out any pending disconnects. */
+  for (mode = 1; mode < MAX_UNET_MODES; mode++) {
+    bind = unet_bind_table(mode);
+    if (!bind || bind->fd == UNDEFINED_SOCKET)
+      continue;
+
+    err = unet_accept(mode, NULL);
+  }
+
 
   start_t = shtime();
 

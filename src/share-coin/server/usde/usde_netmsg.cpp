@@ -55,6 +55,12 @@ extern map<uint256, CAlert> mapAlerts;
 extern vector <CAddress> GetAddresses(CIface *iface, int max_peer);
 
 
+#define MIN_USDE_PROTO_VERSION 209
+
+#define USDE_COIN_HEADER_SIZE SIZEOF_COINHDR_T
+
+
+
 //////////////////////////////////////////////////////////////////////////////
 //
 // dispatching functions
@@ -247,7 +253,7 @@ bool usde_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
     CAddress addrFrom;
     uint64 nNonce = 1;
     vRecv >> pfrom->nVersion >> pfrom->nServices >> nTime >> addrMe;
-    if (pfrom->nVersion < MIN_PROTO_VERSION)
+    if (pfrom->nVersion < MIN_USDE_PROTO_VERSION)
     {
       // Since February 20, 2012, the protocol is initiated at version 209,
       // and earlier versions are no longer supported
@@ -367,7 +373,7 @@ bool usde_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
 
     pfrom->fSuccessfullyConnected = true;
 
-    printf("receive version message: version %d, blocks=%d, us=%s, them=%s, peer=%s\n", pfrom->nVersion, pfrom->nStartingHeight, addrMe.ToString().c_str(), addrFrom.ToString().c_str(), pfrom->addr.ToString().c_str());
+    fprintf(stderr, "DEBUG: USDE: receive version message: version %d, blocks=%d, us=%s, them=%s, peer=%s, subver=%s\n", pfrom->nVersion, pfrom->nStartingHeight, addrMe.ToString().c_str(), addrFrom.ToString().c_str(), pfrom->addr.ToString().c_str(), pfrom->strSubVer.c_str()); 
 
     cPeerBlockCounts.input(pfrom->nStartingHeight);
   }
@@ -872,7 +878,6 @@ bool usde_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
 
 bool usde_ProcessMessages(CIface *iface, CNode* pfrom)
 {
-  static unsigned char USDE_pchMessageStart[4] = { 0xd9, 0xd9, 0xf9, 0xbd };
 
   shtime_t ts;
   CDataStream& vRecv = pfrom->vRecv;
@@ -895,8 +900,9 @@ bool usde_ProcessMessages(CIface *iface, CNode* pfrom)
       break;
 
     // Scan for message start
-    CDataStream::iterator pstart = search(vRecv.begin(), vRecv.end(), BEGIN(USDE_pchMessageStart), END(USDE_pchMessageStart));
-    int nHeaderSize = vRecv.GetSerializeSize(CMessageHeader());
+    CDataStream::iterator pstart = search(vRecv.begin(), vRecv.end(), 
+        BEGIN(iface->hdr_magic), END(iface->hdr_magic));
+    int nHeaderSize = USDE_COIN_HEADER_SIZE;
     if (vRecv.end() - pstart < nHeaderSize)
     {
       if ((int)vRecv.size() > nHeaderSize)
@@ -966,7 +972,7 @@ bool usde_ProcessMessages(CIface *iface, CNode* pfrom)
       if (strstr(e.what(), "end of data"))
       {
         // Allow exceptions from underlength message on vRecv
-        printf("ProcessMessages(%s, %u bytes) : Exception '%s' caught, normally caused by a message being shorter than its stated length\n", strCommand.c_str(), nMessageSize, e.what());
+       fprintf(stderr, "DEBUG: USDE: ProcessMessages(%s, %u bytes) : Exception '%s' caught, normally caused by a message being shorter than its stated length [addr: %s] [recv-size: %d] [cmd: %s]", strCommand.c_str(), nMessageSize, e.what(), pfrom->addr.ToString().c_str(), (int)vRecv.size(), strCommand.c_str());
       }
       else if (strstr(e.what(), "size too large"))
       {

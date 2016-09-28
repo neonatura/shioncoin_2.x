@@ -1,20 +1,39 @@
-// Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2012 The Bitcoin developers
-// Copyright (c) 2011-2012 Litecoin Developers
-// Copyright (c) 2013 usde Developers
-// Distributed under the MIT/X11 software license, see the accompanying
-// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
+/*
+ * @copyright
+ *
+ *  Copyright 2014 Neo Natura
+ *
+ *  This file is part of the Share Library.
+ *  (https://github.com/neonatura/share)
+ *        
+ *  The Share Library is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version. 
+ *
+ *  The Share Library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with The Share Library.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  @endcopyright
+ */  
 
 #include "shcoind.h"
 #include "main.h"
 #include "protocol.h"
 #include "util.h"
 #include "netbase.h"
+#include "coin_proto.h"
+
 #ifndef WIN32
 # include <arpa/inet.h>
 #endif
 
-unsigned char pchMessageStart[4] = { 0xd9, 0xd9, 0xf9, 0xbd };
 
 static const char* ppszTypeName[] =
 {
@@ -26,19 +45,25 @@ static const char* ppszTypeName[] =
 
 CMessageHeader::CMessageHeader()
 {
-    memcpy(pchMessageStart, ::pchMessageStart, sizeof(pchMessageStart));
-    memset(pchCommand, 0, sizeof(pchCommand));
-    pchCommand[1] = 1;
-    nMessageSize = -1;
-    nChecksum = 0;
+  memset(pchMessageStart, '\000', sizeof(pchMessageStart));
+  memset(pchCommand, 0, sizeof(pchCommand));
+  pchCommand[1] = 1;
+  nMessageSize = -1;
+  nChecksum = 0;
 }
 
-CMessageHeader::CMessageHeader(const char* pszCommand, unsigned int nMessageSizeIn)
+CMessageHeader::CMessageHeader(int ifaceIndexIn, const char* pszCommand, unsigned int nMessageSizeIn)
 {
-    memcpy(pchMessageStart, ::pchMessageStart, sizeof(pchMessageStart));
-    strncpy(pchCommand, pszCommand, COMMAND_SIZE);
-    nMessageSize = nMessageSizeIn;
-    nChecksum = 0;
+  ifaceIndex = ifaceIndexIn;
+  CIface *iface = GetCoinByIndex(ifaceIndex);
+  if (iface) {
+    memcpy(pchMessageStart, iface->hdr_magic, sizeof(pchMessageStart));
+  } else {
+    memset(pchMessageStart, '\000', sizeof(pchMessageStart));
+  }
+  strncpy(pchCommand, pszCommand, COMMAND_SIZE);
+  nMessageSize = nMessageSizeIn;
+  nChecksum = 0;
 }
 
 std::string CMessageHeader::GetCommand() const
@@ -51,58 +76,41 @@ std::string CMessageHeader::GetCommand() const
 
 bool CMessageHeader::IsValid() const
 {
-    // Check start string
-    if (memcmp(pchMessageStart, ::pchMessageStart, sizeof(pchMessageStart)) != 0) {
-fprintf(stderr, "DEBUG: CMessageHeader::IsValid: no pchMessageStart prefix\n");
-        return false;
+
+  CIface *iface = GetCoinByIndex(ifaceIndex);
+  if (!iface) {
+    return (error(SHERR_INVAL, "CMessageHeader.IsValid: no coin interface (#%d).", ifaceIndex));
   }
 
-    // Check the command string for errors
-    for (const char* p1 = pchCommand; p1 < pchCommand + COMMAND_SIZE; p1++)
+  if (0 != memcmp(pchMessageStart, iface->hdr_magic, sizeof(pchMessageStart))) {
+    return (error(SHERR_ILSEQ, "CMessageHeader.IsValid[%s]: no pchMessageStart prefix", iface->name));
+  }
+
+  for (const char* p1 = pchCommand; p1 < pchCommand + COMMAND_SIZE; p1++)
+  {
+    if (*p1 == 0)
     {
-        if (*p1 == 0)
-        {
-            // Must be all zeros after the first zero
-            for (; p1 < pchCommand + COMMAND_SIZE; p1++)
-                if (*p1 != 0) {
-fprintf(stderr, "DEBUG: CMessageHeader::IsValid: no trailing zeros.\n");
-                    return false;
-}
+      /* null bytes after trailing string terminator */
+      for (; p1 < pchCommand + COMMAND_SIZE; p1++) {
+        if (*p1 != 0) {
+          return (error(SHERR_INVAL, "CMessageHeader::IsValid: no trailing zeros."));
         }
-        else if (*p1 < ' ' || *p1 > 0x7E) {
-            return false;
-}
+      }
     }
-
-    // Message size
-    if (nMessageSize > MAX_SIZE)
-    {
-        fprintf(stderr, "DEBUG: CMessageHeader::IsValid() : (%s, %u bytes) nMessageSize > MAX_SIZE\n", GetCommand().c_str(), nMessageSize);
-        return false;
+    else if (*p1 < ' ' || *p1 > 0x7E) {
+      return false;
     }
+  }
 
-    return true;
+  /* ensure message is smaller than maximum encapsulation size. */
+  if (nMessageSize > MAX_SIZE) {
+    return (error(SHERR_INVAL, "CMessageHeader::IsValid() : (%s, %u bytes) nMessageSize > MAX_SIZE\n", GetCommand().c_str(), nMessageSize));
+  }
+
+  return (true); /* all good */
 }
 
 
-
-CAddress::CAddress() : CService()
-{
-    Init();
-}
-
-CAddress::CAddress(CService ipIn, uint64 nServicesIn) : CService(ipIn)
-{
-    Init();
-    nServices = nServicesIn;
-}
-
-void CAddress::Init()
-{
-    nServices = NODE_NETWORK;
-    nTime = 100000000;
-    nLastTry = 0;
-}
 
 CInv::CInv()
 {

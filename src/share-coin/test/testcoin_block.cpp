@@ -321,10 +321,10 @@ _TEST(cointx)
 
   bool found = false;
   string strAccount;
-  CCoinAddr addr;
-  BOOST_FOREACH(const PAIRTYPE(CCoinAddr, string)& item, wallet->mapAddressBook)
+  CCoinAddr addr(TEST_COIN_IFACE);
+  BOOST_FOREACH(const PAIRTYPE(CTxDestination, string)& item, wallet->mapAddressBook)
   {
-    const CCoinAddr& address = item.first;
+    const CCoinAddr& address = CCoinAddr(TEST_COIN_IFACE, item.first);
     const string& account = item.second;
     addr = address;
     strAccount = account;
@@ -456,7 +456,6 @@ _TEST(assettx)
   _TRUE(wtx.CheckTransaction(TEST_COIN_IFACE)); /* .. */
   _TRUE(VerifyAsset(wtx) == true);
 
-wtx.print();
 }
 
 _TEST(identtx)
@@ -701,7 +700,6 @@ fprintf(stderr, "DEBUG: TEST: OFFER: offer accepted .. bal is now %f\n", ((doubl
     _TRUE(ProcessBlock(NULL, block) == true);
     delete block;
   }
-acc_wtx.print();
 
   /* verify insertion */
   _TRUE(acc_wtx.IsInMemoryPool(TEST_COIN_IFACE) == false);
@@ -729,7 +727,6 @@ fprintf(stderr, "DEBUG: TEST: OFFER: offer generated .. bal is now %f\n", ((doub
     _TRUE(ProcessBlock(NULL, block) == true);
     delete block;
   }
-gen_wtx.print();
 
   /* pay operation */
   CWalletTx pay_wtx;
@@ -757,7 +754,6 @@ fprintf(stderr, "DEBUG: TEST: OFFER: offer pay'd .. bal is now %f\n", ((double)t
     _TRUE(ProcessBlock(NULL, block) == true);
     delete block;
   }
-pay_wtx.print();
 
   _TRUE(pay_wtx.IsInMemoryPool(TEST_COIN_IFACE) == false);
 #if 0
@@ -1114,7 +1110,7 @@ _TEST(exectx)
   wtx.strFromAccount = strAccount;
 
   err = init_exec_tx(iface, strAccount, strPath, 0, wtx); 
-if (err) fprintf(stderr, "DEBUG: TEST: EXECTX[status %d]: %s\n", err, wtx.ToString().c_str());
+if (err) fprintf(stderr, "DEBUG: TEST: EXECTX[status %d]: %s\n", err, wtx.ToString(TEST_COIN_IFACE).c_str());
   CExec *exec = &((CExec&)wtx.certificate);
   uint160 hExec = exec->GetIdentHash();
   _TRUE(err == 0);

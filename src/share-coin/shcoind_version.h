@@ -41,6 +41,11 @@ static const int CLIENT_VERSION =
 
 #define CLIENT_VERSION DISK_VERSION
 
+/* client version of network node for particular coin service */
+#define IFACE_VERSION(_iface) \
+  ((_iface)->client_ver)
+
+
 //
 // network protocol versioning
 //

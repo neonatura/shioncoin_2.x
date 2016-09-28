@@ -34,8 +34,9 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 noinst_PROGRAMS = shc$(EXEEXT) shcoind$(EXEEXT) .notice$(EXEEXT) \
-	$(am__EXEEXT_1)
+	$(am__EXEEXT_1) $(am__EXEEXT_2)
 @USDE_SERVICE_TRUE@am__append_1 = usde
+@EMC2_SERVICE_TRUE@am__append_2 = emc2
 subdir = bin
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -131,10 +132,14 @@ CONFIG_HEADER = $(top_builddir)/config.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 @USDE_SERVICE_TRUE@am__EXEEXT_1 = usde$(EXEEXT)
+@EMC2_SERVICE_TRUE@am__EXEEXT_2 = emc2$(EXEEXT)
 PROGRAMS = $(noinst_PROGRAMS)
 _notice_SOURCES = .c
 _notice_OBJECTS = .$(OBJEXT)
 _notice_LDADD = $(LDADD)
+emc2_SOURCES = emc2.c
+emc2_OBJECTS = emc2.$(OBJEXT)
+emc2_LDADD = $(LDADD)
 shc_SOURCES = shc.c
 shc_OBJECTS = shc.$(OBJEXT)
 shc_LDADD = $(LDADD)
@@ -157,8 +162,8 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = .c shc.c shcoind.c usde.c
-DIST_SOURCES = .c shc.c shcoind.c usde.c
+SOURCES = .c emc2.c shc.c shcoind.c usde.c
+DIST_SOURCES = .c emc2.c shc.c shcoind.c usde.c
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -1086,6 +1091,9 @@ clean-noinstPROGRAMS:
 	list=`for p in $$list; do echo "$$p"; done | sed 's/$(EXEEXT)$$//'`; \
 	echo " rm -f" $$list; \
 	rm -f $$list
+@EMC2_SERVICE_FALSE@emc2$(EXEEXT): $(emc2_OBJECTS) $(emc2_DEPENDENCIES) 
+@EMC2_SERVICE_FALSE@	@rm -f emc2$(EXEEXT)
+@EMC2_SERVICE_FALSE@	$(LINK) $(emc2_OBJECTS) $(emc2_LDADD) $(LIBS)
 @USDE_SERVICE_FALSE@usde$(EXEEXT): $(usde_OBJECTS) $(usde_DEPENDENCIES) 
 @USDE_SERVICE_FALSE@	@rm -f usde$(EXEEXT)
 @USDE_SERVICE_FALSE@	$(LINK) $(usde_OBJECTS) $(usde_LDADD) $(LIBS)
@@ -1097,6 +1105,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/emc2.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/usde.Po@am__quote@
@@ -1328,6 +1337,9 @@ uninstall-am:
 
 @USDE_SERVICE_TRUE@usde:
 @USDE_SERVICE_TRUE@	ln -sf $(top_builddir)/src/share-coin/usde
+
+@EMC2_SERVICE_TRUE@emc2:
+@EMC2_SERVICE_TRUE@	ln -sf $(top_builddir)/src/share-coin/emc2
 
 shcoind: docs
 	ln -sf $(top_builddir)/src/share-coin/shcoind

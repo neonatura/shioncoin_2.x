@@ -111,14 +111,14 @@ static void opt_set_defaults(void)
     opt_bool_set(OPT_SERV_USDE, TRUE); /* default */
 #endif
 
-#ifndef OMNI_SERVICE
-  opt_bool_set(OPT_SERV_OMNI, FALSE);
+#ifndef EMC2_SERVICE
+  opt_bool_set(OPT_SERV_EMC2, FALSE);
 #else
-  strncpy(buf, shpref_get(OPT_SERV_OMNI, ""), sizeof(buf)-1);
+  strncpy(buf, shpref_get(OPT_SERV_EMC2, ""), sizeof(buf)-1);
   if (tolower(*buf) == 'f')
-    opt_bool_set(OPT_SERV_OMNI, FALSE);
+    opt_bool_set(OPT_SERV_EMC2, FALSE);
   else
-    opt_bool_set(OPT_SERV_OMNI, TRUE); /* default */
+    opt_bool_set(OPT_SERV_EMC2, TRUE); /* default */
 #endif
 
 #ifndef STRATUM_SERVICE

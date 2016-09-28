@@ -214,23 +214,18 @@ fin:
 void uevent_cycle(void)
 {
   static unsigned int event_idx;
-  static unsigned int mode_idx;
   uevent_t *e;
   shtime_t start;
   shtime_t ts;
   unsigned int e_max;
-  int mode;
   int err;
-
-  mode_idx++;
-  mode_idx = (mode_idx % MAX_UNET_MODES);
 
   start = shtime();
   e_max = (event_idx - 1) % UNET_MAX_EVENTS;
   while (event_idx != e_max) {
     e = &event_table[event_idx];
 
-    if (e->type && (e->mode == mode_idx)) {
+    if (e->type) {
       err = 0;
       switch (e->type) {
         case UEVENT_PEER:
@@ -244,7 +239,7 @@ void uevent_cycle(void)
       if (err == 0)
         uevent_clear_pos(event_idx);
 
-      if (shtime_after(shtime(), shtime_adj(start, 0.02)))
+      if (shtime_after(shtime(), shtime_adj(start, 0.05)))
         break; /* break out after 20ms */
     }
 

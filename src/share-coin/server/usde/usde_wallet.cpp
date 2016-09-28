@@ -337,7 +337,7 @@ bool USDEWallet::CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey)
 {
   {
     LOCK2(cs_main, cs_wallet);
-    Debug("CommitTransaction:\n%s", wtxNew.ToString().c_str());
+//    Debug("CommitTransaction:\n%s", wtxNew.ToString().c_str());
     {
       // This is only to keep the database open to defeat the auto-flush for the
       // duration of this scope.  This is the only place where this optimization

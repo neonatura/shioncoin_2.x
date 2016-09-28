@@ -37,7 +37,7 @@ blkidx_t tableBlockIndex[MAX_COIN_IFACE];
 
 extern double GetDifficulty(int ifaceIndex, const CBlockIndex* blockindex = NULL);
 extern std::string HexBits(unsigned int nBits);
-extern void ScriptPubKeyToJSON(const CScript& scriptPubKey, Object& out);
+extern void ScriptPubKeyToJSON(int ifaceIndex, const CScript& scriptPubKey, Object& out);
 
 
 
@@ -1769,7 +1769,6 @@ bool CTransaction::CheckTransaction(int ifaceIndex)
   {
     BOOST_FOREACH(const CTxIn& txin, vin) {
       if (txin.prevout.IsNull()) {
-        print();
         return error(SHERR_INVAL, "(core) CheckTransaction: prevout is null");
       }
 #if 0 
@@ -1802,12 +1801,10 @@ bool CTransaction::CheckTransactionInputs(int ifaceIndex)
 
   BOOST_FOREACH(const CTxIn& txin, vin) {
     if (txin.prevout.IsNull()) {
-      print();
       return error(SHERR_INVAL, "(core) CheckTransactionInputs: prevout is null");
     }
 
     if (!VerifyTxHash(iface, txin.prevout.hash)) {
-      print();
       return error(SHERR_INVAL, "(core) CheckTransactionInputs: unknown prevout hash '%s'", txin.prevout.hash.GetHex().c_str());
     }
   }
@@ -1928,7 +1925,7 @@ bool CTransaction::FetchInputs(CTxDB& txdb, const map<uint256, CTxIndex>& mapTes
       // Revisit this if/when transaction replacement is implemented and allows
       // adding inputs:
       fInvalid = true;
-      return error(SHERR_INVAL, "FetchInputs() : %s prevout.n out of range %d %d %d prev tx %s\n%s", GetHash().ToString().substr(0,10).c_str(), prevout.n, txPrev.vout.size(), txindex.vSpent.size(), prevout.hash.ToString().substr(0,10).c_str(), txPrev.ToString().c_str());
+      return error(SHERR_INVAL, "FetchInputs() : %s prevout.n out of range %d %d %d prev tx %s", GetHash().ToString().substr(0,10).c_str(), prevout.n, txPrev.vout.size(), txindex.vSpent.size(), prevout.hash.ToString().substr(0,10).c_str());
     }
   }
 
@@ -2585,14 +2582,14 @@ bool CBlock::trust(int deg, const char *msg, ...)
   return (false);
 }
 
-std::string CTransactionCore::ToString()
+std::string CTransactionCore::ToString(int ifaceIndex)
 {
-  return (write_string(Value(ToValue()), false));
+  return (write_string(Value(ToValue(ifaceIndex)), false));
 }
 
-std::string CTransaction::ToString()
+std::string CTransaction::ToString(int ifaceIndex)
 {
-  return (write_string(Value(ToValue()), false));
+  return (write_string(Value(ToValue(ifaceIndex)), false));
 }
 
 std::string CBlockHeader::ToString()
@@ -2605,7 +2602,7 @@ std::string CBlock::ToString()
   return (write_string(Value(ToValue()), false));
 }
 
-Object CTransactionCore::ToValue()
+Object CTransactionCore::ToValue(int ifaceIndex)
 {
   Object obj;
 
@@ -2620,9 +2617,9 @@ Object CTransactionCore::ToValue()
   return (obj);
 }
 
-Object CTransaction::ToValue()
+Object CTransaction::ToValue(int ifaceIndex)
 {
-  Object obj = CTransactionCore::ToValue();
+  Object obj = CTransactionCore::ToValue(ifaceIndex);
 
   obj.push_back(Pair("txid", GetHash().GetHex()));
 
@@ -2653,9 +2650,8 @@ Object CTransaction::ToValue()
     Object out;
     out.push_back(Pair("value", ValueFromAmount(txout.nValue)));
     out.push_back(Pair("n", (boost::int64_t)i));
-    Object o;
-    ScriptPubKeyToJSON(txout.scriptPubKey, o);
-    out.push_back(Pair("scriptPubKey", o));
+    out.push_back(Pair("scriptpubkey", txout.scriptPubKey.ToString().c_str()));
+    ScriptPubKeyToJSON(ifaceIndex, txout.scriptPubKey, out);
     obj_vout.push_back(out);
   } 
   obj.push_back(Pair("vout", obj_vout));
@@ -2697,7 +2693,7 @@ Object CTransaction::ToValue()
 Object CTransaction::ToValue(CBlock *pblock)
 {
   CBlockHeader& block = (CBlockHeader& )(*pblock);
-  Object tx_obj = ToValue();
+  Object tx_obj = ToValue(pblock->ifaceIndex);
   Object obj;
 
   obj = block.ToValue();

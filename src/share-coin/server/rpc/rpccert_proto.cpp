@@ -244,7 +244,7 @@ Value rpc_cert_new(CIface *iface, const Array& params, bool fHelp)
   if (err)
     throw JSONRPCError(err, "Failure initializing transaction.");
 
-  return (wtx.ToValue());
+  return (wtx.ToValue(ifaceIndex));
 }
 
 /**
@@ -293,7 +293,7 @@ Value rpc_wallet_donate(CIface *iface, const Array& params, bool fHelp)
   if (err)
     throw JSONRPCError(err, "Failure initializing transaction.");
     
-  return (wtx.ToValue());
+  return (wtx.ToValue(ifaceIndex));
 }
 
 Value rpc_wallet_csend(CIface *iface, const Array& params, bool fHelp) 
@@ -338,7 +338,7 @@ Value rpc_wallet_csend(CIface *iface, const Array& params, bool fHelp)
   if (err)
     throw JSONRPCError(err, "Failure initializing transaction.");
     
-  return (wtx.ToValue());
+  return (wtx.ToValue(ifaceIndex));
 }
 
 
@@ -381,8 +381,7 @@ Value rpc_wallet_stamp(CIface *iface, const Array& params, bool fHelp)
   if (err)
     throw JSONRPCError(err, "transaction generation failure");
     
-/* DEBUG: */wtx.print();
-  return (wtx.ToValue());
+  return (wtx.ToValue(ifaceIndex));
 }
 
 Value rpc_cert_export(CIface *iface, const Array& params, bool fHelp) 
@@ -448,7 +447,7 @@ Value rpc_cert_export(CIface *iface, const Array& params, bool fHelp)
     if (!IsMine(*wallet, dest))
       continue;
 
-    CCoinAddr addr(dest);
+    CCoinAddr addr(ifaceIndex, dest);
     CKeyID keyID;
     if (!addr.GetKeyID(keyID))
       continue;//throw JSONRPCError(-3, "Address does not refer to a key");
@@ -460,7 +459,7 @@ Value rpc_cert_export(CIface *iface, const Array& params, bool fHelp)
 
     if (dest == cert_addr.Get() || dest == ext_addr) {
       Object entry;
-      string strKey = CCoinSecret(vchSecret, fCompressed).ToString();
+      string strKey = CCoinSecret(ifaceIndex, vchSecret, fCompressed).ToString();
       entry.push_back(Pair("key", strKey));
       entry.push_back(Pair("label", strLabel));
       entry.push_back(Pair("addr", addr.ToString()));

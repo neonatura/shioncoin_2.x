@@ -38,7 +38,7 @@ extern "C" {
 #define TEST_COIN_IFACE 0
 #define SHC_COIN_IFACE 1
 #define USDE_COIN_IFACE 2
-#define OMNI_COIN_IFACE 3
+#define EMC2_COIN_IFACE 3
 #define MAX_COIN_IFACE 4 
 
 
@@ -80,6 +80,9 @@ extern "C" {
 #define MIN_INPUT_VALUE(_iface) \
   (int64)(iface ? ((_iface)->min_input) : 0)
 
+#define COIN_SERVICES(_iface) \
+  ((_iface)->services)
+
 
 #define STAT_BLOCK_ACCEPTS(_iface) (_iface)->stat.tot_block_accept
 #define STAT_BLOCK_SUBMITS(_iface) (_iface)->stat.tot_block_submit
@@ -89,6 +92,9 @@ extern "C" {
 struct coin_iface_t;
 typedef int (*coin_f)(struct coin_iface_t * /*iface*/, void * /* arg */);
 #define COINF(_f) ((coin_f)(_f))
+
+#define HEADER_PREFIX(_iface) \
+  ((_iface)->hdr_magic)
 
 /**
  * A coin interface provides a specialized means to perform service operations.
@@ -105,8 +111,10 @@ typedef struct coin_iface_t
   /* socket */
   int port;
 
+
   unsigned char hdr_magic[4];
 
+  uint64_t services; /* NODE_XXX */
   uint64_t min_input;
   uint64_t max_block_size;
   uint64_t max_orphan_tx;
