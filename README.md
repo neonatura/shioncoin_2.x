@@ -13,11 +13,10 @@ The stratum service utilizes supplemental methods that are not standard, and req
 
 <h3>Build Dependencies</h3>
 
-The c++ boost shared library is required.  To be specific, the "system", "filesystem", "program_options", and "thread" boost libraries. The "shcoind", "shc", and "usde" programs are the only sharelib program that link against boost libraries.
+The c++ boost shared library is required.  To be specific, the "system", "filesystem", "program_options", and "thread" boost libraries. The "shcoind" and "shcoin" programs are the only sharelib program that link against boost libraries.
 To install on linux run 'yum install libboost*' or 'apt-get install libboost*'.
 
-The 'openssl version 1.0.1g' distribution has been included in the directory '/depend/openssl-1.0.1g'. This version will automatically be compiled and linked against the "shcoind", "shc", and "usde" programs.
-
+The 'openssl version 1.0.1g' distribution has been included in the directory '/src/share-ssl-lib'. This version will automatically be compiled and linked against the shcoind and shcoin programs. The Open SSL library is used for RPC protocol communication between the shcoind daemon and shcoin utility program.
 
 <h2>SHC Specifications</h2>
 The share-coin is unique in that it allows for additional types of transactions than regular coin transfers. Examples of these capabilities include exchanging coins between currencies, providing certified licenses for custom use, and assigning names to otherwise hard to remember hash tags. Compatibilty with the 'share library' file-system and network providing methods to utilize SHC block-chain transactions via external programs.
@@ -75,51 +74,8 @@ The binaries can be found under src/share-coin as "shc", "usde", and "shcoind". 
 When installed on a unix-like systems that supports the traditional /etc/init.d/rc.d/ hierarchy a 'shcoind' daemon will be registered with the system to load upon startup as the root user. 
 Note: The client utility programs "shc" and "usde" must be ran as the same user as the 'shcoind' daemon.
 
+The shcoind daemon and client programs store data in the "/var/lib/share/blockchain/" directory. These programs will not [automatically] attempt to read the contents of the traditional currency hierarchy (i.e. "~/.usde/"). Commands are provided in order to import or export in either a legacy and/or optimized manner for the entire block-chain, wallet transactions, and network peer addresses. No RPC access is permitted except via the local machine and only with the automatically generated rpc credentials (see "rpc.conf" file). 
 
-
-<h3>Stratum Protocol Template</h3>
-<br>Command: mining.ping
-<br>Description: Verify or measure server response time.
-<br>Example Request: {"method":"mining.ping","id":1,"params":[]}
-<br>Example Response: {"id":1,"error":null,"result":null}
-<br>
-<br>Command: mining.shares
-<br>
-<br>Command: mining.get_transactions
-<br>
-<br>Command: mining.info
-<br>
-<br>Command: mining.authorize
-<br>
-<br>Command: mining.submit
-<br>
-<br>Command: mining.subscribe
-<br>
-<br>Command: block.info[mode,hash]
-<br>Description: Obtain block and transaction info from a block hash.
-<br>
-<br>Command: account.info[account,pkey]
-<br>Description: Obtain account credentials by name and account key.
-<br>
-<br>Command: account.create[label]
-<br>
-<br>Command: account.transactions[amount,pkey,duration]
-<br>
-<br>Command: account.address[hash]
-<br>
-<br>Command: account.secret[addr,pkey]
-<br>
-<br>Command: account.import[account,priv addr]
-<br>
-<br>Command: account.transfer[account,pkey,addr,amount]
-
-
-<h3>Build Dependencies</h3>
-
-The c++ boost shared library is required.  To be specific, the "system", "filesystem", "program_options", and "thread" boost libraries. The "shcoind" and "shcoin" programs are the only sharelib program that link against boost libraries.
-To install on linux run 'yum install libboost*' or 'apt-get install libboost*'.
-
-The 'openssl version 1.0.1g' distribution has been included in the directory '/src/share-ssl-lib'. This version will automatically be compiled and linked against the shcoind and shcoin programs. The Open SSL library is used for RPC protocol communication between the shcoind daemon and shcoin utility program.
 
 Client Utility Program
 ===============================
@@ -227,4 +183,43 @@ validateaddress <address>
 verifymessage <address> <signature> <message>
 </small>
 
-The shcoind daemon and client programs store data in the "/var/lib/share/blockchain/" directory. These programs will not [automatically] attempt to read the contents of the traditional currency hierarchy (i.e. "~/.usde/"). Commands are provided in order to import or export in either a legacy and/or optimized manner for the entire block-chain, wallet transactions, and network peer addresses. No RPC access is permitted except via the local machine and only with the automatically generated rpc credentials (see "rpc.conf" file). 
+
+
+<h3>Stratum Protocol Template</h3>
+<br>Command: mining.ping
+<br>Description: Verify or measure server response time.
+<br>Example Request: {"method":"mining.ping","id":1,"params":[]}
+<br>Example Response: {"id":1,"error":null,"result":null}
+<br>
+<br>Command: mining.shares
+<br>
+<br>Command: mining.get_transactions
+<br>
+<br>Command: mining.info
+<br>
+<br>Command: mining.authorize
+<br>
+<br>Command: mining.submit
+<br>
+<br>Command: mining.subscribe
+<br>
+<br>Command: block.info[mode,hash]
+<br>Description: Obtain block and transaction info from a block hash.
+<br>
+<br>Command: account.info[account,pkey]
+<br>Description: Obtain account credentials by name and account key.
+<br>
+<br>Command: account.create[label]
+<br>
+<br>Command: account.transactions[amount,pkey,duration]
+<br>
+<br>Command: account.address[hash]
+<br>
+<br>Command: account.secret[addr,pkey]
+<br>
+<br>Command: account.import[account,priv addr]
+<br>
+<br>Command: account.transfer[account,pkey,addr,amount]
+
+
+
