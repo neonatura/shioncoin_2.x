@@ -26,7 +26,7 @@
 #include "shcoind.h"
 #include "unet_seed.h"
 
-#define MAX_UNET_PEER_SCAN_SIZE 16
+#define MAX_UNET_PEER_SCAN_SIZE 32
 
 const char *unet_netaddr_str(struct sockaddr *addr)
 {

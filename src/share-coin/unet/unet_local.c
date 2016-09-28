@@ -125,13 +125,14 @@ void unet_local_discover(void) /* ipv4 */
   /* cache address persistently */
   shpref_set("shcoind.net.addr", buf);
 
+  /* add to collection */
+  unet_local_set(buf);
+
   /* retain a cache time-stamp */
   now = time(NULL);
   sprintf(buf, "%lu", (unsigned long)now);
   shpref_set("shcoind.net.addr.stamp", buf);
 
-  /* add to collection */
-  unet_local_set(buf);
 }
 
 void unet_local_init(void)
