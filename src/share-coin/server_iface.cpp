@@ -192,7 +192,6 @@ CAddress GetLocalAddress(const CNetAddr *paddrPeer)
     return ret;
 #endif
     const char *ipaddr = unet_local_host();
-fprintf(stderr, "DEBUG: GetLocalAddress: '%s'\n", ipaddr);
     CAddress addr(CService(ipaddr, 0), 0);
     return (addr);
 }
@@ -689,8 +688,7 @@ void CNode::PushVersion()
   {
     char buf[256];
     sprintf(buf, "PushVersion: version (proto %d / client %d), blocks=%d, us=%s, them=%s, peer=%s", PROTOCOL_VERSION(iface), IFACE_VERSION(iface), GetBestHeight(ifaceIndex), addrMe.ToString().c_str(), addrYou.ToString().c_str(), addr.ToString().c_str());
-  //  unet_log(ifaceIndex, buf);
-fprintf(stderr, "DEBUG: %s\n", buf);
+    unet_log(ifaceIndex, buf);
   }
 }
 
@@ -1499,7 +1497,6 @@ fprintf(stderr, "DEBUG: invalid header magic: {%-2.2x} {%-2.2x} {%-2.2x} {%-2.2x
     return (SHERR_ILSEQ);
   }
 
-fprintf(stderr, "DEBUG: USDE: hdr.size = %d\n", (int)hdr.size); 
   if (hdr.size > MAX_SIZE) {
     shbuf_clear(buff);
     return (SHERR_INVAL);
@@ -1519,7 +1516,7 @@ fprintf(stderr, "DEBUG: USDE: hdr.size = %d\n", (int)hdr.size);
   shbuf_trim(buff, sizeof(hdr) + hdr.size);
 
   bool fRet = usde_coin_server_recv_msg(iface, pnode);
-fprintf(stderr, "DEBUG: usde_coin_server_recv: usde_coin_server_recv_msg ret'd %s <%u bytes> [%s]\n", fRet ? "true" : "false", hdr.size, hdr.cmd); 
+//fprintf(stderr, "DEBUG: usde_coin_server_recv: usde_coin_server_recv_msg ret'd %s <%u bytes> [%s]\n", fRet ? "true" : "false", hdr.size, hdr.cmd); 
 
 #if 0
   vRecv.erase(vRecv.begin(), vRecv.end());
@@ -1816,7 +1813,6 @@ int shc_coin_server_recv(CIface *iface, CNode *pnode, shbuf_t *buff)
     return (SHERR_ILSEQ);
   }
 
-fprintf(stderr, "DEBUG: USDE: hdr.size = %d\n", (int)hdr.size); 
   if (hdr.size > MAX_SIZE) {
     shbuf_clear(buff);
     return (SHERR_INVAL);
@@ -1836,7 +1832,7 @@ fprintf(stderr, "DEBUG: USDE: hdr.size = %d\n", (int)hdr.size);
   shbuf_trim(buff, sizeof(hdr) + hdr.size);
 
   bool fRet = shc_coin_server_recv_msg(iface, pnode);
-fprintf(stderr, "DEBUG: shc_coin_server_recv: shc_coin_server_recv_msg ret'd %s <%u bytes> [%s]\n", fRet ? "true" : "false", hdr.size, hdr.cmd); 
+//fprintf(stderr, "DEBUG: shc_coin_server_recv: shc_coin_server_recv_msg ret'd %s <%u bytes> [%s]\n", fRet ? "true" : "false", hdr.size, hdr.cmd); 
 
 #if 0
   vRecv.erase(vRecv.begin(), vRecv.end());
