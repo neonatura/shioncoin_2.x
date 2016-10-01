@@ -224,7 +224,7 @@ fprintf(stderr, "DEBUG: IMPORT: block '%s' was not accepted.\n", block->GetHash(
         }
 
         nIndex++;
-        if (99 == (nIndex % 100)) {
+        if (249 == (nIndex % 250)) {
 fprintf(stderr, "DEBUG: ProcessBlock info: fseek(blkdat, %d, SEEK_SET)\n", chain.pos);
           /* continue later */
           nIndex++;

@@ -1516,7 +1516,9 @@ fprintf(stderr, "DEBUG: invalid header magic: {%-2.2x} {%-2.2x} {%-2.2x} {%-2.2x
   shbuf_trim(buff, sizeof(hdr) + hdr.size);
 
   bool fRet = usde_coin_server_recv_msg(iface, pnode);
-//fprintf(stderr, "DEBUG: usde_coin_server_recv: usde_coin_server_recv_msg ret'd %s <%u bytes> [%s]\n", fRet ? "true" : "false", hdr.size, hdr.cmd); 
+  if (!fRet) {
+    error(SHERR_INVAL, "usde_coin_server_recv: usde_coin_server_recv_msg ret'd %s <%u bytes> [%s]\n", fRet ? "true" : "false", hdr.size, hdr.cmd); 
+  }
 
 #if 0
   vRecv.erase(vRecv.begin(), vRecv.end());
@@ -1832,7 +1834,9 @@ int shc_coin_server_recv(CIface *iface, CNode *pnode, shbuf_t *buff)
   shbuf_trim(buff, sizeof(hdr) + hdr.size);
 
   bool fRet = shc_coin_server_recv_msg(iface, pnode);
-//fprintf(stderr, "DEBUG: shc_coin_server_recv: shc_coin_server_recv_msg ret'd %s <%u bytes> [%s]\n", fRet ? "true" : "false", hdr.size, hdr.cmd); 
+  if (!fRet) {
+    error(SHERR_INVAL, "shc_coin_server_recv: shc_coin_server_recv_msg ret'd %s <%u bytes> [%s]\n", fRet ? "true" : "false", hdr.size, hdr.cmd); 
+  }
 
 #if 0
   vRecv.erase(vRecv.begin(), vRecv.end());
@@ -3210,7 +3214,9 @@ int emc2_coin_server_recv(CIface *iface, CNode *pnode, shbuf_t *buff)
   shbuf_trim(buff, sizeof(hdr) + hdr.size);
 
   bool fRet = emc2_coin_server_recv_msg(iface, pnode);
-fprintf(stderr, "DEBUG: emc2_coin_server_recv: emc2_coin_server_recv_msg ret'd %s <%u bytes> [%s]\n", fRet ? "true" : "false", hdr.size, hdr.cmd); 
+  if (!fRet) {
+    error(SHERR_INVAL, "emc2_coin_server_recv: emc2_coin_server_recv_msg ret'd %s <%u bytes> [%s]\n", fRet ? "true" : "false", hdr.size, hdr.cmd); 
+  }
 
   vRecv.erase(vRecv.begin(), vRecv.end());
   vRecv.Compact();

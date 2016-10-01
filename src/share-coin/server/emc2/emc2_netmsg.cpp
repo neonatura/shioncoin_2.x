@@ -308,7 +308,6 @@ fprintf(stderr, "EMC2:ProcessMessage: received '%s' (%d bytes from %s)\n", strCo
     // Change version
     pfrom->PushMessage("verack");
     pfrom->vSend.SetVersion(min(pfrom->nVersion, EMC2_PROTOCOL_VERSION));
-fprintf(stderr, "DEBUG: EMC2: PushMessage('verack')\n");
 
     if (!pfrom->fInbound)
     {
@@ -334,7 +333,6 @@ fprintf(stderr, "DEBUG: EMC2: PushMessage('verack')\n");
 #endif
 
       if (pfrom->fOneShot || pfrom->nVersion >= CADDR_TIME_VERSION || (int)vNodes.size() == 1) {
-fprintf(stderr, "DEBUG: EMC2: PushMessage('getaddr')\n");
         pfrom->PushMessage("getaddr");
         pfrom->fGetAddr = true;
       }
