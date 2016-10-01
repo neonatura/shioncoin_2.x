@@ -184,7 +184,6 @@ static unsigned int emc2_DigiShield(const CBlockIndex* pindexLast, const CBlockH
   //DigiShield implementation - thanks to RealSolid & WDC for this code
   // amplitude filter - thanks to daft27 for this code
   nActualTimespan = retargetTimespan + (nActualTimespan - retargetTimespan)/8;
-  printf("DIGISHIELD RETARGET\n");
   if (nActualTimespan < (retargetTimespan - (retargetTimespan/4)) ) nActualTimespan = (retargetTimespan - (retargetTimespan/4));
   if (nActualTimespan > (retargetTimespan + (retargetTimespan/2)) ) nActualTimespan = (retargetTimespan + (retargetTimespan/2));
   // Retarget
@@ -194,12 +193,6 @@ static unsigned int emc2_DigiShield(const CBlockIndex* pindexLast, const CBlockH
 
   if (bnNew > emc2_bnProofOfWorkLimit)
     bnNew = emc2_bnProofOfWorkLimit;
-
-  /// debug print
-  printf("GetNextWorkRequired: DIGISHIELD RETARGET\n");
-  printf("emc2_nTargetTimespan = %"PRI64d" nActualTimespan = %"PRI64d"\n", retargetTimespan, nActualTimespan);
-  printf("Before: %08x %s\n", pindexLast->nBits, CBigNum().SetCompact(pindexLast->nBits).getuint256().ToString().c_str());
-  printf("After: %08x %s\n", bnNew.GetCompact(), bnNew.getuint256().ToString().c_str());
 
   return bnNew.GetCompact();
 }

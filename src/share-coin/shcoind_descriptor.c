@@ -34,7 +34,8 @@ const char *_descriptor_flag_label[MAX_DESCRIPTOR_FLAGS] = {
   "peer-scan",
   "inbound",
   "listen",
-  "map"
+  "map",
+  "sync"
 }; 
 
 

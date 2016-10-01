@@ -526,6 +526,9 @@ sprintf(ntime, "%-8.8x", (unsigned int)task->curtime);
 
 }
 
+/**
+ * @note This function is spaced 1 second apart being called intentionally as to avoid producing orphans.
+ */
 void stratum_task_gen(void)
 {
   task_t *task;

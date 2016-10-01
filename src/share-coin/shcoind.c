@@ -208,12 +208,22 @@ int main(int argc, char *argv[])
     if (!iface || !iface->enabled)
       continue;
 
-#ifndef USDE_SERVICE
     if (idx == USDE_COIN_IFACE) {
+#ifndef USDE_SERVICE
       iface->enabled = FALSE;
-      continue;
-    }
 #endif
+      if (!opt_bool(OPT_SERV_USDE))
+        iface->enabled = FALSE;
+    }
+    if (idx == EMC2_COIN_IFACE) {
+#ifndef EMC2_SERVICE
+      iface->enabled = FALSE;
+#endif
+      if (!opt_bool(OPT_SERV_EMC2))
+        iface->enabled = FALSE;
+    }
+    if (!iface->enabled)
+      continue;
 
     if (iface->op_init) {
       err = iface->op_init(iface, NULL);
@@ -227,31 +237,13 @@ int main(int argc, char *argv[])
   /* initialize coin interface's network service */
   for (idx = 1; idx < MAX_COIN_IFACE; idx++) {
     CIface *iface = GetCoinByIndex(idx);
-    if (!iface)
+    if (!iface || !iface->enabled)
       continue;
 
-    if (idx == USDE_COIN_IFACE) {
-#ifndef USDE_SERVICE
-      iface->enabled = FALSE;
-#endif
-      if (!opt_bool(OPT_SERV_USDE))
-        iface->enabled = FALSE;
-    }
-
-    if (idx == EMC2_COIN_IFACE) {
-#ifndef EMC2_SERVICE
-      iface->enabled = FALSE;
-#endif
-      if (!opt_bool(OPT_SERV_EMC2))
-        iface->enabled = FALSE;
-    }
-    if (!iface->enabled)
-      continue;
-
-    if (iface->op_init) {
+    if (iface->op_bind) {
       err = iface->op_bind(iface, NULL);
       if (err) {
-        fprintf(stderr, "critical: unable to initialize %s service (%s).", iface->name, sherrstr(err));
+        fprintf(stderr, "critical: unable to bind %s service (%s).", iface->name, sherrstr(err));
         exit(1);
       }
     }

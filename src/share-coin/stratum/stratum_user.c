@@ -20,6 +20,18 @@ user_t *stratum_user_find(char *username)
   return (user);
 }
 
+user_t *stratum_user_get(int fd)
+{
+  user_t *user;
+
+  for (user = client_list; user; user = user->next) {
+    if (0 == strcasecmp(fd, user->fd))
+      break;
+  }
+
+  return (user);
+}
+
 int stratum_user_count(user_t *user)
 {
   struct sockaddr_in *addr;

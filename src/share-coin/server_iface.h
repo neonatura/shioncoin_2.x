@@ -88,6 +88,7 @@ int setblockreward(int ifaceIndex, const char *accountName, double amount);
 
 int wallet_account_transfer(int ifaceIndex, const char *sourceAccountName, const char *accountName, const char *comment, double amount);
 
+int stratum_account_cycle(char *acc_name, char *acc_key);
 
 const char *getmininginfo(int ifaceIndex);
 

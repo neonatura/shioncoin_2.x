@@ -313,6 +313,21 @@ const char *json_getnewaddress(int ifaceIndex, const char *account)
   return (getnewaddr_str.c_str());
 }
 
+int cpp_stratum_account_cycle(char *ret_acc_name, char *ret_acc_key)
+{
+  static int _index;
+  int acc_idx;
+  int total = 1;
+
+  if (total == 0)
+    return (SHERR_AGAIN);
+
+  acc_idx = (_index % total);
+
+/* DEBUG: .. */
+  return (SHERR_OPNOTSUPP);
+}
+
 
 CCoinAddr GetAddressByAccount(CWallet *wallet, const char *accountName, bool& found)
 {
@@ -1074,6 +1089,11 @@ const char *stratum_importaddress(int ifaceIndex, const char *account, const cha
 const char *getnewaddress(int ifaceIndex, const char *account)
 {
   return (json_getnewaddress(ifaceIndex, account));
+}
+
+int stratum_account_cycle(char *acc_name, char *acc_key)
+{
+  return (cpp_stratum_account_cycle(acc_name, acc_key));
 }
 
 #ifdef __cplusplus

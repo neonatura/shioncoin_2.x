@@ -43,7 +43,8 @@ extern "C" {
 #define DF_INBOUND (1 << 5)
 #define DF_LISTEN (1 << 6)
 #define DF_MAP (1 << 7)
-#define MAX_DESCRIPTOR_FLAGS 8
+#define DF_SYNC (1 << 8)
+#define MAX_DESCRIPTOR_FLAGS 9
 
 
 #define CLAIM_FD(_fd, _mode, _flag) \

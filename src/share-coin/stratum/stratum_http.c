@@ -115,8 +115,8 @@ unet_table_t *t;
 
     if (next_iface) {
       sprintf(html,
-          "<div style=\"float : right; margin-right : 16px;\">\n"
-          "<form><input type=\"submit\" value=\"%s\" style=\"font-variant : small-caps; background : linear-gradient(to bottom, #1e5799 0%,#2989d8 50%,#207cca 51%,#7db9e8 100%); color : #e8e8e9; border-radius : 9px; border : 0; outline : 0;\" onclick=\"window.location.href='/%s/';return false;\"></form>\n"
+          "<div style=\"float : right; margin-right : 16px; padding-left : 1px; padding-right : 1px;\">\n"
+          "<form><input type=\"submit\" value=\"%s\" style=\"font-variant : small-caps; background : linear-gradient(to bottom, #1e5799 0%,#2989d8 50%,#207cca 51%,#7db9e8 100%); color : #e8e8e9; border-radius : 9px; border : 0; outline : 0; padding-left : 1px; padding-right : 1px;\" onclick=\"window.location.href='/%s/';return false;\"></form>\n"
           "</div>\n",
           next_iface->name, next_iface->name);
       shbuf_catstr(buff, html);
@@ -126,14 +126,14 @@ unet_table_t *t;
         "<div style=\"float : left; margin-left : 16px; margin-right : 16px; font-size : 16px;\">%s</div>\r\n"
         "<div style=\"float : left; margin-left : 16px;\">Block Height: %lu</div>\r\n"
         "<div style=\"float : left; margin-left : 16px;\">Difficulty: %-4.4f</div>\r\n"
-        "<div style=\"float : left; margin-left : 16px;\">Global Speed: %-1.1fkh/s</div>\r\n"
+        "<div style=\"float : left; margin-left : 16px;\">Global Speed: %-3.3fmh/s</div>\r\n"
         "<div style=\"float : left; margin-left : 16px;\">Max Coins: %lu</div>\r\n"
         "<div style=\"clear : both;\"></div>\r\n"
         "</div>\r\n"
         "<hr></hr>\r\n",
         iface->name, height,
         shjson_array_num(json, "result", 1),
-        shjson_array_num(json, "result", 2),
+        shjson_array_num(json, "result", 2) / 1000000,
         (unsigned long)(iface->max_money / COIN));
     shbuf_catstr(buff, html);
     shjson_free(&json);

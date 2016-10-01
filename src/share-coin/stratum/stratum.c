@@ -164,7 +164,13 @@ static void stratum_timer(void)
     if (0 == strncmp(data, "GET ", strlen("GET "))) {
       stratum_register_html_task(peer, data + strlen("GET "));
     } else if (*data == '{') {
-      stratum_register_client_task(peer, data);
+      if (t->flag & UNETF_SYNC) {
+        /* response from a remote stratum service */
+        stratum_sync_response(peer, data);
+      } else {
+        /* normal user request (miner / api) */
+        stratum_register_client_task(peer, data);
+      }
     }
     shbuf_trim(buff, len + 1);
   }
@@ -172,7 +178,12 @@ static void stratum_timer(void)
   stratum_close_free();
 
   if (last_task_t != time(NULL)) {
+    /* generate new work, as needed */
     stratum_task_gen();
+
+    /* synchronize with remote stratum services, as needed */
+    stratum_sync();
+
     last_task_t = time(NULL);
   }
 
@@ -234,6 +245,8 @@ int stratum_init(void)
   unet_timer_set(UNET_STRATUM, stratum_timer); /* x1/s */
   unet_connop_set(UNET_STRATUM, stratum_accept);
   unet_disconnop_set(UNET_STRATUM, stratum_close);
+
+  stratum_sync_init();
 
   return (0);
 }

@@ -88,6 +88,7 @@ common_includes = \
 	stratum/stratum_protocol.h \
 	stratum/stratum_user.h \
 	stratum/stratum_task.h \
+	stratum/stratum_sync.h \
 	stratum/stratum.h \
 	shcoind_rpc.h \
 	shcoind_log.h \
@@ -196,7 +197,8 @@ stratum_sources = \
 	stratum/stratum_message.c \
 	stratum/stratum_protocol.c \
 	stratum/stratum_user.c \
-	stratum/stratum_task.c
+	stratum/stratum_task.c \
+	stratum/stratum_sync.c
 
 tool_sources = \
 	tool/tool_irc.cpp

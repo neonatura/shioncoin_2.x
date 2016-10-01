@@ -50,6 +50,7 @@ extern "C" {
 #define UNETF_PEER_SCAN DF_PEER_SCAN
 #define UNETF_INBOUND DF_INBOUND
 #define UNETF_LISTEN DF_LISTEN
+#define UNETF_SYNC DF_SYNC
 
 
 #define UNDEFINED_SOCKET 0
@@ -246,6 +247,8 @@ int unet_local_verify(char *ipaddr);
 void unet_local_add(char *ipaddr);
 
 const char *unet_local_host(void);
+
+const char *unet_netaddr_str(struct sockaddr *addr);
 
 
 
