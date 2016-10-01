@@ -2131,7 +2131,7 @@ Value rpc_wallet_send(CIface *iface, const Array& params, bool fHelp)
   CCoinAddr address(params[1].get_str());
   if (!address.IsValid())
     throw JSONRPCError(-5, "Invalid coin address");
-  if (address.GetVersion() == CCoinAddr::GetCoinAddrVersion(ifaceIndex))
+  if (address.GetVersion() != CCoinAddr::GetCoinAddrVersion(ifaceIndex))
     throw JSONRPCError(-5, "Invalid address for coin service.");
 
   int64 nAmount = AmountFromValue(params[2]);
