@@ -6,7 +6,7 @@ Summary:        The share-coin virtual currency server.
 Group:          System Environment/Libraries
 License:        GPLv3+
 URL:            http://www.sharelib.net/
-Source0:        http://www.sharelib.net/release/share-coin-2.27.tar.gz
+Source0:        http://www.sharelib.net/release/share-coin-2.27.1.tar.gz
 
 #BuildRequires:  gcc
 #Requires:       info 
