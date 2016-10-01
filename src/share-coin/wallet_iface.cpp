@@ -128,12 +128,16 @@ static uint256 get_private_key_hash(CWallet *wallet, CKeyID keyId)
 
 Object JSONAddressInfo(int ifaceIndex, CCoinAddr address, bool show_priv)
 {
+  CIface *iface = GetCoinByIndex(ifaceIndex);
   CWallet *pwalletMain = GetWallet(ifaceIndex);
   CTxDestination dest = address.Get();
   string currentAddress = address.ToString();
   Object result;
 
   result.push_back(Pair("address", currentAddress));
+
+  if (iface)
+    result.push_back(Pair("coin", iface->name));
 
   if (show_priv) {
     CKeyID keyID;

@@ -317,12 +317,14 @@ if test "x$enable_usde" != "xno" ; then
   AC_DEFINE_UNQUOTED([USDE_SERVICE], 1, [Define to enable USDE coin service.])
 fi
 
-AC_ARG_ENABLE([emc2],
-  AS_HELP_STRING([--disable-emc2], [Disable EMC2 coin service.]))
-AM_CONDITIONAL(EMC2_SERVICE, [test "x$enable_emc2" != "xno"])
-if test "x$enable_emc2" != "xno" ; then
-  AC_DEFINE_UNQUOTED([EMC2_SERVICE], 1, [Define to enable EMC2 coin service.])
-fi
+# v2.28
+#AC_ARG_ENABLE([emc2],
+#  AS_HELP_STRING([--disable-emc2], [Disable EMC2 coin service.]))
+#AM_CONDITIONAL(EMC2_SERVICE, [test "x$enable_emc2" != "xno"])
+#if test "x$enable_emc2" != "xno" ; then
+#  AC_DEFINE_UNQUOTED([EMC2_SERVICE], 1, [Define to enable EMC2 coin service.])
+#fi
+AM_CONDITIONAL(EMC2_SERVICE, [test "xno" != "xno"])
 
 AC_ARG_ENABLE([stratum],
   AS_HELP_STRING([--disable-stratum], [Disable stratum service.]))

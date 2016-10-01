@@ -1,6 +1,6 @@
 Name:           share-coin
-Version:        2.27
-Release:        2%{?dist}
+Version:        2.27.1
+Release:        3%{?dist}
 Summary:        The share-coin virtual currency server.
 
 Group:          System Environment/Libraries
@@ -53,5 +53,5 @@ rm -rf $RPM_BUILD_ROOT
 %{_docdir}/share-coin/shcoin_html.tar.xz
 
 %changelog
-* Thu Sep 15 2016 Neo Natura <support@neo-natura.com> - 2.27
+* Sat Oct 01 2016 Neo Natura <support@neo-natura.com> - 2.27.1
 - The RPM release version of this package.
