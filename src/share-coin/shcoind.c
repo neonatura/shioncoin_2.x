@@ -232,7 +232,10 @@ int main(int argc, char *argv[])
         exit(1);
       }
     }
+
+    bc_chain_idle();
   }
+
 
   /* initialize coin interface's network service */
   for (idx = 1; idx < MAX_COIN_IFACE; idx++) {

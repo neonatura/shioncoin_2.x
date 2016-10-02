@@ -209,7 +209,7 @@ static void commit_payout(int ifaceIndex, int block_height)
       continue; /* public */
 
     coin_val = floor(user->balance[ifaceIndex] * 1000) / 1000;
-    if (coin_val > (user->balance_avg[ifaceIndex] * 20)) {
+    if (coin_val > (user->balance_avg[ifaceIndex] * 10)) {
       if (0 == setblockreward(ifaceIndex, uname, coin_val)) {
         user->reward_time = time(NULL);
         user->reward_height = block_height;

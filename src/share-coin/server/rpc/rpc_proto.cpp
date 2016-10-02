@@ -1574,7 +1574,8 @@ Value rpc_wallet_balance(CIface *iface, const Array& params, bool fHelp)
       string strSentAccount;
       list<pair<CTxDestination, int64> > listReceived;
       list<pair<CTxDestination, int64> > listSent;
-      wtx.GetAmounts(allGeneratedImmature, allGeneratedMature, listReceived, listSent, allFee, strSentAccount);
+      wtx.GetAmounts(listReceived, listSent, allFee, strSentAccount);
+      //wtx.GetAmounts(allGeneratedImmature, allGeneratedMature, listReceived, listSent, allFee, strSentAccount);
       if (wtx.GetDepthInMainChain(ifaceIndex) >= nMinDepth)
       {
         BOOST_FOREACH(const PAIRTYPE(CTxDestination,int64)& r, listReceived)
@@ -1583,7 +1584,7 @@ Value rpc_wallet_balance(CIface *iface, const Array& params, bool fHelp)
       BOOST_FOREACH(const PAIRTYPE(CTxDestination,int64)& r, listSent)
         nBalance -= r.second;
       nBalance -= allFee;
-      nBalance += allGeneratedMature;
+//      nBalance += allGeneratedMature;
     }
     return  ValueFromAmount(nBalance);
   }
@@ -1960,13 +1961,14 @@ Value rpc_wallet_list(CIface *iface, const Array& params, bool fHelp)
     string strSentAccount;
     list<pair<CTxDestination, int64> > listReceived;
     list<pair<CTxDestination, int64> > listSent;
-    wtx.GetAmounts(nGeneratedImmature, nGeneratedMature, listReceived, listSent, nFee, strSentAccount);
+    wtx.GetAmounts(listReceived, listSent, nFee, strSentAccount);
+    //wtx.GetAmounts(nGeneratedImmature, nGeneratedMature, listReceived, listSent, nFee, strSentAccount);
     mapAccountBalances[strSentAccount] -= nFee;
     BOOST_FOREACH(const PAIRTYPE(CTxDestination, int64)& s, listSent)
       mapAccountBalances[strSentAccount] -= s.second;
     if (wtx.GetDepthInMainChain(ifaceIndex) >= nMinDepth)
     {
-      mapAccountBalances[""] += nGeneratedMature;
+//      mapAccountBalances[""] += nGeneratedMature;
       BOOST_FOREACH(const PAIRTYPE(CTxDestination, int64)& r, listReceived)
         if (pwalletMain->mapAddressBook.count(r.first))
           mapAccountBalances[pwalletMain->mapAddressBook[r.first]] += r.second;

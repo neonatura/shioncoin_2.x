@@ -379,29 +379,37 @@ bool CWallet::EncryptWallet(const SecureString& strWalletPassphrase)
     return true;
 }
 
+/**
+ * Anytime a signature is successfully verified, it's proof the outpoint is spent.
+ * Update the wallet spent flag if it doesn't know due to wallet.dat being
+ * restored from backup or the user making copies of wallet.dat.
+ */
 void CWallet::WalletUpdateSpent(const CTransaction &tx)
 {
-    // Anytime a signature is successfully verified, it's proof the outpoint is spent.
-    // Update the wallet spent flag if it doesn't know due to wallet.dat being
-    // restored from backup or the user making copies of wallet.dat.
+  {
+    LOCK(cs_wallet);
+    BOOST_FOREACH(const CTxIn& txin, tx.vin)
     {
-        LOCK(cs_wallet);
-        BOOST_FOREACH(const CTxIn& txin, tx.vin)
-        {
-            map<uint256, CWalletTx>::iterator mi = mapWallet.find(txin.prevout.hash);
-            if (mi != mapWallet.end())
-            {
-                CWalletTx& wtx = (*mi).second;
-                if (!wtx.IsSpent(txin.prevout.n) && IsMine(wtx.vout[txin.prevout.n]))
-                {
-                    Debug("WalletUpdateSpent found spent coin %sbc %s\n", FormatMoney(wtx.GetCredit()).c_str(), wtx.GetHash().ToString().c_str());
-                    wtx.MarkSpent(txin.prevout.n);
-                    wtx.WriteToDisk();
-                    NotifyTransactionChanged(this, txin.prevout.hash, CT_UPDATED);
-                }
-            }
+      map<uint256, CWalletTx>::iterator mi = mapWallet.find(txin.prevout.hash);
+      if (mi != mapWallet.end())
+      {
+        CWalletTx& wtx = (*mi).second;
+        if (txin.prevout.n >= wtx.vout.size()) {
+          /* mis-match */
+          error(SHERR_INVAL, "WalletUpdateSpent: tx '%s' has prevout-n >= vout-size.", wtx.GetHash().GetHex().c_str());
+          continue;
         }
+
+        if (!wtx.IsSpent(txin.prevout.n) && IsMine(wtx.vout[txin.prevout.n]))
+        {
+          Debug("WalletUpdateSpent found spent coin %sbc %s\n", FormatMoney(wtx.GetCredit()).c_str(), wtx.GetHash().ToString().c_str());
+          wtx.MarkSpent(txin.prevout.n);
+          wtx.WriteToDisk();
+          NotifyTransactionChanged(this, txin.prevout.hash, CT_UPDATED);
+        }
+      }
     }
+  }
 }
 
 void CWallet::MarkDirty()
@@ -521,18 +529,18 @@ bool CWallet::EraseFromWallet(uint256 hash)
 
 bool CWallet::IsMine(const CTxIn &txin) const
 {
+  {
+    LOCK(cs_wallet);
+    map<uint256, CWalletTx>::const_iterator mi = mapWallet.find(txin.prevout.hash);
+    if (mi != mapWallet.end())
     {
-        LOCK(cs_wallet);
-        map<uint256, CWalletTx>::const_iterator mi = mapWallet.find(txin.prevout.hash);
-        if (mi != mapWallet.end())
-        {
-            const CWalletTx& prev = (*mi).second;
-            if (txin.prevout.n < prev.vout.size())
-                if (IsMine(prev.vout[txin.prevout.n]))
-                    return true;
-        }
+      const CWalletTx& prev = (*mi).second;
+      if (txin.prevout.n < prev.vout.size())
+        if (IsMine(prev.vout[txin.prevout.n]))
+          return true;
     }
-    return false;
+  }
+  return false;
 }
 
 int64 CWallet::GetDebit(const CTxIn &txin) const
@@ -578,41 +586,83 @@ int64 CWalletTx::GetTxTime() const
 
 int CWalletTx::GetRequestCount() const
 {
-    // Returns -1 if it wasn't being tracked
-    int nRequests = -1;
+  // Returns -1 if it wasn't being tracked
+  int nRequests = -1;
+  {
+    LOCK(pwallet->cs_wallet);
+    if (IsCoinBase())
     {
-        LOCK(pwallet->cs_wallet);
-        if (IsCoinBase())
-        {
-            // Generated block
-            if (hashBlock != 0)
-            {
-                map<uint256, int>::const_iterator mi = pwallet->mapRequestCount.find(hashBlock);
-                if (mi != pwallet->mapRequestCount.end())
-                    nRequests = (*mi).second;
-            }
-        }
-        else
-        {
-            // Did anyone request this transaction?
-            map<uint256, int>::const_iterator mi = pwallet->mapRequestCount.find(GetHash());
-            if (mi != pwallet->mapRequestCount.end())
-            {
-                nRequests = (*mi).second;
-
-                // How about the block it's in?
-                if (nRequests == 0 && hashBlock != 0)
-                {
-                    map<uint256, int>::const_iterator mi = pwallet->mapRequestCount.find(hashBlock);
-                    if (mi != pwallet->mapRequestCount.end())
-                        nRequests = (*mi).second;
-                    else
-                        nRequests = 1; // If it's in someone else's block it must have got out
-                }
-            }
-        }
+      // Generated block
+      if (hashBlock != 0)
+      {
+        map<uint256, int>::const_iterator mi = pwallet->mapRequestCount.find(hashBlock);
+        if (mi != pwallet->mapRequestCount.end())
+          nRequests = (*mi).second;
+      }
     }
-    return nRequests;
+    else
+    {
+      // Did anyone request this transaction?
+      map<uint256, int>::const_iterator mi = pwallet->mapRequestCount.find(GetHash());
+      if (mi != pwallet->mapRequestCount.end())
+      {
+        nRequests = (*mi).second;
+
+        // How about the block it's in?
+        if (nRequests == 0 && hashBlock != 0)
+        {
+          map<uint256, int>::const_iterator mi = pwallet->mapRequestCount.find(hashBlock);
+          if (mi != pwallet->mapRequestCount.end())
+            nRequests = (*mi).second;
+          else
+            nRequests = 1; // If it's in someone else's block it must have got out
+        }
+      }
+    }
+  }
+  return nRequests;
+}
+
+void CWalletTx::GetAmounts(list<pair<CTxDestination, int64> >& listReceived, list<pair<CTxDestination, int64> >& listSent, int64& nFee, string& strSentAccount) const
+{
+  int ifaceIndex = pwallet->ifaceIndex;
+
+  nFee = 0;
+  listReceived.clear();
+  listSent.clear();
+  strSentAccount = strFromAccount;
+
+  // Compute fee:
+  int64 nDebit = GetDebit();
+  if (nDebit > 0) // debit>0 means we signed/sent this transaction
+  {
+    int64 nValueOut = GetValueOut();
+    nFee = nDebit - nValueOut;
+  }
+
+  // Sent/received.
+  BOOST_FOREACH(const CTxOut& txout, vout)
+  {
+    CTxDestination address;
+    vector<unsigned char> vchPubKey;
+    if (!ExtractDestination(txout.scriptPubKey, address))
+    {
+      error(SHERR_INVAL,
+          "CWalletTx::GetAmounts: Unknown transaction type found, txid %s: %s\n",
+          this->GetHash().ToString().c_str(), txout.scriptPubKey.ToString().c_str());
+    }
+
+    // Don't report 'change' txouts
+    if (nDebit > 0 && pwallet->IsChange(txout))
+      continue;
+
+    if (nDebit > 0)
+      listSent.push_back(make_pair(address, txout.nValue));
+
+    if (pwallet->IsMine(txout))
+      listReceived.push_back(make_pair(address, txout.nValue));
+  }
+
 }
 
 void CWalletTx::GetAmounts(int64& nGeneratedImmature, int64& nGeneratedMature, list<pair<CTxDestination, int64> >& listReceived, list<pair<CTxDestination, int64> >& listSent, int64& nFee, string& strSentAccount) const
@@ -680,41 +730,45 @@ void CWalletTx::GetAmounts(int64& nGeneratedImmature, int64& nGeneratedMature, l
 
 }
 
-void CWalletTx::GetAccountAmounts(const string& strAccount, int64& nGenerated, int64& nReceived, int64& nSent, int64& nFee) const
+void CWalletTx::GetAccountAmounts(const string& strAccount, int64& nReceived, int64& nSent, int64& nFee) const
 {
-    nGenerated = nReceived = nSent = nFee = 0;
+  //nGenerated = nReceived = nSent = nFee = 0;
+  nReceived = nSent = nFee = 0;
 
-    int64 allGeneratedImmature, allGeneratedMature, allFee;
-    allGeneratedImmature = allGeneratedMature = allFee = 0;
-    string strSentAccount;
-    list<pair<CTxDestination, int64> > listReceived;
-    list<pair<CTxDestination, int64> > listSent;
-    GetAmounts(allGeneratedImmature, allGeneratedMature, listReceived, listSent, allFee, strSentAccount);
+  int64 allFee;
+  allFee = 0;
+  string strSentAccount;
+  list<pair<CTxDestination, int64> > listReceived;
+  list<pair<CTxDestination, int64> > listSent;
+  GetAmounts(listReceived, listSent, allFee, strSentAccount);
 
-    if (strAccount == "")
-        nGenerated = allGeneratedMature;
-    if (strAccount == strSentAccount)
+#if 0
+  if (strAccount == "")
+    nGenerated = allGeneratedMature;
+#endif
+
+  if (strAccount == strSentAccount)
+  {
+    BOOST_FOREACH(const PAIRTYPE(CTxDestination,int64)& s, listSent)
+      nSent += s.second;
+    nFee = allFee;
+  }
+  {
+    LOCK(pwallet->cs_wallet);
+    BOOST_FOREACH(const PAIRTYPE(CTxDestination,int64)& r, listReceived)
     {
-        BOOST_FOREACH(const PAIRTYPE(CTxDestination,int64)& s, listSent)
-            nSent += s.second;
-        nFee = allFee;
+      if (pwallet->mapAddressBook.count(r.first))
+      {
+        map<CTxDestination, string>::const_iterator mi = pwallet->mapAddressBook.find(r.first);
+        if (mi != pwallet->mapAddressBook.end() && (*mi).second == strAccount)
+          nReceived += r.second;
+      }
+      else if (strAccount.empty())
+      {
+        nReceived += r.second;
+      }
     }
-    {
-        LOCK(pwallet->cs_wallet);
-        BOOST_FOREACH(const PAIRTYPE(CTxDestination,int64)& r, listReceived)
-        {
-            if (pwallet->mapAddressBook.count(r.first))
-            {
-                map<CTxDestination, string>::const_iterator mi = pwallet->mapAddressBook.find(r.first);
-                if (mi != pwallet->mapAddressBook.end() && (*mi).second == strAccount)
-                    nReceived += r.second;
-            }
-            else if (strAccount.empty())
-            {
-                nReceived += r.second;
-            }
-        }
-    }
+  }
 }
 
 bool CWalletTx::WriteToDisk()
@@ -1611,12 +1665,15 @@ int64 GetAccountBalance(int ifaceIndex, CWalletDB& walletdb, const string& strAc
     if (!wtx.IsFinal(ifaceIndex))
       continue;
 
-    int64 nGenerated, nReceived, nSent, nFee;
-    wtx.GetAccountAmounts(strAccount, nGenerated, nReceived, nSent, nFee);
+    //int64 nGenerated, nReceived, nSent, nFee;
+    //wtx.GetAccountAmounts(strAccount, nGenerated, nReceived, nSent, nFee);
+    int64 nReceived, nSent, nFee;
+    wtx.GetAccountAmounts(strAccount, nReceived, nSent, nFee);
 
     if (nReceived != 0 && wtx.GetDepthInMainChain(ifaceIndex) >= nMinDepth)
       nBalance += nReceived;
-    nBalance += nGenerated - nSent - nFee;
+    //nBalance += nGenerated - nSent - nFee;
+    nBalance -= nSent + nFee;
   }
 
   /* internal accounting entries */
