@@ -622,15 +622,18 @@ static Value ListReceived(CWallet *wallet, const Array& params, bool fByAccounts
 void ListTransactions(int ifaceIndex, const CWalletTx& wtx, const string& strAccount, int nMinDepth, bool fLong, Array& ret)
 {
   CWallet *pwalletMain = GetWallet(ifaceIndex);
-  int64 nGeneratedImmature, nGeneratedMature, nFee;
+//  int64 nGeneratedImmature, nGeneratedMature, nFee;
+  int64 nFee;
   string strSentAccount;
   list<pair<CTxDestination, int64> > listReceived;
   list<pair<CTxDestination, int64> > listSent;
 
-  wtx.GetAmounts(nGeneratedImmature, nGeneratedMature, listReceived, listSent, nFee, strSentAccount);
+//  wtx.GetAmounts(nGeneratedImmature, nGeneratedMature);
+  wtx.GetAmounts(listReceived, listSent, nFee, strSentAccount);
 
   bool fAllAccounts = (strAccount == string("*"));
 
+#if 0
   // Generated blocks assigned to account ""
   if ((nGeneratedMature+nGeneratedImmature) != 0 && (fAllAccounts || strAccount == ""))
   {
@@ -650,6 +653,7 @@ void ListTransactions(int ifaceIndex, const CWalletTx& wtx, const string& strAcc
       WalletTxToJSON(ifaceIndex, wtx, entry);
     ret.push_back(entry);
   }
+#endif
 
   // Sent
   if ((!listSent.empty() || nFee != 0) && (fAllAccounts || strAccount == strSentAccount))

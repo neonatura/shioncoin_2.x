@@ -577,7 +577,7 @@ static bool usde_ConnectInputs(CTransaction *tx, MapPrevTx inputs, map<uint256, 
   return true;
 }
 
-CBlock* usde_CreateNewBlock(CReserveKey& reservekey)
+CBlock* usde_CreateNewBlock(const CPubKey& rkey)
 {
   CIface *iface = GetCoinByIndex(USDE_COIN_IFACE);
   CBlockIndex* pindexPrev = GetBestBlockIndex(iface);
@@ -593,7 +593,7 @@ CBlock* usde_CreateNewBlock(CReserveKey& reservekey)
   txNew.vin.resize(1);
   txNew.vin[0].prevout.SetNull();
   txNew.vout.resize(1);
-  txNew.vout[0].scriptPubKey << reservekey.GetReservedKey() << OP_CHECKSIG;
+  txNew.vout[0].scriptPubKey << rkey << OP_CHECKSIG;
 
   // Add our coinbase tx as first transaction
   pblock->vtx.push_back(txNew);

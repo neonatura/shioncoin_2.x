@@ -69,7 +69,7 @@ extern uint256 usde_hashGenesisBlock;
 
 
 
-CBlock* usde_CreateNewBlock(CReserveKey& reservekey);
+CBlock* usde_CreateNewBlock(const CPubKey& rkey);
 
 bool usde_CreateGenesisBlock();
 

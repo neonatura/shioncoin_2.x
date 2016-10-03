@@ -542,7 +542,8 @@ void c_ListTransactions(int ifaceIndex, const CWalletTx& wtx, const string& strA
   list<pair<CTxDestination, int64> > listReceived;
   list<pair<CTxDestination, int64> > listSent;
 
-  wtx.GetAmounts(nGeneratedImmature, nGeneratedMature, listReceived, listSent, nFee, strSentAccount);
+  wtx.GetAmounts(ifaceIndex, nGeneratedImmature, nGeneratedMature);
+  //wtx.GetAmounts(nGeneratedImmature, nGeneratedMature, listReceived, listSent, nFee, strSentAccount);
 
   bool fAllAccounts = (strAccount == string("*"));
 

@@ -143,7 +143,7 @@ extern std::map<uint256, CDataStream*> EMC2_mapOrphanTransactions;
 /**
  * Create a block template with pending inventoried transactions.
  */
-CBlock* emc2_CreateNewBlock(CReserveKey& reservekey);
+CBlock* emc2_CreateNewBlock(const CPubKey& rkey);
 
 /**
  * Generate the inital EMC2 block in the block-chain.

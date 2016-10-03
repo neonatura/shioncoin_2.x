@@ -92,6 +92,7 @@ static int test_block_templ(CIface *iface, CBlock **block_p)
   CWallet *wallet = GetWallet(iface);
   int ifaceIndex = GetCoinIndex(iface);
   CBlock* pblock;
+  string strAccount("");
   unsigned int median;
   int reset;
     
@@ -103,8 +104,9 @@ static int test_block_templ(CIface *iface, CBlock **block_p)
   CBlockIndex *pindexBest = GetBestBlockIndex(TEST_COIN_IFACE);
   median = pindexBest->GetMedianTimePast() + 1;
 
-  CReserveKey reservekey(wallet);
-  pblock = test_CreateNewBlock(reservekey);
+  CPubKey pubkey = GetAccountPubKey(wallet, strAccount);
+//CReserveKey reservekey(wallet);
+  pblock = test_CreateNewBlock(pubkey);
   if (!pblock)
     return (NULL);
 

@@ -118,7 +118,7 @@ extern uint256 test_hashGenesisBlock;
 
 
 
-CBlock* test_CreateNewBlock(CReserveKey& reservekey);
+CBlock* test_CreateNewBlock(const CPubKey& rkey);
 
 bool test_CreateGenesisBlock();
 

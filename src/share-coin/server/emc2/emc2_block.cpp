@@ -420,7 +420,7 @@ static bool emc2_ConnectInputs(CTransaction *tx, MapPrevTx inputs, map<uint256, 
   return true;
 }
 
-CBlock* emc2_CreateNewBlock(CReserveKey& reservekey)
+CBlock* emc2_CreateNewBlock(const CPubKey& rkey)
 {
   CIface *iface = GetCoinByIndex(EMC2_COIN_IFACE);
   CBlockIndex* pindexPrev = GetBestBlockIndex(iface);
@@ -437,7 +437,7 @@ CBlock* emc2_CreateNewBlock(CReserveKey& reservekey)
   txNew.vin[0].prevout.SetNull();
   txNew.vout.resize(2);
   txNew.vout[0].scriptPubKey = EMC2_CHARITY_SCRIPT;
-  txNew.vout[1].scriptPubKey << reservekey.GetReservedKey() << OP_CHECKSIG;
+  txNew.vout[1].scriptPubKey << rkey << OP_CHECKSIG;
 
   // Add our coinbase tx as first transaction
   pblock->vtx.push_back(txNew);

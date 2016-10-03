@@ -497,29 +497,27 @@ bool SHCWallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend, 
 
         if (nChange > 0)
         {
-          // Note: We use a new key here to keep it from being obvious which side is the change.
-          //  The drawback is that by not reusing a previous key, the change may be lost if a
-          //  backup is restored, if the backup doesn't have the new private key for the change.
-          //  If we reused the old key, it would be possible to add code to look for and
-          //  rediscover unknown transactions that were written with keys of ours to recover
-          //  post-backup change.
 
-          // Reserve a new key pair from key pool
-          CPubKey vchPubKey = reservekey.GetReservedKey();
-          // assert(mapKeys.count(vchPubKey));
-
-          // Fill a vout to ourself
-          // TODO: pass in scriptChange instead of reservekey so
-          // change transaction isn't always pay-to-bitcoin-address
+          CPubKey vchPubKey;
+          if (wtxNew.strFromAccount.length() != 0 &&
+              GetMergedPubKey(wtxNew.strFromAccount, "change", vchPubKey)) {
+            /* Use a consistent change address based on primary address. */
+            reservekey.ReturnKey();
+          } else {
+            /* Revert to using a quasi-standard 'ghost' address. */
+            vchPubKey = reservekey.GetReservedKey();
+          }
+        
           CScript scriptChange;
           scriptChange.SetDestination(vchPubKey.GetID());
 
           // Insert change txn at random position:
           vector<CTxOut>::iterator position = wtxNew.vout.begin()+GetRandInt(wtxNew.vout.size());
           wtxNew.vout.insert(position, CTxOut(nChange, scriptChange));
-        }
-        else
+
+        } else {
           reservekey.ReturnKey();
+        }
 
         // Fill vin
         BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setCoins)

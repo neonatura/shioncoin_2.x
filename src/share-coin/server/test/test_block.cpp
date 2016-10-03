@@ -324,7 +324,7 @@ static bool test_ConnectInputs(CTransaction *tx, MapPrevTx inputs, map<uint256, 
   return true;
 }
 
-CBlock* test_CreateNewBlock(CReserveKey& reservekey)
+CBlock* test_CreateNewBlock(const CPubKey& rkey)
 {
   CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
   CBlockIndex* pindexPrev = GetBestBlockIndex(iface);
@@ -340,7 +340,7 @@ CBlock* test_CreateNewBlock(CReserveKey& reservekey)
   txNew.vin.resize(1);
   txNew.vin[0].prevout.SetNull();
   txNew.vout.resize(1);
-  txNew.vout[0].scriptPubKey << reservekey.GetReservedKey() << OP_CHECKSIG;
+  txNew.vout[0].scriptPubKey << rkey << OP_CHECKSIG;
 
   // Add our coinbase tx as first transaction
   pblock->vtx.push_back(txNew);
@@ -588,13 +588,15 @@ CBlock *test_GenerateBlock()
     return (NULL);
 
   CWallet *wallet = GetWallet(iface);
-  CReserveKey reservekey(wallet);
-  CBlock *block = test_CreateNewBlock(reservekey);
+
+  string sysAccount("");
+  CPubKey pubkey = GetAccountPubKey(wallet, sysAccount);
+//  CReserveKey reservekey(wallet);
+  CBlock *block = test_CreateNewBlock(pubkey);
   if (!block)
-return (NULL);
-reservekey.KeepKey();
-string sysAccount("");
-wallet->SetAddressBookName(reservekey.GetReservedKey().GetID(), sysAccount); 
+    return (NULL);
+//reservekey.KeepKey();
+//wallet->SetAddressBookName(reservekey.GetReservedKey().GetID(), sysAccount); 
 
   nXIndex++;
   sprintf(xn_hex, "%-8.8x%-8.8x", nXIndex, nXIndex);

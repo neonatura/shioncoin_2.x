@@ -336,6 +336,7 @@ nScanHeight = 0;
     int GetVersion() { return nWalletVersion; }
 
     bool GetMergedAddress(string strAccount, const char *tag, CCoinAddr& addrRet);
+    bool GetMergedPubKey(string strAccount, const char *tag, CPubKey& pubkey);
 
     /** Address book entry changed.
      * @note called with lock cs_wallet held.
@@ -618,7 +619,7 @@ public:
         return nChangeCached;
     }
 
-    void GetAmounts(int64& nGeneratedImmature, int64& nGeneratedMature, std::list<std::pair<CTxDestination, int64> >& listReceived, std::list<std::pair<CTxDestination, int64> >& listSent, int64& nFee, std::string& strSentAccount) const;
+    void GetAmounts(int ifaceIndex, int64& nGeneratedImmature, int64& nGeneratedMature) const;
 
     void GetAmounts(list<pair<CTxDestination, int64> >& listReceived, list<pair<CTxDestination, int64> >& listSent, int64& nFee, string& strSentAccount) const;
 
@@ -831,6 +832,8 @@ bool LoadBlockIndex(CIface *iface);
  */
 int IndexOfExtOutput(const CTransaction& tx);
 
+
+CPubKey GetAccountPubKey(CWallet *wallet, string strAccount, bool bForceNew=false);
 
 CCoinAddr GetAccountAddress(CWallet *wallet, string strAccount, bool bForceNew=false);
 

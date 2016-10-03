@@ -463,7 +463,7 @@ bool shc_FetchInputs(CTransaction *tx, CTxDB& txdb, const map<uint256, CTxIndex>
 #endif
 
 
-CBlock* shc_CreateNewBlock(CReserveKey& reservekey)
+CBlock* shc_CreateNewBlock(const CPubKey& rkey)
 {
   CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);
   CBlockIndex* pindexPrev = GetBestBlockIndex(iface);
@@ -484,7 +484,7 @@ CBlock* shc_CreateNewBlock(CReserveKey& reservekey)
   txNew.vin.resize(1);
   txNew.vin[0].prevout.SetNull();
   txNew.vout.resize(1);
-  txNew.vout[0].scriptPubKey << reservekey.GetReservedKey() << OP_CHECKSIG;
+  txNew.vout[0].scriptPubKey << rkey << OP_CHECKSIG;
 
   // Add our coinbase tx as first transaction
   pblock->vtx.push_back(txNew);

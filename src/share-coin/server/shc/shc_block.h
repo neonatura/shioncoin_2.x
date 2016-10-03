@@ -148,7 +148,7 @@ extern std::map<uint256, CDataStream*> SHC_mapOrphanTransactions;
 /**
  * Create a block template with pending inventoried transactions.
  */
-CBlock* shc_CreateNewBlock(CReserveKey& reservekey);
+CBlock* shc_CreateNewBlock(const CPubKey& rkey);
 
 /**
  * Generate the inital SHC block in the block-chain.

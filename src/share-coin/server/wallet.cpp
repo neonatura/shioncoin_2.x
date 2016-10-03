@@ -665,6 +665,7 @@ void CWalletTx::GetAmounts(list<pair<CTxDestination, int64> >& listReceived, lis
 
 }
 
+#if 0
 void CWalletTx::GetAmounts(int64& nGeneratedImmature, int64& nGeneratedMature, list<pair<CTxDestination, int64> >& listReceived, list<pair<CTxDestination, int64> >& listSent, int64& nFee, string& strSentAccount) const
 {
   int ifaceIndex = pwallet->ifaceIndex;
@@ -726,6 +727,47 @@ void CWalletTx::GetAmounts(int64& nGeneratedImmature, int64& nGeneratedMature, l
 
     if (pwallet->IsMine(txout))
       listReceived.push_back(make_pair(address, txout.nValue));
+  }
+
+}
+#endif
+void CWalletTx::GetAmounts(int ifaceIndex, int64& nGeneratedImmature, int64& nGeneratedMature) const
+{
+
+  nGeneratedImmature = nGeneratedMature = 0;
+
+  if (!IsCoinBase())
+    return;
+
+  if (GetBlocksToMaturity(ifaceIndex) > 0) {
+    nGeneratedImmature = pwallet->GetCredit(*this);
+  } else {
+    /* base reward */
+    nGeneratedMature = GetCredit();
+
+    if (ifaceIndex == TEST_COIN_IFACE ||
+        ifaceIndex == SHC_COIN_IFACE) {
+      if (vout.size() > 1) {
+        int64 nFee = 0;
+        /* do not count >0 coinbase outputs as part of miner 'reward' */
+        for (int idx = 1; idx < vout.size(); idx++) {
+          const CTxOut& txout = vout[idx];
+          if (pwallet->IsMine(txout)) {
+            CTxDestination address;
+            if (ExtractDestination(txout.scriptPubKey, address)) {
+              nFee += txout.nValue;
+              //listReceived.push_back(make_pair(address, txout.nValue));
+            }
+          }
+        }
+        nGeneratedMature -= nFee;
+      }
+    } else if (ifaceIndex == EMC2_COIN_IFACE) {
+      if (vout.size() > 0) {
+        /* subtract donation output */
+        nGeneratedMature -= vout[0].nValue;
+      }
+    }
   }
 
 }
@@ -1834,6 +1876,7 @@ int CMerkleTx::SetMerkleBranch(int ifaceIndex)
 }
 
 
+#if 0
 CCoinAddr GetAccountAddress(CWallet *wallet, string strAccount, bool bForceNew)
 {
   CWalletDB walletdb(wallet->strWalletFile);
@@ -1870,8 +1913,52 @@ CCoinAddr GetAccountAddress(CWallet *wallet, string strAccount, bool bForceNew)
 
   return CCoinAddr(wallet->ifaceIndex, account.vchPubKey.GetID());
 }
+#endif
 
-bool CWallet::GetMergedAddress(string strAccount, const char *tag, CCoinAddr& addrRet)
+CPubKey GetAccountPubKey(CWallet *wallet, string strAccount, bool bForceNew)
+{
+  CWalletDB walletdb(wallet->strWalletFile);
+  CAccount account;
+  bool bKeyUsed = false;
+
+  walletdb.ReadAccount(strAccount, account);
+
+  // Check if the current key has been used
+  if (account.vchPubKey.IsValid())
+  {
+    CScript scriptPubKey;
+    scriptPubKey.SetDestination(account.vchPubKey.GetID());
+    for (map<uint256, CWalletTx>::iterator it = wallet->mapWallet.begin();
+        it != wallet->mapWallet.end() && account.vchPubKey.IsValid();
+        ++it)
+    {
+      const CWalletTx& wtx = (*it).second;
+      BOOST_FOREACH(const CTxOut& txout, wtx.vout)
+        if (txout.scriptPubKey == scriptPubKey)
+          bKeyUsed = true;
+    }
+  }
+
+  // Generate a new key
+  if (!account.vchPubKey.IsValid() || bForceNew || bKeyUsed)
+  {
+    if (!wallet->GetKeyFromPool(account.vchPubKey, false))
+      return CPubKey();
+
+    wallet->SetAddressBookName(account.vchPubKey.GetID(), strAccount);
+    walletdb.WriteAccount(strAccount, account);
+  }
+
+  return (account.vchPubKey);
+}
+
+CCoinAddr GetAccountAddress(CWallet *wallet, string strAccount, bool bForceNew)
+{
+  const CPubKey& pubkey = GetAccountPubKey(wallet, strAccount, bForceNew);
+  return CCoinAddr(wallet->ifaceIndex, pubkey.GetID());
+}
+
+bool CWallet::GetMergedPubKey(string strAccount, const char *tag, CPubKey& pubkey)
 {
   bool bForceNew = true;
   CWalletDB walletdb(strWalletFile);
@@ -1894,7 +1981,7 @@ bool CWallet::GetMergedAddress(string strAccount, const char *tag, CCoinAddr& ad
 
   cbuff tagbuff(tag, tag + strlen(tag)); 
   key = pkey.MergeKey(tagbuff);
-  CPubKey pubkey = key.GetPubKey();
+  pubkey = key.GetPubKey();
   if (!pubkey.IsValid()) {
     return error(SHERR_INVAL, "CWallet.GetMergedAddress: generated pubkey is invalid.");
   }
@@ -1908,6 +1995,16 @@ bool CWallet::GetMergedAddress(string strAccount, const char *tag, CCoinAddr& ad
     SetAddressBookName(pubkey.GetID(), strAccount);
     walletdb.WriteAccount(strAccount, account);
   }
+
+  return (true);
+}
+
+bool CWallet::GetMergedAddress(string strAccount, const char *tag, CCoinAddr& addrRet)
+{
+  CPubKey pubkey;
+  bool fRet = GetMergedPubKey(strAccount, tag, pubkey);
+  if (!fRet)
+    return (false);
 
   addrRet = CCoinAddr(ifaceIndex, pubkey.GetID());
   return (true);
