@@ -395,8 +395,8 @@ void stratum_http_request(SOCKET sk, char *url)
 
     sprintf(ret_html,
         "<tr><td>%s</td>"
-        "<td>%-4.4f</td>"
-        "<td>%-4.4f</td>"
+        "<td>%-2.2f</td>"
+        "<td>%-8.8f</td>"
         "<td>%u</td></tr>",
         user->worker, stratum_user_speed(user),
         user->block_tot, (unsigned int)user->block_cnt);

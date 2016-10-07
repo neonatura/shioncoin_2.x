@@ -116,8 +116,13 @@ static uint256 get_private_key_hash(CWallet *wallet, CKeyID keyId)
   if (!wallet->GetSecret(keyId, vchSecret, fCompressed))
     return (phash);
 
-  string secret = CCoinSecret(wallet->ifaceIndex, vchSecret, fCompressed).ToString();
+  CCoinSecret sec(wallet->ifaceIndex, vchSecret, fCompressed);
+  if (!sec.IsValid()) {
+    error(SHERR_INVAL, "get_private_key_hash: invalid secret for keyid '%s'.", keyId.ToString().c_str());
+    return (phash);
+  }
 
+  string secret = sec.ToString();
   unsigned char *secret_str = (unsigned char *)secret.c_str();
   size_t secret_len = secret.length();
   SHA256(secret_str, secret_len, (unsigned char*)&phash);
@@ -386,6 +391,9 @@ int c_setblockreward(int ifaceIndex, const char *accountName, double dAmount)
 fprintf(stderr, "DEBUG: c_setblockreward: wallet is locked\n");
     return (-13);
   }
+
+  if (dAmount <= 0)
+    return (SHERR_INVAL);
 
   const CCoinAddr address = GetAddressByAccount(pwalletMain, accountName, found);
   if (!found) {

@@ -1954,37 +1954,58 @@ Value rpc_wallet_list(CIface *iface, const Array& params, bool fHelp)
 
   map<string, int64> mapAccountBalances;
   BOOST_FOREACH(const PAIRTYPE(CTxDestination, string)& entry, pwalletMain->mapAddressBook) {
-    if (IsMine(*pwalletMain, entry.first)) // This address belongs to me
+    if (IsMine(*pwalletMain, entry.first)) { // This address belongs to me
       mapAccountBalances[entry.second] = 0;
+}
   }
 
   for (map<uint256, CWalletTx>::iterator it = pwalletMain->mapWallet.begin(); it != pwalletMain->mapWallet.end(); ++it)
   {
     const CWalletTx& wtx = (*it).second;
-    int64 nGeneratedImmature, nGeneratedMature, nFee;
+    //int64 nGeneratedImmature, nGeneratedMature, nFee;
+    int64 nFee;
     string strSentAccount;
     list<pair<CTxDestination, int64> > listReceived;
     list<pair<CTxDestination, int64> > listSent;
     wtx.GetAmounts(listReceived, listSent, nFee, strSentAccount);
-    //wtx.GetAmounts(nGeneratedImmature, nGeneratedMature, listReceived, listSent, nFee, strSentAccount);
-    mapAccountBalances[strSentAccount] -= nFee;
-    BOOST_FOREACH(const PAIRTYPE(CTxDestination, int64)& s, listSent)
-      mapAccountBalances[strSentAccount] -= s.second;
+
+    if (nFee != 0) {
+      mapAccountBalances[strSentAccount] -= nFee;
+    }
+
+    BOOST_FOREACH(const PAIRTYPE(CTxDestination, int64)& s, listSent) {
+      int64 nValue = s.second;
+      if (nValue <= 0)
+        continue;
+
+      mapAccountBalances[strSentAccount] -= nValue;
+    }
+
     if (wtx.GetDepthInMainChain(ifaceIndex) >= nMinDepth)
     {
-//      mapAccountBalances[""] += nGeneratedMature;
-      BOOST_FOREACH(const PAIRTYPE(CTxDestination, int64)& r, listReceived)
-        if (pwalletMain->mapAddressBook.count(r.first))
+      BOOST_FOREACH(const PAIRTYPE(CTxDestination, int64)& r, listReceived) {
+        if (pwalletMain->mapAddressBook.count(r.first)) {
           mapAccountBalances[pwalletMain->mapAddressBook[r.first]] += r.second;
-        else
+        } else {
           mapAccountBalances[""] += r.second;
+        }
+      }
+    }
+
+    /* add in change */
+    BOOST_FOREACH(const CTxOut& txout, wtx.vout) {
+      if (wtx.GetDebit() > 0 && pwalletMain->IsChange(txout)) {
+        mapAccountBalances[strSentAccount] += txout.nValue; 
+      }
     }
   }
 
   list<CAccountingEntry> acentries;
   CWalletDB(pwalletMain->strWalletFile).ListAccountCreditDebit("*", acentries);
-  BOOST_FOREACH(const CAccountingEntry& entry, acentries)
+  BOOST_FOREACH(const CAccountingEntry& entry, acentries) {
+fprintf(stderr, "DEBUG: mapAccountBalances['%s'](%f) += nCreditDebit(%f)\n", entry.strAccount.c_str(), (double)mapAccountBalances[entry.strAccount]/COIN, (double)entry.nCreditDebit/COIN);
     mapAccountBalances[entry.strAccount] += entry.nCreditDebit;
+  }
 
   Object ret;
   BOOST_FOREACH(const PAIRTYPE(string, int64)& accountBalance, mapAccountBalances) {

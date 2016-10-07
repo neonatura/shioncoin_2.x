@@ -632,35 +632,49 @@ void CWalletTx::GetAmounts(list<pair<CTxDestination, int64> >& listReceived, lis
   listSent.clear();
   strSentAccount = strFromAccount;
 
-  // Compute fee:
-  int64 nDebit = GetDebit();
-  if (nDebit > 0) // debit>0 means we signed/sent this transaction
-  {
-    int64 nValueOut = GetValueOut();
-    nFee = nDebit - nValueOut;
+  int64 nDebit = 0;
+  if (!IsCoinBase()) {
+    nDebit = GetDebit();
+
+    // Compute fee:
+    if (nDebit > 0) // debit>0 means we signed/sent this transaction
+    {
+      int64 nValueOut = 0;
+      BOOST_FOREACH(const CTxOut& txout, vout) {
+        nValueOut += txout.nValue;
+      }
+
+      nFee = MAX(0.0, nDebit - nValueOut);
+    }
   }
 
   // Sent/received.
+  int idx = -1;
   BOOST_FOREACH(const CTxOut& txout, vout)
   {
+    int64 nValue = txout.nValue;
+
+    idx++;
+    if (nValue <= 0) {
+      error(SHERR_INVAL, "GetAmounts: invalid transaction '%s' with non-positive output (#%d) coin value (%f).", GetHash().GetHex().c_str(), idx, ((double)nValue / COIN));
+      continue;
+    }
+
     CTxDestination address;
-    vector<unsigned char> vchPubKey;
-    if (!ExtractDestination(txout.scriptPubKey, address))
-    {
+    if (!ExtractDestination(txout.scriptPubKey, address)) {
       error(SHERR_INVAL,
           "CWalletTx::GetAmounts: Unknown transaction type found, txid %s: %s\n",
           this->GetHash().ToString().c_str(), txout.scriptPubKey.ToString().c_str());
     }
 
-    // Don't report 'change' txouts
-    if (nDebit > 0 && pwallet->IsChange(txout))
+    if (nDebit > 0 && pwallet->IsChange(txout)) /* skip change */
       continue;
 
     if (nDebit > 0)
-      listSent.push_back(make_pair(address, txout.nValue));
+      listSent.push_back(make_pair(address, nValue));
 
     if (pwallet->IsMine(txout))
-      listReceived.push_back(make_pair(address, txout.nValue));
+      listReceived.push_back(make_pair(address, nValue));
   }
 
 }
@@ -1707,6 +1721,9 @@ int64 GetAccountBalance(int ifaceIndex, CWalletDB& walletdb, const string& strAc
     if (!wtx.IsFinal(ifaceIndex))
       continue;
 
+    if (wtx.IsCoinBase() && wtx.GetBlocksToMaturity(ifaceIndex) > 0)
+      continue;
+
     //int64 nGenerated, nReceived, nSent, nFee;
     //wtx.GetAccountAmounts(strAccount, nGenerated, nReceived, nSent, nFee);
     int64 nReceived, nSent, nFee;
@@ -1714,7 +1731,6 @@ int64 GetAccountBalance(int ifaceIndex, CWalletDB& walletdb, const string& strAc
 
     if (nReceived != 0 && wtx.GetDepthInMainChain(ifaceIndex) >= nMinDepth)
       nBalance += nReceived;
-    //nBalance += nGenerated - nSent - nFee;
     nBalance -= nSent + nFee;
   }
 

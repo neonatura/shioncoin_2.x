@@ -345,6 +345,8 @@ Array RPCConvertValues(const std::string &strMethod, const std::vector<std::stri
 
   if (strMethod == "move"                   && n > 2) ConvertTo<double>(params[2]);
   if (strMethod == "move"                   && n > 3) ConvertTo<boost::int64_t>(params[3]);
+  if (strMethod == "wallet.move"                   && n > 2) ConvertTo<double>(params[2]);
+  if (strMethod == "wallet.move"                   && n > 3) ConvertTo<boost::int64_t>(params[3]);
 
   if (strMethod == "sendfrom"               && n > 2) ConvertTo<double>(params[2]);
   if (strMethod == "sendfrom"               && n > 3) ConvertTo<boost::int64_t>(params[3]);

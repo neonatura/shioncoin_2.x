@@ -43,6 +43,7 @@ bool CTransaction::WriteCoins(int ifaceIndex, const vector<int64>& vAmount)
   int64 blockPos;
   size_t data_len;
   int txPos;
+  int idx;
   int err;
 
   if (!bc) {
@@ -57,7 +58,7 @@ bool CTransaction::WriteCoins(int ifaceIndex, const vector<int64>& vAmount)
   data_len = 0;
   err = bc_idx_find(bc, hash.GetRaw(), NULL, &txPos);
   if (!err) { /* exists */
-    err = bc_get(bc, txPos, &data, &data_len);
+    err = bc_get(bc, txPos, (unsigned char **)&data, &data_len);
     if (err) {
       return (error(err, "CTransaction.WriteCoinSpent: error obtaining data for db-index #%u.", (unsigned int)txPos));
     }
@@ -112,6 +113,7 @@ bool CTransaction::WriteCoins(int ifaceIndex, int nOut, bool fUnspend)
   int64 blockPos;
   size_t data_len;
   int txPos;
+  int idx;
   int err;
 
   if (!bc) {
@@ -126,7 +128,7 @@ bool CTransaction::WriteCoins(int ifaceIndex, int nOut, bool fUnspend)
   data_len = 0;
   err = bc_idx_find(bc, hash.GetRaw(), NULL, &txPos);
   if (!err) { /* exists */
-    err = bc_get(bc, txPos, &data, &data_len);
+    err = bc_get(bc, txPos, (unsigned char **)&data, &data_len);
     if (err) {
       return (error(err, "CTransaction.WriteCoinSpent: error obtaining data for db-index #%u.", (unsigned int)txPos));
     }
@@ -172,6 +174,7 @@ bool CTransaction::WriteCoins(int ifaceIndex, int nOut, bool fUnspend)
 
 bool CTransaction::WriteCoins(int ifaceIndex, const vector<char>& vfSpent)
 {
+  int idx;
 
   if (vfSpent.size() == 0)
     return (true); /* all done */
@@ -183,7 +186,7 @@ bool CTransaction::WriteCoins(int ifaceIndex, const vector<char>& vfSpent)
     if (!vfSpent[idx])
       continue;
 
-    if (!WriteCoinSpent(ifaceIndex, idx)) {
+    if (!WriteCoins(ifaceIndex, idx)) {
       return (error(SHERR_INVAL, "WirteCoinSpent: error marking coin as spent."));
     }
   }
@@ -219,7 +222,7 @@ bool CTransaction::ReadCoins(int ifaceIndex, vector<int64>& vAmount, int64& nTot
   data = NULL;
   err = bc_idx_find(bc, hash.GetRaw(), NULL, &txPos);
   if (!err) { /* exists */
-    err = bc_get(bc, txPos, &data, &data_len);
+    err = bc_get(bc, txPos, (unsigned char **)&data, &data_len);
     if (err) {
       return (error(err, "CTransaction.ReadCoins: error obtaining data for db-index #%u.", (unsigned int)txPos));
     }
@@ -260,7 +263,7 @@ bool CTransaction::ReadCoins(int ifaceIndex, vector<int64>& vAmount, int64& nTot
   return (true);
 }
 
-bool CTransaction::ReadCoins(int ifaceIndex, vector<CTxOut>& vOut, uint64& nTotalValue)
+bool CTransaction::ReadCoins(int ifaceIndex, vector<CTxOut>& vOut, int64& nTotalValue)
 {
   vector<int64> vAmount;
   int idx;
@@ -284,6 +287,7 @@ bool CTransaction::ReadCoins(int ifaceIndex, vector<CTxOut>& vOut, uint64& nTota
 bool CTransaction::ReadCoins(int ifaceIndex, vector<char>& vfSpent)
 {
   vector<int64> vAmount;
+  int64 nTotalValue;
   int idx;
 
   if (!ReadCoins(ifaceIndex, vAmount, nTotalValue))

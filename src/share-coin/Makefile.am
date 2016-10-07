@@ -51,6 +51,7 @@ common_includes = \
 	$(top_srcdir)/src/share-lib/net/shnet.h \
 	unet/unet.h \
 	server/block.h \
+	server/coin.h \
 	server/chain.h \
 	server/global.h \
 	server/allocators.h \
@@ -168,6 +169,7 @@ server_sources = \
 	server/rpc/rpcrawtransaction.cpp \
 	server/protocol.cpp \
 	server/block.cpp \
+	server/coin.cpp \
 	server/chain.cpp \
 	server/matrix.cpp \
 	server/spring.c \

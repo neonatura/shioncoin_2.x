@@ -721,6 +721,19 @@ bc_t *GetBlockTxChain(CIface *iface)
   return (iface->bc_tx);
 }
 
+bc_t *GetBlockCoinChain(CIface *iface)
+{
+
+  if (!iface->bc_coin) {
+    char name[4096];
+
+    sprintf(name, "%s_coin", iface->name);
+    bc_open(name, &iface->bc_coin);
+  }
+
+  return (iface->bc_coin);
+}
+
 static void _bc_chain_idle(void)
 {
 #ifdef SHCOIN_SERVER

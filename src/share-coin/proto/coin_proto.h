@@ -140,6 +140,7 @@ typedef struct coin_iface_t
 
   bc_t *bc_block;
   bc_t *bc_tx;
+  bc_t *bc_coin;
   double blk_diff; /* next block difficulty */
   uint64_t tx_tot; /* nTransactionsUpdated */
   bc_hash_t block_besthash; /* best block hash */
@@ -217,6 +218,8 @@ coin_iface_t *GetCoin(const char *name);
 bc_t *GetBlockChain(CIface *iface);
 
 bc_t *GetBlockTxChain(CIface *iface);
+
+bc_t *GetBlockCoinChain(CIface *iface);
 
 
 #ifdef __cplusplus

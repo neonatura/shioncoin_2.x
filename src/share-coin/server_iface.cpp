@@ -683,7 +683,11 @@ void CNode::PushVersion()
   RAND_bytes((unsigned char*)&nLocalHostNonce, sizeof(nLocalHostNonce));
 
 
-  PushMessage("version", PROTOCOL_VERSION(iface), COIN_SERVICES(iface), nTime, addrYou, addrMe, nLocalHostNonce, FormatSubVersion(GetClientName(iface), IFACE_VERSION(iface), std::vector<string>()), GetBestHeight(ifaceIndex));
+  if (ifaceIndex == EMC2_COIN_IFACE) {
+    PushMessage("version", PROTOCOL_VERSION(iface), COIN_SERVICES(iface), nTime, addrYou, addrMe, nLocalHostNonce, FormatSubVersion("Satoshi", IFACE_VERSION(iface), std::vector<string>()), GetBestHeight(ifaceIndex));
+  } else {
+    PushMessage("version", PROTOCOL_VERSION(iface), COIN_SERVICES(iface), nTime, addrYou, addrMe, nLocalHostNonce, FormatSubVersion(GetClientName(iface), IFACE_VERSION(iface), std::vector<string>()), GetBestHeight(ifaceIndex));
+  }
 
   {
     char buf[256];

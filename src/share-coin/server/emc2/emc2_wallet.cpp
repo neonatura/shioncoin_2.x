@@ -129,7 +129,7 @@ bool emc2_LoadWallet(void)
   {
     int64 nStart;
 
-    printf("Rescanning last %i blocks (from block %i)...\n", pindexBest->nHeight - pindexRescan->nHeight, pindexRescan->nHeight);
+    Debug("(ecm2) LoadWallet: Rescanning last %i blocks (from block %i)...\n", pindexBest->nHeight - pindexRescan->nHeight, pindexRescan->nHeight);
     nStart = GetTimeMillis();
     emc2Wallet->ScanForWalletTransactions(pindexRescan, true);
     printf(" rescan      %15"PRI64d"ms\n", GetTimeMillis() - nStart);
@@ -226,8 +226,17 @@ void EMC2Wallet::ReacceptWalletTransactions()
     BOOST_FOREACH(PAIRTYPE(const uint256, CWalletTx)& item, mapWallet)
     {
       CWalletTx& wtx = item.second;
-      if (wtx.IsCoinBase() && wtx.IsSpent(0))
-        continue;
+      if (wtx.IsCoinBase()) {
+        bool fSpent = true;
+        for (unsigned int i = 0; i < wtx.vout.size(); i++) {
+          if (!wtx.IsSpent(i)) {
+            fSpent = false;
+            break;
+          }
+        }
+        if (fSpent)
+          continue;
+      }
 
       CTxIndex txindex;
       bool fUpdated = false;

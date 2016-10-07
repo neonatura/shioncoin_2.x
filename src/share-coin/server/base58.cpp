@@ -39,8 +39,9 @@ bool CCoinSecret::SetString(const char* pszSecret)
   bool ret;
 
   ret = CBase58Data::SetString(pszSecret);
-  if (!ret)
-    return (false);
+  if (!ret) {
+    return error(SHERR_INVAL, "error setting base58 data '%s'.", pszSecret);
+  }
 
   ret = IsValid();
   if (!ret)

@@ -100,6 +100,7 @@ static bool ServiceWalletEvent(int ifaceIndex)
       if (!block) continue;
 
       BOOST_FOREACH(const CTransaction& tx, block->vtx) {
+/* opt_bool(OPT_WALLET_REACCEPT */
         wallet->AddToWalletIfInvolvingMe(tx, block, false, false);
       }
 
@@ -404,38 +405,47 @@ void ServiceEventState(int ifaceIndex)
 {
   CIface *iface = GetCoinByIndex(ifaceIndex);
 
-  if (!serv_state(iface, COINF_DL_SCAN) &&
-      !serv_state(iface, COINF_DL_SYNC)) {
-    set_serv_state(iface, COINF_DL_SCAN);
-  } else if (serv_state(iface, COINF_DL_SCAN)) {
+  if (serv_state(iface, COINF_DL_SCAN)) {
     if (!ServiceBlockEvent(ifaceIndex)) {
-      set_serv_state(iface, COINF_DL_SYNC);
       unset_serv_state(iface, COINF_DL_SCAN);
     }
+    return;
   }
 
-  if (serv_state(iface, COINF_DL_SYNC) &&
-      !serv_state(iface, COINF_WALLET_SCAN) &&
-      !serv_state(iface, COINF_WALLET_SYNC)) {
-    set_serv_state(iface, COINF_WALLET_SCAN);
-  } else if (serv_state(iface, COINF_WALLET_SCAN)) {
+  if (serv_state(iface, COINF_WALLET_SCAN)) {
     if (!ServiceWalletEvent(ifaceIndex)) {
-      set_serv_state(iface, COINF_WALLET_SYNC);
       unset_serv_state(iface, COINF_WALLET_SCAN);
     }
+    return;
   }
 
-  if (serv_state(iface, COINF_DL_SYNC) &&
-      serv_state(iface, COINF_WALLET_SYNC) &&
-      !serv_state(iface, COINF_PEER_SCAN) &&
-      !serv_state(iface, COINF_PEER_SYNC)) {
-    set_serv_state(iface, COINF_PEER_SCAN);
-  } else if (serv_state(iface, COINF_PEER_SCAN)) {
+  if (serv_state(iface, COINF_PEER_SCAN)) {
     if (!ServicePeerEvent(ifaceIndex)) {
-      set_serv_state(iface, COINF_PEER_SYNC);
       unset_serv_state(iface, COINF_PEER_SCAN);
     }
+    return;
   }
+
+#if 0
+  if (!serv_state(iface, COINF_DL_SYNC)) {
+    set_serv_state(iface, COINF_DL_SYNC);
+    set_serv_state(iface, COINF_DL_SCAN);
+    return;
+  }
+#endif
+
+  if (!serv_state(iface, COINF_WALLET_SYNC)) {
+    set_serv_state(iface, COINF_WALLET_SYNC);
+    set_serv_state(iface, COINF_WALLET_SCAN);
+    return;
+  } 
+
+  if (!serv_state(iface, COINF_PEER_SYNC)) {
+    set_serv_state(iface, COINF_PEER_SYNC);
+    set_serv_state(iface, COINF_PEER_SCAN);
+    return;
+  }
+
 }
 
 void InitServiceWalletEvent(CWallet *wallet, uint64_t nHeight)
@@ -444,7 +454,10 @@ void InitServiceWalletEvent(CWallet *wallet, uint64_t nHeight)
   if (GetBestHeight(wallet->ifaceIndex) == wallet->nScanHeight)
     return; /* up-to-date, 'service wallet event' is redundant scan. */
   unset_serv_state(iface, COINF_WALLET_SYNC);
-  wallet->nScanHeight = MIN(nHeight, wallet->nScanHeight); 
+  if (wallet->nScanHeight == 0)
+    wallet->nScanHeight = nHeight;
+  else
+    wallet->nScanHeight = MIN(nHeight, wallet->nScanHeight); 
 }
 
 #ifdef __cplusplus

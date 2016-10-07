@@ -963,6 +963,20 @@ public:
     int GetDepthInMainChain(int ifaceIndex) const { CBlockIndex *pindexRet; return GetDepthInMainChain(ifaceIndex, pindexRet); }
 
 
+    bool WriteCoins(int ifaceIndex, const vector<int64>& vAmount);
+
+    bool WriteCoins(int ifaceIndex, int nOut, bool fUnspend = false);
+
+    bool WriteCoins(int ifaceIndex, const vector<char>& vfSpent);
+
+    bool ReadCoins(int ifaceIndex, vector<int64>& vAmount, int64& nTotalValue);
+
+    bool ReadCoins(int ifaceIndex, vector<CTxOut>& vOut, int64& nTotalValue);
+
+    bool ReadCoins(int ifaceIndex, vector<char>& vfSpent);
+
+
+
 protected:
     const CTxOut& GetOutputFor(const CTxIn& input, const MapPrevTx& inputs) const;
 };

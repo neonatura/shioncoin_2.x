@@ -72,4 +72,5 @@ int bc_purge(bc_t *bc, bcsize_t pos);
 void bc_chain_idle(void);
 
 
+
 #endif /* ndef __BLOCKCHAIN__BC_BLOCK_H__ */
