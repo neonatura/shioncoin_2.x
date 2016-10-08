@@ -1618,6 +1618,56 @@ Value rpc_wallet_export(CIface *iface, const Array& params, bool fHelp)
   char *text;
 
   CWallet *pwalletMain = GetWallet(iface);
+
+  std::set<CKeyID> keys;
+  pwalletMain->GetKeys(keys);
+  BOOST_FOREACH(const CKeyID& key, keys) {
+    if (pwalletMain->mapAddressBook.count(key) == 0) { /* loner */
+
+      /* was this key ever used. */
+      int nTxInput = 0;
+      int nTxSpent = 0;
+      BOOST_FOREACH(PAIRTYPE(const uint256, CWalletTx)& item, pwalletMain->mapWallet) {
+        const CWalletTx& tx = item.second;
+        int i;
+        for (i = 0; i < tx.vout.size(); i++) {
+          CTxDestination dest;
+          if (!ExtractDestination(tx.vout[i].scriptPubKey, dest))
+            continue;
+          CKeyID k1;
+          CCoinAddr(ifaceIndex, dest).GetKeyID(k1);
+          if (k1 == key) {
+            if (tx.IsSpent(i)) {
+              nTxSpent++;
+            }
+            nTxInput++;
+          }
+        }
+      }
+      if (nTxInput == 0 || (nTxSpent >= nTxInput))
+        continue; /* never used or spent */
+
+      /* pub key */
+      CCoinAddr addr(ifaceIndex, key);
+
+      /* priv key */
+      CSecret vchSecret;
+      bool fCompressed;
+      if (!pwalletMain->GetSecret(key, vchSecret, fCompressed))
+        continue;
+      CCoinSecret csec(ifaceIndex, vchSecret, fCompressed);
+      string strKey = csec.ToString();
+
+      node = shjson_obj_add(tree, NULL);
+      shjson_str_add(node, "key", (char *)strKey.c_str()); 
+      shjson_str_add(node, "label", "coinbase");
+      shjson_str_add(node, "addr", (char *)addr.ToString().c_str());
+      shjson_str_add(node, "phrase", (char *)EncodeMnemonicSecret(csec).c_str());
+      shjson_num_add(node, "inputs", (nTxInput - nTxSpent));
+    }
+  }
+  
+
   map<string, int64> mapAccountBalances;
   BOOST_FOREACH(const PAIRTYPE(CTxDestination, string)& entry, pwalletMain->mapAddressBook) {
     CTxDestination dest = entry.first;
@@ -2003,7 +2053,6 @@ Value rpc_wallet_list(CIface *iface, const Array& params, bool fHelp)
   list<CAccountingEntry> acentries;
   CWalletDB(pwalletMain->strWalletFile).ListAccountCreditDebit("*", acentries);
   BOOST_FOREACH(const CAccountingEntry& entry, acentries) {
-fprintf(stderr, "DEBUG: mapAccountBalances['%s'](%f) += nCreditDebit(%f)\n", entry.strAccount.c_str(), (double)mapAccountBalances[entry.strAccount]/COIN, (double)entry.nCreditDebit/COIN);
     mapAccountBalances[entry.strAccount] += entry.nCreditDebit;
   }
 
