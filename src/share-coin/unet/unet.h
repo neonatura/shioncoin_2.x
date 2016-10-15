@@ -70,7 +70,7 @@ typedef int socklen_t;
 #define MAX_CONNECT_IDLE_TIME 45
 #define MAX_IDLE_TIME 3600
 
-#define UNET_MAX_EVENTS 10240
+#define UNET_MAX_EVENTS 20480
 
 #define UEVENT_NONE 0
 #define UEVENT_PEER 1
