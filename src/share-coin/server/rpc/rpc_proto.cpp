@@ -1624,6 +1624,8 @@ Value rpc_wallet_export(CIface *iface, const Array& params, bool fHelp)
   BOOST_FOREACH(const CKeyID& key, keys) {
     if (pwalletMain->mapAddressBook.count(key) == 0) { /* loner */
 
+#if 0
+/* DEBUG: commented out; takes too long with large wallet */
       /* was this key ever used. */
       int nTxInput = 0;
       int nTxSpent = 0;
@@ -1646,6 +1648,7 @@ Value rpc_wallet_export(CIface *iface, const Array& params, bool fHelp)
       }
       if (nTxInput == 0 || (nTxSpent >= nTxInput))
         continue; /* never used or spent */
+#endif
 
       /* pub key */
       CCoinAddr addr(ifaceIndex, key);
@@ -1663,7 +1666,7 @@ Value rpc_wallet_export(CIface *iface, const Array& params, bool fHelp)
       shjson_str_add(node, "label", "coinbase");
       shjson_str_add(node, "addr", (char *)addr.ToString().c_str());
       shjson_str_add(node, "phrase", (char *)EncodeMnemonicSecret(csec).c_str());
-      shjson_num_add(node, "inputs", (nTxInput - nTxSpent));
+//      shjson_num_add(node, "inputs", (nTxInput - nTxSpent));
     }
   }
   
