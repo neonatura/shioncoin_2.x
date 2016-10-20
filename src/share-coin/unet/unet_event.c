@@ -57,9 +57,14 @@ uevent_t *uevent_new(int umode, int type, void *data)
   return (e);
 }
 
-uevent_t *uevent_new_peer(int umode, shpeer_t *peer)
+uevent_t *create_uevent_verify_peer(int umode, shpeer_t *peer)
 {
-  return (uevent_new(umode, UEVENT_PEER, peer));
+  return (uevent_new(umode, UEVENT_PEER_VERIFY, peer));
+}
+
+uevent_t *create_uevent_connect_peer(int umode, shpeer_t *peer)
+{
+  return (uevent_new(umode, UEVENT_PEER_CONN, peer));
 }
 
 void uevent_clear_pos(int idx)
@@ -104,15 +109,20 @@ now = shtime();
   err = shnet_track_verify(peer, &e->fd);
   if (!err) {
     /* success */
-    shnet_track_mark(bind->peer_db, peer, 1);
+    unet_peer_incr(e->mode, peer);
     bind->scan_freq = MAX(0.001, bind->scan_freq * 1.1);
 
     sprintf(buf, "unet_peer_verify: peer '%s' verified.", shpeer_print(peer));
     unet_log(e->mode, buf);
 
+#if 0
     /* initiate service connection. */
     if (!unet_peer_find(e->mode, shpeer_addr(peer))) /* x2check */
       unet_connect(e->mode, shpeer_addr(peer), NULL);
+#endif
+    /* transfer peer to new connection event */
+    create_uevent_connect_peer(e->mode, peer);
+    e->data = NULL;
 
     e->fd = 0;
     return (0); /* dispose of event */
@@ -120,7 +130,7 @@ now = shtime();
 
   if (err != SHERR_INPROGRESS) {
     /* connection error */
-    shnet_track_mark(bind->peer_db, peer, -1);
+    unet_peer_decr(e->mode, peer);
     bind->scan_freq = MAX(0.001, bind->scan_freq * 0.9);
 
     if (err != -ECONNREFUSED) { /* SHERR_CONNREFUSED */
@@ -143,7 +153,7 @@ now = shtime();
 #endif
 
     /* error */
-    shnet_track_mark(bind->peer_db, peer, -1);
+    unet_peer_decr(e->mode, peer);
     bind->scan_freq = MAX(0.001, bind->scan_freq * 0.9);
 
     if (e->fd) {
@@ -158,7 +168,7 @@ now = shtime();
   return (SHERR_AGAIN);
 }
 
-int uevent_cycle_peer(uevent_t *e)
+int uevent_cycle_peer_verify(uevent_t *e)
 {
   unet_bind_t *bind;
   shpeer_t *peer;
@@ -191,14 +201,9 @@ int uevent_cycle_peer(uevent_t *e)
 
   bind->scan_stamp = shtime();
 
-  err = shnet_track_add(bind->peer_db, peer);
-  if (err) { 
-    PRINT_ERROR(err, "uevent_cycle_peer: shnet_track_add");
-    goto fin;
-  }
+  unet_peer_incr(e->mode, peer);
 
   if (unet_peer_find(e->mode, shpeer_addr(peer))) {
-    shnet_track_mark(bind->peer_db, peer, 1); /* give points for being connected */
     goto fin; /* already connected */
   }
 
@@ -207,6 +212,24 @@ int uevent_cycle_peer(uevent_t *e)
     return (err);
   
 fin:
+  shpeer_free(&peer);
+  return (0); /* event completed */
+}
+
+int uevent_cycle_peer_conn(uevent_t *e)
+{
+  shpeer_t *peer;
+  int err;
+
+  if (!e->data)
+    return (0); /* all done */
+
+  peer = (shpeer_t *)e->data;
+
+  if (!unet_peer_find(e->mode, shpeer_addr(peer))) {
+    unet_connect(e->mode, shpeer_addr(peer), NULL);
+  }
+
   shpeer_free(&peer);
   return (0); /* event completed */
 }
@@ -228,10 +251,11 @@ void uevent_cycle(void)
     if (e->type) {
       err = 0;
       switch (e->type) {
-        case UEVENT_PEER:
-          timing_init("event_cycle_peer", &ts);
-          err = uevent_cycle_peer(e);
-          timing_term(e->mode, "event_cycle_peer", &ts);
+        case UEVENT_PEER_VERIFY:
+          err = uevent_cycle_peer_verify(e);
+          break;
+        case UEVENT_PEER_CONN:
+          err = uevent_cycle_peer_conn(e);
           break;
       }
 
@@ -239,7 +263,7 @@ void uevent_cycle(void)
       if (err == 0)
         uevent_clear_pos(event_idx);
 
-      if (shtime_after(shtime(), shtime_adj(start, 0.05)))
+      if (shtime_after(shtime(), shtime_adj(start, 0.2)))
         break; /* break out after 20ms */
     }
 

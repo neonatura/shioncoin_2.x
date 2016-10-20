@@ -73,7 +73,8 @@ typedef int socklen_t;
 #define UNET_MAX_EVENTS 20480
 
 #define UEVENT_NONE 0
-#define UEVENT_PEER 1
+#define UEVENT_PEER_VERIFY 1
+#define UEVENT_PEER_CONN 2
 
 
 typedef unsigned int SOCKET;
@@ -228,7 +229,9 @@ void unet_peer_scan(void);
 
 int unet_peer_wait(unet_bind_t *bind);
 
-uevent_t *uevent_new_peer(int umode, shpeer_t *peer);
+uevent_t *create_uevent_verify_peer(int umode, shpeer_t *peer);
+
+uevent_t *create_uevent_connect_peer(int umode, shpeer_t *peer);
 
 void uevent_cycle(void);
 
@@ -239,6 +242,10 @@ void unet_peer_fill(int mode);
 unsigned int unet_peer_total(int mode);
 
 int unet_peer_find(int mode, struct sockaddr *addr);
+
+void unet_peer_incr(int mode, shpeer_t *peer);
+
+void unet_peer_decr(int mode, shpeer_t *peer);
 
 void unet_local_init(void);
 

@@ -323,74 +323,6 @@ string CRPCTable::help(CIface *iface, string strCommand) const
     return strRet;
 }
 
-#if 0
-Value help(const Array& params, bool fHelp)
-{
-    if (fHelp || params.size() > 1)
-        throw runtime_error(
-            "help [command]\n"
-            "List commands, or get help for a command.");
-
-    string strCommand;
-    if (params.size() > 0)
-        strCommand = params[0].get_str();
-
-    return tableRPC.help(strCommand);
-}
-#endif
-
-Value addpeer(const Array& params, bool fHelp)
-{
-  if (fHelp || params.size() != 1)
-    throw runtime_error(
-        "addpeer <host>[:<port>]\n"
-        "Attempt to connect to a remote coin server.");
-
-  CIface *iface = GetCoinByIndex(USDE_COIN_IFACE); 
-  string strHost;
-  CService vserv;
-  char buf[256];
-  char *ptr;
-  int port;
-
-  strHost = params[0].get_str();
-
-  port = 0;
-  memset(buf, 0, sizeof(buf));
-  strncpy(buf, strHost.c_str(), sizeof(buf)-1);
-  ptr = strchr(buf, ':');
-  if (!ptr)
-    ptr = strchr(buf, ' '); /* ipv6 */
-  if (ptr) {
-    port = atoi(ptr+1);
-    *ptr = '\000';
-  }
-  if (port == 0)
-    port = USDE_COIN_DAEMON_PORT;
-
-  if (Lookup(strHost.c_str(), vserv, port, false)) {
-      shpeer_t *peer;
-      char buf2[1024];
-      char buf[1024];
-
-      sprintf(buf, "%s %d", strHost.c_str(), port);
-      peer = shpeer_init(iface->name, buf);
-      uevent_new_peer(GetCoinIndex(iface), peer); /* keep alloc'd */
-
-      sprintf(buf2, "addpeer: initiating peer connection to '%s'.\n",
-          shpeer_print(peer));
-      unet_log(GetCoinIndex(iface), buf2);
-
-#if 0
-    CSemaphoreGrant grant(*semOutbound);
-    OpenNetworkConnection(CAddress(vserv), &grant);
-#endif
-
-//    OpenNetworkConnection(CAddress(vserv));
-  }
-
-  return "initiated new peer connection.";
-}
 
 Value stop(const Array& params, bool fHelp)
 {
@@ -2782,7 +2714,7 @@ Value rpc_peer_add(CIface *iface, const Array& params, bool fHelp)
 
     sprintf(buf, "%s %d", strHost.c_str(), port);
     peer = shpeer_init(iface->name, buf);
-    uevent_new_peer(GetCoinIndex(iface), peer); /* keep alloc'd */
+    create_uevent_connect_peer(GetCoinIndex(iface), peer); /* keep alloc'd */
 
     sprintf(buf2, "addpeer: initiating peer connection to '%s'.\n",
         shpeer_print(peer));

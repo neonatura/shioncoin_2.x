@@ -1,11 +1,30 @@
-// Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2012 The Bitcoin developers
-// Copyright (c) 2011-2012 Litecoin Developers
-// Copyright (c) 2013 usde Developers
-// Distributed under the MIT/X11 software license, see the accompanying
-// file COPYING or http://www.opensource.org/licenses/mit-license.php.
-#ifndef BITCOIN_NET_H
-#define BITCOIN_NET_H
+
+/*
+ * @copyright
+ *
+ *  Copyright 2014 Neo Natura
+ *
+ *  This file is part of the Share Library.
+ *  (https://github.com/neonatura/share)
+ *        
+ *  The Share Library is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version. 
+ *
+ *  The Share Library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with The Share Library.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  @endcopyright
+ */  
+
+#ifndef __SERVER__NET_H__
+#define __SERVER__NET_H__
 
 #include <deque>
 #include <boost/array.hpp>
@@ -19,7 +38,6 @@
 #include "mruset.h"
 #include "netbase.h"
 #include "protocol.h"
-//#include "addrman.h"
 #include "util.h"
 #include "sync.h"
 
@@ -291,7 +309,6 @@ public:
     CService addrLocal;
     int nVersion;
     std::string strSubVer;
-    bool fOneShot;
     bool fClient;
     bool fInbound;
     bool fNetworkNode;
@@ -349,7 +366,6 @@ public:
         addrName = addrNameIn == "" ? addr.ToStringIPPort() : addrNameIn;
         nVersion = 0;
         strSubVer = "";
-        fOneShot = false;
         fClient = false; // set by version message
         fInbound = fInboundIn;
         fNetworkNode = false;
@@ -376,11 +392,6 @@ public:
 
     ~CNode()
     {
-        if (hSocket != INVALID_SOCKET)
-        {
-//            closesocket(hSocket);
-            hSocket = INVALID_SOCKET;
-        }
         if (pfilter)
           delete pfilter;
     }
@@ -784,8 +795,16 @@ public:
     bool IsSubscribed(unsigned int nChannel);
     void Subscribe(unsigned int nChannel, unsigned int nHops=0);
     void CancelSubscribe(unsigned int nChannel);
-    void CloseSocketDisconnect();
+
+    void CloseSocketDisconnect(const char *reason = NULL);
+
     void Cleanup();
+
+    /** Decrease the connection preference of this network node. */
+    void Distrust();
+
+    /** Increase the connection preference of this network node. */
+    void Trust();
 
 
     // Denial-of-service detection/prevention
@@ -858,5 +877,5 @@ inline void RelayMessage<>(const CInv& inv, const CDataStream& ss)
     RelayInventory(inv);
 }
 
+#endif /* ndef __SERVER__NET_H__ */
 
-#endif

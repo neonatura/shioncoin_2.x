@@ -51,23 +51,55 @@ static void set_serv_state(CIface *iface, int flag)
   memset(errbuf, 0, sizeof(errbuf));
   if (flag & COINF_DL_SCAN) {
     strcpy(errbuf, "entering service mode: download block-chain [scan]");
+#if 0
   } else if (flag & COINF_DL_SYNC) {
     strcpy(errbuf, "entering service mode: download block-chain [sync]");
+#endif
   } else if (flag & COINF_WALLET_SCAN) {
     strcpy(errbuf, "entering service mode: wallet tx [scan]");
+#if 0
   } else if (flag & COINF_WALLET_SYNC) {
     strcpy(errbuf, "entering service mode: wallet tx [sync]");
+#endif
   } else if (flag & COINF_PEER_SCAN) {
     strcpy(errbuf, "entering service mode: peer list [scan]");
+#if 0
   } else if (flag & COINF_PEER_SYNC) {
     strcpy(errbuf, "entering service mode: peer list [sync]");
+#endif
   }
   if (*errbuf)
     unet_log(GetCoinIndex(iface), errbuf);
 }
+
 static void unset_serv_state(CIface *iface, int flag)
 {
+  char errbuf[256];
+
   iface->flags &= ~flag;
+
+  memset(errbuf, 0, sizeof(errbuf));
+  if (flag & COINF_DL_SCAN) {
+    strcpy(errbuf, "exiting service mode: download block-chain [scan]");
+#if 0
+  } else if (flag & COINF_DL_SYNC) {
+    strcpy(errbuf, "entering service mode: download block-chain [sync]");
+#endif
+  } else if (flag & COINF_WALLET_SCAN) {
+    strcpy(errbuf, "exiting service mode: wallet tx [scan]");
+#if 0
+  } else if (flag & COINF_WALLET_SYNC) {
+    strcpy(errbuf, "entering service mode: wallet tx [sync]");
+#endif
+  } else if (flag & COINF_PEER_SCAN) {
+    strcpy(errbuf, "exiting service mode: peer list [scan]");
+#if 0
+  } else if (flag & COINF_PEER_SYNC) {
+    strcpy(errbuf, "entering service mode: peer list [sync]");
+#endif
+  }
+  if (*errbuf)
+    unet_log(GetCoinIndex(iface), errbuf);
 }
 static bool serv_state(CIface *iface, int flag)
 {
@@ -369,6 +401,7 @@ bool ServicePeerEvent(int ifaceIndex)
 {
   NodeList &vNodes = GetNodeList(ifaceIndex);
   CNode *pfrom;
+  int tot;
 
   if (vNodes.empty())
     return (true); /* keep checking */
@@ -380,9 +413,11 @@ bool ServicePeerEvent(int ifaceIndex)
   if (pfrom->nVersion == 0)
     return (true); /* not ready yet */
 
-  if (unet_peer_total(ifaceIndex) < 500) {
+  tot = unet_peer_total(ifaceIndex);
+  if (tot < 500) {
     pfrom->PushMessage("getaddr");
     pfrom->fGetAddr = true;
+fprintf(stderr, "DEBUG: ServicePeerEvent: pushed \"getaddr\" request.\n");
   }
 
 #if 0
@@ -426,13 +461,11 @@ void ServiceEventState(int ifaceIndex)
     return;
   }
 
-#if 0
   if (!serv_state(iface, COINF_DL_SYNC)) {
     set_serv_state(iface, COINF_DL_SYNC);
     set_serv_state(iface, COINF_DL_SCAN);
     return;
   }
-#endif
 
   if (!serv_state(iface, COINF_WALLET_SYNC)) {
     set_serv_state(iface, COINF_WALLET_SYNC);
@@ -515,7 +548,10 @@ void ServiceBlockEventUpdate(int ifaceIndex)
     return;
 
   CBlockIndex *bestIndex = GetBestBlockIndex(iface);
-  if (bestIndex && iface->blockscan_max == bestIndex->nHeight)
+  if (!bestIndex)
+    return;
+
+  if (iface->blockscan_max == bestIndex->nHeight)
     return;
 
   iface->net_valid = time(NULL);
@@ -546,7 +582,8 @@ int InitServiceBlockEvent(int ifaceIndex, uint64_t nHeight)
   /* resync */
   iface->net_invalid = 0;
   iface->blockscan_max = MAX(iface->blockscan_max, nHeight);
-  unset_serv_state(iface, COINF_DL_SYNC);
+  if (!serv_state(iface, COINF_DL_SCAN))
+    unset_serv_state(iface, COINF_DL_SYNC);
 
   return (0);
 }

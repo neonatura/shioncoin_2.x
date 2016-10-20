@@ -56,6 +56,8 @@ extern CMedianFilter<int> cPeerBlockCounts;
 extern map<uint256, CAlert> mapAlerts;
 extern vector <CAddress> GetAddresses(CIface *iface, int max_peer);
 
+#define MIN_SHC_PROTO_VERSION 2000000
+
 #define SHC_COIN_HEADER_SIZE SIZEOF_COINHDR_T
 
 //////////////////////////////////////////////////////////////////////////////
@@ -223,6 +225,7 @@ bool shc_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataStr
   CWallet *pwalletMain = GetWallet(iface);
   int ifaceIndex = GetCoinIndex(iface);
   blkidx_t *blockIndex;
+  char errbuf[256];
   shtime_t ts;
 
   RandAddSeedPerfmon();
@@ -256,16 +259,12 @@ fprintf(stderr, "DEBUG: ProcessMessage: pfrom->nVersion (already) %d\n", pfrom->
     uint64 nNonce = 1;
     vRecv >> pfrom->nVersion >> pfrom->nServices >> nTime >> addrMe;
 
-#if 0
-    if (pfrom->nVersion < MIN_PROTO_VERSION)
+    if (pfrom->nVersion < MIN_SHC_PROTO_VERSION)
     {
-      // Since February 20, 2012, the protocol is initiated at version 209,
-      // and earlier versions are no longer supported
-      printf("partner %s using obsolete version %i; disconnecting\n", pfrom->addr.ToString().c_str(), pfrom->nVersion);
-      pfrom->fDisconnect = true;
+      sprintf(errbuf, "(shc) %s using obsolete version %i", pfrom->addr.ToString().c_str(), pfrom->nVersion);
+      pfrom->CloseSocketDisconnect(errbuf);
       return false;
     }
-#endif
 
     if (!vRecv.empty())
       vRecv >> addrFrom >> nNonce;
@@ -275,8 +274,8 @@ fprintf(stderr, "DEBUG: ProcessMessage: pfrom->nVersion (already) %d\n", pfrom->
       vRecv >> pfrom->nStartingHeight;
 
     if (0 != strncmp(pfrom->strSubVer.c_str(), "/SHC", 4)) {
-      error(SHERR_INVAL, "(shc) ProcessMessage: connect from wrong coin interface '%s' (%s), disconnecting\n", pfrom->addr.ToString().c_str(), pfrom->strSubVer.c_str());
-      pfrom->fDisconnect = true;
+      sprintf(errbuf, "(shc) ProcessMessage: connect from wrong coin interface '%s' (%s)", pfrom->addr.ToString().c_str(), pfrom->strSubVer.c_str());
+      pfrom->CloseSocketDisconnect(errbuf);
       return true;
     }
 
@@ -295,8 +294,7 @@ fprintf(stderr, "DEBUG: ProcessMessage: pfrom->nVersion (already) %d\n", pfrom->
     // Disconnect if we connected to ourself
     if (nNonce == nLocalHostNonce && nNonce > 1)
     {
-      printf("connected to self at %s, disconnecting\n", pfrom->addr.ToString().c_str());
-      pfrom->fDisconnect = true;
+      pfrom->CloseSocketDisconnect(NULL);
       return true;
     }
 
@@ -312,42 +310,24 @@ fprintf(stderr, "DEBUG: ProcessMessage: pfrom->nVersion (already) %d\n", pfrom->
     pfrom->PushMessage("verack");
     pfrom->vSend.SetVersion(min(pfrom->nVersion, SHC_PROTOCOL_VERSION));
 
-    if (!pfrom->fInbound)
-    {
-      // Advertise our address
+    if (!pfrom->fInbound) { // Advertise our address
       if (/*!fNoListen &&*/ !IsInitialBlockDownload(SHC_COIN_IFACE))
       {
         CAddress addr = GetLocalAddress(&pfrom->addr);
         addr.SetPort(iface->port);
         if (addr.IsRoutable()) {
-          Debug("VERACK: Pushing (GetLocalAddress) '%s'..\n", addr.ToString().c_str());
+          Debug("VERSION: Pushing (GetLocalAddress) '%s'..", addr.ToString().c_str());
           pfrom->PushAddress(addr);
           pfrom->addrLocal = addr;
         } else {
-          Debug("VERACK: Pushing (GetLocalAddress) '%s' NOT ROUTABLE\n", addr.ToString().c_str());
+          Debug("VERSION: Pushing (GetLocalAddress) '%s' NOT ROUTABLE\n", addr.ToString().c_str());
         }
       }
 
 #if 0
-      // Get recent addresses
-      if (pfrom->fOneShot || pfrom->nVersion >= CADDR_TIME_VERSION || addrman.size() < 1000)
-      {
-        pfrom->PushMessage("getaddr");
-        pfrom->fGetAddr = true;
-      }
-      addrman.Good(pfrom->addr);
-#endif
-
       if (pfrom->fOneShot || pfrom->nVersion >= CADDR_TIME_VERSION || (int)vNodes.size() < 2) {
         pfrom->PushMessage("getaddr");
         pfrom->fGetAddr = true;
-      }
-    } else {
-#if 0
-      if (((CNetAddr)pfrom->addr) == (CNetAddr)addrFrom)
-      {
-        addrman.Add(addrFrom, addrFrom);
-        addrman.Good(addrFrom);
       }
 #endif
     }
@@ -366,11 +346,7 @@ fprintf(stderr, "DEBUG: ProcessMessage: pfrom->nVersion (already) %d\n", pfrom->
 #endif
     CBlockIndex *pindexBest = GetBestBlockIndex(SHC_COIN_IFACE);
     if (pindexBest) {
-      if (pindexBest->nHeight < pfrom->nStartingHeight) {
-        InitServiceBlockEvent(SHC_COIN_IFACE, pfrom->nStartingHeight);
-      }
-    } else {
-        InitServiceBlockEvent(SHC_COIN_IFACE, pfrom->nStartingHeight);
+      InitServiceBlockEvent(SHC_COIN_IFACE, pfrom->nStartingHeight);
     }
 
     // Relay alerts
@@ -480,8 +456,11 @@ fprintf(stderr, "DEBUG: ProcessMessage: Must have a version message before anyth
 
     if (vAddr.size() < 1000)
       pfrom->fGetAddr = false;
+fprintf(stderr, "DEBUG: RECV 'addr': pfrom->fGetAddr = %s\n", pfrom->fGetAddr ? "true" : "false");
+#if 0
     if (pfrom->fOneShot)
       pfrom->fDisconnect = true;
+#endif
   }
 
 
@@ -801,13 +780,13 @@ fprintf(stderr, "DEBUG: ProcessMessage[tx]: block.nDoS = %d\n", block.nDoS);
 #endif
 
 #if 0
-    vector<CAddress> vAddr;
-    vector<CAddress> vAddr = addrman.GetAddr();
-#endif
     vector<CAddress> vAddr = GetAddresses(iface, SHC_MAX_GETADDR);
     BOOST_FOREACH(const CAddress &addr, vAddr)
       pfrom->PushAddress(addr);
+#endif
 
+    pfrom->vAddrToSend = GetAddresses(iface, SHC_MAX_GETADDR);
+fprintf(stderr, "DEBUG: RECV 'getaddr': pfrom->vAddrToSend.size() = %d\n", pfrom->vAddrToSend.size()); 
   }
 
 
@@ -1138,50 +1117,31 @@ bool shc_SendMessages(CIface *iface, CNode* pto, bool fSendTrickle)
             pnode->setAddrKnown.clear();
 
           // Rebroadcast our address
-//          if (!fNoListen) {
-            CAddress addr = GetLocalAddress(&pnode->addr);
-            addr.SetPort(iface->port);
-            if (addr.IsRoutable()) {
-              pnode->PushAddress(addr);
-              pnode->addrLocal = addr;
-            }
-//          }
+          CAddress addr = GetLocalAddress(&pnode->addr);
+          addr.SetPort(iface->port);
+          if (addr.IsRoutable()) {
+            pnode->PushAddress(addr);
+            pnode->addrLocal = addr;
+          }
         }
       }
       nLastRebroadcast = GetTime();
     }
 
-    //
-    // Message: addr
-    //
-    if (fSendTrickle)
-    {
-      vector<CAddress> vAddr;
-      vAddr.reserve(pto->vAddrToSend.size());
-      BOOST_FOREACH(const CAddress& addr, pto->vAddrToSend)
-      {
-        // returns true if wasn't already contained in the set
-        if (pto->setAddrKnown.insert(addr).second)
-        {
-          vAddr.push_back(addr);
-          // receiver rejects addr messages larger than 1000
-          if (vAddr.size() >= 1000)
-          {
-            pto->PushMessage("addr", vAddr);
-            vAddr.clear();
-          }
-        }
+    /* msg: "addr" */
+    if (!pto->vAddrToSend.empty()) {
+      const CAddress& addr = pto->vAddrToSend.front();
+      if (pto->setAddrKnown.insert(addr).second) { /* check for dups */
+        pto->PushAddress(addr);
       }
-      pto->vAddrToSend.clear();
-      if (!vAddr.empty())
-        pto->PushMessage("addr", vAddr);
+      pto->vAddrToSend.erase(pto->vAddrToSend.begin());
+
+      if (pto->setAddrKnown.size() >= SHC_MAX_GETADDR)
+        pto->vAddrToSend.clear(); 
     }
 
-
-    //
-    // Message: inventory
-    //
-    if (pto->vInventoryToSend.size() != 0) {
+    /* msg: "inventory" */
+    if (!pto->vInventoryToSend.empty()) {
       vector<CInv> vInv;
       vector<CInv> vInvWait;
       {
@@ -1241,34 +1201,34 @@ bool shc_SendMessages(CIface *iface, CNode* pto, bool fSendTrickle)
       }
     }
 
+    /* msg: "getdata" */
+    if (!pto->mapAskFor.empty()) {
+      vector<CInv> vGetData;
+      int64 nNow = GetTime() * 1000000;
+      SHCTxDB txdb;
 
-    //
-    // Message: getdata
-    //
-    vector<CInv> vGetData;
-    int64 nNow = GetTime() * 1000000;
-    SHCTxDB txdb;
-    while (!pto->mapAskFor.empty() && (*pto->mapAskFor.begin()).first <= nNow)
-    {
-      const CInv& inv = (*pto->mapAskFor.begin()).second;
-      if (!AlreadyHave(iface, txdb, inv))
+      while (!pto->mapAskFor.empty() && (*pto->mapAskFor.begin()).first <= nNow)
       {
-        if (fDebugNet)
-          printf("sending getdata: %s\n", inv.ToString().c_str());
-        vGetData.push_back(inv);
-        if (vGetData.size() >= 1000)
+        const CInv& inv = (*pto->mapAskFor.begin()).second;
+        if (!AlreadyHave(iface, txdb, inv))
         {
-          pto->PushMessage("getdata", vGetData);
-          vGetData.clear();
+          vGetData.push_back(inv);
+          if (vGetData.size() >= 1000)
+          {
+            pto->PushMessage("getdata", vGetData);
+            vGetData.clear();
+          }
+          mapAlreadyAskedFor[inv] = nNow;
         }
-        mapAlreadyAskedFor[inv] = nNow;
+        pto->mapAskFor.erase(pto->mapAskFor.begin());
       }
-      pto->mapAskFor.erase(pto->mapAskFor.begin());
+
+      if (!vGetData.empty())
+        pto->PushMessage("getdata", vGetData);
     }
-    if (!vGetData.empty())
-      pto->PushMessage("getdata", vGetData);
 
   }
+
   return true;
 }
 

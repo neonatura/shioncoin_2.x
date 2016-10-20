@@ -75,7 +75,7 @@ void unet_timer_cycle(void)
       continue; /* all done */
 
     now = shtime();
-    min_t = shtime_adj(now, -0.1); /* 10ms ago */
+    min_t = shtime_adj(now, -0.02); /* 20ms ago */
     if (shtime_before(min_t, bind->timer_stamp))
       continue; /* not ready */
 

@@ -221,6 +221,7 @@ bool emc2_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
   CWallet *pwalletMain = GetWallet(iface);
   int ifaceIndex = GetCoinIndex(iface);
   blkidx_t *blockIndex;
+  char errbuf[256];
   shtime_t ts;
 
   Debug("EMC2:ProcessMessage: received '%s' (%d bytes from %s)\n", strCommand.c_str(), vRecv.size(), pfrom->addr.ToString().c_str());
@@ -255,8 +256,8 @@ bool emc2_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
     vRecv >> pfrom->nVersion >> pfrom->nServices >> nTime >> addrMe;
     if (pfrom->nVersion < MIN_EMC2_PROTO_VERSION)
     {
-      printf("peer %s using obsolete version %i; disconnecting\n", pfrom->addr.ToString().c_str(), pfrom->nVersion);
-      pfrom->fDisconnect = true;
+      sprintf(errbuf, "peer %s using obsolete (emc2) version %i", pfrom->addr.ToString().c_str(), pfrom->nVersion);
+      pfrom->CloseSocketDisconnect(errbuf);
       return false;
     }
 
@@ -291,8 +292,7 @@ bool emc2_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
     // Disconnect if we connected to ourself
     if (nNonce == nLocalHostNonce && nNonce > 1)
     {
-      printf("connected to self at %s, disconnecting\n", pfrom->addr.ToString().c_str());
-      pfrom->fDisconnect = true;
+      pfrom->CloseSocketDisconnect(NULL);
       return true;
     }
 
@@ -308,9 +308,7 @@ bool emc2_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
     pfrom->PushMessage("verack");
     pfrom->vSend.SetVersion(min(pfrom->nVersion, EMC2_PROTOCOL_VERSION));
 
-    if (!pfrom->fInbound)
-    {
-      // Advertise our address
+    if (!pfrom->fInbound) { // Advertise our address
       if (/*!fNoListen &&*/ !IsInitialBlockDownload(EMC2_COIN_IFACE))
       {
         CAddress addr = GetLocalAddress(&pfrom->addr);
@@ -322,25 +320,9 @@ bool emc2_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
       }
 
 #if 0
-      // Get recent addresses
-      if (pfrom->fOneShot || pfrom->nVersion >= CADDR_TIME_VERSION || addrman.size() < 1000)
-      {
-        pfrom->PushMessage("getaddr");
-        pfrom->fGetAddr = true;
-      }
-      addrman.Good(pfrom->addr);
-#endif
-
       if (pfrom->fOneShot || pfrom->nVersion >= CADDR_TIME_VERSION || (int)vNodes.size() == 1) {
         pfrom->PushMessage("getaddr");
         pfrom->fGetAddr = true;
-      }
-    } else {
-#if 0
-      if (((CNetAddr)pfrom->addr) == (CNetAddr)addrFrom)
-      {
-        addrman.Add(addrFrom, addrFrom);
-        addrman.Good(addrFrom);
       }
 #endif
     }
@@ -360,9 +342,7 @@ bool emc2_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
 
     CBlockIndex *pindexBest = GetBestBlockIndex(EMC2_COIN_IFACE);
     if (pindexBest) {
-      if (pindexBest->nHeight < pfrom->nStartingHeight) {
-        InitServiceBlockEvent(EMC2_COIN_IFACE, pfrom->nStartingHeight);
-      }
+      InitServiceBlockEvent(EMC2_COIN_IFACE, pfrom->nStartingHeight);
     }
 
 
@@ -472,8 +452,10 @@ bool emc2_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
 
     if (vAddr.size() < 1000)
       pfrom->fGetAddr = false;
+#if 0
     if (pfrom->fOneShot)
       pfrom->fDisconnect = true;
+#endif
   }
 
 
@@ -797,13 +779,11 @@ bool emc2_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
 #endif
 
 #if 0
-    vector<CAddress> vAddr;
-    vector<CAddress> vAddr = addrman.GetAddr();
-#endif
     vector<CAddress> vAddr = GetAddresses(iface, EMC2_MAX_GETADDR);
     BOOST_FOREACH(const CAddress &addr, vAddr)
       pfrom->PushAddress(addr);
-
+#endif
+    pfrom->vAddrToSend = GetAddresses(iface, EMC2_MAX_GETADDR);
   }
 
   /* exclusively used by bloom filter supported coin services, but does not require they have a bloom filter enabled for node. */

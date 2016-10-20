@@ -55,7 +55,7 @@ using namespace boost;
 void ThreadMessageHandler2(void* parg);
 void ThreadSocketHandler2(void* parg);
 void ThreadDNSAddressSeed2(void* parg);
-bool OpenNetworkConnection(int ifaceIndex, const CAddress& addrConnect, const char *strDest = NULL);
+//bool OpenNetworkConnection(int ifaceIndex, const CAddress& addrConnect, const char *strDest = NULL);
 
 CSemaphore *semOutbound = NULL;
 
@@ -611,64 +611,57 @@ CNode* ConnectNode(int ifaceIndex, CAddress addrConnect, const char *pszDest, in
     pnode->nTimeConnected = GetTime();
   return pnode;
 
-#if 0
-  // Connect
-  SOCKET hSocket;
-  if (pszDest ? ConnectSocketByName(addrConnect, hSocket, pszDest, GetDefaultPort()) : ConnectSocket(addrConnect, hSocket))
-  {
-    addrman.Attempt(addrConnect);
-
-    /// debug print
-    fprintf(stderr, "connected %s\n", pszDest ? pszDest : addrConnect.ToString().c_str());
-
-    // Set to nonblocking
-#ifdef WIN32
-    u_long nOne = 1;
-    if (ioctlsocket(hSocket, FIONBIO, &nOne) == SOCKET_ERROR)
-      fprintf(stderr, "ConnectSocket() : ioctlsocket nonblocking setting failed, error %d\n", WSAGetLastError());
-#else
-    if (fcntl(hSocket, F_SETFL, O_NONBLOCK) == SOCKET_ERROR)
-      fprintf(stderr, "ConnectSocket() : fcntl nonblocking setting failed, error %d\n", errno);
-#endif
-
-    // Add node
-    CNode* pnode = new CNode(hSocket, addrConnect, pszDest ? pszDest : "", false);
-    if (nTimeout != 0)
-      pnode->AddRef(nTimeout);
-    else
-      pnode->AddRef();
-
-    {
-      LOCK(cs_vNodes);
-      vNodes.push_back(pnode);
-    }
-
-    pnode->nTimeConnected = GetTime();
-    return pnode;
-  }
-  else
-  {
-    return NULL;
-  }
-#endif
 }
 
-void CNode::CloseSocketDisconnect()
+void CNode::CloseSocketDisconnect(const char *reason)
 {
-    fDisconnect = true;
-    if (hSocket != INVALID_SOCKET)
-    {
-        fprintf(stderr, "disconnecting node %s\n", addrName.c_str());
-        closesocket(hSocket);
-        hSocket = INVALID_SOCKET;
-        vRecv.clear();
-    }
+
+  if (reason != NULL)
+    Distrust();
+
+  if (hSocket != INVALID_SOCKET) /* close socket descriptor */
+  {
+    unet_close(hSocket, (char *)reason);
+    hSocket = INVALID_SOCKET;
+  }
+  vRecv.clear();
+
+  fDisconnect = true; /* trigger de-allocation */
 }
 
 void CNode::Cleanup()
 {
 }
 
+void CNode::Distrust()
+{
+  CIface *iface = GetCoinByIndex(ifaceIndex);
+  shpeer_t *peer;
+  char addr_str[256];
+
+  if (!iface || !iface->enabled)
+    return;
+
+  sprintf(addr_str, "%s %d", addr.ToStringIP().c_str(), addr.GetPort());
+  peer = shpeer_init(iface->name, addr_str);
+  unet_peer_decr(ifaceIndex, peer);
+  shpeer_free(&peer);
+}
+
+void CNode::Trust()
+{
+  CIface *iface = GetCoinByIndex(ifaceIndex);
+  shpeer_t *peer;
+  char addr_str[256];
+
+  if (!iface || !iface->enabled)
+    return;
+
+  sprintf(addr_str, "%s %d", addr.ToStringIP().c_str(), addr.GetPort());
+  peer = shpeer_init(iface->name, addr_str);
+  unet_peer_incr(ifaceIndex, peer);
+  shpeer_free(&peer);
+}
 
 void CNode::PushVersion()
 {
@@ -729,6 +722,7 @@ bool CNode::Misbehaving(int howmuch)
 {
   static int ban_span;
   static time_t ban_max;
+  char errbuf[1024];
 
   if (!ban_span) {
     ban_span = MAX(0, opt_num(OPT_BAN_SPAN));
@@ -754,8 +748,8 @@ bool CNode::Misbehaving(int howmuch)
       if (setBanned[addr] < banTime)
         setBanned[addr] = banTime;
     }
-    CloseSocketDisconnect();
-    error(SHERR_INVAL, "disconnected %s for misbehavior (score=%d).", addrName.c_str(), nMisbehavior);
+    sprintf(errbuf, "disconnected %s for misbehavior (score=%d).", addrName.c_str(), nMisbehavior);
+    CloseSocketDisconnect(errbuf);
     return true;
   }
 
@@ -788,353 +782,6 @@ void CNode::copyStats(CNodeStats &stats)
 
 
 
-#if 0
-void ThreadSocketHandler(void* parg)
-{
-//    IMPLEMENT_RANDOMIZE_STACK(ThreadSocketHandler(parg));
-
-    // Make this thread recognisable as the networking thread
-    RenameThread("bitcoin-net");
-
-    try
-    {
-        vnThreadsRunning[THREAD_SOCKETHANDLER]++;
-        ThreadSocketHandler2(parg);
-        vnThreadsRunning[THREAD_SOCKETHANDLER]--;
-    }
-    catch (std::exception& e) {
-        vnThreadsRunning[THREAD_SOCKETHANDLER]--;
-        PrintException(&e, "ThreadSocketHandler()");
-    } catch (...) {
-        vnThreadsRunning[THREAD_SOCKETHANDLER]--;
-        throw; // support pthread_cancel()
-    }
-    fprintf(stderr, "ThreadSocketHandler exited\n");
-}
-
-void ThreadSocketHandler2(void* parg)
-{
-    fprintf(stderr, "ThreadSocketHandler started\n");
-    list<CNode*> vNodesDisconnected;
-    unsigned int nPrevNodeCount = 0;
-
-    loop
-    {
-        //
-        // Disconnect nodes
-        //
-        {
-            LOCK(cs_vNodes);
-            // Disconnect unused nodes
-            vector<CNode*> vNodesCopy = vNodes;
-            BOOST_FOREACH(CNode* pnode, vNodesCopy)
-            {
-                if (pnode->fDisconnect ||
-                    (pnode->GetRefCount() <= 0 && pnode->vRecv.empty() && pnode->vSend.empty()))
-                {
-                    // remove from vNodes
-                    vNodes.erase(remove(vNodes.begin(), vNodes.end(), pnode), vNodes.end());
-
-                    // release outbound grant (if any)
-                    pnode->grantOutbound.Release();
-
-                    // close socket and cleanup
-                    pnode->CloseSocketDisconnect();
-                    pnode->Cleanup();
-
-                    // hold in disconnected pool until all refs are released
-                    pnode->nReleaseTime = max(pnode->nReleaseTime, GetTime() + 15 * 60);
-                    if (pnode->fNetworkNode || pnode->fInbound)
-                        pnode->Release();
-                    vNodesDisconnected.push_back(pnode);
-                }
-            }
-
-            // Delete disconnected nodes
-            list<CNode*> vNodesDisconnectedCopy = vNodesDisconnected;
-            BOOST_FOREACH(CNode* pnode, vNodesDisconnectedCopy)
-            {
-                // wait until threads are done using it
-                if (pnode->GetRefCount() <= 0)
-                {
-                    bool fDelete = false;
-                    {
-                        TRY_LOCK(pnode->cs_vSend, lockSend);
-                        if (lockSend)
-                        {
-                            TRY_LOCK(pnode->cs_vRecv, lockRecv);
-                            if (lockRecv)
-                            {
-                                TRY_LOCK(pnode->cs_mapRequests, lockReq);
-                                if (lockReq)
-                                {
-                                    TRY_LOCK(pnode->cs_inventory, lockInv);
-                                    if (lockInv)
-                                        fDelete = true;
-                                }
-                            }
-                        }
-                    }
-                    if (fDelete)
-                    {
-                        vNodesDisconnected.remove(pnode);
-                        delete pnode;
-                    }
-                }
-            }
-        }
-        if (vNodes.size() != nPrevNodeCount)
-        {
-            nPrevNodeCount = vNodes.size();
-        }
-
-
-        //
-        // Find which sockets have data to receive
-        //
-        struct timeval timeout;
-        timeout.tv_sec  = 0;
-        timeout.tv_usec = 50000; // frequency to poll pnode->vSend
-
-        fd_set fdsetRecv;
-        fd_set fdsetSend;
-        fd_set fdsetError;
-        FD_ZERO(&fdsetRecv);
-        FD_ZERO(&fdsetSend);
-        FD_ZERO(&fdsetError);
-        SOCKET hSocketMax = 0;
-
-        BOOST_FOREACH(SOCKET hListenSocket, vhListenSocket) {
-            FD_SET(hListenSocket, &fdsetRecv);
-            hSocketMax = max(hSocketMax, hListenSocket);
-        }
-        {
-            LOCK(cs_vNodes);
-            BOOST_FOREACH(CNode* pnode, vNodes)
-            {
-                if (pnode->hSocket == INVALID_SOCKET)
-                    continue;
-                FD_SET(pnode->hSocket, &fdsetRecv);
-                FD_SET(pnode->hSocket, &fdsetError);
-                hSocketMax = max(hSocketMax, pnode->hSocket);
-                {
-                    TRY_LOCK(pnode->cs_vSend, lockSend);
-                    if (lockSend && !pnode->vSend.empty())
-                        FD_SET(pnode->hSocket, &fdsetSend);
-                }
-            }
-        }
-
-        vnThreadsRunning[THREAD_SOCKETHANDLER]--;
-        int nSelect = select(hSocketMax + 1, &fdsetRecv, &fdsetSend, &fdsetError, &timeout);
-        vnThreadsRunning[THREAD_SOCKETHANDLER]++;
-        if (fShutdown)
-            return;
-        if (nSelect == SOCKET_ERROR)
-        {
-            int nErr = WSAGetLastError();
-            if (hSocketMax != INVALID_SOCKET)
-            {
-                fprintf(stderr, "socket select error %d\n", nErr);
-                for (unsigned int i = 0; i <= hSocketMax; i++)
-                    FD_SET(i, &fdsetRecv);
-            }
-            FD_ZERO(&fdsetSend);
-            FD_ZERO(&fdsetError);
-            Sleep(timeout.tv_usec/1000);
-        }
-
-
-        //
-        // Accept new connections
-        //
-        BOOST_FOREACH(SOCKET hListenSocket, vhListenSocket)
-        if (hListenSocket != INVALID_SOCKET && FD_ISSET(hListenSocket, &fdsetRecv))
-        {
-#ifdef USE_IPV6
-            struct sockaddr_storage sockaddr;
-#else
-            struct sockaddr sockaddr;
-#endif
-            socklen_t len = sizeof(sockaddr);
-            SOCKET hSocket = accept(hListenSocket, (struct sockaddr*)&sockaddr, &len);
-            CAddress addr;
-            int nInbound = 0;
-
-            if (hSocket != INVALID_SOCKET)
-                if (!addr.SetSockAddr((const struct sockaddr*)&sockaddr))
-                    fprintf(stderr, "warning: unknown socket family\n");
-
-            {
-                LOCK(cs_vNodes);
-                BOOST_FOREACH(CNode* pnode, vNodes)
-                    if (pnode->fInbound)
-                        nInbound++;
-            }
-
-            if (hSocket == INVALID_SOCKET)
-            {
-                if (WSAGetLastError() != WSAEWOULDBLOCK)
-                    fprintf(stderr, "socket error accept failed: %d\n", WSAGetLastError());
-            }
-            else if (nInbound >= opt_num(OPT_MAX_CONN) - MAX_OUTBOUND_CONNECTIONS)
-            {
-                {
-                    LOCK(cs_setservAddNodeAddresses);
-                    if (!setservAddNodeAddresses.count(addr))
-                        closesocket(hSocket);
-                }
-            }
-            else if (CNode::IsBanned(addr))
-            {
-                fprintf(stderr, "connection from %s dropped (banned)\n", addr.ToString().c_str());
-                closesocket(hSocket);
-            }
-            else
-            {
-                fprintf(stderr, "accepted connection %s\n", addr.ToString().c_str());
-                CNode* pnode = new CNode(hSocket, addr, "", true);
-                pnode->AddRef();
-                {
-                    LOCK(cs_vNodes);
-                    vNodes.push_back(pnode);
-                }
-            }
-        }
-
-
-        //
-        // Service each socket
-        //
-        vector<CNode*> vNodesCopy;
-        {
-            LOCK(cs_vNodes);
-            vNodesCopy = vNodes;
-            BOOST_FOREACH(CNode* pnode, vNodesCopy)
-                pnode->AddRef();
-        }
-        BOOST_FOREACH(CNode* pnode, vNodesCopy)
-        {
-            if (fShutdown)
-                return;
-
-            //
-            // Receive
-            //
-            if (pnode->hSocket == INVALID_SOCKET)
-                continue;
-            if (FD_ISSET(pnode->hSocket, &fdsetRecv) || FD_ISSET(pnode->hSocket, &fdsetError))
-            {
-                TRY_LOCK(pnode->cs_vRecv, lockRecv);
-                if (lockRecv)
-                {
-                    CDataStream& vRecv = pnode->vRecv;
-                    unsigned int nPos = vRecv.size();
-
-                    if (nPos > ReceiveBufferSize()) {
-                        if (!pnode->fDisconnect)
-                            fprintf(stderr, "socket recv flood control disconnect (%d bytes)\n", vRecv.size());
-                        pnode->CloseSocketDisconnect();
-                    }
-                    else {
-                        // typical socket buffer is 8K-64K
-                        char pchBuf[0x10000];
-                        int nBytes = recv(pnode->hSocket, pchBuf, sizeof(pchBuf), MSG_DONTWAIT);
-                        if (nBytes > 0)
-                        {
-                            vRecv.resize(nPos + nBytes);
-                            memcpy(&vRecv[nPos], pchBuf, nBytes);
-                            pnode->nLastRecv = GetTime();
-                        }
-                        else if (nBytes == 0)
-                        {
-                            // socket closed gracefully
-                            if (!pnode->fDisconnect)
-                                fprintf(stderr, "socket closed\n");
-                            pnode->CloseSocketDisconnect();
-                        }
-                        else if (nBytes < 0)
-                        {
-                            // error
-                            int nErr = WSAGetLastError();
-                            if (nErr != WSAEWOULDBLOCK && nErr != WSAEMSGSIZE && nErr != WSAEINTR && nErr != WSAEINPROGRESS)
-                            {
-                                if (!pnode->fDisconnect)
-                                    fprintf(stderr, "socket recv error %d\n", nErr);
-                                pnode->CloseSocketDisconnect();
-                            }
-                        }
-                    }
-                }
-            }
-
-            //
-            // Send
-            //
-            if (pnode->hSocket == INVALID_SOCKET)
-                continue;
-            if (FD_ISSET(pnode->hSocket, &fdsetSend))
-            {
-                TRY_LOCK(pnode->cs_vSend, lockSend);
-                if (lockSend)
-                {
-                    CDataStream& vSend = pnode->vSend;
-                    if (!vSend.empty())
-                    {
-                        int nBytes = send(pnode->hSocket, &vSend[0], vSend.size(), MSG_NOSIGNAL | MSG_DONTWAIT);
-                        if (nBytes > 0)
-                        {
-                            vSend.erase(vSend.begin(), vSend.begin() + nBytes);
-                            pnode->nLastSend = GetTime();
-                        }
-                        else if (nBytes < 0)
-                        {
-                            // error
-                            int nErr = WSAGetLastError();
-                            if (nErr != WSAEWOULDBLOCK && nErr != WSAEMSGSIZE && nErr != WSAEINTR && nErr != WSAEINPROGRESS)
-                            {
-                                fprintf(stderr, "socket send error %d\n", nErr);
-                                pnode->CloseSocketDisconnect();
-                            }
-                        }
-                    }
-                }
-            }
-
-            //
-            // Inactivity checking
-            //
-            if (pnode->vSend.empty())
-                pnode->nLastSendEmpty = GetTime();
-            if (GetTime() - pnode->nTimeConnected > 60)
-            {
-                if (pnode->nLastRecv == 0 || pnode->nLastSend == 0)
-                {
-                    fprintf(stderr, "socket no message in first 60 seconds, %d %d\n", pnode->nLastRecv != 0, pnode->nLastSend != 0);
-                    pnode->fDisconnect = true;
-                }
-                else if (GetTime() - pnode->nLastSend > 90*60 && GetTime() - pnode->nLastSendEmpty > 90*60)
-                {
-                    fprintf(stderr, "socket not sending\n");
-                    pnode->fDisconnect = true;
-                }
-                else if (GetTime() - pnode->nLastRecv > 90*60)
-                {
-                    fprintf(stderr, "socket inactivity timeout\n");
-                    pnode->fDisconnect = true;
-                }
-            }
-        }
-        {
-            LOCK(cs_vNodes);
-            BOOST_FOREACH(CNode* pnode, vNodesCopy)
-                pnode->Release();
-        }
-
-        Sleep(10);
-    }
-}
-#endif
 
 void usde_server_close(int fd, struct sockaddr *addr)
 {
@@ -1187,9 +834,6 @@ void usde_close_free(void)
       // release outbound grant (if any)
       pnode->grantOutbound.Release();
 
-/* socket is closed by underlying 'unet' network engine 
-              pnode->CloseSocketDisconnect();
-*/
       pnode->Cleanup();
 
       // hold in disconnected pool until all refs are released
@@ -1565,31 +1209,18 @@ void usde_server_timer(void)
 
       shbuf_t *pchBuf = descriptor_rbuff(pnode->hSocket);
       if (pchBuf) {
-        err = usde_coin_server_recv(iface, pnode, pchBuf);
-        if (err && err != SHERR_AGAIN) {
-fprintf(stderr, "DEBUG: usde_coin_server_recv: error %d\n", err);
+        TRY_LOCK(pnode->cs_vRecv, lockRecv);
+        if (lockRecv) {
+          timing_init("recv msg", &ts);
+          err = usde_coin_server_recv(iface, pnode, pchBuf);
+          if (err && err != SHERR_AGAIN) {
+            error(err, "usde_coin_server_recv");
+            pnode->CloseSocketDisconnect("usde_coin_server_recv");
+            continue;
+          }
+          timing_term(USDE_COIN_IFACE, "recv msg", &ts);
         }
       }
-
-#if 0
-      /* incoming data */
-      CDataStream& vRecv = pnode->vRecv;
-      unsigned int nPos = vRecv.size();
-      shbuf_t *pchBuf = shnet_read_buf(pnode->hSocket);
-      if (pchBuf) {
-        unsigned char *pch = shbuf_data(pchBuf);
-        size_t nBytes = MIN(65536, shbuf_size(pchBuf));
-
-
-        vRecv.resize(nPos + nBytes);
-        memcpy(&vRecv[nPos], pch, nBytes);
-        shbuf_trim(pchBuf, nBytes);
-        pnode->nLastRecv = GetTime();
-      } else {
-        unet_shutdown(pnode->hSocket);
-fprintf(stderr, "DEBUG: usde_server_timer: unet_shutdown()\n"); 
-      }
-#endif
 
       {
         LOCK(pnode->cs_vSend);
@@ -1686,9 +1317,6 @@ static void shc_close_free(void)
       // release outbound grant (if any)
       pnode->grantOutbound.Release();
 
-/* socket is closed by underlying 'unet' network engine 
-              pnode->CloseSocketDisconnect();
-*/
       pnode->Cleanup();
 
       // hold in disconnected pool until all refs are released
@@ -1883,30 +1511,18 @@ void shc_server_timer(void)
 
       shbuf_t *pchBuf = descriptor_rbuff(pnode->hSocket);
       if (pchBuf) {
-        err = shc_coin_server_recv(iface, pnode, pchBuf);
-        if (err && err != SHERR_AGAIN) {
-fprintf(stderr, "DEBUG: shc_coin_server_recv: error %d\n", err); 
+        TRY_LOCK(pnode->cs_vRecv, lockRecv);
+        if (lockRecv) {
+          timing_init("recv msg", &ts);
+          err = shc_coin_server_recv(iface, pnode, pchBuf);
+          if (err && err != SHERR_AGAIN) {
+            error(err, "shc_coin_server_recv");
+            pnode->CloseSocketDisconnect("shc_coin_server_recv");
+            continue;
+          }
+          timing_term(USDE_COIN_IFACE, "recv msg", &ts);
         }
       }
-#if 0
-      /* incoming data */
-      CDataStream& vRecv = pnode->vRecv;
-      unsigned int nPos = vRecv.size();
-      shbuf_t *pchBuf = shnet_read_buf(pnode->hSocket);
-      if (pchBuf) {
-        unsigned char *pch = shbuf_data(pchBuf);
-        size_t nBytes = MIN(409600, shbuf_size(pchBuf));
-
-
-        vRecv.resize(nPos + nBytes);
-        memcpy(&vRecv[nPos], pch, nBytes);
-        shbuf_trim(pchBuf, nBytes);
-        pnode->nLastRecv = GetTime();
-      } else {
-        unet_shutdown(pnode->hSocket);
-fprintf(stderr, "DEBUG: shc_server_timer: unet_shutdown()\n"); 
-      }
-#endif
 
       {
         LOCK(pnode->cs_vSend);
@@ -2112,6 +1728,7 @@ void ThreadOpenConnections(void* parg)
 }
 #endif
 
+#if 0
 void static ProcessOneShot(int ifaceIndex)
 {
     string strDest;
@@ -2132,6 +1749,7 @@ void static ProcessOneShot(int ifaceIndex)
 #endif
     OpenNetworkConnection(ifaceIndex, addr, strDest.c_str());
 }
+#endif
 
 #if 0
 void ThreadOpenConnections2(void* parg)
@@ -2253,6 +1871,7 @@ void ThreadOpenConnections2(void* parg)
 
 
 
+#if 0
 // if succesful, this moves the passed grant to the constructed node
 bool OpenNetworkConnection(int ifaceIndex, const CAddress& addrConnect, const char *strDest)
 {
@@ -2299,6 +1918,7 @@ bool OpenNetworkConnection(int ifaceIndex, const CAddress& addrConnect, const ch
 
     return true;
 }
+#endif
 
 
 
@@ -2720,6 +2340,7 @@ void start_rpc_server(void)
   StartRPCServer();
 }
 
+#if 0
 void start_node_peer(const char *host, int port)
 {
   CService vserv;
@@ -2749,6 +2370,7 @@ if (i != MAX_COIN_IFACE)
   }
 
 }
+#endif
 
 #if 0
 void flush_addrman_db(void)
@@ -2962,7 +2584,8 @@ void AddPeerAddress(CIface *iface, const char *hostname, int port)
 
   /* add peer to tracking database. */
   peer = shpeer_init(iface->name, addr_str);
-  uevent_new_peer(GetCoinIndex(iface), peer);
+  create_uevent_verify_peer(GetCoinIndex(iface), peer);
+fprintf(stderr, "DEBUG: AddPeerAddress: host '%s' @ port %d\n", hostname, port);
 }
 
 
@@ -2987,7 +2610,6 @@ void emc2_close_free(void)
       // release outbound grant (if any)
       pnode->grantOutbound.Release();
 
-      /* socket is closed by underlying 'unet' network engine pnode->CloseSocketDisconnect(); */
       pnode->Cleanup();
 
       // hold in disconnected pool until all refs are released
@@ -3216,7 +2838,7 @@ int emc2_coin_server_recv(CIface *iface, CNode *pnode, shbuf_t *buff)
   vRecv.resize(sizeof(hdr) + hdr.size);
   memcpy(&vRecv[0], data, sizeof(hdr) + hdr.size);
   shbuf_trim(buff, sizeof(hdr) + hdr.size);
-
+  
   bool fRet = emc2_coin_server_recv_msg(iface, pnode);
   if (!fRet) {
     error(SHERR_INVAL, "emc2_coin_server_recv: emc2_coin_server_recv_msg ret'd %s <%u bytes> [%s]\n", fRet ? "true" : "false", hdr.size, hdr.cmd); 
@@ -3312,9 +2934,16 @@ void emc2_server_timer(void)
 
       shbuf_t *pchBuf = descriptor_rbuff(pnode->hSocket);
       if (pchBuf) {
-        err = emc2_coin_server_recv(iface, pnode, pchBuf);
-        if (err && err != SHERR_AGAIN) {
-fprintf(stderr, "DEBUG: emc2_coin_server_recv: error %d\n", err);
+        TRY_LOCK(pnode->cs_vRecv, lockRecv);
+        if (lockRecv) {
+          timing_init("recv msg", &ts);
+          err = emc2_coin_server_recv(iface, pnode, pchBuf);
+          if (err && err != SHERR_AGAIN) {
+            error(err, "emc2_coin_server_recv");
+            pnode->CloseSocketDisconnect("emc2_coin_server_recv");
+            continue;
+          }
+          timing_term(EMC2_COIN_IFACE, "recv msg", &ts);
         }
       }
 

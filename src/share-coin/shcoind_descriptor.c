@@ -243,7 +243,7 @@ void descriptor_list_print(void)
       if (0 == fstat(fd, &st)) {
         sprintf(buf, "[#%-4.4d] unknown <%s>",
             fd, S_ISSOCK(st.st_mode) ? "socket" : "file");
-        shcoind_log(buf);
+        shcoind_info("descriptor_list_print", buf);
       }
       continue;
     }
@@ -257,14 +257,14 @@ void descriptor_list_print(void)
     } else if (S_ISREG(st.st_mode)) {
       sprintf(buf+strlen(buf), " <valid file>");
     }
-    shcoind_log(buf);
+    shcoind_info("descriptor_list_print", buf);
   }
 
   /* totals */
   sprintf(buf, "[total : open(%llu) access(%llu) close(%llu)]",
       _total_descriptor_claim, _total_descriptor_mark,
       _total_descriptor_release);
-  shcoind_log(buf);
+  shcoind_info("descriptor_list_print", buf);
 
   /* averages */
   double openf = (double)_total_descriptor_claim / 
@@ -302,8 +302,8 @@ void descriptor_rbuff_add(int fd, unsigned char *data, size_t data_len)
 
   d = (_descriptor_table + fd);
   if (!d->flag) {
-    sprintf(errbuf, "descriptor_append: invalid fd %d data append <%d bytes>.\n", fd, data_len);
-    shcoind_log(errbuf);
+    sprintf(errbuf, "invalid fd %d data append <%d bytes>.\n", fd, data_len);
+    shcoind_info("descriptor_append", errbuf);
     return;
   }
  

@@ -74,7 +74,7 @@ void usage_help(void)
       "Virtual currency daemon for the Share Library Suite.\n"
       "\n"
       "Network Options:\n"
-      "\t--max-conn <#>\tThe maximum number of incoming coin-service connections.\n"
+      "\t--max-conn <#>\tThe maximum number of incoming coin-service connections. (default: 300)\n"
       "\t--no-seed\tPrevent pre-defined seed IP addresses from being used.\n"
       "\t--check-addr\tRe-verify the external IP address used by this machine.\n"
       "\t--no-usde\tDisable the USDE coin service.\n"

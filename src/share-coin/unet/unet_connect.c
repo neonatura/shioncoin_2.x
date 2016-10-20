@@ -95,7 +95,7 @@ int unet_connect(int mode, struct sockaddr *net_addr, SOCKET *sk_p)
     /* record successfull connection */
     shpeer_t *peer = shpeer_init(
         (char *)unet_mode_label(mode), (char *)shaddr_print(net_addr));
-    shnet_track_mark(bind->peer_db, peer, 1);
+    unet_peer_incr(mode, peer);
     shpeer_free(&peer);
   }
 

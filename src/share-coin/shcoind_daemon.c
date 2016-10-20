@@ -51,12 +51,14 @@ void shcoind_poll_msg_queue(void)
       shbuf_trim(server_msg_buff, sizeof(uint32_t));
       if (shbuf_size(server_msg_buff) < sizeof(tx_app_msg_t)) return;
       app = (tx_app_msg_t *)shbuf_data(server_msg_buff);
-      if (0 != strcasecmp(app->app_peer.label, "usde"))
-        break;
-      if (app->app_peer.type == SHNET_PEER_IPV4) {
-        memcpy(&in_addr, &app->app_peer.addr.sin_addr, sizeof(struct in_addr));
-        strcpy(host_buf, inet_ntoa(in_addr));
-        start_node_peer(host_buf, ntohs(app->app_peer.addr.sin_port));
+
+      /* shared is notifying about a remote application */
+      if (0 == strcmp(app->app_peer.label, "shc")) {
+        unet_peer_incr(UNET_SHC, &app->app_peer);
+      } else if (0 == strcmp(app->app_peer.label, "usde")) {
+        unet_peer_incr(UNET_USDE, &app->app_peer);
+      } else if (0 == strcmp(app->app_peer.label, "emc2")) {
+        unet_peer_incr(UNET_EMC2, &app->app_peer);
       }
       break;
 
@@ -153,7 +155,7 @@ void daemon_server(void)
     }
 
     /* handle network communication. */
-    unet_cycle(0.2); /* max idle 200ms */
+    unet_cycle(0.12); /* max idle 120ms */
 
     /* handle libshare message queue */
     shcoind_poll_msg_queue();

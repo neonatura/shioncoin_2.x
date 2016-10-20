@@ -101,7 +101,7 @@ int unet_accept(int mode, SOCKET *sk_p)
     char buf[256];
 
     sprintf(buf, "unet_accept: socket descriptor (%u) exceeds supported maximum.", (unsigned int)cli_fd);
-    unet_log(mode, buf); 
+    shcoind_info(unet_mode_label(mode), buf);
 
     /* exceeds supported limit (hard-coded) */
     shnet_close(cli_fd);
@@ -109,17 +109,20 @@ int unet_accept(int mode, SOCKET *sk_p)
   }
 
   if (mode < MAX_UNET_COIN_MODES) {
+    /* only one connection allowed per origin IP address for coin services */
     if (unet_peer_find(mode, shaddr(cli_fd))) {
       sprintf(buf, "unet_accept: disconnecting non-unique IP origin: %s", shaddr_print(shaddr(cli_fd))); 
-      unet_log(mode, buf);
+      shcoind_info(unet_mode_label(mode), buf);
 
       /* only one IP origin address per coin service allowed */
       shnet_close(cli_fd);
       return (SHERR_NOTUNIQ);
     }
+
+    /* loop-back connections are not permitted */
     if (unet_local_verify_fd(cli_fd)) {
       sprintf(buf, "unet_accept: disconnecting loopback IP origin: %s", shaddr_print(shaddr(cli_fd))); 
-      unet_log(mode, buf);
+      shcoind_info(unet_mode_label(mode), buf);
 
       /* only non-local IP address permitted. */
       shnet_close(cli_fd);

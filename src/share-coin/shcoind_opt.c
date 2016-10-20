@@ -75,7 +75,7 @@ static void opt_set_defaults(void)
   if (isdigit(*buf))
     opt_num_set(OPT_MAX_CONN, MAX(0, atoi(buf)));
   if (opt_num(OPT_MAX_CONN) == 0)
-    opt_num_set(OPT_MAX_CONN, 512); /* default */
+    opt_num_set(OPT_MAX_CONN, 300); /* default */
 
   strncpy(buf, shpref_get("shcoind.net.seed", ""), sizeof(buf)-1);
   if (tolower(*buf) == 'f')
