@@ -4355,20 +4355,145 @@ Value rpc_tx_list(CIface *iface, const Array& params, bool fHelp)
 
 Value rpc_tx_pool(CIface *iface, const Array& params, bool fHelp)
 {
-  CTxMemPool *pool = GetTxMemPool(iface);
 
   if (fHelp || params.size() != 0)
     throw runtime_error(
         "tx.pool\n"
-        "Returns all transaction ids awaiting confirmation.");
+        "Returns all transaction awaiting confirmation.");
 
-  vector<uint256> vtxid;
+  CTxMemPool *pool = GetTxMemPool(iface);
+  int ifaceIndex = GetCoinIndex(iface);
 
   Array a;
+  Object obj;
   if (pool) {
-    pool->queryHashes(vtxid);
-    BOOST_FOREACH(const uint256& hash, vtxid)
-      a.push_back(hash.ToString());
+    LOCK(pool->cs);
+
+    BOOST_FOREACH(const PAIRTYPE(uint256, CTransaction)& r, pool->mapTx) {
+      CTransaction *tx = (CTransaction *)(&r.second);
+      a.push_back(tx->ToValue(ifaceIndex));
+    }
+  }
+
+  return a;
+}
+
+Value rpc_tx_prune(CIface *iface, const Array& params, bool fHelp)
+{
+
+  if (fHelp || params.size() != 0)
+    throw runtime_error(
+        "tx.prune\n"
+        "Revert pool transactions with an unknown or spent input.\n"
+        );
+
+  CTxMemPool *pool = GetTxMemPool(iface);
+  CWallet *wallet = GetWallet(iface);
+
+  Array a;
+  if (iface->enabled && pool && wallet) {
+    LOCK(pool->cs);
+
+    vector<uint256> pool_revert; 
+    BOOST_FOREACH(const PAIRTYPE(uint256, CTransaction)& r, pool->mapTx) {
+      const CTransaction& tx = r.second;
+      vector<CWalletTx> revert;
+      bool fValid = true;
+
+      BOOST_FOREACH(const CTxIn& in, tx.vin) {
+        if (pool->mapTx.count(in.prevout.hash) != 0)
+          continue; /* dependant on another tx in pool */
+
+        CTransaction prevtx;
+        const uint256& prevhash = in.prevout.hash;
+
+        if (!GetTransaction(iface, prevhash, prevtx, NULL)) {
+          /* the input tx is unknown. */
+          fValid = false;
+          continue;
+        }
+
+        const CTxOut& out = prevtx.vout[in.prevout.n];
+        if (!wallet->IsMine(out)) {
+          /* we are attempting to spend someone else's input */
+          fValid = false;
+          continue;
+        }
+
+        CWalletTx wtx(wallet, prevtx);
+        if (wtx.IsSpent(in.prevout.n)) {
+          /* we are attempting to double-spend */
+          revert.push_back(wtx);
+          fValid = false;
+          continue;
+        }
+      }
+      if (fValid)
+        continue; /* a-ok boss */
+
+      BOOST_FOREACH(const CWalletTx& wtx, revert) {
+        /* insert prevout transaction back into wallet. */
+        uint256 tx_hash = wtx.GetHash();
+        wallet->mapWallet[tx_hash] = wtx;
+      }
+
+      pool_revert.push_back(tx.GetHash());
+    }
+
+    /* erase invalid entries from pool */
+    BOOST_FOREACH(uint256 hash, pool_revert) {
+      pool->mapTx.erase(hash);
+    }
+  }
+
+  return a;
+}
+
+Value rpc_tx_purge(CIface *iface, const Array& params, bool fHelp)
+{
+
+  if (fHelp || params.size() != 0)
+    throw runtime_error(
+        "tx.purge\n"
+        "Reverts all transaction awaiting confirmation.");
+
+  CTxMemPool *pool = GetTxMemPool(iface);
+  CWallet *wallet = GetWallet(iface);
+
+  Array a;
+  Object obj;
+  if (iface->enabled && pool && wallet) {
+    LOCK(pool->cs);
+
+    BOOST_FOREACH(const PAIRTYPE(uint256, CTransaction)& r, pool->mapTx) {
+      const CTransaction& tx = r.second;
+      CTransaction prevtx;
+
+      BOOST_FOREACH(const CTxIn& in, tx.vin) {
+        const uint256& prevhash = in.prevout.hash;
+
+        if (pool->mapTx.count(prevhash) != 0)
+          continue; /* moot */
+
+        if (!GetTransaction(iface, prevhash, prevtx, NULL))
+          continue; /* dito */
+
+        if (!wallet->IsMine(prevtx))
+          continue; /* no longer owner */
+
+        CWalletTx wtx(wallet, prevtx);
+        if (wtx.IsSpent(in.prevout.n))
+          continue; /* already spent */
+
+        /* push pool transaction's inputs back into wallet. */
+        uint256 tx_hash = wtx.GetHash();
+        wallet->mapWallet[tx_hash] = wtx;
+
+        a.push_back(tx_hash.GetHex());
+      }
+    }
+
+    pool->mapTx.clear();
   }
 
   return a;
@@ -4678,6 +4803,8 @@ static const CRPCCommand vRPCCommands[] =
     { "tx.getraw",            &rpc_getrawtransaction},
     { "tx.list",              &rpc_tx_list},
     { "tx.pool",              &rpc_tx_pool},
+    { "tx.prune",             &rpc_tx_prune},
+    { "tx.purge",             &rpc_tx_purge},
     { "wallet.addr",          &rpc_wallet_addr},
     { "wallet.addrlist",      &rpc_wallet_addrlist},
     { "wallet.balance",       &rpc_wallet_balance},

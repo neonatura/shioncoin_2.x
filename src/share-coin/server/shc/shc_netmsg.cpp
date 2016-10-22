@@ -398,6 +398,7 @@ fprintf(stderr, "DEBUG: ProcessMessage: Must have a version message before anyth
       return error(SHERR_INVAL, "message addr size() = %d", vAddr.size());
     }
 
+#if 0
     // Store the new addresses
     vector<CAddress> vAddrOk;
     int64 nNow = GetAdjustedTime();
@@ -443,24 +444,19 @@ fprintf(stderr, "DEBUG: ProcessMessage: Must have a version message before anyth
       if (fReachable)
         vAddrOk.push_back(addr);
     }
-
-    int cnt = 0;
     BOOST_FOREACH(const CAddress &addr, vAddrOk) {
       AddPeerAddress(iface, addr.ToStringIP().c_str(), addr.GetPort());
     }
-#if 0
-    addrman.Add(vAddrOk, pfrom->addr, 2 * 60 * 60);
 #endif
 
+    BOOST_FOREACH(CAddress& addr, vAddr) {
+      AddPeerAddress(iface, addr.ToStringIP().c_str(), addr.GetPort());
+    }
 
 
     if (vAddr.size() < 1000)
       pfrom->fGetAddr = false;
 fprintf(stderr, "DEBUG: RECV 'addr': pfrom->fGetAddr = %s\n", pfrom->fGetAddr ? "true" : "false");
-#if 0
-    if (pfrom->fOneShot)
-      pfrom->fDisconnect = true;
-#endif
   }
 
 
@@ -786,7 +782,6 @@ fprintf(stderr, "DEBUG: ProcessMessage[tx]: block.nDoS = %d\n", block.nDoS);
 #endif
 
     pfrom->vAddrToSend = GetAddresses(iface, SHC_MAX_GETADDR);
-fprintf(stderr, "DEBUG: RECV 'getaddr': pfrom->vAddrToSend.size() = %d\n", pfrom->vAddrToSend.size()); 
   }
 
 
@@ -1131,8 +1126,11 @@ bool shc_SendMessages(CIface *iface, CNode* pto, bool fSendTrickle)
     /* msg: "addr" */
     if (!pto->vAddrToSend.empty()) {
       const CAddress& addr = pto->vAddrToSend.front();
-      if (pto->setAddrKnown.insert(addr).second) { /* check for dups */
-        pto->PushAddress(addr);
+      if (0 == pto->setAddrKnown.count(addr)) {
+        vector<CAddress> vAddr;
+        vAddr.push_back(addr);
+        pto->PushMessage("addr", vAddr);
+        pto->setAddrKnown.insert(addr);
       }
       pto->vAddrToSend.erase(pto->vAddrToSend.begin());
 
@@ -1154,7 +1152,7 @@ bool shc_SendMessages(CIface *iface, CNode* pto, bool fSendTrickle)
             continue;
           }
 
-  #if 0
+#if 0
           // trickle out tx inv to protect privacy
           if (inv.type == MSG_TX && !fSendTrickle)
           {
@@ -1181,7 +1179,7 @@ bool shc_SendMessages(CIface *iface, CNode* pto, bool fSendTrickle)
               continue;
             }
           }
-  #endif
+#endif
 
           // returns true if wasn't already contained in the set
           if (pto->setInventoryKnown.insert(inv).second)

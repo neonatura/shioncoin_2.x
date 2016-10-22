@@ -122,7 +122,7 @@ now = shtime();
 #endif
     /* transfer peer to new connection event */
     create_uevent_connect_peer(e->mode, peer);
-    e->data = NULL;
+    e->data = NULL; /* prevent event data from being free'd */
 
     e->fd = 0;
     return (0); /* dispose of event */
@@ -212,7 +212,10 @@ int uevent_cycle_peer_verify(uevent_t *e)
     return (err);
   
 fin:
-  shpeer_free(&peer);
+  peer = (shpeer_t *)e->data;
+  if (peer)
+    shpeer_free(&peer);
+
   return (0); /* event completed */
 }
 
