@@ -112,7 +112,7 @@ bool emc2_LoadWallet(void)
 
   printf("%s", strErrors.str().c_str());
 
-  RegisterWallet(emc2Wallet);
+  //RegisterWallet(emc2Wallet);
 
   CBlockIndex *pindexRescan = GetBestBlockIndex(EMC2_COIN_IFACE);
   if (GetBoolArg("-rescan"))
@@ -533,4 +533,44 @@ void EMC2Wallet::AddSupportingTransactions(CWalletTx& wtx)
   EMC2TxDB txdb;
   wtx.AddSupportingTransactions(txdb);
   txdb.Close();
+}
+
+bool EMC2Wallet::UnacceptWalletTransaction(const CTransaction& tx)
+{
+  CIface *iface = GetCoinByIndex(EMC2_COIN_IFACE);
+
+  if (!core_UnacceptWalletTransaction(iface, tx))
+    return (false);
+
+  {
+    EMC2TxDB txdb;
+
+    BOOST_FOREACH(const CTxIn& in, tx.vin) {
+      const uint256& prev_hash = in.prevout.hash; 
+      int nTxOut = in.prevout.n;
+
+      CTxIndex txindex;
+      if (!txdb.ReadTxIndex(prev_hash, txindex))
+        continue;
+
+      if (nTxOut >= txindex.vSpent.size())
+        continue; /* bad */
+
+      /* set output as unspent */
+      txindex.vSpent[nTxOut].SetNull();
+      txdb.UpdateTxIndex(prev_hash, txindex);
+    }
+
+    /* remove pool tx from db */
+    txdb.EraseTxIndex(tx);
+
+    txdb.Close();
+  }
+
+  return (true);
+}
+
+int64 EMC2Wallet::GetBlockValue(int nHeight, int64 nFees)
+{
+  return (emc2_GetBlockValue(nHeight, nFees));
 }

@@ -432,9 +432,7 @@ bool CTransaction::ReadTx(int ifaceIndex, uint256 txHash, uint256 *hashBlock)
 
   if (hashBlock) {
     *hashBlock = block->GetHash();
-    if (*hashBlock == 0) {
-      fprintf(stderr, "DEBUG: ReadTx: invalid hash 0 \n");
-    }
+//    if (*hashBlock == 0) { fprintf(stderr, "DEBUG: ReadTx: invalid hash 0 \n"); }
   }
 
   Init(*tx);
@@ -1578,148 +1576,6 @@ bool CBlock::ReadFromDisk(const CBlockIndex* pindex, bool fReadTransactions)
 
   return (ReadBlock(nHeight));
 }
-#if 0
-bool CBlock::ReadFromDisk(const CBlockIndex* pindex, bool fReadTransactions)
-{
-  CIface *iface = GetCoinByIndex(ifaceIndex);
-  char errbuf[1024];
-  bool ok;
-
-  if (!pindex)
-    return (false);
-
-  ok = ReadBlock(pindex->nHeight);
-  if (!ok) {
-    sprintf(errbuf, "CBlock::ReadFromDisk: error obtaining block height %d (hash '%s').", pindex->nHeight, pindex->GetBlockHash().GetHex().c_str());
-    return error(SHERR_INVAL, errbuf);
-  }
-
-//  if (pindex->pprev && GetHash() != pindex->GetBlockHash())
-  if (GetHash() != pindex->GetBlockHash()) {
-    /* search deleted blocks */
-//    ok = ReadArchBlock(pindex->GetBlockHash());
-ok = false; /* DEBUG: */
-    if (!ok) {
-      sprintf(errbuf, "CBlock::ReadFromDisk: block hash '%s' does not match block index '%s' for height %d:", GetHash().GetHex().c_str(), pindex->GetBlockHash().GetHex().c_str(), pindex->nHeight);
-      return error(SHERR_INVAL, errbuf);
-    }
-fprintf(stderr, "DEBUG: ReadFromDisk: retrieved archived record.\n"); 
-  }
-
-#if 0 /* DEBUG: */
-  if (!CheckBlock()) {
-    unet_log(ifaceIndex, "CBlock::ReadFromDisk: block validation failure.");
-    return (false);
-  }
-#endif
-  
-  return (true);
-}
-#endif
-
-#if 0
-bool CBlock::ReadBlock(uint64_t nHeight)
-{
-  CIface *iface = GetCoinByIndex(ifaceIndex);
-  CDataStream sBlock(SER_DISK, CLIENT_VERSION);
-  size_t sBlockLen;
-  unsigned char *sBlockData;
-  char errbuf[1024];
-  bc_t *bc;
-  int err;
-
-  bc = GetBlockChain(iface);
-  if (!bc)
-    return (false);
-
-  err = bc_get(bc, nHeight, &sBlockData, &sBlockLen);
-  if (err) {
-    sprintf(errbuf, "CBlock::ReadBlock[height %d]: %s (sherr %d).",
-      (int)nHeight, sherrstr(err), err);
-    unet_log(ifaceIndex, errbuf);
-    return (false);
-  }
-
-  /* serialize binary data into block */
-  sBlock.write((const char *)sBlockData, sBlockLen);
-  sBlock >> *this;
-  free(sBlockData);
-
-    uint256 cur_hash = GetHash();
-{
-uint256 t_hash;
-bc_hash_t b_hash;
-memcpy(b_hash, cur_hash.GetRaw(), sizeof(bc_hash_t));
-t_hash.SetRaw(b_hash);
-if (!bc_hash_cmp(t_hash.GetRaw(), cur_hash.GetRaw())) {
-fprintf(stderr, "DEBUG: ReadBlock: error comparing self-hash ('%s' / '%s')\n", cur_hash.GetHex().c_str(), t_hash.GetHex().c_str());
-}
-}
-  {
-    uint256 db_hash;
-    bc_hash_t ret_hash;
-    err = bc_get_hash(bc, nHeight, ret_hash);
-    if (err) {
-fprintf(stderr, "DEBUG: CBlock::ReadBlock: bc_get_hash err %d\n", err); 
-      return (false);
-    }
-    db_hash.SetRaw((unsigned int *)ret_hash);
-
-    if (!bc_hash_cmp(db_hash.GetRaw(), cur_hash.GetRaw())) {
-fprintf(stderr, "DEBUG: CBlock::ReadBlock: hash '%s' from loaded block at pos %d has invalid hash of '%s'\n", db_hash.GetHex().c_str(), nHeight, cur_hash.GetHex().c_str());
-print();
-        SetNull();
-
-  return (false);
-    }
-  }
-
-  if (!CheckBlock()) {
-    unet_log(ifaceIndex, "CBlock::ReadBlock: block validation failure.");
-    return (false);
-  }
-
-fprintf(stderr, "DEBUG: CBlock::ReadBlock: GET retrieved pos (%d): hash '%s'\n", nHeight, GetHash().GetHex().c_str());
-
-  return (true);
-}
-#endif
-
-#if 0
-bool CBlock::ReadBlock(uint64_t nHeight)
-{
-  switch (ifaceIndex) {
-    case SHC_COIN_IFACE:
-      {
-        SHCBlock *block = (SHCBlock *)this;
-        return (block->ReadBlock(nHeight));
-      }
-    case USDE_COIN_IFACE:
-      {
-        USDEBlock *block = (USDEBlock *)this;
-        return (block->ReadBlock(nHeight));
-      }
-  }
-  return (false);
-}
-
-bool CBlock::CheckBlock()
-{
-  switch (ifaceIndex) {
-    case SHC_COIN_IFACE:
-      {
-        SHCBlock *block = (SHCBlock *)this;
-        return (block->CheckBlock());
-      }
-    case USDE_COIN_IFACE:
-      {
-        USDEBlock *block = (USDEBlock *)this;
-        return (block->CheckBlock());
-      }
-  }
-  return (false);
-}
-#endif
 
 bool CTransaction::CheckTransaction(int ifaceIndex)
 {
@@ -1837,7 +1693,8 @@ bool CBlock::CheckTransactionInputs(int ifaceIndex)
 
 bool CTransaction::FetchInputs(CTxDB& txdb, const map<uint256, CTxIndex>& mapTestPool, CBlock *pblockNew, bool fMiner, MapPrevTx& inputsRet, bool& fInvalid)
 {
-  CIface *iface = GetCoinByIndex(txdb.ifaceIndex);
+  int ifaceIndex = txdb.ifaceIndex;
+  CIface *iface = GetCoinByIndex(ifaceIndex);
 
   // FetchInputs can return false either because we just haven't seen some inputs
   // (in which case the transaction should be stored as an orphan)
@@ -1884,8 +1741,9 @@ bool CTransaction::FetchInputs(CTxDB& txdb, const map<uint256, CTxIndex>& mapTes
       CTxMemPool *mempool = GetTxMemPool(iface);
       {
         LOCK(mempool->cs);
-        if (!mempool->exists(prevout.hash))
-          return error(SHERR_INVAL, "FetchInputs() : %s mempool Tx prev not found %s", GetHash().ToString().substr(0,10).c_str(),  prevout.hash.ToString().substr(0,10).c_str());
+        if (!mempool->exists(prevout.hash)) {
+          return error(SHERR_INVAL, "FetchInputs: %s: mempool Tx prev not found %s: %s", GetHash().ToString().c_str(),  prevout.hash.ToString().c_str(), ToString(ifaceIndex).c_str());
+}
         txPrev = mempool->lookup(prevout.hash);
       }
       if (!fFound)
@@ -2039,6 +1897,29 @@ bool core_DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex, CBlock *pblock)
   return true;
 }
 
+bool core_DisconnectBlock(CBlockIndex* pindex, CBlock *pblock)
+{
+  CIface *iface = GetCoinByIndex(pblock->ifaceIndex);
+  int err;
+
+  if (!iface || !iface->enabled)
+    return error(SHERR_INVAL, "coin interface not enabled.");
+
+  Debug("DisonnectBlock[%s]: disconnect block '%s' (height %d).", iface->name, pindex->GetBlockHash().GetHex().c_str(), (int)pindex->nHeight);
+
+  // Disconnect in reverse order
+  for (int i = pblock->vtx.size()-1; i >= 0; i--)
+    if (!pblock->vtx[i].DisconnectInputs(pblock->ifaceIndex))
+      return false;
+
+  return true;
+}
+
+bool CBlock::DisconnectBlock(CBlockIndex *pindex)
+{
+  return (core_DisconnectBlock(pindex, this));
+}
+
 bool VerifyTxHash(CIface *iface, uint256 hashTx)
 {
   bc_t *bc = GetBlockTxChain(iface);
@@ -2051,47 +1932,6 @@ bool VerifyTxHash(CIface *iface, uint256 hashTx)
   return (true);
 }
 
-bool CTransaction::DisconnectInputs(CTxDB& txdb)
-{
-  // Relinquish previous transactions' spent pointers
-  if (!IsCoinBase())
-  {
-    BOOST_FOREACH(const CTxIn& txin, vin)
-    {
-      COutPoint prevout = txin.prevout;
-
-      // Get prev txindex from disk
-      CTxIndex txindex;
-      if (!txdb.ReadTxIndex(prevout.hash, txindex))
-        return error(SHERR_INVAL, "DisconnectInputs() : ReadTxIndex failed");
-
-      if (prevout.n >= txindex.vSpent.size())
-        return error(SHERR_INVAL, "DisconnectInputs() : prevout.n out of range");
-
-      // Mark outpoint as not spent
-      txindex.vSpent[prevout.n].SetNull();
-
-      // Write back
-      if (!txdb.UpdateTxIndex(prevout.hash, txindex))
-        return error(SHERR_INVAL, "DisconnectInputs() : UpdateTxIndex failed");
-
-/* DEBUG: TODO: remove from wallet->mapCert ifCert
- * what to replace with?
- * */
-    }
-  }
-
-  // Remove transaction from index
-  // This can fail if a duplicate of this transaction was in a chain that got
-  // reorganized away. This is only possible if this transaction was completely
-  // spent, so erasing it would be a no-op anway.
-  txdb.EraseTxIndex(*this);
-
-  /* erase from bc_tx.idx */
-  EraseTx(txdb.ifaceIndex);
-
-  return true;
-}
 
 bool CTransaction::EraseTx(int ifaceIndex)
 {
@@ -2174,6 +2014,7 @@ bool core_AcceptBlock(CBlock *pblock)
   }
 
   BOOST_FOREACH(const CTransaction& tx, pblock->vtx) {
+
 #if 0 /* not standard */
     // Check that all inputs exist
     if (!tx.IsCoinBase()) {
@@ -2988,6 +2829,326 @@ CExec *CTransaction::RemoveExec(const CExec& execIn)
 
 }
 
+static bool GetCommitBranches(CBlockIndex *pbest, CBlockIndex *pindexNew, vector<CBlockIndex*>& vConnect, vector<CBlockIndex*>& vDisconnect)
+{
+  CBlockIndex* pfork = pbest;
+  CBlockIndex* plonger = pindexNew;
+ 
+  while (pfork && pfork != plonger)
+  {   
+    while (plonger->nHeight > pfork->nHeight) {
+      plonger = plonger->pprev;
+      if (!plonger)
+        return (false);
+    }
+    if (pfork == plonger)
+      break;
 
+    pfork = pfork->pprev;
+    if (!pfork)
+      return (false);
+  }
+
+  /* discon tree */
+  vDisconnect.clear();
+  for (CBlockIndex* pindex = pbest; pindex != pfork; pindex = pindex->pprev)
+    vDisconnect.push_back(pindex);
+
+  /* connect tree */
+  vConnect.clear();
+  for (CBlockIndex* pindex = pindexNew; pindex != pfork; pindex = pindex->pprev)
+    vConnect.push_back(pindex);
+  reverse(vConnect.begin(), vConnect.end());
+
+  if (vDisconnect.size() > 0) {
+    Debug("REORGANIZE: Disconnect %lu blocks; %s..\n", (unsigned long)vDisconnect.size(), pfork->GetBlockHash().ToString().c_str());
+    Debug("REORGANIZE: Connect %lu blocks; ..%s\n", (unsigned long)vConnect.size(), pindexNew->GetBlockHash().ToString().c_str());
+  }
+
+  return (true);
+}
+
+bool core_CommitBlock(CTxDB& txdb, CBlock *pblock, CBlockIndex *pindexNew)
+{
+  CIface *iface = GetCoinByIndex(pblock->ifaceIndex);
+  CBlockIndex *pbest = GetBestBlockIndex(pblock->ifaceIndex);
+  CTxMemPool *pool = GetTxMemPool(iface);
+  vector<CBlockIndex*> vConnect;
+  vector<CBlockIndex*> vDisconnect;
+  map<CBlockIndex *, CBlock *> mConnectBlocks;
+  map<CBlockIndex *, CBlock *> mDisconBlocks;
+  vector<CBlock *> vFree;
+  bool fValid = true;
+
+  if  (!GetCommitBranches(pbest, pindexNew, vConnect, vDisconnect)) {
+    return (error(SHERR_INVAL, "core_CommitBlock: error obtaining commit branches."));
+  }
+
+  if (!txdb.TxnBegin()) {
+    return error(SHERR_INVAL, "core_CommitBlock: error initializing db transaction.");
+  }
+
+  if (pblock->hashPrevBlock != pbest->GetBlockHash()) {
+    pblock->WriteArchBlock();
+  }
+
+  /* discon blocks */
+  BOOST_FOREACH(CBlockIndex* pindex, vDisconnect) {
+    const uint256& hash = pindex->GetBlockHash();
+    CBlock *block;
+
+    block = GetBlockByHash(iface, hash);
+    if (!block)
+      block = GetArchBlockByHash(iface, hash); /* orphan */
+    if (!block) {
+      error(SHERR_INVAL, "core_CommitBlock: error obtaining disconnect block '%s'", hash.GetHex().c_str());
+      fValid = false;
+      break;
+    }
+
+    mDisconBlocks[pindex] = block;
+    vFree.push_back(block);
+  }
+  if (!fValid)
+    goto fin;
+
+  /* connect blocks */
+  BOOST_FOREACH(CBlockIndex *pindex, vConnect) {
+    const uint256& hash = pindex->GetBlockHash();
+    CBlock *block;
+
+    if (pindexNew->GetBlockHash() == pindex->GetBlockHash()) {
+      block = pblock;
+    } else {
+      block = GetBlockByHash(iface, hash);
+      if (!block)
+        block = GetArchBlockByHash(iface, hash); /* orphan */
+      if (block)
+        vFree.push_back(block);
+    }
+    if (!block) {
+      error(SHERR_INVAL, "core_CommitBlock: error obtaining connect block '%s'", hash.GetHex().c_str());
+      fValid = false;
+      break;
+    }
+
+    mConnectBlocks[pindex] = block;
+  }
+  if (!fValid)
+    goto fin;
+
+  /* perform discon */
+  BOOST_FOREACH(PAIRTYPE(CBlockIndex *, CBlock *) r, mDisconBlocks) {
+    CBlockIndex *pindex = r.first;
+    CBlock *block = r.second;
+
+    if (!block->DisconnectBlock(txdb, pindex)) {
+      error(SHERR_INVAL, "Reorganize() : DisonnectBlock %s failed", pindex->GetBlockHash().ToString().c_str());
+      fValid = false;
+      break;
+    }
+
+    /* add discon block tx's into pending pool */
+    BOOST_FOREACH(CTransaction& tx, block->vtx) {
+      if (tx.IsCoinBase())
+        continue;
+      tx.AcceptToMemoryPool(txdb, false);
+    }
+  }
+  if (!fValid)
+    goto fin;
+
+  /* perform connect */
+  BOOST_FOREACH(PAIRTYPE(CBlockIndex *, CBlock *) r, mConnectBlocks) {
+    CBlockIndex *pindex = r.first;
+    CBlock *block = r.second;
+
+    if (!block->ConnectBlock(txdb, pindex)) {
+      error(SHERR_INVAL, "Reorganize() : ConnectBlock %s failed", pindex->GetBlockHash().ToString().c_str());
+      fValid = false;
+      break;
+    }
+
+    /* remove connectd block tx's from pool */ 
+    BOOST_FOREACH(CTransaction& tx, block->vtx) {
+      pool->remove(tx);
+    }
+  }
+  if (!fValid)
+    goto fin;
+
+  if (!txdb.WriteHashBestChain(pindexNew->GetBlockHash())) {
+    fValid = false;
+    error(SHERR_INVAL, "Reorganize() : WriteHashBestChain failed");
+    goto fin;
+  }
+
+  // Make sure it's successfully written to disk before changing memory structure
+  if (!txdb.TxnCommit()) {
+    fValid = false;
+    error(SHERR_INVAL, "Reorganize() : TxnCommit failed");
+    goto fin;
+  }
+
+  // Disconnect shorter branch
+  BOOST_FOREACH(CBlockIndex* pindex, vDisconnect)
+    if (pindex->pprev)
+      pindex->pprev->pnext = NULL;
+
+  // Connect longer branch
+  BOOST_FOREACH(CBlockIndex* pindex, vConnect)
+    if (pindex->pprev)
+      pindex->pprev->pnext = pindex;
+
+fin:
+  if (!fValid) {
+    txdb.TxnAbort(); /* abort the ship, matey */
+    pblock->InvalidChainFound(pindexNew);
+    error(SHERR_INVAL, "core_CommitBlock: invalid chain block: %s", pblock->ToString().c_str());
+  }
+
+  BOOST_FOREACH(CBlock *block, vFree) {
+    delete block;
+  }
+
+  return (fValid);
+}
+
+bool core_CommitBlock(CBlock *pblock, CBlockIndex *pindexNew)
+{
+  CIface *iface = GetCoinByIndex(pblock->ifaceIndex);
+  CBlockIndex *pbest = GetBestBlockIndex(pblock->ifaceIndex);
+  CTxMemPool *pool = GetTxMemPool(iface);
+  vector<CBlockIndex*> vConnect;
+  vector<CBlockIndex*> vDisconnect;
+  map<CBlockIndex *, CBlock *> mConnectBlocks;
+  map<CBlockIndex *, CBlock *> mDisconBlocks;
+  vector<CBlock *> vFree;
+  bool fValid = true;
+
+  if  (!GetCommitBranches(pbest, pindexNew, vConnect, vDisconnect)) {
+    return (error(SHERR_INVAL, "core_CommitBlock: error obtaining commit branches."));
+  }
+
+  if (pblock->hashPrevBlock != pbest->GetBlockHash()) {
+    pblock->WriteArchBlock();
+  }
+
+  /* discon blocks */
+  BOOST_FOREACH(CBlockIndex* pindex, vDisconnect) {
+    const uint256& hash = pindex->GetBlockHash();
+    CBlock *block;
+
+    block = GetBlockByHash(iface, hash);
+    if (!block)
+      block = GetArchBlockByHash(iface, hash); /* orphan */
+    if (!block) {
+      error(SHERR_INVAL, "core_CommitBlock: error obtaining disconnect block '%s'", hash.GetHex().c_str());
+      fValid = false;
+      break;
+    }
+
+    mDisconBlocks[pindex] = block;
+    vFree.push_back(block);
+  }
+  if (!fValid)
+    goto fin;
+
+  /* connect blocks */
+  BOOST_FOREACH(CBlockIndex *pindex, vConnect) {
+    const uint256& hash = pindex->GetBlockHash();
+    CBlock *block;
+
+    if (pindexNew->GetBlockHash() == pindex->GetBlockHash()) {
+      block = pblock;
+    } else {
+      block = GetBlockByHash(iface, hash);
+      if (!block)
+        block = GetArchBlockByHash(iface, hash); /* orphan */
+      if (block)
+        vFree.push_back(block);
+    }
+    if (!block) {
+      error(SHERR_INVAL, "core_CommitBlock: error obtaining connect block '%s'", hash.GetHex().c_str());
+      fValid = false;
+      break;
+    }
+
+    mConnectBlocks[pindex] = block;
+  }
+  if (!fValid)
+    goto fin;
+
+  /* perform discon */
+  BOOST_FOREACH(PAIRTYPE(CBlockIndex *, CBlock *) r, mDisconBlocks) {
+    CBlockIndex *pindex = r.first;
+    CBlock *block = r.second;
+
+    if (!block->DisconnectBlock(pindex)) {
+      error(SHERR_INVAL, "Reorganize() : DisonnectBlock %s failed", pindex->GetBlockHash().ToString().c_str());
+      fValid = false;
+      break;
+    }
+
+  }
+  if (!fValid)
+    goto fin;
+
+  /* perform connect */
+  BOOST_FOREACH(PAIRTYPE(CBlockIndex *, CBlock *) r, mConnectBlocks) {
+    CBlockIndex *pindex = r.first;
+    CBlock *block = r.second;
+
+    if (!block->ConnectBlock(pindex)) {
+      error(SHERR_INVAL, "Reorganize() : ConnectBlock %s failed", pindex->GetBlockHash().ToString().c_str());
+      fValid = false;
+      break;
+    }
+  }
+  if (!fValid)
+    goto fin;
+
+  // Disconnect shorter branch
+  BOOST_FOREACH(CBlockIndex* pindex, vDisconnect)
+    if (pindex->pprev)
+      pindex->pprev->pnext = NULL;
+
+  // Connect longer branch
+  BOOST_FOREACH(CBlockIndex* pindex, vConnect)
+    if (pindex->pprev)
+      pindex->pprev->pnext = pindex;
+
+  /* add discon block tx's into pending pool */
+  BOOST_FOREACH(PAIRTYPE(CBlockIndex *, CBlock *) r, mDisconBlocks) {
+    CBlock *block = r.second;
+
+    BOOST_FOREACH(CTransaction& tx, block->vtx) {
+      if (tx.IsCoinBase())
+        continue;
+      tx.AcceptPool(false);
+    }
+  }
+
+  /* remove connectd block tx's from pool */ 
+  BOOST_FOREACH(PAIRTYPE(CBlockIndex *, CBlock *) r, mConnectBlocks) {
+    CBlock *block = r.second;
+
+    BOOST_FOREACH(CTransaction& tx, block->vtx) {
+      pool->remove(tx);
+    }
+  }
+
+fin:
+  if (!fValid) {
+    pblock->InvalidChainFound(pindexNew);
+    error(SHERR_INVAL, "core_CommitBlock: invalid chain block: %s", pblock->ToString().c_str());
+  }
+
+  BOOST_FOREACH(CBlock *block, vFree) {
+    delete block;
+  }
+
+  return (fValid);
+}
 
 

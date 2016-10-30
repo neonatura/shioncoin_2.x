@@ -113,7 +113,7 @@ bool test_LoadWallet(void)
 
   printf("%s", strErrors.str().c_str());
 
-  RegisterWallet(testWallet);
+  //RegisterWallet(testWallet);
 
 #if 0
   CBlockIndex *pindexRescan = GetBestBlockIndex(TEST_COIN_IFACE);
@@ -387,6 +387,7 @@ bool TESTWallet::CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey)
       return false;
     }
   }
+
   return true;
 }
 
@@ -537,4 +538,44 @@ void TESTWallet::AddSupportingTransactions(CWalletTx& wtx)
   TESTTxDB txdb;
   wtx.AddSupportingTransactions(txdb);
   txdb.Close();
+}
+
+bool TESTWallet::UnacceptWalletTransaction(const CTransaction& tx)
+{
+  CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
+
+  if (!core_UnacceptWalletTransaction(iface, tx))
+    return (false);
+
+  {
+    TESTTxDB txdb;
+
+    BOOST_FOREACH(const CTxIn& in, tx.vin) {
+      const uint256& prev_hash = in.prevout.hash; 
+      int nTxOut = in.prevout.n;
+
+      CTxIndex txindex;
+      if (!txdb.ReadTxIndex(prev_hash, txindex))
+        continue;
+
+      if (nTxOut >= txindex.vSpent.size())
+        continue; /* bad */
+
+      /* set output as unspent */
+      txindex.vSpent[nTxOut].SetNull();
+      txdb.UpdateTxIndex(prev_hash, txindex);
+    }
+
+    /* remove pool tx from db */
+    txdb.EraseTxIndex(tx);
+
+    txdb.Close();
+  }
+
+  return (true);
+}
+
+int64 TESTWallet::GetBlockValue(int nHeight, int64 nFees)
+{
+  return (test_GetBlockValue(nHeight, nFees));
 }

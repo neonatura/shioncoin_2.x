@@ -72,10 +72,14 @@ extern vector <CAddress> GetAddresses(CIface *iface, int max_peer);
 // get the wallet transaction with the given hash (if it exists)
 bool static GetTransaction(const uint256& hashTx, CWalletTx& wtx)
 {
-    BOOST_FOREACH(CWallet* pwallet, setpwalletRegistered)
-        if (pwallet->GetTransaction(hashTx,wtx))
-            return true;
-    return false;
+  CWallet *pwallet = GetWallet(SHC_COIN_IFACE);
+
+  if (pwallet) {
+    if (pwallet->GetTransaction(hashTx,wtx))
+      return true;
+  }
+
+  return false;
 }
 
 void shc_RelayTransaction(const CTransaction& tx, const uint256& hash)
@@ -87,8 +91,10 @@ void shc_RelayTransaction(const CTransaction& tx, const uint256& hash)
 // notify wallets about an incoming inventory (for request counts)
 void static Inventory(const uint256& hash)
 {
-    BOOST_FOREACH(CWallet* pwallet, setpwalletRegistered)
-        pwallet->Inventory(hash);
+  CWallet *pwallet = GetWallet(SHC_COIN_IFACE);
+
+  if (pwallet)
+    pwallet->Inventory(hash);
 }
 
 // ask wallets to resend their transactions
@@ -181,7 +187,7 @@ unsigned int shc_LimitOrphanTxSize(unsigned int nMaxOrphans)
 //
 
 
-static bool AlreadyHave(CIface *iface, SHCTxDB& txdb, const CInv& inv)
+static bool AlreadyHave(CIface *iface, const CInv& inv)
 {
   int ifaceIndex = GetCoinIndex(iface);
 
@@ -189,14 +195,29 @@ static bool AlreadyHave(CIface *iface, SHCTxDB& txdb, const CInv& inv)
   {
     case MSG_TX:
       {
-        bool txInMap = false;
+        bool fHave;
+
+        /* pending in mem pool */
+        fHave = false;
         {
           LOCK(SHCBlock::mempool.cs);
-          txInMap = (SHCBlock::mempool.exists(inv.hash));
+          fHave  = (SHCBlock::mempool.exists(inv.hash));
         }
-        return txInMap ||
-          SHC_mapOrphanTransactions.count(inv.hash) ||
-          txdb.ContainsTx(inv.hash);
+        if (fHave)
+          return (true);
+
+        /* committed to database */
+        fHave = false;
+        {
+          SHCTxDB txdb;
+          fHave = txdb.ContainsTx(inv.hash);
+          txdb.Close();
+        }
+        if (fHave)
+          return (true);
+
+        /* orphans */
+        return (SHC_mapOrphanTransactions.count(inv.hash));
       }
 
     case MSG_BLOCK:
@@ -204,6 +225,7 @@ static bool AlreadyHave(CIface *iface, SHCTxDB& txdb, const CInv& inv)
       return blockIndex->count(inv.hash) ||
         SHC_mapOrphanBlocks.count(inv.hash);
   }
+
   // Don't know what it is, just say we already got one
   return true;
 }
@@ -478,38 +500,38 @@ fprintf(stderr, "DEBUG: RECV 'addr': pfrom->fGetAddr = %s\n", pfrom->fGetAddr ? 
         break;
       }
     }
-    SHCTxDB txdb;
-    for (unsigned int nInv = 0; nInv < vInv.size(); nInv++)
     {
-      const CInv &inv = vInv[nInv];
+      for (unsigned int nInv = 0; nInv < vInv.size(); nInv++)
+      {
+        const CInv &inv = vInv[nInv];
 
-      inv.ifaceIndex = SHC_COIN_IFACE;
+        inv.ifaceIndex = SHC_COIN_IFACE;
 
-      if (fShutdown)
-        return true;
-      pfrom->AddInventoryKnown(inv);
+        if (fShutdown)
+          return true;
+        pfrom->AddInventoryKnown(inv);
 
-      bool fAlreadyHave = AlreadyHave(iface, txdb, inv);
-      Debug("(shc) INVENTORY: %s [%s]", 
-          inv.ToString().c_str(), fAlreadyHave ? "have" : "new");
+        bool fAlreadyHave = AlreadyHave(iface, inv);
+        Debug("(shc) INVENTORY: %s [%s]", 
+            inv.ToString().c_str(), fAlreadyHave ? "have" : "new");
 
-      if (!fAlreadyHave)
-        pfrom->AskFor(inv);
-      else if (inv.type == MSG_BLOCK && SHC_mapOrphanBlocks.count(inv.hash)) {
-        pfrom->PushGetBlocks(GetBestBlockIndex(SHC_COIN_IFACE), shc_GetOrphanRoot(SHC_mapOrphanBlocks[inv.hash]));
-      } else if (nInv == nLastBlock) {
-        // In case we are on a very long side-chain, it is possible that we already have
-        // the last block in an inv bundle sent in response to getblocks. Try to detect
-        // this situation and push another getblocks to continue.
-        std::vector<CInv> vGetData(SHC_COIN_IFACE, inv);
-        blkidx_t blkidx = *blockIndex;
-        pfrom->PushGetBlocks(blkidx[inv.hash], uint256(0));
-        if (fDebug)
-          printf("force request: %s\n", inv.ToString().c_str());
+        if (!fAlreadyHave)
+          pfrom->AskFor(inv);
+        else if (inv.type == MSG_BLOCK && SHC_mapOrphanBlocks.count(inv.hash)) {
+          pfrom->PushGetBlocks(GetBestBlockIndex(SHC_COIN_IFACE), shc_GetOrphanRoot(SHC_mapOrphanBlocks[inv.hash]));
+        } else if (nInv == nLastBlock) {
+          // In case we are on a very long side-chain, it is possible that we already have
+          // the last block in an inv bundle sent in response to getblocks. Try to detect
+          // this situation and push another getblocks to continue.
+          std::vector<CInv> vGetData(SHC_COIN_IFACE, inv);
+          blkidx_t blkidx = *blockIndex;
+          pfrom->PushGetBlocks(blkidx[inv.hash], uint256(0));
+          Debug("(shc) INVENTORY: force request: %s\n", inv.ToString().c_str());
+        }
+
+        // Track requests for our stuff
+        Inventory(inv.hash);
       }
-
-      // Track requests for our stuff
-      Inventory(inv.hash);
     }
   }
 
@@ -663,7 +685,6 @@ fprintf(stderr, "DEBUG: getheaders %d to %s\n", (pindex ? pindex->nHeight : -1),
     vector<uint256> vWorkQueue;
     vector<uint256> vEraseQueue;
     CDataStream vMsg(vRecv);
-    SHCTxDB txdb;
     CTransaction tx;
     vRecv >> tx;
 
@@ -671,6 +692,7 @@ fprintf(stderr, "DEBUG: getheaders %d to %s\n", (pindex ? pindex->nHeight : -1),
     pfrom->AddInventoryKnown(inv);
 
     bool fMissingInputs = false;
+    SHCTxDB txdb;
     if (tx.AcceptToMemoryPool(txdb, true, &fMissingInputs))
     {
       SyncWithWallets(iface, tx); /* newer scrypt-coins skip this step */
@@ -735,6 +757,7 @@ fprintf(stderr, "DEBUG: ProcessMessage[tx]: tx.NDoS = %d\n", tx.nDoS);
       pfrom->Misbehaving(tx.nDoS);
     }
 #endif
+    txdb.Close();
   }
 
 
@@ -1203,12 +1226,11 @@ bool shc_SendMessages(CIface *iface, CNode* pto, bool fSendTrickle)
     if (!pto->mapAskFor.empty()) {
       vector<CInv> vGetData;
       int64 nNow = GetTime() * 1000000;
-      SHCTxDB txdb;
 
       while (!pto->mapAskFor.empty() && (*pto->mapAskFor.begin()).first <= nNow)
       {
         const CInv& inv = (*pto->mapAskFor.begin()).second;
-        if (!AlreadyHave(iface, txdb, inv))
+        if (!AlreadyHave(iface, inv))
         {
           vGetData.push_back(inv);
           if (vGetData.size() >= 1000)

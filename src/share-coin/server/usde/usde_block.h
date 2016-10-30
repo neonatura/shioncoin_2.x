@@ -49,6 +49,62 @@ class USDE_CTxMemPool : public CTxMemPool
 
 };
 
+class USDEBlock : public CBlock
+{
+public:
+    // header
+    static const int CURRENT_VERSION=1;
+    static USDE_CTxMemPool mempool; 
+    static CBlockIndex *pindexBest;
+    static CBlockIndex *pindexGenesisBlock;// = NULL;
+    static CBigNum bnBestChainWork;// = 0;
+    static CBigNum bnBestInvalidWork;// = 0;
+    static int64 nTimeBestReceived ;//= 0;
+
+    static int64 nTargetTimespan;
+    static int64 nTargetSpacing;
+
+    USDEBlock()
+    {
+        ifaceIndex = USDE_COIN_IFACE;
+        SetNull();
+    }
+    USDEBlock(const CBlock &block)
+    {
+        ifaceIndex = USDE_COIN_IFACE;
+        SetNull();
+        *((CBlock*)this) = block;
+    }
+
+    void SetNull()
+    {
+      nVersion = USDEBlock::CURRENT_VERSION;
+      CBlock::SetNull();
+
+    }
+
+    bool SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew);
+    void InvalidChainFound(CBlockIndex* pindexNew);
+    unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast);
+    bool AcceptBlock();
+    bool IsBestChain();
+    CScript GetCoinbaseFlags();
+    bool AddToBlockIndex();
+    bool ConnectBlock(CTxDB& txdb, CBlockIndex* pindex);
+    bool CheckBlock();
+    bool ReadBlock(uint64_t nHeight);
+    bool ReadArchBlock(uint256 hash);
+    bool IsOrphan();
+    bool Truncate();
+    bool VerifyCheckpoint(int nHeight);
+    uint64_t GetTotalBlocksEstimate();
+    bool DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex);
+
+    bool SetBestChain(CBlockIndex*);
+
+//  protected: bool SetBestChainInner(CTxDB& txdb, CBlockIndex *pindexNew);
+};
+
 
 
 extern USDE_CTxMemPool USDE_mempool;
@@ -83,6 +139,8 @@ bool usde_CheckBlock(CBlock *block);
 uint256 usde_GetOrphanRoot(const CBlock* pblock);
 
 void usde_SyncWithWallets(const CTransaction& tx, const CBlock* pblock, bool fUpdate);
+
+int64 usde_GetBlockValue(int nHeight, int64 nFees);
 
 
 #endif /* ndef __USDE_BLOCK_H__ */

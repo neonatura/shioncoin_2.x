@@ -30,8 +30,6 @@ using namespace boost;
 // Global state
 //
 
-CCriticalSection cs_setpwalletRegistered;
-set<CWallet*> setpwalletRegistered;
 
 CCriticalSection cs_main;
 
@@ -50,12 +48,6 @@ int64 nTransactionFee = 0;
 CMedianFilter<int> cPeerBlockCounts(5, 0); // Amount of blocks that other nodes claim to have
 
 
-// notify wallets about an updated transaction
-void static UpdatedTransaction(const uint256& hashTx)
-{
-    BOOST_FOREACH(CWallet* pwallet, setpwalletRegistered)
-        pwallet->UpdatedTransaction(hashTx);
-}
 
 
 
@@ -261,15 +253,6 @@ FILE* AppendBlockFile(unsigned int& nFileRet)
         nCurrentBlockFile++;
     }
 }
-
-
-
-static void PrintWallets(const CBlock& block)
-{
-  BOOST_FOREACH(CWallet* pwallet, setpwalletRegistered)
-    pwallet->PrintWallet(block);
-}
-
 
 
 

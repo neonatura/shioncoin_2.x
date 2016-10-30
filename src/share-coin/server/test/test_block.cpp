@@ -324,10 +324,12 @@ static bool test_ConnectInputs(CTransaction *tx, MapPrevTx inputs, map<uint256, 
   return true;
 }
 
-CBlock* test_CreateNewBlock(const CPubKey& rkey)
+CBlock* test_CreateNewBlock(const CPubKey& rkey, CBlockIndex *pindexPrev)
 {
   CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
-  CBlockIndex* pindexPrev = GetBestBlockIndex(iface);
+
+  if (!pindexPrev)
+    pindexPrev = GetBestBlockIndex(iface);
 
   // Create new block
   //auto_ptr<CBlock> pblock(new CBlock());
@@ -575,12 +577,12 @@ bool test_CreateGenesisBlock()
   return (true);
 }
 
-CBlock *test_GenerateBlock()
+CBlock *test_GenerateBlock(CBlockIndex *pindexPrev)
 {
   CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
   static unsigned int nNonceIndex;
   static unsigned int nXIndex = 0xf0000000;
-  CBlockIndex *bestIndex = GetBestBlockIndex(TEST_COIN_IFACE);
+//  CBlockIndex *bestIndex = GetBestBlockIndex(TEST_COIN_IFACE);
   blkidx_t *blockIndex = GetBlockTable(TEST_COIN_IFACE);
   char xn_hex[128];
 
@@ -592,7 +594,7 @@ CBlock *test_GenerateBlock()
   string sysAccount("");
   CPubKey pubkey = GetAccountPubKey(wallet, sysAccount);
 //  CReserveKey reservekey(wallet);
-  CBlock *block = test_CreateNewBlock(pubkey);
+  CBlock *block = test_CreateNewBlock(pubkey, pindexPrev);
   if (!block)
     return (NULL);
 //reservekey.KeepKey();
@@ -650,16 +652,19 @@ CBlock *test_GenerateBlock()
 
 static bool test_IsFromMe(CTransaction& tx)
 {
-  BOOST_FOREACH(CWallet* pwallet, setpwalletRegistered)
-    if (pwallet->IsFromMe(tx))
-      return true;
+  CWallet *pwallet = GetWallet(TEST_COIN_IFACE);
+
+  if (pwallet->IsFromMe(tx))
+    return true;
+
   return false;
 }
 
 static void test_EraseFromWallets(uint256 hash)
 {
-  BOOST_FOREACH(CWallet* pwallet, setpwalletRegistered)
-    pwallet->EraseFromWallet(hash);
+  CWallet *pwallet = GetWallet(TEST_COIN_IFACE);
+
+  pwallet->EraseFromWallet(hash);
 }
 
 bool TEST_CTxMemPool::accept(CTxDB& txdb, CTransaction &tx, bool fCheckInputs, bool* pfMissingInputs)
@@ -671,8 +676,10 @@ bool TEST_CTxMemPool::accept(CTxDB& txdb, CTransaction &tx, bool fCheckInputs, b
     return error(SHERR_INVAL, "CTxMemPool::accept() : CheckTransaction failed");
 
   // Coinbase is only valid in a block, not as a loose transaction
-  if (tx.IsCoinBase())
+  if (tx.IsCoinBase()) {
+fprintf(stderr, "DEBUG: TEST_CTxMemPool:accept: warning: coinbase: %s", tx.ToString(TEST_COIN_IFACE).c_str());
     return error(SHERR_INVAL, "CTxMemPool::accept() : coinbase as individual tx");
+}
 
   // To help v0.1.5 clients who would see it as a negative number
   if ((int64)tx.nLockTime > std::numeric_limits<int>::max())
@@ -801,8 +808,7 @@ bool TEST_CTxMemPool::accept(CTxDB& txdb, CTransaction &tx, bool fCheckInputs, b
   if (ptxOld)
     test_EraseFromWallets(ptxOld->GetHash());
 
-  Debug("(test) mempool accepted %s (pool-size %u)\n",
-      hash.ToString().c_str(), mapTx.size());
+//  Debug("(test) mempool accepted %s (pool-size %u)\n", hash.ToString().c_str(), mapTx.size());
   return true;
 }
 
@@ -1057,7 +1063,6 @@ bool TESTBlock::CheckBlock()
 
 
 
-
 bool static test_Reorganize(CTxDB& txdb, CBlockIndex* pindexNew, TEST_CTxMemPool *mempool)
 {
   char errbuf[1024];
@@ -1183,18 +1188,19 @@ GetBestBlockChain(iface).ToString().substr(0,20).c_str(), GetBestHeight(TEST_COI
     unet_log(TEST_COIN_IFACE, "InvalidChainFound: WARNING: Displayed transactions may not be correct!  You may need to upgrade, or other nodes may need to upgrade.\n");
 }
 
-bool TESTBlock::SetBestChainInner(CTxDB& txdb, CBlockIndex *pindexNew)
+#ifdef USE_LEVELDB_TXDB
+bool test_SetBestChainInner(CTxDB& txdb, CBlock *block, CBlockIndex *pindexNew)
 {
-  uint256 hash = GetHash();
+  uint256 hash = block->GetHash();
   shtime_t ts;
   bool ret;
 
   timing_init("SetBestChainInner:ConnectBlock", &ts);
-  ret = ConnectBlock(txdb, pindexNew);
+  ret = block->ConnectBlock(txdb, pindexNew);
   timing_term(TEST_COIN_IFACE, "SetBestChainInner:ConnectBlock", &ts);
   if (!ret) {
     txdb.TxnAbort();
-    InvalidChainFound(pindexNew);
+    block->InvalidChainFound(pindexNew);
     return error(SHERR_INVAL, "connect block failure");
   }
 
@@ -1203,7 +1209,7 @@ bool TESTBlock::SetBestChainInner(CTxDB& txdb, CBlockIndex *pindexNew)
   timing_term(TEST_COIN_IFACE, "SetBestChainInner:WriteHashBestChain", &ts);
   if (!ret) {
     txdb.TxnAbort();
-    InvalidChainFound(pindexNew);
+    block->InvalidChainFound(pindexNew);
     return error(SHERR_INVAL, "error writing best hash chain");
   }
 
@@ -1216,17 +1222,19 @@ bool TESTBlock::SetBestChainInner(CTxDB& txdb, CBlockIndex *pindexNew)
   pindexNew->pprev->pnext = pindexNew;
 
   // Delete redundant memory transactions
-  BOOST_FOREACH(CTransaction& tx, vtx)
-    mempool.remove(tx);
+  BOOST_FOREACH(CTransaction& tx, block->vtx)
+    TESTBlock::mempool.remove(tx);
 
   return true;
 }
+#endif
 
 // notify wallets about a new best chain
 void static TEST_SetBestChain(const CBlockLocator& loc)
 {
-    BOOST_FOREACH(CWallet* pwallet, setpwalletRegistered)
-        pwallet->SetBestChain(loc);
+  CWallet *pwallet = GetWallet(TEST_COIN_IFACE);
+
+  pwallet->SetBestChain(loc);
 }
 
 #if 0
@@ -1249,6 +1257,14 @@ static bool TEST_IsInitialBlockDownload()
 }
 #endif
 
+
+
+
+
+
+
+
+#ifdef USE_LEVELDB_TXDB
 bool TESTBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
 {
   CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
@@ -1271,66 +1287,14 @@ bool TESTBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
   else if (hashPrevBlock == GetBestBlockChain(iface))
   {
     timing_init("SetBestChainInner", &ts);
-    if (!SetBestChainInner(txdb, pindexNew))
+    if (!test_SetBestChainInner(txdb, this, pindexNew))
       return error(SHERR_INVAL, "SetBestChain() : SetBestChainInner failed");
     timing_term(TEST_COIN_IFACE, "SetBestChainInner", &ts);
   }
   else
   {
-/* reorg will attempt to read this block from db */
+    /* reorg will attempt to read this block from db */
     WriteArchBlock();
-
-#if 0
-    // the first block in the new chain that will cause it to become the new best chain
-    CBlockIndex *pindexIntermediate = pindexNew;
-
-    // list of blocks that need to be connected afterwards
-    std::vector<CBlockIndex*> vpindexSecondary;
-
-    // Reorganize is costly in terms of db load, as it works in a single db transaction.
-    // Try to limit how much needs to be done inside
-    while (pindexIntermediate->pprev && pindexIntermediate->pprev->bnChainWork > GetBestBlockIndex(TEST_COIN_IFACE)->bnChainWork)
-    {
-      vpindexSecondary.push_back(pindexIntermediate);
-      pindexIntermediate = pindexIntermediate->pprev;
-    }
-
-    if (!vpindexSecondary.empty())
-      Debug("Postponing %i reconnects\n", vpindexSecondary.size());
-
-    // Switch to new best branch
-    
-    ret = test_Reorganize(txdb, pindexIntermediate, &mempool);
-    if (!ret) {
-      txdb.TxnAbort();
-      InvalidChainFound(pindexNew);
-      return error(SHERR_INVAL, "SetBestChain() : Reorganize failed");
-    }
-
-    CBlockIndex *lastIndex = NULL;
-
-    // Connect futher blocks
-    BOOST_REVERSE_FOREACH(CBlockIndex *pindex, vpindexSecondary)
-    {
-      TESTBlock block;
-      if (!block.ReadFromDisk(pindex) &&
-          !block.ReadArchBlock(pindex->GetBlockHash())) {
-        error(SHERR_IO, "SetBestChain() : ReadFromDisk failed\n");
-        break;
-      }
-      if (!txdb.TxnBegin()) {
-        error(SHERR_INVAL, "SetBestChain() : TxnBegin 2 failed\n");
-        break;
-      }
-      // errors now are not fatal, we still did a reorganisation to a new chain in a valid way
-      if (!block.SetBestChainInner(txdb, pindex))
-        break;
-      lastIndex = pindex;
-    }
-    if (lastIndex && lastIndex != pindexNew) {
-fprintf(stderr, "DEBUG: pindexLast = '%s' @ %d, pindexNew = '%s' @ %d\n", lastIndex->GetBlockHash().GetHex().c_str(), lastIndex->nHeight, pindexNew->GetBlockHash().GetHex().c_str(), pindexNew->nHeight);
-    }
-#endif
 
     ret = test_Reorganize(txdb, pindexNew, &mempool);
     if (!ret) {
@@ -1384,6 +1348,54 @@ fprintf(stderr, "DEBUG: pindexLast = '%s' @ %d, pindexNew = '%s' @ %d\n", lastIn
 
   return true;
 }
+#endif
+
+#ifndef USE_LEVELDB_TXDB
+bool TESTBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
+{
+  uint256 hash = GetHash();
+  shtime_t ts;
+  bool ret;
+
+  if (TESTBlock::pindexGenesisBlock == NULL && hash == test_hashGenesisBlock)
+  {
+    if (!txdb.TxnBegin())
+      return error(SHERR_INVAL, "SetBestChain() : TxnBegin failed");
+    txdb.WriteHashBestChain(hash);
+    if (!txdb.TxnCommit())
+      return error(SHERR_INVAL, "SetBestChain() : TxnCommit failed");
+    TESTBlock::pindexGenesisBlock = pindexNew;
+  } else {
+    timing_init("SetBestChain/commit", &ts);
+    ret = core_CommitBlock(txdb, this, pindexNew); 
+    timing_term(TEST_COIN_IFACE, "SetBestChain/commit", &ts);
+    if (!ret)
+      return (false);
+  }
+
+  // Update best block in wallet (so we can detect restored wallets)
+  bool fIsInitialDownload = IsInitialBlockDownload(TEST_COIN_IFACE);
+  if (!fIsInitialDownload) {
+    const CBlockLocator locator(TEST_COIN_IFACE, pindexNew);
+    timing_init("SetBestChain/locator", &ts);
+    TEST_SetBestChain(locator);
+    timing_term(TEST_COIN_IFACE, "SetBestChain/locator", &ts);
+  }
+
+  // New best block
+  SetBestBlockIndex(TEST_COIN_IFACE, pindexNew);
+  bnBestChainWork = pindexNew->bnChainWork;
+  nTimeBestReceived = GetTime();
+
+  {
+    CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
+    if (iface)
+      STAT_TX_ACCEPTS(iface)++;
+  }
+
+  return true;
+}
+#endif
 
 bool TESTBlock::IsBestChain()
 {
@@ -1421,8 +1433,9 @@ CScript TESTBlock::GetCoinbaseFlags()
 
 static void test_UpdatedTransaction(const uint256& hashTx)
 {
-  BOOST_FOREACH(CWallet* pwallet, setpwalletRegistered)
-    pwallet->UpdatedTransaction(hashTx);
+  CWallet *pwallet = GetWallet(TEST_COIN_IFACE);
+
+  pwallet->UpdatedTransaction(hashTx);
 }
 
 
@@ -1782,4 +1795,45 @@ bool TESTBlock::DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex)
   return true;
 }
 
+bool TESTBlock::SetBestChain(CBlockIndex* pindexNew)
+{
+  CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
+  uint256 hash = GetHash();
+  shtime_t ts;
+  bool ret;
+
+  if (TESTBlock::pindexGenesisBlock == NULL && hash == test_hashGenesisBlock)
+  {
+    TESTBlock::pindexGenesisBlock = pindexNew;
+  } else {
+    timing_init("SetBestChain/commit", &ts);
+    ret = core_CommitBlock(this, pindexNew); 
+    timing_term(TEST_COIN_IFACE, "SetBestChain/commit", &ts);
+    if (!ret)
+      return (false);
+  }
+
+  // Update best block in wallet (so we can detect restored wallets)
+  bool fIsInitialDownload = IsInitialBlockDownload(TEST_COIN_IFACE);
+  if (!fIsInitialDownload) {
+    const CBlockLocator locator(TEST_COIN_IFACE, pindexNew);
+    timing_init("SetBestChain/locator", &ts);
+    TEST_SetBestChain(locator);
+    timing_term(TEST_COIN_IFACE, "SetBestChain/locator", &ts);
+
+    {
+      TESTTxDB txdb;
+      txdb.WriteHashBestChain(hash);
+      txdb.Close();
+    }
+  }
+
+  // New best block
+  SetBestBlockIndex(TEST_COIN_IFACE, pindexNew);
+  bnBestChainWork = pindexNew->bnChainWork;
+  nTimeBestReceived = GetTime();
+  STAT_TX_ACCEPTS(iface)++;
+
+  return true;
+}
 

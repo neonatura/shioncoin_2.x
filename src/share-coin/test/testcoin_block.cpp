@@ -137,6 +137,8 @@ shtime_t ts;
   delete parent;
   /* battle1 : finish */
 
+//fprintf(stderr, "DEBUG: TEST: REORG: parent block '%s' @ height %d\n", hashParent.GetHex().c_str(), GetBestHeight(iface)); 
+
   /* battle2 : start */
   chain1 = test_GenerateBlock();
   _TRUEPTR(chain1);
@@ -197,6 +199,56 @@ shtime_t ts;
   delete chain3;
   delete chain2;
   delete chain1;
+
+  /* battle4 : begin */
+  {
+    /* create parent */
+    CBlock *par_block = test_GenerateBlock();
+    _TRUEPTR(par_block);
+    _TRUE(ProcessBlock(NULL, par_block) == true);
+    delete par_block;
+    CBlockIndex *pindex = GetBestBlockIndex(iface);
+
+    /* orphan */
+    CBlock *o_block = test_GenerateBlock();
+    _TRUEPTR(o_block);
+    _TRUE(ProcessBlock(NULL, o_block) == true);
+
+    /* over-riding new */
+    CBlock *n_block = test_GenerateBlock(pindex);
+    _TRUEPTR(n_block);
+    _TRUE(ProcessBlock(NULL, n_block) == true);
+    uint256 nhash = n_block->GetHash();
+    CBlockIndex *nindex = (*blockIndex)[nhash]; 
+    _TRUEPTR(nindex);
+
+#if 0
+    {
+      TESTTxDB txdb;
+      _TRUE(n_block->SetBestChain(txdb, nindex)); 
+      txdb.Close();
+    }
+#endif
+    {
+      /* create child of new */
+      CBlock *t_block = test_GenerateBlock(nindex);
+      _TRUEPTR(t_block);
+      _TRUE(ProcessBlock(NULL, t_block) == true);
+
+      /* verify */
+      pindex = GetBestBlockIndex(iface);
+      _TRUE(pindex->GetBlockHash() == t_block->GetHash());
+      _TRUEPTR(pindex->pprev);
+      _TRUE(pindex->pprev->GetBlockHash() == n_block->GetHash());
+
+      delete t_block;
+    }
+
+    delete o_block;
+    delete n_block;
+  }
+  /* battle4 : finish */
+
 }
 
 _TEST(serializetx)
@@ -464,6 +516,7 @@ _TEST(identtx)
   CWallet *wallet = GetWallet(iface);
   CWalletTx wtx;
   string strAccount("");
+  int64 certFee;
   int64 orig_bal;
   int64 bal;
   int mode;
@@ -478,18 +531,19 @@ _TEST(identtx)
   _TRUE(0 == err);
   uint160 hashCert = cert_wtx.certificate.GetHash();
 
-  for (idx = 0; idx < 3; idx++) {
+  {
     CBlock *block = test_GenerateBlock();
     _TRUEPTR(block);
     _TRUE(ProcessBlock(NULL, block) == true);
+//fprintf(stderr, "DEBUG: TEST: CERT: cert block '%s' @ height %d\n", block->GetHash().GetHex().c_str(), GetBestHeight(iface)); 
     delete block;
   }
 
   orig_bal = GetAccountBalance(TEST_COIN_IFACE, strAccount, 1);
   _TRUE(orig_bal > (iface->min_tx_fee * 2));
 
-
-  err = init_ident_donate_tx(iface, strAccount, orig_bal/2, hashCert, wtx);  
+  certFee = GetCertOpFee(iface, GetBestHeight(iface));
+  err = init_ident_donate_tx(iface, strAccount, certFee, hashCert, wtx);  
 if (err) fprintf(stderr, "DEBUG: TEST: init_ident_donate: error %d\n", err);
   _TRUE(err == 0);
   _TRUE(wtx.CheckTransaction(TEST_COIN_IFACE)); /* .. */
@@ -497,7 +551,7 @@ if (err) fprintf(stderr, "DEBUG: TEST: init_ident_donate: error %d\n", err);
   _TRUE(VerifyIdent(wtx, mode) == true);
   _TRUE(wtx.IsInMemoryPool(TEST_COIN_IFACE) == true);
 
-  for (idx = 0; idx < 3; idx++) {
+  {
     CBlock *block = test_GenerateBlock();
     _TRUEPTR(block);
     _TRUE(ProcessBlock(NULL, block) == true);
@@ -508,7 +562,8 @@ if (err) fprintf(stderr, "DEBUG: TEST: init_ident_donate: error %d\n", err);
   _TRUE(wtx.IsInMemoryPool(TEST_COIN_IFACE) == false);
 
   bal = GetAccountBalance(TEST_COIN_IFACE, strAccount, 1);
-  _TRUE(bal < orig_bal);
+  _TRUE((bal + GetBestHeight(iface)) < orig_bal);
+
   orig_bal = bal;
 
 
@@ -517,7 +572,8 @@ if (err) fprintf(stderr, "DEBUG: TEST: init_ident_donate: error %d\n", err);
   _TRUE(addr.IsValid() == true);
 
   CWalletTx csend_tx;
-  err = init_ident_certcoin_tx(iface, strAccount, bal - COIN, hashCert, addr, csend_tx);
+  certFee = GetCertOpFee(iface, GetBestHeight(iface));
+  err = init_ident_certcoin_tx(iface, strAccount, certFee, hashCert, addr, csend_tx);
 if (err) fprintf(stderr, "DEBUG: IDENT-TX(cert coin): err == %d\n", err);
   _TRUE(err == 0);
   _TRUE(csend_tx.CheckTransaction(TEST_COIN_IFACE)); /* .. */
@@ -634,8 +690,8 @@ _TEST(offertx)
   _TRUE(addr.IsValid() == true);
 
   int64 bal = GetAccountBalance(TEST_COIN_IFACE, strLabel, 1);
-  srcValue = -1 * (bal / 3);
-  destValue = 1 * (bal / 4);
+  srcValue = -1 * (bal / 10);
+  destValue = 1 * (bal / 10);
 
   CWalletTx wtx;
   err = init_offer_tx(iface, strLabel, srcValue, TEST_COIN_IFACE, destValue, wtx);

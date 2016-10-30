@@ -45,6 +45,7 @@
 #include "walletdb.h"
 #include "usde/usde_wallet.h"
 #include "usde/usde_txidx.h"
+#include "usde/usde_block.h"
 #include "chain.h"
 
 using namespace std;
@@ -111,7 +112,7 @@ bool usde_LoadWallet(void)
 
   printf("%s", strErrors.str().c_str());
 
-  RegisterWallet(usdeWallet);
+  //RegisterWallet(usdeWallet);
 
   CBlockIndex *pindexRescan = GetBestBlockIndex(USDE_COIN_IFACE);
   if (GetBoolArg("-rescan"))
@@ -523,4 +524,44 @@ void USDEWallet::AddSupportingTransactions(CWalletTx& wtx)
   USDETxDB txdb;
   wtx.AddSupportingTransactions(txdb);
   txdb.Close();
+}
+
+bool USDEWallet::UnacceptWalletTransaction(const CTransaction& tx)
+{
+  CIface *iface = GetCoinByIndex(USDE_COIN_IFACE);
+
+  if (!core_UnacceptWalletTransaction(iface, tx))
+    return (false);
+
+  {
+    USDETxDB txdb;
+
+    BOOST_FOREACH(const CTxIn& in, tx.vin) {
+      const uint256& prev_hash = in.prevout.hash; 
+      int nTxOut = in.prevout.n;
+
+      CTxIndex txindex;
+      if (!txdb.ReadTxIndex(prev_hash, txindex))
+        continue;
+
+      if (nTxOut >= txindex.vSpent.size())
+        continue; /* bad */
+
+      /* set output as unspent */
+      txindex.vSpent[nTxOut].SetNull();
+      txdb.UpdateTxIndex(prev_hash, txindex);
+    }
+
+    /* remove pool tx from db */
+    txdb.EraseTxIndex(tx);
+
+    txdb.Close();
+  }
+
+  return (true);
+}
+
+int64 USDEWallet::GetBlockValue(int nHeight, int64 nFees)
+{
+  return (usde_GetBlockValue(nHeight, nFees));
 }

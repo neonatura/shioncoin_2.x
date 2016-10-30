@@ -101,9 +101,11 @@ static int emc2_bind(CIface *iface, void *_unused_)
 }
 static int emc2_term(CIface *iface, void *_unused_)
 {
+#if 0
   CWallet *wallet = GetWallet(iface);
   if (wallet)
     UnregisterWallet(wallet);
+#endif
   SetWallet(iface, NULL);
 }
 

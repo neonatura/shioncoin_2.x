@@ -1100,6 +1100,8 @@ int init_ident_certcoin_tx(CIface *iface, string strAccount, uint64_t nValue, ui
 {
   CWallet *wallet = GetWallet(iface);
   int ifaceIndex = GetCoinIndex(iface);
+  int64 nMinValue = MIN_TX_FEE(iface); 
+  int64 nMinInput = MIN_INPUT_VALUE(iface); 
   CIdent *ident;
 
   if (ifaceIndex != TEST_COIN_IFACE && ifaceIndex != SHC_COIN_IFACE)
@@ -1111,7 +1113,7 @@ int init_ident_certcoin_tx(CIface *iface, string strAccount, uint64_t nValue, ui
   if (!addrDest.IsValid())
     return (SHERR_INVAL);
 
-  if (nValue < iface->min_tx_fee) {
+  if (nValue <= (nMinValue+nMinValue+nMinInput)) {
     return (SHERR_INVAL);
   }
 
@@ -1155,9 +1157,13 @@ int init_ident_certcoin_tx(CIface *iface, string strAccount, uint64_t nValue, ui
   scriptPubKey += scriptPubKeyOrig;
   int64 nFeeRequired;
   if (!wallet->CreateTransaction(scriptPubKey, nValue, wtx, rkey, nFeeRequired)) {
+CTransaction& pr_tx = (CTransaction&)wtx;
+fprintf(stderr, "DEBUG: init_ident_certcoin_tx: error creating tx '%s' [nFeeRquired %llu]\n", pr_tx.ToString(ifaceIndex).c_str(), nFeeRequired); 
     return (SHERR_CANCELED);
   }
   if (!wallet->CommitTransaction(wtx, rkey)) {
+CTransaction *tx = (CTransaction *)&wtx;
+fprintf(stderr, "DEBUG: init_ident_certcoin_tx: error commiting tx '%s' [nFeeRequired %llu]\n", tx->ToString(ifaceIndex).c_str(), nFeeRequired); 
     return (SHERR_CANCELED);
   }
 
@@ -1174,10 +1180,12 @@ int init_ident_certcoin_tx(CIface *iface, string strAccount, uint64_t nValue, ui
   CScript destPubKey;
   destPubKey.SetDestination(addrDest.Get());
   
-  if (!SendMoneyWithExtTx(iface, wtx, t_wtx, destPubKey, vecSend)) { 
+  if (!SendMoneyWithExtTx(iface, wtx, t_wtx, destPubKey, vecSend, nMinValue)) { 
     fprintf(stderr, "DEBUG: init_ident_donate_tx:: !SendMoneyWithExtTx()\n");
     return (SHERR_INVAL);
   }
+
+  Debug("CERT-TX: sent certified payment of %f [fee %f]\n", ((double)nValue/(double)COIN), ((double)(nMinValue+nFeeRequired)/(double)COIN)); 
 
   return (0);
 }

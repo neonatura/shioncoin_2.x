@@ -357,6 +357,8 @@ nScanHeight = 0;
     virtual bool CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey) = 0;
     virtual void AddSupportingTransactions(CWalletTx& wtx) = 0;
     virtual void ResendWalletTransactions() = 0;
+    virtual bool UnacceptWalletTransaction(const CTransaction& tx) = 0;
+    virtual int64 GetBlockValue(int nHeight, int64 nFees) = 0;
 };
 
 /** A key allocated from the key pool. */
@@ -683,6 +685,7 @@ public:
 
     bool AcceptWalletTransaction(CTxDB& txdb, bool fCheckInputs=true);
 
+
 //    void RelayWalletTransaction(CTxDB& txdb);
 
 };
@@ -865,6 +868,8 @@ bool SyncWithWallets(CIface *iface, CTransaction& tx, CBlock *pblock = NULL);
 bool SendRemitMoneyTx(CIface *iface, const CCoinAddr& addrFrom, CWalletTx *wtxIn, CWalletTx& wtxNew, vector<pair<CScript, int64> >& vecSend, CScript scriptPubKey);
 
 bool CreateMoneyTx(CIface *iface, CWalletTx& wtxNew, vector<COutput>& vecRecv, vector<CTxOut>& vecSend, CScript scriptPubKey);
+
+bool core_UnacceptWalletTransaction(CIface *iface, const CTransaction& tx);
 
 #endif
 

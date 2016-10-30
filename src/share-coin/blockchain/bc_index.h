@@ -7,4 +7,7 @@ int bc_idx_get(bc_t *bc, bcsize_t pos, bc_idx_t *ret_idx);
 
 bcsize_t bc_idx_next(bc_t *bc);
 
+int bc_idx_reset(bc_t *bc, bcsize_t pos, bc_idx_t *idx);
+
+
 

@@ -71,6 +71,8 @@ int bc_purge(bc_t *bc, bcsize_t pos);
 
 void bc_chain_idle(void);
 
+int bc_rewrite(bc_t *bc, bcsize_t pos, bc_hash_t hash, void *raw_data, int data_len);
+
 
 
 #endif /* ndef __BLOCKCHAIN__BC_BLOCK_H__ */

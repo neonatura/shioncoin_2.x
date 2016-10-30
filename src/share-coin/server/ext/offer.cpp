@@ -801,6 +801,7 @@ int generate_offer_tx(CIface *iface, uint160 hashOffer, CWalletTx& wtx)
 {
   int ifaceIndex = GetCoinIndex(iface);
   CWallet *wallet = GetWallet(iface);
+  int64 minTxFee = MIN_TX_FEE(iface);
   char errbuf[1024];
   bool ret;
 
@@ -842,23 +843,27 @@ return (SHERR_NOENT);
   vector<pair<CScript, int64> > vecSend;
   if (offer->nPayCoin != ifaceIndex ||
       ifaceIndex == TEST_COIN_IFACE) {
-    nFeeValue -= iface->min_tx_fee; /* for GEN op script */
+    nFeeValue -= minTxFee; /* for GEN op script */
 
     /* offer sending shc */
     if (!offer->GetXferAddr(ifaceIndex, payAddr, strPayAccount))
       return (SHERR_INVAL);
 
     BOOST_FOREACH(COfferAccept& accept, offer->accepts) {
-      int nValue = MAX(0, (-1 * accept.nPayValue));
+fprintf(stderr, "DEBUG: vecSend.insert/1: offer->accept.nPayValue = %f\n", ((double)accept.nPayValue/(double)COIN));
+      int64 nValue = MAX(0, -1 * accept.nPayValue);
 
       /* output - send SHC to accept addr */
       CCoinAddr destAddr(ifaceIndex);
       if (!accept.GetPayAddr(ifaceIndex, destAddr))
         continue; /* print error */
 
-      CScript destPubKey;
-      destPubKey.SetDestination(destAddr.Get());
-      vecSend.insert(vecSend.begin(), make_pair(destPubKey, nValue));
+      if (nValue > 0) { /* DEBUG: TODO: is this correct to skip? */
+        CScript destPubKey;
+        destPubKey.SetDestination(destAddr.Get());
+        vecSend.insert(vecSend.begin(), make_pair(destPubKey, nValue));
+      }
+fprintf(stderr, "DEBUG: vecSend.insert/1: '%s' @ %f\n", destAddr.ToString().c_str(), ((double)nValue/(double)COIN));
 
       nFeeValue -= nValue;
       
@@ -908,6 +913,7 @@ int calcFee;
       CScript destPubKey;
       destPubKey.SetDestination(destAddr.Get());
       vecSend.insert(vecSend.begin(), make_pair(destPubKey, nValue));
+fprintf(stderr, "DEBUG: vecSend.insert/2: '%s' @ %f\n", destAddr.ToString().c_str(), ((double)nValue/(double)COIN));
 
       calcFee += nValue;
     }
@@ -935,7 +941,7 @@ int calcFee;
   /* ext output - remainder of input is left to block tx fee */
   CScript scriptFee;
   scriptFee << OP_EXT_GENERATE << CScript::EncodeOP_N(OP_OFFER) << OP_HASH160 << offerHash << OP_2DROP << OP_RETURN;
-  vecSend.push_back(make_pair(scriptFee, (int64)iface->min_tx_fee));
+  vecSend.push_back(make_pair(scriptFee, minTxFee));
 
   CReserveKey reservekey(wallet);
   ret = CreateTransactionWithInputTx(iface, vecSend, wtxIn, nTxOut, wtx, reservekey);

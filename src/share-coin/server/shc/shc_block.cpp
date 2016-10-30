@@ -261,6 +261,9 @@ namespace SHC_Checkpoints
     ( 49889, uint256("0x42d4c28de6ae6240e1bc60de5964c034f084973f6878a0fa5cdb5b41804c0a71") )
     ( 49890, uint256("0x3b8e1c70ce3cb7ac3971a17c7d6bde1616469f97cd9e8a6e34645cbcbd6bf913") )
     ( 49891, uint256("0x7ce3c3f913414b3a028edac1b018110b75a3c62b62e6e395b49e109ccc7b7803") )
+    ( 65997, uint256("0x4c8579c86a6db4e8e340f5dee3c1a5ad4f19a589eb72fed4971fc458ef0115e2") )
+    ( 65998, uint256("0x1eadc18e03909382526b15621bf2358ef8aa6d69abf3698ec5103718107e67ae") )
+    ( 65999, uint256("0x3655833e31669b877c44b72fa3aacaea8bec2f31fc177ea720485aabb79ca488") )
     ;
 
 
@@ -692,16 +695,19 @@ bool shc_CreateGenesisBlock()
 
 static bool shc_IsFromMe(CTransaction& tx)
 {
-  BOOST_FOREACH(CWallet* pwallet, setpwalletRegistered)
-    if (pwallet->IsFromMe(tx))
-      return true;
+  CWallet *pwallet = GetWallet(SHC_COIN_IFACE);
+
+  if (pwallet->IsFromMe(tx))
+    return true;
+
   return false;
 }
 
 static void shc_EraseFromWallets(uint256 hash)
 {
-  BOOST_FOREACH(CWallet* pwallet, setpwalletRegistered)
-    pwallet->EraseFromWallet(hash);
+  CWallet *pwallet = GetWallet(SHC_COIN_IFACE);
+
+  pwallet->EraseFromWallet(hash);
 }
 
 bool SHC_CTxMemPool::accept(CTxDB& txdb, CTransaction &tx, bool fCheckInputs, bool* pfMissingInputs)
@@ -1241,20 +1247,20 @@ void SHCBlock::InvalidChainFound(CBlockIndex* pindexNew)
     unet_log(SHC_COIN_IFACE, "InvalidChainFound: WARNING: Displayed transactions may not be correct!  You may need to upgrade, or other nodes may need to upgrade.\n");
 }
 
-bool SHCBlock::SetBestChainInner(CTxDB& txdb, CBlockIndex *pindexNew)
+bool shc_SetBestChainInner(CBlock *block, CTxDB& txdb, CBlockIndex *pindexNew)
 {
-  uint256 hash = GetHash();
+  uint256 hash = block->GetHash();
   bc_t *bc = GetBlockChain(GetCoinByIndex(SHC_COIN_IFACE));
 
 
   // Adding to current best branch
-  if (!ConnectBlock(txdb, pindexNew) || !txdb.WriteHashBestChain(hash))
+  if (!block->ConnectBlock(txdb, pindexNew) || !txdb.WriteHashBestChain(hash))
   {
 fprintf(stderr, "DEBUG: SHCBlock::SetBestChainInner: error connecting block.\n");
 /* truncate block-chain to failed block height. */
 // bc_truncate(bc, pindexNew->nHeight);
     txdb.TxnAbort();
-    InvalidChainFound(pindexNew);
+    block->InvalidChainFound(pindexNew);
     return false;
   }
   if (!txdb.TxnCommit())
@@ -1264,8 +1270,8 @@ fprintf(stderr, "DEBUG: SHCBlock::SetBestChainInner: error connecting block.\n")
   pindexNew->pprev->pnext = pindexNew;
 
   // Delete redundant memory transactions
-  BOOST_FOREACH(CTransaction& tx, vtx)
-    mempool.remove(tx);
+  BOOST_FOREACH(CTransaction& tx, block->vtx)
+    SHCBlock::mempool.remove(tx);
 
   return true;
 }
@@ -1273,8 +1279,9 @@ fprintf(stderr, "DEBUG: SHCBlock::SetBestChainInner: error connecting block.\n")
 // notify wallets about a new best chain
 void static SHC_SetBestChain(const CBlockLocator& loc)
 {
-    BOOST_FOREACH(CWallet* pwallet, setpwalletRegistered)
-        pwallet->SetBestChain(loc);
+  CWallet *pwallet = GetWallet(SHC_COIN_IFACE);
+
+  pwallet->SetBestChain(loc);
 }
 
 
@@ -1295,7 +1302,7 @@ bool SHCBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
   }
   else if (hashPrevBlock == GetBestBlockChain(iface))
   {
-    if (!SetBestChainInner(txdb, pindexNew))
+    if (!shc_SetBestChainInner(this, txdb, pindexNew))
       return error(SHERR_INVAL, "SetBestChain() : SetBestChainInner failed");
   }
   else
@@ -1519,8 +1526,9 @@ CScript SHCBlock::GetCoinbaseFlags()
 
 static void shc_UpdatedTransaction(const uint256& hashTx)
 {
-  BOOST_FOREACH(CWallet* pwallet, setpwalletRegistered)
-    pwallet->UpdatedTransaction(hashTx);
+  CWallet *pwallet = GetWallet(SHC_COIN_IFACE);
+
+  pwallet->UpdatedTransaction(hashTx);
 }
 
 bool SHCBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)
@@ -1912,6 +1920,42 @@ bool SHCBlock::DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex)
       }
     }
   }
+
+  return true;
+}
+
+bool SHCBlock::SetBestChain(CBlockIndex* pindexNew)
+{
+  CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);
+  uint256 hash = GetHash();
+  shtime_t ts;
+  bool ret;
+
+  if (SHCBlock::pindexGenesisBlock == NULL && hash == shc_hashGenesisBlock)
+  {
+    SHCBlock::pindexGenesisBlock = pindexNew;
+  } else {
+    timing_init("SetBestChain/commit", &ts);
+    ret = core_CommitBlock(this, pindexNew); 
+    timing_term(SHC_COIN_IFACE, "SetBestChain/commit", &ts);
+    if (!ret)
+      return (false);
+  }
+
+  // Update best block in wallet (so we can detect restored wallets)
+  bool fIsInitialDownload = IsInitialBlockDownload(SHC_COIN_IFACE);
+  if (!fIsInitialDownload) {
+    const CBlockLocator locator(SHC_COIN_IFACE, pindexNew);
+    timing_init("SetBestChain/locator", &ts);
+    SHC_SetBestChain(locator);
+    timing_term(SHC_COIN_IFACE, "SetBestChain/locator", &ts);
+  }
+
+  // New best block
+  SetBestBlockIndex(SHC_COIN_IFACE, pindexNew);
+  bnBestChainWork = pindexNew->bnChainWork;
+  nTimeBestReceived = GetTime();
+  STAT_TX_ACCEPTS(iface)++;
 
   return true;
 }

@@ -88,7 +88,7 @@ bool CCoinAddr::IsValid() const
       return false;
   }
   if (vchData.size() != nExpectedSize) {
-    fprintf(stderr, "DEBUG: CCoinSecret: vchData.size() %d, nExpectedSize %d\n", vchData.size(), nExpectedSize);
+    Debug("CCoinSecret: vchData.size() %d, nExpectedSize %d\n", vchData.size(), nExpectedSize);
   }
   return vchData.size() == nExpectedSize;
   //return fExpectTestNet == fTestNet && vchData.size() == nExpectedSize;

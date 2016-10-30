@@ -46,6 +46,9 @@ class USDEWallet : public CWallet
     bool CreateTransaction(CScript scriptPubKey, int64 nValue, CWalletTx& wtxNew, CReserveKey& reservekey, int64& nFeeRet);
     void AddSupportingTransactions(CWalletTx& wtx);
 
+    bool UnacceptWalletTransaction(const CTransaction& tx);
+
+    int64 GetBlockValue(int nHeight, int64 nFees);
 };
 
 extern USDEWallet *usdeWallet;

@@ -28,11 +28,12 @@ extern TEST_certtx(CuTest*);
 extern TEST_identtx(CuTest*);
 extern TEST_bloom_create_insert_key(CuTest*);
 extern TEST_bloom_match(CuTest*);
-
 extern TEST_coin_hdkey(CuTest*);
 extern TEST_channeltx(CuTest*);
 extern TEST_hdtx(CuTest*);
 extern TEST_exectx(CuTest*);
+extern TEST_coin_table(CuTest*);
+extern TEST_coin_spendall(CuTest*);
 
 
 
@@ -75,17 +76,19 @@ int main(int argc, char *argv[])
   SUITE_ADD_TEST(suite, TEST_matrix);
   SUITE_ADD_TEST(suite, TEST_reorganize);
   SUITE_ADD_TEST(suite, TEST_serializetx);
-  SUITE_ADD_TEST(suite, TEST_offertx);
   SUITE_ADD_TEST(suite, TEST_matrixtx);
+  SUITE_ADD_TEST(suite, TEST_identtx);
   SUITE_ADD_TEST(suite, TEST_hdtx);
   SUITE_ADD_TEST(suite, TEST_signtx);
   SUITE_ADD_TEST(suite, TEST_cointx);
   SUITE_ADD_TEST(suite, TEST_aliastx);
   SUITE_ADD_TEST(suite, TEST_certtx);
   SUITE_ADD_TEST(suite, TEST_assettx);
-  SUITE_ADD_TEST(suite, TEST_identtx);
   SUITE_ADD_TEST(suite, TEST_exectx);
   SUITE_ADD_TEST(suite, TEST_channeltx);
+//  SUITE_ADD_TEST(suite, TEST_offertx);
+  SUITE_ADD_TEST(suite, TEST_coin_table);
+  SUITE_ADD_TEST(suite, TEST_coin_spendall);
 
   CuSuiteRun(suite);
   CuSuiteSummary(suite, output);

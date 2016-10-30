@@ -94,8 +94,9 @@ public:
     uint64_t GetTotalBlocksEstimate();
     bool DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex);
 
-  protected:
-    bool SetBestChainInner(CTxDB& txdb, CBlockIndex *pindexNew);
+    bool SetBestChain(CBlockIndex*);
+
+//  protected: bool SetBestChainInner(CTxDB& txdb, CBlockIndex *pindexNew);
 };
 
 
@@ -118,7 +119,9 @@ extern uint256 test_hashGenesisBlock;
 
 
 
-CBlock* test_CreateNewBlock(const CPubKey& rkey);
+CBlock* test_CreateNewBlock(const CPubKey& rkey, CBlockIndex *pindexPrev = NULL);
+
+CBlock *test_GenerateBlock(CBlockIndex *pindexPrev = NULL);
 
 bool test_CreateGenesisBlock();
 
@@ -133,6 +136,7 @@ uint256 test_GetOrphanRoot(const CBlock* pblock);
 
 void test_SyncWithWallets(const CTransaction& tx, const CBlock* pblock, bool fUpdate);
 
-CBlock *test_GenerateBlock();
+int64 test_GetBlockValue(int nHeight, int64 nFees);
+
 
 #endif /* ndef __TEST__TEST_BLOCK_H__ */

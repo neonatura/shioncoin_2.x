@@ -262,6 +262,63 @@ int bc_idx_set(bc_t *bc, bcsize_t pos, bc_idx_t *idx)
   return (err);
 }
 
+static int _bc_idx_reset(bc_t *bc, bcsize_t pos, bc_idx_t *idx)
+{
+  bc_idx_t n_idx;
+  bcsize_t of;
+  int err;
+
+  if (!bc || pos < 0) {
+    return (SHERR_INVAL);
+  }
+
+  err = bc_idx_open(bc);
+  if (err) {
+    return (err);
+  }
+
+#if 0
+  if (pos == 0) {
+    bc_idx_t blank_idx;
+
+    /* blank initial record */
+    memset(&blank_idx, 0, sizeof(blank_idx));
+    err = bc_map_append(bc, &bc->idx_map, &blank_idx, sizeof(bc_idx_t));
+    if (err)
+      return (err);
+
+    pos++;
+  }
+#endif
+
+  if (bc_idx_get(bc, pos, &n_idx) != 0)
+    return (SHERR_NOENT);
+
+  of = (pos * sizeof(bc_idx_t));
+  if (pos >= (bc->idx_map.hdr->of / sizeof(bc_idx_t)) ||
+      (of + sizeof(bc_idx_t)) > bc->idx_map.size) {
+    return (SHERR_IO);
+  }
+
+  /* write to file map */
+  err = bc_map_write(bc, &bc->idx_map, of, idx, sizeof(bc_idx_t)); 
+  if (err)
+    return (err);
+
+  return (0);
+}
+
+int bc_idx_reset(bc_t *bc, bcsize_t pos, bc_idx_t *idx)
+{
+  int err;
+
+  bc_lock();
+  err = _bc_idx_reset(bc, pos, idx);
+  bc_unlock();
+
+  return (err);
+}
+
 /**
  * @note (odd) only reduces index count when "pos" is last record in db.
  */

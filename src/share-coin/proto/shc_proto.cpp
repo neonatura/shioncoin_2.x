@@ -89,11 +89,12 @@ static int shc_bind(CIface *iface, void *_unused_)
 
 static int shc_term(CIface *iface, void *_unused_)
 {
+#if 0
   CWallet *wallet = GetWallet(iface);
   if (wallet) {
     UnregisterWallet(wallet);
-//  delete pwalletMain;
    }
+#endif
   SetWallet(iface, NULL);
 }
 static int shc_msg_recv(CIface *iface, CNode *pnode)

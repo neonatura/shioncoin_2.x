@@ -106,8 +106,9 @@ public:
     uint64_t GetTotalBlocksEstimate();
     bool DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex);
 
-  protected:
-    bool SetBestChainInner(CTxDB& txdb, CBlockIndex *pindexNew);
+    bool SetBestChain(CBlockIndex*);
+
+//  protected: bool SetBestChainInner(CTxDB& txdb, CBlockIndex *pindexNew);
 };
 
 
@@ -170,6 +171,7 @@ bool shc_ProcessBlock(CNode* pfrom, CBlock* pblock);
  */
 uint256 shc_GetOrphanRoot(const CBlock* pblock);
 
+int64 shc_GetBlockValue(int nHeight, int64 nFees);
 
 
 /**

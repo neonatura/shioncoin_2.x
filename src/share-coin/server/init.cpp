@@ -323,21 +323,6 @@ std::string HelpMessage()
     return strUsage;
 }
 
-void RegisterWallet(CWallet* pwalletIn)
-{
-    {
-        LOCK(cs_setpwalletRegistered);
-        setpwalletRegistered.insert(pwalletIn);
-    }
-}
-
-void UnregisterWallet(CWallet* pwalletIn)
-{
-    {
-        LOCK(cs_setpwalletRegistered);
-        setpwalletRegistered.erase(pwalletIn);
-    }
-}
 
 #if 0
 /** Initialize usde.
@@ -918,7 +903,7 @@ void server_shutdown(void)
 
   bitdb.Flush(true);
   boost::filesystem::remove(GetPidFile());
-//  UnregisterWallet(pwalletMain);
+//  //UnregisterWallet(pwalletMain);
 //  delete pwalletMain;
 
   CloseBlockChains();

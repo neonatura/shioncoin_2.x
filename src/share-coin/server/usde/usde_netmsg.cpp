@@ -73,17 +73,20 @@ extern vector <CAddress> GetAddresses(CIface *iface, int max_peer);
 // get the wallet transaction with the given hash (if it exists)
 bool static GetTransaction(const uint256& hashTx, CWalletTx& wtx)
 {
-    BOOST_FOREACH(CWallet* pwallet, setpwalletRegistered)
-        if (pwallet->GetTransaction(hashTx,wtx))
-            return true;
-    return false;
+  CWallet *pwallet = GetWallet(USDE_COIN_IFACE);
+
+  if (pwallet->GetTransaction(hashTx,wtx))
+    return true;
+
+  return false;
 }
 
 // notify wallets about an incoming inventory (for request counts)
 void static Inventory(const uint256& hash)
 {
-    BOOST_FOREACH(CWallet* pwallet, setpwalletRegistered)
-        pwallet->Inventory(hash);
+  CWallet *pwallet = GetWallet(USDE_COIN_IFACE);
+
+  pwallet->Inventory(hash);
 }
 
 // ask wallets to resend their transactions
@@ -176,7 +179,7 @@ unsigned int usde_LimitOrphanTxSize(unsigned int nMaxOrphans)
 //
 
 
-static bool AlreadyHave(CIface *iface, USDETxDB& txdb, const CInv& inv)
+static bool AlreadyHave(CIface *iface, const CInv& inv)
 {
   int ifaceIndex = GetCoinIndex(iface);
 
@@ -184,14 +187,26 @@ static bool AlreadyHave(CIface *iface, USDETxDB& txdb, const CInv& inv)
   {
     case MSG_TX:
       {
-        bool txInMap = false;
+        bool fHave;
+
+        fHave = false;
         {
           LOCK(USDEBlock::mempool.cs);
-          txInMap = (USDEBlock::mempool.exists(inv.hash));
+          fHave = (USDEBlock::mempool.exists(inv.hash));
         }
-        return txInMap ||
-          USDE_mapOrphanTransactions.count(inv.hash) ||
-          txdb.ContainsTx(inv.hash);
+        if (fHave)
+          return (true);
+
+        fHave = false;
+        {
+          USDETxDB txdb;
+          fHave = txdb.ContainsTx(inv.hash);
+          txdb.Close();
+        }
+        if (fHave)
+          return (true);
+
+        return (USDE_mapOrphanTransactions.count(inv.hash));
       }
 
     case MSG_BLOCK:
@@ -475,7 +490,6 @@ bool usde_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
       }
     }
 
-    USDETxDB txdb;
     for (unsigned int nInv = 0; nInv < vInv.size(); nInv++)
     {
       const CInv &inv = vInv[nInv];
@@ -487,7 +501,7 @@ bool usde_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
 
       pfrom->AddInventoryKnown(inv);
 
-      bool fAlreadyHave = AlreadyHave(iface, txdb, inv);
+      bool fAlreadyHave = AlreadyHave(iface, inv);
 
       if (!fAlreadyHave)
         pfrom->AskFor(inv);
@@ -642,7 +656,6 @@ bool usde_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
     vector<uint256> vWorkQueue;
     vector<uint256> vEraseQueue;
     CDataStream vMsg(vRecv);
-    USDETxDB txdb;
     CTransaction tx;
     vRecv >> tx;
 
@@ -650,6 +663,7 @@ bool usde_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
     pfrom->AddInventoryKnown(inv);
 
     bool fMissingInputs = false;
+    USDETxDB txdb;
     if (tx.AcceptToMemoryPool(txdb, true, &fMissingInputs))
     {
       SyncWithWallets(iface, tx);
@@ -706,6 +720,7 @@ bool usde_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
     if (tx.nDoS) 
       pfrom->Misbehaving(tx.nDoS);
 #endif
+    txdb.Close();
   }
 
 
@@ -1122,11 +1137,10 @@ bool usde_SendMessages(CIface *iface, CNode* pto, bool fSendTrickle)
     //
     vector<CInv> vGetData;
     int64 nNow = GetTime() * 1000000;
-    USDETxDB txdb;
     while (!pto->mapAskFor.empty() && (*pto->mapAskFor.begin()).first <= nNow)
     {
       const CInv& inv = (*pto->mapAskFor.begin()).second;
-      if (!AlreadyHave(iface, txdb, inv))
+      if (!AlreadyHave(iface, inv))
       {
         vGetData.push_back(inv);
         if (vGetData.size() >= 1000)

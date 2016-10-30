@@ -626,6 +626,8 @@ int CWalletTx::GetRequestCount() const
 void CWalletTx::GetAmounts(list<pair<CTxDestination, int64> >& listReceived, list<pair<CTxDestination, int64> >& listSent, int64& nFee, string& strSentAccount) const
 {
   int ifaceIndex = pwallet->ifaceIndex;
+  CIface *iface = GetCoinByIndex(ifaceIndex);
+//  int64 minValue = (int64)MIN_INPUT_VALUE(iface);
 
   nFee = 0;
   listReceived.clear();
@@ -655,10 +657,15 @@ void CWalletTx::GetAmounts(list<pair<CTxDestination, int64> >& listReceived, lis
     int64 nValue = txout.nValue;
 
     idx++;
-    if (nValue <= 0) {
-      error(SHERR_INVAL, "GetAmounts: invalid transaction '%s' with non-positive output (#%d) coin value (%f).", GetHash().GetHex().c_str(), idx, ((double)nValue / COIN));
+    if (nValue < 0) {
+      Debug("GetAmounts: invalid transaction '%s' coin value for output (#%d) [coin value (%f)].", GetHash().GetHex().c_str(), idx, ((double)nValue / (double)COIN));
       continue;
     }
+
+if (nValue == 0.00000000) {
+CTransaction *t_tx = (CTransaction *)this;
+fprintf(stderr, "DEBUG: GetAmounts: warning: %s\n", t_tx->ToString(ifaceIndex).c_str());
+}
 
     CTxDestination address;
     if (!ExtractDestination(txout.scriptPubKey, address)) {
@@ -1761,14 +1768,17 @@ bool SyncWithWallets(CIface *iface, CTransaction& tx, CBlock *pblock)
 
 void CWalletTx::AddSupportingTransactions(CTxDB& txdb)
 {
+  int ifaceIndex = txdb.ifaceIndex;
+
   vtxPrev.clear();
 
   const int COPY_DEPTH = 3;
-  if (SetMerkleBranch(txdb.ifaceIndex) < COPY_DEPTH)
+  if (SetMerkleBranch(ifaceIndex) < COPY_DEPTH)
   {
     vector<uint256> vWorkQueue;
-    BOOST_FOREACH(const CTxIn& txin, vin)
+    BOOST_FOREACH(const CTxIn& txin, vin) {
       vWorkQueue.push_back(txin.prevout.hash);
+}
 
     // This critsect is OK because txdb is already open
     {
@@ -1800,17 +1810,21 @@ void CWalletTx::AddSupportingTransactions(CTxDB& txdb)
         }
         else
         {
-          printf("ERROR: AddSupportingTransactions() : unsupported transaction\n");
+          error(SHERR_INVAL, "AddSupportingTransactions: unsupported transaction: %s", hash.GetHex().c_str());
           continue;
         }
 
-        int nDepth = tx.SetMerkleBranch(txdb.ifaceIndex);
+        if (tx.IsCoinBase())
+          continue;
+
+        int nDepth = tx.SetMerkleBranch(ifaceIndex);
         vtxPrev.push_back(tx);
 
         if (nDepth < COPY_DEPTH)
         {
-          BOOST_FOREACH(const CTxIn& txin, tx.vin)
+          BOOST_FOREACH(const CTxIn& txin, tx.vin) {
             vWorkQueue.push_back(txin.prevout.hash);
+          }
         }
       }
     }
@@ -2035,11 +2049,13 @@ bool CreateTransactionWithInputTx(CIface *iface,
 {
   int ifaceIndex = GetCoinIndex(iface);
   CWallet *pwalletMain = GetWallet(iface);
+  int64 nMinValue = MIN_INPUT_VALUE(iface);
   int64 nValue = 0;
   int64 nFeeRet;
+
   BOOST_FOREACH(const PAIRTYPE(CScript, int64)& s, vecSend) {
-    if (nValue < 0) {
-      return error(SHERR_INVAL, "CreateTransactionWIthInputTx: nValue < 0\n");
+    if (s.second < 0) {//nMinValue) {
+      return error(SHERR_INVAL, "CreateTransactionWIthInputTx: send-value(%f) < min-value(%f)", ((double)s.second/(double)COIN), ((double)nMinValue/(double)COIN));
     }
     nValue += s.second;
   }
@@ -2749,4 +2765,67 @@ bool CreateExtTransactionFromAddrTx(CIface *iface,
   return true;
 }
 #endif
+
+/**
+ * @note: This functionality is designed to rid of rejected transactions. This does not permit the 'canceling' of already relayed transactions.
+ */
+bool core_UnacceptWalletTransaction(CIface *iface, const CTransaction& tx)
+{
+  const uint256& tx_hash = tx.GetHash();
+  CTxMemPool *pool = GetTxMemPool(iface);
+  CWallet *wallet = GetWallet(iface);
+
+  LOCK(pool->cs);
+
+  if (pool->mapTx.count(tx_hash) == 0)
+    return (false); /* not in pool */
+
+  /* remove from pool. */
+  pool->mapTx.erase(tx_hash);
+
+  /* remove from wallet */
+  wallet->EraseFromWallet(tx_hash);
+
+  /* cycle through inputs */
+  BOOST_FOREACH(const CTxIn& in, tx.vin) {
+    const uint256& prevhash = in.prevout.hash;
+    CTransaction prevtx;
+
+    if (pool->mapTx.count(prevhash) != 0)
+      continue; /* prevout is in pool */
+
+    if (!::GetTransaction(iface, prevhash, prevtx, NULL))
+      continue; /* dito */
+
+    if (!wallet->IsMine(prevtx)) {
+fprintf(stderr, "DEBUG: core_UnacceptWalletTransaction: abandoning tx '%s' -- not owner\n", prevhash.GetHex().c_str()); 
+      continue; /* no longer owner */
+}
+
+    CWalletTx wtx;
+    if (wallet->mapWallet.count(prevhash) != 0) {
+      wtx = wallet->mapWallet[prevhash];
+    } else {
+      wtx = CWalletTx(wallet, prevtx);
+    }
+
+    /* mark output as unspent */
+    vector<char> vfNewSpent = wtx.vfSpent;
+    vfNewSpent[in.prevout.n] = false;
+    wtx.UpdateSpent(vfNewSpent);
+    wtx.MarkDirty();
+fprintf(stderr, "DEBUG: marked wallet tx '%s' out #%d as unspent\n", prevhash.GetHex().c_str(), in.prevout.n); 
+
+    if (!wtx.WriteToDisk()) {
+      Debug("rpc_tx_purge: error writing tx \"%s\" to tx database.", prevhash);
+      continue;
+    }
+
+    /* push pool transaction's inputs back into wallet. */
+    wallet->mapWallet[prevhash] = wtx;
+fprintf(stderr, "DEBUG: core_UnacceptWalletTransaction: pushed '%s' into pool.\n", wtx.GetHash().GetHex().c_str()); 
+  }
+
+  return (true);
+}
 

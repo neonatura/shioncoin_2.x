@@ -5,6 +5,7 @@
 #include "init.h"
 #include "wallet.h"
 #include "walletdb.h"
+#include "test/test_block.h"
 
 using namespace std;
 
@@ -369,6 +370,95 @@ fprintf(stderr, "DEBUG: TEST: found addr '%s' for account '%s'\n", address.ToStr
 }
 
 
+_TEST(coin_table)
+{
+  blkidx_t *blockIndex = GetBlockTable(TEST_COIN_IFACE);
+  CBlock *blocks[10];
+  int idx;
+
+  CBlock *par_block = test_GenerateBlock();
+  _TRUEPTR(par_block);
+  _TRUE(ProcessBlock(NULL, par_block) == true);
+
+  for (idx = 0; idx < 10; idx++) {
+    blocks[idx] = test_GenerateBlock();
+    _TRUEPTR(blocks[idx]);
+    _TRUE(ProcessBlock(NULL, blocks[idx]) == true);
+  }
+
+  uint256 par_hash = par_block->GetHash();
+  CBlockIndex *par_index = (*blockIndex)[par_hash]; 
+
+  /* spend first four block's coinbase */
+  for (idx = 0; idx < 8; idx++) { /* spend */
+    CBlock *block = blocks[idx];
+    uint256 hash = (int64)idx;
+    CTransaction& tx = block->vtx[0];
+    _TRUE(tx.WriteCoins(TEST_COIN_IFACE, 0, hash) == true);
+  }
+  for (idx = 4; idx < 8; idx++) { /* unspend */
+    CBlock *block = blocks[idx];
+    uint256 hash;
+    hash.SetNull();
+    CTransaction& tx = block->vtx[0];
+    _TRUE(tx.WriteCoins(TEST_COIN_IFACE, 0, hash) == true);
+  }
+
+  uint256 blank_hash = 0;
+  for (idx = 0; idx < 10; idx++) {
+    CBlock *block = blocks[idx];
+    CTransaction& tx = block->vtx[0];
+    uint256 tx_hash = tx.vout[0].GetHash();
+    
+    vector<uint256> vOuts;
+    _TRUE(tx.ReadCoins(TEST_COIN_IFACE, vOuts)); 
+
+    if (idx < 4) {
+      uint256 hash = (int64)idx;
+      _TRUE(vOuts[0] == hash);
+    } else {
+      _TRUE(vOuts[0] == blank_hash);
+    }
+
+    delete block;
+  }
+
+}
+
+
+_TEST(coin_spendall)
+{
+  CWallet *wallet = GetWallet(TEST_COIN_IFACE);
+  CScript scriptPubKey;
+  string strFromAcc("");
+  string strToAcc("test");
+  string strError;
+  int64 nValue;
+  int64 bal;
+
+  CWalletTx wtx;
+  wtx.SetNull();
+  wtx.strFromAccount = strFromAcc;
+
+  bal = GetAccountBalance(TEST_COIN_IFACE, strFromAcc, 1);
+  CCoinAddr addrTo = GetAccountAddress(wallet, strToAcc, true);
+  nValue = bal - COIN;
+
+  scriptPubKey.SetDestination(addrTo.Get());
+  strError = wallet->SendMoney(scriptPubKey, nValue, wtx);
+  _TRUE(strError == "");
+  _TRUE(wtx.CheckTransaction(TEST_COIN_IFACE));
+
+  _TRUE(wtx.IsInMemoryPool(TEST_COIN_IFACE) == true);
+  {
+    CBlock *block = test_GenerateBlock();
+    _TRUEPTR(block);
+    _TRUE(ProcessBlock(NULL, block) == true);
+    delete block;
+  }
+  _TRUE(wtx.IsInMemoryPool(TEST_COIN_IFACE) == false);
+
+}
 
 
 #ifdef __cplusplus

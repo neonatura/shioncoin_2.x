@@ -115,7 +115,7 @@ bool shc_LoadWallet(void)
 
   printf("%s", strErrors.str().c_str());
 
-  RegisterWallet(shcWallet);
+  //RegisterWallet(shcWallet);
 
   CBlockIndex *pindexRescan = GetBestBlockIndex(SHC_COIN_IFACE);
   if (GetBoolArg("-rescan"))
@@ -306,7 +306,7 @@ void SHCWallet::ReacceptWalletTransactions()
         }
         if (fUpdated)
         {
-          printf("ReacceptWalletTransactions found spent coin %sbc %s\n", FormatMoney(wtx.GetCredit()).c_str(), wtx.GetHash().ToString().c_str());
+          Debug("ReacceptWalletTransactions found spent coin %sbc %s\n", FormatMoney(wtx.GetCredit()).c_str(), wtx.GetHash().ToString().c_str());
           wtx.MarkDirty();
           wtx.WriteToDisk();
         }
@@ -314,8 +314,10 @@ void SHCWallet::ReacceptWalletTransactions()
       else
       {
         // Reaccept any txes of ours that aren't already in a block
-        if (!wtx.IsCoinBase())
+        if (!wtx.IsCoinBase()) {
           wtx.AcceptWalletTransaction(txdb, false);
+fprintf(stderr, "DEBUG: reaccepting tx '%s' into pool (not in block)\n", wtx.GetHash().GetHex().c_str());
+        }
       }
     }
     if (!vMissingTx.empty())
@@ -573,4 +575,46 @@ void SHCWallet::AddSupportingTransactions(CWalletTx& wtx)
   SHCTxDB txdb;
   wtx.AddSupportingTransactions(txdb);
   txdb.Close();
+}
+
+bool SHCWallet::UnacceptWalletTransaction(const CTransaction& tx)
+{
+  CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);
+
+  if (!core_UnacceptWalletTransaction(iface, tx))
+    return (false);
+
+  {
+    SHCTxDB txdb;
+
+    BOOST_FOREACH(const CTxIn& in, tx.vin) {
+      const uint256& prev_hash = in.prevout.hash; 
+      int nTxOut = in.prevout.n;
+
+      CTxIndex txindex;
+      if (!txdb.ReadTxIndex(prev_hash, txindex))
+        continue;
+
+      if (nTxOut >= txindex.vSpent.size())
+        continue; /* bad */
+
+      /* set output as unspent */
+      txindex.vSpent[nTxOut].SetNull();
+      txdb.UpdateTxIndex(prev_hash, txindex);
+fprintf(stderr, "DEBUG: TXDB: marked tx '%s' out #%d as unspent\n", prev_hash.GetHex().c_str(), nTxOut);
+    }
+
+    /* remove pool tx from db */
+    txdb.EraseTxIndex(tx);
+fprintf(stderr, "DEBUG: TXDB: erased tx '%s'\n", tx.GetHash().GetHex().c_str());
+
+    txdb.Close();
+  }
+
+  return (true);
+}
+
+int64 SHCWallet::GetBlockValue(int nHeight, int64 nFees)
+{
+  return (shc_GetBlockValue(nHeight, nFees));
 }

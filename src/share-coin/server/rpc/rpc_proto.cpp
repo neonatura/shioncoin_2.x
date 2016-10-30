@@ -4384,65 +4384,72 @@ Value rpc_tx_prune(CIface *iface, const Array& params, bool fHelp)
   if (fHelp || params.size() != 0)
     throw runtime_error(
         "tx.prune\n"
-        "Revert pool transactions with an unknown or spent input.\n"
-        );
+        "Revert pending transactions in an invalid state.");
 
   CTxMemPool *pool = GetTxMemPool(iface);
   CWallet *wallet = GetWallet(iface);
+  int ifaceIndex = GetCoinIndex(iface);
 
   Array a;
   if (iface->enabled && pool && wallet) {
-    LOCK(pool->cs);
+    vector<uint256> v;
 
-    vector<uint256> pool_revert; 
+    LOCK(pool->cs);
     BOOST_FOREACH(const PAIRTYPE(uint256, CTransaction)& r, pool->mapTx) {
-      const CTransaction& tx = r.second;
-      vector<CWalletTx> revert;
+      const uint256& tx_hash = r.first;
+      CTransaction *tx = (CTransaction *)&r.second;
+
       bool fValid = true;
 
-      BOOST_FOREACH(const CTxIn& in, tx.vin) {
-        if (pool->mapTx.count(in.prevout.hash) != 0)
-          continue; /* dependant on another tx in pool */
+      if (!tx->CheckTransaction(ifaceIndex)) {
+        fValid = false;
+        Debug("rpc_tx_prune: transaction '%s' is invalid.", tx_hash.GetHex().c_str());
+      } else {
+        BOOST_FOREACH(const CTxIn& in, tx->vin) {
+          if (pool->mapTx.count(in.prevout.hash) != 0)
+            continue; /* dependant on another tx in pool */
 
-        CTransaction prevtx;
-        const uint256& prevhash = in.prevout.hash;
+          CTransaction prevtx;
+          const uint256& prevhash = in.prevout.hash;
 
-        if (!GetTransaction(iface, prevhash, prevtx, NULL)) {
-          /* the input tx is unknown. */
-          fValid = false;
-          continue;
-        }
+          if (!GetTransaction(iface, prevhash, prevtx, NULL)) {
+            /* the input tx is unknown. */
+            Debug("rpc_tx_prune: previous transaction '%s' is invalid.", prevhash.GetHex().c_str());
+            fValid = false;
+            continue;
+          }
 
-        const CTxOut& out = prevtx.vout[in.prevout.n];
-        if (!wallet->IsMine(out)) {
-          /* we are attempting to spend someone else's input */
-          fValid = false;
-          continue;
-        }
+          const CTxOut& out = prevtx.vout[in.prevout.n];
+          if (!wallet->IsMine(out)) {
+            Debug("rpc_tx_prune: previous transaction \"%s\" output (#%d) is foreign.", (int)in.prevout.n, prevhash.GetHex().c_str());
+            /* we are attempting to spend someone else's input */
+            fValid = false;
+            continue;
+          }
 
-        CWalletTx wtx(wallet, prevtx);
-        if (wtx.IsSpent(in.prevout.n)) {
-          /* we are attempting to double-spend */
-          revert.push_back(wtx);
-          fValid = false;
-          continue;
+          CWalletTx wtx(wallet, prevtx);
+          if (wtx.IsSpent(in.prevout.n)) {
+            Debug("rpc_tx_prune: previous transaction \"%s\" output (#%d) is already spent.", prevhash.GetHex().c_str(), (int)in.prevout.n);
+            /* we are attempting to double-spend */
+            fValid = false;
+            continue;
+          }
         }
       }
       if (fValid)
         continue; /* a-ok boss */
 
-      BOOST_FOREACH(const CWalletTx& wtx, revert) {
-        /* insert prevout transaction back into wallet. */
-        uint256 tx_hash = wtx.GetHash();
-        wallet->mapWallet[tx_hash] = wtx;
-      }
-
-      pool_revert.push_back(tx.GetHash());
+      v.push_back(tx_hash);
+      a.push_back(tx_hash.GetHex());
     }
 
     /* erase invalid entries from pool */
-    BOOST_FOREACH(uint256 hash, pool_revert) {
-      pool->mapTx.erase(hash);
+    BOOST_FOREACH(const uint256 tx_hash, v) {
+      if (pool->mapTx.count(tx_hash) == 0)
+        continue;
+
+      const CTransaction& tx = pool->mapTx[tx_hash];
+      wallet->UnacceptWalletTransaction(tx);
     }
   }
 
@@ -4465,32 +4472,16 @@ Value rpc_tx_purge(CIface *iface, const Array& params, bool fHelp)
   if (iface->enabled && pool && wallet) {
     LOCK(pool->cs);
 
+    vector<CTransaction> v;
     BOOST_FOREACH(const PAIRTYPE(uint256, CTransaction)& r, pool->mapTx) {
       const CTransaction& tx = r.second;
-      CTransaction prevtx;
+      const uint256& hash = r.first;
 
-      BOOST_FOREACH(const CTxIn& in, tx.vin) {
-        const uint256& prevhash = in.prevout.hash;
-
-        if (pool->mapTx.count(prevhash) != 0)
-          continue; /* moot */
-
-        if (!GetTransaction(iface, prevhash, prevtx, NULL))
-          continue; /* dito */
-
-        if (!wallet->IsMine(prevtx))
-          continue; /* no longer owner */
-
-        CWalletTx wtx(wallet, prevtx);
-        if (wtx.IsSpent(in.prevout.n))
-          continue; /* already spent */
-
-        /* push pool transaction's inputs back into wallet. */
-        uint256 tx_hash = wtx.GetHash();
-        wallet->mapWallet[tx_hash] = wtx;
-
-        a.push_back(tx_hash.GetHex());
-      }
+      v.push_back(tx);
+      a.push_back(hash.GetHex());
+    }
+    BOOST_FOREACH(const CTransaction& tx, v) {
+      wallet->UnacceptWalletTransaction(tx);
     }
 
     pool->mapTx.clear();

@@ -49,6 +49,9 @@ using namespace json_spirit;
 
 typedef std::vector<uint256> HashList;
 
+typedef map< uint256, vector<uint256> > tx_map;
+
+
 
 class CTxDB;
 
@@ -927,7 +930,12 @@ public:
     }
 
 
+    /* leveldb */
     bool DisconnectInputs(CTxDB& txdb);
+
+    /* fmap */
+    bool DisconnectInputs(int ifaceIndex);
+
 
     /** 
      * Fetch from memory and/or disk. inputsRet keys are transaction hashes.
@@ -948,7 +956,14 @@ public:
 
     bool CheckTransactionInputs(int ifaceIndex);
 
+
+    /* leveldb */
     bool AcceptToMemoryPool(CTxDB& txdb, bool fCheckInputs=true, bool* pfMissingInputs=NULL);
+
+    /* fmap */
+    bool AcceptPool(int ifaceIndex, bool fCheckInputs=true);
+
+
 
     bool IsInMemoryPool(int ifaceIndex);
 
@@ -963,21 +978,19 @@ public:
     int GetDepthInMainChain(int ifaceIndex) const { CBlockIndex *pindexRet; return GetDepthInMainChain(ifaceIndex, pindexRet); }
 
 
-    bool WriteCoins(int ifaceIndex, const vector<int64>& vAmount);
+    bool WriteCoins(int ifaceIndex, const vector<uint256>& vOuts);
 
-    bool WriteCoins(int ifaceIndex, int nOut, bool fUnspend = false);
+    bool WriteCoins(int ifaceIndex, int nOut, const uint256& hashTxOut);
 
-    bool WriteCoins(int ifaceIndex, const vector<char>& vfSpent);
+    bool ReadCoins(int ifaceIndex, vector<uint256>& vOuts);
 
-    bool ReadCoins(int ifaceIndex, vector<int64>& vAmount, int64& nTotalValue);
+    bool EraseCoins(int ifaceIndex);
 
-    bool ReadCoins(int ifaceIndex, vector<CTxOut>& vOut, int64& nTotalValue);
-
-    bool ReadCoins(int ifaceIndex, vector<char>& vfSpent);
-
-
+    /* fmap */
+    bool ConnectInputs(int ifaceIndex, const CBlockIndex* pindexBlock, tx_map& mapOutput, map<uint256, CTransaction> mapTx, int& nSigOps, int64& nFees, bool fVerifySig = true, bool fVerifyInputs = false, bool fRequireInputs = false);
 
 protected:
+    /* leveldb */
     const CTxOut& GetOutputFor(const CTxIn& input, const MapPrevTx& inputs) const;
 };
 
@@ -1194,8 +1207,21 @@ class CBlock : public CBlockHeader
     virtual bool ReadBlock(uint64_t nHeight) = 0;
     virtual bool ReadArchBlock(uint256 hash) = 0;
     virtual bool CheckBlock() = 0;
+
+    /* leveldb */
     virtual bool SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew) = 0;
+//    virtual bool SetBestChainInner(CTxDB& txdb, CBlockIndex *pindexNew) = 0;
+
+    /* fmap */
+    virtual bool SetBestChain(CBlockIndex* pindexNew) = 0;
+
+    /* leveldb */
     virtual bool ConnectBlock(CTxDB& txdb, CBlockIndex* pindex) = 0;
+
+    /* fmap */
+    virtual bool ConnectBlock(CBlockIndex* pindex);
+
+
     virtual bool IsBestChain() = 0;
     virtual unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast) = 0;
     virtual CScript GetCoinbaseFlags() = 0;
@@ -1205,10 +1231,13 @@ class CBlock : public CBlockHeader
     virtual void InvalidChainFound(CBlockIndex* pindexNew) = 0;
     virtual bool VerifyCheckpoint(int nHeight) = 0;
     virtual uint64_t GetTotalBlocksEstimate() = 0;
+
+    /* leveldb */
     virtual bool DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex) = 0;
 
-  protected:
-    virtual bool SetBestChainInner(CTxDB& txdb, CBlockIndex *pindexNew) = 0;
+    /* fmap */
+    bool DisconnectBlock(CBlockIndex* pindex);
+
 };
 
 /**
@@ -1379,61 +1408,6 @@ class CBlockIndex
     }
 };
 
-class USDE_CTxMemPool;
-class USDEBlock : public CBlock
-{
-public:
-    // header
-    static const int CURRENT_VERSION=1;
-    static USDE_CTxMemPool mempool; 
-    static CBlockIndex *pindexBest;
-    static CBlockIndex *pindexGenesisBlock;// = NULL;
-    static CBigNum bnBestChainWork;// = 0;
-    static CBigNum bnBestInvalidWork;// = 0;
-    static int64 nTimeBestReceived ;//= 0;
-
-    static int64 nTargetTimespan;
-    static int64 nTargetSpacing;
-
-    USDEBlock()
-    {
-        ifaceIndex = USDE_COIN_IFACE;
-        SetNull();
-    }
-    USDEBlock(const CBlock &block)
-    {
-        ifaceIndex = USDE_COIN_IFACE;
-        SetNull();
-        *((CBlock*)this) = block;
-    }
-
-    void SetNull()
-    {
-      nVersion = USDEBlock::CURRENT_VERSION;
-      CBlock::SetNull();
-
-    }
-
-    bool SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew);
-    void InvalidChainFound(CBlockIndex* pindexNew);
-    unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast);
-    bool AcceptBlock();
-    bool IsBestChain();
-    CScript GetCoinbaseFlags();
-    bool AddToBlockIndex();
-    bool ConnectBlock(CTxDB& txdb, CBlockIndex* pindex);
-    bool CheckBlock();
-    bool ReadBlock(uint64_t nHeight);
-    bool ReadArchBlock(uint256 hash);
-    bool IsOrphan();
-    bool Truncate();
-    bool VerifyCheckpoint(int nHeight);
-    uint64_t GetTotalBlocksEstimate();
-    bool DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex);
-
-  protected:
-    bool SetBestChainInner(CTxDB& txdb, CBlockIndex *pindexNew);
-};
 
 #if 0
 class GMCBlock : public CBlock
@@ -1483,6 +1457,12 @@ public:
     }
 
     virtual void queryHashes(std::vector<uint256>& vtxid) = 0;
+
+    virtual bool remove(CTransaction &tx) = 0;
+
+    virtual bool addUnchecked(const uint256& hash, CTransaction &tx) = 0;
+
+
 };
 
 blkidx_t *GetBlockTable(int ifaceIndex);
@@ -1673,6 +1653,9 @@ void CloseBlockChain(CIface *iface);
 
 void CloseBlockChains(void);
 
+bool core_CommitBlock(CTxDB& txdb, CBlock *pblock, CBlockIndex *pindexNew);
+
+bool core_CommitBlock(CBlock *pblock, CBlockIndex *pindexNew);
 
 
 #endif /* ndef __SERVER_BLOCK_H__ */

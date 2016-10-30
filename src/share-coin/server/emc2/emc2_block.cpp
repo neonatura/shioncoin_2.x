@@ -666,26 +666,24 @@ bool emc2_CreateGenesisBlock()
 
 
 
-
-
-
-
-
-
-
 static bool emc2_IsFromMe(CTransaction& tx)
 {
-  BOOST_FOREACH(CWallet* pwallet, setpwalletRegistered)
-    if (pwallet->IsFromMe(tx))
-      return true;
+  CWallet *pwallet = GetWallet(EMC2_COIN_IFACE);
+
+  if (pwallet->IsFromMe(tx))
+    return true;
+
   return false;
 }
 
 static void emc2_EraseFromWallets(uint256 hash)
 {
-  BOOST_FOREACH(CWallet* pwallet, setpwalletRegistered)
-    pwallet->EraseFromWallet(hash);
+  CWallet *pwallet = GetWallet(EMC2_COIN_IFACE);
+
+  pwallet->EraseFromWallet(hash);
 }
+
+
 
 bool EMC2_CTxMemPool::accept(CTxDB& txdb, CTransaction &tx, bool fCheckInputs, bool* pfMissingInputs)
 {
@@ -726,7 +724,7 @@ bool EMC2_CTxMemPool::accept(CTxDB& txdb, CTransaction &tx, bool fCheckInputs, b
     if (mapNextTx.count(outpoint))
     {
       // emc2 disallow's replacement of previous tx
-      return false;
+      return (error(SHERR_NOTUNIQ, "(emc2) accept: intput from tx '%s' conflicts with existing pool tx.", outpoint.hash));
     }
   }
 
@@ -738,10 +736,10 @@ bool EMC2_CTxMemPool::accept(CTxDB& txdb, CTransaction &tx, bool fCheckInputs, b
     if (!tx.FetchInputs(txdb, mapUnused, NULL, false, mapInputs, fInvalid))
     {
       if (fInvalid)
-        return error(SHERR_INVAL, "CTxMemPool::accept() : FetchInputs found invalid tx %s", hash.ToString().substr(0,10).c_str());
+        return error(SHERR_INVAL, "CTxMemPool::accept() : FetchInputs found invalid tx %s", hash.GetHex().c_str());
       if (pfMissingInputs)
         *pfMissingInputs = true;
-      return false;
+      return error(SHERR_INVAL, "CTxMemPool::accept() : FetchInputs found tx '%s' has missing inputs", hash.GetHex().c_str());
     }
 
     // Check for non-standard pay-to-script-hash in inputs
@@ -1218,15 +1216,15 @@ GetBestBlockChain(iface).ToString().substr(0,20).c_str(), GetBestHeight(EMC2_COI
     unet_log(EMC2_COIN_IFACE, "InvalidChainFound: WARNING: Displayed transactions may not be correct!  You may need to upgrade, or other nodes may need to upgrade.\n");
 }
 
-bool EMC2Block::SetBestChainInner(CTxDB& txdb, CBlockIndex *pindexNew)
+bool emc2_SetBestChainInner(CBlock *block, CTxDB& txdb, CBlockIndex *pindexNew)
 {
-  uint256 hash = GetHash();
+  uint256 hash = block->GetHash();
 
   // Adding to current best branch
-  if (!ConnectBlock(txdb, pindexNew) || !txdb.WriteHashBestChain(hash))
+  if (!block->ConnectBlock(txdb, pindexNew) || !txdb.WriteHashBestChain(hash))
   {
     txdb.TxnAbort();
-    InvalidChainFound(pindexNew);
+    block->InvalidChainFound(pindexNew);
     return false;
   }
   if (!txdb.TxnCommit())
@@ -1236,8 +1234,8 @@ bool EMC2Block::SetBestChainInner(CTxDB& txdb, CBlockIndex *pindexNew)
   pindexNew->pprev->pnext = pindexNew;
 
   // Delete redundant memory transactions
-  BOOST_FOREACH(CTransaction& tx, vtx)
-    mempool.remove(tx);
+  BOOST_FOREACH(CTransaction& tx, block->vtx)
+    EMC2Block::mempool.remove(tx);
 
   return true;
 }
@@ -1245,8 +1243,9 @@ bool EMC2Block::SetBestChainInner(CTxDB& txdb, CBlockIndex *pindexNew)
 // notify wallets about a new best chain
 void static EMC2_SetBestChain(const CBlockLocator& loc)
 {
-    BOOST_FOREACH(CWallet* pwallet, setpwalletRegistered)
-        pwallet->SetBestChain(loc);
+  CWallet *pwallet = GetWallet(EMC2_COIN_IFACE);
+
+  pwallet->SetBestChain(loc);
 }
 
 #if 0
@@ -1431,7 +1430,7 @@ bool EMC2Block::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
   }
   else if (hashPrevBlock == GetBestBlockChain(iface))
   {
-    if (!SetBestChainInner(txdb, pindexNew))
+    if (!emc2_SetBestChainInner(this, txdb, pindexNew))
       return error(SHERR_INVAL, "SetBestChain() : SetBestChainInner failed");
   }
   else
@@ -1559,8 +1558,9 @@ CScript EMC2Block::GetCoinbaseFlags()
 
 static void emc2_UpdatedTransaction(const uint256& hashTx)
 {
-  BOOST_FOREACH(CWallet* pwallet, setpwalletRegistered)
-    pwallet->UpdatedTransaction(hashTx);
+  CWallet *pwallet = GetWallet(EMC2_COIN_IFACE);
+
+  pwallet->UpdatedTransaction(hashTx);
 }
 
 bool EMC2Block::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)
@@ -1963,3 +1963,38 @@ bool EMC2Block::DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex)
   return (core_DisconnectBlock(txdb, pindex, this));
 }
 
+bool EMC2Block::SetBestChain(CBlockIndex* pindexNew)
+{
+  CIface *iface = GetCoinByIndex(EMC2_COIN_IFACE);
+  uint256 hash = GetHash();
+  shtime_t ts;
+  bool ret;
+
+  if (EMC2Block::pindexGenesisBlock == NULL && hash == emc2_hashGenesisBlock)
+  {
+    EMC2Block::pindexGenesisBlock = pindexNew;
+  } else {
+    timing_init("SetBestChain/commit", &ts);
+    ret = core_CommitBlock(this, pindexNew); 
+    timing_term(EMC2_COIN_IFACE, "SetBestChain/commit", &ts);
+    if (!ret)
+      return (false);
+  }
+
+  // Update best block in wallet (so we can detect restored wallets)
+  bool fIsInitialDownload = IsInitialBlockDownload(EMC2_COIN_IFACE);
+  if (!fIsInitialDownload) {
+    const CBlockLocator locator(EMC2_COIN_IFACE, pindexNew);
+    timing_init("SetBestChain/locator", &ts);
+    EMC2_SetBestChain(locator);
+    timing_term(EMC2_COIN_IFACE, "SetBestChain/locator", &ts);
+  }
+
+  // New best block
+  SetBestBlockIndex(EMC2_COIN_IFACE, pindexNew);
+  bnBestChainWork = pindexNew->bnChainWork;
+  nTimeBestReceived = GetTime();
+  STAT_TX_ACCEPTS(iface)++;
+
+  return true;
+}

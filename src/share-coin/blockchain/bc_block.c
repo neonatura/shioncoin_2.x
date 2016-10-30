@@ -181,6 +181,71 @@ int bc_write(bc_t *bc, unsigned int jrnl, unsigned char *data, int data_len)
 }
 #endif
 
+static int _bc_rewrite(bc_t *bc, bcsize_t pos, bc_hash_t hash, void *raw_data, int data_len)
+{
+  unsigned char *data = (unsigned char *)raw_data;
+  bc_idx_t idx;
+  bc_map_t *map;
+  char ext[64];
+  char errbuf[256];
+  int jrnl;
+  int err;
+
+  jrnl = bc_journal(pos);
+
+  err = bc_alloc(bc, jrnl);
+  if (err) {
+    sprintf(errbuf, "bc_write: error: bc_alloc failed: %s.", sherrstr(err));
+    shcoind_log(errbuf);
+    return (err);
+  }
+
+  map = bc->data_map + jrnl;
+  if (!*map->ext)
+    sprintf(map->ext, "%u", idx.jrnl);
+
+  err = bc_idx_get(bc, pos, &idx);
+  if (err)
+    return (err);
+
+  if (idx.size != data_len)
+    return (SHERR_EXIST);
+
+  idx.crc = shcrc32(data, data_len);
+
+  /* store fresh block index */
+  err = bc_idx_reset(bc, pos, &idx);
+  if (err) { 
+    sprintf(errbuf, "bc_write: error: bc_idx_set failure: %s.", sherrstr(err));
+    shcoind_log(errbuf);
+    return (err);
+  }
+
+  /* store serialized block data */
+  err = bc_map_write(bc, map, idx.of, data, data_len);
+  if (err) { /* uh oh */
+    sprintf(errbuf, "bc_write: error: bc_map_append failure: %s.", sherrstr(err));
+    shcoind_log(errbuf);
+    bc_idx_clear(bc, pos);
+    return (err);
+  }
+
+  return (0);
+}
+
+int bc_rewrite(bc_t *bc, bcsize_t pos, bc_hash_t hash, void *raw_data, int data_len)
+{
+  int err;
+
+  if (!bc_lock())
+    return (SHERR_NOLCK);
+
+  err = _bc_rewrite(bc, pos, hash, raw_data, data_len);
+  bc_unlock();
+
+  return (err);
+}
+
 static int _bc_write(bc_t *bc, bcsize_t pos, bc_hash_t hash, void *raw_data, int data_len)
 {
   unsigned char *data = (unsigned char *)raw_data;
@@ -215,9 +280,12 @@ static int _bc_write(bc_t *bc, bcsize_t pos, bc_hash_t hash, void *raw_data, int
   /* store fresh block index */
   err = bc_idx_set(bc, pos, &idx);
   if (err) { 
-    sprintf(errbuf, "bc_write: error: bc_idx_set failure: %s.", sherrstr(err));
-    shcoind_log(errbuf);
-    return (err);
+    if (err == SHERR_EXIST) {
+      /* record already existed */
+      err = _bc_rewrite(bc, pos, hash, raw_data, data_len); 
+    }
+    if (err)
+      return (err);
   }
 
   /* store serialized block data */
@@ -291,6 +359,7 @@ int bc_append(bc_t *bc, bc_hash_t hash, void *data, size_t data_len)
 
   return (err);
 }
+
 
 /**
  * Fills a pre-allocated binary segment with a specified size from a specified record position.

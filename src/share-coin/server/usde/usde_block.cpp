@@ -821,16 +821,19 @@ bool usde_CreateGenesisBlock()
 
 static bool usde_IsFromMe(CTransaction& tx)
 {
-  BOOST_FOREACH(CWallet* pwallet, setpwalletRegistered)
-    if (pwallet->IsFromMe(tx))
-      return true;
+  CWallet *pwallet = GetWallet(USDE_COIN_IFACE);
+
+  if (pwallet->IsFromMe(tx))
+    return true;
+
   return false;
 }
 
 static void usde_EraseFromWallets(uint256 hash)
 {
-  BOOST_FOREACH(CWallet* pwallet, setpwalletRegistered)
-    pwallet->EraseFromWallet(hash);
+  CWallet *pwallet = GetWallet(USDE_COIN_IFACE);
+
+  pwallet->EraseFromWallet(hash);
 }
 
 bool USDE_CTxMemPool::accept(CTxDB& txdb, CTransaction &tx, bool fCheckInputs, bool* pfMissingInputs)
@@ -1356,15 +1359,15 @@ GetBestBlockChain(iface).ToString().substr(0,20).c_str(), GetBestHeight(USDE_COI
     unet_log(USDE_COIN_IFACE, "InvalidChainFound: WARNING: Displayed transactions may not be correct!  You may need to upgrade, or other nodes may need to upgrade.\n");
 }
 
-bool USDEBlock::SetBestChainInner(CTxDB& txdb, CBlockIndex *pindexNew)
+bool usde_SetBestChainInner(CBlock *block, CTxDB& txdb, CBlockIndex *pindexNew)
 {
-  uint256 hash = GetHash();
+  uint256 hash = block->GetHash();
 
   // Adding to current best branch
-  if (!ConnectBlock(txdb, pindexNew) || !txdb.WriteHashBestChain(hash))
+  if (!block->ConnectBlock(txdb, pindexNew) || !txdb.WriteHashBestChain(hash))
   {
     txdb.TxnAbort();
-    InvalidChainFound(pindexNew);
+    block->InvalidChainFound(pindexNew);
     return false;
   }
   if (!txdb.TxnCommit())
@@ -1374,8 +1377,8 @@ bool USDEBlock::SetBestChainInner(CTxDB& txdb, CBlockIndex *pindexNew)
   pindexNew->pprev->pnext = pindexNew;
 
   // Delete redundant memory transactions
-  BOOST_FOREACH(CTransaction& tx, vtx)
-    mempool.remove(tx);
+  BOOST_FOREACH(CTransaction& tx, block->vtx)
+    USDEBlock::mempool.remove(tx);
 
   return true;
 }
@@ -1383,8 +1386,9 @@ bool USDEBlock::SetBestChainInner(CTxDB& txdb, CBlockIndex *pindexNew)
 // notify wallets about a new best chain
 void static USDE_SetBestChain(const CBlockLocator& loc)
 {
-    BOOST_FOREACH(CWallet* pwallet, setpwalletRegistered)
-        pwallet->SetBestChain(loc);
+  CWallet *pwallet = GetWallet(USDE_COIN_IFACE);
+
+  pwallet->SetBestChain(loc);
 }
 
 #if 0
@@ -1569,7 +1573,7 @@ bool USDEBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
   }
   else if (hashPrevBlock == GetBestBlockChain(iface))
   {
-    if (!SetBestChainInner(txdb, pindexNew))
+    if (!usde_SetBestChainInner(this, txdb, pindexNew))
       return error(SHERR_INVAL, "SetBestChain() : SetBestChainInner failed");
   }
   else
@@ -1699,8 +1703,9 @@ CScript USDEBlock::GetCoinbaseFlags()
 
 static void usde_UpdatedTransaction(const uint256& hashTx)
 {
-  BOOST_FOREACH(CWallet* pwallet, setpwalletRegistered)
-    pwallet->UpdatedTransaction(hashTx);
+  CWallet *pwallet = GetWallet(USDE_COIN_IFACE);
+
+  pwallet->UpdatedTransaction(hashTx);
 }
 
 bool USDEBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)
@@ -2097,3 +2102,38 @@ bool USDEBlock::DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex)
   return (core_DisconnectBlock(txdb, pindex, this));
 }
 
+bool USDEBlock::SetBestChain(CBlockIndex* pindexNew)
+{
+  CIface *iface = GetCoinByIndex(USDE_COIN_IFACE);
+  uint256 hash = GetHash();
+  shtime_t ts;
+  bool ret;
+
+  if (USDEBlock::pindexGenesisBlock == NULL && hash == usde_hashGenesisBlock)
+  {
+    USDEBlock::pindexGenesisBlock = pindexNew;
+  } else {
+    timing_init("SetBestChain/commit", &ts);
+    ret = core_CommitBlock(this, pindexNew); 
+    timing_term(USDE_COIN_IFACE, "SetBestChain/commit", &ts);
+    if (!ret)
+      return (false);
+  }
+
+  // Update best block in wallet (so we can detect restored wallets)
+  bool fIsInitialDownload = IsInitialBlockDownload(USDE_COIN_IFACE);
+  if (!fIsInitialDownload) {
+    const CBlockLocator locator(USDE_COIN_IFACE, pindexNew);
+    timing_init("SetBestChain/locator", &ts);
+    USDE_SetBestChain(locator);
+    timing_term(USDE_COIN_IFACE, "SetBestChain/locator", &ts);
+  }
+
+  // New best block
+  SetBestBlockIndex(USDE_COIN_IFACE, pindexNew);
+  bnBestChainWork = pindexNew->bnChainWork;
+  nTimeBestReceived = GetTime();
+  STAT_TX_ACCEPTS(iface)++;
+
+  return true;
+}
