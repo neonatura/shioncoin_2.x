@@ -1247,6 +1247,7 @@ void SHCBlock::InvalidChainFound(CBlockIndex* pindexNew)
     unet_log(SHC_COIN_IFACE, "InvalidChainFound: WARNING: Displayed transactions may not be correct!  You may need to upgrade, or other nodes may need to upgrade.\n");
 }
 
+#ifdef USE_LEVELDB_TXDB
 bool shc_SetBestChainInner(CBlock *block, CTxDB& txdb, CBlockIndex *pindexNew)
 {
   uint256 hash = block->GetHash();
@@ -1275,6 +1276,7 @@ fprintf(stderr, "DEBUG: SHCBlock::SetBestChainInner: error connecting block.\n")
 
   return true;
 }
+#endif
 
 // notify wallets about a new best chain
 void static SHC_SetBestChain(const CBlockLocator& loc)
@@ -1285,6 +1287,7 @@ void static SHC_SetBestChain(const CBlockLocator& loc)
 }
 
 
+#ifdef USE_LEVELDB_TXDB
 bool SHCBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
 {
   CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);
@@ -1410,7 +1413,54 @@ fprintf(stderr, "DEBUG: SHC_Reorganize(): error reorganizing.\n");
 
   return true;
 }
+#endif
 
+#ifndef USE_LEVELDB_TXDB
+bool SHCBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
+{
+  uint256 hash = GetHash();
+  shtime_t ts;
+  bool ret;
+
+  if (SHCBlock::pindexGenesisBlock == NULL && hash == shc_hashGenesisBlock)
+  {
+    if (!txdb.TxnBegin())
+      return error(SHERR_INVAL, "SetBestChain() : TxnBegin failed");
+    txdb.WriteHashBestChain(hash);
+    if (!txdb.TxnCommit())
+      return error(SHERR_INVAL, "SetBestChain() : TxnCommit failed");
+    SHCBlock::pindexGenesisBlock = pindexNew;
+  } else {
+    timing_init("SetBestChain/commit", &ts);
+    ret = core_CommitBlock(txdb, this, pindexNew);
+    timing_term(SHC_COIN_IFACE, "SetBestChain/commit", &ts);
+    if (!ret)
+      return (false);
+  }
+
+  // Update best block in wallet (so we can detect restored wallets)
+  bool fIsInitialDownload = IsInitialBlockDownload(SHC_COIN_IFACE);
+  if (!fIsInitialDownload) {
+    const CBlockLocator locator(SHC_COIN_IFACE, pindexNew);
+    timing_init("SetBestChain/locator", &ts);
+    SHC_SetBestChain(locator);
+    timing_term(SHC_COIN_IFACE, "SetBestChain/locator", &ts);
+  }
+
+  // New best block
+  SetBestBlockIndex(SHC_COIN_IFACE, pindexNew);
+  bnBestChainWork = pindexNew->bnChainWork;
+  nTimeBestReceived = GetTime();
+
+  {
+    CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);
+    if (iface)
+      STAT_TX_ACCEPTS(iface)++;
+  }
+
+  return true;
+}
+#endif
 
 bool SHCBlock::IsBestChain()
 {
@@ -1418,82 +1468,6 @@ bool SHCBlock::IsBestChain()
   return (pindexBest && GetHash() == pindexBest->GetBlockHash());
 }
 
-#if 0
-bool shc_AcceptBlock(SHCBlock *pblock)
-{
-  CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);
-  int ifaceIndex = SHC_COIN_IFACE;
-  NodeList &vNodes = GetNodeList(ifaceIndex);
-  bc_t *bc = GetBlockChain(GetCoinByIndex(ifaceIndex));
-  blkidx_t *blockIndex = GetBlockTable(ifaceIndex);
-  shtime_t ts;
-  bool ret;
-
-  uint256 hash = pblock->GetHash();
-  if (blockIndex->count(hash)) {
-    return error(SHERR_INVAL, "SHCBlock::AcceptBlock() : block already in block table.");
-  }
-#if 0
-  if (0 == bc_find(bc, hash.GetRaw(), NULL)) {
-    return error(SHERR_INVAL, "AcceptBlock() : block already in block table.");
-  }
-#endif
-
-// Get prev block index
-  map<uint256, CBlockIndex*>::iterator mi = blockIndex->find(pblock->hashPrevBlock);
-  if (mi == blockIndex->end())
-    return error(SHERR_INVAL, "SHC:AcceptBlock: prev block '%s' not found.", pblock->hashPrevBlock.GetHex().c_str());
-  CBlockIndex* pindexPrev = (*mi).second;
-  int nHeight = pindexPrev->nHeight+1;
-
-  // Check proof of work
-  if (pblock->nBits != pblock->GetNextWorkRequired(pindexPrev)) {
-    return error(SHERR_INVAL, "AcceptBlock() : incorrect proof of work");
-  }
-
-  if (!CheckDiskSpace(::GetSerializeSize(*pblock, SER_DISK, CLIENT_VERSION))) {
-    return error(SHERR_IO, "AcceptBlock() : out of disk space");
-  }
-
-  // Check timestamp against prev
-  if (pblock->GetBlockTime() <= pindexPrev->GetMedianTimePast()) {
-    return error(SHERR_INVAL, "AcceptBlock() : block's timestamp is too early");
-  }
-
-  // Check that all transactions are finalized
-  BOOST_FOREACH(const CTransaction& tx, pblock->vtx)
-    if (!tx.IsFinal(SHC_COIN_IFACE, nHeight, pblock->GetBlockTime())) {
-      return error(SHERR_INVAL, "AcceptBlock() : contains a non-final transaction");
-    }
-
-  // Check that the block chain matches the known block chain up to a checkpoint
-  if (!SHC_Checkpoints::CheckBlock(nHeight, hash)) {
-    return error(SHERR_INVAL, "AcceptBlock() : rejected by checkpoint lockin at %d", nHeight);
-  }
-
-  ret = pblock->AddToBlockIndex();
-  if (!ret) {
-    pblock->WriteArchBlock();
-    return error(SHERR_IO, "AcceptBlock() : AddToBlockIndex failed");
-  }
-
-  if (!pblock->WriteBlock(nHeight)) {
-    return error(SHERR_INVAL, "SHC: AcceptBlock(): error writing block to height %d", nHeight);
-  }
-
-  /* Relay inventory, but don't relay old inventory during initial block download */
-  int nBlockEstimate = SHC_Checkpoints::GetTotalBlocksEstimate();
-  if (GetBestBlockChain(iface) == hash)
-  {
-    LOCK(cs_vNodes);
-    BOOST_FOREACH(CNode* pnode, vNodes)
-      if (GetBestHeight(SHC_COIN_IFACE) > (pnode->nStartingHeight != -1 ? pnode->nStartingHeight - 2000 : nBlockEstimate))
-        pnode->PushInventory(CInv(ifaceIndex, MSG_BLOCK, hash));
-  }
-
-  return true;
-}
-#endif
 
 bool SHCBlock::AcceptBlock()
 {

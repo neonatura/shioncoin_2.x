@@ -508,7 +508,6 @@ bool core_ConnectBlock(CBlock *block, CBlockIndex* pindex)
   tx_map mapOutputs;
   map<uint256, CTransaction> mapTx;
   BOOST_FOREACH(CTransaction& tx, block->vtx) {
-    CTransaction tx;
     uint256 hashTx = tx.GetHash();
 
     if (!core_ConnectCoinInputs(block->ifaceIndex, &tx, pindex, mapOutputs, mapTx, nSigOps, nFees, true, false, ((block == NULL) ? false : true)))

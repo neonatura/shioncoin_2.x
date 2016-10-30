@@ -1216,6 +1216,7 @@ GetBestBlockChain(iface).ToString().substr(0,20).c_str(), GetBestHeight(EMC2_COI
     unet_log(EMC2_COIN_IFACE, "InvalidChainFound: WARNING: Displayed transactions may not be correct!  You may need to upgrade, or other nodes may need to upgrade.\n");
 }
 
+#ifdef USE_LEVELDB_TXDB
 bool emc2_SetBestChainInner(CBlock *block, CTxDB& txdb, CBlockIndex *pindexNew)
 {
   uint256 hash = block->GetHash();
@@ -1239,6 +1240,7 @@ bool emc2_SetBestChainInner(CBlock *block, CTxDB& txdb, CBlockIndex *pindexNew)
 
   return true;
 }
+#endif
 
 // notify wallets about a new best chain
 void static EMC2_SetBestChain(const CBlockLocator& loc)
@@ -1409,6 +1411,7 @@ bool emc2_Reindex(CTxDB& txdb, CBlockIndex *pindexNew)
 }
 #endif
 
+#ifdef USE_LEVELDB_TXDB
 bool EMC2Block::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
 {
   CIface *iface = GetCoinByIndex(EMC2_COIN_IFACE);
@@ -1539,6 +1542,56 @@ bool EMC2Block::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
 
   return true;
 }
+#endif
+
+#ifndef USE_LEVELDB_TXDB
+bool EMC2Block::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
+{
+  uint256 hash = GetHash();
+  shtime_t ts;
+  bool ret;
+
+  if (EMC2Block::pindexGenesisBlock == NULL && hash == emc2_hashGenesisBlock)
+  {
+    if (!txdb.TxnBegin())
+      return error(SHERR_INVAL, "SetBestChain() : TxnBegin failed");
+    txdb.WriteHashBestChain(hash);
+    if (!txdb.TxnCommit())
+      return error(SHERR_INVAL, "SetBestChain() : TxnCommit failed");
+    EMC2Block::pindexGenesisBlock = pindexNew;
+  } else {
+    timing_init("SetBestChain/commit", &ts);
+    ret = core_CommitBlock(txdb, this, pindexNew);
+    timing_term(EMC2_COIN_IFACE, "SetBestChain/commit", &ts);
+    if (!ret)
+      return (false);
+  }
+
+  // Update best block in wallet (so we can detect restored wallets)
+  bool fIsInitialDownload = IsInitialBlockDownload(EMC2_COIN_IFACE);
+  if (!fIsInitialDownload) {
+    const CBlockLocator locator(EMC2_COIN_IFACE, pindexNew);
+    timing_init("SetBestChain/locator", &ts);
+    EMC2_SetBestChain(locator);
+    timing_term(EMC2_COIN_IFACE, "SetBestChain/locator", &ts);
+  }
+
+  // New best block
+  SetBestBlockIndex(EMC2_COIN_IFACE, pindexNew);
+  bnBestChainWork = pindexNew->bnChainWork;
+  nTimeBestReceived = GetTime();
+
+  {
+    CIface *iface = GetCoinByIndex(EMC2_COIN_IFACE);
+    if (iface)
+      STAT_TX_ACCEPTS(iface)++;
+  }
+
+  return true;
+}
+#endif
+
+
 
 bool EMC2Block::IsBestChain()
 {

@@ -1359,6 +1359,7 @@ GetBestBlockChain(iface).ToString().substr(0,20).c_str(), GetBestHeight(USDE_COI
     unet_log(USDE_COIN_IFACE, "InvalidChainFound: WARNING: Displayed transactions may not be correct!  You may need to upgrade, or other nodes may need to upgrade.\n");
 }
 
+#ifdef USE_LEVELDB_TXDB
 bool usde_SetBestChainInner(CBlock *block, CTxDB& txdb, CBlockIndex *pindexNew)
 {
   uint256 hash = block->GetHash();
@@ -1382,6 +1383,7 @@ bool usde_SetBestChainInner(CBlock *block, CTxDB& txdb, CBlockIndex *pindexNew)
 
   return true;
 }
+#endif
 
 // notify wallets about a new best chain
 void static USDE_SetBestChain(const CBlockLocator& loc)
@@ -1552,6 +1554,7 @@ bool usde_Reindex(CTxDB& txdb, CBlockIndex *pindexNew)
 }
 #endif
 
+#ifdef USE_LEVELDB_TXDB
 bool USDEBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
 {
   CIface *iface = GetCoinByIndex(USDE_COIN_IFACE);
@@ -1684,6 +1687,54 @@ bool USDEBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
 
   return true;
 }
+#endif
+
+#ifndef USE_LEVELDB_TXDB
+bool USDEBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
+{
+  uint256 hash = GetHash();
+  shtime_t ts;
+  bool ret;
+
+  if (USDEBlock::pindexGenesisBlock == NULL && hash == usde_hashGenesisBlock)
+  {
+    if (!txdb.TxnBegin())
+      return error(SHERR_INVAL, "SetBestChain() : TxnBegin failed");
+    txdb.WriteHashBestChain(hash);
+    if (!txdb.TxnCommit())
+      return error(SHERR_INVAL, "SetBestChain() : TxnCommit failed");
+    USDEBlock::pindexGenesisBlock = pindexNew;
+  } else {
+    timing_init("SetBestChain/commit", &ts);
+    ret = core_CommitBlock(txdb, this, pindexNew);
+    timing_term(USDE_COIN_IFACE, "SetBestChain/commit", &ts);
+    if (!ret)
+      return (false);
+  }
+
+  // Update best block in wallet (so we can detect restored wallets)
+  bool fIsInitialDownload = IsInitialBlockDownload(USDE_COIN_IFACE);
+  if (!fIsInitialDownload) {
+    const CBlockLocator locator(USDE_COIN_IFACE, pindexNew);
+    timing_init("SetBestChain/locator", &ts);
+    USDE_SetBestChain(locator);
+    timing_term(USDE_COIN_IFACE, "SetBestChain/locator", &ts);
+  }
+
+  // New best block
+  SetBestBlockIndex(USDE_COIN_IFACE, pindexNew);
+  bnBestChainWork = pindexNew->bnChainWork;
+  nTimeBestReceived = GetTime();
+
+  {
+    CIface *iface = GetCoinByIndex(USDE_COIN_IFACE);
+    if (iface)
+      STAT_TX_ACCEPTS(iface)++;
+  }
+
+  return true;
+}
+#endif
 
 bool USDEBlock::IsBestChain()
 {
