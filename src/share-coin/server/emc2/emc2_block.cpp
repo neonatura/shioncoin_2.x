@@ -176,7 +176,6 @@ static unsigned int emc2_DigiShield(const CBlockIndex* pindexLast, const CBlockH
 
   // Limit adjustment step
   int64 nActualTimespan = pindexLast->GetBlockTime() - pindexFirst->GetBlockTime();
-  printf(" nActualTimespan = %"PRI64d" before bounds\n", nActualTimespan);
 
   CBigNum bnNew;
   bnNew.SetCompact(pindexLast->nBits);

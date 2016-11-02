@@ -4391,7 +4391,7 @@ Value rpc_tx_prune(CIface *iface, const Array& params, bool fHelp)
   int ifaceIndex = GetCoinIndex(iface);
 
   Array a;
-  if (iface->enabled && pool && wallet) {
+  if (iface && iface->enabled && pool && wallet) {
     vector<uint256> v;
 
     LOCK(pool->cs);
@@ -4427,6 +4427,8 @@ Value rpc_tx_prune(CIface *iface, const Array& params, bool fHelp)
             continue;
           }
 
+/* DEBUG: TODO: load wallet tx from db */
+#if 0
           CWalletTx wtx(wallet, prevtx);
           if (wtx.IsSpent(in.prevout.n)) {
             Debug("rpc_tx_prune: previous transaction \"%s\" output (#%d) is already spent.", prevhash.GetHex().c_str(), (int)in.prevout.n);
@@ -4434,6 +4436,8 @@ Value rpc_tx_prune(CIface *iface, const Array& params, bool fHelp)
             fValid = false;
             continue;
           }
+#endif
+
         }
       }
       if (fValid)

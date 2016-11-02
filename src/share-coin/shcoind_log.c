@@ -29,17 +29,13 @@
 void f_shcoind_log(int err_code, const char *tag, const char *text, const char *src_fname, long src_line)
 {
   static shbuf_t *buff;
+  char fname[PATH_MAX+1];
   char origin[256];
   char *date_str;
   char buf[256];
+  size_t len;
 
   if (!err_code && !opt_num(OPT_DEBUG)) {
-#if 0
-    memset(buf, 0, sizeof(buf));
-    strncpy(buf, shpref_get("shcoind.debug", ""), sizeof(buf)-1);
-    if (*buf != 't' && *buf != 'T')
-      return; /* all done */
-#endif
     return;
   }
 
@@ -51,11 +47,19 @@ void f_shcoind_log(int err_code, const char *tag, const char *text, const char *
     shbuf_catstr(buff, ": ");
   }
   if (text) {
-    shbuf_catstr(buff, text);
-    shbuf_catstr(buff, " ");
+    len = strlen(text);
+    if (*text && text[strlen(text)-1] == '\n')
+      len--;
+    shbuf_cat(buff, text, len);
   }
   if (src_fname && src_line) {
-    sprintf(origin, "(%s:%ld)", src_fname, src_line);
+    char *ptr = strrchr(src_fname, '/');
+    if (!ptr)
+      strncpy(fname, src_fname, sizeof(fname)-1);
+    else
+      strncpy(fname, ptr+1, sizeof(fname)-1);
+
+    sprintf(origin, " (%s:%ld)", fname, src_line);
     shbuf_catstr(buff, origin);
   }
 

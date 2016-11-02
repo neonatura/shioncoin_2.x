@@ -52,6 +52,7 @@ using namespace std;
 using namespace boost;
 
 
+
 void ThreadMessageHandler2(void* parg);
 void ThreadSocketHandler2(void* parg);
 void ThreadDNSAddressSeed2(void* parg);
@@ -1094,10 +1095,10 @@ bool usde_coin_server_recv_msg(CIface *iface, CNode* pfrom)
   bool fRet = false;
   try {
     char *cmd = (char *)strCommand.c_str();
-    LOCK(cs_main);
-    timing_init(cmd, &ts);
-    fRet = usde_ProcessMessage(iface, pfrom, strCommand, vRecv);
-    timing_term(USDE_COIN_IFACE, cmd, &ts);
+    {
+//      LOCK(cs_main);
+      fRet = usde_ProcessMessage(iface, pfrom, strCommand, vRecv);
+    }
   } catch (std::ios_base::failure& e) {
     if (strstr(e.what(), "end of data"))
     {
@@ -1397,7 +1398,7 @@ bool shc_coin_server_recv_msg(CIface *iface, CNode* pfrom)
     char *cmd = (char *)strCommand.c_str();
     timing_init(cmd, &ts);
     {
-      LOCK(cs_main);
+//      LOCK(cs_main);
       fRet = shc_ProcessMessage(iface, pfrom, strCommand, vRecv);
     }
     timing_term(SHC_COIN_IFACE, cmd, &ts);
@@ -2775,10 +2776,10 @@ bool emc2_coin_server_recv_msg(CIface *iface, CNode* pfrom)
   bool fRet = false;
   try {
     char *cmd = (char *)strCommand.c_str();
-    LOCK(cs_main);
-    timing_init(cmd, &ts);
-    fRet = emc2_ProcessMessage(iface, pfrom, strCommand, vRecv);
-    timing_term(EMC2_COIN_IFACE, cmd, &ts);
+    {
+//      LOCK(cs_main);
+      fRet = emc2_ProcessMessage(iface, pfrom, strCommand, vRecv);
+    }
   } catch (std::ios_base::failure& e) {
     if (strstr(e.what(), "end of data"))
     {

@@ -1,5 +1,31 @@
 
+/*
+ * @copyright
+ *
+ *  Copyright 2014 Neo Natura
+ *
+ *  This file is part of the Share Library.
+ *  (https://github.com/neonatura/share)
+ *        
+ *  The Share Library is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version. 
+ *
+ *  The Share Library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with The Share Library.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  @endcopyright
+ */  
+
 #define __STRATUM__TASK_C__
+
+#include <math.h>
 #include "shcoind.h"
 #include "coin_proto.h"
 
@@ -186,9 +212,7 @@ static void check_payout(int ifaceIndex)
 
 }
 
-/**
- * @param block_height the min block height the mining reward will be available.
- */
+#if 0
 static void commit_payout(int ifaceIndex, int block_height)
 {
   user_t *user;
@@ -218,6 +242,62 @@ static void commit_payout(int ifaceIndex, int block_height)
       }
     }
   }
+}
+#endif
+
+/**
+ * @param block_height the min block height the mining reward will be available.
+ */
+static void commit_payout(int ifaceIndex, int block_height)
+{
+  CIface *iface = GetCoinByIndex(ifaceIndex);
+  user_t *user;
+  char uname[256];
+  double min_input;
+  double coin_val;
+  double bal;
+
+  for (user = client_list; user; user = user->next) {
+    if (user->balance[ifaceIndex] < 5.0)
+      continue;
+
+    memset(uname, 0, sizeof(uname));
+    strncpy(uname, user->worker, sizeof(uname) - 1);
+    strtok(uname, ".");
+    if (!*uname)
+      continue;
+
+    if (0 == strcasecmp(uname, "anonymous"))
+      continue; /* public */
+
+    coin_val = floor(user->balance[ifaceIndex] * 1000) / 1000;
+    if (coin_val > (user->balance_avg[ifaceIndex] * 4)) {
+      break;
+    }
+  }
+  if (!user)
+    return;
+
+  bal = getaccountbalance(ifaceIndex, "");
+  min_input = (double)iface->min_tx_fee / (double)COIN;
+  for (user = client_list; user; user = user->next) {
+    coin_val = floor(user->balance[ifaceIndex] * 1000) / 1000;
+    if (coin_val <= min_input)
+      continue;
+
+    if (coin_val >= bal)
+      continue;
+
+    if (0 == addblockreward(ifaceIndex, uname, coin_val)) {
+      user->reward_time = time(NULL);
+      user->reward_height = block_height;
+      user->balance[ifaceIndex] = MAX(0.0, user->balance[ifaceIndex] - coin_val);
+
+      bal -= coin_val;
+    }
+  }
+
+  sendblockreward(ifaceIndex);
 }
 
 static int task_verify(int ifaceIndex, int *work_reset_p)

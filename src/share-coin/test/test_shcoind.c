@@ -58,7 +58,6 @@ int main(int argc, char *argv[])
 
   serv_peer = shapp_init("shcoind", NULL, SHAPP_LOCAL);
 
-
   test_shcoind_init();
 
   /* test suits */

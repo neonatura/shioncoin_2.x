@@ -437,6 +437,132 @@ fprintf(stderr, "DEBUG: '%s' = SendMoneyTo: amount %d\n", strError.c_str(), (int
   return (0);
 }
 
+vector< pair<CScript, int64> > vecRewardSend;
+int64 nBankFee = 0;
+
+int c_addblockreward(int ifaceIndex, const char *accountName, double dAmount)
+{
+  CIface *iface = GetCoinByIndex(ifaceIndex);
+  CWallet *pwalletMain = GetWallet(ifaceIndex);
+  CWalletDB walletdb(pwalletMain->strWalletFile);
+  string strAccount(accountName);
+  string strMainAccount("");
+  int64 nAmount;
+  Array ret;
+  int nMinDepth = 1; /* single confirmation requirement */
+  int nMinConfirmDepth = 1; /* single confirmation requirement */
+  int64 nBalance;
+
+  if (pwalletMain->IsLocked()) {
+fprintf(stderr, "DEBUG: c_setblockreward: wallet is locked\n");
+    return (-13);
+  }
+
+  if (dAmount <= 0)
+    return (-3);
+
+#if 0
+  CCoinAddr address;
+  if (!wallet->GetMergedAddress(accountName, "miner", address))
+    return (-5);
+#endif
+  bool found = false;
+  CCoinAddr address = GetAddressByAccount(pwalletMain, accountName, found);
+  if (!found || !address.IsValid()) {
+    char errbuf[1024];
+    sprintf(errbuf, "setblockreward: account '%s' has invalid %s address.", accountName, iface->name);
+    shcoind_log(errbuf);
+    return (-5);
+  }
+
+
+  if (dAmount <= 0.0 || dAmount > 84000000.0) {
+    return (-3);
+  }
+
+  nAmount = roundint64(dAmount * COIN);
+  if (!MoneyRange(ifaceIndex, nAmount)) {
+    return (-3);
+  }
+
+  nBalance  = GetAccountBalance(ifaceIndex, walletdb, strMainAccount, nMinConfirmDepth);
+  if (nAmount > nBalance) {
+    shcoind_log("c_setblockreward: warning: main account has insufficient funds for block reward distribution.");
+    return (-6);
+  }
+
+  /* add to list */
+  CScript scriptPubKey;
+  scriptPubKey.SetDestination(address.Get());
+  vecRewardSend.push_back(make_pair(scriptPubKey, nAmount));
+
+  return (0);
+}
+
+int c_sendblockreward(int ifaceIndex)
+{
+  CIface *iface = GetCoinByIndex(ifaceIndex);
+  CWallet *wallet = GetWallet(ifaceIndex);
+  string strMainAccount("");
+  int64 nFeeRet;
+  int nMinConfirmDepth = 1; /* single confirmation requirement */
+  bool fRet;
+
+  if (vecRewardSend.size() == 0)
+    return (0); /* all done */
+
+  /* calculate already-subtracted fee */
+  int64 nTotValue = 0;
+  int64 nValue = 0;
+  BOOST_FOREACH(const PAIRTYPE(CScript, int64)& item, vecRewardSend) {
+    nValue += item.second + (item.second / 1000);
+    nTotValue += item.second;
+  }
+  nBankFee += nValue / 1000;
+
+  /* add in residual bank fee */
+  if (nBankFee > (MIN_TX_FEE(iface) * 4)) {
+    CCoinAddr address(ifaceIndex);
+    if (wallet->GetMergedAddress(strMainAccount, "bank", address)) {
+      CScript scriptPubKey;
+      scriptPubKey.SetDestination(address.Get());
+      vecRewardSend.push_back(make_pair(scriptPubKey, nBankFee));
+    }
+    nBankFee = 0;
+  }
+
+
+#if 0
+  /* double-check balance */
+  nBalance  = GetAccountBalance(ifaceIndex, walletdb, strMainAccount, nMinConfirmDepth);
+  if (nAmount > nBalance) {
+    shcoind_log("c_setblockreward: warning: main account has insufficient funds for block reward distribution.");
+    return (-6);
+  }
+#endif
+
+  CWalletTx wtx;
+  wtx.strFromAccount = strMainAccount;
+
+  CReserveKey rkey(wallet);
+  fRet = wallet->CreateTransaction(vecRewardSend, wtx, rkey, nFeeRet);
+  vecRewardSend.clear();
+  if (!fRet)
+    return (-4);
+
+  fRet = wallet->CommitTransaction(wtx, rkey);
+  if (!fRet)
+    return (-4);
+
+  Debug("sendblockreward: sent %f coins for stratum reward(s) [tx-fee %f].", (double)nTotValue/(double)COIN, (double)nFeeRet/(double)COIN);
+
+  /* bank pays for all transaction fees */
+  nBankFee -= nFeeRet;
+
+  return (0);
+}
+
+
 /**
  * Transfer currency between two accounts.
  */
@@ -1036,6 +1162,18 @@ int setblockreward(int ifaceIndex, const char *accountName, double amount)
   if (!*accountName)
     return (-5); /* invalid coin address */
   return (c_setblockreward(ifaceIndex, accountName, amount));
+}
+
+int addblockreward(int ifaceIndex, const char *accountName, double amount)
+{
+  if (!*accountName)
+    return (-5); /* invalid coin address */
+  return (c_addblockreward(ifaceIndex, accountName, amount));
+}
+
+int sendblockreward(int ifaceIndex)
+{
+  return (c_sendblockreward(ifaceIndex));
 }
 
 int wallet_account_transfer(int ifaceIndex, const char *sourceAccountName, const char *accountName, const char *comment, double amount)

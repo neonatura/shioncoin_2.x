@@ -85,6 +85,8 @@ int block_save(int block_height, const char *json_str);
 char *block_load(int block_height);
 
 int setblockreward(int ifaceIndex, const char *accountName, double amount);
+int addblockreward(int ifaceIndex, const char *accountName, double amount);
+int sendblockreward(int ifaceIndex);
 
 int wallet_account_transfer(int ifaceIndex, const char *sourceAccountName, const char *accountName, const char *comment, double amount);
 

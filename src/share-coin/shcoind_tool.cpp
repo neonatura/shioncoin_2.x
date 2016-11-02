@@ -104,6 +104,8 @@ int main(int argc, char *argv[])
     }
   }
 
+  opt_init();
+
   /* perform rpc operation */
   ret = CommandLineRPC(argc, argv);
 

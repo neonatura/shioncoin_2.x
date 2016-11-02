@@ -16,12 +16,15 @@ void test_shcoind_init(void)
   CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
   uint256 thash;
 
-/* initialize chains */
+  /* initialize configuration options */
+  opt_init();
+
+  /* initialize chains */
   bc_t *tx_bc = GetBlockTxChain(iface);
   bc_t *bc = GetBlockChain(iface);
 
   /* load wallet */
-testWallet = new TESTWallet();
+  testWallet = new TESTWallet();
   SetWallet(TEST_COIN_IFACE, testWallet);
   //RegisterWallet(testWallet);
   RandAddSeedPerfmon();
