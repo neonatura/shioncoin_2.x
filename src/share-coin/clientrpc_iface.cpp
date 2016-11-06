@@ -231,6 +231,8 @@ string JSONRPCRequest(const char *iface, const string& strMethod, const Array& p
 
 Object CallRPC(const char *iface, const string& strMethod, const Array& params)
 {
+  char port_str[64];
+
   if (mapArgs["-rpcuser"] == "" && mapArgs["-rpcpassword"] == "")
     throw runtime_error(strprintf(
           _("You must set rpcpassword=<password> in the configuration file:\n%s\n"
@@ -245,7 +247,10 @@ Object CallRPC(const char *iface, const string& strMethod, const Array& params)
   asio::ssl::stream<asio::ip::tcp::socket> sslStream(io_service, context);
   SSLIOStreamDevice<asio::ip::tcp> d(sslStream, fUseSSL);
   iostreams::stream< SSLIOStreamDevice<asio::ip::tcp> > stream(d);
-  if (!d.connect(GetArg("-rpcconnect", "127.0.0.1"), GetArg("-rpcport", "54448")))
+
+  string host_str("127.0.0.1");
+  sprintf(port_str, "%u", (unsigned int)opt_num(OPT_RPC_PORT));
+  if (!d.connect(host_str, string(port_str)))
     throw runtime_error("couldn't connect to server");
 
   // HTTP basic authentication
@@ -282,6 +287,7 @@ fprintf(stderr, "DEBUG: strReply: %s\n", strReply.c_str());
   return reply;
 }
 
+#if 0
 template<typename T>
 void ConvertTo(Value& value)
 {
@@ -299,8 +305,10 @@ void ConvertTo(Value& value)
     value = value.get_value<T>();
   }
 }
+#endif
 
 
+#if 0
 // Convert strings to command-specific RPC representation
 Array RPCConvertValues(const std::string &strMethod, const std::vector<std::string> &strParams)
 {
@@ -394,6 +402,17 @@ Array RPCConvertValues(const std::string &strMethod, const std::vector<std::stri
   if (strMethod == "tx.signraw"     && n > 2) ConvertTo<Array>(params[2]);
 
   return params;
+}
+#endif
+
+Array RPCConvertValues(const std::string &strMethod, const std::vector<std::string> &strParams)
+{
+  Array params;
+
+  BOOST_FOREACH(const std::string &param, strParams)
+    params.push_back(param);
+
+  return (params);
 }
 
 int CommandLineRPC(int argc, char *argv[])

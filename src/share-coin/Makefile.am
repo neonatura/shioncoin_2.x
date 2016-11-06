@@ -35,6 +35,22 @@ proto_sources = \
 	$(srcdir)/proto/emc2_proto.h \
 	$(srcdir)/proto/test_proto.h
 
+stratum_sources = \
+	stratum/stratum.h \
+	stratum/stratum_http.h \
+	stratum/stratum_message.h \
+	stratum/stratum_protocol.h \
+	stratum/stratum_user.h \
+	stratum/stratum_task.h \
+	stratum/stratum_sync.h \
+	stratum/stratum.c \
+	stratum/stratum_http.c \
+	stratum/stratum_message.c \
+	stratum/stratum_protocol.c \
+	stratum/stratum_user.c \
+	stratum/stratum_task.c \
+	stratum/stratum_sync.c
+
 common_includes = \
 	$(top_builddir)/config.h \
 	$(top_srcdir)/src/share-lib/share.h \
@@ -83,14 +99,6 @@ common_includes = \
 	server/wallet.h \
 	shcoind_version.h \
 	server_iface.h \
-	stratum/stratum.h \
-	stratum/stratum_http.h \
-	stratum/stratum_message.h \
-	stratum/stratum_protocol.h \
-	stratum/stratum_user.h \
-	stratum/stratum_task.h \
-	stratum/stratum_sync.h \
-	stratum/stratum.h \
 	shcoind_rpc.h \
 	shcoind_log.h \
 	shcoind_opt.h \
@@ -138,6 +146,7 @@ server_sources = \
 	server/shc/shc_wallet.h \
 	server/shc/shc_txidx.cpp \
 	server/shc/shc_txidx.h \
+	server/shc/shc_rpc.cpp \
 	server/usde/usde_netmsg.cpp \
 	server/usde/usde_netmsg.h \
 	server/usde/usde_block.cpp \
@@ -193,14 +202,6 @@ server_sources = \
 	wallet_iface.cpp \
 	block_iface.cpp \
 	server_iface.cpp
-stratum_sources = \
-	stratum/stratum.c \
-	stratum/stratum_http.c \
-	stratum/stratum_message.c \
-	stratum/stratum_protocol.c \
-	stratum/stratum_user.c \
-	stratum/stratum_task.c \
-	stratum/stratum_sync.c
 
 tool_sources = \
 	tool/tool_irc.cpp
@@ -228,7 +229,7 @@ shc: shcointool
 
 test_shcoind_SOURCES = \
 	$(common_includes) $(common_sources) \
-	$(server_sources) $(stratum_sources) \
+	$(server_sources) \
 	test/CuTest.c \
 	test/CuTest.h \
 	test/test_shcoind.c \

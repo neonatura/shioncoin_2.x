@@ -338,6 +338,7 @@ int cpp_stratum_account_cycle(char *ret_acc_name, char *ret_acc_key)
 }
 
 
+
 CCoinAddr GetAddressByAccount(CWallet *wallet, const char *accountName, bool& found)
 {
   CCoinAddr address(wallet->ifaceIndex);
@@ -1120,6 +1121,24 @@ const char *c_stratum_error_get(int req_id)
   return (stratumerror_json.c_str());
 }
 
+static const char *cpp_stratum_call_rpc(int ifaceIndex, const char *account, const char *pkey_str, shjson_t *json)
+{
+  string strAccount(account);
+  uint256 in_pkey;
+
+  if (account && pkey_str && *pkey_str) { 
+    in_pkey.SetHex(pkey_str);
+    if (!valid_pkey_hash(strAccount, in_pkey)) {
+      error(SHERR_ACCESS, "Invalid private key hash specified.");
+      return (NULL);
+    }
+  } else {
+    account = NULL;
+  }
+
+  return (ExecuteStratumRPC(ifaceIndex, account, json));
+}
+
 
 
 #ifdef __cplusplus
@@ -1244,6 +1263,11 @@ const char *getnewaddress(int ifaceIndex, const char *account)
 int stratum_account_cycle(char *acc_name, char *acc_key)
 {
   return (cpp_stratum_account_cycle(acc_name, acc_key));
+}
+
+const char *stratum_call_rpc(int ifaceIndex, const char *account, const char *pkey_str, shjson_t *json)
+{
+  return (cpp_stratum_call_rpc(ifaceIndex, account, pkey_str, json));
 }
 
 #ifdef __cplusplus

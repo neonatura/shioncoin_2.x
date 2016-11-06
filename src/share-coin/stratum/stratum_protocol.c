@@ -453,6 +453,7 @@ int stratum_default_iface(void)
 }
 
 extern int DefaultWorkIndex;
+
 /**
  * @todo: leave stale worker users (without open fd) until next round reset. current behavior does not payout if connection is severed.
  */ 
@@ -519,7 +520,8 @@ int stratum_request_message(user_t *user, shjson_t *json)
     return (err);
   } 
 
-  if (0 == strcmp(method, "mining.authorize")) {
+  if (0 == strcmp(method, "mining.authorize") ||
+      0 == strcmp(method, "stratum.authorize")) {
     shjson_t *param;
     char *username;
 
@@ -773,6 +775,42 @@ int stratum_request_message(user_t *user, shjson_t *json)
     return (stratum_request_account_info(ifaceIndex, user, idx,
           shjson_array_astr(json, "params", 0),
           shjson_array_astr(json, "params", 1)));
+  }
+
+  {
+    const char *ret_json;
+    char account[256];
+
+    memset(account, 0, sizeof(account));
+    strncpy(account, user->worker, sizeof(account)-1);
+    strtok(account, ".");
+    ret_json = ExecuteStratumRPC(ifaceIndex, (const char *)account, json); 
+    if (!ret_json) {
+fprintf(stderr, "DEBUG: stratum_request_message: error executing rpc call for '%s'\n", user->worker);
+      reply = shjson_init(NULL);
+      set_stratum_error(reply, -5, "invalid");
+      shjson_null_add(reply, "result");
+      stratum_send_message(user, reply);
+      shjson_free(&reply);
+      return (SHERR_INVAL);
+    }
+
+    reply = shjson_init(ret_json);
+    if (!reply) {
+fprintf(stderr, "DEBUG: stratum_request_message: error parsing JSON: %s\n", ret_json);
+      reply = shjson_init(NULL);
+      set_stratum_error(reply, -5, "invalid");
+      shjson_null_add(reply, "result");
+      stratum_send_message(user, reply);
+      shjson_free(&reply);
+      return (SHERR_INVAL);
+    }
+
+    /* send RPC response */
+    shjson_num_add(reply, "id", idx);
+    err = stratum_send_message(user, reply);
+    shjson_free(&reply);
+    return (0);
   }
 
   timing_term(ifaceIndex, method, &ts);

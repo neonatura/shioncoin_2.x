@@ -25,7 +25,7 @@ user_t *stratum_user_get(int fd)
   user_t *user;
 
   for (user = client_list; user; user = user->next) {
-    if (0 == strcasecmp(fd, user->fd))
+    if (user->fd == fd)
       break;
   }
 
@@ -99,6 +99,10 @@ user_t *stratum_user(user_t *user, char *username)
   char name[256]; 
   char *ptr;
   int cli_cnt;
+
+  /* invalid chars */
+  if (strchr(username, '@'))
+    return (NULL);
 
   memset(name, 0, sizeof(name));
   strncpy(name, username, sizeof(name) - 1);

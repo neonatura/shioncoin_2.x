@@ -27,8 +27,7 @@
 
 int get_stratum_daemon_port(void)
 {
-/* todo: config */
-  return (STRATUM_DAEMON_PORT);
+  return (opt_num(OPT_STRATUM_PORT));
 }
 
 /**

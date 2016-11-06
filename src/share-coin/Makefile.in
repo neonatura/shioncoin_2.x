@@ -183,15 +183,15 @@ am__objects_5 = $(am__objects_4) shcoind-fractal.$(OBJEXT) \
 	shcoind-fractal_bmp.$(OBJEXT) shcoind-test_wallet.$(OBJEXT) \
 	shcoind-test_block.$(OBJEXT) shcoind-shc_netmsg.$(OBJEXT) \
 	shcoind-shc_block.$(OBJEXT) shcoind-shc_wallet.$(OBJEXT) \
-	shcoind-shc_txidx.$(OBJEXT) shcoind-usde_netmsg.$(OBJEXT) \
-	shcoind-usde_block.$(OBJEXT) shcoind-usde_wallet.$(OBJEXT) \
-	shcoind-usde_txidx.$(OBJEXT) shcoind-emc2_txidx.$(OBJEXT) \
-	shcoind-emc2_block.$(OBJEXT) shcoind-emc2_wallet.$(OBJEXT) \
-	shcoind-emc2_netmsg.$(OBJEXT) shcoind-txext.$(OBJEXT) \
-	shcoind-alias.$(OBJEXT) shcoind-certificate.$(OBJEXT) \
-	shcoind-offer.$(OBJEXT) shcoind-asset.$(OBJEXT) \
-	shcoind-exec.$(OBJEXT) shcoind-channel.$(OBJEXT) \
-	shcoind-rpcalias_proto.$(OBJEXT) \
+	shcoind-shc_txidx.$(OBJEXT) shcoind-shc_rpc.$(OBJEXT) \
+	shcoind-usde_netmsg.$(OBJEXT) shcoind-usde_block.$(OBJEXT) \
+	shcoind-usde_wallet.$(OBJEXT) shcoind-usde_txidx.$(OBJEXT) \
+	shcoind-emc2_txidx.$(OBJEXT) shcoind-emc2_block.$(OBJEXT) \
+	shcoind-emc2_wallet.$(OBJEXT) shcoind-emc2_netmsg.$(OBJEXT) \
+	shcoind-txext.$(OBJEXT) shcoind-alias.$(OBJEXT) \
+	shcoind-certificate.$(OBJEXT) shcoind-offer.$(OBJEXT) \
+	shcoind-asset.$(OBJEXT) shcoind-exec.$(OBJEXT) \
+	shcoind-channel.$(OBJEXT) shcoind-rpcalias_proto.$(OBJEXT) \
 	shcoind-rpccert_proto.$(OBJEXT) shcoind-rpcdump.$(OBJEXT) \
 	shcoind-rpcnet.$(OBJEXT) shcoind-rpc_proto.$(OBJEXT) \
 	shcoind-rpcrawtransaction.$(OBJEXT) shcoind-protocol.$(OBJEXT) \
@@ -285,6 +285,7 @@ am__objects_13 = $(am__objects_12) test_shcoind-fractal.$(OBJEXT) \
 	test_shcoind-shc_block.$(OBJEXT) \
 	test_shcoind-shc_wallet.$(OBJEXT) \
 	test_shcoind-shc_txidx.$(OBJEXT) \
+	test_shcoind-shc_rpc.$(OBJEXT) \
 	test_shcoind-usde_netmsg.$(OBJEXT) \
 	test_shcoind-usde_block.$(OBJEXT) \
 	test_shcoind-usde_wallet.$(OBJEXT) \
@@ -317,16 +318,8 @@ am__objects_13 = $(am__objects_12) test_shcoind-fractal.$(OBJEXT) \
 	test_shcoind-wallet_iface.$(OBJEXT) \
 	test_shcoind-block_iface.$(OBJEXT) \
 	test_shcoind-server_iface.$(OBJEXT)
-am__objects_14 = test_shcoind-stratum.$(OBJEXT) \
-	test_shcoind-stratum_http.$(OBJEXT) \
-	test_shcoind-stratum_message.$(OBJEXT) \
-	test_shcoind-stratum_protocol.$(OBJEXT) \
-	test_shcoind-stratum_user.$(OBJEXT) \
-	test_shcoind-stratum_task.$(OBJEXT) \
-	test_shcoind-stratum_sync.$(OBJEXT)
 am_test_shcoind_OBJECTS = $(am__objects_1) $(am__objects_11) \
-	$(am__objects_13) $(am__objects_14) \
-	test_shcoind-CuTest.$(OBJEXT) \
+	$(am__objects_13) test_shcoind-CuTest.$(OBJEXT) \
 	test_shcoind-test_shcoind.$(OBJEXT) \
 	test_shcoind-test_init.$(OBJEXT) \
 	test_shcoind-testcoin_key.$(OBJEXT) \
@@ -1311,6 +1304,22 @@ proto_sources = \
 	$(srcdir)/proto/emc2_proto.h \
 	$(srcdir)/proto/test_proto.h
 
+stratum_sources = \
+	stratum/stratum.h \
+	stratum/stratum_http.h \
+	stratum/stratum_message.h \
+	stratum/stratum_protocol.h \
+	stratum/stratum_user.h \
+	stratum/stratum_task.h \
+	stratum/stratum_sync.h \
+	stratum/stratum.c \
+	stratum/stratum_http.c \
+	stratum/stratum_message.c \
+	stratum/stratum_protocol.c \
+	stratum/stratum_user.c \
+	stratum/stratum_task.c \
+	stratum/stratum_sync.c
+
 common_includes = \
 	$(top_builddir)/config.h \
 	$(top_srcdir)/src/share-lib/share.h \
@@ -1359,14 +1368,6 @@ common_includes = \
 	server/wallet.h \
 	shcoind_version.h \
 	server_iface.h \
-	stratum/stratum.h \
-	stratum/stratum_http.h \
-	stratum/stratum_message.h \
-	stratum/stratum_protocol.h \
-	stratum/stratum_user.h \
-	stratum/stratum_task.h \
-	stratum/stratum_sync.h \
-	stratum/stratum.h \
 	shcoind_rpc.h \
 	shcoind_log.h \
 	shcoind_opt.h \
@@ -1414,6 +1415,7 @@ server_sources = \
 	server/shc/shc_wallet.h \
 	server/shc/shc_txidx.cpp \
 	server/shc/shc_txidx.h \
+	server/shc/shc_rpc.cpp \
 	server/usde/usde_netmsg.cpp \
 	server/usde/usde_netmsg.h \
 	server/usde/usde_block.cpp \
@@ -1470,22 +1472,13 @@ server_sources = \
 	block_iface.cpp \
 	server_iface.cpp
 
-stratum_sources = \
-	stratum/stratum.c \
-	stratum/stratum_http.c \
-	stratum/stratum_message.c \
-	stratum/stratum_protocol.c \
-	stratum/stratum_user.c \
-	stratum/stratum_task.c \
-	stratum/stratum_sync.c
-
 tool_sources = \
 	tool/tool_irc.cpp
 
 bin_SCRIPTS = shc $(am__append_1) $(am__append_2)
 test_shcoind_SOURCES = \
 	$(common_includes) $(common_sources) \
-	$(server_sources) $(stratum_sources) \
+	$(server_sources) \
 	test/CuTest.c \
 	test/CuTest.h \
 	test/test_shcoind.c \
@@ -1726,6 +1719,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-shc_block.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-shc_netmsg.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-shc_proto.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-shc_rpc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-shc_txidx.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-shc_wallet.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-shcoind.Po@am__quote@
@@ -1846,6 +1840,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-shc_block.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-shc_netmsg.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-shc_proto.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-shc_rpc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-shc_txidx.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-shc_wallet.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-shcoind_descriptor.Po@am__quote@
@@ -1854,13 +1849,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-shcoind_rpc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-shcoind_signal.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-spring.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-stratum.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-stratum_http.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-stratum_message.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-stratum_protocol.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-stratum_sync.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-stratum_task.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-stratum_user.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-sync.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-test_block.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-test_init.Po@am__quote@
@@ -2982,104 +2970,6 @@ test_shcoind-scrypt.obj: server/scrypt.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-scrypt.obj `if test -f 'server/scrypt.c'; then $(CYGPATH_W) 'server/scrypt.c'; else $(CYGPATH_W) '$(srcdir)/server/scrypt.c'; fi`
 
-test_shcoind-stratum.o: stratum/stratum.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-stratum.o -MD -MP -MF $(DEPDIR)/test_shcoind-stratum.Tpo -c -o test_shcoind-stratum.o `test -f 'stratum/stratum.c' || echo '$(srcdir)/'`stratum/stratum.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-stratum.Tpo $(DEPDIR)/test_shcoind-stratum.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='stratum/stratum.c' object='test_shcoind-stratum.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-stratum.o `test -f 'stratum/stratum.c' || echo '$(srcdir)/'`stratum/stratum.c
-
-test_shcoind-stratum.obj: stratum/stratum.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-stratum.obj -MD -MP -MF $(DEPDIR)/test_shcoind-stratum.Tpo -c -o test_shcoind-stratum.obj `if test -f 'stratum/stratum.c'; then $(CYGPATH_W) 'stratum/stratum.c'; else $(CYGPATH_W) '$(srcdir)/stratum/stratum.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-stratum.Tpo $(DEPDIR)/test_shcoind-stratum.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='stratum/stratum.c' object='test_shcoind-stratum.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-stratum.obj `if test -f 'stratum/stratum.c'; then $(CYGPATH_W) 'stratum/stratum.c'; else $(CYGPATH_W) '$(srcdir)/stratum/stratum.c'; fi`
-
-test_shcoind-stratum_http.o: stratum/stratum_http.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-stratum_http.o -MD -MP -MF $(DEPDIR)/test_shcoind-stratum_http.Tpo -c -o test_shcoind-stratum_http.o `test -f 'stratum/stratum_http.c' || echo '$(srcdir)/'`stratum/stratum_http.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-stratum_http.Tpo $(DEPDIR)/test_shcoind-stratum_http.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='stratum/stratum_http.c' object='test_shcoind-stratum_http.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-stratum_http.o `test -f 'stratum/stratum_http.c' || echo '$(srcdir)/'`stratum/stratum_http.c
-
-test_shcoind-stratum_http.obj: stratum/stratum_http.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-stratum_http.obj -MD -MP -MF $(DEPDIR)/test_shcoind-stratum_http.Tpo -c -o test_shcoind-stratum_http.obj `if test -f 'stratum/stratum_http.c'; then $(CYGPATH_W) 'stratum/stratum_http.c'; else $(CYGPATH_W) '$(srcdir)/stratum/stratum_http.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-stratum_http.Tpo $(DEPDIR)/test_shcoind-stratum_http.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='stratum/stratum_http.c' object='test_shcoind-stratum_http.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-stratum_http.obj `if test -f 'stratum/stratum_http.c'; then $(CYGPATH_W) 'stratum/stratum_http.c'; else $(CYGPATH_W) '$(srcdir)/stratum/stratum_http.c'; fi`
-
-test_shcoind-stratum_message.o: stratum/stratum_message.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-stratum_message.o -MD -MP -MF $(DEPDIR)/test_shcoind-stratum_message.Tpo -c -o test_shcoind-stratum_message.o `test -f 'stratum/stratum_message.c' || echo '$(srcdir)/'`stratum/stratum_message.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-stratum_message.Tpo $(DEPDIR)/test_shcoind-stratum_message.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='stratum/stratum_message.c' object='test_shcoind-stratum_message.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-stratum_message.o `test -f 'stratum/stratum_message.c' || echo '$(srcdir)/'`stratum/stratum_message.c
-
-test_shcoind-stratum_message.obj: stratum/stratum_message.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-stratum_message.obj -MD -MP -MF $(DEPDIR)/test_shcoind-stratum_message.Tpo -c -o test_shcoind-stratum_message.obj `if test -f 'stratum/stratum_message.c'; then $(CYGPATH_W) 'stratum/stratum_message.c'; else $(CYGPATH_W) '$(srcdir)/stratum/stratum_message.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-stratum_message.Tpo $(DEPDIR)/test_shcoind-stratum_message.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='stratum/stratum_message.c' object='test_shcoind-stratum_message.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-stratum_message.obj `if test -f 'stratum/stratum_message.c'; then $(CYGPATH_W) 'stratum/stratum_message.c'; else $(CYGPATH_W) '$(srcdir)/stratum/stratum_message.c'; fi`
-
-test_shcoind-stratum_protocol.o: stratum/stratum_protocol.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-stratum_protocol.o -MD -MP -MF $(DEPDIR)/test_shcoind-stratum_protocol.Tpo -c -o test_shcoind-stratum_protocol.o `test -f 'stratum/stratum_protocol.c' || echo '$(srcdir)/'`stratum/stratum_protocol.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-stratum_protocol.Tpo $(DEPDIR)/test_shcoind-stratum_protocol.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='stratum/stratum_protocol.c' object='test_shcoind-stratum_protocol.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-stratum_protocol.o `test -f 'stratum/stratum_protocol.c' || echo '$(srcdir)/'`stratum/stratum_protocol.c
-
-test_shcoind-stratum_protocol.obj: stratum/stratum_protocol.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-stratum_protocol.obj -MD -MP -MF $(DEPDIR)/test_shcoind-stratum_protocol.Tpo -c -o test_shcoind-stratum_protocol.obj `if test -f 'stratum/stratum_protocol.c'; then $(CYGPATH_W) 'stratum/stratum_protocol.c'; else $(CYGPATH_W) '$(srcdir)/stratum/stratum_protocol.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-stratum_protocol.Tpo $(DEPDIR)/test_shcoind-stratum_protocol.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='stratum/stratum_protocol.c' object='test_shcoind-stratum_protocol.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-stratum_protocol.obj `if test -f 'stratum/stratum_protocol.c'; then $(CYGPATH_W) 'stratum/stratum_protocol.c'; else $(CYGPATH_W) '$(srcdir)/stratum/stratum_protocol.c'; fi`
-
-test_shcoind-stratum_user.o: stratum/stratum_user.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-stratum_user.o -MD -MP -MF $(DEPDIR)/test_shcoind-stratum_user.Tpo -c -o test_shcoind-stratum_user.o `test -f 'stratum/stratum_user.c' || echo '$(srcdir)/'`stratum/stratum_user.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-stratum_user.Tpo $(DEPDIR)/test_shcoind-stratum_user.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='stratum/stratum_user.c' object='test_shcoind-stratum_user.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-stratum_user.o `test -f 'stratum/stratum_user.c' || echo '$(srcdir)/'`stratum/stratum_user.c
-
-test_shcoind-stratum_user.obj: stratum/stratum_user.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-stratum_user.obj -MD -MP -MF $(DEPDIR)/test_shcoind-stratum_user.Tpo -c -o test_shcoind-stratum_user.obj `if test -f 'stratum/stratum_user.c'; then $(CYGPATH_W) 'stratum/stratum_user.c'; else $(CYGPATH_W) '$(srcdir)/stratum/stratum_user.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-stratum_user.Tpo $(DEPDIR)/test_shcoind-stratum_user.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='stratum/stratum_user.c' object='test_shcoind-stratum_user.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-stratum_user.obj `if test -f 'stratum/stratum_user.c'; then $(CYGPATH_W) 'stratum/stratum_user.c'; else $(CYGPATH_W) '$(srcdir)/stratum/stratum_user.c'; fi`
-
-test_shcoind-stratum_task.o: stratum/stratum_task.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-stratum_task.o -MD -MP -MF $(DEPDIR)/test_shcoind-stratum_task.Tpo -c -o test_shcoind-stratum_task.o `test -f 'stratum/stratum_task.c' || echo '$(srcdir)/'`stratum/stratum_task.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-stratum_task.Tpo $(DEPDIR)/test_shcoind-stratum_task.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='stratum/stratum_task.c' object='test_shcoind-stratum_task.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-stratum_task.o `test -f 'stratum/stratum_task.c' || echo '$(srcdir)/'`stratum/stratum_task.c
-
-test_shcoind-stratum_task.obj: stratum/stratum_task.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-stratum_task.obj -MD -MP -MF $(DEPDIR)/test_shcoind-stratum_task.Tpo -c -o test_shcoind-stratum_task.obj `if test -f 'stratum/stratum_task.c'; then $(CYGPATH_W) 'stratum/stratum_task.c'; else $(CYGPATH_W) '$(srcdir)/stratum/stratum_task.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-stratum_task.Tpo $(DEPDIR)/test_shcoind-stratum_task.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='stratum/stratum_task.c' object='test_shcoind-stratum_task.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-stratum_task.obj `if test -f 'stratum/stratum_task.c'; then $(CYGPATH_W) 'stratum/stratum_task.c'; else $(CYGPATH_W) '$(srcdir)/stratum/stratum_task.c'; fi`
-
-test_shcoind-stratum_sync.o: stratum/stratum_sync.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-stratum_sync.o -MD -MP -MF $(DEPDIR)/test_shcoind-stratum_sync.Tpo -c -o test_shcoind-stratum_sync.o `test -f 'stratum/stratum_sync.c' || echo '$(srcdir)/'`stratum/stratum_sync.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-stratum_sync.Tpo $(DEPDIR)/test_shcoind-stratum_sync.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='stratum/stratum_sync.c' object='test_shcoind-stratum_sync.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-stratum_sync.o `test -f 'stratum/stratum_sync.c' || echo '$(srcdir)/'`stratum/stratum_sync.c
-
-test_shcoind-stratum_sync.obj: stratum/stratum_sync.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-stratum_sync.obj -MD -MP -MF $(DEPDIR)/test_shcoind-stratum_sync.Tpo -c -o test_shcoind-stratum_sync.obj `if test -f 'stratum/stratum_sync.c'; then $(CYGPATH_W) 'stratum/stratum_sync.c'; else $(CYGPATH_W) '$(srcdir)/stratum/stratum_sync.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-stratum_sync.Tpo $(DEPDIR)/test_shcoind-stratum_sync.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='stratum/stratum_sync.c' object='test_shcoind-stratum_sync.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-stratum_sync.obj `if test -f 'stratum/stratum_sync.c'; then $(CYGPATH_W) 'stratum/stratum_sync.c'; else $(CYGPATH_W) '$(srcdir)/stratum/stratum_sync.c'; fi`
-
 test_shcoind-CuTest.o: test/CuTest.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-CuTest.o -MD -MP -MF $(DEPDIR)/test_shcoind-CuTest.Tpo -c -o test_shcoind-CuTest.o `test -f 'test/CuTest.c' || echo '$(srcdir)/'`test/CuTest.c
 @am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-CuTest.Tpo $(DEPDIR)/test_shcoind-CuTest.Po
@@ -3338,6 +3228,20 @@ shcoind-shc_txidx.obj: server/shc/shc_txidx.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/shc/shc_txidx.cpp' object='shcoind-shc_txidx.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-shc_txidx.obj `if test -f 'server/shc/shc_txidx.cpp'; then $(CYGPATH_W) 'server/shc/shc_txidx.cpp'; else $(CYGPATH_W) '$(srcdir)/server/shc/shc_txidx.cpp'; fi`
+
+shcoind-shc_rpc.o: server/shc/shc_rpc.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-shc_rpc.o -MD -MP -MF $(DEPDIR)/shcoind-shc_rpc.Tpo -c -o shcoind-shc_rpc.o `test -f 'server/shc/shc_rpc.cpp' || echo '$(srcdir)/'`server/shc/shc_rpc.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-shc_rpc.Tpo $(DEPDIR)/shcoind-shc_rpc.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/shc/shc_rpc.cpp' object='shcoind-shc_rpc.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-shc_rpc.o `test -f 'server/shc/shc_rpc.cpp' || echo '$(srcdir)/'`server/shc/shc_rpc.cpp
+
+shcoind-shc_rpc.obj: server/shc/shc_rpc.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-shc_rpc.obj -MD -MP -MF $(DEPDIR)/shcoind-shc_rpc.Tpo -c -o shcoind-shc_rpc.obj `if test -f 'server/shc/shc_rpc.cpp'; then $(CYGPATH_W) 'server/shc/shc_rpc.cpp'; else $(CYGPATH_W) '$(srcdir)/server/shc/shc_rpc.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-shc_rpc.Tpo $(DEPDIR)/shcoind-shc_rpc.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/shc/shc_rpc.cpp' object='shcoind-shc_rpc.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-shc_rpc.obj `if test -f 'server/shc/shc_rpc.cpp'; then $(CYGPATH_W) 'server/shc/shc_rpc.cpp'; else $(CYGPATH_W) '$(srcdir)/server/shc/shc_rpc.cpp'; fi`
 
 shcoind-usde_netmsg.o: server/usde/usde_netmsg.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-usde_netmsg.o -MD -MP -MF $(DEPDIR)/shcoind-usde_netmsg.Tpo -c -o shcoind-usde_netmsg.o `test -f 'server/usde/usde_netmsg.cpp' || echo '$(srcdir)/'`server/usde/usde_netmsg.cpp
@@ -4276,6 +4180,20 @@ test_shcoind-shc_txidx.obj: server/shc/shc_txidx.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/shc/shc_txidx.cpp' object='test_shcoind-shc_txidx.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-shc_txidx.obj `if test -f 'server/shc/shc_txidx.cpp'; then $(CYGPATH_W) 'server/shc/shc_txidx.cpp'; else $(CYGPATH_W) '$(srcdir)/server/shc/shc_txidx.cpp'; fi`
+
+test_shcoind-shc_rpc.o: server/shc/shc_rpc.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-shc_rpc.o -MD -MP -MF $(DEPDIR)/test_shcoind-shc_rpc.Tpo -c -o test_shcoind-shc_rpc.o `test -f 'server/shc/shc_rpc.cpp' || echo '$(srcdir)/'`server/shc/shc_rpc.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-shc_rpc.Tpo $(DEPDIR)/test_shcoind-shc_rpc.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/shc/shc_rpc.cpp' object='test_shcoind-shc_rpc.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-shc_rpc.o `test -f 'server/shc/shc_rpc.cpp' || echo '$(srcdir)/'`server/shc/shc_rpc.cpp
+
+test_shcoind-shc_rpc.obj: server/shc/shc_rpc.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-shc_rpc.obj -MD -MP -MF $(DEPDIR)/test_shcoind-shc_rpc.Tpo -c -o test_shcoind-shc_rpc.obj `if test -f 'server/shc/shc_rpc.cpp'; then $(CYGPATH_W) 'server/shc/shc_rpc.cpp'; else $(CYGPATH_W) '$(srcdir)/server/shc/shc_rpc.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-shc_rpc.Tpo $(DEPDIR)/test_shcoind-shc_rpc.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/shc/shc_rpc.cpp' object='test_shcoind-shc_rpc.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-shc_rpc.obj `if test -f 'server/shc/shc_rpc.cpp'; then $(CYGPATH_W) 'server/shc/shc_rpc.cpp'; else $(CYGPATH_W) '$(srcdir)/server/shc/shc_rpc.cpp'; fi`
 
 test_shcoind-usde_netmsg.o: server/usde/usde_netmsg.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-usde_netmsg.o -MD -MP -MF $(DEPDIR)/test_shcoind-usde_netmsg.Tpo -c -o test_shcoind-usde_netmsg.o `test -f 'server/usde/usde_netmsg.cpp' || echo '$(srcdir)/'`server/usde/usde_netmsg.cpp

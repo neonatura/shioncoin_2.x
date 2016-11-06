@@ -23,12 +23,14 @@
  *  @endcopyright
  */  
 
-#ifndef __SERVER__RPCCERT_PROTO_H__
-#define __SERVER__RPCCERT_PROTO_H__
+#ifndef __SERVER__RPCALIAS_PROTO_H__
+#define __SERVER__RPCALIAS_PROTO_H__
 
 
+#if 0
 #include "shcoind.h"
 #include "coin_proto.h"
+#endif
 
 #include <string>
 #include <list>
@@ -40,9 +42,20 @@
 
 
 
+Value rpc_alias_info(CIface *iface, const Array& params, bool fStratum);
 
-Value rpc_alias_addr(CIface *iface, const Array& params, bool fHelp);
+Value rpc_alias_fee(CIface *iface, const Array& params, bool fStratum);
+
+Value rpc_alias_addr(CIface *iface, const Array& params, bool fStratum);
+
+Value rpc_alias_pubaddr(CIface *iface, const Array& params, bool fStratum);
+
+Value rpc_alias_get(CIface *iface, const Array& params, bool fStratum);
+
+Value rpc_alias_getaddr(CIface *iface, const Array& params, bool fStratum);
+
+Value rpc_alias_listaddr(CIface *iface, const Array& params, bool fStratum);
 
 
-#endif /* ndef __SERVER__RPCCERT_PROTO_H__ */
+#endif /* ndef __SERVER__RPCALIAS_PROTO_H__ */
 

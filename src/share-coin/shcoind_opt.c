@@ -53,6 +53,26 @@ void opt_print(void)
       OPT_BAN_THRESHOLD, opt_num(OPT_BAN_THRESHOLD));
   shcoind_info("config", buf); 
 
+#ifdef STRATUM_SERVICE
+  sprintf(buf, "info: option '%s' set to '%d'.", 
+      OPT_SERV_STRATUM, opt_bool(OPT_SERV_STRATUM) ? "true" : "false");
+  shcoind_info("config", buf); 
+
+  sprintf(buf, "info: option '%s' set to '%d'.", 
+      OPT_STRATUM_PORT, opt_num(OPT_STRATUM_PORT));
+  shcoind_info("config", buf); 
+#endif
+
+#ifdef RPC_SERVICE
+  sprintf(buf, "info: option '%s' set to '%d'.", 
+      OPT_SERV_RPC, opt_bool(OPT_SERV_RPC) ? "true" : "false");
+  shcoind_info("config", buf); 
+
+  sprintf(buf, "info: option '%s' set to '%d'.", 
+      OPT_RPC_PORT, opt_num(OPT_RPC_PORT));
+  shcoind_info("config", buf); 
+#endif
+
 }
 
 static void opt_set_defaults(void)
@@ -123,12 +143,36 @@ static void opt_set_defaults(void)
 
 #ifndef STRATUM_SERVICE
   opt_bool_set(OPT_SERV_STRATUM, FALSE);
+  opt_num_set(OPT_STRATUM_PORT, 0);
 #else
   strncpy(buf, shpref_get(OPT_SERV_STRATUM, ""), sizeof(buf)-1);
   if (tolower(*buf) == 'f')
     opt_bool_set(OPT_SERV_STRATUM, FALSE);
   else
     opt_bool_set(OPT_SERV_STRATUM, TRUE); /* default */
+
+  strncpy(buf, shpref_get(OPT_STRATUM_PORT, ""), sizeof(buf)-1);
+  if (isdigit(*buf))
+    opt_num_set(OPT_STRATUM_PORT, MAX(0, atoi(buf)));
+  if (opt_num(OPT_STRATUM_PORT) == 0)
+    opt_num_set(OPT_STRATUM_PORT, STRATUM_DAEMON_PORT); /* default */
+#endif
+
+#ifndef RPC_SERVICE
+  opt_bool_set(OPT_SERV_RPC, FALSE);
+  opt_num_set(OPT_RPC_PORT, 0);
+#else
+  strncpy(buf, shpref_get(OPT_SERV_RPC, ""), sizeof(buf)-1);
+  if (tolower(*buf) == 'f')
+    opt_bool_set(OPT_SERV_RPC, FALSE);
+  else
+    opt_bool_set(OPT_SERV_RPC, TRUE); /* default */
+
+  strncpy(buf, shpref_get("shcoind.rpc.port", ""), sizeof(buf)-1);
+  if (isdigit(*buf))
+    opt_num_set(OPT_RPC_PORT, MAX(0, atoi(buf)));
+  if (opt_num(OPT_RPC_PORT) == 0)
+    opt_num_set(OPT_RPC_PORT, 9447); /* default */
 #endif
 
 }

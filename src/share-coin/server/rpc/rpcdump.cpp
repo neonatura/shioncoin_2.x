@@ -36,6 +36,8 @@
 using namespace json_spirit;
 using namespace std;
 
+static bool fHelp = false;
+
 class CTxDump
 {
 public:
@@ -55,7 +57,7 @@ public:
 };
 
 #if 0
-Value importprivkey(const Array& params, bool fHelp)
+Value importprivkey(const Array& params, bool fStratum)
 {
     if (fHelp || params.size() < 1 || params.size() > 2)
         throw runtime_error(
@@ -94,7 +96,7 @@ Value importprivkey(const Array& params, bool fHelp)
 #endif
 
 #if 0
-Value dumpprivkey(const Array& params, bool fHelp)
+Value dumpprivkey(const Array& params, bool fStratum)
 {
     if (fHelp || params.size() != 1)
         throw runtime_error(

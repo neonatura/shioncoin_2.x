@@ -1,22 +1,57 @@
-// Copyright (c) 2010 Satoshi Nakamoto
-// Copyright (c) 2009-2012 The Bitcoin developers
-// Copyright (c) 2011-2012 Litecoin Developers
-// Copyright (c) 2013 usde Developers
-// Distributed under the MIT/X11 software license, see the accompanying
-// file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef _BITCOINRPC_H_
-#define _BITCOINRPC_H_ 1
+/*
+ * @copyright
+ *
+ *  Copyright 2014 Neo Natura
+ *
+ *  This file is part of the Share Library.
+ *  (https://github.com/neonatura/share)
+ *        
+ *  The Share Library is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version. 
+ *
+ *  The Share Library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with The Share Library.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  @endcopyright
+ */  
 
+#ifndef __RPC__RPC_PROTO_H__
+#define __RPC__RPC_PROTO_H__
+
+#ifdef __cplusplus
 #include <string>
 #include <list>
 #include <map>
-
 #include "json/json_spirit_reader_template.h"
 #include "json/json_spirit_writer_template.h"
 #include "json/json_spirit_utils.h"
+#endif
 
 #include "coin_proto.h"
+
+#define MAX_RPC_ARGS 32
+
+#define RPC_NULL 0
+#define RPC_STRING 1
+#define RPC_INT 2 
+#define RPC_INT64 3 
+#define RPC_DOUBLE 4 
+#define RPC_BOOL 5
+#define RPC_ARRAY 6
+#define RPC_OBJECT 7
+#define RPC_ACCOUNT 8
+#define MAX_RPC_ARG_TYPES 9
+
+
+#ifdef __cplusplus
 
 json_spirit::Object JSONRPCError(int code, const std::string& message);
 
@@ -40,52 +75,17 @@ void RPCTypeCheck(const json_spirit::Array& params,
 void RPCTypeCheck(const json_spirit::Object& o,
                   const std::map<std::string, json_spirit::Value_type>& typesExpected);
 
-#if 0
-typedef json_spirit::Value(*rpcfn_type)(const json_spirit::Array& params, bool fHelp);
-
-class CRPCCommand
-{
-public:
-    std::string name;
-    rpcfn_type actor;
-    bool okSafeMode;
-};
-#endif
-
 typedef json_spirit::Value(*rpcfn_type)(CIface *iface, const json_spirit::Array& params, bool fHelp);
-class CRPCCommand
+
+typedef int rpcfn_arg[MAX_RPC_ARGS];
+class RPCOp
 {
 public:
-    std::string name;
-    rpcfn_type actor;
+  rpcfn_type actor;
+  int min_arg;
+  rpcfn_arg arg;
+  string usage;
 };
-
-/**
- * Bitcoin RPC command dispatcher.
- */
-class CRPCTable
-{
-private:
-    std::map<std::string, const CRPCCommand*> mapCommands;
-public:
-    CRPCTable();
-    const CRPCCommand* operator[](std::string name) const;
-    std::string help(CIface *iface, std::string name) const;
-
-    /**
-     * Execute a method.
-     * @param method   Method to execute
-     * @param params   Array of arguments (JSON objects)
-     * @returns Result of the call.
-     * @throws an exception (json_spirit::Value) when an error happens.
-     */
-    json_spirit::Value execute(CIface *iface, const std::string &method, const json_spirit::Array &params) const;
-};
-
-
-
-extern const CRPCTable tableRPC;
-
 
 inline vector<unsigned char> vchFromValue(const json_spirit::Value& value) {
   string strName = value.get_str();
@@ -93,5 +93,27 @@ inline vector<unsigned char> vchFromValue(const json_spirit::Value& value) {
   return vector<unsigned char>(strbeg, strbeg + strName.size());
 }
 
+
+void RegisterRPCOp(int ifaceIndex, string name, const RPCOp& op);
+
+#endif /* def __cplusplus */
+
+
+void RegisterRPCOpDefaults(int ifaceIndex);
+
+
+#ifdef __cplusplus
+extern "C" {
 #endif
+const char *ExecuteStratumRPC(int ifaceIndex, const char *account, shjson_t *json);
+#ifdef __cplusplus
+}
+#endif
+
+
+
+
+
+#endif /* ndef __RPC__RPC_PROTO_H__ */
+
 

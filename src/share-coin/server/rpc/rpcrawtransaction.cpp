@@ -39,6 +39,8 @@ using namespace boost;
 using namespace boost::assign;
 using namespace json_spirit;
 
+static bool fHelp = false;
+
 // These are all in bitcoinrpc.cpp:
 extern Object JSONRPCError(int code, const string& message);
 extern int64 AmountFromValue(const Value& value);
@@ -132,7 +134,7 @@ void TxToJSON(CIface *iface, const CTransaction& tx, const uint256 hashBlock, Ob
 }
 #endif
 
-Value rpc_getrawtransaction(CIface *iface, const Array& params, bool fHelp)
+Value rpc_getrawtransaction(CIface *iface, const Array& params, bool fStratum)
 {
   if (fHelp || params.size() < 1 || params.size() > 2)
     throw runtime_error(
@@ -169,7 +171,7 @@ Value rpc_getrawtransaction(CIface *iface, const Array& params, bool fHelp)
 }
 
 #if 0
-Value listunspent(const Array& params, bool fHelp)
+Value listunspent(const Array& params, bool fStratum)
 {
     if (fHelp || params.size() > 2)
         throw runtime_error(
@@ -213,7 +215,7 @@ Value listunspent(const Array& params, bool fHelp)
 #endif
 
 #if 0
-Value createrawtransaction(const Array& params, bool fHelp)
+Value createrawtransaction(const Array& params, bool fStratum)
 {
     if (fHelp || params.size() != 2)
         throw runtime_error(
@@ -278,7 +280,7 @@ Value createrawtransaction(const Array& params, bool fHelp)
     return HexStr(ss.begin(), ss.end());
 }
 
-Value decoderawtransaction(const Array& params, bool fHelp)
+Value decoderawtransaction(const Array& params, bool fStratum)
 {
   CIface *iface = GetCoinByIndex(USDE_COIN_IFACE);
 
@@ -307,7 +309,7 @@ Value decoderawtransaction(const Array& params, bool fHelp)
 #endif
 
 #if 0
-Value signrawtransaction(const Array& params, bool fHelp)
+Value signrawtransaction(const Array& params, bool fStratum)
 {
     if (fHelp || params.size() < 1 || params.size() > 4)
         throw runtime_error(
@@ -491,7 +493,7 @@ Value signrawtransaction(const Array& params, bool fHelp)
 #endif
 
 #if 0
-Value rpc_tx_signraw(CIface *iface, const Array& params, bool fHelp)
+Value rpc_tx_signraw(CIface *iface, const Array& params, bool fStratum)
 {
   int ifaceIndex = GetCoinIndex(iface);
 
@@ -677,7 +679,7 @@ Value rpc_tx_signraw(CIface *iface, const Array& params, bool fHelp)
 #endif
 
 #if 0
-Value rpc_sendrawtransaction(CIface *iface, const Array& params, bool fHelp)
+Value rpc_sendrawtransaction(CIface *iface, const Array& params, bool fStratum)
 {
   int ifaceIndex = GetCoinIndex(iface);
 

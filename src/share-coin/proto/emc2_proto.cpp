@@ -39,6 +39,9 @@ int64 EMC2Block::nTimeBestReceived;
 CBigNum EMC2Block::bnBestChainWork;
 CBigNum EMC2Block::bnBestInvalidWork;
 
+extern void RegisterRPCOpDefaults(int ifaceIndex);
+
+
 #if 0
 int64 EMC2Block::nTargetTimespan = 14400; /* four hours */
 int64 EMC2Block::nTargetSpacing = 180; /* three minutes */
@@ -49,6 +52,8 @@ static int emc2_init(CIface *iface, void *_unused_)
 {
   int ifaceIndex = GetCoinIndex(iface);
   int err;
+
+  RegisterRPCOpDefaults(EMC2_COIN_IFACE);
 
   emc2Wallet = new EMC2Wallet();
   SetWallet(EMC2_COIN_IFACE, emc2Wallet);

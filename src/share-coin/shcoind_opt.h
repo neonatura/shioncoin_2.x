@@ -47,6 +47,11 @@ extern "C" {
 /** An option indicating whether to enable the stratum service. */
 #define OPT_SERV_STRATUM "shcoind.net.stratum"
 
+#define OPT_STRATUM_PORT "shcoind.stratum.port"
+
+#define OPT_SERV_RPC "shcoind.net.rpc"
+
+#define OPT_RPC_PORT "shcoind.rpc.port"
 
 
 void opt_init(void);

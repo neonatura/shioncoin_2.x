@@ -28,7 +28,6 @@
 #include "main.h"
 #include "wallet.h"
 #include "coin_proto.h"
-
 #include "shc/shc_netmsg.h"
 #include "shc/shc_block.h"
 #include "shc/shc_wallet.h"
@@ -41,10 +40,17 @@ CBigNum SHCBlock::bnBestChainWork;
 CBigNum SHCBlock::bnBestInvalidWork;
 
 
+
+
+extern void shc_RegisterRPCOp();
+
+
 static int shc_init(CIface *iface, void *_unused_)
 {
   int ifaceIndex = GetCoinIndex(iface);
   int err;
+
+  shc_RegisterRPCOp();
 
   shcWallet = new SHCWallet();
   SetWallet(SHC_COIN_IFACE, shcWallet);

@@ -68,8 +68,10 @@ extern string AccountFromValue(const Value& value);
 extern bool IsAccountValid(CIface *iface, std::string strAccount);
 
 
+static bool fHelp = false;
 
-Value rpc_cert_info(CIface *iface, const Array& params, bool fHelp) 
+
+Value rpc_cert_info(CIface *iface, const Array& params, bool fStratum) 
 {
   int ifaceIndex = GetCoinIndex(iface);
 
@@ -93,7 +95,7 @@ Value rpc_cert_info(CIface *iface, const Array& params, bool fHelp)
   return (result);
 }
 
-Value rpc_cert_list(CIface *iface, const Array& params, bool fHelp) 
+Value rpc_cert_list(CIface *iface, const Array& params, bool fStratum) 
 {
   int ifaceIndex = GetCoinIndex(iface);
 
@@ -150,7 +152,7 @@ Value rpc_cert_list(CIface *iface, const Array& params, bool fHelp)
   return (result);
 }
 
-Value rpc_cert_get(CIface *iface, const Array& params, bool fHelp) 
+Value rpc_cert_get(CIface *iface, const Array& params, bool fStratum) 
 {
   int ifaceIndex = GetCoinIndex(iface);
 
@@ -192,7 +194,7 @@ Value rpc_cert_get(CIface *iface, const Array& params, bool fHelp)
   return (result);
 }
 
-Value rpc_cert_new(CIface *iface, const Array& params, bool fHelp) 
+Value rpc_cert_new(CIface *iface, const Array& params, bool fStratum) 
 {
   CWallet *wallet = GetWallet(iface);
   int ifaceIndex = GetCoinIndex(iface);
@@ -250,7 +252,7 @@ Value rpc_cert_new(CIface *iface, const Array& params, bool fHelp)
 /**
  * Donate tx fee to block miner with optional certificate reference.
  */
-Value rpc_wallet_donate(CIface *iface, const Array& params, bool fHelp) 
+Value rpc_wallet_donate(CIface *iface, const Array& params, bool fStratum) 
 {
   int ifaceIndex = GetCoinIndex(iface);
   int64 nBalance;
@@ -296,7 +298,7 @@ Value rpc_wallet_donate(CIface *iface, const Array& params, bool fHelp)
   return (wtx.ToValue(ifaceIndex));
 }
 
-Value rpc_wallet_csend(CIface *iface, const Array& params, bool fHelp) 
+Value rpc_wallet_csend(CIface *iface, const Array& params, bool fStratum) 
 {
   int ifaceIndex = GetCoinIndex(iface);
   int64 nBalance;
@@ -342,7 +344,7 @@ Value rpc_wallet_csend(CIface *iface, const Array& params, bool fHelp)
 }
 
 
-Value rpc_wallet_stamp(CIface *iface, const Array& params, bool fHelp) 
+Value rpc_wallet_stamp(CIface *iface, const Array& params, bool fStratum) 
 {
   int ifaceIndex = GetCoinIndex(iface);
   int64 nBalance;
@@ -384,7 +386,7 @@ Value rpc_wallet_stamp(CIface *iface, const Array& params, bool fHelp)
   return (wtx.ToValue(ifaceIndex));
 }
 
-Value rpc_cert_export(CIface *iface, const Array& params, bool fHelp) 
+Value rpc_cert_export(CIface *iface, const Array& params, bool fStratum) 
 {
   int ifaceIndex = GetCoinIndex(iface);
   int64 nBalance;

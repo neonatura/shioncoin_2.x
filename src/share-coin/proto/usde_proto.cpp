@@ -42,11 +42,14 @@ CBigNum USDEBlock::bnBestInvalidWork;
 int64 USDEBlock::nTargetTimespan = 7200; /* two hours */
 int64 USDEBlock::nTargetSpacing = 60; /* one minute */
 
+extern void RegisterRPCOpDefaults(int ifaceIndex);
 
 static int usde_init(CIface *iface, void *_unused_)
 {
   int ifaceIndex = GetCoinIndex(iface);
   int err;
+
+  RegisterRPCOpDefaults(USDE_COIN_IFACE);
 
   usdeWallet = new USDEWallet();
   SetWallet(USDE_COIN_IFACE, usdeWallet);

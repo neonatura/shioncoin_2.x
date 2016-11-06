@@ -93,6 +93,10 @@ class CAlias : public CIdent
       ref->ref_type = nType;
     }
 
+    bool GetCoinAddr(CCoinAddr& addrRet);
+
+    void SetCoinAddr(CCoinAddr& addr);
+
     friend bool operator==(const CAlias &a, const CAlias &b)
     {
       return (
@@ -147,13 +151,16 @@ alias_list *GetAliasTable(int ifaceIndex);
 alias_list *GetAliasPendingTable(int ifaceIndex);
 
 
-bool GetTxOfAlias(CIface *iface, const std::string strTitle, CTransaction& tx);
 
 bool IsAliasTx(const CTransaction& tx);
 
 bool IsLocalAlias(CIface *iface, const CTransaction& tx);
 
 int64 GetAliasOpFee(CIface *iface, int nHeight); 
+
+bool GetTxOfAlias(CIface *iface, const std::string strTitle, CTransaction& tx);
+
+CAlias *GetAliasByName(CIface *iface, string label, CTransaction& tx);
 
 bool VerifyAlias(CTransaction& tx);
 

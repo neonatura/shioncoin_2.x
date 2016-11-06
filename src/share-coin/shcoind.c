@@ -114,6 +114,7 @@ void usage_version(void)
       get_libshare_version());
 }
 
+extern void RegisterRPCOpDefaults(int ifaceIndex);
 
 
 int main(int argc, char *argv[])

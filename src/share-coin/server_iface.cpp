@@ -2213,9 +2213,11 @@ void BindServer(int ifaceIndex)
 }
 
 
+extern void RPC_Init(void);
 static void StartRPCServer(void)
 {
-  CreateThread(ThreadRPCServer, NULL);
+//  CreateThread(ThreadRPCServer, NULL);
+RPC_Init();
 }
 
 void StartCoinServer(void)

@@ -5,6 +5,7 @@
 #include <fcntl.h>
 #endif
 #include <errno.h>
+#include "rpcnet.h"
 
 user_t *client_list;
 
@@ -141,6 +142,7 @@ void shcoind_poll_msg_queue(void)
 #define RUN_SHUTDOWN 2
 #define RUN_RESTART 3 /* not used */
 
+
 void daemon_server(void)
 {
   int run_mode;
@@ -159,6 +161,11 @@ void daemon_server(void)
 
     /* handle libshare message queue */
     shcoind_poll_msg_queue();
+
+#ifdef RPC_SERVICE
+    /* handle RPC communication */
+    RPC_CycleConnections();
+#endif
 
     if (fShutdown && !_shutdown_timer) {
       set_shutdown_timer();

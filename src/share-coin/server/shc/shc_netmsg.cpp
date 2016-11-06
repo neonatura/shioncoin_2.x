@@ -46,6 +46,11 @@
 #include <boost/array.hpp>
 #include <share.h>
 
+
+#include "rpc_proto.h"
+#include "rpccert_proto.h"
+
+
 using namespace std;
 using namespace boost;
 
@@ -1251,10 +1256,5 @@ bool shc_SendMessages(CIface *iface, CNode* pto, bool fSendTrickle)
 
   return true;
 }
-
-
-
-
-
 
 
