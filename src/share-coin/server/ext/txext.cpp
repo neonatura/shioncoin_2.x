@@ -145,7 +145,7 @@ bool CSign::SignContext(unsigned char *data, size_t data_len)
   nAlg = ALG_ECDSA; 
 
   /* generate private key */
-  kpriv = shpeer_kpriv(ashpeer());
+  kpriv = shpeer_kpriv(ashpeer()); //sharenet_peer()
   memset(priv_key_hex, 0, sizeof(priv_key_hex));
   strncpy(priv_key_hex, shkey_hex(kpriv), sizeof(priv_key_hex)-1);
   priv_key = shecdsa_key_priv(priv_key_hex);

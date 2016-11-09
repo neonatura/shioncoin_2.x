@@ -32,11 +32,11 @@ extern "C" {
 
 
 
-#define OPT_DEBUG "debug"
-#define OPT_MAX_CONN "max-conn"
-#define OPT_PEER_SEED "peer-seed"
-#define OPT_BAN_SPAN "ban-span"
-#define OPT_BAN_THRESHOLD "ban-threshold"
+#define OPT_DEBUG "shcoind.debug"
+#define OPT_MAX_CONN "shcoind.net.max"
+#define OPT_PEER_SEED "shcoind.net.seed"
+#define OPT_BAN_SPAN "shcoind.ban.span"
+#define OPT_BAN_THRESHOLD "shcoind.ban.threshold"
 
 /** An option indicating whether to enable the USDE coin service. */
 #define OPT_SERV_USDE "shcoind.net.usde"

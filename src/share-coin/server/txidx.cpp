@@ -52,8 +52,6 @@ void CDBEnv::EnvShutdown()
     if (!fDbEnvInit)
         return;
 
-fprintf(stderr, "DEBUG: CDBEnv::EnvShutdown: de-allocating database environment.");
-
     fDbEnvInit = false;
     try
     {

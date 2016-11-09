@@ -48,7 +48,8 @@
 #define RPC_ARRAY 6
 #define RPC_OBJECT 7
 #define RPC_ACCOUNT 8
-#define MAX_RPC_ARG_TYPES 9
+#define RPC_COINADDR 9
+#define MAX_RPC_ARG_TYPES 10
 
 
 #ifdef __cplusplus

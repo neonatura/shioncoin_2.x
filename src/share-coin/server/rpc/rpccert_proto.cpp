@@ -392,18 +392,14 @@ Value rpc_cert_export(CIface *iface, const Array& params, bool fStratum)
   int64 nBalance;
   int err;
 
-  if (fHelp || (params.size() != 1 && params.size() != 2)) {
-    throw runtime_error(
-        "cert.export <cert-hash> [<path>]\n"
-        "Summary: Export the credentials neccessary to own a certificate.\n"
-        "Params: [ <cert-hash> The certificate's reference hash. ]\n"
-        "\n" 
-        "Ownership and management of a certificate depends on having specific coin address key(s) in the coin wallet. Exporting a certificate provides JSON formatted content which can be used with \"wallet.import\" command to attain ownership of a certificate.\n"
-        );
-  }
+  if (fStratum)
+    throw runtime_error("unsupported operation");
 
   if (ifaceIndex != SHC_COIN_IFACE)
-    throw runtime_error("Unsupported operation for coin service.");
+    throw runtime_error("unsupported operation");
+
+  if ((params.size() != 1 && params.size() != 2))
+    throw runtime_error("invalid parameters");
 
   uint160 hCert(params[0].get_str().c_str());
   if (!VerifyCertHash(iface, hCert)) 

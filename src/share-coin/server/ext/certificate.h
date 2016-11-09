@@ -108,20 +108,6 @@ class CIdent : public CExtCore
     }
 */
 
-/*
-    void FillEntity(SHCertEnt *entity)
-    {
-      memset(entity, 0, sizeof(entity));
-      if (vchSecret.data()) {
-        entity->ent_len = MIN(sizeof(entity->ent_data), vchSecret.size());
-        memcpy(entity->ent_data, vchSecret.data(), entity->ent_len);
-      }
-      string strLabel = GetLabel();
-      strncpy(entity->ent_name, strLabel.c_str(), sizeof(entity->ent_name)-1);
-      memcpy(&entity->ent_peer, &peer.peer, sizeof(entity->ent_peer));
-      memcpy(&entity->ent_sig, &sig.sig, sizeof(entity->ent_sig));
-    }
-*/
 
 
     bool IsLocalRegion()
@@ -329,6 +315,10 @@ class CCert : public CIdent
 
       return (cbuff(raw, raw+16));
     }
+
+    void FillEntity(SHCertEnt *entity);
+
+    void NotifySharenet(int ifaceIndex);
 
     std::string ToString();
 

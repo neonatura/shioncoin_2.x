@@ -453,7 +453,7 @@ bool CTransaction::ReadFromDisk(CDiskTxPos pos)
   uint256 hashTx;
   int err;
 
-  if (!iface || ifaceIndex < 1 || ifaceIndex >= MAX_COIN_IFACE) {
+  if (!iface) {// || ifaceIndex < 1 || ifaceIndex >= MAX_COIN_IFACE) {
     sprintf(errbuf, "CTransaction::ReadTx: error obtaining coin iface #%d\n", (int)pos.nFile);
     return error(SHERR_INVAL, errbuf);
   }
@@ -482,10 +482,12 @@ bool CTransaction::ReadFromDisk(CDiskTxPos pos)
   Init(*tx);
   delete block;
 
+#if 0
   if (!CheckTransaction(ifaceIndex)) {
     sprintf(errbuf, "CTransaction::ReadTx: invalid transaction '%s' for block height %d\n", hashTx.GetHex().c_str(), nHeight);
     return error(SHERR_INVAL, errbuf);
   } 
+#endif
 
   return (true);
 }
@@ -2071,6 +2073,12 @@ bool core_AcceptBlock(CBlock *pblock)
       if (tx.isFlag(CTransaction::TXF_EXEC)) {
         ProcessExecTx(iface, pblock->originPeer, tx);
       }
+      if (tx.isFlag(CTransaction::TXF_ALIAS)) {
+        bool fRet = CommitAliasTx(iface, tx, nHeight);
+        if (!fRet) {
+          error(SHERR_INVAL, "CommitAliasTx failure");
+        }
+      }
     }
   }
 
@@ -2109,11 +2117,27 @@ bool CTransaction::IsStandard() const
 
 
 
-CAlias *CTransaction::CreateAlias(std::string name, const uint160& hash)
+CAlias *CTransaction::CreateAlias(std::string name, const uint160& hash, int type)
 {
   nFlag |= CTransaction::TXF_ALIAS;
 
   alias = CAlias(name, hash);
+  alias.SetType(type);
+  return (&alias);
+}
+CAlias *CTransaction::UpdateAlias(std::string name, const uint160& hash)
+{
+  nFlag |= CTransaction::TXF_ALIAS;
+
+  alias = CAlias(name, hash);
+  return (&alias);
+}
+CAlias *CTransaction::RemoveAlias(std::string name)
+{
+  nFlag |= CTransaction::TXF_ALIAS;
+
+  alias = CAlias();
+  alias.SetLabel(name);
   return (&alias);
 }
 
@@ -2504,7 +2528,7 @@ Object CTransaction::ToValue(int ifaceIndex)
     obj.push_back(Pair("license", license.ToValue()));
   }
   if (this->nFlag & TXF_ALIAS)
-    obj.push_back(Pair("alias", alias.ToValue()));
+    obj.push_back(Pair("alias", alias.ToValue(ifaceIndex)));
   if (this->nFlag & TXF_ASSET) {
     CAsset asset(certificate);
     obj.push_back(Pair("asset", asset.ToValue()));

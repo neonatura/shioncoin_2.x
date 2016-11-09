@@ -101,6 +101,8 @@ public:
     mutable unsigned int nScanHeight;
 
     mutable std::map<std::string, uint256> mapAlias;
+    mutable std::map<uint256, std::string> mapAliasArch;
+
     mutable std::map<uint160, uint256> mapLicense;
     mutable std::map<uint160, uint256> mapOffer;
     mutable std::map<uint160, uint256> mapOfferAccept;
@@ -847,6 +849,8 @@ bool SendMoneyWithExtTx(CIface *iface, CWalletTx& wtxIn, CWalletTx& wtxNew, cons
 
 bool GetCoinAddr(CWallet *wallet, CCoinAddr& addrAccount, string& strAccount);
 
+bool GetCoinAddr(CWallet *wallet, string strAddress, CCoinAddr& addrAccount);
+
 bool CreateTransactionWithInputTx(CIface *iface, const vector<pair<CScript, int64> >& vecSend, CWalletTx& wtxIn, int nTxOut, CWalletTx& wtxNew, CReserveKey& reservekey, int64 nTxFee = 0);
 
 bool VerifyMatrixTx(CTransaction& tx, int& mode);
@@ -870,6 +874,8 @@ bool SendRemitMoneyTx(CIface *iface, const CCoinAddr& addrFrom, CWalletTx *wtxIn
 bool CreateMoneyTx(CIface *iface, CWalletTx& wtxNew, vector<COutput>& vecRecv, vector<CTxOut>& vecSend, CScript scriptPubKey);
 
 bool core_UnacceptWalletTransaction(CIface *iface, const CTransaction& tx);
+
+
 
 #endif
 

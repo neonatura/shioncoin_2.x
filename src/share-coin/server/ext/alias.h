@@ -77,21 +77,7 @@ class CAlias : public CIdent
       READWRITE(*(CIdent *)this);
     )
 
-    void FillReference(SHAlias *ref)
-    {
-      memset(ref, 0, sizeof(SHAlias));
-      std::string strLabel = GetLabel();
-      strncpy(ref->ref_name,
-          (const char *)strLabel.c_str(), 
-          MIN(strLabel.size(), sizeof(ref->ref_name)-1));
-      if (vAddr.data()) {
-        strncpy(ref->ref_hash,
-            (const char *)vAddr.data(),
-            MIN(vAddr.size(), sizeof(ref->ref_hash)-1));
-      }
-      ref->ref_expire = tExpire;
-      ref->ref_type = nType;
-    }
+    void FillReference(SHAlias *ref);
 
     bool GetCoinAddr(CCoinAddr& addrRet);
 
@@ -119,15 +105,7 @@ class CAlias : public CIdent
       CIdent::SetNull();
     }
 
-    void NotifySharenet(int ifaceIndex)
-    {
-      CIface *iface = GetCoinByIndex(ifaceIndex);
-      if (!iface || !iface->enabled) return;
-
-      SHAlias ref;
-      FillReference(&ref);
-      shnet_inform(iface, TX_REFERENCE, &ref, sizeof(ref));
-    }
+    void NotifySharenet(int ifaceIndex);
 
     const uint160 GetHash()
     {
@@ -137,9 +115,9 @@ class CAlias : public CIdent
       return Hash160(rawbuf);
     }
 
-    std::string ToString();
+    std::string ToString(int ifaceIndex);
 
-    Object ToValue();
+    Object ToValue(int ifaceIndex);
 
 };
 
@@ -164,10 +142,21 @@ CAlias *GetAliasByName(CIface *iface, string label, CTransaction& tx);
 
 bool VerifyAlias(CTransaction& tx);
 
+bool CommitAliasTx(CIface *iface, CTransaction& tx, int nHeight);
+
+bool ConnectAliasTx(CIface *iface, CTransaction& tx);
+
+bool DisconnectAliasTx(CIface *iface, CTransaction& tx);
+
+bool IsValidAliasName(CIface *iface, string label);
+
+
 
 int init_alias_addr_tx(CIface *iface, const char *title, CCoinAddr& addr, CWalletTx& wtx);
 
 int update_alias_addr_tx(CIface *iface, const char *title, CCoinAddr& addr, CWalletTx& wtx);
+
+int remove_alias_addr_tx(CIface *iface, string strAccount, string strTitle, CWalletTx& wtx);
 
 
 #endif /* ndef __ALIAS_H__ */

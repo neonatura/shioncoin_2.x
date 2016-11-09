@@ -703,6 +703,11 @@ bool core_DisconnectInputs(int ifaceIndex, CTransaction *tx)
       error(SHERR_INVAL, "core_DisconnectInputs: error disconnecting certificate");
     }
   }
+  if (IsAliasTx(*tx)) {
+    if (!DisconnectAliasTx(iface, *tx)) {
+      error(SHERR_INVAL, "core_DisconnectInputs: error disconnecting alias");
+    }
+  }
 
   /* erase from 'coin' fmap */
   tx->EraseCoins(ifaceIndex);
@@ -752,6 +757,11 @@ bool CTransaction::DisconnectInputs(CTxDB& txdb)
   if (IsCertTx(*this)) {
     if (!DisconnectCertificate(iface, *this)) {
       error(SHERR_INVAL, "core_DisconnectInputs: error disconnecting certificate");
+    }
+  }
+  if (IsAliasTx(*this)) {
+    if (!DisconnectAliasTx(iface, *this)) {
+      error(SHERR_INVAL, "core_DisconnectInputs: error disconnecting alias");
     }
   }
 

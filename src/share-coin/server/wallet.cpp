@@ -402,7 +402,7 @@ void CWallet::WalletUpdateSpent(const CTransaction &tx)
 
         if (!wtx.IsSpent(txin.prevout.n) && IsMine(wtx.vout[txin.prevout.n]))
         {
-          Debug("WalletUpdateSpent found spent coin %sbc %s\n", FormatMoney(wtx.GetCredit()).c_str(), wtx.GetHash().ToString().c_str());
+//          Debug("WalletUpdateSpent found spent coin %sbc %s\n", FormatMoney(wtx.GetCredit()).c_str(), wtx.GetHash().ToString().c_str());
           wtx.MarkSpent(txin.prevout.n);
           wtx.WriteToDisk();
           NotifyTransactionChanged(this, txin.prevout.hash, CT_UPDATED);
@@ -2053,6 +2053,10 @@ bool CreateTransactionWithInputTx(CIface *iface,
   int64 nValue = 0;
   int64 nFeeRet;
 
+  if (wtxIn.IsSpent(nTxOut)) {
+    return error(ifaceIndex, "CreateTransactionWithInputTx: previous ext tx '%s' is already spent.", wtxIn.GetHash().GetHex().c_str());
+  }
+
   BOOST_FOREACH(const PAIRTYPE(CScript, int64)& s, vecSend) {
     if (s.second < 0) {//nMinValue) {
       return error(SHERR_INVAL, "CreateTransactionWIthInputTx: send-value(%f) < min-value(%f)", ((double)s.second/(double)COIN), ((double)nMinValue/(double)COIN));
@@ -2235,6 +2239,9 @@ bool GetCoinAddr(CWallet *wallet, CCoinAddr& addrAccount, string& strAccount)
 {
   bool fIsScript = addrAccount.IsScript();
 
+  if (!addrAccount.IsValid())
+    return (false);
+
   BOOST_FOREACH(const PAIRTYPE(CTxDestination, string)& item, wallet->mapAddressBook)
   {
     const CCoinAddr& address = CCoinAddr(wallet->ifaceIndex, item.first);
@@ -2252,6 +2259,36 @@ bool GetCoinAddr(CWallet *wallet, CCoinAddr& addrAccount, string& strAccount)
   }
 
   return (false);
+}
+
+bool GetCoinAddrAlias(CWallet *wallet, string strAlias, CCoinAddr& addrAccount)
+{
+  CIface *iface = GetCoinByIndex(wallet->ifaceIndex); 
+  CTransaction tx;
+  CAlias *alias;
+
+  alias = GetAliasByName(iface, strAlias, tx); 
+  if (!alias)
+    return (false);
+
+  return (alias->GetCoinAddr(addrAccount));
+}
+
+bool GetCoinAddr(CWallet *wallet, string strAddress, CCoinAddr& addrAccount)
+{
+
+  if (strAddress.length() == 0)
+    return (false);
+
+  if (strAddress.at(0) == '@') {
+    return (GetCoinAddrAlias(wallet, strAddress, addrAccount));
+  }
+
+  addrAccount = CCoinAddr(strAddress);
+  if (!addrAccount.IsValid())
+    return (false);
+
+  return (true);
 }
 
 bool DecodeMatrixHash(const CScript& script, int& mode, uint160& hash)

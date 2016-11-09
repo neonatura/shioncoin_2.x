@@ -123,15 +123,15 @@ inline int shnet_inform(CIface *iface, int tx_op, void *data, size_t data_len)
   int err;
 
   mode = (uint32_t)tx_op;
-  peer = shpeer_init(iface->name, NULL);
+//  peer = shpeer_init(iface->name, NULL);
   buff = shbuf_init();
   shbuf_cat(buff, &mode, sizeof(uint32_t));
-  shbuf_cat(buff, peer, sizeof(shpeer_t));
+//  shbuf_cat(buff, peer, sizeof(shpeer_t));
   shbuf_cat(buff, data, data_len);
   qid = shmsgget(NULL);
   err = shmsg_write(qid, buff, NULL);
   shbuf_free(&buff);
-  shpeer_free(&peer);
+//  shpeer_free(&peer);
   if (err)
     return (err);
 

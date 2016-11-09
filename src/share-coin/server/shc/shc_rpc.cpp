@@ -42,7 +42,7 @@ extern Value rpc_wallet_keyphrase(CIface *iface, const Array& params, bool fHelp
 extern Value rpc_wallet_setkeyphrase(CIface *iface, const Array& params, bool fHelp);
 
 const RPCOp WALLET_CSEND = {
-  &rpc_wallet_csend, 4, {RPC_ACCOUNT, RPC_STRING, RPC_DOUBLE, RPC_STRING},
+  &rpc_wallet_csend, 4, {RPC_ACCOUNT, RPC_COINADDR, RPC_DOUBLE, RPC_STRING},
   "Syntax: <account> <address> <value> <cert-hash>\n"
   "Summary: Send a certified coin transaction."
 };
@@ -57,7 +57,7 @@ const RPCOp WALLET_DONATE = {
 };
 
 const RPCOp WALLET_KEYPHRASE = {
-  &rpc_wallet_keyphrase, 1, {RPC_STRING},
+  &rpc_wallet_keyphrase, 1, {RPC_COINADDR},
   "Syntax: <address>\n"
     "Summary: Reveals the private key corresponding to a public coin address as a phrase of common words..\n"
     "Params: [ <address> The coin address. ]\n"
@@ -106,6 +106,13 @@ const RPCOp ALIAS_PUBADDR = {
   "When a coin address is specified the alias label will be published onto the block chain in reference. If the alias label already exists, then a transfer will occur providing you are the original owner.\n"
   "The assigned coin address, if one exists, is printed if a specific coin address is not specified."
 };
+const RPCOp ALIAS_REMOVE = {
+  &rpc_alias_remove, 1, {RPC_STRING, RPC_ACCOUNT},
+  "Syntax: <name> [<account>]\n"
+  "Summary: Removed a published alias.\n"
+  "Params: [ <name> The alias's label, <account> the account of the referenced coin address. ]\n"
+  "Removes a published alias from the block-chain. The alias owner's account is verified [when an account specification is warranted]."
+};
 const RPCOp ALIAS_GET = {
   &rpc_alias_get, 1, {RPC_STRING},
   "Syntax: <alias-hash>\n"
@@ -116,16 +123,16 @@ const RPCOp ALIAS_GET = {
 };
 const RPCOp ALIAS_GETADDR = {
   &rpc_alias_getaddr, 1, {RPC_STRING},
-  "Syntax: <coin-address>\n"
+  "Syntax: <name>\n"
   "Summary: Obtain specific information about an alias.\n"
   "Params: [ <name> The alias label being referenced. ]\n"
   "\n"
   "Print indepth information about a particular alias based on it's label."
 };
-const RPCOp ALIAS_LISTADDR = {
+const RPCOp ALIAS_LIST = {
   &rpc_alias_listaddr, 0, {RPC_STRING},
   "Syntax: [<keyword>]\n"
-  "List all published coin address aliases with optional keyword."
+  "List all published aliases with optional keyword filter."
 };
 
 
@@ -172,12 +179,13 @@ void shc_RegisterRPCOp()
 
   RegisterRPCOpDefaults(ifaceIndex);
 
-  RegisterRPCOp(ifaceIndex, "alias.info", ALIAS_INFO);
   RegisterRPCOp(ifaceIndex, "alias.fee", ALIAS_FEE);
-  RegisterRPCOp(ifaceIndex, "alias.pubaddr", ALIAS_PUBADDR);
-  RegisterRPCOp(ifaceIndex, "alias.list", ALIAS_FEE);
-  RegisterRPCOp(ifaceIndex, "alias.get", ALIAS_GET);
+//  RegisterRPCOp(ifaceIndex, "alias.get", ALIAS_GET);
   RegisterRPCOp(ifaceIndex, "alias.getaddr", ALIAS_GETADDR);
+  RegisterRPCOp(ifaceIndex, "alias.info", ALIAS_INFO);
+  RegisterRPCOp(ifaceIndex, "alias.list", ALIAS_LIST);
+  RegisterRPCOp(ifaceIndex, "alias.pubaddr", ALIAS_PUBADDR);
+  RegisterRPCOp(ifaceIndex, "alias.remove", ALIAS_REMOVE);
 
   RegisterRPCOp(ifaceIndex, "cert.export", CERT_EXPORT);
   RegisterRPCOp(ifaceIndex, "cert.info", CERT_INFO);

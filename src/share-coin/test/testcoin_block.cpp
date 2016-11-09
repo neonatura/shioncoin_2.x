@@ -137,8 +137,6 @@ shtime_t ts;
   delete parent;
   /* battle1 : finish */
 
-//fprintf(stderr, "DEBUG: TEST: REORG: parent block '%s' @ height %d\n", hashParent.GetHex().c_str(), GetBestHeight(iface)); 
-
   /* battle2 : start */
   chain1 = test_GenerateBlock();
   _TRUEPTR(chain1);
@@ -434,30 +432,56 @@ _TEST(aliastx)
   _TRUE(VerifyAlias(wtx) == true);
 
   /* incorporate alias into block-chain + few more coins */
-  for (idx = 0; idx < 5; idx++) {
+  {
     CBlock *block = test_GenerateBlock();
     _TRUEPTR(block);
     _TRUE(ProcessBlock(NULL, block) == true);
     delete block;
   }
 
-  err = update_alias_addr_tx(iface, "test", addr, wtx);
+  /* update */
+
+  CWalletTx mod_wtx;
+  err = update_alias_addr_tx(iface, "test", addr, mod_wtx);
   _TRUE(0 == err);
+  _TRUE(mod_wtx.CheckTransaction(TEST_COIN_IFACE) == true); /* .. */
+  _TRUE(VerifyAlias(mod_wtx) == true);
+  _TRUE(mod_wtx.IsInMemoryPool(TEST_COIN_IFACE) == true);
 
-  _TRUE(wtx.CheckTransaction(TEST_COIN_IFACE) == true); /* .. */
-  _TRUE(VerifyAlias(wtx) == true);
-
-/* insert into block-chain */
-  for (idx = 0; idx < 5; idx++) {
+  /* insert into block-chain */
+  {
     CBlock *block = test_GenerateBlock();
     _TRUEPTR(block);
     _TRUE(ProcessBlock(NULL, block) == true);
     delete block;
   }
 
-CTransaction t_tx;
-string strTitle("test");
-_TRUE(GetTxOfAlias(iface, strTitle, t_tx) == true);
+  _TRUE(mod_wtx.IsInMemoryPool(TEST_COIN_IFACE) == false);
+
+  CTransaction t_tx;
+  string strTitle("test");
+  _TRUE(GetTxOfAlias(iface, strTitle, t_tx) == true);
+
+  /* remove */
+
+  CWalletTx rem_wtx;
+  err = remove_alias_addr_tx(iface, strLabel, strTitle, rem_wtx);
+  _TRUE(0 == err);
+  _TRUE(rem_wtx.CheckTransaction(TEST_COIN_IFACE) == true); /* .. */
+  _TRUE(VerifyAlias(rem_wtx) == true);
+  _TRUE(rem_wtx.IsInMemoryPool(TEST_COIN_IFACE) == true);
+
+  /* insert into block-chain */
+  {
+    CBlock *block = test_GenerateBlock();
+    _TRUEPTR(block);
+    _TRUE(ProcessBlock(NULL, block) == true);
+    delete block;
+  }
+
+  _TRUE(rem_wtx.IsInMemoryPool(TEST_COIN_IFACE) == false);
+  _TRUE(GetTxOfAlias(iface, strTitle, t_tx) == false);
+
 }
 
 

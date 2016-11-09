@@ -2129,7 +2129,7 @@ Value rpc_wallet_rescan(CIface *iface, const Array& params, bool fStratum)
 
 Value rpc_wallet_send(CIface *iface, const Array& params, bool fStratum)
 {
-  CWallet *pwalletMain = GetWallet(iface);
+  CWallet *wallet = GetWallet(iface);
   int ifaceIndex = GetCoinIndex(iface);
 
   if (fHelp || params.size() < 3 || params.size() > 6)
@@ -2143,8 +2143,10 @@ Value rpc_wallet_send(CIface *iface, const Array& params, bool fStratum)
 
   /* destination coin address */
   CCoinAddr address(params[1].get_str());
+#if 0
   if (!address.IsValid())
     throw JSONRPCError(-5, "Invalid coin address");
+#endif
   if (address.GetVersion() != CCoinAddr::GetCoinAddrVersion(ifaceIndex))
     throw JSONRPCError(-5, "Invalid address for coin service.");
 
@@ -2168,7 +2170,7 @@ Value rpc_wallet_send(CIface *iface, const Array& params, bool fStratum)
     throw JSONRPCError(-6, "Account has insufficient funds");
 
   // Send
-  string strError = pwalletMain->SendMoneyToDestination(address.Get(), nAmount, wtx);
+  string strError = wallet->SendMoneyToDestination(address.Get(), nAmount, wtx);
   if (strError != "")
     throw JSONRPCError(-4, strError);
 
@@ -2380,11 +2382,12 @@ Value rpc_wallet_unconfirm(CIface *iface, const Array& params, bool fStratum)
 
 Value rpc_wallet_validate(CIface *iface, const Array& params, bool fStratum)
 {
+  int ifaceIndex = GetCoinIndex(iface);
 
   if (fStratum)
     throw runtime_error("unsupported operation");
 
-  CWallet *pwalletMain = GetWallet(iface);
+  CWallet *wallet = GetWallet(iface);
 
   if (fHelp || params.size() != 1)
     throw runtime_error(
@@ -2392,7 +2395,7 @@ Value rpc_wallet_validate(CIface *iface, const Array& params, bool fStratum)
         "Return information about <coin-address>.");
 
   CCoinAddr address(params[0].get_str());
-  bool isValid = address.IsValid();
+  bool isValid = true;//address.IsValid();
 
   Object ret;
   ret.push_back(Pair("isvalid", isValid));
@@ -2401,7 +2404,7 @@ Value rpc_wallet_validate(CIface *iface, const Array& params, bool fStratum)
     CTxDestination dest = address.Get();
     string currentAddress = address.ToString();
     ret.push_back(Pair("address", currentAddress));
-    bool fMine = IsMine(*pwalletMain, dest);
+    bool fMine = IsMine(*wallet, dest);
     ret.push_back(Pair("ismine", fMine));
 #if 0
     if (fMine) {
@@ -2409,8 +2412,8 @@ Value rpc_wallet_validate(CIface *iface, const Array& params, bool fStratum)
       ret.insert(ret.end(), detail.begin(), detail.end());
     }
 #endif
-    if (pwalletMain->mapAddressBook.count(dest))
-      ret.push_back(Pair("account", pwalletMain->mapAddressBook[dest]));
+    if (wallet->mapAddressBook.count(dest))
+      ret.push_back(Pair("account", wallet->mapAddressBook[dest]));
   }
   return ret;
 }
@@ -3691,22 +3694,11 @@ Value rpc_wallet_tx(CIface *iface, const Array& params, bool fStratum)
 Value rpc_wallet_keyphrase(CIface *iface, const Array& params, bool fStratum)
 {
 
-  if (fHelp || params.size() != 1)
-    throw runtime_error(
-        "wallet.keyphrase <address>\n"
-        "Summary: Reveals the private key corresponding to a public coin address as a phrase of common words..\n"
-        "Params: [ <address> The coin address. ]\n"
-        "\n"
-        "The 'wallet.key' command provides a method to obtain the private key associated\n"
-        "with a particular coin address.\n"
-        "\n"
-        "The coin address must be available in the local wallet in order to print it's pr\n"
-        "ivate address.\n"
-        "\n"
-        "The private coin address can be imported into another system via the 'wallet.setkey' command.\n"
-        "\n"
-        "The entire wallet can be exported to a file via the 'wallet.export' command.\n"
-        );
+  if (fStratum)
+    throw runtime_error("unsupported operation");
+
+  if (params.size() != 1)
+    throw runtime_error("wallet.keyphrase");
 
   CWallet *pwalletMain = GetWallet(iface);
   int ifaceIndex = GetCoinIndex(iface);
@@ -3811,8 +3803,9 @@ const char *_rpc_arg_label[MAX_RPC_ARG_TYPES] = {
   "d",
   "b",
   "ar",
-  "o",
-  "a"
+  "obj",
+  "acc",
+  "addr"
 };
 
 typedef map <string,RPCOp> rpcfn_map;
@@ -4272,7 +4265,7 @@ const RPCOp WALLET_RESCAN = {
   "Rescan the block-chain for personal wallet transactions."
 };
 const RPCOp WALLET_SEND = {
-  &rpc_wallet_send, 3, {RPC_STRING, RPC_STRING, RPC_DOUBLE, RPC_INT64, RPC_STRING, RPC_STRING},
+  &rpc_wallet_send, 3, {RPC_ACCOUNT, RPC_COINADDR, RPC_DOUBLE, RPC_INT64, RPC_STRING, RPC_STRING},
   "Syntax: <fromaccount> <toaddress> <amount> [minconf=1] [comment] [comment-to]\n"
   "Note: The <amount> is a real and is rounded to the nearest 0.00000001"
 };
@@ -4304,9 +4297,9 @@ const RPCOp WALLET_UNSPENT = {
   "{txid, vout, scriptPubKey, amount, confirmations}"
 };
 const RPCOp WALLET_VALIDATE = {
-  &rpc_wallet_validate, 1, {RPC_ACCOUNT}, 
+  &rpc_wallet_validate, 1, {RPC_COINADDR},
   "Syntax: <coin-address>\n"
-  "Return information about <coin-address>."
+  "Return summarized information about <coin-address>."
 };
 
 
@@ -4396,7 +4389,7 @@ void RegisterRPCOpDefaults(int ifaceIndex)
   RegisterRPCAlias(ifaceIndex, "getrawtransaction", TX_GETRAW);
 
   RegisterRPCOp(ifaceIndex, "tx.list", TX_LIST);
-  RegisterRPCOp(ifaceIndex, "listtransactions", TX_LIST);
+  RegisterRPCAlias(ifaceIndex, "listtransactions", TX_LIST);
 
   RegisterRPCOp(ifaceIndex, "tx.pool", TX_POOL);
   RegisterRPCAlias(ifaceIndex, "getrawmempool", TX_POOL);
@@ -4430,10 +4423,10 @@ void RegisterRPCOpDefaults(int ifaceIndex)
   RegisterRPCOp(ifaceIndex, "wallet.new", WALLET_NEW);
 
   RegisterRPCOp(ifaceIndex, "wallet.recvbyaccount", WALLET_RECVBYACCOUNT);
-  RegisterRPCOp(ifaceIndex, "getreceivedbyaccount", WALLET_RECVBYACCOUNT);
+  RegisterRPCAlias(ifaceIndex, "getreceivedbyaccount", WALLET_RECVBYACCOUNT);
 
   RegisterRPCOp(ifaceIndex, "wallet.recvbyaddr", WALLET_RECVBYADDR);
-  RegisterRPCOp(ifaceIndex, "getreceivedbyaddr", WALLET_RECVBYADDR);
+  RegisterRPCAlias(ifaceIndex, "getreceivedbyaddr", WALLET_RECVBYADDR);
 
   RegisterRPCOp(ifaceIndex, "wallet.rescan", WALLET_RESCAN);
 
@@ -5236,6 +5229,64 @@ void RPCConvertTo(string strJSON, Value& value)
   }
 }
 
+static string RPCConvertToAddr(CIface *iface, string str)
+{
+
+  if (!iface || !iface->enabled)
+    throw JSONRPCError(-5, "unsupported operation");
+
+  if (str.length() == 0)
+    throw JSONRPCError(-5, "blank coin address specified");
+    
+  CWallet *wallet = GetWallet(iface);
+  int ifaceIndex = GetCoinIndex(iface);
+
+  CCoinAddr addr(ifaceIndex);
+  bool isValid = GetCoinAddr(wallet, str, addr); 
+
+  if (!isValid) {
+    char buf[256];
+
+    sprintf (buf, "(%s) invalid coin address specified \"%s\".", 
+        iface->name, str.c_str()); 
+    throw JSONRPCError(-3, buf);
+  }
+
+  return (addr.ToString());
+}
+
+static void RPCConvertParam(CIface *iface, RPCOp *op, int arg_idx, Array& param)
+{
+  string str;
+
+  if (param[arg_idx].type() == str_type)
+    str = param[arg_idx].get_str();
+
+  switch (op->arg[arg_idx]) {
+    case RPC_INT:
+      RPCConvertTo<int>(str, param[arg_idx]);
+      break;
+    case RPC_INT64:
+      RPCConvertTo<boost::int64_t>(str, param[arg_idx]);
+      break;
+    case RPC_DOUBLE:
+      RPCConvertTo<double>(str, param[arg_idx]);
+      break;
+    case RPC_BOOL:
+      RPCConvertTo<bool>(str, param[arg_idx]);
+      break;
+    case RPC_ARRAY:
+      RPCConvertTo<Array>(str, param[arg_idx]);
+      break;
+    case RPC_OBJECT:
+      RPCConvertTo<Object>(str, param[arg_idx]);
+      break;
+    case RPC_COINADDR:
+      param[arg_idx] = Value(RPCConvertToAddr(iface, str));
+      break;
+  }
+
+}
 
 
 json_spirit::Value rpc_execute(CIface *iface, const std::string &strMethod, json_spirit::Array &params)
@@ -5261,11 +5312,14 @@ json_spirit::Value rpc_execute(CIface *iface, const std::string &strMethod, json
       params.size() > max_arg)
     return (rpc_command_help(iface, strMethod)); 
 
+
   /* decapsulate complex parameters */
   for (i = 0; i < max_arg; i++) {
     if (i >= params.size())
       break;
 
+    RPCConvertParam(iface, op, i, params);
+#if 0
     string str = params[i].get_str();
     switch (op->arg[i]) {
       case RPC_INT:
@@ -5287,6 +5341,7 @@ json_spirit::Value rpc_execute(CIface *iface, const std::string &strMethod, json
         RPCConvertTo<Object>(str, params[i]);
         break;
     }
+#endif
   }
 
   try
@@ -5335,6 +5390,8 @@ fprintf(stderr, "DEBUG: ar_len %d, max_arg 0\n", ar_len, max_arg);
 }
 
   for (i = 0; op->arg[i] != RPC_NULL && i < MAX_RPC_ARGS; i++) {
+    if (i >= op->min_arg)
+      break;
     if (op->arg[i] == RPC_ACCOUNT) {
       if (!account || i >= ar_len)
         return (NULL);
@@ -5370,6 +5427,8 @@ fprintf(stderr, "DEBUG: ar_len %d, max_arg 0\n", ar_len, max_arg);
           param.push_back(p_str);
         }
 
+        RPCConvertParam(iface, op, i, param);
+#if 0
         /* de-capsulate */
         string str = param[i].get_str();
         switch (op->arg[i]) {
@@ -5392,6 +5451,7 @@ fprintf(stderr, "DEBUG: ar_len %d, max_arg 0\n", ar_len, max_arg);
             RPCConvertTo<Object>(str, param[i]);
             break;
         }
+#endif
       }
     }
 

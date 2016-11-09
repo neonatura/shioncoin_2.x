@@ -161,9 +161,10 @@ Value rpc_alias_pubaddr(CIface *iface, const Array& params, bool fStratum)
 
   int ifaceIndex = GetCoinIndex(iface);
   string vchTitleStr = params[0].get_str();
-  string vchDataStr = params[1].get_str();
+  string strAddress;
+  if (params.size() > 1)
+    strAddress = params[1].get_str();
   vector<unsigned char> vchTitle = vchFromValue(params[0]);
-  vector<unsigned char> vchData = vchFromValue(params[1]);
   int err;
 
   if (ifaceIndex != TEST_COIN_IFACE &&
@@ -176,21 +177,32 @@ Value rpc_alias_pubaddr(CIface *iface, const Array& params, bool fStratum)
   if(vchTitle.size() >= MAX_SHARE_NAME_LENGTH)
     throw runtime_error("The label exceeds 135 characters.");
 
-  if (vchData.size() < 1)
+  CTransaction in_tx;
+  CAlias *alias = GetAliasByName(iface, vchTitleStr, in_tx); 
+
+  if (strAddress.size() == 0) {
+    if (!alias)
+      throw JSONRPCError(-5, "Invalid alias name");
+
+    CCoinAddr addr(ifaceIndex);
+    if (!alias->GetCoinAddr(addr))
+      throw JSONRPCError(-5, "Invalid coin address.");
+
+    return (addr.ToString());
+  }
+
+  CCoinAddr addr = CCoinAddr(strAddress);
+  if (strAddress.size() < 1)
     throw runtime_error("An invalid coin address was specified.");
 
-  if (vchData.size() >= MAX_SHARE_HASH_LENGTH)
+  if (strAddress.size() >= MAX_SHARE_HASH_LENGTH)
     throw runtime_error("The coin address exceeds 135 characters.");
 
-  string strAddress = params[1].get_str();
-  CCoinAddr addr = CCoinAddr(strAddress);
   if (!addr.IsValid())
     throw JSONRPCError(-5, "Invalid coin address");
 
   CWalletTx wtx;
 
-  CTransaction in_tx;
-  CAlias *alias = GetAliasByName(iface, vchTitleStr, in_tx); 
   if (!alias) {
     err = init_alias_addr_tx(iface, vchTitleStr.c_str(), addr, wtx); 
     if (err) {
@@ -215,6 +227,7 @@ Value rpc_alias_pubaddr(CIface *iface, const Array& params, bool fStratum)
       throw JSONRPCError(-5, "Unable to generate transaction.");
     }
   }
+
   return (wtx.ToValue(ifaceIndex));
 }
 
@@ -241,7 +254,7 @@ Value rpc_alias_get(CIface *iface, const Array& params, bool fStratum)
       continue;
 
     if (tx.alias.GetHash() == hash)
-      return (tx.alias.ToValue());
+      return (tx.alias.ToValue(ifaceIndex));
   }
 
   throw JSONRPCError(-5, "invalid hash specified");
@@ -261,7 +274,7 @@ Value rpc_alias_getaddr(CIface *iface, const Array& params, bool fStratum)
   if (!alias)
     throw JSONRPCError(-5, "invalid alias label");
 
-  return (alias->ToValue());
+  return (alias->ToValue(ifaceIndex));
 }
 
 Value rpc_alias_listaddr(CIface *iface, const Array& params, bool fStratum) 
@@ -308,6 +321,69 @@ Value rpc_alias_listaddr(CIface *iface, const Array& params, bool fStratum)
 
   return (result);
 }
+
+
+Value rpc_alias_remove(CIface *iface, const Array& params, bool fStratum) 
+{
+  CWallet *wallet = GetWallet(iface);
+
+  if (fStratum)
+    throw runtime_error("unsupported operation");
+
+  if (params.size() != 1)
+    throw runtime_error("invalid parameters");
+
+  int ifaceIndex = GetCoinIndex(iface);
+  if (ifaceIndex != TEST_COIN_IFACE &&
+      ifaceIndex != SHC_COIN_IFACE)
+    throw runtime_error("unsupported operation");
+
+  string strTitle = params[0].get_str();
+  string strAccount;
+  if (params.size() > 1)
+    strAccount = params[1].get_str();
+  int err;
+
+  if(strTitle.size() < 1)
+    throw runtime_error("A label must be specified.");
+
+  if(strTitle.size() >= MAX_SHARE_NAME_LENGTH)
+    throw runtime_error("The label exceeds 135 characters.");
+
+  CTransaction in_tx;
+  CAlias *alias = GetAliasByName(iface, strTitle, in_tx); 
+  if (!alias)
+    throw JSONRPCError(-5, "invalid alias name");
+
+  string strAliasAccount;
+  CCoinAddr addr(ifaceIndex);
+  if (!alias->GetCoinAddr(addr))
+    throw JSONRPCError(-5, "Invalid coind address reference.");
+
+  bool ret = GetCoinAddr(wallet, addr, strAliasAccount);
+  if (!ret)
+    throw JSONRPCError(-5, "Unknown reference account");
+
+  if (fStratum || strAccount.size() != 0) {
+    if (strAliasAccount != strAccount)
+      throw JSONRPCError(-5, "Invalid reference account.");
+  }
+  strAccount = strAliasAccount;
+
+  CWalletTx wtx;
+  err = remove_alias_addr_tx(iface, strAccount, strTitle, wtx); 
+  if (err) {
+    if (err == SHERR_NOENT)
+      throw JSONRPCError(-5, "Coin address not located in wallet.");
+    if (err == SHERR_AGAIN)
+      throw JSONRPCError(-5, "Not enough coins in account to create alias.");
+    throw JSONRPCError(-5, "Unable to generate transaction.");
+  }
+
+  return (wtx.ToValue(ifaceIndex));
+}
+
+
 
 
 

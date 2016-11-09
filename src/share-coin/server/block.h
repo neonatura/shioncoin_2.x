@@ -801,7 +801,9 @@ public:
     bool EraseTx(int ifaceIndex);
 
 
-    CAlias *CreateAlias(std::string name, const uint160& hash);
+    CAlias *CreateAlias(std::string name, const uint160& hash, int type = CAlias::ALIAS_COINADDR);
+    CAlias *UpdateAlias(std::string name, const uint160& hash);
+    CAlias *RemoveAlias(std::string name);
 
     CCert *CreateCert(int ifaceIndex, const char *name, CCoinAddr& addr, cbuff secret, int64 nLicenseFee);
     CCert *CreateLicense(CCert *cert);

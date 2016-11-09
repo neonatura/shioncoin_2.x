@@ -21,7 +21,7 @@ The 'openssl version 1.0.1g' distribution has been included in the directory '/s
 <h2>SHC Specifications</h2>
 The share-coin is unique in that it allows for additional types of transactions than regular coin transfers. Examples of these capabilities include exchanging coins between currencies, providing certified licenses for custom use, and assigning names to otherwise hard to remember hash tags. Compatibilty with the 'share library' file-system and network providing methods to utilize SHC block-chain transactions via external programs.
  
-The shcoind SHC coin server recalcultes the block difficulty rate every block using the Kimmooto Gravity Well algorythm. The target duration for blocks is one minute.
+The shcoind SHC coin server recalcultes the block difficulty rate every block using the Kimoto Gravity Well algorythm. The target duration for blocks is one minute.
 
 A maximum of 1 Billion SHC coins will be generated. The reward life-time is expected to continue for around 40 years (~ 2055).  
 
@@ -34,7 +34,7 @@ The SHC network requires 1 confirmation per transaction.
 The SHC network block matures after 60 confirmations.
 
 <h2>USDe Specifications</h2>
-The shcoind USDe coin server recalcultes the block difficulty rate every block using the Kmmooto Gravity Well algorythm. The target duration for blocks is one minute.
+The shcoind USDe coin server recalcultes the block difficulty rate every block using the Kimoto Gravity Well algorythm. The target duration for blocks is one minute.
 
 A maximum of 1.6Billion USDe will be generated. Block reward halves every 130,000 blocks. The current money supply is estimated at 1.12 billion coins in circulation.
 

@@ -71,6 +71,7 @@ int GetTotalCertificates(int ifaceIndex)
   return (certs->size());
 }
 
+
 bool InsertCertTable(CIface *iface, CTransaction& tx, unsigned int nHeight, bool fUpdate)
 {
   CWallet *wallet = GetWallet(iface);
@@ -108,6 +109,9 @@ bool InsertCertTable(CIface *iface, CTransaction& tx, unsigned int nHeight, bool
 
   wallet->mapCert[hCert] = tx.GetHash();
   wallet->mapCertLabel[cert.GetLabel()] = hCert;
+
+  /* save to sharefs sub-system. */
+  cert.NotifySharenet(GetCoinIndex(iface));
 
   return (true);
 }
@@ -937,7 +941,25 @@ fprintf(stderr, "DEBUG: !wtx.CreateLicense\n");
   return (0);
 }
 
+void CCert::FillEntity(SHCertEnt *entity)
+{
+  memset(entity, 0, sizeof(entity));
+#if 0
+  if (vchSecret.data()) {
+    entity->ent_len = MIN(sizeof(entity->ent_data), vchSecret.size());
+    memcpy(entity->ent_data, vchSecret.data(), entity->ent_len);
+  }
+  string strLabel = GetLabel();
+  strncpy(entity->ent_name, strLabel.c_str(), sizeof(entity->ent_name)-1);
+  memcpy(&entity->ent_peer, &peer.peer, sizeof(entity->ent_peer));
+  memcpy(&entity->ent_sig, &sig.sig, sizeof(entity->ent_sig));
+#endif
+}
 
+void CCert::NotifySharenet(int ifaceIndex)
+{
+//shcert_init()
+}
 
 void CLicense::NotifySharenet(int ifaceIndex)
 {
@@ -1274,7 +1296,7 @@ Object CIdent::ToValue()
     obj.push_back(Pair("type", (int64_t)nType));
   }
 
-  obj.push_back(Pair("addr", stringFromVch(vAddr)));
+  obj.push_back(Pair("addrhex", stringFromVch(vAddr)));
 
   return (obj);
 }
@@ -1308,6 +1330,7 @@ Object CLicense::ToValue()
 void CLicense::Sign(int ifaceIndex, CCoinAddr& addr)
 {
   signature.SignOrigin(ifaceIndex, addr);
+//DEBUG: only sign Context (data = ent_sig of last cert)
 }
 
 bool CLicense::VerifySignature(CCoinAddr& addr)
