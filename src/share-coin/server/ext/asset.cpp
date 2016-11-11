@@ -488,11 +488,15 @@ int activate_asset_tx(CIface *iface, string strAccount, const uint160& hashAsset
     return (SHERR_INVAL);
   }
 
+  CTransaction cert_tx;
+  if (!GetTxOfCert(iface, hashCert, cert_tx))
+    return (SHERR_NOENT);
+
   /* generate tx */
   CCert *asset;
 	CScript scriptPubKey;
   wtx.SetNull();
-  asset = wtx.SignAsset(CAsset(tx.certificate), hashCert);
+  asset = wtx.SignAsset(CAsset(tx.certificate), &cert_tx.certificate);
   uint160 assetHash = asset->GetHash();
 
   vector<pair<CScript, int64> > vecSend;
@@ -610,6 +614,44 @@ Object CAsset::ToValue()
   return (obj);
 }
 
+bool CAsset::Sign(CCert *cert)
+{
+  string hexContext = stringFromVch(cert->signature.vPubKey);
+  cbuff vchContext = ParseHex(hexContext);
+  return (signature.SignContext(vchContext));
+}
+bool CAsset::Sign(int ifaceIndex)
+{
+  CIface *iface = GetCoinByIndex(ifaceIndex);
+  CTransaction cert_tx;
+
+  if (!GetTxOfCert(iface, hashIssuer, cert_tx))
+    return (false);
+
+  return (Sign(&cert_tx.certificate));
+}
+
+bool CAsset::VerifySignature(CCert *cert)
+{
+  string hexContext = stringFromVch(cert->signature.vPubKey);
+  cbuff vchContext = ParseHex(hexContext);
+  return (signature.VerifyContext(vchContext.data(), vchContext.size()));
+}
+
+bool CAsset::VerifySignature(int ifaceIndex)
+{
+  CIface *iface = GetCoinByIndex(ifaceIndex);
+  CTransaction cert_tx;
+
+  if (!GetTxOfCert(iface, hashIssuer, cert_tx))
+    return (false);
+
+  return (VerifySignature(&cert_tx.certificate));
+}
+
+
+
+#if 0
 bool CAsset::Sign(uint160 sigCertIn)
 {
   hashIssuer = sigCertIn;
@@ -621,5 +663,6 @@ bool CAsset::VerifySignature()
 {
   return (signature.VerifyContext(hashIssuer));
 }
+#endif
 
 

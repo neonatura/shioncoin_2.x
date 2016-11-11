@@ -87,6 +87,14 @@ class CAsset : public CCert
       return (*this);
     }
 
+    bool Sign(CCert *cert);
+
+    bool Sign(int ifaceIndex);
+
+    bool VerifySignature(CCert *cert);
+
+    bool VerifySignature(int ifaceIndex);
+
     bool Sign(uint160 sigCertIn);
 
     bool VerifySignature();

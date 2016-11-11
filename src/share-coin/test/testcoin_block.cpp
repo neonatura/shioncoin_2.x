@@ -326,27 +326,30 @@ _TEST(signtx)
   CWallet *wallet = GetWallet(iface);
   string strAccount("");
   CCoinAddr extAddr = GetAccountAddress(wallet, strAccount, true);
-  unsigned char *data;
+  char *data;
   size_t data_len;
   bool ret;
 
-  data = (unsigned char *)strdup("secret");
+  data = (char *)strdup("secret");
   data_len = (size_t)sizeof(strlen("secret"));
   string strSecret("secret");
 
   /* CExtCore.origin */
   CCert cert;
-  _TRUE(cert.signature.Sign(TEST_COIN_IFACE, extAddr, data, data_len) == true);
-  _TRUE(cert.signature.Verify(extAddr, data, data_len) == true);
+  cbuff vchContext(data, data + data_len);
+  _TRUE(cert.signature.Sign(TEST_COIN_IFACE, extAddr, vchContext) == true);
+  _TRUE(cert.signature.Verify(extAddr, (unsigned char *)data, data_len) == true);
 
   cert.SetNull();
   cbuff vchSecret(vchFromString(strSecret));
   _TRUE(cert.Sign(TEST_COIN_IFACE, extAddr, vchSecret) == true);
   _TRUE(cert.VerifySignature(vchSecret) == true);
  
+#if 0
   CAsset asset;
-  _TRUE(asset.Sign(cert.GetHash()) == true);
-  _TRUE(asset.VerifySignature() == true);
+  _TRUE(asset.Sign(&cert) == true);
+  _TRUE(asset.VerifySignature(TEST_COIN_IFACE) == true);
+#endif
 
   CLicense license;
   _TRUE(license.signature.SignOrigin(TEST_COIN_IFACE, extAddr) == true);
@@ -518,6 +521,7 @@ _TEST(assettx)
   CAsset asset(wtx.certificate);
   uint160 hashAsset = asset.GetHash();
 
+
   /* incorporate asset into block-chain + few more coins */
   for (idx = 0; idx < 8; idx++) {
     CBlock *block = test_GenerateBlock();
@@ -532,6 +536,8 @@ _TEST(assettx)
   _TRUE(wtx.CheckTransaction(TEST_COIN_IFACE)); /* .. */
   _TRUE(VerifyAsset(wtx) == true);
 
+// activate
+  //_TRUE(asset.VerifySignature(TEST_COIN_IFACE));
 }
 
 _TEST(identtx)
@@ -548,10 +554,9 @@ _TEST(identtx)
   int err;
 
   CWalletTx cert_wtx;
-  const char *raw = "ident-test-secret";
-  cbuff vchSecret(raw, raw+strlen(raw));
+  string hexSeed;
   uint160 issuer;
-  err = init_cert_tx(iface, strAccount, "test", vchSecret, 1, cert_wtx);
+  err = init_cert_tx(iface, cert_wtx, strAccount, "test", hexSeed, 1);
   _TRUE(0 == err);
   uint160 hashCert = cert_wtx.certificate.GetHash();
 
@@ -639,9 +644,8 @@ _TEST(certtx)
   CWalletTx wtx;
   unsigned int nBestHeight = GetBestHeight(iface) + 1;
   {
-    const char *raw = "test-secret";
-    cbuff vchSecret(raw, raw+strlen(raw));
-    err = init_cert_tx(iface, strLabel, "test", vchSecret, 1, wtx);
+    string hexSeed;
+    err = init_cert_tx(iface, wtx, strLabel, "test", hexSeed, 1);
 if (err) fprintf(stderr, "DEBUG: TEST: init_cert_tx: error %d\n", err);
     _TRUE(0 == err);
   }
@@ -665,10 +669,33 @@ if (err) fprintf(stderr, "DEBUG: TEST: init_cert_tx: error %d\n", err);
   _TRUE(t_tx.GetHash() == wtx.GetHash());
   _TRUE(wtx.IsInMemoryPool(TEST_COIN_IFACE) == false);
 
+
+  /* chained certificate */
+  CWalletTx chain_wtx;
+  string strTitle("test");
+  err = derive_cert_tx(iface, chain_wtx, hashCert, strLabel, strTitle);
+  _TRUE(err == 0);
+  _TRUE(chain_wtx.CheckTransaction(TEST_COIN_IFACE)); /* .. */
+  _TRUE(VerifyCert(iface, chain_wtx, nBestHeight) == true);
+  _TRUE(chain_wtx.IsInMemoryPool(TEST_COIN_IFACE) == true);
+
+  { /* insert derived cert into chain */
+    CBlock *block = test_GenerateBlock();
+    _TRUEPTR(block);
+    _TRUE(ProcessBlock(NULL, block) == true);
+    delete block;
+  }
+
+  /* verify insertion */
+  t_tx.SetNull();
+  hashCert = chain_wtx.certificate.GetHash();
+  _TRUE(GetTxOfCert(iface, hashCert, t_tx) == true);
+  _TRUE(t_tx.GetHash() == chain_wtx.GetHash());
+  _TRUE(chain_wtx.IsInMemoryPool(TEST_COIN_IFACE) == false);
+
   /* generake test license from certificate */
   CWalletTx lic_wtx;
   err = init_license_tx(iface, strLabel, hashCert, lic_wtx);
-if (err)  fprintf(stderr, "DEBUG: %d = init_license_tx()\n", err);
   _TRUE(0 == err);
 
   _TRUE(lic_wtx.CheckTransaction(TEST_COIN_IFACE)); /* .. */
@@ -688,6 +715,7 @@ if (err)  fprintf(stderr, "DEBUG: %d = init_license_tx()\n", err);
   CTransaction t2_tx;
   _TRUE(GetTxOfLicense(iface, licHash, t2_tx) == true);
   _TRUE(lic_wtx.IsInMemoryPool(TEST_COIN_IFACE) == false);
+
 }
 
 _TEST(offertx)
@@ -719,7 +747,6 @@ _TEST(offertx)
 
   CWalletTx wtx;
   err = init_offer_tx(iface, strLabel, srcValue, TEST_COIN_IFACE, destValue, wtx);
-if (err) fprintf(stderr, "DEBUG: TEST: OFFER: OFFER-TX: %d = init_offer_tx()\n", err); 
   _TRUE(0 == err);
   uint160 hashOffer = wtx.offer.GetHash();
   uint256 hashTx = wtx.GetHash();

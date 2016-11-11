@@ -224,9 +224,9 @@ Value rpc_cert_new(CIface *iface, const Array& params, bool fStratum)
   if (wallet->mapCertLabel.count(strTitle))
     throw JSONRPCError(-5, "Certificate name must be unique.");
 
-  cbuff vSeed;
+  string hexSeed;
   if (params.size() > 2)
-    vSeed = ParseHex(params[2].get_str());
+    hexSeed = params[2].get_str();
 
   int64 nFee = 0;
   if (params.size() > 3) {
@@ -242,7 +242,7 @@ Value rpc_cert_new(CIface *iface, const Array& params, bool fStratum)
 #endif
 
   CWalletTx wtx;
-  err = init_cert_tx(iface, strAccount, strTitle, vSeed, nFee, wtx);
+  err = init_cert_tx(iface, wtx, strAccount, strTitle, hexSeed, nFee);
   if (err)
     throw JSONRPCError(err, "Failure initializing transaction.");
 

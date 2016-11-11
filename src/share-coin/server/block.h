@@ -805,7 +805,10 @@ public:
     CAlias *UpdateAlias(std::string name, const uint160& hash);
     CAlias *RemoveAlias(std::string name);
 
-    CCert *CreateCert(int ifaceIndex, const char *name, CCoinAddr& addr, cbuff secret, int64 nLicenseFee);
+    CCert *CreateCert(int ifaceIndex, string strTitle, CCoinAddr& addr, string hexSeed, int64 nLicenseFee);
+
+    CCert *DeriveCert(int ifaceIndex, string strTitle, CCoinAddr& addr, CCert *chain, string hexSeed, int64 nLicenseFee);
+
     CCert *CreateLicense(CCert *cert);
 
     COffer *CreateOffer();
@@ -816,7 +819,7 @@ public:
 
     CCert *CreateAsset(string strAssetName, string strAssetHash);
     CCert *UpdateAsset(const CAsset& assetIn, string strAssetName, string strAssetHash);
-    CCert *SignAsset(const CAsset& assetIn, uint160 hashCert);
+    CCert *SignAsset(const CAsset& assetIn, CCert *cert);
     CCert *RemoveAsset(const CAsset& assetIn);
 
     CExec *CreateExec();

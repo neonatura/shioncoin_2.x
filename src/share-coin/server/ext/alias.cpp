@@ -260,10 +260,8 @@ bool VerifyAlias(CTransaction& tx)
   int nOut;
 
   /* core verification */
-  if (!IsAliasTx(tx)) {
-fprintf(stderr, "DEBUG: VerifyAlias: is not alias tx\n");
-    return (false); /* tx not flagged as alias */
-}
+  if (!IsAliasTx(tx))
+    return (error(SHERR_INVAL, "VerifyAlias: not an alias tx"));
 
   /* verify hash in pub-script matches alias hash */
   nOut = IndexOfExtOutput(tx);
@@ -494,14 +492,10 @@ bool CommitAliasTx(CIface *iface, CTransaction& tx, int nHeight)
         return (false);
       break;
     case OP_EXT_UPDATE:
-      if (!VerifyAliasChain(iface, tx)) {
-fprintf(stderr, "DEBUG: CommitAliasTx: OP_EXT_UPDATE: !VerifyAliasChain()\n");
+      if (!VerifyAliasChain(iface, tx))
         return (false);
-}
-      if (!ConnectAliasTx(iface, tx)) {
-fprintf(stderr, "DEBUG: CommitAliasTx: OP_EXT_UPDATE: !CommitAliasTx\n");
+      if (!ConnectAliasTx(iface, tx))
         return (false);
-}
       break;
     case OP_EXT_REMOVE:
       if (!VerifyAliasChain(iface, tx))
@@ -596,10 +590,8 @@ int init_alias_addr_tx(CIface *iface, const char *title, CCoinAddr& addr, CWalle
 
   string strExtAccount = "@" + strAccount;
   CCoinAddr extAddr = GetAccountAddress(wallet, strExtAccount, true);
-  if (!extAddr.IsValid()) {
-fprintf(stderr, "DEBUG: error obtaining address for '%s'\n", strExtAccount.c_str());
-    return (SHERR_INVAL);
-}
+  if (!extAddr.IsValid())
+    return (error(SHERR_INVAL, "init_alias_addr_tx: error obtaining address for '%s'\n", strExtAccount.c_str()));
 
   scriptPubKeyOrig.SetDestination(extAddr.Get());
   scriptPubKey << OP_EXT_ACTIVATE << CScript::EncodeOP_N(OP_ALIAS) << OP_HASH160 << aliasHash << OP_2DROP;

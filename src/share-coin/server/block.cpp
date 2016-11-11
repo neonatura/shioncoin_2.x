@@ -2079,6 +2079,12 @@ bool core_AcceptBlock(CBlock *pblock)
           error(SHERR_INVAL, "CommitAliasTx failure");
         }
       }
+      if (tx.isFlag(CTransaction::TXF_LICENSE)) {
+        bool fRet = CommitLicenseTx(iface, tx, nHeight);
+        if (!fRet) {
+          error(SHERR_INVAL, "CommitLicenseTx failure");
+        }
+      }
     }
   }
 
@@ -2155,19 +2161,41 @@ CIdent *CTransaction::CreateEntity(const char *name, cbuff secret)
 }
 */
 
-CCert *CTransaction::CreateCert(int ifaceIndex, const char *name, CCoinAddr& addr, cbuff secret, int64 nLicenseFee)
+CCert *CTransaction::CreateCert(int ifaceIndex, string strTitle, CCoinAddr& addr, string hexSeed, int64 nLicenseFee)
 {
+  cbuff vchContext;
 
   if (nFlag & CTransaction::TXF_CERTIFICATE)
     return (NULL);
-
-  string strTitle(name);
 
   nFlag |= CTransaction::TXF_CERTIFICATE;
   certificate = CCert(strTitle);
   shgeo_local(&certificate.geo, SHGEO_PREC_DISTRICT);
   certificate.SetFee(nLicenseFee);
-  certificate.Sign(ifaceIndex, addr, secret);
+  certificate.Sign(ifaceIndex, addr, vchContext, hexSeed);
+
+  return (&certificate);
+}
+
+CCert *CTransaction::DeriveCert(int ifaceIndex, string strTitle, CCoinAddr& addr, CCert *chain, string hexSeed, int64 nLicenseFee)
+{
+
+  if (nFlag & CTransaction::TXF_CERTIFICATE)
+    return (NULL);
+
+  nFlag |= CTransaction::TXF_CERTIFICATE;
+  certificate = CCert(strTitle);
+  certificate.hashIssuer = chain->GetHash();
+
+  certificate.nFlag |= SHCERT_CERT_CHAIN;
+  certificate.nFlag |= SHCERT_CERT_LICENSE; /* capable of licensing */
+  /* signing is revoked once parent is a chained cert */
+  if (chain->nFlag & SHCERT_CERT_CHAIN)
+    certificate.nFlag &= ~SHCERT_CERT_SIGN;
+
+  shgeo_local(&certificate.geo, SHGEO_PREC_DISTRICT);
+  certificate.SetFee(nLicenseFee);
+  certificate.Sign(ifaceIndex, addr, chain, hexSeed);
 
   return (&certificate);
 }
@@ -2183,7 +2211,15 @@ CCert *CTransaction::CreateLicense(CCert *cert)
     return (NULL);
   
   nFlag |= CTransaction::TXF_LICENSE;
-  CLicense license(*cert);
+  CLicense license;//(*cert);
+
+  license.nFlag |= SHCERT_CERT_CHAIN;
+  license.nFlag &= ~SHCERT_CERT_SIGN;
+
+  shgeo_local(&license.geo, SHGEO_PREC_DISTRICT);
+  license.hashIssuer = cert->GetHash();
+  license.Sign(cert);
+
   certificate = (CCert&)license;
 
   return (&certificate);
@@ -2265,6 +2301,11 @@ CCert *CTransaction::CreateAsset(string strAssetName, string strAssetHash)
 
   nFlag |= CTransaction::TXF_ASSET;
   CAsset asset(strAssetName);
+
+  asset.nFlag |= SHCERT_CERT_CHAIN;
+  asset.nFlag &= ~SHCERT_CERT_SIGN;
+  asset.nFlag &= ~SHCERT_CERT_DIGITAL;
+
   certificate = (CCert&)asset;
 
   return (&certificate);
@@ -2283,7 +2324,7 @@ CCert *CTransaction::UpdateAsset(const CAsset& assetIn, string strAssetName, str
   return (&certificate);
 }
 
-CCert *CTransaction::SignAsset(const CAsset& assetIn, uint160 hashCert)
+CCert *CTransaction::SignAsset(const CAsset& assetIn, CCert *cert)
 {
 
   if (nFlag & CTransaction::TXF_ASSET)
@@ -2291,7 +2332,8 @@ CCert *CTransaction::SignAsset(const CAsset& assetIn, uint160 hashCert)
 
   nFlag |= CTransaction::TXF_ASSET;
   CAsset asset = assetIn;
-  asset.Sign(hashCert);
+  asset.Sign(cert);
+  asset.hashIssuer = cert->GetHash();
   certificate = (CCert&)asset;
 
   return (&certificate);

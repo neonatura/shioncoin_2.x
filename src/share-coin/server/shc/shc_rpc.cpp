@@ -156,7 +156,7 @@ const RPCOp CERT_GET = {
   "Print information about a certificate."
 };
 const RPCOp CERT_LIST = {
-  &rpc_cert_get, 0, {RPC_STRING},
+  &rpc_cert_list, 0, {RPC_STRING},
   "Syntax: [<keyword>]\n"
   "List all certificates with an optional keyword."
 };

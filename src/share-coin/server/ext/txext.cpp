@@ -126,7 +126,7 @@ Object CExtCore::ToValue()
 }
 
 
-bool CSign::SignContext(unsigned char *data, size_t data_len)
+bool CSign::SignContext(cbuff& vchContext, string hexSeed)
 {
   shkey_t *priv_key;
   shkey_t *pub_key;
@@ -136,19 +136,32 @@ bool CSign::SignContext(unsigned char *data, size_t data_len)
   char sig_r[1024];
   char sig_s[1024];
 
-  if (!data || !data_len)
-    return (error(SHERR_INVAL, "CSign::SignContext: no context specified."));
-
   if (nAlg & ALG_ECDSA)
-    return error(SHERR_INVAL, "CSign:SignAddress: address signature is already signed.");
+    return error(SHERR_INVAL, "CSign:SignContext: address signature is already signed.");
+
+  if (vchContext.size() == 0) { /* use blank message */
+    static uint160 blank_hash; 
+    vchContext = cbuff(blank_hash.begin(), blank_hash.end());
+  }
+
+  if (hexSeed.size() == 0) { /* use machine's unique "priveleged key" */
+    char priv_key_hex[256];
+    shkey_t *kpriv;
+
+    kpriv = shpeer_kpriv(sharenet_peer());
+    memset(priv_key_hex, 0, sizeof(priv_key_hex));
+    strncpy(priv_key_hex, shkey_hex(kpriv), sizeof(priv_key_hex)-1);
+    hexSeed = string(priv_key_hex);
+  }
+
+  char *seed_hex = (char *)hexSeed.c_str();
+  unsigned char *data = (unsigned char *)vchContext.data();
+  size_t data_len = vchContext.size();
 
   nAlg = ALG_ECDSA; 
 
   /* generate private key */
-  kpriv = shpeer_kpriv(ashpeer()); //sharenet_peer()
-  memset(priv_key_hex, 0, sizeof(priv_key_hex));
-  strncpy(priv_key_hex, shkey_hex(kpriv), sizeof(priv_key_hex)-1);
-  priv_key = shecdsa_key_priv(priv_key_hex);
+  priv_key = shecdsa_key_priv((char *)seed_hex);
   if (!priv_key) {
     return error(SHERR_INVAL, "CSign::SignContenxt: error generating private key.");
   }
@@ -178,6 +191,7 @@ bool CSign::SignContext(unsigned char *data, size_t data_len)
   return (true);
 }
 
+
 bool CSign::VerifyContext(unsigned char *data, size_t data_len)
 {
   shkey_t *pub_key;
@@ -191,6 +205,12 @@ bool CSign::VerifyContext(unsigned char *data, size_t data_len)
 
   if (vPubKey.size() == 0) {
     return (error(SHERR_INVAL, "CSign::Verify: no public key established."));
+  }
+
+  if (data_len == 0) {
+    static unsigned char blank_hash[20];
+    data = blank_hash;
+    data_len = 20;
   }
 
   /* verify content */
@@ -281,21 +301,15 @@ bool CSign::VerifyOrigin(CCoinAddr& addr)
   return (VerifyAddress(addr, raw, sizeof(shkey_t)));
 }
 
-bool CSign::SignContext(uint160 hash)
-{
-  shkey_t *kHash;
-  kHash = hash.GetKey();
-  return (SignContext((unsigned char *)kHash, sizeof(shkey_t)));
-}
 
 
 bool CSign::VerifyContext(uint160 hash)
 {
-  shkey_t *kHash;
-  kHash = hash.GetKey();
-  return (VerifyContext((unsigned char *)kHash, sizeof(shkey_t)));
+  cbuff vchContext(hash.begin(), hash.end());
+  return (VerifyContext((unsigned char *)vchContext.data(), vchContext.size()));
 }
 
+#if 0
 bool CSign::Sign(int ifaceIndex, CCoinAddr& addr, unsigned char *data, size_t data_len)
 {
   bool ret;
@@ -312,18 +326,50 @@ bool CSign::Sign(int ifaceIndex, CCoinAddr& addr, unsigned char *data, size_t da
  
   return true;
 }
+#endif
 
-bool CSign::Verify(CCoinAddr& addr, unsigned char *data, size_t data_len)
+bool CSign::Sign(int ifaceIndex, CCoinAddr& addr, cbuff& vchContext, string hexSeed)
 {
   bool ret;
 
+  ret = SignContext(vchContext, hexSeed);
+  if (!ret) {
+    return error(SHERR_INVAL, "CSign.Sign: Error signing context.");
+  }
+   
+  if (addr.IsValid()) {
+    ret = SignAddress(ifaceIndex, addr, vchContext.data(), vchContext.size());
+    if (!ret) { 
+      return error(SHERR_INVAL, "CSign.Sign: Error signing addr '%s'.", addr.ToString().c_str());
+    }
+  }
+ 
+  return true;
+}
+
+bool CSign::Sign(int ifaceIndex, CCoinAddr& addr, string hexContext, string hexSeed)
+{
+  cbuff vchContext = ParseHex(hexContext);
+  return (Sign(ifaceIndex, addr, vchContext, hexSeed));
+}
+
+bool CSign::Verify(CCoinAddr& addr, unsigned char *data, size_t data_len)
+{
+  static unsigned char blank_hash[20];
+  bool ret;
+
+  if (data_len == 0) {
+    data = blank_hash;
+    data_len = 20;
+  }
+
   ret = VerifyContext(data, data_len);
   if (!ret)
-    return false;
+    return error(SHERR_INVAL, "CSign.Verify: context integrity failure.");
 
   ret = VerifyAddress(addr, data, data_len);
   if (!ret)
-    return (false);
+    return error(SHERR_INVAL, "CSign.Verify: origin integrity failure.");
 
   return (true);
 }
@@ -340,3 +386,38 @@ Object CSign::ToValue()
 }
 
 
+bool CSign::VerifySeed(string hexSeed)
+{
+  char pub_key_hex[256];
+  shkey_t *priv_key;
+  shkey_t *pub_key;
+
+  if (!(nAlg & ALG_ECDSA))
+    return false; /* seed is only related to context ECDSA signature */
+
+  if (hexSeed.size() == 0) { /* use machine's unique "priveleged key" */
+    static char priv_key_hex[256];
+    shkey_t *kpriv;
+
+    kpriv = shpeer_kpriv(sharenet_peer());
+    memset(priv_key_hex, 0, sizeof(priv_key_hex));
+    strncpy(priv_key_hex, shkey_hex(kpriv), sizeof(priv_key_hex)-1);
+    hexSeed = string(priv_key_hex);
+  }
+
+  priv_key = shecdsa_key_priv((char *)hexSeed.c_str());
+  if (!priv_key)
+    return error(SHERR_INVAL, "VerifySignatureSeed: error generating private key.");
+
+  /* generate public key */
+  pub_key = shecdsa_key_pub(priv_key);
+  shkey_free(&priv_key);
+  if (!pub_key)
+    return error(SHERR_INVAL, "VerifySignatureSeed: error generating public key.");
+
+  memset(pub_key_hex, 0, sizeof(pub_key_hex));
+  strncpy(pub_key_hex, shkey_hex(pub_key), sizeof(pub_key_hex)-1);
+  string strPubKey(pub_key_hex);
+
+  return (strPubKey == stringFromVch(vPubKey));
+}

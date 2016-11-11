@@ -88,10 +88,10 @@ class CSign
       SetNull();
     }
 
-    CSign(uint160 hash)
+    CSign(uint160 hash, string hexSeed = string())
     {
       SetNull();
-      SignContext(hash);
+      SignContext(hash, hexSeed);
     }
 
     IMPLEMENT_SERIALIZE (
@@ -139,7 +139,19 @@ class CSign
     }
 
 
-    bool SignContext(unsigned char *data, size_t data_len);
+    bool SignContext(cbuff& vchContext, string hexSeed = string());
+
+    bool SignContext(uint160 hash, string hexSeed = string())
+    {
+      cbuff vchContext(hash.begin(), hash.end());
+      return (SignContext(vchContext, hexSeed));
+    }
+
+    bool SignContext(string hexContext, string hexSeed = string())
+    {
+      cbuff vchContext = ParseHex(hexContext);
+      return (SignContext(vchContext, hexSeed)); 
+    }
 
     bool VerifyContext(unsigned char *data, size_t data_len);
 
@@ -154,13 +166,17 @@ class CSign
 
 
 
-    bool SignContext(uint160 hash);
 
     bool VerifyContext(uint160 hash);
 
-    bool Sign(int ifaceIndex, CCoinAddr& addr, unsigned char *data, size_t data_len);
+    //bool Sign(int ifaceIndex, CCoinAddr& addr, unsigned char *data, size_t data_len);
+    bool Sign(int ifaceIndex, CCoinAddr& addr, cbuff& vchContext, string hexSeed = string());
+
+    bool Sign(int ifaceIndex, CCoinAddr& addr, string hexContext, string hexSeed = string());
 
     bool Verify(CCoinAddr& addr, unsigned char *data, size_t data_len);
+
+    bool VerifySeed(string hexSeed);
 
 
     const uint160 GetHash()
@@ -263,6 +279,16 @@ class CExtCore
     std::string GetLabel()
     {
       return (stringFromVch(vchLabel)); 
+    }
+
+    int GetVersion()
+    {
+      return (nVersion);
+    }
+
+    void SetVersion(int ver)
+    {
+      nVersion = ver;
     }
 
     std::string ToString();

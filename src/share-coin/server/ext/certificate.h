@@ -256,6 +256,8 @@ class CCert : public CIdent
       CIdent::SetNull();
       signature.SetNull();
       vContext.clear();
+
+      nVersion = 2;
       nFee = 0;
 
       /* x509 prep */
@@ -295,12 +297,36 @@ class CCert : public CIdent
     /**
      * @note The signature does not take into account the geo-detic address (although the underlying certificate hash does).
      */
-    bool Sign(int ifaceIndex, CCoinAddr& addr, cbuff vchSecret);
+    bool Sign(int ifaceIndex, CCoinAddr& addr, cbuff vchContext, string hexSeed = string());
+
+    bool Sign(int ifaceIndex, CCoinAddr& addr, CCert *cert, string hexSeed = string())
+    {
+      string hexContext = stringFromVch(cert->signature.vPubKey);
+      return (Sign(ifaceIndex, addr, ParseHex(hexContext), hexSeed));
+    }
+
 
     /**
-     * Verify the integrity of a signature.
+     * Verify the integrity of a signature against some context.
      */
-    bool VerifySignature(cbuff vchSecret);
+    bool VerifySignature(cbuff vchContext);
+
+    /**
+     * Verify the integrity of a signature against the pubkey of specific cert.
+     */
+    bool VerifySignature(CCert *cert)
+    {
+      return (VerifySignature(cert->signature.vPubKey));
+    }
+
+    /**
+     * Verify the integrity of a signature against the pubkey of chained cert.
+     */
+    bool VerifySignature(int ifaceIndex);
+
+    bool IsSignatureOwner(string strAccount = string());
+
+    bool VerifySignatureSeed(string hexSeed);
 
     /**
      * Create a randomized serial number suitable for a certificate.
@@ -381,9 +407,14 @@ class CLicense : public CCert
       CCert::Init(b);
     }
 
-    void Sign(int ifaceIndex, CCoinAddr& addr);
+    bool Sign(CCert *cert);
 
-    bool VerifySignature(CCoinAddr& addr);
+    bool Sign(int ifaceIndex);
+
+    bool VerifySignature(CCert *cert);
+
+    bool VerifySignature(int ifaceIndex);
+
 
     const uint160 GetHash()
     {
@@ -408,11 +439,14 @@ bool VerifyCert(CIface *iface, CTransaction& tx, int nHeight);
 
 int64 GetCertOpFee(CIface *iface, int nHeight);
 
-extern int init_cert_tx(CIface *iface, string strAccount, string strTitle, cbuff vchSecret, int64 nLicenseFee, CWalletTx& wtx);
+int init_cert_tx(CIface *iface, CWalletTx& wtx, string strAccount, string strTitle, string hexSeed = string(), int64 nLicenseFee = 0);
 
-int init_ident_stamp_tx(CIface *iface, std::string strAccount, std::string strComment, CWalletTx& wtx);
+int derive_cert_tx(CIface *iface, CWalletTx& wtx, const uint160& hChainCert, string strAccount, string strTitle, string hexSeed = string(), int64 nLicenseFee = 0);
+
+int init_ident_stamp_tx(CIface *iface, string strAccount, string strComment, CWalletTx& wtx);
 
 int init_license_tx(CIface *iface, string strAccount, uint160 hashCert, CWalletTx& wtx);
+
 
 bool VerifyLicense(CTransaction& tx);
 
@@ -451,6 +485,12 @@ bool GetCertByName(CIface *iface, string name, CCert& cert);
 bool GetTxOfIdent(CIface *iface, const uint160& hash, CTransaction& tx);
 
 bool InsertIdentTable(CIface *iface, CTransaction& tx);
+
+bool CommitLicenseTx(CIface *iface, CTransaction& tx, int nHeight);
+
+bool VerifyLicenseChain(CIface *iface, CTransaction& tx);
+
+
 
 
 
