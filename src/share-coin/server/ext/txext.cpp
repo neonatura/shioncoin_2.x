@@ -30,7 +30,7 @@
 using namespace std;
 using namespace boost;
 
-
+#define BLANK_HASH_SIZE 21
 
 #if 0
 
@@ -140,8 +140,8 @@ bool CSign::SignContext(cbuff& vchContext, string hexSeed)
     return error(SHERR_INVAL, "CSign:SignContext: address signature is already signed.");
 
   if (vchContext.size() == 0) { /* use blank message */
-    static uint160 blank_hash; 
-    vchContext = cbuff(blank_hash.begin(), blank_hash.end());
+    static unsigned char blank_hash[BLANK_HASH_SIZE];
+    vchContext = cbuff(blank_hash, blank_hash + sizeof(blank_hash));
   }
 
   if (hexSeed.size() == 0) { /* use machine's unique "priveleged key" */
@@ -208,9 +208,9 @@ bool CSign::VerifyContext(unsigned char *data, size_t data_len)
   }
 
   if (data_len == 0) {
-    static unsigned char blank_hash[20];
+    static unsigned char blank_hash[BLANK_HASH_SIZE];
     data = blank_hash;
-    data_len = 20;
+    data_len = sizeof(blank_hash);
   }
 
   /* verify content */
@@ -355,12 +355,12 @@ bool CSign::Sign(int ifaceIndex, CCoinAddr& addr, string hexContext, string hexS
 
 bool CSign::Verify(CCoinAddr& addr, unsigned char *data, size_t data_len)
 {
-  static unsigned char blank_hash[20];
   bool ret;
 
   if (data_len == 0) {
+    static unsigned char blank_hash[BLANK_HASH_SIZE];
     data = blank_hash;
-    data_len = 20;
+    data_len = sizeof(blank_hash);
   }
 
   ret = VerifyContext(data, data_len);

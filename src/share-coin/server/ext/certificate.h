@@ -257,7 +257,7 @@ class CCert : public CIdent
       signature.SetNull();
       vContext.clear();
 
-      nVersion = 2;
+      nVersion = 3;
       nFee = 0;
 
       /* x509 prep */

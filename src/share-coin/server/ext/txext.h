@@ -55,10 +55,12 @@ inline bool arrcasecmp(cbuff v1, cbuff v2)
 inline std::string stringFromVch(const std::vector<unsigned char> &vch) 
 {
   std::string res;
-  std::vector<unsigned char>::const_iterator vi = vch.begin();
-  while (vi != vch.end()) {
-    res += (char) (*vi);
-    vi++;
+  if (vch.size() != 0) {
+    std::vector<unsigned char>::const_iterator vi = vch.begin();
+    while (vi != vch.end()) {
+      res += (char) (*vi);
+      vi++;
+    }
   }
   return res;
 }

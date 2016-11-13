@@ -645,7 +645,7 @@ _TEST(certtx)
   unsigned int nBestHeight = GetBestHeight(iface) + 1;
   {
     string hexSeed;
-    err = init_cert_tx(iface, wtx, strLabel, "test", hexSeed, 1);
+    err = init_cert_tx(iface, wtx, strLabel, "test CA", hexSeed, 1);
 if (err) fprintf(stderr, "DEBUG: TEST: init_cert_tx: error %d\n", err);
     _TRUE(0 == err);
   }
@@ -672,8 +672,9 @@ if (err) fprintf(stderr, "DEBUG: TEST: init_cert_tx: error %d\n", err);
 
   /* chained certificate */
   CWalletTx chain_wtx;
-  string strTitle("test");
+  string strTitle("test CHAIN");
   err = derive_cert_tx(iface, chain_wtx, hashCert, strLabel, strTitle);
+if (err) fprintf(stderr, "DEBUG: certtx: error (%d) derive cert tx\n", err); 
   _TRUE(err == 0);
   _TRUE(chain_wtx.CheckTransaction(TEST_COIN_IFACE)); /* .. */
   _TRUE(VerifyCert(iface, chain_wtx, nBestHeight) == true);
