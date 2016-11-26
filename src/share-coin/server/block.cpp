@@ -2085,6 +2085,12 @@ bool core_AcceptBlock(CBlock *pblock)
           error(SHERR_INVAL, "CommitLicenseTx failure");
         }
       }
+      if (tx.isFlag(CTransaction::TXF_CONTEXT)) {
+        int err = CommitContextTx(iface, tx, nHeight);
+        if (err) {
+          error(err, "CommitContextTx failure");
+        }
+      }
     }
   }
 
@@ -2127,15 +2133,23 @@ CAlias *CTransaction::CreateAlias(std::string name, const uint160& hash, int typ
 {
   nFlag |= CTransaction::TXF_ALIAS;
 
-  alias = CAlias(name, hash);
+  //alias = CAlias(name, hash);
+  alias = CAlias();
+  alias.SetExpireTime(CAlias::DEFAULT_ALIAS_LIFESPAN);
+  alias.SetLabel(name);
   alias.SetType(type);
+
   return (&alias);
 }
 CAlias *CTransaction::UpdateAlias(std::string name, const uint160& hash)
 {
   nFlag |= CTransaction::TXF_ALIAS;
 
-  alias = CAlias(name, hash);
+//  alias = CAlias(name, hash);
+  alias = CAlias();
+  alias.SetExpireTime(CAlias::DEFAULT_ALIAS_LIFESPAN);
+  alias.SetLabel(name);
+
   return (&alias);
 }
 CAlias *CTransaction::RemoveAlias(std::string name)
@@ -2143,6 +2157,7 @@ CAlias *CTransaction::RemoveAlias(std::string name)
   nFlag |= CTransaction::TXF_ALIAS;
 
   alias = CAlias();
+  alias.SetExpireTime(CAlias::DEFAULT_ALIAS_LIFESPAN);
   alias.SetLabel(name);
   return (&alias);
 }
@@ -2170,6 +2185,7 @@ CCert *CTransaction::CreateCert(int ifaceIndex, string strTitle, CCoinAddr& addr
 
   nFlag |= CTransaction::TXF_CERTIFICATE;
   certificate = CCert(strTitle);
+  certificate.SetSerialNumber();
   shgeo_local(&certificate.geo, SHGEO_PREC_DISTRICT);
   certificate.SetFee(nLicenseFee);
   certificate.Sign(ifaceIndex, addr, vchContext, hexSeed);
@@ -2185,6 +2201,7 @@ CCert *CTransaction::DeriveCert(int ifaceIndex, string strTitle, CCoinAddr& addr
 
   nFlag |= CTransaction::TXF_CERTIFICATE;
   certificate = CCert(strTitle);
+  certificate.SetSerialNumber();
   certificate.hashIssuer = chain->GetHash();
 
   certificate.nFlag |= SHCERT_CERT_CHAIN;
@@ -2216,6 +2233,7 @@ CCert *CTransaction::CreateLicense(CCert *cert)
   license.nFlag |= SHCERT_CERT_CHAIN;
   license.nFlag &= ~SHCERT_CERT_SIGN;
 
+  license.SetSerialNumber();
   shgeo_local(&license.geo, SHGEO_PREC_DISTRICT);
   license.hashIssuer = cert->GetHash();
   license.Sign(cert);
@@ -2593,6 +2611,10 @@ Object CTransaction::ToValue(int ifaceIndex)
   if (this->nFlag & TXF_CHANNEL) {
     obj.push_back(Pair("channel", channel.ToValue()));
   }
+  if (this->nFlag & TXF_CONTEXT) {
+    CContext ctx(certificate);
+    obj.push_back(Pair("context", ctx.ToValue()));
+  }
 
   return (obj);
 }
@@ -2894,6 +2916,27 @@ CExec *CTransaction::RemoveExec(const CExec& execIn)
   return (exec);
 
 }
+
+CContext *CTransaction::CreateContext()
+{
+  CContext *ctx;
+
+  if (nFlag & CTransaction::TXF_CONTEXT)
+    return (NULL);
+
+  nFlag |= CTransaction::TXF_CONTEXT;
+
+  ctx = (CContext *)&certificate;
+  ctx->SetNull();
+
+  /* each context value expires after two years */
+  ctx->SetExpireTime(CContext::DEFAULT_CONTEXT_LIFESPAN);
+
+  return (ctx);
+}
+
+
+
 
 static bool GetCommitBranches(CBlockIndex *pbest, CBlockIndex *pindexNew, vector<CBlockIndex*>& vConnect, vector<CBlockIndex*>& vDisconnect)
 {

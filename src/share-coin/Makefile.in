@@ -191,8 +191,10 @@ am__objects_5 = $(am__objects_4) shcoind-fractal.$(OBJEXT) \
 	shcoind-txext.$(OBJEXT) shcoind-alias.$(OBJEXT) \
 	shcoind-certificate.$(OBJEXT) shcoind-offer.$(OBJEXT) \
 	shcoind-asset.$(OBJEXT) shcoind-exec.$(OBJEXT) \
-	shcoind-channel.$(OBJEXT) shcoind-rpcalias_proto.$(OBJEXT) \
-	shcoind-rpccert_proto.$(OBJEXT) shcoind-rpcdump.$(OBJEXT) \
+	shcoind-channel.$(OBJEXT) shcoind-context.$(OBJEXT) \
+	shcoind-rpcalias_proto.$(OBJEXT) \
+	shcoind-rpccert_proto.$(OBJEXT) \
+	shcoind-rpccontext_proto.$(OBJEXT) shcoind-rpcdump.$(OBJEXT) \
 	shcoind-rpcnet.$(OBJEXT) shcoind-rpc_proto.$(OBJEXT) \
 	shcoind-rpcrawtransaction.$(OBJEXT) shcoind-protocol.$(OBJEXT) \
 	shcoind-block.$(OBJEXT) shcoind-coin.$(OBJEXT) \
@@ -298,8 +300,10 @@ am__objects_13 = $(am__objects_12) test_shcoind-fractal.$(OBJEXT) \
 	test_shcoind-certificate.$(OBJEXT) \
 	test_shcoind-offer.$(OBJEXT) test_shcoind-asset.$(OBJEXT) \
 	test_shcoind-exec.$(OBJEXT) test_shcoind-channel.$(OBJEXT) \
+	test_shcoind-context.$(OBJEXT) \
 	test_shcoind-rpcalias_proto.$(OBJEXT) \
 	test_shcoind-rpccert_proto.$(OBJEXT) \
+	test_shcoind-rpccontext_proto.$(OBJEXT) \
 	test_shcoind-rpcdump.$(OBJEXT) test_shcoind-rpcnet.$(OBJEXT) \
 	test_shcoind-rpc_proto.$(OBJEXT) \
 	test_shcoind-rpcrawtransaction.$(OBJEXT) \
@@ -1345,6 +1349,7 @@ common_includes = \
 	server/rpc_proto.h \
 	server/rpcalias_proto.h \
 	server/rpccert_proto.h \
+	server/rpccontext_proto.h \
 	server/compat.h \
 	server/crypter.h \
 	server/txidx.h \
@@ -1439,8 +1444,10 @@ server_sources = \
 	server/ext/asset.cpp \
 	server/ext/exec.cpp \
 	server/ext/channel.cpp \
+	server/ext/context.cpp \
 	server/rpc/rpcalias_proto.cpp \
 	server/rpc/rpccert_proto.cpp \
+	server/rpc/rpccontext_proto.cpp \
 	server/rpc/rpcdump.cpp \
 	server/rpc/rpcnet.cpp \
 	server/rpc/rpc_proto.cpp \
@@ -1687,6 +1694,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-channel.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-coin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-coin_proto.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-context.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-crypter.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-emc2_block.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-emc2_netmsg.Po@am__quote@
@@ -1710,6 +1718,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-rpc_proto.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-rpcalias_proto.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-rpccert_proto.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-rpccontext_proto.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-rpcdump.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-rpcnet.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-rpcrawtransaction.Po@am__quote@
@@ -1808,6 +1817,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-channel.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-coin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-coin_proto.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-context.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-crypter.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-emc2_block.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-emc2_netmsg.Po@am__quote@
@@ -1831,6 +1841,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-rpc_proto.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-rpcalias_proto.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-rpccert_proto.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-rpccontext_proto.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-rpcdump.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-rpcnet.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-rpcrawtransaction.Po@am__quote@
@@ -3453,6 +3464,20 @@ shcoind-channel.obj: server/ext/channel.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-channel.obj `if test -f 'server/ext/channel.cpp'; then $(CYGPATH_W) 'server/ext/channel.cpp'; else $(CYGPATH_W) '$(srcdir)/server/ext/channel.cpp'; fi`
 
+shcoind-context.o: server/ext/context.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-context.o -MD -MP -MF $(DEPDIR)/shcoind-context.Tpo -c -o shcoind-context.o `test -f 'server/ext/context.cpp' || echo '$(srcdir)/'`server/ext/context.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-context.Tpo $(DEPDIR)/shcoind-context.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/ext/context.cpp' object='shcoind-context.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-context.o `test -f 'server/ext/context.cpp' || echo '$(srcdir)/'`server/ext/context.cpp
+
+shcoind-context.obj: server/ext/context.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-context.obj -MD -MP -MF $(DEPDIR)/shcoind-context.Tpo -c -o shcoind-context.obj `if test -f 'server/ext/context.cpp'; then $(CYGPATH_W) 'server/ext/context.cpp'; else $(CYGPATH_W) '$(srcdir)/server/ext/context.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-context.Tpo $(DEPDIR)/shcoind-context.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/ext/context.cpp' object='shcoind-context.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-context.obj `if test -f 'server/ext/context.cpp'; then $(CYGPATH_W) 'server/ext/context.cpp'; else $(CYGPATH_W) '$(srcdir)/server/ext/context.cpp'; fi`
+
 shcoind-rpcalias_proto.o: server/rpc/rpcalias_proto.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-rpcalias_proto.o -MD -MP -MF $(DEPDIR)/shcoind-rpcalias_proto.Tpo -c -o shcoind-rpcalias_proto.o `test -f 'server/rpc/rpcalias_proto.cpp' || echo '$(srcdir)/'`server/rpc/rpcalias_proto.cpp
 @am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-rpcalias_proto.Tpo $(DEPDIR)/shcoind-rpcalias_proto.Po
@@ -3480,6 +3505,20 @@ shcoind-rpccert_proto.obj: server/rpc/rpccert_proto.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/rpc/rpccert_proto.cpp' object='shcoind-rpccert_proto.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-rpccert_proto.obj `if test -f 'server/rpc/rpccert_proto.cpp'; then $(CYGPATH_W) 'server/rpc/rpccert_proto.cpp'; else $(CYGPATH_W) '$(srcdir)/server/rpc/rpccert_proto.cpp'; fi`
+
+shcoind-rpccontext_proto.o: server/rpc/rpccontext_proto.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-rpccontext_proto.o -MD -MP -MF $(DEPDIR)/shcoind-rpccontext_proto.Tpo -c -o shcoind-rpccontext_proto.o `test -f 'server/rpc/rpccontext_proto.cpp' || echo '$(srcdir)/'`server/rpc/rpccontext_proto.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-rpccontext_proto.Tpo $(DEPDIR)/shcoind-rpccontext_proto.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/rpc/rpccontext_proto.cpp' object='shcoind-rpccontext_proto.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-rpccontext_proto.o `test -f 'server/rpc/rpccontext_proto.cpp' || echo '$(srcdir)/'`server/rpc/rpccontext_proto.cpp
+
+shcoind-rpccontext_proto.obj: server/rpc/rpccontext_proto.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-rpccontext_proto.obj -MD -MP -MF $(DEPDIR)/shcoind-rpccontext_proto.Tpo -c -o shcoind-rpccontext_proto.obj `if test -f 'server/rpc/rpccontext_proto.cpp'; then $(CYGPATH_W) 'server/rpc/rpccontext_proto.cpp'; else $(CYGPATH_W) '$(srcdir)/server/rpc/rpccontext_proto.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-rpccontext_proto.Tpo $(DEPDIR)/shcoind-rpccontext_proto.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/rpc/rpccontext_proto.cpp' object='shcoind-rpccontext_proto.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-rpccontext_proto.obj `if test -f 'server/rpc/rpccontext_proto.cpp'; then $(CYGPATH_W) 'server/rpc/rpccontext_proto.cpp'; else $(CYGPATH_W) '$(srcdir)/server/rpc/rpccontext_proto.cpp'; fi`
 
 shcoind-rpcdump.o: server/rpc/rpcdump.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-rpcdump.o -MD -MP -MF $(DEPDIR)/shcoind-rpcdump.Tpo -c -o shcoind-rpcdump.o `test -f 'server/rpc/rpcdump.cpp' || echo '$(srcdir)/'`server/rpc/rpcdump.cpp
@@ -4405,6 +4444,20 @@ test_shcoind-channel.obj: server/ext/channel.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-channel.obj `if test -f 'server/ext/channel.cpp'; then $(CYGPATH_W) 'server/ext/channel.cpp'; else $(CYGPATH_W) '$(srcdir)/server/ext/channel.cpp'; fi`
 
+test_shcoind-context.o: server/ext/context.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-context.o -MD -MP -MF $(DEPDIR)/test_shcoind-context.Tpo -c -o test_shcoind-context.o `test -f 'server/ext/context.cpp' || echo '$(srcdir)/'`server/ext/context.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-context.Tpo $(DEPDIR)/test_shcoind-context.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/ext/context.cpp' object='test_shcoind-context.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-context.o `test -f 'server/ext/context.cpp' || echo '$(srcdir)/'`server/ext/context.cpp
+
+test_shcoind-context.obj: server/ext/context.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-context.obj -MD -MP -MF $(DEPDIR)/test_shcoind-context.Tpo -c -o test_shcoind-context.obj `if test -f 'server/ext/context.cpp'; then $(CYGPATH_W) 'server/ext/context.cpp'; else $(CYGPATH_W) '$(srcdir)/server/ext/context.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-context.Tpo $(DEPDIR)/test_shcoind-context.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/ext/context.cpp' object='test_shcoind-context.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-context.obj `if test -f 'server/ext/context.cpp'; then $(CYGPATH_W) 'server/ext/context.cpp'; else $(CYGPATH_W) '$(srcdir)/server/ext/context.cpp'; fi`
+
 test_shcoind-rpcalias_proto.o: server/rpc/rpcalias_proto.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-rpcalias_proto.o -MD -MP -MF $(DEPDIR)/test_shcoind-rpcalias_proto.Tpo -c -o test_shcoind-rpcalias_proto.o `test -f 'server/rpc/rpcalias_proto.cpp' || echo '$(srcdir)/'`server/rpc/rpcalias_proto.cpp
 @am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-rpcalias_proto.Tpo $(DEPDIR)/test_shcoind-rpcalias_proto.Po
@@ -4432,6 +4485,20 @@ test_shcoind-rpccert_proto.obj: server/rpc/rpccert_proto.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/rpc/rpccert_proto.cpp' object='test_shcoind-rpccert_proto.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-rpccert_proto.obj `if test -f 'server/rpc/rpccert_proto.cpp'; then $(CYGPATH_W) 'server/rpc/rpccert_proto.cpp'; else $(CYGPATH_W) '$(srcdir)/server/rpc/rpccert_proto.cpp'; fi`
+
+test_shcoind-rpccontext_proto.o: server/rpc/rpccontext_proto.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-rpccontext_proto.o -MD -MP -MF $(DEPDIR)/test_shcoind-rpccontext_proto.Tpo -c -o test_shcoind-rpccontext_proto.o `test -f 'server/rpc/rpccontext_proto.cpp' || echo '$(srcdir)/'`server/rpc/rpccontext_proto.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-rpccontext_proto.Tpo $(DEPDIR)/test_shcoind-rpccontext_proto.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/rpc/rpccontext_proto.cpp' object='test_shcoind-rpccontext_proto.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-rpccontext_proto.o `test -f 'server/rpc/rpccontext_proto.cpp' || echo '$(srcdir)/'`server/rpc/rpccontext_proto.cpp
+
+test_shcoind-rpccontext_proto.obj: server/rpc/rpccontext_proto.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-rpccontext_proto.obj -MD -MP -MF $(DEPDIR)/test_shcoind-rpccontext_proto.Tpo -c -o test_shcoind-rpccontext_proto.obj `if test -f 'server/rpc/rpccontext_proto.cpp'; then $(CYGPATH_W) 'server/rpc/rpccontext_proto.cpp'; else $(CYGPATH_W) '$(srcdir)/server/rpc/rpccontext_proto.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-rpccontext_proto.Tpo $(DEPDIR)/test_shcoind-rpccontext_proto.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/rpc/rpccontext_proto.cpp' object='test_shcoind-rpccontext_proto.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-rpccontext_proto.obj `if test -f 'server/rpc/rpccontext_proto.cpp'; then $(CYGPATH_W) 'server/rpc/rpccontext_proto.cpp'; else $(CYGPATH_W) '$(srcdir)/server/rpc/rpccontext_proto.cpp'; fi`
 
 test_shcoind-rpcdump.o: server/rpc/rpcdump.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-rpcdump.o -MD -MP -MF $(DEPDIR)/test_shcoind-rpcdump.Tpo -c -o test_shcoind-rpcdump.o `test -f 'server/rpc/rpcdump.cpp' || echo '$(srcdir)/'`server/rpc/rpcdump.cpp

@@ -2504,7 +2504,7 @@ int check_ip(char *serv_hostname, struct in_addr *net_addr)
   shnet_verify(&r_set, NULL, &to);
 
   buff = shnet_read_buf(sk);
-  if (!buff) {
+  if (!buff || shbuf_size(buff) == 0) {
     shnet_close(sk);
     return (SHERR_INVAL);
   }
@@ -2531,7 +2531,9 @@ void GetMyExternalIP(void)
 {
   CNetAddr addrLocalHost;
   struct in_addr addr;
+  shgeo_t geo;
   char selfip_addr[MAXHOSTNAMELEN+1];
+  char prbuf[1024];
   char buf[256];
   int idx;
   int err;
@@ -2569,8 +2571,21 @@ void GetMyExternalIP(void)
   for (idx = 0; idx < MAX_COIN_IFACE; idx++)
     AddLocal(idx, addrLocalHost, LOCAL_HTTP);
 
-  sprintf(buf, "info: listening on IP addr '%s'.", buf);
-  shcoind_log(buf);
+  sprintf(prbuf, "info: listening on IP addr '%s'.", buf);
+  shcoind_log(prbuf);
+
+  /* set the local geodetic location based on the listening address. */
+  if (0 == shgeodb_host(buf, &geo)) {
+    shnum_t lat, lon;
+
+    /* register location as local with libshare. */
+    shgeo_local_set(&geo);
+
+    shgeo_loc(&geo, &lat, &lon, NULL);
+    sprintf(buf, "info: latitude %Lf, longitude %Lf.", lat, lon);
+    shcoind_log(buf);
+  }
+
 }
 
 

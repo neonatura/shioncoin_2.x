@@ -527,6 +527,7 @@ extern "C" {
 
 #define TXIDX_TABLE "txidx"
 
+#if 0
 shdb_t *txdb_open(CIface *iface)
 {
   shdb_t *db;
@@ -543,6 +544,7 @@ shdb_t *txdb_open(CIface *iface)
   return (db);
 }
 
+
 void txdb_close(shdb_t **db_p)
 {
   shdb_t *db;
@@ -555,7 +557,9 @@ void txdb_close(shdb_t **db_p)
 
   shdb_close(db);
 }
+#endif
 
+#if 0
 bool WriteTxIndex(CIface *iface, uint256 txOrigin, uint256 txSpent)
 {
   shdb_t *db;
@@ -593,6 +597,7 @@ error:
   txdb_close(&db);
   return (err);
 }
+#endif
 
 #ifdef __cplusplus
 }
@@ -613,6 +618,7 @@ int txdb_hashlist_cb(void *p, int arg_nr, char **args, char **cols)
 }
 
 
+#if 0
 bool ReadTxIndexOrigin(CIface *iface, uint256 txSpent, HashList& txOrigin)
 {
   vector<uint256> origin; 
@@ -636,7 +642,10 @@ bool ReadTxIndexOrigin(CIface *iface, uint256 txSpent, HashList& txOrigin)
   
   return (true);
 }
+#endif
 
+
+#if 0
 bool ReadTxIndexSpent(CIface *iface, uint256 txOrigin, HashList& txSpent)
 {
   vector<uint256> spent;
@@ -660,6 +669,7 @@ bool ReadTxIndexSpent(CIface *iface, uint256 txOrigin, HashList& txSpent)
   
   return (true);
 }
+#endif
 
 
 #if 0

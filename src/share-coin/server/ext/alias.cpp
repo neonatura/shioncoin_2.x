@@ -257,6 +257,7 @@ bool IsLocalAlias(CIface *iface, const CTransaction& tx)
 bool VerifyAlias(CTransaction& tx)
 {
   uint160 hashAlias;
+  time_t now;
   int nOut;
 
   /* core verification */
@@ -282,16 +283,25 @@ bool VerifyAlias(CTransaction& tx)
   }
 
   CAlias *alias = tx.GetAlias();
+
   if (hashAlias != alias->GetHash()) {
+    return error(SHERR_INVAL, "VerifyAlias: transaction references invalid alias hash.");
     return (false); /* alias hash mismatch */
   }
 
+  now = time(NULL);
+  if (alias->GetExpireTime() > (now + CAlias::DEFAULT_ALIAS_LIFESPAN))
+    return error(SHERR_INVAL, "VerifyAlias: expiration exceeds %d years.", (CAlias::DEFAULT_ALIAS_LIFESPAN/31536000));
+
+  if (alias->GetLabel().size() > 135)
+    return error(SHERR_INVAL, "VerifyAlias: label exceeds 135 characters.");
+
   return (true);
 }
-
 
 bool IsValidAliasName(CIface *iface, string label)
 {
+#if 0
   CWallet *wallet = GetWallet(iface);
   uint256 hTx;
 
@@ -303,39 +313,65 @@ bool IsValidAliasName(CIface *iface, string label)
     return (false);
 
   return (true);
+#endif
+  CTransaction tx;
+  if (GetAliasByName(iface, label, tx))
+    return (true);
+
+  return (false); 
 }
 
-CAlias *GetAliasByName(CIface *iface, string label, CTransaction& tx)
+bool GetTxOfAlias(CIface *iface, const std::string strTitle, CTransaction& tx) 
 {
   CWallet *wallet = GetWallet(iface);
   uint256 hTx;
 
-  if (wallet->mapAlias.count(label) == 0)
-    return (NULL);
+  if (wallet->mapAlias.count(strTitle) == 0)
+    return (false);
 
-  hTx = wallet->mapAlias[label];
+  hTx = wallet->mapAlias[strTitle];
   if (hTx.IsNull())
-    return (NULL);
-  if (!GetTransaction(iface, hTx, tx, NULL))
-    return (NULL);
+    return (false);
 
-  return (&tx.alias);
+  if (!GetTransaction(iface, hTx, tx, NULL))
+    return (false);
+
+  return (true);
 }
 
-/* for conveience */
-bool GetTxOfAlias(CIface *iface, const std::string strTitle, CTransaction& tx) 
+/**
+ * @note Performs an additional expiration check.
+ */
+CAlias *GetAliasByName(CIface *iface, string label, CTransaction& tx)
 {
-  return (GetAliasByName(iface, strTitle, tx) != NULL);
+  CAlias *alias;
+
+  if (!GetTxOfAlias(iface, label, tx))
+    return (NULL);
+
+  alias = &tx.alias;
+  if (alias->IsExpired())
+    return (NULL);
+
+  return (alias);
 }
 
 bool CAlias::GetCoinAddr(CCoinAddr& addrRet)
 {
 
+  if (vAddr.size() == 0)
+    return (false);
+  addrRet = CCoinAddr(stringFromVch(vAddr));
+  if (!addrRet.IsValid())
+    return (false);
+
+#if 0
   uint160 hash(vAddr);
   CKeyID keyid(hash);
   addrRet.Set(keyid);
   if (!addrRet.IsValid())
     return (false);
+#endif
 
   return (true);
 }
@@ -343,6 +379,9 @@ bool CAlias::GetCoinAddr(CCoinAddr& addrRet)
 void CAlias::SetCoinAddr(CCoinAddr& addr)
 {
 
+  vAddr = vchFromString(addr.ToString());
+
+#if 0
   CKeyID key_id;
   if (!addr.GetKeyID(key_id))
     return;
@@ -351,6 +390,7 @@ void CAlias::SetCoinAddr(CCoinAddr& addr)
   memset(hstr, 0, sizeof(hstr));
   strncpy(hstr, key_id.GetHex().c_str(), sizeof(hstr)-1);
   vAddr = cbuff(hstr, hstr + strlen(hstr));
+#endif
 
 }
 
@@ -565,23 +605,22 @@ int init_alias_addr_tx(CIface *iface, const char *title, CCoinAddr& addr, CWalle
     return (SHERR_NOENT);
   }
 
-  CKeyID key_id;
-  if (!addr.GetKeyID(key_id)) {
-    return (SHERR_OPNOTSUPP);
-  }
-
-  CAlias *alias;
-
-  /* embed alias content into transaction */
-  wtx.SetNull();
-  alias = wtx.CreateAlias(strTitle, key_id);
-  wtx.strFromAccount = strAccount; /* originating account for payment */
-
   int64 nFee = GetAliasOpFee(iface, GetBestHeight(iface));
   int64 bal = GetAccountBalance(ifaceIndex, strAccount, 1);
   if (bal < nFee) {
     return (SHERR_AGAIN);
   }
+
+  /* embed alias content into transaction */
+  wtx.SetNull();
+  wtx.strFromAccount = strAccount; /* originating account for payment */
+
+  uint160 deprec_hash;
+  CAlias *alias = wtx.CreateAlias(strTitle, deprec_hash);
+  if (!alias)
+    return (SHERR_INVAL);
+
+  alias->SetCoinAddr(addr);
 
   /* send to extended tx storage account */
   CScript scriptPubKeyOrig;
@@ -604,7 +643,7 @@ int init_alias_addr_tx(CIface *iface, const char *title, CCoinAddr& addr, CWalle
     return (SHERR_INVAL);
   }
 
-  Debug("SENT:ALIASNEW : title=%s, ref=%s, aliashash=%s, tx=%s\n", title, key_id.GetHex().c_str(), alias->GetHash().ToString().c_str(), wtx.GetHash().GetHex().c_str());
+  Debug("SENT:ALIASNEW : title=%s, aliashash=%s, tx=%s\n", title, alias->GetHash().ToString().c_str(), wtx.GetHash().GetHex().c_str());
 
   return (0);
 }
@@ -617,15 +656,9 @@ int update_alias_addr_tx(CIface *iface, const char *title, CCoinAddr& addr, CWal
 
   if (strlen(title) > MAX_SHARE_NAME_LENGTH)
     return (SHERR_INVAL);
-  if (!addr.IsValid())
-    return (SHERR_INVAL);
 
   if (!IsValidAliasName(iface, strTitle))
     return (SHERR_NOENT);
-
-  CKeyID key_id;
-  if (!addr.GetKeyID(key_id))
-    return (SHERR_OPNOTSUPP);
 
   /* verify original alias */
   CTransaction tx;
@@ -642,7 +675,24 @@ int update_alias_addr_tx(CIface *iface, const char *title, CCoinAddr& addr, CWal
   /* establish account */
   string strAccount;
   if (!GetCoinAddr(wallet, addr, strAccount)) 
+    return (SHERR_NOENT);
+
+  int64 nNetFee = (int64)MIN_TX_FEE(iface);
+  int64 bal = GetAccountBalance(ifaceIndex, strAccount, 1);
+  if (bal < nNetFee) {
+    return (SHERR_AGAIN);
+  }
+
+  string strAccountIn;
+  CCoinAddr addrIn(ifaceIndex);
+  if (!tx.alias.GetCoinAddr(addrIn))
     return (SHERR_INVAL);
+  if (!GetCoinAddr(wallet, addrIn, strAccountIn))
+    return (SHERR_REMOTE);
+#if 0
+  if (strAccountIn != strAccount)
+    return (SHERR_ACCESS);
+#endif
 
   /* generate new coin address */
   string strExtAccount = "@" + strAccount;
@@ -655,10 +705,12 @@ int update_alias_addr_tx(CIface *iface, const char *title, CCoinAddr& addr, CWal
   wtx.SetNull();
   wtx.strFromAccount = strAccount;
 
-  alias = wtx.UpdateAlias(strTitle, key_id);
+  uint160 deprec_hash;
+  alias = wtx.UpdateAlias(strTitle, deprec_hash);
   alias->SetType(tx.alias.GetType());
-  uint160 aliasHash = alias->GetHash();
+  alias->SetCoinAddr(addr);
 
+  uint160 aliasHash = alias->GetHash();
   vector<pair<CScript, int64> > vecSend;
   CWalletTx& wtxIn = wallet->mapWallet[wtxInHash];
 
@@ -668,16 +720,11 @@ int update_alias_addr_tx(CIface *iface, const char *title, CCoinAddr& addr, CWal
 	scriptPubKey << OP_EXT_UPDATE << CScript::EncodeOP_N(OP_ALIAS) << OP_HASH160 << aliasHash << OP_2DROP;
   scriptPubKey += scriptPubKeyOrig;
 
-  int64 nNetFee = (int64)MIN_TX_FEE(iface);
-  int64 bal = GetAccountBalance(ifaceIndex, strAccount, 1);
-  if (bal < nNetFee) {
-    return (SHERR_AGAIN);
-  }
 
   if (!SendMoneyWithExtTx(iface, wtxIn, wtx, scriptPubKey, vecSend))
     return (SHERR_INVAL);
 
-  Debug("SENT:ALIASUPDATE : title=%s, ref=%s, aliashash=%s, tx=%s\n", title, key_id.GetHex().c_str(), alias->GetHash().ToString().c_str(), wtx.GetHash().GetHex().c_str());
+  Debug("SENT:ALIASUPDATE : title=%s, aliashash=%s, tx=%s\n", title, alias->GetHash().ToString().c_str(), wtx.GetHash().GetHex().c_str());
 
 	return (0);
 }
@@ -752,11 +799,13 @@ Object CAlias::ToValue(int ifaceIndex)
   if (GetType() == ALIAS_COINADDR) {
     obj.push_back(Pair("type-name", "pubkey"));
 
+#if 0
     CCoinAddr addr(ifaceIndex);
     if (GetCoinAddr(addr))
       obj.push_back(Pair("address", addr.ToString().c_str()));
     else
       obj.push_back(Pair("valid", "false"));
+#endif
   }
 
   return (obj);

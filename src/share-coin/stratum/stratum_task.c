@@ -193,6 +193,7 @@ static void check_payout(int ifaceIndex)
       for (i = 0; i < MAX_ROUNDS_PER_HOUR; i++)
         reward += (weight * user->block_avg[i]);
       if (reward >= 0.0000001) { 
+fprintf(stderr, "DEBUG: check_payout: rewarded '%s' %-8.8f coins.\n", user->worker, reward);
         user->balance[ifaceIndex] += reward;
         /* regulate tx # */
         user->balance_avg[ifaceIndex] = 
@@ -281,6 +282,12 @@ static void commit_payout(int ifaceIndex, int block_height)
   bal = getaccountbalance(ifaceIndex, "");
   min_input = (double)iface->min_tx_fee / (double)COIN;
   for (user = client_list; user; user = user->next) {
+    memset(uname, 0, sizeof(uname));
+    strncpy(uname, user->worker, sizeof(uname) - 1);
+    strtok(uname, ".");
+    if (!*uname)
+      continue;
+
     coin_val = floor(user->balance[ifaceIndex] * 1000) / 1000;
     if (coin_val <= min_input)
       continue;
@@ -289,6 +296,7 @@ static void commit_payout(int ifaceIndex, int block_height)
       continue;
 
     if (0 == addblockreward(ifaceIndex, uname, coin_val)) {
+fprintf(stderr, "DEBUG: commit_payout: sending %f coins to '%s' for reward.\n", coin_val, uname);  
       user->reward_time = time(NULL);
       user->reward_height = block_height;
       user->balance[ifaceIndex] = MAX(0.0, user->balance[ifaceIndex] - coin_val);

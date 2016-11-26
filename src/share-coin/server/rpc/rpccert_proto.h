@@ -46,6 +46,10 @@ Value rpc_cert_get(CIface *iface, const Array& params, bool fHelp);
 
 Value rpc_cert_new(CIface *iface, const Array& params, bool fHelp);
 
+Value rpc_cert_derive(CIface *iface, const Array& params, bool fHelp);
+
+Value rpc_cert_license(CIface *iface, const Array& params, bool fStratum);
+
 Value rpc_wallet_donate(CIface *iface, const Array& params, bool fHelp);
 
 Value rpc_wallet_csend(CIface *iface, const Array& params, bool fHelp); 

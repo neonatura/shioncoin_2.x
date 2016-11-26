@@ -34,6 +34,7 @@
 #include "asset.h"
 #include "spring.h"
 #include "hdkey.h"
+#include "context.h"
 
 
 
@@ -564,7 +565,6 @@ _TEST(identtx)
     CBlock *block = test_GenerateBlock();
     _TRUEPTR(block);
     _TRUE(ProcessBlock(NULL, block) == true);
-//fprintf(stderr, "DEBUG: TEST: CERT: cert block '%s' @ height %d\n", block->GetHash().GetHex().c_str(), GetBestHeight(iface)); 
     delete block;
   }
 
@@ -716,6 +716,56 @@ if (err) fprintf(stderr, "DEBUG: certtx: error (%d) derive cert tx\n", err);
   CTransaction t2_tx;
   _TRUE(GetTxOfLicense(iface, licHash, t2_tx) == true);
   _TRUE(lic_wtx.IsInMemoryPool(TEST_COIN_IFACE) == false);
+
+}
+
+_TEST(ctxtx)
+{
+  CWallet *wallet = GetWallet(TEST_COIN_IFACE);
+  CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
+  int idx;
+  int err;
+
+
+  string strLabel("");
+
+  {
+    CBlock *block = test_GenerateBlock();
+    _TRUEPTR(block);
+    _TRUE(ProcessBlock(NULL, block) == true);
+    delete block;
+  }
+
+  CWalletTx wtx;
+  int nBestHeight = GetBestHeight(iface) + 1;
+  {
+    const char *payload = "test context value";
+    string strName = "test context name";
+    cbuff vchValue(payload, payload + strlen(payload));
+    err = init_ctx_tx(iface, wtx, strLabel, strName, vchValue);
+if (err) fprintf(stderr, "DEBUG: TEST: init_ctx_tx: error %d\n", err);
+    _TRUE(0 == err);
+  }
+  CContext ctx(wtx.certificate);
+  uint160 hashContext = ctx.GetHash();
+
+  _TRUE(wtx.CheckTransaction(TEST_COIN_IFACE)); /* .. */
+  _TRUE(VerifyContextTx(iface, wtx, nBestHeight) == true);
+  _TRUE(wtx.IsInMemoryPool(TEST_COIN_IFACE) == true);
+
+  /* insert ctx into chain + create a coin balance */
+  {
+    CBlock *block = test_GenerateBlock();
+    _TRUEPTR(block);
+    _TRUE(ProcessBlock(NULL, block) == true);
+    delete block;
+  }
+
+  /* verify insertion */
+  CTransaction t_tx;
+  _TRUEPTR(GetContextByHash(iface, hashContext, t_tx));
+  _TRUE(t_tx.GetHash() == wtx.GetHash());
+  _TRUE(wtx.IsInMemoryPool(TEST_COIN_IFACE) == false);
 
 }
 

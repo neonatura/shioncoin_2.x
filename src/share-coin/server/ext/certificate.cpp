@@ -916,15 +916,6 @@ int init_cert_tx(CIface *iface, CWalletTx& wtx, string strAccount, string strTit
   cert = wtx.CreateCert(ifaceIndex, strTitle.c_str(), addr, hexSeed, nLicenseFee);
   wtx.strFromAccount = strAccount; /* originating account for payment */
  
-  cert->SetSerialNumber();
-#if 0
-  /* generate unique 128-bit serial number */
-  unsigned char raw_ser[16];
-  uint64_t *raw_val = (uint64_t *)raw_ser;
-  raw_val[0] = shrand();
-  raw_val[1] = shrand();
-  cert->vContext = cbuff(raw_val, raw_val + 16);
-#endif
 
   int64 nFee = GetCertOpFee(iface, GetBestHeight(iface));
   int64 bal = GetAccountBalance(ifaceIndex, strAccount, 1);
@@ -964,6 +955,7 @@ int derive_cert_tx(CIface *iface, CWalletTx& wtx, const uint160& hChainCert, str
 {
   CWallet *wallet = GetWallet(iface);
   int ifaceIndex = GetCoinIndex(iface);
+  string strExtAccount = "@" + strAccount;
 
   if(strTitle.length() == 0)
     return (SHERR_INVAL);
@@ -985,6 +977,22 @@ int derive_cert_tx(CIface *iface, CWalletTx& wtx, const uint160& hChainCert, str
     return (SHERR_INVAL);
   }
 
+
+  CCoinAddr extAddr(ifaceIndex);
+  if ((chain->nFlag & SHCERT_CERT_NONREPUDIATION)) {
+    string strValAccount;
+
+    extAddr = CCoinAddr(stringFromVch(chain->vAddr));
+    if (!GetCoinAddr(wallet, extAddr, strValAccount)) {
+      return error(SHERR_ACCESS, "derive_cert_tx: private entity warning: invalid chain certificate coin address.");
+    }
+    if (strValAccount != strExtAccount) {
+      return error(SHERR_ACCESS, "derive_cert_tx: must be certificate owner to derive 'private entity' certificate."); 
+    }
+  } else {
+    extAddr = GetAccountAddress(wallet, strExtAccount, true);
+  }
+
   if (!chain->VerifySignature(ifaceIndex))
     return error(SHERR_INVAL, "derive_cert_tx: signature integrity error.");
 
@@ -993,23 +1001,13 @@ int derive_cert_tx(CIface *iface, CWalletTx& wtx, const uint160& hChainCert, str
     return (SHERR_INVAL);
 
   CCert *cert;
-  string strExtAccount = "@" + strAccount;
-  CCoinAddr extAddr = GetAccountAddress(wallet, strExtAccount, true);
 
   /* embed cert content into transaction */
   wtx.SetNull();
   cert = wtx.DeriveCert(ifaceIndex, strTitle.c_str(), addr, chain, hexSeed, nLicenseFee);
   wtx.strFromAccount = strAccount; /* originating account for payment */
  
-  cert->SetSerialNumber();
-#if 0
-  /* generate unique 128-bit serial number */
-  unsigned char raw_ser[16];
-  uint64_t *raw_val = (uint64_t *)raw_ser;
-  raw_val[0] = shrand();
-  raw_val[1] = shrand();
-  cert->vContext = cbuff(raw_val, raw_val + 16);
-#endif
+  cert->tExpire = chain->tExpire;
 
   int64 nFee = GetCertOpFee(iface, GetBestHeight(iface));
   int64 bal = GetAccountBalance(ifaceIndex, strAccount, 1);
@@ -1104,8 +1102,7 @@ int init_license_tx(CIface *iface, string strAccount, uint160 hashCert, CWalletT
     return (SHERR_INVAL);
   }
 
-  /* create unique serial number */
-  lic->SetSerialNumber();
+  lic->tExpire = cert->tExpire;
 
   /* inherit title from cert */
   lic->SetLabel(cert->GetLabel());
@@ -1182,11 +1179,80 @@ void CCert::FillEntity(SHCertEnt *entity)
 #endif
 }
 
+static void FillSharenetCertificate(SHCert *cert, CCert *c_cert, CCert *iss)
+{
+  shkey_t *pubkey;
+  int err;
+
+  memset(cert, 0, sizeof(SHCert));
+
+  cert->cert_sub.ent_len = cert->cert_iss.ent_len = 21; /* default ecdsa */
+
+  if (c_cert->vContext.size() == 16)
+    memcpy(shcert_sub_ser(cert), c_cert->vContext.data(), 16); 
+
+  cert->cert_flag = c_cert->nFlag;
+
+  if (iss) {
+    /* issuer's cert */
+    cert->cert_ver = iss->GetVersion();
+
+    if (iss->vContext.size() == 16)
+      memcpy(shcert_iss_ser(cert), iss->vContext.data(), 16); 
+
+    const string& iss_label = iss->GetLabel();
+    strncpy(cert->cert_iss.ent_name, iss_label.c_str(), MAX_SHARE_NAME_LENGTH - 1);
+
+    if (iss->vContext.size() == 16)
+      memcpy(shcert_iss_ser(cert), iss->vContext.data(), 16); 
+
+    const string& iss_pubkey = stringFromVch(iss->signature.vPubKey);
+    pubkey = shecdsa_key((char *)iss_pubkey.c_str());
+    if (!pubkey) {
+      error(SHERR_INVAL, "CCert.NotifySharenet: iss pubkey failure");
+      return;
+    }
+    memcpy(&cert->cert_iss.ent_sig.sig_key, pubkey, sizeof(shkey_t)); 
+    shkey_free(&pubkey);
+
+    cert->cert_sub.ent_len = stringFromVch(iss->signature.vPubKey).size() / 2;
+    cert->cert_iss.ent_len = cert->cert_sub.ent_len;
+
+    cert->cert_iss.ent_sig.sig_stamp = shtime();
+    cert->cert_iss.ent_sig.sig_expire = iss->tExpire;
+#if 0
+    shcert_iss_stamp(&cert) = shtime(); 
+    shcert_iss_expire(&cert) = iss->tExpire;
+#endif
+  }
+
+/* subject */
+  strncpy(cert->cert_sub.ent_name, c_cert->GetLabel().c_str(), sizeof(cert->cert_sub.ent_name)-1);
+  memcpy(&cert->cert_sub.ent_peer, ashpeer(), sizeof(cert->cert_sub.ent_peer));
+
+  const string& pubkey_str = stringFromVch(c_cert->signature.vPubKey);
+  pubkey = shecdsa_key((char *)pubkey_str.c_str());
+  if (!pubkey) {
+    error(SHERR_INVAL, "CCert.NotifySharenet: pubkey failure");
+    return;
+  }
+  memcpy(&cert->cert_sub.ent_sig.sig_key, pubkey, sizeof(shkey_t)); 
+  shkey_free(&pubkey);
+
+  strcpy(cert->cert_sub.ent_sig.key.ecdsa.sig_r,
+      stringFromVch(c_cert->signature.vSig[0]).c_str());
+  strcpy(cert->cert_sub.ent_sig.key.ecdsa.sig_s, 
+      stringFromVch(c_cert->signature.vSig[1]).c_str());
+
+  shcert_sub_stamp(cert) = shtime(); 
+  shcert_sub_expire(cert) = c_cert->tExpire;
+
+}
+
 void CCert::NotifySharenet(int ifaceIndex)
 {
   SHCert cert;
   char tag[SHFS_PATH_MAX];
-  shkey_t *pubkey;
   int err;
 
 #if 0
@@ -1202,64 +1268,8 @@ void CCert::NotifySharenet(int ifaceIndex)
     iss = &tx.certificate;
   }
 
-  memset(&cert, 0, sizeof(cert));
-
-  cert.cert_sub.ent_len = cert.cert_iss.ent_len = 21; /* default ecdsa */
-
-  if (vContext.size() == 16)
-    memcpy(shcert_sub_ser(&cert), vContext.data(), 16); 
-
-  if (iss) {
-    /* issuer's cert */
-    cert.cert_ver = iss->GetVersion();
-    cert.cert_flag = iss->nFlag;
-
-    const string& iss_label = iss->GetLabel();
-    strncpy(cert.cert_iss.ent_name, iss_label.c_str(), MAX_SHARE_NAME_LENGTH - 1);
-
-    if (iss->vContext.size() == 16)
-      memcpy(shcert_iss_ser(&cert), iss->vContext.data(), 16); 
-
-    const string& iss_pubkey = stringFromVch(iss->signature.vPubKey);
-    pubkey = shecdsa_key((char *)iss_pubkey.c_str());
-    if (!pubkey) {
-      error(SHERR_INVAL, "CCert.NotifySharenet: iss pubkey failure");
-      return;
-    }
-    memcpy(&cert.cert_iss.ent_sig.sig_key, pubkey, sizeof(shkey_t)); 
-    shkey_free(&pubkey);
-
-    cert.cert_sub.ent_len = stringFromVch(iss->signature.vPubKey).size() / 2;
-    cert.cert_iss.ent_len = cert.cert_sub.ent_len;
-
-    cert.cert_iss.ent_sig.sig_stamp = shtime();
-    cert.cert_iss.ent_sig.sig_expire = iss->tExpire;
-#if 0
-    shcert_iss_stamp(&cert) = shtime(); 
-    shcert_iss_expire(&cert) = iss->tExpire;
-#endif
-  }
-
-/* subject */
-  strncpy(cert.cert_sub.ent_name, GetLabel().c_str(), sizeof(cert.cert_sub.ent_name)-1);
-  memcpy(&cert.cert_sub.ent_peer, ashpeer(), sizeof(cert.cert_sub.ent_peer));
-
-  const string& pubkey_str = stringFromVch(signature.vPubKey);
-  pubkey = shecdsa_key((char *)pubkey_str.c_str());
-  if (!pubkey) {
-    error(SHERR_INVAL, "CCert.NotifySharenet: pubkey failure");
-    return;
-  }
-  memcpy(&cert.cert_sub.ent_sig.sig_key, pubkey, sizeof(shkey_t)); 
-  shkey_free(&pubkey);
-
-  strcpy(cert.cert_sub.ent_sig.key.ecdsa.sig_r,
-      stringFromVch(signature.vSig[0]).c_str());
-  strcpy(cert.cert_sub.ent_sig.key.ecdsa.sig_s, 
-      stringFromVch(signature.vSig[1]).c_str());
-
-  shcert_sub_stamp(&cert) = shtime(); 
-  shcert_sub_expire(&cert) = tExpire;
+  memset(&cert, 0, sizeof(shcert_t));
+  FillSharenetCertificate(&cert, this, iss);
 
   sprintf(tag, "alias/%s", GetLabel().c_str());
   err = shfs_cert_save(&cert, tag);
@@ -1276,6 +1286,7 @@ void CLicense::NotifySharenet(int ifaceIndex)
   char tag[SHFS_PATH_MAX];
   char sig_r[256];
   char sig_s[256];
+  int err;
   int i;
 
 #if 0
@@ -1288,6 +1299,7 @@ void CLicense::NotifySharenet(int ifaceIndex)
   shkey_t *pubkey;
   SHLicense lic;
   SHCert cert;
+  SHCert pcert;
 
   memset(&lic, 0, sizeof(lic));
 
@@ -1298,67 +1310,24 @@ void CLicense::NotifySharenet(int ifaceIndex)
   if (GetTxOfCert(iface, hashIssuer, tx))
     iss = &tx.certificate;
 
+  memset(&cert, 0, sizeof(cert));
+  FillSharenetCertificate(&cert, this, iss);
+
+  memset(&pcert, 0, sizeof(pcert));
+  FillSharenetCertificate(&pcert, iss, NULL);
+
+  err = shlic_save(&pcert, &cert);
+  if (err) {
+    error(err, "CLicense.NotifySharenet: error saving license.");
+  }
+
+#if 0
   memset(&lic, 0, sizeof(lic));
   memcpy(&lic.lic_ctx, hLic.GetKey(), sizeof(lic.lic_ctx));
   lic.lic_expire = tExpire; 
 
   shnet_inform(iface, TX_LICENSE, (char *)&lic, sizeof(shlic_t));
-
-
-  /* associated certificate context of license */
-  memset(&cert, 0, sizeof(cert));
-
-  cert.cert_sub.ent_len = cert.cert_iss.ent_len = 21; /* default ecdsa */
-
-  if (vContext.size() == 16)
-    memcpy(shcert_sub_ser(&cert), vContext.data(), 16); 
-
-  if (iss) {
-    /* issuer */
-    cert.cert_ver = iss->GetVersion();
-    cert.cert_flag = iss->nFlag;
-
-    const string& iss_label = iss->GetLabel();
-    strncpy(cert.cert_iss.ent_name, iss_label.c_str(), MAX_SHARE_NAME_LENGTH - 1);
-
-    if (iss->vContext.size() == 16)
-      memcpy(shcert_iss_ser(&cert), iss->vContext.data(), 16); 
-
-    const string& pubkey_str = stringFromVch(iss->signature.vPubKey);
-    pubkey = shecdsa_key((char *)pubkey_str.c_str());
-    if (!pubkey) {
-      error(SHERR_INVAL, "NotifySharenet: error encoding key '%s'\n", pubkey_str.c_str());
-      return;
-    }
-    memcpy(&cert.cert_iss.ent_sig.sig_key, pubkey, sizeof(shkey_t)); 
-    shkey_free(&pubkey);
-
-    cert.cert_sub.ent_len = stringFromVch(iss->signature.vPubKey).size() / 2;
-    cert.cert_iss.ent_len = cert.cert_sub.ent_len;
-
-    cert.cert_iss.ent_sig.sig_stamp = shtime();
-    cert.cert_iss.ent_sig.sig_expire = iss->tExpire;
-  }
-
-/* subject */
-  strncpy(cert.cert_sub.ent_name, GetLabel().c_str(), sizeof(cert.cert_sub.ent_name)-1);
-  memcpy(&cert.cert_sub.ent_peer, ashpeer(), sizeof(cert.cert_sub.ent_peer));
-
-  const string& label = stringFromVch(signature.vPubKey);
-  pubkey = shecdsa_key((char *)label.c_str());
-  memcpy(&cert.cert_sub.ent_sig.sig_key, pubkey, sizeof(shkey_t)); 
-  shkey_free(&pubkey);
-
-  strcpy(cert.cert_sub.ent_sig.key.ecdsa.sig_r,
-      stringFromVch(signature.vSig[0]).c_str());
-  strcpy(cert.cert_sub.ent_sig.key.ecdsa.sig_s, 
-      stringFromVch(signature.vSig[1]).c_str());
-
-  shcert_sub_stamp(&cert) = shtime(); 
-  shcert_sub_expire(&cert) = tExpire;
-
-  sprintf(tag, "lic/%s", GetLabel().c_str());
-  shfs_cert_save(&cert, tag);
+#endif
 
 }
 
@@ -1715,13 +1684,13 @@ Object CIdent::ToValue()
   Object obj = CExtCore::ToValue();
   char sig[256];
   char loc[256];
-  shnum_t x, y;
+  shnum_t lat, lon;
 
 //  obj.push_back(Pair("identhash", GetHash().GetHex()));
 
-  shgeo_loc(&geo, &x, &y, NULL);
-  if (x != 0.0000 || y != 0.0000) {
-    sprintf(loc, "%f,%f", (double)x, (double)y);
+  shgeo_loc(&geo, &lat, &lon, NULL);
+  if (lat != 0.0000 || lon != 0.0000) {
+    sprintf(loc, "%Lf,%Lf", lat, lon);
     string strGeo(loc);
     obj.push_back(Pair("geo", strGeo));
   }
@@ -1730,7 +1699,8 @@ Object CIdent::ToValue()
     obj.push_back(Pair("type", (int64_t)nType));
   }
 
-  obj.push_back(Pair("addrhex", stringFromVch(vAddr)));
+  if (vAddr.size() != 0)
+    obj.push_back(Pair("addr", stringFromVch(vAddr)));
 
   return (obj);
 }
@@ -1748,8 +1718,10 @@ Object CCert::ToValue()
     obj.push_back(Pair("fee", ValueFromAmount(nFee)));
   if (nFlag != 0)
     obj.push_back(Pair("flags", nFlag));
+
   obj.push_back(Pair("signature", signature.GetHash().GetHex()));
-  obj.push_back(Pair("sigpubkey", signature.GetHash().GetHex()));
+  if (signature.vPubKey.size() != 0)
+    obj.push_back(Pair("sigpubkey", stringFromVch(signature.vPubKey)));
   
   return (obj);
 }

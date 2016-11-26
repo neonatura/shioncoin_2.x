@@ -277,8 +277,7 @@ class CCert : public CIdent
     /* a 128-bit binary context converted into a 160bit hexadecimal number. */
     std::string GetSerialNumber()
     {
-      uint160 hash(vContext);
-      return (hash.GetHex());
+      return (HexStr(vContext));
     }
 
     uint160 GetIssuerHash()
@@ -333,11 +332,11 @@ class CCert : public CIdent
      */
     static cbuff GenerateSerialNumber()
     {
-      unsigned char raw[16];
-      uint64_t rand1 = shrand();
-      uint64_t rand2 = shrand();
-      memcpy(raw, &rand1, sizeof(uint64_t));
-      memcpy(raw + sizeof(uint64_t), &rand2, sizeof(uint64_t));
+      static unsigned char raw[32];
+      uint64_t *v = (uint64_t *)raw;
+
+      v[0] = shrand();
+      v[1] = shrand();
 
       return (cbuff(raw, raw+16));
     }
@@ -471,6 +470,8 @@ cert_list *GetIdentTable(int ifaceIndex);
 cert_list *GetLicenseTable(int ifaceIndex);
 
 bool IsCertTx(const CTransaction& tx);
+
+bool IsLicenseTx(const CTransaction& tx);
 
 bool InsertCertTable(CIface *iface, CTransaction& tx, unsigned int nHeight, bool fUpdate = true);
 

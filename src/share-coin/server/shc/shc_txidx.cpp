@@ -93,7 +93,7 @@ CBlockIndex static * InsertBlockIndex(uint256 hash)
 }
 
 typedef vector<CBlockIndex*> txlist;
-bool shc_FillBlockIndex(txlist& vMatrix, txlist& vSpring, txlist& vCert, txlist& vIdent)
+bool shc_FillBlockIndex(txlist& vMatrix, txlist& vSpring, txlist& vCert, txlist& vIdent, txlist& vLicense, txlist& vAlias, txlist& vContext)
 {
   CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);
   blkidx_t *blockIndex = GetBlockTable(SHC_COIN_IFACE);
@@ -159,6 +159,18 @@ bool shc_FillBlockIndex(txlist& vMatrix, txlist& vSpring, txlist& vCert, txlist&
         if (VerifyCert(iface, tx, nHeight))
           vCert.push_back(pindexNew);
       }
+      if (tx.isFlag(CTransaction::TXF_ALIAS) &&
+          IsAliasTx(tx)) {
+        vAlias.push_back(pindexNew);
+      }
+      if (tx.isFlag(CTransaction::TXF_LICENSE) &&
+          IsLicenseTx(tx)) {
+        vLicense.push_back(pindexNew);
+      }
+      if (tx.isFlag(CTransaction::TXF_CONTEXT) &&
+          IsContextTx(tx)) {
+        vContext.push_back(pindexNew);
+      }
     }
 
     lastIndex = pindexNew;
@@ -202,7 +214,10 @@ bool SHCTxDB::LoadBlockIndex()
   txlist vMatrix;
   txlist vCert;
   txlist vIdent;
-  if (!shc_FillBlockIndex(vMatrix, vSpring, vCert, vIdent))
+  txlist vLicense;
+  txlist vAlias;
+  txlist vContext;
+  if (!shc_FillBlockIndex(vMatrix, vSpring, vCert, vIdent, vLicense, vAlias, vContext))
     return (false);
 
   if (fRequestShutdown)
@@ -401,6 +416,33 @@ bool SHCTxDB::LoadBlockIndex()
     BOOST_FOREACH(CTransaction& tx, block->vtx) {
       if (IsCertTx(tx))
         InsertCertTable(iface, tx, pindex->nHeight);
+    }
+    delete block;
+  }
+
+  /* license */
+  BOOST_FOREACH(CBlockIndex *pindex, vLicense) {
+    CBlock *block = GetBlockByHash(iface, pindex->GetBlockHash());
+    BOOST_FOREACH(CTransaction& tx, block->vtx) {
+      CommitLicenseTx(iface, tx, pindex->nHeight);
+    }
+    delete block;
+  }
+
+  /* alias */
+  BOOST_FOREACH(CBlockIndex *pindex, vAlias) {
+    CBlock *block = GetBlockByHash(iface, pindex->GetBlockHash());
+    BOOST_FOREACH(CTransaction& tx, block->vtx) {
+      CommitAliasTx(iface, tx, pindex->nHeight);
+    }
+    delete block;
+  }
+
+  /* context */
+  BOOST_FOREACH(CBlockIndex *pindex, vContext) {
+    CBlock *block = GetBlockByHash(iface, pindex->GetBlockHash());
+    BOOST_FOREACH(CTransaction& tx, block->vtx) {
+      CommitContextTx(iface, tx, pindex->nHeight);
     }
     delete block;
   }

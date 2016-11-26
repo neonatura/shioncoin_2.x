@@ -200,14 +200,8 @@ Value rpc_cert_new(CIface *iface, const Array& params, bool fStratum)
   int ifaceIndex = GetCoinIndex(iface);
   int err;
 
-  if (fHelp || params.size() > 5 || params.size() < 2)
-    throw runtime_error(
-        "cert.new <account> <name> [<hex-seed>] [<fee>]\n"
-        "Summary: Creates a new certificate suitable for authorizing another certificate or license.\n"
-        "Params: [ <account> The coin account name., <name> The title or the certificate, <hex-seed> A hexadecimal string to create the private key from, <fee> the coin value to license or have issued. ]\n"
-        "\n" 
-        "A certificate can either be designated for issueing other certificates or granting licenses, but not both. Either form of the certificate may be used in order to donate or send a certified coin transfer."
-        );
+  if (params.size() < 2)
+    throw runtime_error("invalid paramaters");
 
   if (ifaceIndex != TEST_COIN_IFACE &&
       ifaceIndex != SHC_COIN_IFACE)
@@ -224,16 +218,16 @@ Value rpc_cert_new(CIface *iface, const Array& params, bool fStratum)
   if (wallet->mapCertLabel.count(strTitle))
     throw JSONRPCError(-5, "Certificate name must be unique.");
 
-  string hexSeed;
-  if (params.size() > 2)
-    hexSeed = params[2].get_str();
-
   int64 nFee = 0;
-  if (params.size() > 3) {
-    nFee = AmountFromValue(params[3]);
+  if (params.size() > 2) {
+    nFee = AmountFromValue(params[2]);
     if (nFee < 0)
       throw JSONRPCError(-5, "Invalid coin fee value.");
   }
+
+  string hexSeed;
+  if (params.size() > 3)
+    hexSeed = params[3].get_str();
 
 #if 0
   uint160 hIssuer;
@@ -243,6 +237,95 @@ Value rpc_cert_new(CIface *iface, const Array& params, bool fStratum)
 
   CWalletTx wtx;
   err = init_cert_tx(iface, wtx, strAccount, strTitle, hexSeed, nFee);
+  if (err)
+    throw JSONRPCError(err, "Failure initializing transaction.");
+
+  return (wtx.ToValue(ifaceIndex));
+}
+
+Value rpc_cert_derive(CIface *iface, const Array& params, bool fStratum) 
+{
+  CWallet *wallet = GetWallet(iface);
+  int ifaceIndex = GetCoinIndex(iface);
+  int err;
+
+  if (params.size() < 3)
+    throw runtime_error("invalid paramaters");
+
+  if (ifaceIndex != TEST_COIN_IFACE &&
+      ifaceIndex != SHC_COIN_IFACE)
+    throw runtime_error("Unsupported operation for coin service.");
+
+  string strAccount = AccountFromValue(params[0]);
+  if (!IsAccountValid(iface, strAccount))
+    throw JSONRPCError(SHERR_INVAL, "Invalid account name specified.");
+
+  string strTitle = params[1].get_str();
+  if (strTitle.length() == 0 || strTitle.length() > 135)
+    throw JSONRPCError(-5, "Certificate name must be between 1 and 135 characters.");
+
+  if (wallet->mapCertLabel.count(strTitle))
+    throw JSONRPCError(-5, "Certificate name must be unique.");
+
+  string hexIssuer = params[2].get_str();
+
+  int64 nFee = 0;
+  if (params.size() > 3) {
+    nFee = AmountFromValue(params[3]);
+    if (nFee < 0)
+      throw JSONRPCError(-5, "Invalid coin fee value.");
+  }
+
+  string hexSeed;
+  if (params.size() > 4)
+    hexSeed = params[4].get_str();
+
+  CTransaction tx;
+  uint160 hIssuer(hexIssuer);
+  if (!GetTxOfCert(iface, hIssuer, tx))
+    throw JSONRPCError(err, "Unable to obtain chain certificate.");
+
+  CWalletTx wtx;
+  err = derive_cert_tx(iface, wtx, hIssuer, strAccount, strTitle, hexSeed, nFee);
+  if (err)
+    throw JSONRPCError(err, "Failure initializing transaction.");
+
+  return (wtx.ToValue(ifaceIndex));
+}
+
+Value rpc_cert_license(CIface *iface, const Array& params, bool fStratum) 
+{
+  CWallet *wallet = GetWallet(iface);
+  int ifaceIndex = GetCoinIndex(iface);
+  int err;
+
+  if (params.size() < 3)
+    throw runtime_error("invalid paramaters");
+
+  if (ifaceIndex != TEST_COIN_IFACE &&
+      ifaceIndex != SHC_COIN_IFACE)
+    throw runtime_error("Unsupported operation for coin service.");
+
+  string strAccount = AccountFromValue(params[0]);
+  if (!IsAccountValid(iface, strAccount))
+    throw JSONRPCError(SHERR_INVAL, "Invalid account name specified.");
+
+  string strTitle = params[1].get_str();
+  if (strTitle.length() == 0 || strTitle.length() > 135)
+    throw JSONRPCError(-5, "Certificate name must be between 1 and 135 characters.");
+
+  if (wallet->mapCertLabel.count(strTitle))
+    throw JSONRPCError(-5, "Certificate name must be unique.");
+
+  string hexIssuer = params[2].get_str();
+
+  CTransaction tx;
+  uint160 hIssuer(hexIssuer);
+  if (!GetTxOfCert(iface, hIssuer, tx))
+    throw JSONRPCError(err, "Unable to obtain chain certificate.");
+
+  CWalletTx wtx;
+  err = init_license_tx(iface, strAccount, hIssuer, wtx);
   if (err)
     throw JSONRPCError(err, "Failure initializing transaction.");
 

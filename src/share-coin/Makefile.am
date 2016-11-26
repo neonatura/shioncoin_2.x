@@ -76,6 +76,7 @@ common_includes = \
 	server/rpc_proto.h \
 	server/rpcalias_proto.h \
 	server/rpccert_proto.h \
+	server/rpccontext_proto.h \
 	server/compat.h \
 	server/crypter.h \
 	server/txidx.h \
@@ -170,8 +171,10 @@ server_sources = \
 	server/ext/asset.cpp \
 	server/ext/exec.cpp \
 	server/ext/channel.cpp \
+	server/ext/context.cpp \
 	server/rpc/rpcalias_proto.cpp \
 	server/rpc/rpccert_proto.cpp \
+	server/rpc/rpccontext_proto.cpp \
 	server/rpc/rpcdump.cpp \
 	server/rpc/rpcnet.cpp \
 	server/rpc/rpc_proto.cpp \

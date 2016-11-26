@@ -191,13 +191,13 @@ Value rpc_alias_pubaddr(CIface *iface, const Array& params, bool fStratum)
     return (addr.ToString());
   }
 
-  CCoinAddr addr = CCoinAddr(strAddress);
   if (strAddress.size() < 1)
     throw runtime_error("An invalid coin address was specified.");
 
   if (strAddress.size() >= MAX_SHARE_HASH_LENGTH)
     throw runtime_error("The coin address exceeds 135 characters.");
 
+  CCoinAddr addr = CCoinAddr(strAddress);
   if (!addr.IsValid())
     throw JSONRPCError(-5, "Invalid coin address");
 

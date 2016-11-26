@@ -2809,7 +2809,7 @@ Value rpc_peer_export(CIface *iface, const Array& params, bool fStratum)
     db = shnet_track_open(iface->name);
     if (!db) 
       throw JSONRPCError(-5, "Error opening peer track database.");
-    json = shdb_json(db, SHPREF_TRACK, 0, 0);
+    json = shdb_json_write(db, SHPREF_TRACK, 0, 0);
     text = shjson_print(json);
     shjson_free(&json);
     shnet_track_close(db);

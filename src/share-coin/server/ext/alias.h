@@ -36,6 +36,8 @@
 class CAlias : public CIdent
 {
   public:
+    static const double DEFAULT_ALIAS_LIFESPAN = 378432000; /* 12 yr */ 
+
     static const int ALIAS_NONE = 0;
     static const int ALIAS_COINADDR = TXREF_PUBADDR;
 

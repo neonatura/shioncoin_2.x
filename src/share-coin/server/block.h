@@ -474,6 +474,7 @@ class CTransactionCore
     static const int TXF_MATRIX = (1 << 11);
     static const int TXF_CHANNEL = (1 << 12);
     static const int TXF_EXEC = (1 << 13);
+    static const int TXF_CONTEXT = (1 << 14);
 
     int nFlag;
     std::vector<CTxIn> vin;
@@ -561,7 +562,8 @@ public:
           (this->nFlag & TXF_LICENSE) ||
           (this->nFlag & TXF_ASSET) ||
           (this->nFlag & TXF_IDENT) ||
-          (this->nFlag & TXF_EXEC))
+          (this->nFlag & TXF_EXEC) ||
+          (this->nFlag & TXF_CONTEXT))
         READWRITE(certificate);
       if (this->nFlag & TXF_ALIAS)
         READWRITE(alias);
@@ -581,7 +583,8 @@ public:
           (this->nFlag & TXF_CERTIFICATE) ||
           (this->nFlag & TXF_LICENSE) ||
           (this->nFlag & TXF_ASSET) ||
-          (this->nFlag & TXF_EXEC))
+          (this->nFlag & TXF_EXEC) ||
+          (this->nFlag & TXF_CONTEXT))
         certificate = tx.certificate;
       if (this->nFlag & TXF_ALIAS)
         alias = tx.alias;
@@ -832,6 +835,8 @@ public:
     CIdent *CreateIdent(CIdent *ident);
 
     CIdent *CreateIdent(int ifaceIndex, CCoinAddr& addr);
+
+    CContext *CreateContext();
 
 
     CAlias *GetAlias()

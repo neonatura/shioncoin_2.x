@@ -38,17 +38,17 @@ function init(farg)
   return 0
 end
 
-farg = { }
-init(farg)
-farg.sender = "test"
-farg.value = 2
-print(donate(farg))
-print(spigot(farg))
-
-print "userdata:"
-for k, v in pairs(userdata) do
-  if (type(v) == "string" or type(v) == "number") then
-    print(k .. ": " .. v)
-  end
-end
+-- farg = { }
+-- init(farg)
+-- farg.sender = "test"
+-- farg.value = 2
+-- print(donate(farg))
+-- print(spigot(farg))
+-- 
+-- print "userdata:"
+-- for k, v in pairs(userdata) do
+--   if (type(v) == "string" or type(v) == "number") then
+--     print(k .. ": " .. v)
+--   end
+-- end
 
