@@ -156,7 +156,7 @@ man1dir = $(mandir)/man1
 am__installdirs = "$(DESTDIR)$(man1dir)" "$(DESTDIR)$(docdir)"
 NROFF = nroff
 MANS = $(dist_man_MANS)
-am__dist_doc_DATA_DIST = shcoin_html.tar.xz
+am__dist_doc_DATA_DIST = shcoin_html.tar.gz
 DATA = $(dist_doc_DATA)
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 pkglibexecdir = @pkglibexecdir@
@@ -1046,7 +1046,7 @@ dist_docdir = $(datadir)/@PACKAGE@
 @HAVE_HELP2MAN_TRUE@	man/man1/shcoin.1 \
 @HAVE_HELP2MAN_TRUE@	man/man1/shcoind.1
 
-@HAVE_DOXYGEN_TRUE@dist_doc_DATA = shcoin_html.tar.xz
+@HAVE_DOXYGEN_TRUE@dist_doc_DATA = shcoin_html.tar.gz
 EXTRA_DIST = $(htmldir)
 all: all-am
 
@@ -1331,10 +1331,10 @@ uninstall-man: uninstall-man1
 @HAVE_DOXYGEN_TRUE@	$(DOXYGEN) doxygen.conf
 @HAVE_DOXYGEN_TRUE@	echo Timestamp > doxyfile.stamp
 
-@HAVE_DOXYGEN_TRUE@shcoin_html.tar.xz: doxyfile.stamp
-@HAVE_DOXYGEN_TRUE@	rm -f shcoin_html.tar.xz
+@HAVE_DOXYGEN_TRUE@shcoin_html.tar.gz: doxyfile.stamp
+@HAVE_DOXYGEN_TRUE@	rm -f shcoin_html.tar.gz
 @HAVE_DOXYGEN_TRUE@	tar -cpf shcoin_html.tar $(htmldir)
-@HAVE_DOXYGEN_TRUE@	xz shcoin_html.tar
+@HAVE_DOXYGEN_TRUE@	gzip shcoin_html.tar
 @HAVE_DOXYGEN_TRUE@	rm -f shcoin_html.tar
 
 clean-local:

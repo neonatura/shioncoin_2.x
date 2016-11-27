@@ -20,7 +20,7 @@ endif
 
 
 if HAVE_DOXYGEN
-dist_doc_DATA = shcoin_html.tar.xz
+dist_doc_DATA = shcoin_html.tar.gz
 
 $(htmldir): doxyfile.stamp
 
@@ -29,10 +29,10 @@ doxyfile.stamp:
 	$(DOXYGEN) doxygen.conf
 	echo Timestamp > doxyfile.stamp
 
-shcoin_html.tar.xz: doxyfile.stamp
-	rm -f shcoin_html.tar.xz
+shcoin_html.tar.gz: doxyfile.stamp
+	rm -f shcoin_html.tar.gz
 	tar -cpf shcoin_html.tar $(htmldir)
-	xz shcoin_html.tar
+	gzip shcoin_html.tar
 	rm -f shcoin_html.tar
 endif
 

@@ -1866,13 +1866,13 @@ FILE *fl;
         {
           LOCK2(cs_main, pwalletMain->cs_wallet);
 
-          pwalletMain->MarkDirty();
-          pwalletMain->SetAddressBookName(vchAddress, strLabel);
-
           if (!pwalletMain->AddKey(key)) {
-            continue; //throw JSONRPCError(-4,"Error adding key to wallet");
+            //JSONRPCError(-4,"Error adding key to wallet"); 
+            continue; 
           }
 
+          pwalletMain->MarkDirty();
+          pwalletMain->SetAddressBookName(vchAddress, strLabel);
         }
       }
     }

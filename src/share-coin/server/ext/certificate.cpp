@@ -1255,11 +1255,9 @@ void CCert::NotifySharenet(int ifaceIndex)
   char tag[SHFS_PATH_MAX];
   int err;
 
-#if 0
   /* only applies to ShareCoin block-chain transaction */
   if (ifaceIndex != SHC_COIN_IFACE)
     return;
-#endif
 
   CCert *iss = NULL;
   CIface *iface = GetCoinByIndex(ifaceIndex);
@@ -1289,11 +1287,9 @@ void CLicense::NotifySharenet(int ifaceIndex)
   int err;
   int i;
 
-#if 0
   /* only applies to ShareCoin block-chain transaction */
   if (ifaceIndex != SHC_COIN_IFACE)
     return;
-#endif
 
   uint160 hLic = GetHash();
   shkey_t *pubkey;
