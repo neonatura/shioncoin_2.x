@@ -201,7 +201,7 @@ Value rpc_cert_new(CIface *iface, const Array& params, bool fStratum)
   int err;
 
   if (params.size() < 2)
-    throw runtime_error("invalid paramaters");
+    throw runtime_error("invalid parameters");
 
   if (ifaceIndex != TEST_COIN_IFACE &&
       ifaceIndex != SHC_COIN_IFACE)
@@ -250,7 +250,7 @@ Value rpc_cert_derive(CIface *iface, const Array& params, bool fStratum)
   int err;
 
   if (params.size() < 3)
-    throw runtime_error("invalid paramaters");
+    throw runtime_error("invalid parameters");
 
   if (ifaceIndex != TEST_COIN_IFACE &&
       ifaceIndex != SHC_COIN_IFACE)
@@ -299,8 +299,8 @@ Value rpc_cert_license(CIface *iface, const Array& params, bool fStratum)
   int ifaceIndex = GetCoinIndex(iface);
   int err;
 
-  if (params.size() < 3)
-    throw runtime_error("invalid paramaters");
+  if (params.size() < 2)
+    throw runtime_error("invalid parameters");
 
   if (ifaceIndex != TEST_COIN_IFACE &&
       ifaceIndex != SHC_COIN_IFACE)
@@ -310,16 +310,8 @@ Value rpc_cert_license(CIface *iface, const Array& params, bool fStratum)
   if (!IsAccountValid(iface, strAccount))
     throw JSONRPCError(SHERR_INVAL, "Invalid account name specified.");
 
-  string strTitle = params[1].get_str();
-  if (strTitle.length() == 0 || strTitle.length() > 135)
-    throw JSONRPCError(-5, "Certificate name must be between 1 and 135 characters.");
-
-  if (wallet->mapCertLabel.count(strTitle))
-    throw JSONRPCError(-5, "Certificate name must be unique.");
-
-  string hexIssuer = params[2].get_str();
-
   CTransaction tx;
+  string hexIssuer = params[1].get_str();
   uint160 hIssuer(hexIssuer);
   if (!GetTxOfCert(iface, hIssuer, tx))
     throw JSONRPCError(err, "Unable to obtain chain certificate.");

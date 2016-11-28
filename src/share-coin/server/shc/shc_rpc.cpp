@@ -175,8 +175,8 @@ const RPCOp CERT_DERIVE = {
   "Derive a certificate from another certificate."
 };
 const RPCOp CERT_LICENSE = {
-  &rpc_cert_license, 3, {RPC_ACCOUNT, RPC_STRING, RPC_STRING},
-  "Syntax: <account> <name> <cert-hash>\n"
+  &rpc_cert_license, 2, {RPC_ACCOUNT, RPC_STRING, RPC_STRING},
+  "Syntax: <account> <cert-hash> [<hex seed>]\n"
   "Generate a license from a certificate."
 };
 
@@ -306,12 +306,15 @@ const RPCOp CTX_GETLOC = {
 };
 const RPCOp CTX_SETLOC = {
   &rpc_ctx_setloc, 3, {RPC_ACCOUNT, RPC_STRING, RPC_STRING, RPC_STRING, RPC_STRING, RPC_STRING},
-  "Syntax: account \"geo:<lat>,<lon>\" <summary> [<country>] [<web-url>]\n"
+  "Syntax: account \"geo:<lat>,<lon>\" <summary> [<type>] [<country>] [<web-url>]\n"
   "Syntax: <account> <name> (\"geo:<lat>,<lon>\" | <zipcode>)\n"
   "Summary: Create contextual information about a specific place.\n"
-  "Params: [ <account> The account to associate with the context, <zipcode> A 5-digit numeric zipcode, <name> The name of the location, <summary> A textual description of the location, <country> The two-letter country code, <zipcode> A zipcode for the given country, <web-url> A url providing additional information about the place. ]\n"
+  "Params: [ <account> The account to associate with the context, <zipcode> A 5-digit numeric zipcode, <name> The name of the location, <summary> A textual description of the location, <type> A location type code, <country> The two-letter country code, <zipcode> A zipcode for the given country, <web-url> A url providing additional information about the place. ]\n"
   "\n"
-  "This dual-purpose command allows for locations to be given contextual information and specific geodetic locations to be given names."
+  "This dual-purpose command allows for locations to be given contextual information and specific geodetic locations to be given names.\n"
+  "\n"
+  "Note: Use the \"ctx.loctypes\" command to list supported location type codes.\n"
+  "Note: The \"springable\" value denotes whether the geodetic location can be claimed in the SHC spring matrix (see \"wallet.stamp\")."
 };
 
 const RPCOp CTX_FINDLOC = {
@@ -324,11 +327,19 @@ const RPCOp CTX_FINDLOC = {
   "\n"
   "Example: ctx.findloc \"Missoula, MT\"\n"
   "Example: ctx.findloc \"geo:46.9,114.2\"\n"
-  "Note: The \"spring\" value indicates whether the location can be claimed from the spring matrix.\n"
   "Note: All city names are in the format \"<city>, <state-abrev>\".\n"
   "Note: An internal database will be searched if the location cannot be found in the block-chain."
+  "Note: The \"springable\" value denotes whether the geodetic location can be claimed in the SHC spring matrix (see \"wallet.stamp\")."
 };
 
+const RPCOp CTX_LOCTYPES = {
+  &rpc_ctx_loctypes, 0, {},
+  "List all of the supported location type codes and their respective descriptions.\n"
+  "\n"
+  "name: The location type code.\n"
+  "desc: A printable label describing the location type.\n"
+  "prec: The precision associated with the location type."
+};
 
 
 
@@ -369,6 +380,7 @@ void shc_RegisterRPCOp()
   RegisterRPCOp(ifaceIndex, "ctx.getloc", CTX_GETLOC);
   RegisterRPCOp(ifaceIndex, "ctx.setloc", CTX_SETLOC);
   RegisterRPCOp(ifaceIndex, "ctx.findloc", CTX_FINDLOC);
+  RegisterRPCOp(ifaceIndex, "ctx.loctypes", CTX_LOCTYPES);
 
   RegisterRPCOp(ifaceIndex, "wallet.csend", WALLET_CSEND);
   RegisterRPCOp(ifaceIndex, "wallet.donate", WALLET_DONATE);

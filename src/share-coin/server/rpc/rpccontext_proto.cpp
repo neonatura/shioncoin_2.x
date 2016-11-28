@@ -126,9 +126,9 @@ Value rpc_ctx_list(CIface *iface, const Array& params, bool fStratum)
     /* get set of pub keys assigned to extended account. */
     string strExtAccount = "@" + strAccount;
     GetAccountAddresses(wallet, strExtAccount, setAddress);
-    if (setAddress.size() == 0)
+    if (setAddress.size() == 0) {
       return (ret);
-//      throw JSONRPCError(-5, string("invalid account name"));
+    }
   }
 
   BOOST_FOREACH(const PAIRTYPE(uint160, uint256)& r, wallet->mapContext) {
@@ -147,7 +147,7 @@ Value rpc_ctx_list(CIface *iface, const Array& params, bool fStratum)
       
       CTxDestination dest;
       const CTxOut& txout = tx.vout[nOut];
-      if (ExtractDestination(txout.scriptPubKey, dest))
+      if (!ExtractDestination(txout.scriptPubKey, dest))
         continue;
 
       if (setAddress.count(dest) == 0)
@@ -423,7 +423,6 @@ Value rpc_ctx_setid(CIface *iface, const Array& params, bool fStratum)
       strZip = strGeo;
 
       err = shgeodb_place(strGeo.c_str(), &loc);
-fprintf(stderr, "DEBUG: SETID: %d = shgeodb_place('%s')\n", err, strGeo.c_str());
       if (err) {
         /* unknown .. keep zipcode but bail on lat/lon assoc. */
         strGeo = string();
@@ -495,6 +494,22 @@ fprintf(stderr, "DEBUG: SETID: %d = shgeodb_place('%s')\n", err, strGeo.c_str())
   return (ret_obj);
 }
 
+static string GetObjectValue(Object obj, string cmp_name)
+{
+  for( Object::size_type i = 0; i != obj.size(); ++i )
+  {
+    const Pair& pair = obj[i];
+    const string& name = pair.name_;
+
+    if (cmp_name == name) {
+      const Value& value = pair.value_;
+      return (value.get_str());
+    }
+  }
+
+  return (string());
+}
+
 Value rpc_ctx_getloc(CIface *iface, const Array& params, bool fStratum)
 {
   CWallet *wallet = GetWallet(iface);
@@ -512,6 +527,9 @@ Value rpc_ctx_getloc(CIface *iface, const Array& params, bool fStratum)
     strName = strId; 
     strId = "loc:" + strId;
     ctx = GetContextByName(iface, strId, tx);
+    if (!ctx)
+      throw JSONRPCError(-5, string("unknown location"));
+      
     strId = stringFromVch(ctx->vContext); /* geo:XX,XX */
   }
 
@@ -532,6 +550,18 @@ Value rpc_ctx_getloc(CIface *iface, const Array& params, bool fStratum)
     ret_obj.push_back(Pair("name", strName));
   ret_obj.push_back(Pair("txhash", tx.GetHash().GetHex()));
   ret_obj.push_back(Pair("ctxhash", ctx->GetHash().GetHex()));
+
+  string strPlaceType = GetObjectValue(ret_obj, "code"); 
+  if (strPlaceType.length() != 0) {
+    ret_obj.push_back(Pair("type", 
+          string(shgeo_place_desc((char *)strPlaceType.c_str()))));
+  }
+
+  if (is_spring_loc(lat, lon)) {
+    ret_obj.push_back(Pair("springable", "true"));
+  } else {
+    ret_obj.push_back(Pair("springable", "false"));
+  }
 
   return (ret_obj);
 }
@@ -559,7 +589,7 @@ Value rpc_ctx_setloc(CIface *iface, const Array& params, bool fStratum)
   string strAccount = params[0].get_str();
   string strId = params[1].get_str();
 
-  if (strId.substr(0, 4) != "geo:") {
+  if (strId.substr(0, 4) != "geo:") { /* loc:XX */
     string strZip;
 
     if (shgeodb_place(strId.c_str(), &geo) == 0) {
@@ -619,14 +649,28 @@ Value rpc_ctx_setloc(CIface *iface, const Array& params, bool fStratum)
 //      if (strSummary.size() > 135) throw JSONRPCError(-5, string("summary exceeds maximum length (135 characters)"));
       loc_obj.push_back(Pair("summary", strSummary));
     }
-    if (params.size() > 3) {
-      string strLocale = params[3].get_str();
+
+    /* define regional boundary */
+    string strPlaceType = "AREA";
+    if (params.size() > 3)
+      strPlaceType = params[3].get_str();
+    loc_obj.push_back(Pair("code", strPlaceType));
+#if 0
+    /* reduce precision to match location type */
+    memset(&geo, 0, sizeof(geo));
+    shgeo_set(&geo, lat, lon, 0);
+    shgeo_dim(&geo, shgeo_place_prec((char *)strPlaceType.c_str()));
+    shgeo_loc(&geo, &lat, &lon, NULL);
+#endif
+
+    if (params.size() > 4) {
+      string strLocale = params[4].get_str();
       if (strLocale.size() > 5)
         throw JSONRPCError(-5, string("locale exceeds maximum length (5 characters)"));
       loc_obj.push_back(Pair("country", strLocale));
     }
-    if (params.size() > 4) {
-      string strUrl = params[4].get_str();
+    if (params.size() > 5) {
+      string strUrl = params[5].get_str();
       if (strUrl.size() > 135)
         throw JSONRPCError(-5, string("url exceeds maximum length (135 characters)"));
       loc_obj.push_back(Pair("weblog", strUrl));
@@ -674,7 +718,7 @@ static Object ConvertLocationToObject(shgeo_t *geo, shloc_t *loc)
 
   if (*loc->loc_type) {
     ret_obj.push_back(Pair("code", string(loc->loc_type)));
-    ret_obj.push_back(Pair("type", string(shgeo_place_desc(loc->loc_type))));
+//    ret_obj.push_back(Pair("type", string(shgeo_place_desc(loc->loc_type))));
   }
 
   ptr = strchr(loc->loc_locale, '_');
@@ -701,10 +745,64 @@ Value rpc_ctx_findloc(CIface *iface, const Array& params, bool fStratum)
   int err;
 
   if (params.size() != 1)
-    throw runtime_error("invalid paramaters");
+    throw runtime_error("invalid parameters");
 
   string strId = params[0].get_str();
 
+  bool fScan = true;
+  if (strId.substr(0, 4) != "geo:") { /* find geodetic cordinates */
+    /* search block-chain by name. */
+    CTransaction tx;
+    string idstr = "loc:" + strId;
+    ctx = GetContextByName(iface, idstr, tx);
+    if (ctx) {
+      strId = stringFromVch(ctx->vContext); /* geo:XX,XX */
+    } else {
+      /* search libshare by name. */
+      err = shgeodb_place(strId.c_str(), &geo);
+      if (err)
+        throw JSONRPCError(err, string("unknown location"));
+
+      { /* jic */
+        static char buf[256];
+
+        shgeo_loc(&geo, &lat, &lon, NULL);
+        sprintf(buf, "%-5.5Lf,%-5.5Lf", lat, lon);
+        strId = string(buf);
+      }
+    }
+    fScan = false;
+  }
+
+  if (!FormatGeoContext(iface, strId, lat, lon))
+    throw JSONRPCError(err, string("invalid geodetic format"));
+
+  CTransaction tx;
+  ctx = GetContextByName(iface, strId, tx);
+  if (ctx) { /* SHC */
+    Value val;
+    if (read_string(stringFromVch(ctx->vContext), val)) {
+      ret_obj = val.get_obj();
+      shgeo_loc(&ctx->geo, &lat, &lon, NULL);
+    }
+  } else { /* libshare */
+    if (fScan) {
+      /* scan area */
+      err = shgeodb_scan(lat, lon, 0.5, &geo);
+      if (err)
+        throw JSONRPCError(err, string("unknown location"));
+    } else {
+      shgeo_set(&geo, lat, lon, 0);
+    }
+
+    /* welp, we found a reference to a spot at least */
+    err = shgeodb_loc(&geo, &loc);
+    if (!err) {
+      ret_obj = ConvertLocationToObject(&geo, &loc);
+    }
+  }
+
+#if 0
   if (strId.substr(0, 4) == "geo:") {
     bool bFound = false;
 
@@ -713,10 +811,11 @@ Value rpc_ctx_findloc(CIface *iface, const Array& params, bool fStratum)
       throw JSONRPCError(err, string("invalid geodetic format"));
 
     /* check block-chain */
+    string strGeo;
     CTransaction tx;
     ctx = GetContextByName(iface, strId, tx);
     if (ctx) {
-      string strGeo = stringFromVch(ctx->vContext);
+      strGeo = stringFromVch(ctx->vContext);
       ctx = GetContextByName(iface, strGeo, tx);
       if (ctx) {
         Value val;
@@ -771,15 +870,53 @@ Value rpc_ctx_findloc(CIface *iface, const Array& params, bool fStratum)
       shgeo_loc(&geo, &lat, &lon, NULL);
     }
   }
+#endif
+
+  string strGeo = GetObjectValue(ret_obj, "geo");
+  if (strGeo.length() == 0) {
+    char buf[256];
+
+    sprintf(buf, "%-5.5Lf,%-5.5Lf", lat, lon);
+    string ret_geo(buf);
+    ret_obj.push_back(Pair("geo", ret_geo));
+  }
+
+  string strPlaceType = GetObjectValue(ret_obj, "code"); 
+  if (strPlaceType.length() != 0) {
+    ret_obj.push_back(Pair("type", 
+          string(shgeo_place_desc((char *)strPlaceType.c_str()))));
+  }
 
   if (is_spring_loc(lat, lon)) {
-    ret_obj.push_back(Pair("spring", "true"));
+    ret_obj.push_back(Pair("springable", "true"));
   } else {
-    ret_obj.push_back(Pair("spring", "false"));
+    ret_obj.push_back(Pair("springable", "false"));
   }
 
   return (ret_obj);
 }
 
+Value rpc_ctx_loctypes(CIface *iface, const Array& params, bool fStratum)
+{
+  const char **place_codes = shgeo_place_codes();
+  int err;
+  int i;
 
+  if (params.size() != 0)
+    throw runtime_error("invalid parameters");
+
+  Array ret_ar;
+  for (i = 0; place_codes[i]; i++) {
+    char *code = (char *)place_codes[i];
+
+    Object obj;
+    obj.push_back(Pair("name", string(place_codes[i])));
+    obj.push_back(Pair("desc", string(shgeo_place_desc(code))));
+    obj.push_back(Pair("prec", shgeo_place_prec(code)));
+
+    ret_ar.push_back(obj);
+  }
+
+  return (ret_ar);
+}
 

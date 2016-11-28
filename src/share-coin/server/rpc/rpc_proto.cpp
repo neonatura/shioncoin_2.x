@@ -896,7 +896,7 @@ Value rpc_block_free(CIface *iface, const Array& params, bool fStratum)
     throw runtime_error("unsupported operation");
 
   if (params.size() != 0)
-    throw runtime_error("invalid paramaters");
+    throw runtime_error("invalid parameters");
 
   CloseBlockChain(iface);
 
@@ -1765,7 +1765,7 @@ Value rpc_wallet_info(CIface *iface, const Array& params, bool fStratum)
   int ifaceIndex = GetCoinIndex(iface);
 
   if (params.size() != 0)
-    throw runtime_error("invalid paramaters specified");
+    throw runtime_error("invalid parameters specified");
 
   Object obj;
   obj.push_back(Pair("version",       (int)CLIENT_VERSION));

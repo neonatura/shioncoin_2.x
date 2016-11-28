@@ -76,6 +76,11 @@ Value rpc_ctx_setloc(CIface *iface, const Array& params, bool fStratum);
  */
 Value rpc_ctx_findloc(CIface *iface, const Array& params, bool fStratum);
 
+/**
+ * Display the internal table of short and long names for location types.
+ */
+Value rpc_ctx_loctypes(CIface *iface, const Array& params, bool fStratum);
+
 /* not implem'd */
 Value rpc_ctx_setevent(CIface *iface, const Array& params, bool fStratum);
 Value rpc_ctx_getevent(CIface *iface, const Array& params, bool fStratum);

@@ -302,13 +302,15 @@ Value rpc_alias_listaddr(CIface *iface, const Array& params, bool fStratum)
         label.find(keyword) == std::string::npos)
       continue;
 
-    if (!GetTransaction(iface, hash, tx, NULL))
+    if (!GetTransaction(iface, hash, tx, &hBlock))
       continue;
 
     Object obj;
 
     obj.push_back(Pair("block", hBlock.GetHex()));
     obj.push_back(Pair("tx", tx.GetHash().GetHex()));
+
+    alias = (CAlias *)&tx.alias;
     obj.push_back(Pair("alias", alias->GetHash().GetHex()));
     if (alias->GetType() == CAlias::ALIAS_COINADDR) {
       CCoinAddr addr(ifaceIndex);

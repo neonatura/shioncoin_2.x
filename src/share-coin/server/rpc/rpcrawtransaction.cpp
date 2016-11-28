@@ -54,7 +54,7 @@ void ScriptPubKeyToJSON(int ifaceIndex, const CScript& scriptPubKey, Object& out
   vector<CTxDestination> addresses;
   int nRequired;
 
-  out.push_back(Pair("script", scriptPubKey.ToString()));
+//  out.push_back(Pair("script", scriptPubKey.ToString()));
   //    out.push_back(Pair("hex", HexStr(scriptPubKey.begin(), scriptPubKey.end())));
 
   if (!ExtractDestinations(scriptPubKey, type, addresses, nRequired))

@@ -2281,7 +2281,7 @@ bool GetCoinAddr(CWallet *wallet, string strAddress, CCoinAddr& addrAccount)
     return (false);
 
   if (strAddress.at(0) == '@') {
-    return (GetCoinAddrAlias(wallet, strAddress, addrAccount));
+    return (GetCoinAddrAlias(wallet, strAddress.substr(1), addrAccount));
   }
 
   addrAccount = CCoinAddr(strAddress);

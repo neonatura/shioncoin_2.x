@@ -533,9 +533,10 @@ bool CommitAliasTx(CIface *iface, CTransaction& tx, int nHeight)
       break;
     case OP_EXT_UPDATE:
       if (!VerifyAliasChain(iface, tx))
-        return (false);
+        return error(SHERR_INVAL, "CommitAliasTx: error verifying alias chain on tx '%s' for update.", tx.GetHash().GetHex().c_str());
+(false);
       if (!ConnectAliasTx(iface, tx))
-        return (false);
+        return error(SHERR_INVAL, "CommitAliasTx: error updating alias on tx '%s'.", tx.GetHash().GetHex().c_str());
       break;
     case OP_EXT_REMOVE:
       if (!VerifyAliasChain(iface, tx))

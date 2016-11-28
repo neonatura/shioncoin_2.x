@@ -375,6 +375,7 @@ bool SHCTxDB::LoadBlockIndex()
   }
 
   /* ident */
+  std::reverse(vIdent.begin(), vIdent.end());
   BOOST_FOREACH(CBlockIndex *pindex, vIdent) {
     CBlock *block = GetBlockByHash(iface, pindex->GetBlockHash());
     BOOST_FOREACH(CTransaction& tx, block->vtx) {
@@ -386,6 +387,7 @@ bool SHCTxDB::LoadBlockIndex()
 
   /* Spring Matrix */
   cert_list *idents = GetIdentTable(ifaceIndex);
+  std::reverse(vSpring.begin(), vSpring.end());
   BOOST_FOREACH(CBlockIndex *pindex, vSpring) {
     CBlock *block = GetBlockByHash(iface, pindex->GetBlockHash());
     if (!block) continue;
@@ -411,6 +413,7 @@ bool SHCTxDB::LoadBlockIndex()
     delete block;
   }
 
+  std::reverse(vCert.begin(), vCert.end());
   BOOST_FOREACH(CBlockIndex *pindex, vCert) {
     CBlock *block = GetBlockByHash(iface, pindex->GetBlockHash());
     BOOST_FOREACH(CTransaction& tx, block->vtx) {
@@ -421,28 +424,35 @@ bool SHCTxDB::LoadBlockIndex()
   }
 
   /* license */
+  std::reverse(vLicense.begin(), vLicense.end());
   BOOST_FOREACH(CBlockIndex *pindex, vLicense) {
     CBlock *block = GetBlockByHash(iface, pindex->GetBlockHash());
     BOOST_FOREACH(CTransaction& tx, block->vtx) {
-      CommitLicenseTx(iface, tx, pindex->nHeight);
+      if (IsLicenseTx(tx))
+        CommitLicenseTx(iface, tx, pindex->nHeight);
     }
     delete block;
   }
 
   /* alias */
+  std::reverse(vAlias.begin(), vAlias.end());
   BOOST_FOREACH(CBlockIndex *pindex, vAlias) {
     CBlock *block = GetBlockByHash(iface, pindex->GetBlockHash());
     BOOST_FOREACH(CTransaction& tx, block->vtx) {
-      CommitAliasTx(iface, tx, pindex->nHeight);
+      if (IsAliasTx(tx)) {
+        CommitAliasTx(iface, tx, pindex->nHeight);
+      }
     }
     delete block;
   }
 
   /* context */
+  std::reverse(vContext.begin(), vContext.end());
   BOOST_FOREACH(CBlockIndex *pindex, vContext) {
     CBlock *block = GetBlockByHash(iface, pindex->GetBlockHash());
     BOOST_FOREACH(CTransaction& tx, block->vtx) {
-      CommitContextTx(iface, tx, pindex->nHeight);
+      if (IsContextTx(tx))
+        CommitContextTx(iface, tx, pindex->nHeight);
     }
     delete block;
   }
