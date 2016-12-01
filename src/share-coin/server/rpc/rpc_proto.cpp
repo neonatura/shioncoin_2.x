@@ -1920,6 +1920,68 @@ Value rpc_wallet_list(CIface *iface, const Array& params, bool fStratum)
   if (fStratum)
     throw runtime_error("unsupported operation");
 
+  CWallet *wallet = GetWallet(iface);
+  int ifaceIndex = GetCoinIndex(iface);
+
+  if (fHelp || params.size() > 1)
+    throw runtime_error(
+        "wallet.list [minconf=1]\n"
+        "Returns Object that has account names as keys, account balances as values.");
+
+  int nMinDepth = 1;
+  if (params.size() > 0)
+    nMinDepth = params[0].get_int();
+
+
+  vector<string> vAcc;
+  BOOST_FOREACH(const PAIRTYPE(CTxDestination, string)& entry, wallet->mapAddressBook) {
+    const string& strAccount = entry.second;
+
+    if (strAccount.length() != 0 && strAccount.at(0) == '@')
+      continue; /* ext account */
+
+    if (find(vAcc.begin(), vAcc.end(), strAccount) != vAcc.end())
+      continue; /* already established account name */
+
+    if (IsMine(*wallet, entry.first)) { // This address belongs to me
+      vAcc.push_back(strAccount);
+    }
+  }
+
+  map<string, int64> mapAccountBalances;
+  BOOST_FOREACH(const string& strAccount, vAcc) {
+    int64 nTotal = 0;
+
+    vector<COutput> vCoins;
+    wallet->AvailableAccountCoins(strAccount, vCoins);
+    BOOST_FOREACH(const COutput& out, vCoins) {
+      nTotal += out.tx->vout[out.i].nValue;
+    }
+
+    mapAccountBalances[strAccount] = nTotal;
+  }
+
+  /* ?? */
+  list<CAccountingEntry> acentries;
+  CWalletDB(wallet->strWalletFile).ListAccountCreditDebit("*", acentries);
+  BOOST_FOREACH(const CAccountingEntry& entry, acentries) {
+    mapAccountBalances[entry.strAccount] += entry.nCreditDebit;
+  }
+
+  Object ret;
+  BOOST_FOREACH(const PAIRTYPE(string, int64)& accountBalance, mapAccountBalances) {
+    ret.push_back(Pair(accountBalance.first, ValueFromAmount(accountBalance.second)));
+  }
+
+  return ret;
+}
+#if 0
+Value rpc_wallet_list(CIface *iface, const Array& params, bool fStratum)
+{
+
+  if (fStratum)
+    throw runtime_error("unsupported operation");
+
   CWallet *pwalletMain = GetWallet(iface);
   int ifaceIndex = GetCoinIndex(iface);
 
@@ -1992,6 +2054,7 @@ Value rpc_wallet_list(CIface *iface, const Array& params, bool fStratum)
   }
   return ret;
 }
+#endif
 
 Value rpc_wallet_addr(CIface *iface, const Array& params, bool fStratum)
 {
@@ -2170,7 +2233,8 @@ Value rpc_wallet_send(CIface *iface, const Array& params, bool fStratum)
     throw JSONRPCError(-6, "Account has insufficient funds");
 
   // Send
-  string strError = wallet->SendMoneyToDestination(address.Get(), nAmount, wtx);
+  //string strError = wallet->SendMoneyToDestination(address.Get(), nAmount, wtx);
+  string strError = wallet->SendMoney(strAccount, address.Get(), nAmount, wtx);
   if (strError != "")
     throw JSONRPCError(-4, strError);
 
@@ -2306,36 +2370,23 @@ Value rpc_wallet_setkeyphrase(CIface *iface, const Array& params, bool fStratum)
 Value rpc_wallet_unspent(CIface *iface, const Array& params, bool fStratum)
 {
 
-  if (fStratum)
+  if (params.size() == 0)
     throw runtime_error("unsupported operation");
 
   CWallet *pwalletMain = GetWallet(iface);
   int ifaceIndex = GetCoinIndex(iface);
-
-  if (fHelp || params.size() > 2)
-    throw runtime_error(
-        "wallet.unspent [minconf=1] [maxconf=999999]\n"
-        "Returns array of unspent transaction outputs\n"
-        "with between minconf and maxconf (inclusive) confirmations.\n"
-        "Results are an array of Objects, each of which has:\n"
-        "{txid, vout, scriptPubKey, amount, confirmations}");
-
-  RPCTypeCheck(params, list_of(int_type)(int_type));
+  string strAccount = params[0].get_str();
 
   int nMinDepth = 1;
-  if (params.size() > 0)
-    nMinDepth = params[0].get_int();
-
-  int nMaxDepth = 999999;
   if (params.size() > 1)
-    nMaxDepth = params[1].get_int();
+    nMinDepth = params[1].get_int();
 
   Array results;
   vector<COutput> vecOutputs;
-  pwalletMain->AvailableCoins(vecOutputs, false);
+  pwalletMain->AvailableAccountCoins(strAccount, vecOutputs, false);
   BOOST_FOREACH(const COutput& out, vecOutputs)
   {
-    if (out.nDepth < nMinDepth || out.nDepth > nMaxDepth)
+    if (out.nDepth < nMinDepth)
       continue;
 
     int64 nValue = out.tx->vout[out.i].nValue;
@@ -2343,9 +2394,48 @@ Value rpc_wallet_unspent(CIface *iface, const Array& params, bool fStratum)
     Object entry;
     entry.push_back(Pair("txid", out.tx->GetHash().GetHex()));
     entry.push_back(Pair("vout", out.i));
+    entry.push_back(Pair("script", pk.ToString()));
     entry.push_back(Pair("scriptPubKey", HexStr(pk.begin(), pk.end())));
     entry.push_back(Pair("amount",ValueFromAmount(nValue)));
     entry.push_back(Pair("confirmations",out.nDepth));
+    results.push_back(entry);
+  }
+
+  return results;
+}
+
+Value rpc_wallet_select(CIface *iface, const Array& params, bool fStratum)
+{
+
+  if (params.size() != 2)
+    throw runtime_error("unsupported operation");
+
+  CWallet *pwalletMain = GetWallet(iface);
+  int ifaceIndex = GetCoinIndex(iface);
+  string strAccount = params[0].get_str();
+  int64 nAmount = AmountFromValue(params[1]);
+
+  Array results;
+  vector<COutput> vecOutputs;
+  pwalletMain->AvailableAccountCoins(strAccount, vecOutputs, false);
+
+  int64 nValueRet;
+  set<pair<const CWalletTx*,unsigned int> > setCoins;
+  if (!pwalletMain->SelectAccountCoins(strAccount, nAmount, setCoins, nValueRet))
+    throw JSONRPCError(-6, "Insufficient funds for account.");
+
+  BOOST_FOREACH(PAIRTYPE(const CWalletTx*, unsigned int) pcoin, setCoins) {
+    const CWalletTx *wtx = pcoin.first; 
+    int nOut = pcoin.second;
+    int64 nCredit = wtx->vout[nOut].nValue;
+    const CScript& pk = wtx->vout[nOut].scriptPubKey;
+
+    Object entry;
+    entry.push_back(Pair("txid", wtx->GetHash().GetHex()));
+    entry.push_back(Pair("vout", nOut));
+    entry.push_back(Pair("script", pk.ToString()));
+    entry.push_back(Pair("scriptPubKey", HexStr(pk.begin(), pk.end())));
+    entry.push_back(Pair("amount",ValueFromAmount(nCredit)));
     results.push_back(entry);
   }
 
@@ -4210,7 +4300,7 @@ const RPCOp WALLET_KEY = {
   "The entire wallet can be exported to a file via the 'wallet.export' command."
 };
 const RPCOp WALLET_LIST = {
-  &rpc_wallet_list, 0, {RPC_STRING},
+  &rpc_wallet_list, 0, {RPC_INT},
   "wallet.list [<minconf>=1]\n"
   "Returns Object that has account names as keys, account balances as values."
 };
@@ -4289,12 +4379,14 @@ const RPCOp WALLET_UNCONFIRM = {
   "Display a list of all unconfirmed wallet transactions."
 };
 const RPCOp WALLET_UNSPENT = {
-  &rpc_wallet_unspent, 0, {RPC_INT64, RPC_INT64}, 
-  "Syntax: [<minconf>=1] [<maxconf>=999999]\n"
-  "Returns array of unspent transaction outputs\n"
-  "with between minconf and maxconf (inclusive) confirmations.\n"
-  "Results are an array of Objects, each of which has:\n"
-  "{txid, vout, scriptPubKey, amount, confirmations}"
+  &rpc_wallet_unspent, 1, {RPC_ACCOUNT, RPC_INT64},
+  "Syntax: <account> [<minconf>=1]\n"
+  "Returns array of unspent transaction outputs with minimum specified confirmations."
+};
+const RPCOp WALLET_SELECT = {
+  &rpc_wallet_select, 2, {RPC_ACCOUNT, RPC_DOUBLE},
+  "Syntax: <account> <value>\n"
+  "Returns array of sample transaction outputs to spend."
 };
 const RPCOp WALLET_VALIDATE = {
   &rpc_wallet_validate, 1, {RPC_COINADDR},
@@ -4441,6 +4533,7 @@ void RegisterRPCOpDefaults(int ifaceIndex)
   RegisterRPCOp(ifaceIndex, "wallet.tx", WALLET_TX);
   RegisterRPCOp(ifaceIndex, "wallet.unconfirm", WALLET_UNCONFIRM);
   RegisterRPCOp(ifaceIndex, "wallet.unspent", WALLET_UNSPENT);
+  RegisterRPCOp(ifaceIndex, "wallet.select", WALLET_SELECT);
   RegisterRPCOp(ifaceIndex, "wallet.validate", WALLET_VALIDATE);
 }
 

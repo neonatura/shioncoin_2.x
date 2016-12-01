@@ -46,6 +46,10 @@ class USDEWallet : public CWallet
     bool CreateTransaction(CScript scriptPubKey, int64 nValue, CWalletTx& wtxNew, CReserveKey& reservekey, int64& nFeeRet);
     void AddSupportingTransactions(CWalletTx& wtx);
 
+    bool CreateAccountTransaction(string strFromAccount, const vector<pair<CScript, int64> >& vecSend, CWalletTx& wtxNew, int64& nFeeRet);
+    bool CreateAccountTransaction(string strFromAccount, CScript scriptPubKey, int64 nValue, CWalletTx& wtxNew, int64& nFeeRet);
+
+
     bool UnacceptWalletTransaction(const CTransaction& tx);
 
     int64 GetBlockValue(int nHeight, int64 nFees);

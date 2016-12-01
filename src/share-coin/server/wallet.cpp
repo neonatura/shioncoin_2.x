@@ -1008,6 +1008,74 @@ void CWallet::AvailableCoins(vector<COutput>& vCoins, bool fOnlyConfirmed) const
     }
 }
 
+void CWallet::AvailableAccountCoins(string strAccount, vector<COutput>& vCoins, bool fOnlyConfirmed) const
+{
+  CIface *iface = GetCoinByIndex(ifaceIndex);
+  int64 nMinValue = MIN_INPUT_VALUE(iface);
+
+  vCoins.clear();
+
+  vector<CTxDestination> vDest;
+  BOOST_FOREACH(const PAIRTYPE(CTxDestination, string)& item, mapAddressBook) {
+    const string& account = item.second;
+    if (account != strAccount)
+      continue;
+//    const CCoinAddr& address = CCoinAddr(wallet->ifaceIndex, item.first);
+    vDest.push_back(item.first);
+  }
+
+  {
+    LOCK(cs_wallet);
+    for (map<uint256, CWalletTx>::const_iterator it = mapWallet.begin(); it != mapWallet.end(); ++it)
+    {
+      const CWalletTx* pcoin = &(*it).second;
+
+      if (!pcoin->IsFinal(ifaceIndex))
+        continue;
+
+      if (fOnlyConfirmed && !pcoin->IsConfirmed())
+        continue;
+
+      if (pcoin->IsCoinBase() && pcoin->GetBlocksToMaturity(ifaceIndex) > 0)
+        continue;
+
+      // If output is less than minimum value, then don't include transaction.
+      // This is to help deal with dust spam clogging up create transactions.
+      for (unsigned int i = 0; i < pcoin->vout.size(); i++) {
+        opcodetype opcode;
+        const CScript& script = pcoin->vout[i].scriptPubKey;
+        CScript::const_iterator pc = script.begin();
+        if (script.GetOp(pc, opcode) &&
+            opcode >= 0xf0 && opcode <= 0xf9) { /* ext mode */
+          continue; /* not avail */
+        }
+
+        CIface *iface = GetCoinByIndex(ifaceIndex);
+        if (pcoin->vout[i].nValue < nMinValue)
+          continue;
+
+        if (pcoin->IsSpent(i))
+          continue;
+
+        if (IsChange(pcoin->vout[i])) {
+          if (pcoin->strFromAccount == strAccount) {
+            vCoins.push_back(COutput(pcoin, i, pcoin->GetDepthInMainChain(ifaceIndex)));
+          }
+        } else {
+          /* filter via account */
+          CTxDestination dest;
+          if (!ExtractDestination(pcoin->vout[i].scriptPubKey, dest))
+            continue;
+          if ( std::find(vDest.begin(), vDest.end(), dest) != vDest.end() ) {
+            vCoins.push_back(COutput(pcoin, i, pcoin->GetDepthInMainChain(ifaceIndex)));
+          }
+        }
+
+      }
+    }
+  }
+}
+
 static void ApproximateBestSubset(vector<pair<int64, pair<const CWalletTx*,unsigned int> > >vValue, int64 nTotalLower, int64 nTargetValue,
                                   vector<char>& vfBest, int64& nBest, int iterations = 1000)
 {
@@ -1046,105 +1114,102 @@ static void ApproximateBestSubset(vector<pair<int64, pair<const CWalletTx*,unsig
     }
 }
 
-bool CWallet::SelectCoinsMinConf(int64 nTargetValue, int nConfMine, int nConfTheirs, vector<COutput> vCoins,
-                                 set<pair<const CWalletTx*,unsigned int> >& setCoinsRet, int64& nValueRet) const
+bool CWallet::SelectCoinsMinConf(int64 nTargetValue, int nConfMine, int nConfTheirs, vector<COutput> vCoins, set<pair<const CWalletTx*,unsigned int> >& setCoinsRet, int64& nValueRet) const
 {
-    setCoinsRet.clear();
-    nValueRet = 0;
+  setCoinsRet.clear();
+  nValueRet = 0;
 
-    // List of values less than target
-    pair<int64, pair<const CWalletTx*,unsigned int> > coinLowestLarger;
-    coinLowestLarger.first = std::numeric_limits<int64>::max();
-    coinLowestLarger.second.first = NULL;
-    vector<pair<int64, pair<const CWalletTx*,unsigned int> > > vValue;
-    int64 nTotalLower = 0;
+  // List of values less than target
+  pair<int64, pair<const CWalletTx*,unsigned int> > coinLowestLarger;
+  coinLowestLarger.first = std::numeric_limits<int64>::max();
+  coinLowestLarger.second.first = NULL;
+  vector<pair<int64, pair<const CWalletTx*,unsigned int> > > vValue;
+  int64 nTotalLower = 0;
 
-    random_shuffle(vCoins.begin(), vCoins.end(), GetRandInt);
+  random_shuffle(vCoins.begin(), vCoins.end(), GetRandInt);
 
-    BOOST_FOREACH(COutput output, vCoins)
+  BOOST_FOREACH(COutput output, vCoins)
+  {
+    const CWalletTx *pcoin = output.tx;
+
+    if (output.nDepth < (pcoin->IsFromMe() ? nConfMine : nConfTheirs))
+      continue;
+
+    int i = output.i;
+    int64 n = pcoin->vout[i].nValue;
+
+    pair<int64,pair<const CWalletTx*,unsigned int> > coin = make_pair(n,make_pair(pcoin, i));
+
+    if (n == nTargetValue)
     {
-        const CWalletTx *pcoin = output.tx;
-
-        if (output.nDepth < (pcoin->IsFromMe() ? nConfMine : nConfTheirs))
-            continue;
-
-        int i = output.i;
-        int64 n = pcoin->vout[i].nValue;
-
-        pair<int64,pair<const CWalletTx*,unsigned int> > coin = make_pair(n,make_pair(pcoin, i));
-
-        if (n == nTargetValue)
-        {
-            setCoinsRet.insert(coin.second);
-            nValueRet += coin.first;
-            return true;
-        }
-        else if (n < nTargetValue + CENT)
-        {
-            vValue.push_back(coin);
-            nTotalLower += n;
-        }
-        else if (n < coinLowestLarger.first)
-        {
-            coinLowestLarger = coin;
-        }
+      setCoinsRet.insert(coin.second);
+      nValueRet += coin.first;
+      return true;
     }
-
-    if (nTotalLower == nTargetValue)
+    else if (n < nTargetValue + CENT)
     {
-        for (unsigned int i = 0; i < vValue.size(); ++i)
-        {
-            setCoinsRet.insert(vValue[i].second);
-            nValueRet += vValue[i].first;
-        }
-        return true;
+      vValue.push_back(coin);
+      nTotalLower += n;
     }
-
-    if (nTotalLower < nTargetValue)
+    else if (n < coinLowestLarger.first)
     {
-        if (coinLowestLarger.second.first == NULL)
-            return false;
-        setCoinsRet.insert(coinLowestLarger.second);
-        nValueRet += coinLowestLarger.first;
-        return true;
+      coinLowestLarger = coin;
     }
+  }
 
-    // Solve subset sum by stochastic approximation
-    sort(vValue.rbegin(), vValue.rend(), CompareValueOnly());
-    vector<char> vfBest;
-    int64 nBest;
-
-    ApproximateBestSubset(vValue, nTotalLower, nTargetValue, vfBest, nBest, 1000);
-    if (nBest != nTargetValue && nTotalLower >= nTargetValue + CENT)
-        ApproximateBestSubset(vValue, nTotalLower, nTargetValue + CENT, vfBest, nBest, 1000);
-
-    // If we have a bigger coin and (either the stochastic approximation didn't find a good solution,
-    //                                   or the next bigger coin is closer), return the bigger coin
-    if (coinLowestLarger.second.first &&
-        ((nBest != nTargetValue && nBest < nTargetValue + CENT) || coinLowestLarger.first <= nBest))
+  if (nTotalLower == nTargetValue)
+  {
+    for (unsigned int i = 0; i < vValue.size(); ++i)
     {
-        setCoinsRet.insert(coinLowestLarger.second);
-        nValueRet += coinLowestLarger.first;
+      setCoinsRet.insert(vValue[i].second);
+      nValueRet += vValue[i].first;
     }
-    else {
-        for (unsigned int i = 0; i < vValue.size(); i++)
-            if (vfBest[i])
-            {
-                setCoinsRet.insert(vValue[i].second);
-                nValueRet += vValue[i].first;
-            }
-
-#if 0
-        //// debug print
-        printf("SelectCoins() best subset: ");
-        for (unsigned int i = 0; i < vValue.size(); i++)
-            if (vfBest[i])
-                printf("%s ", FormatMoney(vValue[i].first).c_str());
-        printf("total %s\n", FormatMoney(nBest).c_str());
-#endif
-    }
-
     return true;
+  }
+
+  if (nTotalLower < nTargetValue)
+  {
+    if (coinLowestLarger.second.first == NULL)
+      return false;
+    setCoinsRet.insert(coinLowestLarger.second);
+    nValueRet += coinLowestLarger.first;
+    return true;
+  }
+
+  // Solve subset sum by stochastic approximation
+  sort(vValue.rbegin(), vValue.rend(), CompareValueOnly());
+  vector<char> vfBest;
+  int64 nBest;
+
+  ApproximateBestSubset(vValue, nTotalLower, nTargetValue, vfBest, nBest, 1000);
+  if (nBest != nTargetValue && nTotalLower >= nTargetValue + CENT)
+    ApproximateBestSubset(vValue, nTotalLower, nTargetValue + CENT, vfBest, nBest, 1000);
+
+  // If we have a bigger coin and (either the stochastic approximation didn't find a good solution,
+  //                                   or the next bigger coin is closer), return the bigger coin
+  if (coinLowestLarger.second.first &&
+      ((nBest != nTargetValue && nBest < nTargetValue + CENT) || coinLowestLarger.first <= nBest))
+  {
+    setCoinsRet.insert(coinLowestLarger.second);
+    nValueRet += coinLowestLarger.first;
+  }
+  else {
+    for (unsigned int i = 0; i < vValue.size(); i++)
+      if (vfBest[i])
+      {
+        setCoinsRet.insert(vValue[i].second);
+        nValueRet += vValue[i].first;
+      }
+
+/*
+    for (unsigned int i = 0; i < vValue.size(); i++)
+      if (vfBest[i])
+        fprintf(stderr, "DEBUG: select coins: %s ", FormatMoney(vValue[i].first).c_str());
+    fprintf(stderr, "DEBUG: select coins: total %s\n", FormatMoney(nBest).c_str());
+*/
+  }
+
+  return true;
 }
 
 bool CWallet::SelectCoins(int64 nTargetValue, set<pair<const CWalletTx*,unsigned int> >& setCoinsRet, int64& nValueRet) const
@@ -1157,6 +1222,125 @@ bool CWallet::SelectCoins(int64 nTargetValue, set<pair<const CWalletTx*,unsigned
             SelectCoinsMinConf(nTargetValue, 0, 1, vCoins, setCoinsRet, nValueRet));
 }
 
+static bool SelectCoins_Avg(int64 nTargetValue, vector<COutput> vCoins, set<pair<const CWalletTx*,unsigned int> >& setCoinsRet, int64& nValueRet)
+{
+  setCoinsRet.clear();
+  nValueRet = 0;
+
+#if 0
+  // List of values less than target
+  pair<int64, pair<const CWalletTx*,unsigned int> > coinLowestLarger;
+  coinLowestLarger.first = std::numeric_limits<int64>::max();
+  coinLowestLarger.second.first = NULL;
+#endif
+  vector<pair<int64, pair<const CWalletTx*,unsigned int> > > vValue;
+  int64 nTotalLower = 0;
+#if 0
+  random_shuffle(vCoins.begin(), vCoins.end(), GetRandInt);
+#endif
+
+  int low_cnt = 0;
+  int64 low_tot = 0;
+  int64 max_val = 0;
+  int64 avg_val = nTargetValue;
+  BOOST_FOREACH(COutput output, vCoins) {
+    const CWalletTx *pcoin = output.tx;
+    int i = output.i;
+    int64 n = pcoin->vout[i].nValue;
+
+    if (n == nTargetValue)
+    {
+      /* found an exact value */
+      setCoinsRet.insert(make_pair(pcoin, i));
+      nValueRet += n;
+      return true;
+    }
+
+    if (n > nTargetValue) {
+      if (max_val == 0)
+        max_val = n;
+      else
+        max_val = MIN(max_val, n);
+    } else {
+      low_tot += n;
+      low_cnt++;
+    }
+  }
+  if (low_cnt)
+    avg_val = (low_tot / low_cnt);
+  avg_val = MIN(avg_val, nTargetValue / 4);
+
+fprintf(stderr, "DEBUG: avg_val %f\n", (double)avg_val/(double)COIN);
+fprintf(stderr, "DEBUG: max_val %f\n", (double)max_val/(double)COIN);
+
+  int64 nTotalValue = 0;
+
+  BOOST_FOREACH(COutput output, vCoins) {
+    const CWalletTx *pcoin = output.tx;
+    int i = output.i;
+    int64 n = pcoin->vout[i].nValue;
+
+    if (max_val != 0 && n > max_val) {
+fprintf(stderr, "DEBUG: skipping (too high) nCredit %f\n", (double)n/(double)COIN);
+      continue; /* beyond what is needed */
+    }
+
+    if ((nTotalValue - CENT) > nTargetValue && n < avg_val) {
+fprintf(stderr, "DEBUG: skipping (too low) nCredit %f\n", (double)n/(double)COIN);
+      continue; /* skip relative lower values */ 
+    }
+
+    nTotalValue += n;
+
+    pair<int64,pair<const CWalletTx*,unsigned int> > coin = make_pair(n,make_pair(pcoin, i));
+    vValue.push_back(coin);
+  }
+
+  sort(vValue.rbegin(), vValue.rend(), CompareValueOnly());
+
+  nValueRet = 0;
+  int idx;
+  for (idx = 0; idx < vValue.size(); idx++) {
+    int64 nCredit = vValue[idx].first;
+//    pair<const CWalletTx*,unsigned int>& val = vValue[idx].second;
+//    const CWalletTx *wtx = val.first;
+//    int nOut = val.second;
+
+
+fprintf(stderr, "DEBUG: SelectCoins_Avg: index %d, nCredit %f, nValueRet %f\n", idx, (double)nCredit/(double)COIN, (double)nValueRet/(double)COIN);
+    nTotalValue -= nCredit;
+    if (nCredit > avg_val && 
+        nTotalValue > (nTargetValue - nValueRet)) {
+      fprintf(stderr, "DEBUG: skipping (excess) nCredit %f\n", (double)nCredit/(double)COIN);
+      continue; /* remainder will be sufficient */
+    }
+
+    setCoinsRet.insert(vValue[idx].second);
+    nValueRet += nCredit;
+
+    if (nValueRet >= nTargetValue)
+      break;
+  }
+
+  /* insufficient funds */
+  if (nValueRet < nTargetValue)
+    return (false); 
+
+  return true;
+}
+
+bool CWallet::SelectAccountCoins(string strAccount, int64 nTargetValue, set<pair<const CWalletTx*,unsigned int> >& setCoinsRet, int64& nValueRet) const
+{
+  vector<COutput> vCoins;
+  AvailableAccountCoins(strAccount, vCoins);
+
+  return (SelectCoins_Avg(nTargetValue, vCoins, setCoinsRet, nValueRet));  
+#if 0
+    return (SelectCoinsMinConf(nTargetValue, 1, 6, vCoins, setCoinsRet, nValueRet) ||
+            SelectCoinsMinConf(nTargetValue, 1, 1, vCoins, setCoinsRet, nValueRet) ||
+            SelectCoinsMinConf(nTargetValue, 0, 1, vCoins, setCoinsRet, nValueRet));
+#endif
+}
 
 
 #if 0
@@ -1386,6 +1570,56 @@ string CWallet::SendMoneyToDestination(const CTxDestination& address, int64 nVal
 
     return SendMoney(scriptPubKey, nValue, wtxNew, fAskFee);
 }
+
+
+string CWallet::SendMoney(string strFromAccount, CScript scriptPubKey, int64 nValue, CWalletTx& wtxNew, bool fAskFee)
+{
+    CReserveKey reservekey(this);
+    int64 nFeeRequired;
+
+    if (IsLocked())
+    {
+        string strError = _("Error: Wallet locked, unable to create transaction  ");
+        printf("SendMoney() : %s", strError.c_str());
+        return strError;
+    }
+    if (!CreateAccountTransaction(strFromAccount, scriptPubKey, nValue, wtxNew, nFeeRequired))
+    {
+        string strError;
+        if (nValue + nFeeRequired > GetBalance())
+            strError = strprintf(_("Error: This transaction requires a transaction fee of at least %s because of its amount, complexity, or use of recently received funds  "), FormatMoney(nFeeRequired).c_str());
+        else
+            strError = _("Error: Transaction creation failed  ");
+        printf("SendMoney() : %s", strError.c_str());
+        return strError;
+    }
+
+    if (fAskFee)
+        return "ABORTED";
+
+    if (!CommitTransaction(wtxNew, reservekey))
+        return _("Error: The transaction was rejected.  This might happen if some of the coins in your wallet were already spent, such as if you used a copy of wallet.dat and coins were spent in the copy but not marked as spent here.");
+
+    return "";
+}
+
+
+
+string CWallet::SendMoney(string strFromAccount, const CTxDestination& address, int64 nValue, CWalletTx& wtxNew, bool fAskFee)
+{
+    // Check amount
+    if (nValue <= 0)
+        return _("Invalid amount");
+    if (nValue + nTransactionFee > GetBalance())
+        return _("Insufficient funds");
+
+    // Parse Bitcoin address
+    CScript scriptPubKey;
+    scriptPubKey.SetDestination(address);
+
+    return SendMoney(strFromAccount, scriptPubKey, nValue, wtxNew, fAskFee);
+}
+
 
 
 
@@ -1990,19 +2224,20 @@ CCoinAddr GetAccountAddress(CWallet *wallet, string strAccount, bool bForceNew)
 
 bool CWallet::GetMergedPubKey(string strAccount, const char *tag, CPubKey& pubkey)
 {
-  bool bForceNew = true;
   CWalletDB walletdb(strWalletFile);
   CAccount account;
   CKey pkey;
   CKey key;
-  bool bKeyUsed = false;
+  bool fUpdate = false;
 
-  if (!walletdb.ReadAccount(strAccount, account)) {
-    return error(SHERR_NOENT, "CWallet::GetMergedAddress: unknown account '%s'.", strAccount.c_str());
-  }
+  walletdb.ReadAccount(strAccount, account);
 
   if (!account.vchPubKey.IsValid()) {
-    return error(SHERR_INVAL, "CWallet::GetMergedAddress: account '%s' has no primary address.", strAccount.c_str());
+    if (!GetKeyFromPool(account.vchPubKey, false))
+      return false;
+
+    SetAddressBookName(account.vchPubKey.GetID(), strAccount);
+    fUpdate = true;
   }
 
   if (!GetKey(account.vchPubKey.GetID(), pkey)) {
@@ -2023,8 +2258,10 @@ bool CWallet::GetMergedPubKey(string strAccount, const char *tag, CPubKey& pubke
     }
 
     SetAddressBookName(pubkey.GetID(), strAccount);
-    walletdb.WriteAccount(strAccount, account);
   }
+
+  if (fUpdate)
+    walletdb.WriteAccount(strAccount, account);
 
   return (true);
 }
@@ -2865,4 +3102,5 @@ fprintf(stderr, "DEBUG: core_UnacceptWalletTransaction: pushed '%s' into pool.\n
 
   return (true);
 }
+
 

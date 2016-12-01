@@ -574,3 +574,138 @@ int64 EMC2Wallet::GetBlockValue(int nHeight, int64 nFees)
 {
   return (emc2_GetBlockValue(nHeight, nFees));
 }
+
+bool EMC2Wallet::CreateAccountTransaction(string strFromAccount, const vector<pair<CScript, int64> >& vecSend, CWalletTx& wtxNew, int64& nFeeRet)
+{
+  CIface *iface = GetCoinByIndex(EMC2_COIN_IFACE);
+
+  wtxNew.strFromAccount = strFromAccount;
+
+  int64 nValue = 0;
+  BOOST_FOREACH (const PAIRTYPE(CScript, int64)& s, vecSend)
+  {
+    if (nValue < 0)
+      return false;
+    nValue += s.second;
+  }
+  if (vecSend.empty() || nValue < 0)
+    return false;
+
+  wtxNew.BindWallet(this);
+
+  {
+    LOCK2(cs_main, cs_wallet);
+    // txdb must be opened before the mapWallet lock
+    EMC2TxDB txdb;
+    {
+      nFeeRet = nTransactionFee;
+      loop
+      {
+        wtxNew.vin.clear();
+        wtxNew.vout.clear();
+        wtxNew.fFromMe = true;
+
+        int64 nTotalValue = nValue + nFeeRet;
+        double dPriority = 0;
+        // vouts to the payees
+        BOOST_FOREACH (const PAIRTYPE(CScript, int64)& s, vecSend)
+          wtxNew.vout.push_back(CTxOut(s.second, s.first));
+
+        // Choose coins to use
+        set<pair<const CWalletTx*,unsigned int> > setCoins;
+        int64 nValueIn = 0;
+        if (!SelectAccountCoins(strFromAccount, nTotalValue, setCoins, nValueIn))
+          return false;
+        BOOST_FOREACH(PAIRTYPE(const CWalletTx*, unsigned int) pcoin, setCoins)
+        {
+          int64 nCredit = pcoin.first->vout[pcoin.second].nValue;
+          dPriority += (double)nCredit * pcoin.first->GetDepthInMainChain(ifaceIndex);
+        }
+
+        int64 nChange = nValueIn - nValue - nFeeRet;
+        // if sub-cent change is required, the fee must be raised to at least EMC2_MIN_TX_FEE
+        // or until nChange becomes zero
+        // NOTE: this depends on the exact behaviour of GetMinFee
+        if (nFeeRet < EMC2_MIN_TX_FEE && nChange > 0 && nChange < CENT)
+        {
+          int64 nMoveToFee = min(nChange, EMC2_MIN_TX_FEE - nFeeRet);
+          nChange -= nMoveToFee;
+          nFeeRet += nMoveToFee;
+        }
+
+        if (nChange > 0)
+        {
+
+          CPubKey vchPubKey;
+          if (nChange > CENT &&
+              wtxNew.strFromAccount.length() != 0 &&
+              GetMergedPubKey(wtxNew.strFromAccount, "change", vchPubKey)) {
+            /* Use a consistent change address based on primary address. */
+            //  reservekey.ReturnKey();
+          } else {
+            /* Revert to using a quasi-standard 'ghost' address. */
+            CReserveKey reservekey(this);
+            vchPubKey = reservekey.GetReservedKey();
+            reservekey.KeepKey();
+          }
+
+          CScript scriptChange;
+          scriptChange.SetDestination(vchPubKey.GetID());
+
+          // Insert change txn at random position:
+          vector<CTxOut>::iterator position = wtxNew.vout.begin()+GetRandInt(wtxNew.vout.size());
+          wtxNew.vout.insert(position, CTxOut(nChange, scriptChange));
+
+#if 0
+        } else {
+          reservekey.ReturnKey();
+#endif
+        }
+
+        // Fill vin
+        BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setCoins)
+          wtxNew.vin.push_back(CTxIn(coin.first->GetHash(),coin.second));
+
+        // Sign
+        int nIn = 0;
+        BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setCoins)
+          if (!SignSignature(*this, *coin.first, wtxNew, nIn++)) {
+            txdb.Close();
+            return false;
+          }
+
+        // Limit size
+        unsigned int nBytes = ::GetSerializeSize(*(CTransaction*)&wtxNew, SER_NETWORK, EMC2_PROTOCOL_VERSION);
+        if (nBytes >= MAX_BLOCK_SIZE_GEN(iface)/5) {
+          txdb.Close();
+          return false;
+        }
+        dPriority /= nBytes;
+
+        // Check that enough fee is included
+        int64 nPayFee = nTransactionFee * (1 + (int64)nBytes / 1000);
+        bool fAllowFree = CTransaction::AllowFree(dPriority);
+        int64 nMinFee = wtxNew.GetMinFee(EMC2_COIN_IFACE, 1, fAllowFree, GMF_SEND);
+        if (nFeeRet < max(nPayFee, nMinFee))
+        {
+          nFeeRet = max(nPayFee, nMinFee);
+          continue;
+        }
+
+        // Fill vtxPrev by copying from previous transactions vtxPrev
+        wtxNew.AddSupportingTransactions(txdb);
+        wtxNew.fTimeReceivedIsTxTime = true;
+
+        break;
+      }
+    }
+    txdb.Close();
+  }
+  return true;
+}
+bool EMC2Wallet::CreateAccountTransaction(string strFromAccount, CScript scriptPubKey, int64 nValue, CWalletTx& wtxNew, int64& nFeeRet)
+{
+  vector< pair<CScript, int64> > vecSend;
+  vecSend.push_back(make_pair(scriptPubKey, nValue));
+  return CreateAccountTransaction(strFromAccount, vecSend, wtxNew, nFeeRet);
+}
