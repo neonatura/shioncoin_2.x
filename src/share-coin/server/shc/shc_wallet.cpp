@@ -575,7 +575,7 @@ bool SHCWallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend, 
   return true;
 }
 
-bool SHCWallet::CreateAccountTransaction(string strFromAccount, const vector<pair<CScript, int64> >& vecSend, CWalletTx& wtxNew, int64& nFeeRet)
+bool SHCWallet::CreateAccountTransaction(string strFromAccount, const vector<pair<CScript, int64> >& vecSend, CWalletTx& wtxNew, int64& nFeeRet) // , string& strError)
 {
   CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);
 

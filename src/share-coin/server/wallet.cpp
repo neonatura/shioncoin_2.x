@@ -508,8 +508,9 @@ bool CWallet::AddToWalletIfInvolvingMe(const CTransaction& tx, const CBlock* pbl
       }
       return AddToWallet(wtx);
     }
-    else
+    else {
       WalletUpdateSpent(tx);
+    }
   }
   return false;
 }
@@ -1024,6 +1025,18 @@ void CWallet::AvailableAccountCoins(string strAccount, vector<COutput>& vCoins, 
     vDest.push_back(item.first);
   }
 
+#if 0
+  {
+    std::set<CKeyID> keys;
+    GetKeys(keys);
+    BOOST_FOREACH(const CKeyID& key, keys) {
+      if (mapAddressBook.count(key) == 0) { /* loner */
+        vDest.push_back(key);
+      }
+    }
+  }
+#endif
+
   {
     LOCK(cs_wallet);
     for (map<uint256, CWalletTx>::const_iterator it = mapWallet.begin(); it != mapWallet.end(); ++it)
@@ -1058,6 +1071,7 @@ void CWallet::AvailableAccountCoins(string strAccount, vector<COutput>& vCoins, 
           continue;
 
         if (IsChange(pcoin->vout[i])) {
+fprintf(stderr, "DEBUG: AvailableAccountCoins: found change from \"%s\".\n", pcoin->strFromAccount.c_str());  
           if (pcoin->strFromAccount == strAccount) {
             vCoins.push_back(COutput(pcoin, i, pcoin->GetDepthInMainChain(ifaceIndex)));
           }
@@ -1235,9 +1249,8 @@ static bool SelectCoins_Avg(int64 nTargetValue, vector<COutput> vCoins, set<pair
 #endif
   vector<pair<int64, pair<const CWalletTx*,unsigned int> > > vValue;
   int64 nTotalLower = 0;
-#if 0
+
   random_shuffle(vCoins.begin(), vCoins.end(), GetRandInt);
-#endif
 
   int low_cnt = 0;
   int64 low_tot = 0;
@@ -1583,15 +1596,27 @@ string CWallet::SendMoney(string strFromAccount, CScript scriptPubKey, int64 nVa
         printf("SendMoney() : %s", strError.c_str());
         return strError;
     }
+
+    int nMinDepth = 1;
+    int64 nBalance = GetAccountBalance(ifaceIndex, strFromAccount, nMinDepth);
+
     if (!CreateAccountTransaction(strFromAccount, scriptPubKey, nValue, wtxNew, nFeeRequired))
     {
         string strError;
-        if (nValue + nFeeRequired > GetBalance())
+        if (//nValue + nFeeRequired > GetBalance() ||
+            nValue + nFeeRequired > nBalance) {
             strError = strprintf(_("Error: This transaction requires a transaction fee of at least %s because of its amount, complexity, or use of recently received funds  "), FormatMoney(nFeeRequired).c_str());
-        else
+        } else {
             strError = _("Error: Transaction creation failed  ");
-        printf("SendMoney() : %s", strError.c_str());
+        }
+        fprintf(stderr, "DEBUG: SendMoney: %s", strError.c_str());
         return strError;
+    }
+
+    if ((nValue + nFeeRequired) > nBalance) {
+      string strError;
+      strError = strprintf(_("Account \"%s\" has insufficient funds to initiate transaction [fee %f, balance %f]."), strFromAccount.c_str(), ((double)nFeeRequired/(double)COIN), ((double)nBalance/(double)COIN));
+      return (strError);
     }
 
     if (fAskFee)
@@ -1955,6 +1980,23 @@ int64 GetAccountBalance(int ifaceIndex, CWalletDB& walletdb, const string& strAc
   CWallet *pwalletMain = GetWallet(ifaceIndex);
   int64 nBalance = 0;
 
+  vector <COutput> vCoins;
+  pwalletMain->AvailableAccountCoins(strAccount, vCoins, nMinDepth == 0 ? false : true);
+  BOOST_FOREACH(const COutput& out, vCoins) {
+    nBalance += out.tx->vout[out.i].nValue;
+  }
+
+  /* internal accounting entries */
+  nBalance += walletdb.GetAccountCreditDebit(strAccount);
+
+  return nBalance;
+}
+#if 0
+int64 GetAccountBalance(int ifaceIndex, CWalletDB& walletdb, const string& strAccount, int nMinDepth)
+{
+  CWallet *pwalletMain = GetWallet(ifaceIndex);
+  int64 nBalance = 0;
+
   /* wallet transactions */
   for (map<uint256, CWalletTx>::iterator it = pwalletMain->mapWallet.begin(); it != pwalletMain->mapWallet.end(); ++it)
   {
@@ -1980,6 +2022,7 @@ int64 GetAccountBalance(int ifaceIndex, CWalletDB& walletdb, const string& strAc
 
   return nBalance;
 }
+#endif
 
 int64 GetAccountBalance(int ifaceIndex, const string& strAccount, int nMinDepth)
 {
