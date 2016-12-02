@@ -1597,10 +1597,11 @@ string CWallet::SendMoney(string strFromAccount, CScript scriptPubKey, int64 nVa
         return strError;
     }
 
+    string strError;
     int nMinDepth = 1;
     int64 nBalance = GetAccountBalance(ifaceIndex, strFromAccount, nMinDepth);
 
-    if (!CreateAccountTransaction(strFromAccount, scriptPubKey, nValue, wtxNew, nFeeRequired))
+    if (!CreateAccountTransaction(strFromAccount, scriptPubKey, nValue, wtxNew, strError, nFeeRequired))
     {
         string strError;
         if (//nValue + nFeeRequired > GetBalance() ||

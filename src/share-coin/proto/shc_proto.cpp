@@ -56,9 +56,18 @@ static int shc_init(CIface *iface, void *_unused_)
   SetWallet(SHC_COIN_IFACE, shcWallet);
 
 
-  if (!shc_InitBlockIndex()) {
-    error(SHERR_INVAL, "shc_proto: unable to initialize block index table.");
-    return (SHERR_INVAL);
+  if (!opt_bool(OPT_SHC_BACKUP_RESTORE)) {
+    /* normal startup */
+    if (!shc_InitBlockIndex()) {
+      error(SHERR_INVAL, "shc_proto: unable to initialize block index table.");
+      return (SHERR_INVAL);
+    }
+  } else {
+    /* over-write block-chain with pre-existing backup records */
+    if (!shc_RestoreBlockIndex()) {
+      error(SHERR_INVAL, "shc_proto: unable to initialize block index table.");
+      return (SHERR_INVAL);
+    }
   }
 
   if (!shc_LoadWallet()) {

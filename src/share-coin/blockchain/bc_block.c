@@ -392,7 +392,7 @@ static int _bc_read(bc_t *bc, int pos, void *data, bcsize_t data_len)
 
   if (shcrc32(map->raw + idx.of, idx.size) != idx.crc) {
     sprintf(errbuf, "bc_read: error: invalid crc {map: %x, idx: %x} mismatch at pos %d\n", shcrc32(map->raw + idx.of, idx.size), idx.crc, pos);
-    shcoind_log(errbuf);
+    shcoind_err(SHERR_ILSEQ, "bc_read", errbuf);
     return (SHERR_ILSEQ);
   }
 

@@ -85,6 +85,9 @@ static bool IsChainFile(std::string strFile)
 
 bool shc_InitBlockIndex();
 
+bool shc_RestoreBlockIndex();
+
+
 /**
  * @}
  */

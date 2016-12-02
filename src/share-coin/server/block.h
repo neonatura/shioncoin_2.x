@@ -1667,6 +1667,9 @@ bool core_CommitBlock(CTxDB& txdb, CBlock *pblock, CBlockIndex *pindexNew);
 
 bool core_CommitBlock(CBlock *pblock, CBlockIndex *pindexNew);
 
+int BackupBlockChain(CIface *iface, unsigned int maxHeight);
+
+
 
 #endif /* ndef __SERVER_BLOCK_H__ */
 

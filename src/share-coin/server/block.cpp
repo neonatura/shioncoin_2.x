@@ -3261,3 +3261,57 @@ fin:
 }
 
 
+
+int BackupBlockChain(CIface *iface, unsigned int maxHeight)
+{ 
+  bc_t *bc;
+  char path[PATH_MAX+1];
+  unsigned int height;
+  unsigned int ten_per;
+  int err;
+  
+  sprintf(path, "%s/backup/", bc_path_base());
+  mkdir(path, 0777);
+
+  sprintf(path, "backup/%s_block", iface->name);
+  err = bc_open(path, &bc);
+  if (err)
+    return (err);
+
+  height = bc_idx_next(bc);
+  ten_per = (maxHeight / 10); /* ten percent of max */
+  maxHeight = MIN(maxHeight - ten_per, height + ten_per);
+  for (height = 1; height < maxHeight; height++) {
+    CBlock *block = GetBlockByHeight(iface, height);
+    if (!block) {
+fprintf(stderr, "DEBUG: BackupBlockChain: unknown height %d\n", (int)height);
+      break;
+    }
+
+    CDataStream sBlock(SER_DISK, CLIENT_VERSION);
+    uint256 hash = block->GetHash();
+    char *sBlockData;
+    long sBlockLen;
+
+    sBlock << *block;
+    delete block;
+
+    sBlockLen = sBlock.size();
+    sBlockData = (char *)calloc(sBlockLen, sizeof(char));
+    if (!sBlockData)
+      return error(SHERR_NOMEM, "allocating %d bytes for block data\n", (int)sBlockLen);
+    sBlock.read(sBlockData, sBlockLen);
+
+    err = bc_write(bc, height, hash.GetRaw(), sBlockData, sBlockLen);
+    free(sBlockData);
+    if (err) {
+fprintf(stderr, "DEBUG: BackupBlockChain: bc_write err %d\n", err); 
+      break;
+    }
+  }
+  
+  bc_close(bc);
+  
+  return (0);
+}   
+

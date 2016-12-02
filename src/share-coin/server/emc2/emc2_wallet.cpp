@@ -575,7 +575,7 @@ int64 EMC2Wallet::GetBlockValue(int nHeight, int64 nFees)
   return (emc2_GetBlockValue(nHeight, nFees));
 }
 
-bool EMC2Wallet::CreateAccountTransaction(string strFromAccount, const vector<pair<CScript, int64> >& vecSend, CWalletTx& wtxNew, int64& nFeeRet)
+bool EMC2Wallet::CreateAccountTransaction(string strFromAccount, const vector<pair<CScript, int64> >& vecSend, CWalletTx& wtxNew, string& strError, int64& nFeeRet)
 {
   CIface *iface = GetCoinByIndex(EMC2_COIN_IFACE);
 
@@ -703,9 +703,9 @@ bool EMC2Wallet::CreateAccountTransaction(string strFromAccount, const vector<pa
   }
   return true;
 }
-bool EMC2Wallet::CreateAccountTransaction(string strFromAccount, CScript scriptPubKey, int64 nValue, CWalletTx& wtxNew, int64& nFeeRet)
+bool EMC2Wallet::CreateAccountTransaction(string strFromAccount, CScript scriptPubKey, int64 nValue, CWalletTx& wtxNew, string& strError, int64& nFeeRet)
 {
   vector< pair<CScript, int64> > vecSend;
   vecSend.push_back(make_pair(scriptPubKey, nValue));
-  return CreateAccountTransaction(strFromAccount, vecSend, wtxNew, nFeeRet);
+  return CreateAccountTransaction(strFromAccount, vecSend, wtxNew, strError, nFeeRet);
 }

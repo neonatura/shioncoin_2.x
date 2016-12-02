@@ -580,7 +580,7 @@ int64 TESTWallet::GetBlockValue(int nHeight, int64 nFees)
   return (test_GetBlockValue(nHeight, nFees));
 }
 
-bool TESTWallet::CreateAccountTransaction(string strFromAccount, const vector<pair<CScript, int64> >& vecSend, CWalletTx& wtxNew, int64& nFeeRet)
+bool TESTWallet::CreateAccountTransaction(string strFromAccount, const vector<pair<CScript, int64> >& vecSend, CWalletTx& wtxNew, string& strError, int64& nFeeRet)
 {
   CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
 
@@ -708,9 +708,9 @@ bool TESTWallet::CreateAccountTransaction(string strFromAccount, const vector<pa
   }
   return true;
 }
-bool TESTWallet::CreateAccountTransaction(string strFromAccount, CScript scriptPubKey, int64 nValue, CWalletTx& wtxNew, int64& nFeeRet)
+bool TESTWallet::CreateAccountTransaction(string strFromAccount, CScript scriptPubKey, int64 nValue, CWalletTx& wtxNew, string& strError, int64& nFeeRet)
 {
   vector< pair<CScript, int64> > vecSend;
   vecSend.push_back(make_pair(scriptPubKey, nValue));
-  return CreateAccountTransaction(strFromAccount, vecSend, wtxNew, nFeeRet);
+  return CreateAccountTransaction(strFromAccount, vecSend, wtxNew, strError, nFeeRet);
 }

@@ -288,18 +288,7 @@ bool SHCTxDB::LoadBlockIndex()
   // Load bnBestInvalidWork, OK if it doesn't exist
   ReadBestInvalidWork(SHCBlock::bnBestInvalidWork);
 
-#if 0
-  // Verify blocks in the best chain
-  int nCheckLevel = GetArg("-checklevel", 1);
-  int nCheckDepth = GetArg( "-checkblocks", 10000);
-  if (nCheckDepth == 0)
-    nCheckDepth = 1000000000; // suffices until the year 19000
-  if (nCheckDepth > GetBestHeight(SHC_COIN_IFACE))
-    nCheckDepth = GetBestHeight(SHC_COIN_IFACE);
-  printf("Verifying last %i blocks at level %i\n", nCheckDepth, nCheckLevel);
-#endif
-
-  int nCheckDepth = (GetBestHeight(SHC_COIN_IFACE) / 100) + 2500;
+  int nCheckDepth = (GetBestHeight(SHC_COIN_IFACE) / 100) + 10240;
   int total = 0;
   int invalid = 0;
   int maxHeight = 0;
@@ -353,6 +342,10 @@ bool SHCTxDB::LoadBlockIndex()
 
   CWallet *wallet = GetWallet(SHC_COIN_IFACE);
   InitServiceWalletEvent(wallet, checkHeight);
+
+#if 0
+  BackupBlockChain(iface, maxHeight); 
+#endif
 
   /* Block-chain Validation Matrix */
   std::reverse(vMatrix.begin(), vMatrix.end());
@@ -547,6 +540,75 @@ bool shc_InitBlockIndex()
     return (false);
 
   if (!shc_CreateGenesisBlock())
+    return (false);
+
+  return (true);
+}
+
+bool shc_RestoreBlockIndex()
+{
+  CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);
+  bc_t *bc;
+  char path[PATH_MAX+1];
+  unsigned char *sBlockData;
+  size_t sBlockLen;
+  unsigned int maxHeight;
+  bcsize_t height;
+  int err;
+  bool ret;
+
+  {
+    CWallet *wallet = GetWallet(iface);
+    if (wallet) {
+fprintf(stderr, "DEBUG: shc_RestoreBlockIndex: erasing %d wallet transactions.\n", wallet->mapWallet.size());
+      wallet->mapWallet.clear(); 
+    }
+  }
+  {
+    /* wipe old block-chain index  */
+    bc_t *chain = GetBlockChain(iface);
+    if (chain) {
+fprintf(stderr, "DEBUG: shc_RestoreBlockIndex: erased current block-chain index (%u bytes).\n", (unsigned int)chain->idx_map.hdr->of);
+      chain->idx_map.hdr->of = 0;
+    }
+  }
+
+  if (!shc_CreateGenesisBlock())
+    return (false);
+
+  {
+
+    sprintf(path, "backup/%s_block", iface->name);
+    err = bc_open(path, &bc);
+    if (err)
+      return error(err, "shc_RestoreBlockIndex: error opening backup block-chain.");
+
+    maxHeight = bc_idx_next(bc);
+    for (height = 1; height < maxHeight; height++) {
+      err = bc_get(bc, height, &sBlockData, &sBlockLen);
+      if (err)
+        break;
+
+      CDataStream sBlock(SER_DISK, CLIENT_VERSION);
+      sBlock.write((const char *)sBlockData, sBlockLen);
+      free(sBlockData);
+
+      /* serialize binary data into block */
+      SHCBlock block;
+      sBlock >> block;
+
+      if (!block.WriteBlock(height))
+        break;
+    }
+fprintf(stderr, "DEBUG: shc_RestoreBlocKIndex: wrote %d blocks\n", height);
+
+    bc_close(bc);
+  }
+
+  SHCTxDB txdb("cr");
+  ret = txdb.LoadBlockIndex();
+  txdb.Close();
+  if (!ret)
     return (false);
 
   return (true);

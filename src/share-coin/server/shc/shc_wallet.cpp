@@ -575,7 +575,7 @@ bool SHCWallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend, 
   return true;
 }
 
-bool SHCWallet::CreateAccountTransaction(string strFromAccount, const vector<pair<CScript, int64> >& vecSend, CWalletTx& wtxNew, int64& nFeeRet) // , string& strError)
+bool SHCWallet::CreateAccountTransaction(string strFromAccount, const vector<pair<CScript, int64> >& vecSend, CWalletTx& wtxNew, string& strError, int64& nFeeRet)
 {
   CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);
 
@@ -704,11 +704,11 @@ bool SHCWallet::CreateAccountTransaction(string strFromAccount, const vector<pai
   }
   return true;
 }
-bool SHCWallet::CreateAccountTransaction(string strFromAccount, CScript scriptPubKey, int64 nValue, CWalletTx& wtxNew, int64& nFeeRet)
+bool SHCWallet::CreateAccountTransaction(string strFromAccount, CScript scriptPubKey, int64 nValue, CWalletTx& wtxNew, string& strError, int64& nFeeRet)
 {
   vector< pair<CScript, int64> > vecSend;
   vecSend.push_back(make_pair(scriptPubKey, nValue));
-  return CreateAccountTransaction(strFromAccount, vecSend, wtxNew, nFeeRet);
+  return CreateAccountTransaction(strFromAccount, vecSend, wtxNew, strError, nFeeRet);
 }
 
 bool SHCWallet::CreateTransaction(CScript scriptPubKey, int64 nValue, CWalletTx& wtxNew, CReserveKey& reservekey, int64& nFeeRet)

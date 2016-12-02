@@ -105,6 +105,8 @@ static bool IsChainFile(std::string strFile)
 
 bool emc2_InitBlockIndex();
 
+bool emc2_RestoreBlockIndex();
+
 
 
 #endif /** __EMC2__EMC2_TXIDX_H__ */

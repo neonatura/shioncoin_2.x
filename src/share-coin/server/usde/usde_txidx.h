@@ -81,4 +81,6 @@ static bool IsChainFile(std::string strFile)
 
 bool usde_InitBlockIndex();
 
+bool usde_RestoreBlockIndex();
+
 #endif /* ndef __USDE_TXIDX_H__ */

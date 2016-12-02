@@ -486,18 +486,7 @@ bool EMC2TxDB::LoadBlockIndex()
   // Load bnBestInvalidWork, OK if it doesn't exist
   ReadBestInvalidWork(EMC2Block::bnBestInvalidWork);
 
-#if 0
-  // Verify blocks in the best chain
-  int nCheckLevel = GetArg("-checklevel", 1);
-  int nCheckDepth = GetArg( "-checkblocks", 10000);
-  if (nCheckDepth == 0)
-    nCheckDepth = 1000000000; // suffices until the year 19000
-  if (nCheckDepth > GetBestHeight(EMC2_COIN_IFACE))
-    nCheckDepth = GetBestHeight(EMC2_COIN_IFACE);
-  printf("Verifying last %i blocks at level %i\n", nCheckDepth, nCheckLevel);
-#endif
-
-  int nCheckDepth = (GetBestHeight(EMC2_COIN_IFACE) / 100) + 2500;
+  int nCheckDepth = (GetBestHeight(EMC2_COIN_IFACE) / 100) + 10240;
   int total = 0;
   int invalid = 0;
   int maxHeight = 0;

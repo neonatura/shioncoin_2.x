@@ -178,6 +178,14 @@ int main(int argc, char *argv[])
         if (isdigit(argv[i][0]))
           opt_num_set(OPT_BAN_THRESHOLD, MAX(1, atoi(argv[i])));
       }
+    } else if (0 == strcmp(argv[i], "--restore-shc")) {
+      opt_bool_set(OPT_SHC_BACKUP_RESTORE, TRUE);
+    } else if (0 == strcmp(argv[i], "--restore-usde")) {
+      opt_bool_set(OPT_USDE_BACKUP_RESTORE, TRUE);
+    } else if (0 == strcmp(argv[i], "--restore-emc2")) {
+      opt_bool_set(OPT_EMC2_BACKUP_RESTORE, TRUE);
+
+    
 #if 0
     } else if (0 == strcmp(argv[i], "--rescan")) {
       SoftSetBoolArg("-rescan", true);

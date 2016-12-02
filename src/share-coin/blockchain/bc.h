@@ -80,6 +80,7 @@ typedef struct bc_map_t
 typedef struct bc_t
 {
   char name[BC_MAX_NAME_LENGTH];
+  shkey_t data_key;
   bc_map_t idx_map;
   bc_map_t arch_map;
   bc_map_t *data_map;

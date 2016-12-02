@@ -1863,8 +1863,15 @@ FILE *fl;
         CSecret secret = vchSecret.GetSecret(fCompressed);
         key.SetSecret(secret, fCompressed);
         CKeyID vchAddress = key.GetPubKey().GetID();
+
+
         {
           LOCK2(cs_main, pwalletMain->cs_wallet);
+
+          if (pwalletMain->HaveKey(vchAddress)) {
+            /* pubkey has already been assigned to an account. */
+            continue;
+          }
 
           if (!pwalletMain->AddKey(key)) {
             //JSONRPCError(-4,"Error adding key to wallet"); 

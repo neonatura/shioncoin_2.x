@@ -566,7 +566,7 @@ int64 USDEWallet::GetBlockValue(int nHeight, int64 nFees)
   return (usde_GetBlockValue(nHeight, nFees));
 }
 
-bool USDEWallet::CreateAccountTransaction(string strFromAccount, const vector<pair<CScript, int64> >& vecSend, CWalletTx& wtxNew, int64& nFeeRet)
+bool USDEWallet::CreateAccountTransaction(string strFromAccount, const vector<pair<CScript, int64> >& vecSend, CWalletTx& wtxNew, string& strError, int64& nFeeRet)
 {
   CIface *iface = GetCoinByIndex(USDE_COIN_IFACE);
 
@@ -694,9 +694,9 @@ bool USDEWallet::CreateAccountTransaction(string strFromAccount, const vector<pa
   }
   return true;
 }
-bool USDEWallet::CreateAccountTransaction(string strFromAccount, CScript scriptPubKey, int64 nValue, CWalletTx& wtxNew, int64& nFeeRet)
+bool USDEWallet::CreateAccountTransaction(string strFromAccount, CScript scriptPubKey, int64 nValue, CWalletTx& wtxNew, string& strError, int64& nFeeRet)
 {
   vector< pair<CScript, int64> > vecSend;
   vecSend.push_back(make_pair(scriptPubKey, nValue));
-  return CreateAccountTransaction(strFromAccount, vecSend, wtxNew, nFeeRet);
+  return CreateAccountTransaction(strFromAccount, vecSend, wtxNew, strError, nFeeRet);
 }
