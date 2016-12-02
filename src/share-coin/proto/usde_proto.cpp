@@ -64,9 +64,18 @@ static int usde_init(CIface *iface, void *_unused_)
   }
 #endif
 
-  if (!usde_InitBlockIndex()) {
-    fprintf(stderr, "error: usde_proto: unable to initialize block index table.\n");
-    return (SHERR_INVAL);
+  if (!opt_bool(OPT_USDE_BACKUP_RESTORE)) {
+    /* normal startup */
+    if (!usde_InitBlockIndex()) {
+      error(SHERR_INVAL, "usde_proto: unable to initialize block index table.");
+      return (SHERR_INVAL);
+    }
+  } else {
+    /* over-write block-chain with pre-existing backup records */
+    if (!usde_RestoreBlockIndex()) {
+      error(SHERR_INVAL, "usde_proto: unable to initialize block index table.");
+      return (SHERR_INVAL);
+    }
   }
 
   if (!usde_LoadWallet()) {

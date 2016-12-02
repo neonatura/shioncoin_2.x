@@ -484,3 +484,81 @@ bool usde_InitBlockIndex()
   return (true);
 }
 
+bool usde_RestoreBlockIndex()
+{
+  CIface *iface = GetCoinByIndex(USDE_COIN_IFACE);
+  bc_t *chain = GetBlockChain(iface);
+  bc_t *bc;
+  char path[PATH_MAX+1];
+  unsigned char *sBlockData;
+  size_t sBlockLen;
+  unsigned int maxHeight;
+  bcsize_t height;
+  int err;
+  bool ret;
+
+#if 0
+  {
+    CWallet *wallet = GetWallet(iface);
+    if (wallet) {
+fprintf(stderr, "DEBUG: usde_RestoreBlockIndex: erasing %d wallet transactions.\n", wallet->mapWallet.size());
+      wallet->mapWallet.clear(); 
+    }
+  }
+  {
+    /* wipe old block-chain index  */
+fprintf(stderr, "DEBUG: usde_RestoreBlockIndex: erased current block-chain index (%u bytes).\n", (unsigned int)chain->idx_map.hdr->of);
+    chain->idx_map.hdr->of = 0;
+  }
+#endif
+
+  if (!usde_CreateGenesisBlock())
+    return (false);
+
+  uint256 hash = usde_hashGenesisBlock;
+  {
+    sprintf(path, "backup/%s_block", iface->name);
+    err = bc_open(path, &bc);
+    if (err)
+      return error(err, "usde_RestoreBlockIndex: error opening backup block-chain.");
+
+    maxHeight = bc_idx_next(bc);
+    for (height = 1; height < maxHeight; height++) {
+      int n_height;
+
+      err = bc_get(bc, height, &sBlockData, &sBlockLen);
+      if (err)
+        break;
+
+      /* serialize binary data into block */
+      CDataStream sBlock(SER_DISK, CLIENT_VERSION);
+      sBlock.write((const char *)sBlockData, sBlockLen);
+      USDEBlock block;
+      sBlock >> block;
+      hash = block.GetHash();
+
+      err = bc_write(chain, height, hash.GetRaw(), sBlockData, sBlockLen);
+      if (err < 0)
+        return error(SHERR_INVAL, "block-chain write: %s", sherrstr(n_height));
+      free(sBlockData);
+
+      /* write tx ref's */
+      BOOST_FOREACH(CTransaction& tx, block.vtx) {
+        tx.WriteTx(USDE_COIN_IFACE, height);
+      }
+
+    }
+fprintf(stderr, "DEBUG: usde_RestoreBlocKIndex: wrote %d blocks\n", height);
+
+    bc_close(bc);
+  }
+
+  USDETxDB txdb;
+  txdb.WriteHashBestChain(hash);
+  ret = txdb.LoadBlockIndex();
+  txdb.Close();
+  if (!ret)
+    return (false);
+
+  return (true);
+}
