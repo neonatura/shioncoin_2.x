@@ -3263,7 +3263,7 @@ fin:
 
 
 int BackupBlockChain(CIface *iface, unsigned int maxHeight)
-{ 
+{
   bc_t *bc;
   char path[PATH_MAX+1];
   unsigned int height;
@@ -3309,6 +3309,7 @@ fprintf(stderr, "DEBUG: BackupBlockChain: bc_write err %d\n", err);
       break;
     }
   }
+fprintf(stderr, "DEBUG: BACKUP: total %d blocks backed up\n", height);
   
   bc_close(bc);
   

@@ -343,9 +343,9 @@ bool SHCTxDB::LoadBlockIndex()
   CWallet *wallet = GetWallet(SHC_COIN_IFACE);
   InitServiceWalletEvent(wallet, checkHeight);
 
-#if 0
-  BackupBlockChain(iface, maxHeight); 
-#endif
+  if (!opt_bool(OPT_SHC_BACKUP_RESTORE)) {
+    BackupBlockChain(iface, maxHeight); 
+  }
 
   /* Block-chain Validation Matrix */
   std::reverse(vMatrix.begin(), vMatrix.end());
@@ -548,6 +548,7 @@ bool shc_InitBlockIndex()
 bool shc_RestoreBlockIndex()
 {
   CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);
+  bc_t *chain = GetBlockChain(iface);
   bc_t *bc;
   char path[PATH_MAX+1];
   unsigned char *sBlockData;
@@ -557,6 +558,7 @@ bool shc_RestoreBlockIndex()
   int err;
   bool ret;
 
+#if 0
   {
     CWallet *wallet = GetWallet(iface);
     if (wallet) {
@@ -566,18 +568,16 @@ fprintf(stderr, "DEBUG: shc_RestoreBlockIndex: erasing %d wallet transactions.\n
   }
   {
     /* wipe old block-chain index  */
-    bc_t *chain = GetBlockChain(iface);
-    if (chain) {
 fprintf(stderr, "DEBUG: shc_RestoreBlockIndex: erased current block-chain index (%u bytes).\n", (unsigned int)chain->idx_map.hdr->of);
-      chain->idx_map.hdr->of = 0;
-    }
+    chain->idx_map.hdr->of = 0;
   }
+#endif
 
   if (!shc_CreateGenesisBlock())
     return (false);
 
+  uint256 hash = shc_hashGenesisBlock;
   {
-
     sprintf(path, "backup/%s_block", iface->name);
     err = bc_open(path, &bc);
     if (err)
@@ -585,27 +585,37 @@ fprintf(stderr, "DEBUG: shc_RestoreBlockIndex: erased current block-chain index 
 
     maxHeight = bc_idx_next(bc);
     for (height = 1; height < maxHeight; height++) {
+      int n_height;
+
       err = bc_get(bc, height, &sBlockData, &sBlockLen);
       if (err)
         break;
 
+      /* serialize binary data into block */
       CDataStream sBlock(SER_DISK, CLIENT_VERSION);
       sBlock.write((const char *)sBlockData, sBlockLen);
-      free(sBlockData);
-
-      /* serialize binary data into block */
       SHCBlock block;
       sBlock >> block;
+      hash = block.GetHash();
 
-      if (!block.WriteBlock(height))
-        break;
+      err = bc_write(chain, height, hash.GetRaw(), sBlockData, sBlockLen);
+      if (err < 0)
+        return error(SHERR_INVAL, "block-chain write: %s", sherrstr(n_height));
+      free(sBlockData);
+
+      /* write tx ref's */
+      BOOST_FOREACH(CTransaction& tx, block.vtx) {
+        tx.WriteTx(SHC_COIN_IFACE, height);
+      }
+
     }
 fprintf(stderr, "DEBUG: shc_RestoreBlocKIndex: wrote %d blocks\n", height);
 
     bc_close(bc);
   }
 
-  SHCTxDB txdb("cr");
+  SHCTxDB txdb;
+  txdb.WriteHashBestChain(hash);
   ret = txdb.LoadBlockIndex();
   txdb.Close();
   if (!ret)

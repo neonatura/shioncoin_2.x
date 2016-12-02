@@ -178,11 +178,11 @@ int main(int argc, char *argv[])
         if (isdigit(argv[i][0]))
           opt_num_set(OPT_BAN_THRESHOLD, MAX(1, atoi(argv[i])));
       }
-    } else if (0 == strcmp(argv[i], "--restore-shc")) {
+    } else if (0 == strcmp(argv[i], "--shc-rebuild-chain")) {
       opt_bool_set(OPT_SHC_BACKUP_RESTORE, TRUE);
-    } else if (0 == strcmp(argv[i], "--restore-usde")) {
+    } else if (0 == strcmp(argv[i], "--usde-rebuild-chain")) {
       opt_bool_set(OPT_USDE_BACKUP_RESTORE, TRUE);
-    } else if (0 == strcmp(argv[i], "--restore-emc2")) {
+    } else if (0 == strcmp(argv[i], "--emc2-rebuild-chain")) {
       opt_bool_set(OPT_EMC2_BACKUP_RESTORE, TRUE);
 
     
