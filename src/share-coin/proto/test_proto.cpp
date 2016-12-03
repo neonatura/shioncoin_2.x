@@ -89,6 +89,24 @@ static int test_block_process(CIface *iface, CBlock *block)
   return (0);
 }
 
+static CPubKey test_GetMainAccountPubKey(CWallet *wallet)
+{
+  static CPubKey ret_key;
+
+  if (!ret_key.IsValid()) {
+    string strAccount("");
+
+    ret_key = GetAccountPubKey(wallet, strAccount);
+    if (!ret_key.IsValid()) {
+      CReserveKey reservekey(wallet);
+      ret_key = reservekey.GetReservedKey();
+      reservekey.KeepKey();
+    }
+  }
+
+  return (ret_key);
+}
+
 static int test_block_templ(CIface *iface, CBlock **block_p)
 {
   CWallet *wallet = GetWallet(iface);
@@ -106,8 +124,10 @@ static int test_block_templ(CIface *iface, CBlock **block_p)
   CBlockIndex *pindexBest = GetBestBlockIndex(TEST_COIN_IFACE);
   median = pindexBest->GetMedianTimePast() + 1;
 
-  CPubKey pubkey = GetAccountPubKey(wallet, strAccount);
-//CReserveKey reservekey(wallet);
+  const CPubKey& pubkey = test_GetMainAccountPubKey(wallet);
+  if (!pubkey.IsValid())
+    return (NULL);
+
   pblock = test_CreateNewBlock(pubkey);
   if (!pblock)
     return (NULL);
