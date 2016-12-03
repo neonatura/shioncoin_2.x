@@ -637,12 +637,15 @@ bool EMC2Wallet::CreateAccountTransaction(string strFromAccount, const vector<pa
         {
 
           CPubKey vchPubKey;
+#if 0
           if (nChange > CENT &&
               wtxNew.strFromAccount.length() != 0 &&
               GetMergedPubKey(wtxNew.strFromAccount, "change", vchPubKey)) {
             /* Use a consistent change address based on primary address. */
             //  reservekey.ReturnKey();
-          } else {
+          } else 
+#endif
+          {
             /* Revert to using a quasi-standard 'ghost' address. */
             CReserveKey reservekey(this);
             vchPubKey = reservekey.GetReservedKey();
@@ -671,8 +674,14 @@ bool EMC2Wallet::CreateAccountTransaction(string strFromAccount, const vector<pa
         BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setCoins) {
           const CWalletTx *s_wtx = coin.first;
           if (!SignSignature(*this, *s_wtx, wtxNew, nIn++)) {
+
+#if 0
+            /* failing signing against prevout. mark as spent to prohibit further attempts to use this output. */
+            s_wtx->MarkSpent(nIn);
+#endif
+
             txdb.Close();
-            strError = strprintf(_("An error occurred signing the transaction [input tx \"%s\"]."), s_wtx->GetHash().GetHex().c_str());
+            strError = strprintf(_("An error occurred signing the transaction [input tx \"%s\", output #%d]."), s_wtx->GetHash().GetHex().c_str(), nIn);
             return false;
           }
         }

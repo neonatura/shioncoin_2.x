@@ -339,7 +339,7 @@ int cpp_stratum_account_cycle(char *ret_acc_name, char *ret_acc_key)
 
 
 
-CCoinAddr GetAddressByAccount(CWallet *wallet, const char *accountName, bool& found)
+static CCoinAddr GetAddressByAccount(CWallet *wallet, const char *accountName, bool& found)
 {
   CCoinAddr address(wallet->ifaceIndex);
   string strAccount(accountName);
@@ -349,11 +349,15 @@ CCoinAddr GetAddressByAccount(CWallet *wallet, const char *accountName, bool& fo
   found = false;
   BOOST_FOREACH(const PAIRTYPE(CTxDestination, string)& item, wallet->mapAddressBook)
   {
-    const CCoinAddr& acc_address = CCoinAddr(wallet->ifaceIndex, item.first);
     const string& strName = item.second;
     if (strName == strAccount) {
-      address = acc_address;
+      address = CCoinAddr(wallet->ifaceIndex, item.first);
+      if (!address.IsValid()) {
+fprintf(stderr, "DEBUG: wallet_iface: GetAddressByAccount[%s]: account has invalid coin address.\n", accountName); 
+        continue;
+      }
       found = true;
+      break;
     }
   }
 
@@ -470,9 +474,7 @@ fprintf(stderr, "DEBUG: c_setblockreward: wallet is locked\n");
   bool found = false;
   CCoinAddr address = GetAddressByAccount(pwalletMain, accountName, found);
   if (!found || !address.IsValid()) {
-    char errbuf[1024];
-    sprintf(errbuf, "setblockreward: account '%s' has invalid %s address.", accountName, iface->name);
-    shcoind_log(errbuf);
+//    error(SHERR_NOENT, "setblockreward: account '%s' has invalid %s coin address.", accountName, iface->name);
     return (-5);
   }
 
@@ -522,7 +524,7 @@ int c_sendblockreward(int ifaceIndex)
   nBankFee += nValue / 1000;
 
   /* add in residual bank fee */
-  if (nBankFee > (MIN_TX_FEE(iface) * 4)) {
+  if (nBankFee > (MIN_TX_FEE(iface) * 10)) {
     CCoinAddr address(ifaceIndex);
     if (wallet->GetMergedAddress(strMainAccount, "bank", address)) {
       CScript scriptPubKey;
@@ -545,12 +547,13 @@ int c_sendblockreward(int ifaceIndex)
   CWalletTx wtx;
   wtx.strFromAccount = strMainAccount;
 
-  CReserveKey rkey(wallet);
-  fRet = wallet->CreateTransaction(vecRewardSend, wtx, rkey, nFeeRet);
+  string strError;
+  fRet = wallet->CreateAccountTransaction(strMainAccount, vecRewardSend, wtx, strError, nFeeRet);
   vecRewardSend.clear();
   if (!fRet)
     return (-4);
 
+  CReserveKey rkey(wallet);
   fRet = wallet->CommitTransaction(wtx, rkey);
   if (!fRet)
     return (-4);
@@ -910,7 +913,6 @@ static const char *c_stratum_account_transfer(int ifaceIndex, char *account, cha
   CWalletDB walletdb(pwalletMain->strWalletFile);
   string strAccount(account);
   string strDestAddress(dest);
-  CCoinAddr dest_address(strDestAddress);
   CWalletTx wtx;
   int64 nAmount;
   string strAddress;
@@ -932,8 +934,9 @@ static const char *c_stratum_account_transfer(int ifaceIndex, char *account, cha
       throw JSONRPCError(STERR_ACCESS_NOKEY, "Account transactions are not currently available.");
     }
 
+    CCoinAddr dest_address(strDestAddress);
     if (!dest_address.IsValid()) {
-      throw JSONRPCError(STERR_INVAL, "Invalid usde destination address");
+      throw JSONRPCError(STERR_INVAL, "invalid coin address");
     }
 
     in_pkey.SetHex(pkey_str);
@@ -954,7 +957,6 @@ static const char *c_stratum_account_transfer(int ifaceIndex, char *account, cha
     vector<pair<CScript, int64> > vecSend;
     bool bankAddressFound = false;
     CScript scriptPubKey;
-    CReserveKey keyChange(pwalletMain);
 
     /* send fee to main account */
     CCoinAddr bankAddress = GetAddressByAccount(pwalletMain, "", bankAddressFound);
@@ -970,14 +972,17 @@ static const char *c_stratum_account_transfer(int ifaceIndex, char *account, cha
       vecSend.push_back(make_pair(scriptPubKey, nFee));
     }
     /* user */
+    string strError;
     scriptPubKey.SetDestination(dest_address.Get());
     vecSend.push_back(make_pair(scriptPubKey, nAmount - nFee));
-    if (!pwalletMain->CreateTransaction(vecSend, wtx, keyChange, nTxFee)) {
+    if (!pwalletMain->CreateAccountTransaction(strAccount, vecSend, wtx, strError, nTxFee)) {
       if (nAmount + nTxFee > pwalletMain->GetBalance())
         throw JSONRPCError(STERR_FUND_UNAVAIL, "Insufficient funds for transaction.");
       throw JSONRPCError(STERR_ACCESS_UNAVAIL, "Transaction creation failure.");
     }
-    if (!pwalletMain->CommitTransaction(wtx, keyChange)) {
+
+    CReserveKey rkey(pwalletMain);
+    if (!pwalletMain->CommitTransaction(wtx, rkey)) {
       throw JSONRPCError(STERR_ACCESS_UNAVAIL, "Transaction commit failed.");
     }
   } catch(Object& objError) {

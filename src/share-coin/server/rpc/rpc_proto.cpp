@@ -653,6 +653,10 @@ Value rpc_sys_info(CIface *iface, const Array& params, bool fStratum)
     obj.push_back(Pair("lastinvalidblock", inval_str));
   }
 
+  /* wallet */
+  obj.push_back(Pair("wallettx", (int)pwalletMain->mapWallet.size()));
+  obj.push_back(Pair("walletaddr", (int)pwalletMain->mapAddressBook.size()));
+
   return obj;
 }
 
@@ -1775,12 +1779,57 @@ Value rpc_wallet_info(CIface *iface, const Array& params, bool fStratum)
 
   obj.push_back(Pair("keypoololdest", (boost::int64_t)pwalletMain->GetOldestKeyPoolTime()));
   obj.push_back(Pair("keypoolsize",   pwalletMain->GetKeyPoolSize()));
-  obj.push_back(Pair("txcachecount",   (int)pwalletMain->mapWallet.size()));
 
-  obj.push_back(Pair("errors",        GetWarnings(ifaceIndex, "statusbar")));
+//  obj.push_back(Pair("txcachecount",   (int)pwalletMain->mapWallet.size()));
+//  obj.push_back(Pair("errors",        GetWarnings(ifaceIndex, "statusbar")));
 
   return obj;
 
+}
+
+Value rpc_tx_validate(CIface *iface, const Array& params, bool fStratum)
+{
+
+  if (fStratum)
+    throw runtime_error("unsupported operation");
+
+  if (params.size() != 1)
+    throw runtime_error("invalid parameters specified");
+
+  CWallet *pwalletMain = GetWallet(iface);
+  int ifaceIndex = GetCoinIndex(iface);
+
+  uint256 hash(params[0].get_str());
+
+  if (0 == pwalletMain->mapWallet.count(hash)) {
+    throw JSONRPCError(-4, "Transaction is not contained in wallet.");
+  }
+
+  CWalletTx& wtx = pwalletMain->mapWallet[hash];
+
+  Array ret;
+
+  int nOut = 0;
+  BOOST_FOREACH(const CTxOut& txout, wtx.vout) {
+    bool fValid = false;
+    Object obj;
+
+    CTxDestination dest;
+    if (!wtx.CheckTransaction(ifaceIndex) ||
+        !ExtractDestination(txout.scriptPubKey, dest)) {
+      obj.push_back(Pair("isvalid", "false"));
+    } else {
+      CCoinAddr addr(ifaceIndex, dest);
+      obj.push_back(Pair("spent", wtx.IsSpent(nOut) ? "true" : "false"));
+      obj.push_back(Pair("ismine", pwalletMain->IsMine(wtx) ? "true" : "false")); 
+      obj.push_back(Pair("address", addr.ToString()));
+    }
+
+    ret.push_back(obj);
+    nOut++;
+  }
+
+  return ret;
 }
 
 Value rpc_wallet_import(CIface *iface, const Array& params, bool fStratum)
@@ -4282,6 +4331,10 @@ const RPCOp WALLET_INFO = {
   &rpc_wallet_info, 0, {}, 
   "Statistical and runtime information on wallet operations."
 };
+const RPCOp TX_VALIDATE = {
+  &rpc_tx_validate, 1, {RPC_STRING}, 
+  "Validate a wallet transaction."
+};
 const RPCOp WALLET_IMPORT = {
   &rpc_wallet_import, 1, {RPC_STRING}, 
   "Syntax: <path>\n"
@@ -4493,6 +4546,8 @@ void RegisterRPCOpDefaults(int ifaceIndex)
   RegisterRPCOp(ifaceIndex, "tx.prune", TX_PRUNE);
   RegisterRPCOp(ifaceIndex, "tx.purge", TX_PURGE);
 
+  RegisterRPCOp(ifaceIndex, "tx.validate", TX_VALIDATE);
+
   RegisterRPCOp(ifaceIndex, "wallet.addr", WALLET_ADDR);
   RegisterRPCOp(ifaceIndex, "wallet.listaddr", WALLET_LISTADDR);
   RegisterRPCOp(ifaceIndex, "wallet.balance", WALLET_BALANCE);
@@ -4508,7 +4563,7 @@ void RegisterRPCOpDefaults(int ifaceIndex)
 
   RegisterRPCOp(ifaceIndex, "wallet.list", WALLET_LIST);
 
-  RegisterRPCOp(ifaceIndex, "wallet.lisbyaccount", WALLET_LISTBYACCOUNT);
+  RegisterRPCOp(ifaceIndex, "wallet.listbyaccount", WALLET_LISTBYACCOUNT);
   RegisterRPCAlias(ifaceIndex, "listreceivedbyaccount", WALLET_LISTBYACCOUNT);
 
   RegisterRPCOp(ifaceIndex, "wallet.listbyaddr", WALLET_LISTBYADDR);
