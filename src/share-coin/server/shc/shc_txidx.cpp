@@ -613,6 +613,7 @@ fprintf(stderr, "DEBUG: shc_RestoreBlocKIndex: wrote %d blocks\n", height);
 
     bc_close(bc);
   }
+  bc_idle(chain);
 
   SHCTxDB txdb;
   txdb.WriteHashBestChain(hash);

@@ -467,7 +467,6 @@ bool shc_FetchInputs(CTransaction *tx, CTxDB& txdb, const map<uint256, CTxIndex>
 }
 #endif
 
-
 CBlock* shc_CreateNewBlock(const CPubKey& rkey)
 {
   CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);

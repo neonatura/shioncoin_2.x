@@ -77,8 +77,12 @@ void usage_help(void)
       "\t--max-conn <#>\tThe maximum number of incoming coin-service connections. (default: 300)\n"
       "\t--no-seed\tPrevent pre-defined seed IP addresses from being used.\n"
       "\t--check-addr\tRe-verify the external IP address used by this machine.\n"
+#ifdef USDE_SERVICE
       "\t--no-usde\tDisable the USDE coin service.\n"
+#endif
+#ifdef EMC2_SERVICE
       "\t--no-emc2\tDisable the EMC2 coin service.\n"
+#endif
       "\t--no-stratum\tDisable the stratum service.\n"
       "\n"
       "Peer Options:\n"
@@ -88,6 +92,13 @@ void usage_help(void)
       "Diagnostic Options:\n"
       "\t--debug\t\tLog verbose debugging information.\n"
       "\t-nf\t\tRun daemon in foreground (no fork).\n"
+      "\t--shc-rebuild-chain\tRestore the backup SHC block-chain.\n"
+#ifdef USDE_SERVICE
+      "\t--usde-rebuild-chain\tRestore the backup USDE block-chain.\n"
+#endif
+#ifdef EMC2_SERVICE
+      "\t--emc2-rebuild-chain\tRestore the backup EMC2 block-chain.\n"
+#endif
       "\n"
       "Persistent Preferences:\n"
       "\tshcoind.debug\t\tSee '--debug' command-line option.\n"

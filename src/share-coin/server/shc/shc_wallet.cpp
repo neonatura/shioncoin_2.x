@@ -584,12 +584,16 @@ bool SHCWallet::CreateAccountTransaction(string strFromAccount, const vector<pai
   int64 nValue = 0;
   BOOST_FOREACH (const PAIRTYPE(CScript, int64)& s, vecSend)
   {
-    if (nValue < 0)
+    if (nValue < 0) {
+      strError = "invalid output coin value";
       return false;
+    }
     nValue += s.second;
   }
-  if (vecSend.empty() || nValue < 0)
+  if (vecSend.empty() || nValue < 0) {
+    strError = "incomplete output specified";
     return false;
+  }
 
   wtxNew.BindWallet(this);
 
@@ -614,8 +618,10 @@ bool SHCWallet::CreateAccountTransaction(string strFromAccount, const vector<pai
         // Choose coins to use
         set<pair<const CWalletTx*,unsigned int> > setCoins;
         int64 nValueIn = 0;
-        if (!SelectAccountCoins(strFromAccount, nTotalValue, setCoins, nValueIn))
+        if (!SelectAccountCoins(strFromAccount, nTotalValue, setCoins, nValueIn)) {
+          strError = "An error occurred obtaining the account's unspent coins in order perform the transaction.";
           return false;
+        }
         BOOST_FOREACH(PAIRTYPE(const CWalletTx*, unsigned int) pcoin, setCoins)
         {
           int64 nCredit = pcoin.first->vout[pcoin.second].nValue;
@@ -669,16 +675,20 @@ bool SHCWallet::CreateAccountTransaction(string strFromAccount, const vector<pai
 
         // Sign
         int nIn = 0;
-        BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setCoins)
-          if (!SignSignature(*this, *coin.first, wtxNew, nIn++)) {
+        BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setCoins) {
+          const CWalletTx *s_wtx = coin.first;
+          if (!SignSignature(*this, *s_wtx, wtxNew, nIn++)) {
             txdb.Close();
+            strError = strprintf(_("An error occurred signing the transaction [input tx \"%s\"]."), s_wtx->GetHash().GetHex().c_str());
             return false;
           }
+        }
 
         // Limit size
         unsigned int nBytes = ::GetSerializeSize(*(CTransaction*)&wtxNew, SER_NETWORK, SHC_PROTOCOL_VERSION);
         if (nBytes >= MAX_BLOCK_SIZE_GEN(iface)/5) {
           txdb.Close();
+          strError = strprintf(_("The transaction is too complex (%d of %d max bytes)."), (unsigned int)nBytes, (MAX_BLOCK_SIZE_GEN(iface)/5));
           return false;
         }
         dPriority /= nBytes;

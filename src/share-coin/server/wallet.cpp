@@ -1071,7 +1071,6 @@ void CWallet::AvailableAccountCoins(string strAccount, vector<COutput>& vCoins, 
           continue;
 
         if (IsChange(pcoin->vout[i])) {
-fprintf(stderr, "DEBUG: AvailableAccountCoins: found change from \"%s\".\n", pcoin->strFromAccount.c_str());  
           if (pcoin->strFromAccount == strAccount) {
             vCoins.push_back(COutput(pcoin, i, pcoin->GetDepthInMainChain(ifaceIndex)));
           }
@@ -1603,14 +1602,15 @@ string CWallet::SendMoney(string strFromAccount, CScript scriptPubKey, int64 nVa
 
     if (!CreateAccountTransaction(strFromAccount, scriptPubKey, nValue, wtxNew, strError, nFeeRequired))
     {
-        string strError;
-        if (//nValue + nFeeRequired > GetBalance() ||
-            nValue + nFeeRequired > nBalance) {
-            strError = strprintf(_("Error: This transaction requires a transaction fee of at least %s because of its amount, complexity, or use of recently received funds  "), FormatMoney(nFeeRequired).c_str());
-        } else {
-            strError = _("Error: Transaction creation failed  ");
+        if (strError.length() == 0) {
+          if (//nValue + nFeeRequired > GetBalance() ||
+              nValue + nFeeRequired > nBalance) {
+              strError = strprintf(_("Error: This transaction requires a transaction fee of at least %s because of its amount, complexity, or use of recently received funds  "), FormatMoney(nFeeRequired).c_str());
+          } else {
+              strError = _("Error: Transaction creation failed  ");
+          }
         }
-        fprintf(stderr, "DEBUG: SendMoney: %s", strError.c_str());
+fprintf(stderr, "DEBUG: SendMoney: %s", strError.c_str());
         return strError;
     }
 
@@ -2318,6 +2318,11 @@ bool CWallet::GetMergedAddress(string strAccount, const char *tag, CCoinAddr& ad
     return (false);
 
   addrRet = CCoinAddr(ifaceIndex, pubkey.GetID());
+  if (!addrRet.IsValid()) {
+fprintf(stderr, "DEBUG: CWallet::GetMergedAddress: error generating coin addr from pubkey\n");
+    return (false);
+  }
+
   return (true);
 }
 

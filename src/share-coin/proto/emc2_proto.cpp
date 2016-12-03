@@ -161,11 +161,32 @@ static int emc2_block_process(CIface *iface, CBlock *block)
   return (0);
 }
 
+static CPubKey emc2_GetMainAccountPubKey(CWallet *wallet)
+{
+  static CPubKey ret_key; 
+
+  if (!ret_key.IsValid()) {
+    string strAccount("");
+
+    ret_key = GetAccountPubKey(wallet, strAccount);
+    if (!ret_key.IsValid()) {
+fprintf(stderr, "DEBUG: GetMainAccountPubKey: emc2: error obtaining main account pubkey.");
+      CReserveKey reservekey(wallet);
+      ret_key = reservekey.GetReservedKey();
+      reservekey.KeepKey();
+    } else {
+      CCoinAddr addr(wallet->ifaceIndex, ret_key.GetID()); 
+fprintf(stderr, "DEBUG: emc2_GetMainAccountPubKey: using '%s' for mining address.\n", addr.ToString().c_str()); 
+    }
+  }
+
+  return (ret_key);
+}
+
 static int emc2_block_templ(CIface *iface, CBlock **block_p)
 {
   CWallet *wallet = GetWallet(iface);
   int ifaceIndex = GetCoinIndex(iface);
-  string strAccount("");
   CBlock* pblock;
   unsigned int median;
   int reset;
@@ -178,8 +199,12 @@ static int emc2_block_templ(CIface *iface, CBlock **block_p)
   CBlockIndex *pindexBest = GetBestBlockIndex(EMC2_COIN_IFACE);
   median = pindexBest->GetMedianTimePast() + 1;
 
-  CPubKey pubkey = GetAccountPubKey(wallet, strAccount);
-  //CReserveKey reservekey(wallet);
+  const CPubKey& pubkey = emc2_GetMainAccountPubKey(wallet);
+  if (!pubkey.IsValid()) {
+fprintf(stderr, "DEBUG: emc2_block_templ: error obtaining main pubkey.\n"); 
+    return (NULL);
+  }
+
   pblock = emc2_CreateNewBlock(pubkey);
   if (!pblock)
     return (NULL);

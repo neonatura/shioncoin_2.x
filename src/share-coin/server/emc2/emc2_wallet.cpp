@@ -668,16 +668,20 @@ bool EMC2Wallet::CreateAccountTransaction(string strFromAccount, const vector<pa
 
         // Sign
         int nIn = 0;
-        BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setCoins)
-          if (!SignSignature(*this, *coin.first, wtxNew, nIn++)) {
+        BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setCoins) {
+          const CWalletTx *s_wtx = coin.first;
+          if (!SignSignature(*this, *s_wtx, wtxNew, nIn++)) {
             txdb.Close();
+            strError = strprintf(_("An error occurred signing the transaction [input tx \"%s\"]."), s_wtx->GetHash().GetHex().c_str());
             return false;
           }
+        }
 
         // Limit size
         unsigned int nBytes = ::GetSerializeSize(*(CTransaction*)&wtxNew, SER_NETWORK, EMC2_PROTOCOL_VERSION);
         if (nBytes >= MAX_BLOCK_SIZE_GEN(iface)/5) {
           txdb.Close();
+          strError = strprintf(_("The transaction is too complex (%d of %d max bytes)."), (unsigned int)nBytes, (MAX_BLOCK_SIZE_GEN(iface)/5));
           return false;
         }
         dPriority /= nBytes;
