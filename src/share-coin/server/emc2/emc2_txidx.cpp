@@ -541,6 +541,10 @@ bool EMC2TxDB::LoadBlockIndex()
   CWallet *wallet = GetWallet(EMC2_COIN_IFACE);
   InitServiceWalletEvent(wallet, checkHeight);
 
+  if (!opt_bool(OPT_EMC2_BACKUP_RESTORE)) {
+    BackupBlockChain(iface, maxHeight); 
+  }
+
   return true;
 }
 
@@ -579,3 +583,67 @@ bool EMC2TxDB::ReadFlag(const std::string &name, bool &fValue)
 }
 
 
+bool emc2_RestoreBlockIndex()
+{
+  CIface *iface = GetCoinByIndex(EMC2_COIN_IFACE);
+  bc_t *chain = GetBlockChain(iface);
+  bc_t *bc;
+  char path[PATH_MAX+1];
+  unsigned char *sBlockData;
+  size_t sBlockLen;
+  unsigned int maxHeight;
+  bcsize_t height;
+  int err;
+  bool ret;
+
+  if (!emc2_CreateGenesisBlock())
+    return (false);
+
+  uint256 hash = emc2_hashGenesisBlock;
+  {
+    sprintf(path, "backup/%s_block", iface->name);
+    err = bc_open(path, &bc);
+    if (err)
+      return error(err, "emc2_RestoreBlockIndex: error opening backup block-chain.");
+
+    maxHeight = bc_idx_next(bc);
+    for (height = 1; height < maxHeight; height++) {
+      int n_height;
+
+      err = bc_get(bc, height, &sBlockData, &sBlockLen);
+      if (err)
+        break;
+
+      /* serialize binary data into block */
+      CDataStream sBlock(SER_DISK, CLIENT_VERSION);
+      sBlock.write((const char *)sBlockData, sBlockLen);
+      EMC2Block block;
+      sBlock >> block;
+      hash = block.GetHash();
+
+      err = bc_write(chain, height, hash.GetRaw(), sBlockData, sBlockLen);
+      if (err < 0)
+        return error(SHERR_INVAL, "block-chain write: %s", sherrstr(n_height));
+      free(sBlockData);
+
+      /* write tx ref's */
+      BOOST_FOREACH(CTransaction& tx, block.vtx) {
+        tx.WriteTx(EMC2_COIN_IFACE, height);
+      }
+
+    }
+fprintf(stderr, "DEBUG: emc2_RestoreBlocKIndex: wrote %d blocks\n", height);
+
+    bc_close(bc);
+  }
+  bc_idle(chain);
+
+  EMC2TxDB txdb;
+  txdb.WriteHashBestChain(hash);
+  ret = txdb.LoadBlockIndex();
+  txdb.Close();
+  if (!ret)
+    return (false);
+
+  return (true);
+}

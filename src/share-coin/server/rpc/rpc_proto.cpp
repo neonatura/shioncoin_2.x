@@ -2800,19 +2800,16 @@ Value rpc_wallet_multisend(CIface *iface, const Array& params, bool fStratum)
   return wtx.GetHash().GetHex();
 }
 
+/** create a new coin address for the account specified. */
 Value rpc_wallet_new(CIface *iface, const Array& params, bool fStratum)
 {
-  if (fHelp || params.size() != 1)
-    throw runtime_error(
-        "wallet.new <account>\n"
-        "Returns a new address for receiving payments to the specified account.");
 
-  // Parse the account first so we don't generate a key if there's an error
-  string strAccount = AccountFromValue(params[0]);
+  if (params.size() != 1)
+    throw runtime_error("invalid parameters");
 
   Value ret;
-
-  ret = GetAccountAddress(GetWallet(iface), strAccount).ToString();
+  string strAccount = params[0].get_str();
+  ret = GetAccountAddress(GetWallet(iface), strAccount, true).ToString();
 
   return ret;
 }

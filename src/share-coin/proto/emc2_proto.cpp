@@ -68,9 +68,18 @@ static int emc2_init(CIface *iface, void *_unused_)
   }
 #endif
 
-  if (!emc2_InitBlockIndex()) {
-    fprintf(stderr, "error: emc2_proto: unable to initialize block index table.\n");
-    return (SHERR_INVAL);
+  if (!opt_bool(OPT_EMC2_BACKUP_RESTORE)) {
+    /* normal startup */
+    if (!emc2_InitBlockIndex()) {
+      error(SHERR_INVAL, "emc2_proto: unable to initialize block index table.");
+      return (SHERR_INVAL);
+    }
+  } else {
+    /* over-write block-chain with pre-existing backup records */
+    if (!emc2_RestoreBlockIndex()) {
+      error(SHERR_INVAL, "emc2_proto: unable to initialize block index table.");
+      return (SHERR_INVAL);
+    }
   }
 
   if (!emc2_LoadWallet()) {

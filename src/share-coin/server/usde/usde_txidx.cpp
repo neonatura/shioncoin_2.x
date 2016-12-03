@@ -391,6 +391,10 @@ bool USDETxDB::LoadBlockIndex()
   CWallet *wallet = GetWallet(USDE_COIN_IFACE);
   InitServiceWalletEvent(wallet, checkHeight);
 
+  if (!opt_bool(OPT_USDE_BACKUP_RESTORE)) {
+    BackupBlockChain(iface, maxHeight); 
+  }
+
   return true;
 }
 
