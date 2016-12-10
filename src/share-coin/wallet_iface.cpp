@@ -695,6 +695,39 @@ static bool valid_pkey_hash(string strAccount, uint256 in_pkey)
   return (false);
 }
 
+bool GetStratumKeyAccount(uint256 in_pkey, string& strAccount)
+{
+  CWallet *wallet;
+  uint256 acc_pkey;
+  int ifaceIndex;
+  int valid;
+
+  valid = 0;
+  for (ifaceIndex = 1; ifaceIndex < MAX_COIN_IFACE; ifaceIndex++) {
+    wallet = GetWallet(ifaceIndex);
+    if (!wallet) 
+      continue;
+
+    BOOST_FOREACH(const PAIRTYPE(CTxDestination, string)& item, wallet->mapAddressBook)
+    {
+      const CCoinAddr& address = CCoinAddr(ifaceIndex, item.first);
+      const string& strName = item.second;
+      CKeyID keyID;
+
+      if (!address.GetKeyID(keyID))
+        continue;
+
+      acc_pkey = get_private_key_hash(wallet, keyID);
+      if (acc_pkey == in_pkey) {
+        strAccount = strName;
+        return (true);
+      }
+    }
+  }
+
+  return (false);
+}
+
 /**
  * local up to 100 transactions associated with account name.
  * @param duration The range in the past to search for account transactions (in seconds).
@@ -1126,6 +1159,7 @@ const char *c_stratum_error_get(int req_id)
   return (stratumerror_json.c_str());
 }
 
+#if 0
 static const char *cpp_stratum_call_rpc(int ifaceIndex, const char *account, const char *pkey_str, shjson_t *json)
 {
   string strAccount(account);
@@ -1143,6 +1177,7 @@ static const char *cpp_stratum_call_rpc(int ifaceIndex, const char *account, con
 
   return (ExecuteStratumRPC(ifaceIndex, account, json));
 }
+#endif
 
 
 
@@ -1270,10 +1305,12 @@ int stratum_account_cycle(char *acc_name, char *acc_key)
   return (cpp_stratum_account_cycle(acc_name, acc_key));
 }
 
+#if 0
 const char *stratum_call_rpc(int ifaceIndex, const char *account, const char *pkey_str, shjson_t *json)
 {
   return (cpp_stratum_call_rpc(ifaceIndex, account, pkey_str, json));
 }
+#endif
 
 #ifdef __cplusplus
 }

@@ -98,6 +98,8 @@ extern Value rpc_cert_export(CIface *iface, const Array& params, bool fStratum);
 extern Object JSONRPCReplyObj(const Value& result, const Value& error, const Value& id);
 extern string JSONRPCReply(const Value& result, const Value& error, const Value& id);
 
+extern bool GetStratumKeyAccount(uint256 in_pkey, string& strAccount);
+
 
 const Object emptyobj;
 
@@ -5545,7 +5547,8 @@ fprintf(stderr, "DEBUG: ar_len %d, max_arg 0\n", ar_len, max_arg);
     if (i >= op->min_arg)
       break;
     if (op->arg[i] == RPC_ACCOUNT) {
-      if (!account || i >= ar_len)
+      //if (!account || i >= ar_len)
+      if (i >= ar_len)
         return (NULL);
       break; /* only first occurrence */
     }
@@ -5560,8 +5563,15 @@ fprintf(stderr, "DEBUG: ar_len %d, max_arg 0\n", ar_len, max_arg);
     fVerify = false;
     for (i = 0; i < ar_len; i++) {
       if (op->arg[i] == RPC_ACCOUNT && !fVerify) {
-        string p_str(account);
-        param.push_back(p_str);
+        string acc_str;
+        const char *pkey_str = shjson_array_astr(json, "params", i);
+        uint256 pkey(pkey_str);
+        if (!GetStratumKeyAccount(pkey, acc_str)) {
+fprintf(stderr, "DEBUG: ExecuteStratumRPC: pkey auth fail (%s)\n", pkey_str); 
+          return (NULL);
+        }
+
+        param.push_back(acc_str);
         fVerify = true;
       } else {
         const char *pstr = shjson_array_astr(json, "params", i);
