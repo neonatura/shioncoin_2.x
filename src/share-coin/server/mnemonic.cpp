@@ -1769,16 +1769,23 @@ const string DecodeMnemonic(const string_list& words)
 
 bool DecodeMnemonicSecret(int ifaceIndex, const string phrase, CCoinSecret& addr)
 {
-  std::vector<std::string> words;
-  boost::split(words, phrase, boost::is_any_of(", "), boost::token_compress_on);
+  cbuff secret;
 
-  string hex = DecodeMnemonic(words);
-  cbuff secret = ParseHex(hex);
+  {
+    std::vector<std::string> words;
+    boost::split(words, phrase, boost::is_any_of(", "), boost::token_compress_on);
+
+    string hex = DecodeMnemonic(words);
+    secret = ParseHex(hex);
+  }
   if (secret.size() != 32)
     return (false);
-  CSecret t_buff(secret.begin(), secret.begin() + 32);
 
-  addr = CCoinSecret(ifaceIndex, t_buff, false);
+  {
+    CSecret t_buff(secret.begin(), secret.begin() + 32);
+    addr = CCoinSecret(ifaceIndex, t_buff, false);
+  }
+
   return (true);
 }
 

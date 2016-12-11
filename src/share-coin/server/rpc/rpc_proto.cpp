@@ -2299,6 +2299,54 @@ Value rpc_wallet_send(CIface *iface, const Array& params, bool fStratum)
   return wtx.GetHash().GetHex();
 }
 
+Value rpc_wallet_tsend(CIface *iface, const Array& params, bool fStratum)
+{
+  CWallet *wallet = GetWallet(iface);
+  int ifaceIndex = GetCoinIndex(iface);
+
+  if (params.size() < 3)
+    throw runtime_error("invalid parameters");
+
+  /* originating account  */
+  string strAccount = AccountFromValue(params[0]);
+
+  /* destination coin address */
+  CCoinAddr address(params[1].get_str());
+  if (address.GetVersion() != CCoinAddr::GetCoinAddrVersion(ifaceIndex))
+    throw JSONRPCError(-5, "Invalid address for coin service.");
+
+  int64 nAmount = AmountFromValue(params[2]);
+  int nMinDepth = 1;
+  if (params.size() > 3)
+    nMinDepth = params[3].get_int();
+
+  CWalletTx wtx;
+  wtx.strFromAccount = strAccount;
+
+  EnsureWalletIsUnlocked();
+
+  int64 nBalance = GetAccountBalance(ifaceIndex, strAccount, nMinDepth);
+  if (nAmount > nBalance)
+    throw JSONRPCError(-6, "Account has insufficient funds");
+
+  string strError = wallet->SendMoney(strAccount, address.Get(), nAmount, wtx, true);
+  if (strError != "" && strError != "ABORTED")
+    throw JSONRPCError(-4, strError);
+
+  unsigned int nBytes = ::GetSerializeSize(wtx, SER_NETWORK, PROTOCOL_VERSION(iface));
+  unsigned int nMaxBytes = MAX_BLOCK_SIZE_GEN(iface) / 5;
+  int64 nFee = wallet->GetTxFee(wtx);
+
+  Object ret_obj;
+  ret_obj.push_back(Pair("amount", ValueFromAmount(nAmount)));
+  ret_obj.push_back(Pair("size", (int)nBytes));
+  ret_obj.push_back(Pair("maxsize", (int)nMaxBytes));
+  ret_obj.push_back(Pair("fee", ValueFromAmount(nFee)));
+  ret_obj.push_back(Pair("inputs", (int)wtx.vin.size()));
+
+  return ret_obj;
+}
+
 Value rpc_wallet_set(CIface *iface, const Array& params, bool fStratum)
 {
 
@@ -4418,6 +4466,14 @@ const RPCOp WALLET_SEND = {
   "Syntax: <fromaccount> <toaddress> <amount> [minconf=1] [comment] [comment-to]\n"
   "Note: The <amount> is a real and is rounded to the nearest 0.00000001"
 };
+const RPCOp WALLET_TSEND = {
+  &rpc_wallet_tsend, 3, {RPC_ACCOUNT, RPC_COINADDR, RPC_DOUBLE, RPC_INT64},
+  "Syntax: <fromaccount> <toaddress> <amount> [minconf=1]\n"
+  "\n"
+  "Return information about a send transaction without block-chain commit.\n"
+  "Used in order to obtain information about the details involved if a particular transaction were to take place -- without actually performing the transaction.\n"
+  "Note: The <amount> is a real and is rounded to the nearest 0.00000001"
+};
 const RPCOp WALLET_SET = {
   &rpc_wallet_set, 2, {RPC_STRING, RPC_ACCOUNT},
   "Syntax: <coin-address> <account>\n"
@@ -4473,7 +4529,9 @@ void RegisterRPCOpDefaults(int ifaceIndex)
 
   RegisterRPCOp(ifaceIndex, "block.export", BLOCK_EXPORT);
 
-  RegisterRPCOp(ifaceIndex, "block.free", BLOCK_FREE);
+  if (opt_bool(OPT_ADMIN)) {
+    RegisterRPCOp(ifaceIndex, "block.free", BLOCK_FREE);
+  }
 
   RegisterRPCOp(ifaceIndex, "block.get", BLOCK_GET);
   RegisterRPCAlias(ifaceIndex, "getblock", BLOCK_GET);
@@ -4485,7 +4543,9 @@ void RegisterRPCOpDefaults(int ifaceIndex)
 
   RegisterRPCOp(ifaceIndex, "block.listsince", BLOCK_LISTSINCE);
 
-  RegisterRPCOp(ifaceIndex, "block.purge", BLOCK_PURGE);
+  if (opt_bool(OPT_ADMIN)) {
+    RegisterRPCOp(ifaceIndex, "block.purge", BLOCK_PURGE);
+  }
 
   RegisterRPCOp(ifaceIndex, "block.verify", BLOCK_VERIFY);
 
@@ -4546,7 +4606,10 @@ void RegisterRPCOpDefaults(int ifaceIndex)
   RegisterRPCAlias(ifaceIndex, "getrawmempool", TX_POOL);
 
   RegisterRPCOp(ifaceIndex, "tx.prune", TX_PRUNE);
-  RegisterRPCOp(ifaceIndex, "tx.purge", TX_PURGE);
+
+  if (opt_bool(OPT_ADMIN)) {
+    RegisterRPCOp(ifaceIndex, "tx.purge", TX_PURGE);
+  }
 
   RegisterRPCOp(ifaceIndex, "tx.validate", TX_VALIDATE);
 
@@ -4585,6 +4648,8 @@ void RegisterRPCOpDefaults(int ifaceIndex)
 
   RegisterRPCOp(ifaceIndex, "wallet.send", WALLET_SEND);
   RegisterRPCAlias(ifaceIndex, "sendfrom", WALLET_SEND);
+
+  RegisterRPCOp(ifaceIndex, "wallet.tsend", WALLET_TSEND);
 
   RegisterRPCOp(ifaceIndex, "wallet.set", WALLET_SET);
 

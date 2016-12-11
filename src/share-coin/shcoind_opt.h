@@ -53,10 +53,13 @@ extern "C" {
 
 #define OPT_RPC_PORT "shcoind.rpc.port"
 
-
 #define OPT_SHC_BACKUP_RESTORE "shcoind.shc.backup.restore"
+
 #define OPT_USDE_BACKUP_RESTORE "shcoind.usde.backup.restore"
+
 #define OPT_EMC2_BACKUP_RESTORE "shcoind.emc2.backup.restore"
+
+#define OPT_ADMIN "shcoind.admin"
 
 
 void opt_init(void);

@@ -106,6 +106,7 @@ void usage_help(void)
       "\tshcoind.net.seed\tWhether to use pre-defined seed IP addresses.\n"
       "\tshcoind.ban.span\tSee '--ban-span' command-line option.\n"
       "\tshcoind.ban.threshold\tSee '--ban-threshold' command-line option.\n"
+      "\tshcoind.admin\tEnable administrative priveleges. (hazardous)\n"
       "\n"
       "Note: Run \"shpref <name> <val>\" to set persistent preferences.\n"
       "\n"

@@ -614,8 +614,10 @@ bool EMC2Wallet::CreateAccountTransaction(string strFromAccount, const vector<pa
         // Choose coins to use
         set<pair<const CWalletTx*,unsigned int> > setCoins;
         int64 nValueIn = 0;
-        if (!SelectAccountCoins(strFromAccount, nTotalValue, setCoins, nValueIn))
+        if (!SelectAccountCoins(strFromAccount, nTotalValue, setCoins, nValueIn)) {
+          strError = "An error occurred obtaining sufficient coins in order perform the transaction. Check the transaction fee cost.";
           return false;
+        }
         BOOST_FOREACH(PAIRTYPE(const CWalletTx*, unsigned int) pcoin, setCoins)
         {
           int64 nCredit = pcoin.first->vout[pcoin.second].nValue;

@@ -337,6 +337,7 @@ static int stratum_request_account_import(int ifaceIndex, user_t *user, int idx,
   return (err);
 }
 
+#if 0
 static int stratum_request_account_transactions(int ifaceIndex, user_t *user, int idx, char *account, char *pkey_str, int duration)
 {
   shjson_t *reply;
@@ -356,6 +357,7 @@ static int stratum_request_account_transactions(int ifaceIndex, user_t *user, in
 
   return (err);
 }
+#endif
 
 static int stratum_request_account_transfer(int ifaceIndex, user_t *user, int idx, char *account, char *pkey_str, char *dest, double amount)
 {
@@ -744,12 +746,14 @@ int stratum_request_message(user_t *user, shjson_t *json)
     return (stratum_request_account_create(ifaceIndex, user, idx, 
           shjson_array_astr(json, "params", 0)));
   }
+#if 0
   if (0 == strcmp(method, "account.transactions")) {
     return (stratum_request_account_transactions(ifaceIndex, user, idx, 
           shjson_array_astr(json, "params", 0),
           shjson_array_astr(json, "params", 1),
           shjson_array_num(json, "params", 2)));
   }
+#endif
   if (0 == strcmp(method, "account.address")) {
     return (stratum_request_account_address(ifaceIndex, user, idx, 
           shjson_array_astr(json, "params", 0)));

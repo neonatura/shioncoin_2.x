@@ -53,6 +53,10 @@ void opt_print(void)
       OPT_BAN_THRESHOLD, opt_num(OPT_BAN_THRESHOLD));
   shcoind_info("config", buf); 
 
+  sprintf(buf, "info: option '%s' set to '%s'.", 
+      OPT_ADMIN, opt_bool(OPT_ADMIN) ? "true" : "false");
+  shcoind_info("config", buf); 
+
 #ifdef STRATUM_SERVICE
   sprintf(buf, "info: option '%s' set to '%d'.", 
       OPT_SERV_STRATUM, opt_bool(OPT_SERV_STRATUM) ? "true" : "false");
@@ -120,6 +124,12 @@ static void opt_set_defaults(void)
     opt_num_set(OPT_BAN_THRESHOLD, MAX(0, atoi(buf)));
   if (opt_num(OPT_BAN_THRESHOLD) == 0)
     opt_num_set(OPT_BAN_THRESHOLD, 1000); /* default */
+
+  strncpy(buf, shpref_get("shcoind.admin", ""), sizeof(buf)-1);
+  if (tolower(*buf) == 'f')
+    opt_bool_set(OPT_ADMIN, FALSE);
+  else
+    opt_bool_set(OPT_ADMIN, TRUE); /* default */
 
 #ifndef USDE_SERVICE
   opt_bool_set(OPT_SERV_USDE, FALSE);

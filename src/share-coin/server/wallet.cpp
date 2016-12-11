@@ -663,10 +663,12 @@ void CWalletTx::GetAmounts(list<pair<CTxDestination, int64> >& listReceived, lis
       continue;
     }
 
+#if 0
 if (nValue == 0.00000000) {
 CTransaction *t_tx = (CTransaction *)this;
 fprintf(stderr, "DEBUG: GetAmounts: warning: %s\n", t_tx->ToString(ifaceIndex).c_str());
 }
+#endif
 
     CTxDestination address;
     if (!ExtractDestination(txout.scriptPubKey, address)) {
@@ -1282,9 +1284,6 @@ static bool SelectCoins_Avg(int64 nTargetValue, vector<COutput> vCoins, set<pair
     avg_val = (low_tot / low_cnt);
   avg_val = MIN(avg_val, nTargetValue / 4);
 
-fprintf(stderr, "DEBUG: avg_val %f\n", (double)avg_val/(double)COIN);
-fprintf(stderr, "DEBUG: max_val %f\n", (double)max_val/(double)COIN);
-
   int64 nTotalValue = 0;
 
   BOOST_FOREACH(COutput output, vCoins) {
@@ -1293,12 +1292,10 @@ fprintf(stderr, "DEBUG: max_val %f\n", (double)max_val/(double)COIN);
     int64 n = pcoin->vout[i].nValue;
 
     if (max_val != 0 && n > max_val) {
-fprintf(stderr, "DEBUG: skipping (too high) nCredit %f\n", (double)n/(double)COIN);
       continue; /* beyond what is needed */
     }
 
     if ((nTotalValue - CENT) > nTargetValue && n < avg_val) {
-fprintf(stderr, "DEBUG: skipping (too low) nCredit %f\n", (double)n/(double)COIN);
       continue; /* skip relative lower values */ 
     }
 
@@ -1319,11 +1316,9 @@ fprintf(stderr, "DEBUG: skipping (too low) nCredit %f\n", (double)n/(double)COIN
 //    int nOut = val.second;
 
 
-fprintf(stderr, "DEBUG: SelectCoins_Avg: index %d, nCredit %f, nValueRet %f\n", idx, (double)nCredit/(double)COIN, (double)nValueRet/(double)COIN);
     nTotalValue -= nCredit;
     if (nCredit > avg_val && 
         nTotalValue > (nTargetValue - nValueRet)) {
-      fprintf(stderr, "DEBUG: skipping (excess) nCredit %f\n", (double)nCredit/(double)COIN);
       continue; /* remainder will be sufficient */
     }
 
@@ -1610,7 +1605,6 @@ string CWallet::SendMoney(string strFromAccount, CScript scriptPubKey, int64 nVa
               strError = _("Error: Transaction creation failed  ");
           }
         }
-fprintf(stderr, "DEBUG: SendMoney: %s", strError.c_str());
         return strError;
     }
 
@@ -2319,8 +2313,7 @@ bool CWallet::GetMergedAddress(string strAccount, const char *tag, CCoinAddr& ad
 
   addrRet = CCoinAddr(ifaceIndex, pubkey.GetID());
   if (!addrRet.IsValid()) {
-fprintf(stderr, "DEBUG: CWallet::GetMergedAddress: error generating coin addr from pubkey\n");
-    return (false);
+    return (error(SHERR_INVAL, "CWallet.GetMergedAddress: error generating coin addr from pubkey"));
   }
 
   return (true);
@@ -3140,7 +3133,7 @@ fprintf(stderr, "DEBUG: core_UnacceptWalletTransaction: abandoning tx '%s' -- no
 fprintf(stderr, "DEBUG: marked wallet tx '%s' out #%d as unspent\n", prevhash.GetHex().c_str(), in.prevout.n); 
 
     if (!wtx.WriteToDisk()) {
-      Debug("rpc_tx_purge: error writing tx \"%s\" to tx database.", prevhash);
+      Debug("rpc_tx_purge: error writing tx \"%s\" to tx database.", prevhash.GetHex().c_str());
       continue;
     }
 
