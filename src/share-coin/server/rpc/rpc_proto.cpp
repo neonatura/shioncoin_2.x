@@ -1377,6 +1377,8 @@ Value rpc_block_workex(CIface *iface, const Array& params, bool fStratum)
 
 Value rpc_msg_sign(CIface *iface, const Array& params, bool fStratum)
 {
+  if (fStratum)
+    throw runtime_error("unsupported operation");
   CWallet *pwalletMain = GetWallet(iface);
   if (fHelp || params.size() != 2)
     throw runtime_error(
@@ -1422,6 +1424,8 @@ Value rpc_msg_sign(CIface *iface, const Array& params, bool fStratum)
 
 Value rpc_msg_verify(CIface *iface, const Array& params, bool fStratum)
 {
+  if (fStratum)
+    throw runtime_error("unsupported operation");
   if (fHelp || params.size() != 3)
     throw runtime_error(
         "msg.verify <coin-address> <signature> <message>\n"
@@ -2911,6 +2915,34 @@ Value rpc_wallet_new(CIface *iface, const Array& params, bool fStratum)
   ret = GetAccountAddress(GetWallet(iface), strAccount, true).ToString();
 
   return ret;
+}
+
+Value rpc_wallet_derive(CIface *iface, const Array& params, bool fStratum)
+{
+
+  if (params.size() != 2)
+    throw runtime_error("invalid parameters");
+
+  int ifaceIndex = GetCoinIndex(iface);
+  CWallet *wallet = GetWallet(iface);
+  string strAccount = params[0].get_str();
+  string strSeed = params[1].get_str();
+
+  CCoinAddr raddr = GetAccountAddress(GetWallet(iface), strAccount, false);
+  if (!raddr.IsValid())
+    throw JSONRPCError(-5, "Unknown account name.");
+
+  CCoinAddr addr(ifaceIndex);
+  if (!wallet->GetMergedAddress(strAccount, strSeed.c_str(), addr))
+    throw JSONRPCError(-5, "Error obtaining merged coin address.");
+
+
+  Object ret;
+  ret.push_back(Pair("seed", strSeed));
+  ret.push_back(Pair("origin", raddr.ToString()));
+  ret.push_back(Pair("addr", addr.ToString()));
+
+  return (ret);
 }
 
 Value rpc_peer_add(CIface *iface, const Array& params, bool fStratum)
@@ -4447,6 +4479,14 @@ const RPCOp WALLET_NEW = {
   "Syntax: <account>\n"
   "Returns a new address for receiving payments to the specified account."
 };
+const RPCOp WALLET_DERIVE = {
+  &rpc_wallet_derive, 2, {RPC_ACCOUNT, RPC_STRING},
+  "Syntax: <account> <str-seed>\n"
+  "Summary: Dervies a new coin address.\n"
+  "Params: [ <account> The account to obtain the originating coin address, <str-seed> A string which will be used as a merge seed. ]\n"
+  "\n"
+  "Derives a new address from the private key of the receiving address for a given account."
+};
 const RPCOp WALLET_RECVBYACCOUNT = {
   &rpc_wallet_recvbyaccount, 1, {RPC_ACCOUNT, RPC_INT64},
   "Syntax: <account> [<minconf>=1]\n"
@@ -4636,7 +4676,10 @@ void RegisterRPCOpDefaults(int ifaceIndex)
 
   RegisterRPCOp(ifaceIndex, "wallet.move", WALLET_MOVE);
   RegisterRPCOp(ifaceIndex, "wallet.multisend", WALLET_MULTISEND);
+
   RegisterRPCOp(ifaceIndex, "wallet.new", WALLET_NEW);
+
+  RegisterRPCOp(ifaceIndex, "wallet.derive", WALLET_DERIVE);
 
   RegisterRPCOp(ifaceIndex, "wallet.recvbyaccount", WALLET_RECVBYACCOUNT);
   RegisterRPCAlias(ifaceIndex, "getreceivedbyaccount", WALLET_RECVBYACCOUNT);

@@ -115,8 +115,6 @@ Value rpc_cert_list(CIface *iface, const Array& params, bool fStratum)
   cert_list *certs = GetCertTable(ifaceIndex);
 
   Object result;
-  Object active;
-  Object pending;
   for (cert_list::const_iterator mi = certs->begin(); mi != certs->end(); ++mi) {
     const uint160 hCert = mi->first;
     const uint256 hTx = mi->second;
@@ -144,10 +142,8 @@ Value rpc_cert_list(CIface *iface, const Array& params, bool fStratum)
         continue;
     }
 
-    active.push_back(Pair(cert.GetLabel().c_str(), hCert.GetHex()));
+    result.push_back(Pair(cert.GetLabel().c_str(), hCert.GetHex()));
   }
-  result.push_back(Pair("active", active));
-  result.push_back(Pair("pending", pending));
 
   return (result);
 }
