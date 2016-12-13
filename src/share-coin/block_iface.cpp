@@ -356,9 +356,16 @@ fprintf(stderr, "DEBUG: c_processblock: IsInitialBlockDownload()\n");
 #endif
 
 
+
   CBlockIndex *bestIndex = GetBestBlockIndex(iface);
   if (!bestIndex)
     return (BLKERR_INVALID_JOB); /* work not up-to-date */
+
+  if (bestIndex->nHeight < iface->blockscan_max) {
+    /* still downloading blocks. */
+fprintf(stderr, "DEBUG: processblock: still downloading blocks.. skipping submitted block.\n"); 
+    return (0);
+  }
 
   // Check for duplicate
   uint256 hash = pblock->GetHash();
