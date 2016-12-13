@@ -2182,7 +2182,7 @@ for (idx = 0; idx < MAX_COIN_IFACE; idx++)
 
   unet_local_init();
 
-    GetMyExternalIP(); /* DEBUG: deprecate */
+//  GetMyExternalIP(); 
 }
 
 bool static Bind(int ifaceIndex, const CService &addr, bool fError = true) {
@@ -2574,17 +2574,6 @@ void GetMyExternalIP(void)
   sprintf(prbuf, "info: listening on IP addr '%s'.", buf);
   shcoind_log(prbuf);
 
-  /* set the local geodetic location based on the listening address. */
-  if (0 == shgeodb_host(buf, &geo)) {
-    shnum_t lat, lon;
-
-    /* register location as local with libshare. */
-    shgeo_local_set(&geo);
-
-    shgeo_loc(&geo, &lat, &lon, NULL);
-    sprintf(buf, "info: latitude %Lf, longitude %Lf.", lat, lon);
-    shcoind_log(buf);
-  }
 
 }
 

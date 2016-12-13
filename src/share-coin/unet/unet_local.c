@@ -142,6 +142,7 @@ void unet_local_init(void)
   struct in6_addr sin6;
   char buf[256];
   time_t scan_time;
+  shgeo_t geo;
 
   unet_local_add("127.0.0.1"); /* ipv4 standard loopback */
   unet_local_add("::1"); /* ipv6 standard loopback */
@@ -170,11 +171,27 @@ void unet_local_init(void)
   scan_time = (time_t)atol(shpref_get("shcoind.net.addr.stamp", "0"));
   if (scan_time < (time(NULL) - 86400)) { /* > 1 day */
     unet_local_discover();
+
+    memset(buf, 0, sizeof(buf));
+    strncpy(buf, shpref_get("shcoind.net.addr", ""), sizeof(buf)-1);
   } else {
     /* check for cached or pre-defined IP address. */
     memset(buf, 0, sizeof(buf));
     strncpy(buf, shpref_get("shcoind.net.addr", ""), sizeof(buf)-1);
     unet_local_set(buf);
+  }
+
+  /* set the local geodetic location based on the listening address. */
+  memset(&geo, 0, sizeof(geo));
+  if (0 == shgeodb_host(buf, &geo)) {
+    shnum_t lat, lon;
+
+    /* register location as local with libshare. */
+    shgeo_local_set(&geo);
+
+    shgeo_loc(&geo, &lat, &lon, NULL);
+    sprintf(buf, "info: latitude %Lf, longitude %Lf.", lat, lon);
+    shcoind_log(buf);
   }
 
 }

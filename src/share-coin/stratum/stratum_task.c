@@ -353,27 +353,45 @@ task_t *task_init(void)
   uint64_t block_height;
   unsigned long cb1;
   unsigned long cb2;
+  int is_reset;
   int ifaceIndex;
   int err;
   int i;
 
-  if (!DefaultWorkIndex)
+  is_reset = FALSE;
+  if (DefaultWorkIndex == 0)
     DefaultWorkIndex = stratum_default_iface(); 
   for (ifaceIndex = 1; ifaceIndex < MAX_COIN_IFACE; ifaceIndex++) {
     err = task_verify(ifaceIndex, &work_reset[ifaceIndex]);
     if (!err) {
-      int idx = stratum_default_iface(); 
-      if (idx == 0 || idx == ifaceIndex) {
+      int idx = 0;
+
+      /* determine next service to mine. */
+      if (DefaultWorkIndex == ifaceIndex) {
+        /* random if block confirm was previous mined coin. */
         idx = (shrand() % (MAX_COIN_IFACE-1)) + 1;
-      } 
+      } else {
+        /* default to most difficult */
+        idx = stratum_default_iface();
+      }
+
+      /* assign new default */
       CIface *ifaceWork = GetCoinByIndex(idx);
       if (ifaceWork && ifaceWork->enabled)
         DefaultWorkIndex = idx;
+
+      is_reset = TRUE;
     }
   }
 
-  work_idx++;
-  ifaceIndex = (work_idx % MAX_COIN_IFACE);
+  /* concentrate on single coin at a time */
+  ifaceIndex = DefaultWorkIndex;
+  if (!is_reset) {
+    /* if no block confirmed then delay new work */
+    work_idx++;
+    if (ifaceIndex != (work_idx % MAX_COIN_IFACE))
+      return (NULL);
+  }
   if (ifaceIndex == 0)
     return (NULL);
 
