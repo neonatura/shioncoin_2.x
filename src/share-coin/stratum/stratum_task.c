@@ -320,7 +320,15 @@ static int task_verify(int ifaceIndex, int *work_reset_p)
   block_height = getblockheight(ifaceIndex);
   if (block_height == last_block_height[ifaceIndex]) {
     return (SHERR_AGAIN);
-  } 
+  }
+
+  if (last_block_height[ifaceIndex] != 0) {
+    CIface *iface = GetCoinByIndex(ifaceIndex);
+    if (iface && iface->blockscan_max &&
+        block_height < (iface->blockscan_max - 1)) {
+      return (SHERR_AGAIN);
+    }
+  }
 
   check_payout(ifaceIndex);
   commit_payout(ifaceIndex, block_height-1);
@@ -377,8 +385,10 @@ task_t *task_init(void)
 
       /* assign new default */
       CIface *ifaceWork = GetCoinByIndex(idx);
-      if (ifaceWork && ifaceWork->enabled)
+      if (ifaceWork && ifaceWork->enabled) {
+        
         DefaultWorkIndex = idx;
+      }
 
       is_reset = TRUE;
     }
@@ -398,6 +408,13 @@ task_t *task_init(void)
   iface = GetCoinByIndex(ifaceIndex);
   if (!iface)
     return (NULL);
+
+  if (!iface->enabled)
+    return (NULL);
+
+if (is_reset) {
+fprintf(stderr, "DEBUG: stratum: mining '%s' block..\n", iface->name);
+}
 
   tree = stratum_json(getblocktemplate(ifaceIndex));
   if (!tree) {
