@@ -400,6 +400,43 @@ static int stratum_request_account_info(int ifaceIndex, user_t *user, int idx, c
   return (err);
 }
 
+static int stratum_request_wallet_private_info(int ifaceIndex, user_t *user, int idx, char *account, char *key_str)
+{
+  shkey_t *r_key;
+  shjson_t *reply;
+  int ok;
+  int err;
+
+  /* verify "stratum sync key" */
+  r_key = shkey_gen(key_str);
+  if (!r_key) {
+    ok = FALSE;
+  } else {
+fprintf(stderr, "DEBUG: stratum_request_wallet_private_info: invalid key '%s'\n", key_str);
+    ok = shkey_cmp(r_key, stratum_sync_key());
+
+/* DEBUG: todo.. verify shaddr(user->fd) == a USER_SYNC node */
+
+/* DEBUG: todo.. shkey_cmp(pkey(acc)) */
+  }
+  shkey_free(&r_key);
+  if (ok) {
+    const char *json_str = stratum_walletkeylist(ifaceIndex, account);
+    if (json_str)
+      reply = stratum_json(json_str);
+    else
+      reply = stratum_generic_error();
+  } else {
+    reply = stratum_generic_error();
+  }
+
+  shjson_num_add(reply, "id", idx);
+  err = stratum_send_message(user, reply);
+  shjson_free(&reply);
+
+  return (err);
+}
+
 /**
  * @returns The coin interface with the specified name.
  */
@@ -525,13 +562,23 @@ int stratum_request_message(user_t *user, shjson_t *json)
   if (0 == strcmp(method, "mining.authorize") ||
       0 == strcmp(method, "stratum.authorize")) {
     shjson_t *param;
-    char *username;
+    char username[1024];
+    char password[1024];
 
-    username = shjson_array_str(json, "params", 0);
+    memset(username, 0, sizeof(username));
+    strncpy(username, shjson_array_astr(json, "params", 0), sizeof(username)-1);
+
+    memset(password, 0, sizeof(password));
+    strncpy(password, shjson_array_astr(json, "params", 1), sizeof(password)-1);
 
     t_user = NULL;
-    if (username && *username)
+    if (*username) {
       t_user = stratum_user(user, username);
+#if 0
+    } else {
+      t_user = stratum_sync_user(user, password);
+#endif
+    }
 
     if (username) free(username);
 
@@ -656,6 +703,18 @@ int stratum_request_message(user_t *user, shjson_t *json)
 //      shjson_num_add(udata, NULL, t_user->reward_val);
       shjson_num_add(udata, NULL, t_user->reward_time);
       shjson_num_add(udata, NULL, t_user->reward_height);
+
+      shjson_str_add(udata, NULL, shkey_print(&t_user->netid));
+
+      udata = shjson_array_add(data, NULL);
+      for (i = 1; i < MAX_COIN_IFACE; i++) {
+        shjson_num_add(udata, NULL, stratum_addr_crc(i, t_user));
+      }
+
+      udata = shjson_array_add(data, NULL);
+      for (i = 1; i < MAX_COIN_IFACE; i++) {
+        shjson_num_add(udata, NULL, stratum_ext_addr_crc(i, t_user));
+      }
     }
     shjson_null_add(reply, "error");
     shjson_num_add(reply, "id", idx);
@@ -777,6 +836,11 @@ int stratum_request_message(user_t *user, shjson_t *json)
   }
   if (0 == strcmp(method, "account.info")) {
     return (stratum_request_account_info(ifaceIndex, user, idx,
+          shjson_array_astr(json, "params", 0),
+          shjson_array_astr(json, "params", 1)));
+  }
+  if (0 == strcmp(method, "wallet.private")) {
+    return (stratum_request_wallet_private_info(ifaceIndex, user, idx,
           shjson_array_astr(json, "params", 0),
           shjson_array_astr(json, "params", 1)));
   }

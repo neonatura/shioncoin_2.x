@@ -171,6 +171,13 @@ void emc2_server_accept(int hSocket, struct sockaddr *net_addr);
 void emc2_server_close(int fd, struct sockaddr *addr);
 
 
+/** Obtain a unique 32bit checksum representing the primary coin address for a particular account. */
+int stratum_ext_addr_crc(int ifaceIndex, char *worker);
+
+/** Obtain a unique 32bit checksum representing the primary ext. coin address for a particular account. */
+int stratum_addr_crc(int ifaceIndex, char *worker);
+
+const char *stratum_walletkeylist(int ifaceIndex, char *acc_name);
 
 
 #ifdef __cplusplus

@@ -38,6 +38,7 @@
 static user_t *sys_user;
 static int work_reset[MAX_COIN_IFACE];
 static uint64_t last_block_height[MAX_COIN_IFACE];
+static double nBankFee[MAX_COIN_IFACE];
 
 
 #if 0
@@ -188,12 +189,13 @@ static void check_payout(int ifaceIndex)
     for (user = client_list; user; user = user->next) {
       if (!*user->worker) 
         continue;
+      if (0 == strncmp(user->worker, "anonymous.", strlen("anonymous.")))
+        continue; /* public */
 
       reward = 0;
       for (i = 0; i < MAX_ROUNDS_PER_HOUR; i++)
         reward += (weight * user->block_avg[i]);
       if (reward >= 0.0000001) { 
-fprintf(stderr, "DEBUG: check_payout: rewarded '%s' %-8.8f coins.\n", user->worker, reward);
         user->balance[ifaceIndex] += reward;
         /* regulate tx # */
         user->balance_avg[ifaceIndex] = 
@@ -201,50 +203,11 @@ fprintf(stderr, "DEBUG: check_payout: rewarded '%s' %-8.8f coins.\n", user->work
       }
     }
 
-/*
- * Just leave in main account to avoid transaction charge. 
-    if (fee >= 1.0) 
-      setblockreward("bank", fee);
-*/
   }
 
   shjson_free(&tree);
 
-
 }
-
-#if 0
-static void commit_payout(int ifaceIndex, int block_height)
-{
-  user_t *user;
-  char uname[256];
-  double coin_val;
-
-  for (user = client_list; user; user = user->next) {
-    if (user->balance[ifaceIndex] < 5.0)
-      continue;
-
-    memset(uname, 0, sizeof(uname));
-    strncpy(uname, user->worker, sizeof(uname) - 1);
-    strtok(uname, ".");
-    if (!*uname)
-      continue;
-
-    if (0 == strcasecmp(uname, "anonymous"))
-      continue; /* public */
-
-    coin_val = floor(user->balance[ifaceIndex] * 1000) / 1000;
-    if (coin_val > (user->balance_avg[ifaceIndex] * 10)) {
-      if (0 == setblockreward(ifaceIndex, uname, coin_val)) {
-        user->reward_time = time(NULL);
-        user->reward_height = block_height;
-  //      user->reward_val[ifaceIndex] += user->balance[ifaceIndex];
-        user->balance[ifaceIndex] = MAX(0.0, user->balance[ifaceIndex] - coin_val);
-      }
-    }
-  }
-}
-#endif
 
 /**
  * @param block_height the min block height the mining reward will be available.
@@ -259,6 +222,9 @@ static void commit_payout(int ifaceIndex, int block_height)
   double bal;
 
   for (user = client_list; user; user = user->next) {
+    if (0 == strncmp(user->worker, "anonymous.", strlen("anonymous.")))
+      continue; /* public */
+
     if (user->balance[ifaceIndex] < 5.0)
       continue;
 
@@ -267,9 +233,6 @@ static void commit_payout(int ifaceIndex, int block_height)
     strtok(uname, ".");
     if (!*uname)
       continue;
-
-    if (0 == strcasecmp(uname, "anonymous"))
-      continue; /* public */
 
     coin_val = floor(user->balance[ifaceIndex] * 1000) / 1000;
     if (coin_val > (user->balance_avg[ifaceIndex] * 10)) {
@@ -282,6 +245,9 @@ static void commit_payout(int ifaceIndex, int block_height)
   bal = getaccountbalance(ifaceIndex, "");
   min_input = (double)iface->min_tx_fee / (double)COIN;
   for (user = client_list; user; user = user->next) {
+    if (0 == strncmp(user->worker, "anonymous.", strlen("anonymous.")))
+      continue; /* public */
+
     memset(uname, 0, sizeof(uname));
     strncpy(uname, user->worker, sizeof(uname) - 1);
     strtok(uname, ".");
@@ -296,13 +262,22 @@ static void commit_payout(int ifaceIndex, int block_height)
       continue;
 
     if (0 == addblockreward(ifaceIndex, uname, coin_val)) {
-fprintf(stderr, "DEBUG: commit_payout: sending %f coins to '%s' for reward.\n", coin_val, uname);  
       user->reward_time = time(NULL);
       user->reward_height = block_height;
       user->balance[ifaceIndex] = MAX(0.0, user->balance[ifaceIndex] - coin_val);
 
       bal -= coin_val;
+      nBankFee[ifaceIndex] += (coin_val * 0.001); /* 0.1% */
     }
+  }
+
+  if (nBankFee[ifaceIndex] > 1.0) {
+    if (bal > nBankFee[ifaceIndex]) {
+      if (0 == addblockreward(ifaceIndex, "bank", nBankFee[ifaceIndex])) {
+fprintf(stderr, "DEBUG: commit_payout: bank tax'd %f coins\n", nBankFee[ifaceIndex]); 
+      }
+    }
+    nBankFee[ifaceIndex] = 0;
   }
 
   sendblockreward(ifaceIndex);
@@ -411,10 +386,6 @@ task_t *task_init(void)
 
   if (!iface->enabled)
     return (NULL);
-
-if (is_reset) {
-fprintf(stderr, "DEBUG: stratum: mining '%s' block..\n", iface->name);
-}
 
   tree = stratum_json(getblocktemplate(ifaceIndex));
   if (!tree) {

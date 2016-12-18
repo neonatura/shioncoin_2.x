@@ -38,11 +38,22 @@ extern "C" {
 #define UNET_RESERVED_1 4
 #define UNET_RESERVED_2 5
 #define UNET_RESERVED_3 6
+
 #define UNET_RESERVED_4 7
-#define UNET_STRATUM 8 
-#define UNET_RPC 9 
+
 #define MAX_UNET_COIN_MODES 8
-#define MAX_UNET_MODES 10
+
+/* coin stratum service */
+#define UNET_STRATUM 8 
+
+/* stratum through encrypted-stream-layer */
+#define UNET_STRATUM_ESL 9
+
+/* ssl-rpc via localhost connection */
+#define UNET_RPC 10
+
+/* maximum number of unet services */
+#define MAX_UNET_MODES 11
 
 
 

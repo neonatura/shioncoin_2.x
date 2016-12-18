@@ -2618,6 +2618,31 @@ Value rpc_wallet_validate(CIface *iface, const Array& params, bool fStratum)
   return ret;
 }
 
+Value rpc_stratum_info(CIface *iface, const Array& params, bool fStratum)
+{
+}
+Value rpc_stratum_list(CIface *iface, const Array& params, bool fStratum)
+{
+}
+
+static string json_stratum_key_str;
+Value rpc_stratum_key(CIface *iface, const Array& params, bool fStratum)
+{
+  shpeer_t *peer;
+  char host[256];
+  const char *text;
+  shkey_t *key;
+
+  sprintf(host, "127.0.0.1:%u", opt_num(OPT_STRATUM_PORT));
+  peer = shpeer_init("shcoind", host);
+  key = shpeer_kpriv(peer);
+  text = (const char *)shkey_print(key);
+  json_stratum_key_str = string(text);
+  shpeer_free(&peer);
+
+  return (json_stratum_key_str);
+}
+
 Value rpc_wallet_addrlist(CIface *iface, const Array& params, bool fStratum)
 {
   if (fHelp || params.size() != 1)
@@ -4549,6 +4574,18 @@ const RPCOp WALLET_VALIDATE = {
   "Return summarized information about <coin-address>."
 };
 
+const RPCOp STRATUM_INFO = {
+  &rpc_stratum_info, 0, {},
+  "Return summarized information about the stratum service."
+};
+const RPCOp STRATUM_LIST = {
+  &rpc_stratum_list, 0, {},
+  "List individual users associated with the stratum service."
+};
+const RPCOp STRATUM_KEY = {
+  &rpc_stratum_key, 0, {},
+  "Obtain the client-side synchronization key."
+};
 
 
 
@@ -4631,6 +4668,13 @@ void RegisterRPCOpDefaults(int ifaceIndex)
 
   RegisterRPCOp(ifaceIndex, "peer.remove", PEER_REMOVE); 
 
+  /* stratum service */
+//  RegisterRPCOp(ifaceIndex, "stratum.info", STRATUM_INFO);
+//  RegisterRPCOp(ifaceIndex, "stratum.list", STRATUM_LIST);
+  if (opt_bool(OPT_ADMIN)) {
+    RegisterRPCOp(ifaceIndex, "stratum.key", STRATUM_KEY);
+  }
+
   RegisterRPCOp(ifaceIndex, "tx.decode", TX_DECODE);
   RegisterRPCAlias(ifaceIndex, "decoderawtransaction", TX_DECODE);
 
@@ -4704,6 +4748,8 @@ void RegisterRPCOpDefaults(int ifaceIndex)
   RegisterRPCOp(ifaceIndex, "wallet.unspent", WALLET_UNSPENT);
   RegisterRPCOp(ifaceIndex, "wallet.select", WALLET_SELECT);
   RegisterRPCOp(ifaceIndex, "wallet.validate", WALLET_VALIDATE);
+
+
 }
 
 #if 0

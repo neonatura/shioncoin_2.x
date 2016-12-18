@@ -33,7 +33,6 @@
  * @{
  */
 
-#define USER_SYSTEM (1 << 0)
 
 #define MAX_SPEED_STEP 60
 #define MAX_ROUNDS_PER_HOUR 6
@@ -46,6 +45,7 @@ typedef struct user_t
   char block_hash[256];
 
   char worker[128];
+  char pass[256];
   char cli_ver[128];
   int work_diff;
 
@@ -91,6 +91,9 @@ double speed[MAX_SPEED_STEP];
   time_t reward_time;
   uint64_t reward_height;
   int ifaceIndex;
+
+  /* a unique reference to the originating IP/port */
+  shkey_t netid;
 
   struct user_t *next;
 } user_t;

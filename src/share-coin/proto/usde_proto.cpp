@@ -183,6 +183,9 @@ static CPubKey usde_GetMainAccountPubKey(CWallet *wallet)
       CCoinAddr addr(wallet->ifaceIndex, ret_key.GetID()); 
 fprintf(stderr, "DEBUG: usde_GetMainAccountPubKey: using '%s' for mining address.\n", addr.ToString().c_str()); 
     }
+
+    string strBankAccount("bank");
+    GetAccountAddress(wallet, strBankAccount, false);
   }
 
   return (ret_key);

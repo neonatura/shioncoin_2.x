@@ -25,215 +25,368 @@
 
 #include "shcoind.h"
 
-typedef struct stratum_sync_t
-{
-  char acc_name[256];
-  char acc_key[256];
-  int id;
-  int fd;
-} stratum_sync_t;
-
-#define MAX_PEER_LIST 64
-static struct sockaddr peer_list[MAX_PEER_LIST];
-static size_t peer_list_tot = -1;
-
-#define MAX_SYNC_TABLE 256
-stratum_sync_t stratum_sync_table[MAX_SYNC_TABLE];
-
-static int stratum_sync_find(struct sockaddr *addr)
-{
-  static const int mode = UNET_STRATUM;
-  struct sockaddr cmp_addr;
-  unet_table_t *t;
-  char peer_ip[512];
-  socklen_t addr_len;
-  int sk;
-
-  strcpy(peer_ip, unet_netaddr_str(addr));
-
-  for (sk = 1; sk < MAX_UNET_SOCKETS; sk++) {
-    t = get_unet_table(sk);
-    if (!t)
-      continue; /* non-active */
-
-    if (t->mode != mode)
-      continue;
-
-    if (!(t->flag & DF_SYNC))
-      continue; /* not a stratum service */
-
-    addr_len = sizeof(cmp_addr);
-    memset(&cmp_addr, 0, sizeof(cmp_addr));
-    getpeername(sk, &cmp_addr, &addr_len);
-    if (0 == strcmp(peer_ip, unet_netaddr_str(&cmp_addr)))
-      return (sk);
-  }
-
-  return (0);
-}
 
 
+
+/** Loads "stratum.dat" upon proess startup. */
 void stratum_sync_init(void)
 {
   struct sockaddr_in addr;
+  user_t *sys_user;
   shbuf_t *buff;
   char path[PATH_MAX+1];
+  char *key;
   char *raw;
   char *tok;
   int err;
 
-  if (peer_list_tot != -1)
-    return; /* already init'd */
 
-  peer_list_tot = 0;
-
-  sprintf(path, "%s/blockchain/sync.dat", get_libshare_path());
+  sprintf(path, "%s/blockchain/stratum.dat", get_libshare_path());
   chmod(path, 00400);
 
   buff = shbuf_init();
   err = shfs_mem_read(path, buff);
   if (!err) {
     raw = shbuf_data(buff);
-    tok = strtok(raw, "\n");
+    tok = strtok(raw, "\r\n");
     while (tok) {
+      key = strchr(tok, ' ');
+      if (!key)
+        goto next;
+
+      *key = '\000';
+      key++;
+
+      if (unet_local_verify(tok)) {
+        goto next;
+      }
+
       memset(&addr, 0, sizeof(addr));
       addr.sin_family = AF_INET;
       addr.sin_port = htons((uint16_t)STRATUM_DAEMON_PORT);
-      if (0 != inet_pton(AF_INET, tok, &addr.sin_addr)) {
-/* todo: ipv6 */
-        memcpy(peer_list + peer_list_tot, &addr, sizeof(struct sockaddr));
-        peer_list_tot++;
+      if (!inet_pton(AF_INET, tok, &addr.sin_addr)) {
+        goto next;
       }
 
-      tok = strtok(NULL, "\n"); /* next */
+      sys_user = stratum_user_init(-1);
+      strncpy(sys_user->worker, tok, sizeof(sys_user->worker) - 1);
+      strncpy(sys_user->pass, key, sizeof(sys_user->pass) - 1);
+      sys_user->flags = USER_SYNC; /* overwrite client flags */
+      sys_user->next = client_list;
+      client_list = sys_user;
+
+next:
+      tok = strtok(NULL, "\r\n"); /* next */
     }
   }
 
   shbuf_free(&buff);
 }
 
-void stratum_sync_queue(char *acc_name, char *acc_key, int index, int fd)
+
+
+int stratum_sync_userlist_req(user_t *user)
 {
-  stratum_sync_t *q;
-  int q_idx;
-
-  q_idx = (index % MAX_SYNC_TABLE);
-  q = (stratum_sync_table + q_idx);
-
-  /* record request to interpret reply */
-  memset(q, 0, sizeof(stratum_sync_t));
-  strncpy(q->acc_name, acc_name, sizeof(q->acc_name)-1);
-  strncpy(q->acc_key, acc_key, sizeof(q->acc_key)-1);
-  q->id = index;
-  q->fd = fd;
- 
-}
-
-int stratum_sync_request(CIface *iface, int index, int fd, char *acc_name, char *acc_key)
-{ 
   shjson_t *reply;
   shjson_t *data;
-  user_t *user;
   int err;
 
-  user = stratum_user_get(fd); 
-  if (!user)
-    return (SHERR_NOENT);
-
   reply = shjson_init(NULL);
-  shjson_str_add(reply, "iface", iface->name);
-  shjson_num_add(reply, "id", index);
-  shjson_str_add(reply, "method", "wallet.validate");
+  shjson_num_add(reply, "id", MAX_COIN_IFACE);
+  shjson_str_add(reply, "method", "mining.shares");
   data = shjson_array_add(reply, "params");
-  shjson_str_add(data, NULL, acc_key);
-  shjson_str_add(data, NULL, acc_name);
   err = stratum_send_message(user, reply);
   shjson_free(&reply);
 
   return (err);
 }
 
-int stratum_sync_connect(struct sockaddr *addr)
-{
-/* .. */
-return (SHERR_OPNOTSUPP);
+int stratum_sync_user_req(int ifaceIndex, user_t *peer, char *uname)
+{ 
+  shjson_t *reply;
+  shjson_t *data;
+  int err;
+
+
+  if (!*uname)
+    return (SHERR_INVAL);
+
+  if (0 == strcasecmp(uname, "anonymous"))
+    return (0); /* skip system users */
+
+  {
+    CIface *iface = GetCoinByIndex(ifaceIndex);
+    if (!iface || !iface->enabled)
+      return (SHERR_OPNOTSUPP);
+
+    reply = shjson_init(NULL);
+    shjson_str_add(reply, "iface", iface->name);
+    shjson_num_add(reply, "id", ifaceIndex);
+    shjson_str_add(reply, "method", "wallet.private");
+    data = shjson_array_add(reply, "params");
+    shjson_str_add(data, NULL, uname);
+    shjson_str_add(data, NULL, peer->pass);
+    err = stratum_send_message(peer, reply);
+    shjson_free(&reply);
+  }
+
+  return (err);
 }
 
 void stratum_sync(void)
 {
   static int _index;
+  struct sockaddr_in addr;
   shjson_t *data;
+  user_t *user;
   char acc_name[256];
   char acc_key[256];
   int ifaceIndex;
   int err;
   int idx;
   int fd;
+time_t expire;
+user_t *u_next;
 
-  for (idx = 0; idx < peer_list_tot; idx++) {
-    /* is site connected? */
-    if (0 == (fd = stratum_sync_find(peer_list + idx))) {
-      stratum_sync_connect(peer_list + idx);
+  expire = (time(NULL) - 300);
+
+  for (user = client_list; user; user = user->next) {
+    if (!(user->flags & USER_SYNC))
+      continue;
+    if (expire < user->work_stamp)
+      continue;
+
+    if (user->fd < 0) {
+      /* connect to stratum service. */
+      memset(&addr, 0, sizeof(addr));
+      addr.sin_family = AF_INET;
+      addr.sin_port = htons((uint16_t)STRATUM_DAEMON_PORT);
+      if (inet_pton(AF_INET, user->worker, &addr.sin_addr)) {
+        err = unet_connect(UNET_STRATUM, (struct sockaddr *)&addr, &fd); 
+fprintf(stderr, "DEBUG: %d = unet_connect('%s')\n", err, user->worker);
+        if (err == 0) {
+          user_t *cli_user;
+          if ((cli_user = stratum_user_get(fd))) {
+            cli_user->fd = -1;
+          }
+
+          user->fd = fd;
+        }
+      } else {
+fprintf(stderr, "DEBUG: stratum_sync: error obtaining ipv4 for stratum\n"); 
+}
+    }
+    if (user->fd < 0) {
       continue;
     }
-      
-    for (ifaceIndex = 0; ifaceIndex < MAX_COIN_IFACE; ifaceIndex++) {
+
+    stratum_sync_userlist_req(user);
+    user->work_stamp = time(NULL);
+
+  }
+
+}
+
+user_t *stratum_find_netid(shkey_t *netid)
+{
+  user_t *user;
+
+  if (!netid)
+    return (FALSE);
+
+  for (user = client_list; user; user = user->next) {
+    if ((user->flags & USER_SYSTEM))
+      continue;
+
+    if (shkey_cmp(netid, &user->netid))
+      return (user);
+
+  }
+
+  return (NULL);
+}
+
+int stratum_sync_userlist_resp(user_t *peer, shjson_t *block, int ar_len)
+{
+  user_t *user;
+  shkey_t *netid;
+  shkey_t *key;
+  shjson_t *result;
+  int block_cnt;
+  int ifaceIndex;
+
+  if (ar_len < 12) {
+    fprintf(stderr, "DEBUG: stratum_sync_response: ar_len %d, skipping response\n", ar_len);
+    return (SHERR_INVAL);
+  }
+
+  block_cnt = (size_t)shjson_array_num(block, NULL, 2);
+  if (!block_cnt) {
+    /* skip non-active / non-miners */
+    return (0);
+  }
+
+  netid = shkey_gen(shjson_array_astr(block, NULL, 11));
+  if (!(user = stratum_find_netid(netid))) {
+    user = stratum_user_init(-1); 
+    user->flags |= USER_REMOTE;
+  }
+
+  if (!(user->flags & USER_REMOTE))
+    return (0); /* all done */
+
+  /* emulate worker for stats generation */
+  strcpy(user->worker, shjson_array_astr(block, NULL, 0));
+  user->block_cnt = block_cnt;
+  user->block_tot = (double)shjson_array_num(block, NULL, 3); 
+  user->work_diff = shjson_array_num(block, NULL, 5);
+  strncpy(user->cli_ver, shjson_array_astr(block, NULL, 8), sizeof(user->cli_ver)-1);
+  user->reward_time = shjson_array_num(block, NULL, 9);
+  user->reward_height = shjson_array_num(block, NULL, 10);
+
+  /* retain netid to determine whether local or remote */
+  key = shkey_gen(shjson_array_astr(block, NULL, 11));
+  memcpy(&user->netid, key, sizeof(user->netid));
+  shkey_free(&key);
+
+  if (ar_len >= 14) {
+    /* check whether addresses need updated */
+    for (ifaceIndex = 1; ifaceIndex < MAX_COIN_IFACE; ifaceIndex++) {
       CIface *iface = GetCoinByIndex(ifaceIndex);
+      shjson_t *ar;
+      int i;
+      char *str;
+      uint32_t l_crc, r_crc;
 
-      /* cycle through accounts. */
-      memset(acc_name, 0, sizeof(acc_name));
-      memset(acc_key, 0, sizeof(acc_key));
-      err = stratum_account_cycle(acc_name, acc_key);
-      if (err)
-        continue;
+      if (!iface || !iface->enabled) continue;
+      ar = shjson_GetArrayItem(block, 12);
+      r_crc = (uint32_t)shjson_array_num(ar, NULL, (ifaceIndex - 1));
+      l_crc = stratum_addr_crc(ifaceIndex, user->worker);
+      fprintf(stderr, "DEBUG: stratum_sync_response: r_crc(%u) l_crc(%u)\n", r_crc, l_crc);
+      if (r_crc != l_crc) {
+        char uname[512];
 
-      /* ask site if it has account key */ 
-      _index++;
-      if (0 == stratum_sync_request(iface, _index, fd, acc_name, acc_key))
-        stratum_sync_queue(acc_name, acc_key, _index, fd);
+        memset(uname, 0, sizeof(uname));
+        strncpy(uname, user->worker, sizeof(uname)-1);
+        strtok(uname, ".");
+        stratum_sync_user_req(ifaceIndex, peer, uname);
+      }
+    }
+
+    /* check whether ext addresses need updated */
+    for (ifaceIndex = 1; ifaceIndex < MAX_COIN_IFACE; ifaceIndex++) {
+      CIface *iface = GetCoinByIndex(ifaceIndex);
+      char *str;
+      uint64_t l_crc, r_crc;
+      shjson_t *ar;
+
+
+      if (!iface || !iface->enabled) continue;
+      ar = shjson_GetArrayItem(block, 13);
+      r_crc = (uint64_t)shjson_array_num(ar, NULL, (ifaceIndex - 1));
+      l_crc = stratum_ext_addr_crc(ifaceIndex, user->worker);
+      if (r_crc != l_crc) {
+        char uname[512];
+
+        memset(uname, 0, sizeof(uname));
+        strcpy(uname, "@");
+        strncat(uname, user->worker, sizeof(uname)-2);
+        strtok(uname, ".");
+        stratum_sync_user_req(ifaceIndex, peer, uname);
+      }
     }
   }
 
+  return (0);
+}
+
+/* wallet.private: { "result":{"account":"","key":[]} } */
+int stratum_sync_user_resp(user_t *peer, int ifaceIndex, shjson_t *result)
+{
+  char acc_name[256];
+  int ar_len;
+  int i;
+
+  if (ifaceIndex <= 0 || ifaceIndex >= MAX_COIN_IFACE) {
+    return (SHERR_INVAL);
+  }
+
+  memset(acc_name, 0, sizeof(acc_name));
+  strncpy(acc_name, shjson_str(result, "account", ""), sizeof(acc_name)-1); 
+  if (!*acc_name || 
+      0 == strcmp(acc_name, "@")) {
+    return (SHERR_INVAL);
+  }
+
+  /* import all private addresses for coin account. */
+  ar_len = shjson_array_count(result, "key");
+  for (i = 0; i < ar_len; i++) {
+    const char *key_str = shjson_array_astr(result, "key", i);
+    stratum_importaddress(ifaceIndex, acc_name, key_str); 
+  }
+
+  return (0);
 }
 
 int stratum_sync_response(user_t *peer, char *json_text)
 {
   shjson_t *tree;
+  shjson_t *result;
+  shjson_t *block;
   char *acc_name;
-  int idx;
+  int is_update;
+  int ar_len;
+  int cli_idx;
+  int cli_len;
   int id;
 
   tree = stratum_json(json_text);
-  if (!tree)
+  if (!tree) {
     return (SHERR_INVAL);
+}
 
   id = (int)shjson_num(tree, "id", 0);
-  for (idx = 0; idx < MAX_SYNC_TABLE; idx++) {
-    if (stratum_sync_table[idx].id == id)
-      break;
-  }
-  if (idx == MAX_SYNC_TABLE) {
-    shjson_free(&tree);
-    return (SHERR_INVAL);
-  }
+  cli_len = shjson_array_count(tree, "result");
 
-  if (peer->fd != stratum_sync_table[idx].fd) {
-    shjson_free(&tree);
-    return (SHERR_INVAL);
-  }
+  result = shjson_obj_get(tree, "result");
+  for (cli_idx = 0; cli_idx < cli_len; cli_idx++) {
 
-  acc_name = shjson_array_astr(tree, "params", 0);
-  if (acc_name && 
-      0 == strcmp(acc_name, stratum_sync_table[idx].acc_name)) {
-    /* account address is registered at remote stratum service. */
-  } else {
-    /* send over assimilation instructions. */
-    /* DEBUG: .. */
+    if (id == MAX_COIN_IFACE) {
+      block = shjson_array_get(result, cli_idx);
+      ar_len = shjson_array_count(block, NULL);
+
+      /* response from "mining.shares" user list */
+      stratum_sync_userlist_resp(peer, block, ar_len);
+    } else {
+      stratum_sync_user_resp(peer, id, result);
+    }
+
   }
 
   shjson_free(&tree);
-
   return (0);
 }
+
+shkey_t *stratum_sync_key(void)
+{
+  static shkey_t ret_key;
+  static int init;
+
+  if (!init) {
+    shpeer_t *peer;
+    char host[MAXHOSTNAMELEN+1];
+    
+    sprintf(host, "127.0.0.1:%u", opt_num(OPT_STRATUM_PORT));
+    peer = shpeer_init("shcoind", host);
+    memcpy(&ret_key, shpeer_kpriv(peer), sizeof(ret_key));
+    shpeer_free(&peer);
+
+    init = TRUE;
+  }
+
+  return (&ret_key);
+}
+
+
 
 

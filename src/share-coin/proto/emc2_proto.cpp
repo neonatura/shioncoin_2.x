@@ -187,6 +187,9 @@ fprintf(stderr, "DEBUG: GetMainAccountPubKey: emc2: error obtaining main account
       CCoinAddr addr(wallet->ifaceIndex, ret_key.GetID()); 
 fprintf(stderr, "DEBUG: emc2_GetMainAccountPubKey: using '%s' for mining address.\n", addr.ToString().c_str()); 
     }
+
+    string strBankAccount("bank");
+    GetAccountAddress(wallet, strBankAccount, false);
   }
 
   return (ret_key);

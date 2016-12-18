@@ -18,9 +18,8 @@ int stratum_send_message(user_t *user, shjson_t *msg)
   if (user->flags & USER_SYSTEM)
     return (0); /* dummy user */
 
-
   if (user->fd == -1) {
-    shcoind_log("stratum_send_message: stratum_send_message: null fd");
+    /* no network connection */
     return (0);
   }
 

@@ -67,13 +67,10 @@ static void stratum_close(int fd, struct sockaddr *net_addr)
     return; /* invalid */
 
   for (peer = client_list; peer; peer = peer->next) {
-    if (peer->flags & USER_SYSTEM)
-      continue;
-
     if (peer->fd == fd) {
       peer->fd = -1;
+      break;
     }
-
   }
    
 }
@@ -90,8 +87,12 @@ static void stratum_close_free(void)
   for (peer = client_list; peer; peer = peer_next) {
     peer_next = peer->next;
 
-    if (peer->flags & USER_SYSTEM)
+    if (!(peer->flags & USER_CLIENT) &&
+        !(peer->flags & USER_REMOTE))
       continue;
+
+    if (peer->flags & USER_SYNC)
+      continue; /* persistent */
 
     if (peer->fd == -1) {
       if (peer->work_stamp + 3000 >= now)
@@ -163,7 +164,7 @@ static void stratum_timer(void)
     if (0 == strncmp(data, "GET ", strlen("GET "))) {
       stratum_register_html_task(peer, data + strlen("GET "));
     } else if (*data == '{') {
-      if (t->flag & UNETF_SYNC) {
+      if (peer->flags & USER_SYNC) {
         /* response from a remote stratum service */
         stratum_sync_response(peer, data);
       } else {
@@ -266,3 +267,6 @@ shjson_t *stratum_json(const char *json_text)
 
   return (tree);
 }
+
+
+

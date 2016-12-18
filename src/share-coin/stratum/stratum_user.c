@@ -8,6 +8,28 @@
 
 extern int DefaultWorkIndex;
 
+#define MAX_USER_FLAGS 6
+static const char *user_flag_label[MAX_USER_FLAGS] = {
+  "system",
+  "auth",
+  "subscribe",
+  "sync",
+  "client",
+  "remote"
+};
+
+const char *get_user_flag_label(int flag)
+{
+  int i;
+
+  for (i = 0; i < MAX_USER_FLAGS; i++) {
+    if ( flag & (1 << i) )
+      return (user_flag_label[i]);
+  }
+
+  return ("");
+}
+
 user_t *stratum_user_find(char *username)
 {
   user_t *user;
@@ -24,6 +46,9 @@ user_t *stratum_user_get(int fd)
 {
   user_t *user;
 
+  if (fd < 0)
+    return (NULL);
+
   for (user = client_list; user; user = user->next) {
     if (user->fd == fd)
       break;
@@ -32,6 +57,9 @@ user_t *stratum_user_get(int fd)
   return (user);
 }
 
+/**
+ * @returns The number of local stratum clients.
+ */
 int stratum_user_count(user_t *user)
 {
   struct sockaddr_in *addr;
@@ -44,7 +72,7 @@ int stratum_user_count(user_t *user)
   for (t_user = client_list; t_user; t_user = t_user->next) {
     if (t_user->fd == -1)
       continue;
-    if (t_user->flags & USER_SYSTEM)
+    if (!(t_user->flags & USER_CLIENT))
       continue;
     t_addr = (struct sockaddr_in *)shaddr(t_user->fd);
     if (!t_addr)
@@ -65,7 +93,7 @@ void merge_idle_worker(user_t *user)
   for (t_user = client_list; t_user; t_user = t_user->next) {
     if (t_user == user)
       continue; /* does not apply to self */
-    if (t_user->flags & USER_SYSTEM)
+    if (!(t_user->flags & USER_CLIENT))
       continue; /* skip system users */
     if (t_user->fd != -1)
       continue; /* skip active users */
@@ -146,6 +174,18 @@ user_t *stratum_user_init(int fd)
   //shscrypt_peer_gen(&user->peer, MIN_SHARE_DIFFICULTY);
 
   user->block_freq = 2.0;
+
+  if (user->fd > 0) {
+    shkey_t *key;
+    struct sockaddr *addr;
+
+    user->flags |= USER_CLIENT;
+
+    addr = shaddr(user->fd);
+    key = shkey_bin(addr, sizeof(struct sockaddr));
+    memcpy(&user->netid, key, sizeof(user->netid));
+    shkey_free(&key);
+  }
 
   return (user);
 }
@@ -243,6 +283,27 @@ int stratum_user_broadcast_task(task_t *task)
   }
 
   return (0);
+}
+
+void stratum_user_free(user_t *f_user)
+{
+  user_t *p_user;
+  user_t *user;
+
+  p_user = NULL;
+  for (user = client_list; user; user = user->next) {
+    if (user == f_user) {
+      if (user == client_list) {
+        client_list = user->next;
+      } else {
+        p_user->next = user->next;
+      }
+      free(f_user);
+      break;
+    }
+    p_user = user;
+  }
+
 }
 
 

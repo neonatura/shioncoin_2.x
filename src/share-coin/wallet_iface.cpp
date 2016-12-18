@@ -322,20 +322,6 @@ const char *json_getnewaddress(int ifaceIndex, const char *account)
   return (getnewaddr_str.c_str());
 }
 
-int cpp_stratum_account_cycle(char *ret_acc_name, char *ret_acc_key)
-{
-  static int _index;
-  int acc_idx;
-  int total = 1;
-
-  if (total == 0)
-    return (SHERR_AGAIN);
-
-  acc_idx = (_index % total);
-
-/* DEBUG: .. */
-  return (SHERR_OPNOTSUPP);
-}
 
 
 
@@ -372,6 +358,48 @@ const char *c_getaddressbyaccount(int ifaceIndex, const char *accountName)
   if (!found || !addr.IsValid())
      return (NULL);
   return (addr.ToString().c_str());
+}
+
+static string walletkeylist_json;
+static const char *cpp_stratum_walletkeylist(int ifaceIndex, const char *acc_name)
+{
+  CIface *iface = GetCoinByIndex(ifaceIndex);
+  CWallet *wallet = GetWallet(iface);
+  string strAccount(acc_name);
+  Object ret;
+
+  if (!iface || !wallet || !iface->enabled)
+    return (NULL);
+
+  ret.push_back(Pair("account", strAccount));
+
+  Array ar;
+  BOOST_FOREACH(const PAIRTYPE(CTxDestination, string)& item, wallet->mapAddressBook) {
+    const string& strName = item.second;
+    if (strName == strAccount) {
+      CCoinAddr address = CCoinAddr(wallet->ifaceIndex, item.first);
+      bool fComp;
+      CSecret secret;
+      CKeyID keyID;
+      CKey key;
+
+      if (!address.IsValid())
+        continue;
+      if (!address.GetKeyID(keyID))
+        continue;
+      if (!wallet->GetKey(keyID, key))
+        continue;
+
+      secret = key.GetSecret(fComp); 
+      //cbuff buff(secret.begin(), secret.end());
+      ar.push_back(CCoinSecret(ifaceIndex, secret, fComp).ToString());
+     // ar.push_back(HexStr(buff.begin(), buff.end()));
+    }
+  }
+  ret.push_back(Pair("key", ar));
+
+  walletkeylist_json = JSONRPCReply(ret, Value::null, Value::null);
+  return (walletkeylist_json.c_str());
 }
 
 /**
@@ -443,7 +471,9 @@ fprintf(stderr, "DEBUG: '%s' = SendMoneyTo: amount %d\n", strError.c_str(), (int
 }
 
 vector< pair<CScript, int64> > vecRewardSend;
+#if 0
 int64 nBankFee = 0;
+#endif
 
 int c_addblockreward(int ifaceIndex, const char *accountName, double dAmount)
 {
@@ -518,9 +548,13 @@ int c_sendblockreward(int ifaceIndex)
   int64 nTotValue = 0;
   int64 nValue = 0;
   BOOST_FOREACH(const PAIRTYPE(CScript, int64)& item, vecRewardSend) {
+#if 0
     nValue += item.second + (item.second / 1000);
+#endif
     nTotValue += item.second;
   }
+
+#if 0
   nBankFee += nValue / 1000;
 
   /* add in residual bank fee */
@@ -533,6 +567,7 @@ int c_sendblockreward(int ifaceIndex)
     }
     nBankFee = 0;
   }
+#endif
 
 
 #if 0
@@ -560,8 +595,10 @@ int c_sendblockreward(int ifaceIndex)
 
   Debug("sendblockreward: sent %f coins for stratum reward(s) [tx-fee %f].", (double)nTotValue/(double)COIN, (double)nFeeRet/(double)COIN);
 
+#if 0
   /* bank pays for all transaction fees */
   nBankFee -= nFeeRet;
+#endif
 
   return (0);
 }
@@ -787,7 +824,7 @@ const char *json_getaddressinfo(int ifaceIndex, const char *addr_hash, const cha
     CKeyID keyID;
 
     if (!address.IsValid()) {
-      throw JSONRPCError(STERR_INVAL, "Invalid usde destination address");
+      throw JSONRPCError(STERR_INVAL, "Invalid coin destination address");
     }
 
     if (pkey_str && strlen(pkey_str) > 1) {
@@ -1300,9 +1337,43 @@ const char *getnewaddress(int ifaceIndex, const char *account)
   return (json_getnewaddress(ifaceIndex, account));
 }
 
-int stratum_account_cycle(char *acc_name, char *acc_key)
+
+int stratum_addr_crc(int ifaceIndex, char *worker)
 {
-  return (cpp_stratum_account_cycle(acc_name, acc_key));
+  char *addr;
+  char acc_name[256];
+
+  memset(acc_name, 0, sizeof(acc_name));
+  strncpy(acc_name, worker, sizeof(acc_name)-1);
+  strtok(acc_name, ".");
+
+  addr = (char *)c_getaddressbyaccount(ifaceIndex, acc_name);
+  if (!addr)
+    return (0);
+
+  return ((int)shcrc32(addr, strlen(addr)));
+}
+
+int stratum_ext_addr_crc(int ifaceIndex, char *worker)
+{
+  char *addr;
+  char acc_name[256];
+
+  memset(acc_name, 0, sizeof(acc_name));
+  strcpy(acc_name, "@");
+  strncat(acc_name+1, worker, sizeof(acc_name)-2);
+  strtok(acc_name, ".");
+
+  addr = (char *)c_getaddressbyaccount(ifaceIndex, acc_name);
+  if (!addr)
+    return (0);
+
+  return ((int)shcrc32(addr, strlen(addr)));
+}
+
+const char *stratum_walletkeylist(int ifaceIndex, char *acc_name)
+{
+  return (cpp_stratum_walletkeylist(ifaceIndex, (const char *)acc_name));
 }
 
 #if 0

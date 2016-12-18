@@ -37,7 +37,8 @@ static const char *_unet_label[MAX_UNET_MODES] =
   "!RESERVED!",
   "!RESERVED!",
   "stratum",
-  "rpc",
+  "stratum-esl",
+  "rpc"
 };
 const char *unet_mode_label(int mode)
 {
