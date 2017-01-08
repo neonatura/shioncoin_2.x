@@ -354,6 +354,10 @@ const char *c_getaddressbyaccount(int ifaceIndex, const char *accountName)
 {
   CWallet *wallet = GetWallet(ifaceIndex);
   bool found = false;
+
+  if (!wallet)
+    return (NULL);
+
   CCoinAddr addr = GetAddressByAccount(wallet, accountName, found);
   if (!found || !addr.IsValid())
      return (NULL);

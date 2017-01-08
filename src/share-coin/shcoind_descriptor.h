@@ -44,7 +44,8 @@ extern "C" {
 #define DF_LISTEN (1 << 6)
 #define DF_MAP (1 << 7)
 #define DF_SYNC (1 << 8)
-#define MAX_DESCRIPTOR_FLAGS 9
+#define DF_ESL (1 << 9)
+#define MAX_DESCRIPTOR_FLAGS 10
 
 
 #define CLAIM_FD(_fd, _mode, _flag) \

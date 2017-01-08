@@ -194,9 +194,14 @@ void unet_cycle(double max_t)
         unet_close(fd, "exception");
         continue;
       }
+      t = get_unet_table(fd);
       if (FD_ISSET(fd, &r_set)) {
         memset(data, 0, sizeof(data));
-        r_len = shnet_read(fd, data, sizeof(data));
+        if (!t || !(t->flag & DF_ESL)) {
+          r_len = shnet_read(fd, data, sizeof(data));
+        } else {
+          r_len = esl_read(fd, data, sizeof(data));
+        }
         if (r_len < 0) {
           if (r_len != SHERR_AGAIN) {
             sprintf(errbuf, "read fd %d (%s)", fd, sherrstr(r_len));
@@ -209,12 +214,15 @@ void unet_cycle(double max_t)
         }
       }
       if (FD_ISSET(fd, &w_set)) {
-        t = get_unet_table(fd);
         if (!t || !t->wbuff) continue;
 
         w_tot = shbuf_size(t->wbuff);
         if (w_tot != 0) {
-          w_len = shnet_write(fd, shbuf_data(t->wbuff), w_tot);
+          if (!(t->flag & DF_ESL)) {
+            w_len = shnet_write(fd, shbuf_data(t->wbuff), w_tot);
+          } else {
+            w_len = esl_write(fd, shbuf_data(t->wbuff), w_tot);
+          }
           if (w_len < 0) {
             if (w_len != SHERR_AGAIN) {
               sprintf(errbuf, "write fd %d (%s)", fd, sherrstr(r_len));

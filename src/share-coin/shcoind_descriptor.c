@@ -35,7 +35,8 @@ const char *_descriptor_flag_label[MAX_DESCRIPTOR_FLAGS] = {
   "inbound",
   "listen",
   "map",
-  "sync"
+  "sync",
+  "esl"
 }; 
 
 
@@ -326,6 +327,13 @@ void descriptor_wbuff_add(int fd, unsigned char *data, size_t data_len)
     shcoind_log(errbuf);
     return;
   }
+
+#if 0
+  if (d->flag & DF_ESL) {
+    esl_write_data(fd, data, data_len);
+    return;
+  }
+#endif
  
   if (!d->wbuff)
     d->wbuff = shbuf_init();
