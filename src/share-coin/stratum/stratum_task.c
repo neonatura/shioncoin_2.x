@@ -349,6 +349,8 @@ task_t *task_init(void)
     if (!err) {
       int idx = 0;
 
+      is_reset = TRUE;
+
       /* determine next service to mine. */
       if (DefaultWorkIndex == ifaceIndex) {
         /* random if block confirm was previous mined coin. */
@@ -361,11 +363,10 @@ task_t *task_init(void)
       /* assign new default */
       CIface *ifaceWork = GetCoinByIndex(idx);
       if (ifaceWork && ifaceWork->enabled) {
-        
         DefaultWorkIndex = idx;
+        break;
       }
 
-      is_reset = TRUE;
     }
   }
 
