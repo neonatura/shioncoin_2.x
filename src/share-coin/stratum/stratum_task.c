@@ -347,25 +347,24 @@ task_t *task_init(void)
   for (ifaceIndex = 1; ifaceIndex < MAX_COIN_IFACE; ifaceIndex++) {
     err = task_verify(ifaceIndex, &work_reset[ifaceIndex]);
     if (!err) {
+      int idx;
+
       is_reset = TRUE;
-    }
-  }
-  if (is_reset) {
-    int idx;
 
-    /* determine next service to mine. */
-    if (DefaultWorkIndex == ifaceIndex) {
-      /* random if block confirm was previous mined coin. */
-      idx = (shrand() % (MAX_COIN_IFACE-1)) + 1;
-    } else {
-      /* default to most difficult */
-      idx = stratum_default_iface();
-    }
+      /* determine next service to mine. */
+      if (DefaultWorkIndex == ifaceIndex) {
+        /* random if block confirm was previous mined coin. */
+        idx = (shrand() % (MAX_COIN_IFACE-1)) + 1;
+      } else {
+        /* default to most difficult */
+        idx = stratum_default_iface();
+      }
 
-    /* assign new default */
-    CIface *ifaceWork = GetCoinByIndex(idx);
-    if (ifaceWork && ifaceWork->enabled) {
-      DefaultWorkIndex = idx;
+      /* assign new default */
+      CIface *ifaceWork = GetCoinByIndex(idx);
+      if (ifaceWork && ifaceWork->enabled) {
+        DefaultWorkIndex = idx;
+      }
     }
   }
 
