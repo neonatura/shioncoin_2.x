@@ -347,15 +347,7 @@ int c_processblock(CBlock* pblock)
 
   if (vNodes.empty()) {
     return (0); 
-}
-#if 0 
-  if (IsInitialBlockDownload(pblock->ifaceIndex)) {
-fprintf(stderr, "DEBUG: c_processblock: IsInitialBlockDownload()\n");
-    return (0); // silent
   }
-#endif
-
-
 
   CBlockIndex *bestIndex = GetBestBlockIndex(iface);
   if (!bestIndex)
@@ -363,7 +355,7 @@ fprintf(stderr, "DEBUG: c_processblock: IsInitialBlockDownload()\n");
 
   if (bestIndex->nHeight < iface->blockscan_max) {
     /* still downloading blocks. */
-fprintf(stderr, "DEBUG: processblock: still downloading blocks.. skipping submitted block.\n"); 
+//fprintf(stderr, "DEBUG: processblock: still downloading blocks.. skipping submitted block.\n"); 
     return (0);
   }
 
