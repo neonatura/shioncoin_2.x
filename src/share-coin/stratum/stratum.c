@@ -181,8 +181,10 @@ static void stratum_timer(void)
     /* generate new work, as needed */
     stratum_task_gen();
 
+#if 0
     /* synchronize with remote stratum services, as needed */
     stratum_sync();
+#endif
 
     last_task_t = time(NULL);
   }

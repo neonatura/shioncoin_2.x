@@ -728,14 +728,18 @@ const char *c_getmininginfo(int ifaceIndex)
 {
   Array result;
 
-  result.push_back((int)GetBestHeight(ifaceIndex));
+  int height = (int)GetBestHeight(ifaceIndex);
+  result.push_back((int)height);
 
   if (nextDifficulty > 0.00000000)
     result.push_back((double)nextDifficulty);
   else
     result.push_back((double)GetDifficulty(ifaceIndex));
 
-  result.push_back((double)c_GetNetworkHashRate(ifaceIndex));
+  if (height > 0)
+    result.push_back((double)c_GetNetworkHashRate(ifaceIndex));
+  else
+    result.push_back((double)0.0);
 
   mininginfo_json = JSONRPCReply(result, Value::null, Value::null);
   return (mininginfo_json.c_str());

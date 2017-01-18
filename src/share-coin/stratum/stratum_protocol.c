@@ -580,8 +580,6 @@ int stratum_request_message(user_t *user, shjson_t *json)
 #endif
     }
 
-    if (username) free(username);
-
     if (!t_user) {
       reply = shjson_init(NULL);
       set_stratum_error(reply, -2, "unknown user");

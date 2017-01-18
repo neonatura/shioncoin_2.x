@@ -80,8 +80,16 @@ unet_table_t *t;
     next_iface = NULL;
 
   {
-    shjson_t *json = shjson_init(getmininginfo(idx));
-    unsigned long height = shjson_array_num(json, "result", 0);
+    const char *json_str = getmininginfo(idx);
+    shjson_t *json = shjson_init(json_str);
+    unsigned long height = 0;
+
+if (!json) {
+fprintf(stderr, "DEBUG: stratum_http_request: NULL json for idx #%d: %s\n", idx, json_str);
+}
+
+    if (json)
+      height = shjson_array_num(json, "result", 0);
 
     shbuf_catstr(buff,
         "<div style=\"font-size : 14px; font-family : Georgia; height : 32px; width : 99%; background : linear-gradient(to bottom, #1e5799 0%,#2989d8 50%,#207cca 51%,#7db9e8 100%); color : #e8e8e9; padding-top : 10px;\">\r\n"); 
@@ -122,21 +130,23 @@ unet_table_t *t;
       shbuf_catstr(buff, html);
     }
 
-    sprintf(html,
-        "<div style=\"float : left; margin-left : 16px; margin-right : 16px; font-size : 16px;\">%s</div>\r\n"
-        "<div style=\"float : left; margin-left : 16px;\">Block Height: %lu</div>\r\n"
-        "<div style=\"float : left; margin-left : 16px;\">Difficulty: %-4.4f</div>\r\n"
-        "<div style=\"float : left; margin-left : 16px;\">Global Speed: %-3.3fmh/s</div>\r\n"
-        "<div style=\"float : left; margin-left : 16px;\">Max Coins: %lu</div>\r\n"
-        "<div style=\"clear : both;\"></div>\r\n"
-        "</div>\r\n"
-        "<hr></hr>\r\n",
-        iface->name, height,
-        shjson_array_num(json, "result", 1),
-        shjson_array_num(json, "result", 2) / 1000000,
-        (unsigned long)(iface->max_money / COIN));
-    shbuf_catstr(buff, html);
-    shjson_free(&json);
+    if (json) {
+      sprintf(html,
+          "<div style=\"float : left; margin-left : 16px; margin-right : 16px; font-size : 16px;\">%s</div>\r\n"
+          "<div style=\"float : left; margin-left : 16px;\">Block Height: %lu</div>\r\n"
+          "<div style=\"float : left; margin-left : 16px;\">Difficulty: %-4.4f</div>\r\n"
+          "<div style=\"float : left; margin-left : 16px;\">Global Speed: %-3.3fmh/s</div>\r\n"
+          "<div style=\"float : left; margin-left : 16px;\">Max Coins: %lu</div>\r\n"
+          "<div style=\"clear : both;\"></div>\r\n"
+          "</div>\r\n"
+          "<hr></hr>\r\n",
+          iface->name, height,
+          shjson_array_num(json, "result", 1),
+          shjson_array_num(json, "result", 2) / 1000000,
+          (unsigned long)(iface->max_money / COIN));
+      shbuf_catstr(buff, html);
+      shjson_free(&json);
+    }
 
 /* DEBUG: TODO: .. show mem usage .. blockIndex vs mapped files ~ */
   }
