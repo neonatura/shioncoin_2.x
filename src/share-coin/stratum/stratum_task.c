@@ -345,7 +345,7 @@ task_t *task_init(void)
   uint64_t block_height;
   unsigned long cb1;
   unsigned long cb2;
-  int is_reset;
+  int reset_idx;
   int ifaceIndex;
   int err;
   int i;
