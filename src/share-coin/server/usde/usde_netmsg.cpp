@@ -355,6 +355,7 @@ bool usde_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
     CBlockIndex *pindexBest = GetBestBlockIndex(USDE_COIN_IFACE);
     if (pindexBest) {
       InitServiceBlockEvent(USDE_COIN_IFACE, pfrom->nStartingHeight);
+fprintf(stderr, "DEBUG: USDE: (VER) requesting blocks up to height %d\n", pfrom->nStartingHeight);
     }
 
 

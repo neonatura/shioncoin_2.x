@@ -319,6 +319,15 @@ static int task_verify(int ifaceIndex, int *work_reset_p)
 }
 
 
+typedef struct task_stat_t
+{
+  time_t birth;
+  time_t stamp;
+  uint32_t total;
+} task_stat_t;
+
+task_stat_t _task_stat[MAX_COIN_IFACE];
+
 task_t *task_init(void)
 {
   CIface *iface;
@@ -341,36 +350,43 @@ task_t *task_init(void)
   int err;
   int i;
 
-  is_reset = FALSE;
+  reset_idx = 0;
+
   if (DefaultWorkIndex == 0)
     DefaultWorkIndex = stratum_default_iface(); 
   for (ifaceIndex = 1; ifaceIndex < MAX_COIN_IFACE; ifaceIndex++) {
+    iface = GetCoinByIndex(ifaceIndex);
+    if (!iface || !iface->enabled)
+      continue;
+
     err = task_verify(ifaceIndex, &work_reset[ifaceIndex]);
-    if (!err) {
-      int idx;
+    if (!err)
+      reset_idx = ifaceIndex;
+  }
 
-      is_reset = TRUE;
+  if (reset_idx) {
+    int orig_idx = DefaultWorkIndex;
 
-      /* determine next service to mine. */
-      if (DefaultWorkIndex == ifaceIndex) {
-        /* random if block confirm was previous mined coin. */
-        idx = (shrand() % (MAX_COIN_IFACE-1)) + 1;
-      } else {
-        /* default to most difficult */
-        idx = stratum_default_iface();
-      }
-
-      /* assign new default */
-      CIface *ifaceWork = GetCoinByIndex(idx);
-      if (ifaceWork && ifaceWork->enabled) {
+    int diff_idx = stratum_default_iface();
+    if (diff_idx &&
+        diff_idx != DefaultWorkIndex &&
+        diff_idx != reset_idx) {
+      DefaultWorkIndex = diff_idx;
+    } else {
+      int idx = (shrand() % (MAX_COIN_IFACE-1)) + 1;
+      iface = GetCoinByIndex(idx);
+      if (iface && iface->enabled)
         DefaultWorkIndex = idx;
-      }
+    }
+
+    if (orig_idx) {
+fprintf(stderr, "DEBUG: task_init: switching mining pool from #%d to #%d\n", orig_idx, DefaultWorkIndex); 
     }
   }
 
   /* concentrate on single coin at a time */
   ifaceIndex = DefaultWorkIndex;
-  if (!is_reset) {
+  if (!reset_idx) {
     /* if no block confirmed then delay new work */
     work_idx++;
     if (ifaceIndex != (work_idx % MAX_COIN_IFACE))
@@ -388,6 +404,7 @@ task_t *task_init(void)
 
   tree = stratum_json(getblocktemplate(ifaceIndex));
   if (!tree) {
+fprintf(stderr, "DEBUG: task_init: error obtaining JSON for mining iface #%d\n", ifaceIndex); 
     return (NULL);
   }
 

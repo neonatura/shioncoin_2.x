@@ -147,25 +147,20 @@ const char *c_getblocktemplate(int ifaceIndex)
   // Update block
 
 
-  /* clear work after new block and every ten minutes. */
-  reset = 0;
-  if (altHeight[ifaceIndex] &&
-      altHeight[ifaceIndex] != (GetBestHeight(ifaceIndex) + 1)) {
-    reset = 1;
-    last_reset_t = time(NULL);
-  } else if ((last_reset_t + 600) < time(NULL)) {
-    reset = 1;
-    last_reset_t = time(NULL);
-  }
-  if (reset == 1) { /* delete all worker blocks. */
-    for (map<int, CBlock*>::const_iterator mi = mapWork.begin(); mi != mapWork.end(); ++mi)
-    {
-      CBlock *tblock = mi->second;
-      delete tblock;
-    }
-    mapWork.clear();
-    altBlock[ifaceIndex] = NULL;
+  if (altHeight[ifaceIndex] != (GetBestHeight(ifaceIndex) + 1)) {
+    /* clear work every five minutes. */
+    if ((last_reset_t + 300) < time(NULL)) {
+      last_reset_t = time(NULL);
 
+      /* delete all worker blocks. */
+      for (map<int, CBlock*>::const_iterator mi = mapWork.begin(); mi != mapWork.end(); ++mi)
+      {
+        CBlock *tblock = mi->second;
+        delete tblock;
+      }
+      mapWork.clear();
+    }
+    altBlock[ifaceIndex] = NULL;
     templateWeight = 1;
   } else {
     nIndex++;
@@ -177,7 +172,6 @@ const char *c_getblocktemplate(int ifaceIndex)
     if (templateWeight > 10)
       templateWeight = 5;
   }
-
 
   CBlockIndex *pindexPrev = GetBestBlockIndex(iface);
   if (!pindexPrev) {
@@ -355,7 +349,7 @@ int c_processblock(CBlock* pblock)
 
   if (bestIndex->nHeight < iface->blockscan_max) {
     /* still downloading blocks. */
-//fprintf(stderr, "DEBUG: processblock: still downloading blocks.. skipping submitted block.\n"); 
+fprintf(stderr, "DEBUG: processblock: still downloading blocks.. skipping submitted block.\n"); 
     return (0);
   }
 

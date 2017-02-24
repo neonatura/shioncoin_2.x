@@ -472,6 +472,7 @@ int stratum_default_iface(void)
   CIface *iface;
   double t_diff;
   double diff;
+  double span;
   int ifaceIndex;
   int idx;
 
@@ -481,7 +482,10 @@ int stratum_default_iface(void)
     iface = GetCoinByIndex(idx);
     if (!iface || !iface->enabled) continue;
 
-    t_diff = GetNextDifficulty(idx);
+    span = (double)(60 - MAX(59, time(NULL) - iface->net_valid));
+    t_diff = (double)GetNextDifficulty(idx) / span;
+    t_diff = MAX(0.1, t_diff);
+
     if (t_diff >= diff) {
       ifaceIndex = idx;
       diff = t_diff;

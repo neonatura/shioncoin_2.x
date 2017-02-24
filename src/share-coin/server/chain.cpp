@@ -335,14 +335,17 @@ bool ServiceBlockEvent(int ifaceIndex)
     return (true); /* keep trying */
 
   CBlockIndex *pindexBest = GetBestBlockIndex(ifaceIndex);
-  if (!pindexBest)
+  if (!pindexBest) {
+fprintf(stderr, "DEBUG: (%s) ServiceBlockEvent: !pindexBest\n", iface->name);
     return (true); /* keep trying */
+}
 
   if (iface->blockscan_max == 0)
     return (true); /* keep trying */
 
   if (pindexBest->nHeight >= iface->blockscan_max) {
     ServiceBlockEventUpdate(ifaceIndex);
+fprintf(stderr, "DEBUG: (%s) ServiceBlockEvent: caught up (height %d)\n", iface->name, pindexBest->nHeight);
     return (false);
   }
 
@@ -354,12 +357,13 @@ bool ServiceBlockEvent(int ifaceIndex)
 
     int idx = (nNodeIndex % vNodes.size());
     pfrom = vNodes[idx];
+    nNodeIndex++;
 
     if (pfrom->nVersion == 0)
       return (true); /* not ready yet */
 
     pfrom->PushGetBlocks(pindexBest, uint256(0));
-    nNodeIndex++;
+fprintf(stderr, "DEBUG: (%s) ServiceBlockEvent: requesting blocks (height %d)\n", iface->name, pindexBest->nHeight);
 
     /* force next check to be later */
     iface->net_valid = time(NULL);

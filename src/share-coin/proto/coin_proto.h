@@ -147,6 +147,7 @@ typedef struct coin_iface_t
   time_t net_valid;
   time_t net_invalid;
   uint32_t blockscan_max;
+  time_t work_stamp;
   int flags;
 
   struct coin_stat_t {
