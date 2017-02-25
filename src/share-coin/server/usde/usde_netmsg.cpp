@@ -599,9 +599,13 @@ fprintf(stderr, "DEBUG: nInv == nLastBlock\n");
     CBlockIndex* pindex = locator.GetBlockIndex();
 
     // Send the rest of the chain
-    if (pindex) {
+    if (pindex)
       pindex = pindex->pnext;
-fprintf(stderr, "DEBUG: (getblocks) starting from height %d\n", pindex->nHeight); 
+
+    if (pindex) {
+      Debug("(usde) ProcessMessage[getblocks]: sending from height %d", (int)pindex->nHeight); 
+    } else {
+      Debug("(usde) ProcessMessage[getblocks]: suppressing block upload.");
     }
 
     int nLimit = 500;

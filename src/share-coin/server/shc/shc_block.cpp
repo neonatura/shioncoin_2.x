@@ -986,7 +986,7 @@ bool shc_ProcessBlock(CNode* pfrom, CBlock* pblock)
     if (pfrom) {
       CBlockIndex *pindexBest = GetBestBlockIndex(SHC_COIN_IFACE);
       if (pindexBest) {
-fprintf(stderr, "DEBUG: shc_ProcessBlocks: requsesting missing blocks from height %d\n", pindexBest->nHeight); 
+        Debug("(shc) ProcessBlocks: requesting blocks from height %d due to orphan '%s'.\n", pindexBest->nHeight, pblock->GetHash().GetHex().c_str()); 
         pfrom->PushGetBlocks(GetBestBlockIndex(SHC_COIN_IFACE), shc_GetOrphanRoot(pblock2));
       }
     }

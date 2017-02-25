@@ -303,35 +303,37 @@ bool USDETxDB::LoadBlockIndex()
 
   CBlockIndex *pindexBest = (*mapBlockIndex)[hashBestChain];
   bool ok = true;
-  if (!pindexBest)
+  if (!pindexBest) {
+    Debug("(usde) LoadBlockIndex: Unable to establish block heirarchy.");
     ok = false;
-  else if (pindexBest->nHeight > 0 && !pindexBest->pprev)
+  } else if (pindexBest->nHeight > 0 && !pindexBest->pprev) {
+    Debug("(usde) LoadBlockIndex: Block heirarchy is severed at height %d.", (int)pindexBest->nHeight);
     ok = false;
-  else if (!hasGenesisRoot(pindexBest))
+  } else if (!hasGenesisRoot(pindexBest)) {
+    Debug("(usde) LoadBlockIndex: Invalid genesis hierarchy from height %d.", pindexBest->nHeight);
     ok = false;
+  }
   if (!ok) {
     pindexBest = GetBestBlockIndex(iface);
     if (!pindexBest)
       return error(SHERR_INVAL, "USDETxDB::LoadBlockIndex() : USDEBlock::hashBestChain not found in the block index");
-    fprintf(stderr, "DEBUG: LoadBlockIndex: falling back to highest block height %d\n", pindexBest->nHeight);
     hashBestChain = pindexBest->GetBlockHash();
+
+    error("(usde) LoadBlockIndex: falling back to highest block height %d (hash: %s)\n", pindexBest->nHeight, pindexBest->GetBlockHash().GetHex().c_str());
   }
 
   if (!pindexBest) {
     fprintf(stderr, "DEBUG: USDETxDB::LoadBlockIndex: error: hashBestChain '%s' not found in block index table\n", (hashBestChain).GetHex().c_str());
   }
 
-
-
   SetBestBlockIndex(USDE_COIN_IFACE, pindexBest);
   //  SetBestHeight(iface, pindexBest->nHeight);
   USDEBlock::bnBestChainWork = pindexBest->bnChainWork;
   pindexBest->pnext = NULL;
 
-  sprintf(errbuf, "USDE::LoadBlockIndex: hashBestChain=%s  height=%d  date=%s\n",
-      hashBestChain.GetHex().c_str(), GetBestHeight(USDE_COIN_IFACE),
+  Debug("(usde) LoadBlockIndex: hashBestChain=%s  height=%d  date=%s\n",
+      hashBestChain.GetHex().c_str(), (int)GetBestHeight(USDE_COIN_IFACE),
       DateTimeStrFormat("%x %H:%M:%S", pindexBest->GetBlockTime()).c_str());
-  unet_log(USDE_COIN_IFACE, errbuf);
 
   // Load bnBestInvalidWork, OK if it doesn't exist
   ReadBestInvalidWork(USDEBlock::bnBestInvalidWork);

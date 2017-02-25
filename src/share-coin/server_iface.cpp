@@ -1527,7 +1527,7 @@ void shc_server_timer(void)
             pnode->CloseSocketDisconnect("shc_coin_server_recv");
             continue;
           }
-          timing_term(USDE_COIN_IFACE, "recv msg", &ts);
+          timing_term(SHC_COIN_IFACE, "recv msg", &ts);
         }
       }
 
