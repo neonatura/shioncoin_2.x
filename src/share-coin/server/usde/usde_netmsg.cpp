@@ -507,13 +507,16 @@ fprintf(stderr, "DEBUG: USDE: (VER) requesting blocks up to height %d\n", pfrom-
       if (!fAlreadyHave)
         pfrom->AskFor(inv);
       else if (inv.type == MSG_BLOCK && USDE_mapOrphanBlocks.count(inv.hash)) {
-        pfrom->PushGetBlocks(GetBestBlockIndex(USDE_COIN_IFACE), usde_GetOrphanRoot(USDE_mapOrphanBlocks[inv.hash]));
+        CBlockIndex *pindexBest = GetBestBlockIndex(USDE_COIN_IFACE);
+if (pindexBest) fprintf(stderr, "DEBUG: inv.type == MSG_BLOCK, request blocks from height %d\n", pindexBest->nHeight);
+        pfrom->PushGetBlocks(pindexBest, usde_GetOrphanRoot(USDE_mapOrphanBlocks[inv.hash]));
       } else if (nInv == nLastBlock) {
         // In case we are on a very long side-chain, it is possible that we already have
         // the last block in an inv bundle sent in response to getblocks. Try to detect
         // this situation and push another getblocks to continue.
         std::vector<CInv> vGetData(USDE_COIN_IFACE, inv);
         blkidx_t blkidx = *blockIndex;
+fprintf(stderr, "DEBUG: nInv == nLastBlock\n");
         pfrom->PushGetBlocks(blkidx[inv.hash], uint256(0));
       }
 
@@ -596,8 +599,11 @@ fprintf(stderr, "DEBUG: USDE: (VER) requesting blocks up to height %d\n", pfrom-
     CBlockIndex* pindex = locator.GetBlockIndex();
 
     // Send the rest of the chain
-    if (pindex)
+    if (pindex) {
       pindex = pindex->pnext;
+fprintf(stderr, "DEBUG: (getblocks) starting from height %d\n", pindex->nHeight); 
+    }
+
     int nLimit = 500;
     for (; pindex; pindex = pindex->pnext)
     {

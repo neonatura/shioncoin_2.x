@@ -983,8 +983,13 @@ bool shc_ProcessBlock(CNode* pfrom, CBlock* pblock)
     SHC_mapOrphanBlocksByPrev.insert(make_pair(pblock2->hashPrevBlock, pblock2));
 
     /* request missing blocks */
-    if (pfrom)
-      pfrom->PushGetBlocks(GetBestBlockIndex(SHC_COIN_IFACE), shc_GetOrphanRoot(pblock2));
+    if (pfrom) {
+      CBlockIndex *pindexBest = GetBestBlockIndex(SHC_COIN_IFACE);
+      if (pindexBest) {
+fprintf(stderr, "DEBUG: shc_ProcessBlocks: requsesting missing blocks from height %d\n", pindexBest->nHeight); 
+        pfrom->PushGetBlocks(GetBestBlockIndex(SHC_COIN_IFACE), shc_GetOrphanRoot(pblock2));
+      }
+    }
     return true;
   }
 

@@ -142,10 +142,16 @@ void CNode::PushGetBlocks(CBlockIndex* pindexBegin, uint256 hashEnd)
     return;
   }
 
-  if (pindexBegin)
-    Debug("PushGetBlocks: requesting height %d to hash '%s'\n", pindexBegin->nHeight, hashEnd.GetHex().c_str());
-  else
-    Debug("PushGetBlocks: requesting requesting to hash '%s'\n", hashEnd.GetHex().c_str());
+  {
+    CIface *iface = GetCoinByIndex(ifaceIndex);
+    if (iface && iface->enabled) {
+      if (pindexBegin)
+        Debug("(%s) PushGetBlocks: requesting height %d to hash '%s'\n", iface->name, pindexBegin->nHeight, hashEnd.GetHex().c_str());
+      else
+        Debug("(%s) PushGetBlocks: requesting genesis to hash '%s'\n", iface->name, hashEnd.GetHex().c_str());
+    }
+  }
+
   pindexLastGetBlocksBegin = pindexBegin;
   hashLastGetBlocksEnd = hashEnd;
 

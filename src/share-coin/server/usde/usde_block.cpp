@@ -1095,8 +1095,12 @@ pblock->print();
 
     // Ask this guy to fill in what we're missing
     if (pfrom) {
-      pfrom->PushGetBlocks(GetBestBlockIndex(USDE_COIN_IFACE), usde_GetOrphanRoot(pblock2));
-}
+      CBlockIndex *pindexBest = GetBestBlockIndex(USDE_COIN_IFACE);
+      if (pindexBest) {
+        fprintf(stderr, "DEBUG: usde_ProcessBlocks: requsesting missing blocks from height %d\n", pindexBest->nHeight); 
+        pfrom->PushGetBlocks(pindexBest, usde_GetOrphanRoot(pblock2));
+      }
+    }
 
     return true;
   }

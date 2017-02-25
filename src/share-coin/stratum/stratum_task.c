@@ -214,12 +214,17 @@ static void check_payout(int ifaceIndex)
  */
 static void commit_payout(int ifaceIndex, int block_height)
 {
-  CIface *iface = GetCoinByIndex(ifaceIndex);
+  CIface *iface;
   user_t *user;
   char uname[256];
+  char buf[256];
   double min_input;
   double coin_val;
   double bal;
+
+  iface = GetCoinByIndex(ifaceIndex);
+  if (!iface || !iface->enabled)
+    return;
 
   for (user = client_list; user; user = user->next) {
     if (0 == strncmp(user->worker, "anonymous.", strlen("anonymous.")))
@@ -274,7 +279,8 @@ static void commit_payout(int ifaceIndex, int block_height)
   if (nBankFee[ifaceIndex] > 1.0) {
     if (bal > nBankFee[ifaceIndex]) {
       if (0 == addblockreward(ifaceIndex, "bank", nBankFee[ifaceIndex])) {
-fprintf(stderr, "DEBUG: commit_payout: bank tax'd %f coins\n", nBankFee[ifaceIndex]); 
+        sprintf(buf, "(%s) commit_payout: 'bank' account tax'd %f coins.\n", iface->name, nBankFee[ifaceIndex]); 
+        shcoind_log(buf);
       }
     }
     nBankFee[ifaceIndex] = 0;
@@ -380,7 +386,8 @@ task_t *task_init(void)
     }
 
     if (orig_idx) {
-fprintf(stderr, "DEBUG: task_init: switching mining pool from #%d to #%d\n", orig_idx, DefaultWorkIndex); 
+      sprintf(errbuf, "task_init: switching mining pool from coin interface #%d to #%d\n", orig_idx, DefaultWorkIndex); 
+      shcoind_log(errbuf);
     }
   }
 
@@ -402,10 +409,18 @@ fprintf(stderr, "DEBUG: task_init: switching mining pool from #%d to #%d\n", ori
   if (!iface->enabled)
     return (NULL);
 
-  tree = stratum_json(getblocktemplate(ifaceIndex));
-  if (!tree) {
-fprintf(stderr, "DEBUG: task_init: error obtaining JSON for mining iface #%d\n", ifaceIndex); 
-    return (NULL);
+  {
+    const char *json_text = getblocktemplate(ifaceIndex);
+
+    if (!json_text)
+        return (NULL);
+
+    tree = stratum_json(json_text);
+    if (!tree) {
+      sprintf(errbuf, "(%s) task_init: error decoding JSON: %s\n", iface->name, json_text); 
+      shcoind_log(errbuf);
+      return (NULL);
+    }
   }
 
   block = shjson_obj(tree, "result");
@@ -502,6 +517,8 @@ fprintf(stderr, "DEBUG: task_init: error obtaining JSON for mining iface #%d\n",
   task_list = task;
 #endif
 
+  sprintf(errbuf, "(%s) task_init: created new mining task. (height: %d) (prev-hash: %s)\n", iface->name, (int)task->height, task->prev_hash);
+  shcoind_log(errbuf);
 
   return (task);
 }

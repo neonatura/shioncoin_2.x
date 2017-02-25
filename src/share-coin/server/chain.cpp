@@ -336,16 +336,17 @@ bool ServiceBlockEvent(int ifaceIndex)
 
   CBlockIndex *pindexBest = GetBestBlockIndex(ifaceIndex);
   if (!pindexBest) {
-fprintf(stderr, "DEBUG: (%s) ServiceBlockEvent: !pindexBest\n", iface->name);
+    Debug("(%s) ServiceBlockEvent: no block hiearchy established.\n", iface->name);
     return (true); /* keep trying */
-}
+  }
 
   if (iface->blockscan_max == 0)
     return (true); /* keep trying */
 
   if (pindexBest->nHeight >= iface->blockscan_max) {
     ServiceBlockEventUpdate(ifaceIndex);
-fprintf(stderr, "DEBUG: (%s) ServiceBlockEvent: caught up (height %d)\n", iface->name, pindexBest->nHeight);
+    Debug("(%s) ServiceBlockEvent: finished at height %d.\n", 
+        iface->name, (int)pindexBest->nHeight);
     return (false);
   }
 
@@ -362,8 +363,9 @@ fprintf(stderr, "DEBUG: (%s) ServiceBlockEvent: caught up (height %d)\n", iface-
     if (pfrom->nVersion == 0)
       return (true); /* not ready yet */
 
+    Debug("(%s) ServiceBlockEvent: requesting blocks (height: %d)\n",
+        iface->name, (int)pindexBest->nHeight);
     pfrom->PushGetBlocks(pindexBest, uint256(0));
-fprintf(stderr, "DEBUG: (%s) ServiceBlockEvent: requesting blocks (height %d)\n", iface->name, pindexBest->nHeight);
 
     /* force next check to be later */
     iface->net_valid = time(NULL);
@@ -421,7 +423,7 @@ bool ServicePeerEvent(int ifaceIndex)
   if (tot < 500) {
     pfrom->PushMessage("getaddr");
     pfrom->fGetAddr = true;
-fprintf(stderr, "DEBUG: ServicePeerEvent: pushed \"getaddr\" request.\n");
+    Debug("ServicePeerEvent: requesting node address list for iface #%d (known: %s).\n", ifaceIndex, tot);
   }
 
 #if 0
