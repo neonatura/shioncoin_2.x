@@ -2595,13 +2595,19 @@ void AddPeerAddress(CIface *iface, const char *hostname, int port)
   if (!iface || !iface->enabled)
     return;
 
+  if (port == 0)
+    port = iface->port;
+
   memset(addr_str, 0, sizeof(addr_str));
   snprintf(addr_str, sizeof(addr_str)-1, "%s %d", hostname, port); 
 
   /* add peer to tracking database. */
   peer = shpeer_init(iface->name, addr_str);
   create_uevent_verify_peer(GetCoinIndex(iface), peer);
-fprintf(stderr, "DEBUG: AddPeerAddress: host '%s' @ port %d\n", hostname, port);
+
+  Debug("(%s) AddPeerAddress: verify host '%s' (port: %d).", 
+      iface->name, (char *)hostname, port);
+
 }
 
 

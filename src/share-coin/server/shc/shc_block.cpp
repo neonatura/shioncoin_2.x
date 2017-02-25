@@ -1023,6 +1023,13 @@ bool shc_ProcessBlock(CNode* pfrom, CBlock* pblock)
   }
 
   return true;
+
+}
+
+CBlockIndex *shc_GetLastCheckpoint()
+{
+  blkidx_t *blockIndex = GetBlockTable(SHC_COIN_IFACE);
+  return (SHC_Checkpoints::GetLastCheckpoint(*blockIndex));
 }
 
 bool shc_CheckProofOfWork(uint256 hash, unsigned int nBits)

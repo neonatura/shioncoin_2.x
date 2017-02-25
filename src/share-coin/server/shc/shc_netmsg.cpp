@@ -72,6 +72,7 @@ extern vector <CAddress> GetAddresses(CIface *iface, int max_peer);
 
 // These functions dispatch to one or all registered wallets
 
+extern CBlockIndex *shc_GetLastCheckpoint();
 
 
 // get the wallet transaction with the given hash (if it exists)
@@ -480,10 +481,8 @@ fprintf(stderr, "DEBUG: ProcessMessage: Must have a version message before anyth
       AddPeerAddress(iface, addr.ToStringIP().c_str(), addr.GetPort());
     }
 
-
     if (vAddr.size() < 1000)
       pfrom->fGetAddr = false;
-fprintf(stderr, "DEBUG: RECV 'addr': pfrom->fGetAddr = %s\n", pfrom->fGetAddr ? "true" : "false");
   }
 
 
@@ -525,13 +524,19 @@ fprintf(stderr, "DEBUG: RECV 'addr': pfrom->fGetAddr = %s\n", pfrom->fGetAddr ? 
         else if (inv.type == MSG_BLOCK && SHC_mapOrphanBlocks.count(inv.hash)) {
           pfrom->PushGetBlocks(GetBestBlockIndex(SHC_COIN_IFACE), shc_GetOrphanRoot(SHC_mapOrphanBlocks[inv.hash]));
         } else if (nInv == nLastBlock) {
+          CBlockIndex* pcheckpoint = shc_GetLastCheckpoint();
+
           // In case we are on a very long side-chain, it is possible that we already have
           // the last block in an inv bundle sent in response to getblocks. Try to detect
           // this situation and push another getblocks to continue.
           std::vector<CInv> vGetData(SHC_COIN_IFACE, inv);
           blkidx_t blkidx = *blockIndex;
-          pfrom->PushGetBlocks(blkidx[inv.hash], uint256(0));
-          Debug("(shc) INVENTORY: force request: %s\n", inv.ToString().c_str());
+          CBlockIndex *pindex = blkidx[inv.hash];
+
+          if (!pcheckpoint || !pindex ||
+              pindex->nHeight >= pcheckpoint->nHeight) {
+            pfrom->PushGetBlocks(blkidx[inv.hash], uint256(0));
+          }
         }
 
         // Track requests for our stuff

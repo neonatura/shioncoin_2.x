@@ -1137,6 +1137,12 @@ pblock->print();
   return true;
 }
 
+CBlockIndex *usde_GetLastCheckpoint()
+{
+  blkidx_t *blockIndex = GetBlockTable(USDE_COIN_IFACE);
+  return (USDE_Checkpoints::GetLastCheckpoint(*blockIndex));
+}
+
 bool usde_CheckProofOfWork(uint256 hash, unsigned int nBits)
 {
   CBigNum USDE_bnTarget;
