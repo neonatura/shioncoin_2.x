@@ -319,7 +319,7 @@ bool USDETxDB::LoadBlockIndex()
       return error(SHERR_INVAL, "USDETxDB::LoadBlockIndex() : USDEBlock::hashBestChain not found in the block index");
     hashBestChain = pindexBest->GetBlockHash();
 
-    error("(usde) LoadBlockIndex: falling back to highest block height %d (hash: %s)\n", pindexBest->nHeight, pindexBest->GetBlockHash().GetHex().c_str());
+    error(SHERR_IO, "(usde) LoadBlockIndex: falling back to highest block height %d (hash: %s)\n", pindexBest->nHeight, pindexBest->GetBlockHash().GetHex().c_str());
   }
 
   if (!pindexBest) {
