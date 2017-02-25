@@ -512,25 +512,27 @@ fprintf(stderr, "DEBUG: USDE: (VER) requesting blocks up to height %d\n", pfrom-
 if (pindexBest) fprintf(stderr, "DEBUG: inv.type == MSG_BLOCK, request blocks from height %d\n", pindexBest->nHeight);
         pfrom->PushGetBlocks(pindexBest, usde_GetOrphanRoot(USDE_mapOrphanBlocks[inv.hash]));
       } else if (nInv == nLastBlock) {
-        CBlockIndex* pcheckpoint = usde_GetLastCheckpoint();
 
         // In case we are on a very long side-chain, it is possible that we already have
         // the last block in an inv bundle sent in response to getblocks. Try to detect
         // this situation and push another getblocks to continue.
         std::vector<CInv> vGetData(USDE_COIN_IFACE, inv);
-        blkidx_t blkidx = *blockIndex;
-        CBlockIndex *pindex = blkidx[inv.hash];
+        if (blockIndex->count(inv.hash) != 0) {
+          CBlockIndex* pcheckpoint = usde_GetLastCheckpoint();
+          blkidx_t blkidx = *blockIndex;
+          CBlockIndex *pindex = blkidx[inv.hash];
 
-        if (!pcheckpoint || !pindex ||
-            pindex->nHeight >= pcheckpoint->nHeight) {
+          if (!pcheckpoint || !pindex ||
+              pindex->nHeight >= pcheckpoint->nHeight) {
 
-if (pindex) {
-Debug("(usde) ProcessMessage[inv]: received redundant block at height %d.", (int)pindex->nHeight);
-} else {
-Debug("(usde) ProcessMessage[inv]: received unknown redundant block.");
-}
+            if (pindex) {
+              Debug("(usde) ProcessMessage[inv]: received redundant block at height %d.", (int)pindex->nHeight);
+            } else {
+              Debug("(usde) ProcessMessage[inv]: received unknown redundant block.");
+            }
 
-          pfrom->PushGetBlocks(blkidx[inv.hash], uint256(0));
+            pfrom->PushGetBlocks(blkidx[inv.hash], uint256(0));
+          }
         }
       }
 

@@ -515,8 +515,10 @@ bool emc2_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
         // the last block in an inv bundle sent in response to getblocks. Try to detect
         // this situation and push another getblocks to continue.
         std::vector<CInv> vGetData(EMC2_COIN_IFACE, inv);
-        blkidx_t blkidx = *blockIndex;
-        pfrom->PushGetBlocks(blkidx[inv.hash], uint256(0));
+        if (blockIndex->count(inv.hash) != 0) {
+          blkidx_t blkidx = *blockIndex;
+          pfrom->PushGetBlocks(blkidx[inv.hash], uint256(0));
+        }
       }
 
       // Track requests for our stuff

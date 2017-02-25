@@ -524,18 +524,20 @@ fprintf(stderr, "DEBUG: ProcessMessage: Must have a version message before anyth
         else if (inv.type == MSG_BLOCK && SHC_mapOrphanBlocks.count(inv.hash)) {
           pfrom->PushGetBlocks(GetBestBlockIndex(SHC_COIN_IFACE), shc_GetOrphanRoot(SHC_mapOrphanBlocks[inv.hash]));
         } else if (nInv == nLastBlock) {
-          CBlockIndex* pcheckpoint = shc_GetLastCheckpoint();
 
           // In case we are on a very long side-chain, it is possible that we already have
           // the last block in an inv bundle sent in response to getblocks. Try to detect
           // this situation and push another getblocks to continue.
           std::vector<CInv> vGetData(SHC_COIN_IFACE, inv);
-          blkidx_t blkidx = *blockIndex;
-          CBlockIndex *pindex = blkidx[inv.hash];
+          if (blockIndex->count(inv.hash) != 0) {
+            CBlockIndex* pcheckpoint = shc_GetLastCheckpoint();
+            blkidx_t blkidx = *blockIndex;
+            CBlockIndex *pindex = blkidx[inv.hash];
 
-          if (!pcheckpoint || !pindex ||
-              pindex->nHeight >= pcheckpoint->nHeight) {
-            pfrom->PushGetBlocks(blkidx[inv.hash], uint256(0));
+            if (!pcheckpoint || !pindex ||
+                pindex->nHeight >= pcheckpoint->nHeight) {
+              pfrom->PushGetBlocks(blkidx[inv.hash], uint256(0));
+            }
           }
         }
 
