@@ -175,13 +175,14 @@ static CPubKey usde_GetMainAccountPubKey(CWallet *wallet)
 
     ret_key = GetAccountPubKey(wallet, strAccount);
     if (!ret_key.IsValid()) {
-      fprintf(stderr, "DEBUG: GetMainAccountPubKey: usde: error obtaining main account pubkey.");
+      error(SHERR_INVAL, "(usde) GetMainAccountPubKey: error obtaining main account pubkey.");
       CReserveKey reservekey(wallet);
       ret_key = reservekey.GetReservedKey();
       reservekey.KeepKey();
     } else {
       CCoinAddr addr(wallet->ifaceIndex, ret_key.GetID()); 
-fprintf(stderr, "DEBUG: usde_GetMainAccountPubKey: using '%s' for mining address.\n", addr.ToString().c_str()); 
+      Debug("(usde) GetMainAccountPubKey: using '%s' for mining address.",
+          addr.ToString().c_str()); 
     }
 
     string strBankAccount("bank");

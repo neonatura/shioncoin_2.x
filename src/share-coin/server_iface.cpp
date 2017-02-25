@@ -944,11 +944,12 @@ void usde_server_accept(int hSocket, struct sockaddr *net_addr)
   }
 
   if (inBound) {
-    fprintf(stderr, "usde: accepted connection %s\n", addr.ToString().c_str());
+    Debug("(usde) usde_server_accept: accepted connection '%s'.", 
+        addr.ToString().c_str());
   } else {
-    fprintf(stderr, "usde: initialized connection %s\n", addr.ToString().c_str());
+    Debug("(usde) usde_server_accept: initialized connection '%s'.",
+        addr.ToString().c_str());
   }
-
 
   CNode* pnode = new CNode(USDE_COIN_IFACE, hSocket, addr, 
       shaddr_print(shaddr(hSocket)), inBound);
@@ -1631,9 +1632,11 @@ void shc_server_accept(int hSocket, struct sockaddr *net_addr)
   }
 
   if (inBound) {
-    fprintf(stderr, "shc: accepted connection %s\n", addr.ToString().c_str());
+    Debug("(shc) shc_server_accept: accepted connection '%s'.", 
+        addr.ToString().c_str());
   } else {
-    fprintf(stderr, "shc: initialized connection %s\n", addr.ToString().c_str());
+    Debug("(shc) shc_server_accept: initialized connection '%s'.",
+        addr.ToString().c_str());
   }
 
 
@@ -2719,9 +2722,11 @@ void emc2_server_accept(int hSocket, struct sockaddr *net_addr)
   }
 
   if (inBound) {
-    fprintf(stderr, "emc2: accepted connection %s\n", addr.ToString().c_str());
+    Debug("(emc2) emc2_server_accept: accepted connection '%s'.", 
+        addr.ToString().c_str());
   } else {
-    fprintf(stderr, "emc2: initialized connection %s\n", addr.ToString().c_str());
+    Debug("(emc2) emc2_server_accept: initialized connection '%s'.",
+        addr.ToString().c_str());
   }
 
 

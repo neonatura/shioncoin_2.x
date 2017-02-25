@@ -423,7 +423,7 @@ bool ServicePeerEvent(int ifaceIndex)
   if (tot < 500) {
     pfrom->PushMessage("getaddr");
     pfrom->fGetAddr = true;
-    Debug("ServicePeerEvent: requesting node address list for iface #%d (known: %s).\n", ifaceIndex, tot);
+    Debug("ServicePeerEvent: requesting node address list for iface #%d (known: %d).\n", ifaceIndex, tot);
   }
 
 #if 0

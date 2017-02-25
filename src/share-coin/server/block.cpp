@@ -3284,7 +3284,7 @@ int BackupBlockChain(CIface *iface, unsigned int maxHeight)
   for (height = 1; height < maxHeight; height++) {
     CBlock *block = GetBlockByHeight(iface, height);
     if (!block) {
-fprintf(stderr, "DEBUG: BackupBlockChain: unknown height %d\n", (int)height);
+      error(err, "(%s) BackupBlockChain: load error (height: %u)", iface->name, height);
       break;
     }
 
@@ -3305,11 +3305,13 @@ fprintf(stderr, "DEBUG: BackupBlockChain: unknown height %d\n", (int)height);
     err = bc_write(bc, height, hash.GetRaw(), sBlockData, sBlockLen);
     free(sBlockData);
     if (err) {
-fprintf(stderr, "DEBUG: BackupBlockChain: bc_write err %d\n", err); 
+      error(err, "bc_write [BackupBlockChain]");
       break;
     }
   }
-fprintf(stderr, "DEBUG: BACKUP: total %d blocks backed up\n", height);
+
+  Debug("(%s) BackupBlockChain: total %u blocks stored.", 
+      iface->name, height);
   
   bc_close(bc);
   
