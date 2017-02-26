@@ -258,7 +258,12 @@ bool SHCTxDB::LoadBlockIndex()
   }
 #endif
 
-  CBlockIndex *pindexBest = (*mapBlockIndex)[hashBestChain];
+  CBlockIndex *pindexBest;
+
+  pindexBest = NULL;
+  if (mapBlockIndex->count(hashBestChain) != 0)
+    pindexBest = (*mapBlockIndex)[hashBestChain];
+
   bool ok = true;
   if (!pindexBest)
     ok = false;

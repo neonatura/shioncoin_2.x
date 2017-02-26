@@ -456,7 +456,12 @@ bool EMC2TxDB::LoadBlockIndex()
     //    return error(SHERR_INVAL, "EMC2TxDB::LoadBlockIndex() : EMC2Block::hashBestChain not loaded");
   }
 
-  CBlockIndex *pindexBest = (*mapBlockIndex)[hashBestChain];
+  CBlockIndex *pindexBest;
+
+  pindexBest = NULL;
+  if (mapBlockIndex->count(hashBestChain) != 0)
+    pindexBest = (*mapBlockIndex)[hashBestChain];
+
   bool ok = true;
   if (!pindexBest)
     ok = false;

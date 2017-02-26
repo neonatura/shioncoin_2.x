@@ -301,16 +301,22 @@ bool USDETxDB::LoadBlockIndex()
     //    return error(SHERR_INVAL, "USDETxDB::LoadBlockIndex() : USDEBlock::hashBestChain not loaded");
   }
 
-  CBlockIndex *pindexBest = (*mapBlockIndex)[hashBestChain];
+  CBlockIndex *pindexBest;
+
+
+  pindexBest = NULL;
+  if (mapBlockIndex->count(hashBestChain) != 0)
+    pindexBest = (*mapBlockIndex)[hashBestChain];
+
   bool ok = true;
   if (!pindexBest) {
-    Debug("(usde) LoadBlockIndex: Unable to establish block heirarchy.");
+    Debug("(usde) LoadBlockIndex: Unable to establish block chain.");
     ok = false;
   } else if (pindexBest->nHeight > 0 && !pindexBest->pprev) {
-    Debug("(usde) LoadBlockIndex: Block heirarchy is severed at height %d.", (int)pindexBest->nHeight);
+    Debug("(usde) LoadBlockIndex: Block chain is severed at height %d.", (int)pindexBest->nHeight);
     ok = false;
   } else if (!hasGenesisRoot(pindexBest)) {
-    Debug("(usde) LoadBlockIndex: Invalid genesis hierarchy from height %d.", pindexBest->nHeight);
+    Debug("(usde) LoadBlockIndex: Invalid genesis block based from height %d.", pindexBest->nHeight);
     ok = false;
   }
   if (!ok) {
