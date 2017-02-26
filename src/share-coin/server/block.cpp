@@ -3278,10 +3278,10 @@ int BackupBlockChain(CIface *iface, unsigned int maxHeight)
   if (err)
     return (err);
 
-  height = bc_idx_next(bc);
+  height = MAX(1, bc_idx_next(bc));
   ten_per = (maxHeight / 10); /* ten percent of max */
   maxHeight = MIN(maxHeight - ten_per, height + ten_per);
-  for (height = 1; height < maxHeight; height++) {
+  for (; height < maxHeight; height++) {
     CBlock *block = GetBlockByHeight(iface, height);
     if (!block) {
       error(err, "(%s) BackupBlockChain: load error (height: %u)", iface->name, height);
