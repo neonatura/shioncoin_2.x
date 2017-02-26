@@ -385,7 +385,7 @@ task_t *task_init(void)
         DefaultWorkIndex = idx;
     }
 
-    if (orig_idx) {
+    if (orig_idx && (orig_idx != DefaultWorkIndex)) {
       sprintf(errbuf, "task_init: switching mining pool from coin interface #%d to #%d\n", orig_idx, DefaultWorkIndex); 
       shcoind_log(errbuf);
     }
