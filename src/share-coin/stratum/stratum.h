@@ -47,13 +47,12 @@ typedef struct user_t
   char worker[128];
   char pass[256];
   char cli_ver[128];
+  char cli_id[256];
+  char cur_id[256];
   int work_diff;
 
   int fd;
   int flags;
-
-  /** request id for 'client.get_version'. */
-  int cli_id;
 
   /** last height notified to user */
   int height;

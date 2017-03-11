@@ -4,6 +4,7 @@
 #include "shcoind.h"
 #include "coin_proto.h"
 
+#define DEFAULT_WORK_DIFFICULTY 256
 
 
 char *stratum_runtime_session(void)
@@ -19,9 +20,14 @@ char *stratum_runtime_session(void)
 
 
 
-int stratum_request_id(void)
+uint32_t stratum_request_id(void)
 {
-  static int idx;
+  static uint32_t idx;
+
+  if (!idx) {
+    idx = (rand() & 0xFFFF)  + 0xFF;
+  }
+
   return (++idx);
 }
 
@@ -31,8 +37,9 @@ int stratum_send_difficulty(user_t *user)
   shjson_t *data;
   int err;
 
+  strcpy(user->cur_id, "");
+
   reply = shjson_init(NULL);
-  shjson_null_add(reply, "id");
   shjson_str_add(reply, "method", "mining.set_difficulty");
   data = shjson_array_add(reply, "params");
   shjson_num_add(data, NULL, user->work_diff);
@@ -48,10 +55,10 @@ int stratum_send_client_ver(user_t *user)
   shjson_t *data;
   int err;
 
-  user->cli_id = stratum_request_id();
+  sprintf(user->cli_id, "%u", stratum_request_id());
+  strcpy(user->cur_id, user->cli_id);
 
   reply = shjson_init(NULL);
-  shjson_num_add(reply, "id", user->cli_id);
   shjson_str_add(reply, "method", "client.get_version");
   err = stratum_send_message(user, reply);
   shjson_free(&reply);
@@ -75,7 +82,7 @@ int stratum_session_nonce(void)
 /**
  * @note strtoll is used for 32bit compatibility.
  */
-int stratum_validate_submit(user_t *user, int req_id, shjson_t *json)
+int stratum_validate_submit(user_t *user, shjson_t *json)
 {
   shjson_t *block;
   shkey_t *key;
@@ -205,11 +212,11 @@ fprintf(stderr, "DEBUG: stratum_validate_submit: be_nonce (%x) is lower hash tha
   return (0);
 }
 
-static int stratum_subscribe(user_t *user, int req_id)
+static int stratum_subscribe(user_t *user)
 {
   int err;
 
-  err = stratum_send_subscribe(user, req_id);
+  err = stratum_send_subscribe(user);
   if (!err) 
     user->flags |= USER_SUBSCRIBE;
 
@@ -252,7 +259,7 @@ static shjson_t *stratum_generic_error(void)
   return (reply);
 }
 
-static int stratum_request_account_create(int ifaceIndex, user_t *user, int idx, char *account)
+static int stratum_request_account_create(int ifaceIndex, user_t *user, char *account)
 {
   shjson_t *reply;
   const char *json_data = "{\"result\":null,\"error\":null}";
@@ -264,19 +271,18 @@ static int stratum_request_account_create(int ifaceIndex, user_t *user, int idx,
     /* providing account does not exist; returns usde address and sha of private key */
     reply = stratum_json(stratum_create_account(ifaceIndex, account));
     if (!reply)
-      reply = stratum_json(stratum_error_get(idx));
+      reply = stratum_json(stratum_error_get(atoi(user->cur_id)));
   } else {
     reply = stratum_generic_error();
   }
 
-  shjson_num_add(reply, "id", idx);
   err = stratum_send_message(user, reply);
   shjson_free(&reply);
 
   return (err);
 }
 
-static int stratum_request_account_address(int ifaceIndex, user_t *user, int idx, char *hash)
+static int stratum_request_account_address(int ifaceIndex, user_t *user, char *hash)
 {
   shjson_t *reply;
   int err;
@@ -284,19 +290,18 @@ static int stratum_request_account_address(int ifaceIndex, user_t *user, int idx
   if (hash) {
     reply = stratum_json(stratum_getaddressinfo(ifaceIndex, hash));
     if (!reply)
-      reply = stratum_json(stratum_error_get(idx));
+      reply = stratum_json(stratum_error_get(atoi(user->cur_id)));
   } else {
     reply = stratum_generic_error();
   }
 
-  shjson_num_add(reply, "id", idx);
   err = stratum_send_message(user, reply);
   shjson_free(&reply);
 
   return (err);
 }
 
-static int stratum_request_account_secret(int ifaceIndex, user_t *user, int idx, char *hash, const char *pkey_str)
+static int stratum_request_account_secret(int ifaceIndex, user_t *user, char *hash, const char *pkey_str)
 {
   shjson_t *reply;
   int err;
@@ -304,19 +309,18 @@ static int stratum_request_account_secret(int ifaceIndex, user_t *user, int idx,
   if (hash) {
     reply = stratum_json(stratum_getaddresssecret(ifaceIndex, hash, pkey_str));
     if (!reply)
-      reply = stratum_json(stratum_error_get(idx));
+      reply = stratum_json(stratum_error_get(atoi(user->cur_id)));
   } else {
     reply = stratum_generic_error();
   }
 
-  shjson_num_add(reply, "id", idx);
   err = stratum_send_message(user, reply);
   shjson_free(&reply);
 
   return (err);
 }
 
-static int stratum_request_account_import(int ifaceIndex, user_t *user, int idx, char *hash, const char *privaddr_str)
+static int stratum_request_account_import(int ifaceIndex, user_t *user, char *hash, const char *privaddr_str)
 {
   shjson_t *reply;
   const char *json_data = "{\"result\":null,\"error\":null}";
@@ -325,12 +329,11 @@ static int stratum_request_account_import(int ifaceIndex, user_t *user, int idx,
   if (hash) {
     reply = stratum_json(stratum_importaddress(ifaceIndex, hash, privaddr_str));
     if (!reply)
-      reply = stratum_json(stratum_error_get(idx));
+      reply = stratum_json(stratum_error_get(atoi(user->cur_id)));
   } else {
     reply = stratum_generic_error();
   }
     
-  shjson_num_add(reply, "id", idx);
   err = stratum_send_message(user, reply);
   shjson_free(&reply);
 
@@ -359,7 +362,7 @@ static int stratum_request_account_transactions(int ifaceIndex, user_t *user, in
 }
 #endif
 
-static int stratum_request_account_transfer(int ifaceIndex, user_t *user, int idx, char *account, char *pkey_str, char *dest, double amount)
+static int stratum_request_account_transfer(int ifaceIndex, user_t *user, char *account, char *pkey_str, char *dest, double amount)
 {
   shjson_t *reply;
   const char *json_data = "{\"result\":null,\"error\":null}";
@@ -368,19 +371,18 @@ static int stratum_request_account_transfer(int ifaceIndex, user_t *user, int id
   if (account && pkey_str && dest) {
     reply = stratum_json(stratum_create_transaction(ifaceIndex, account, pkey_str, dest, amount));
     if (!reply)
-      reply = stratum_json(stratum_error_get(idx));
+      reply = stratum_json(stratum_error_get(atoi(user->cur_id)));
   } else {
     reply = stratum_generic_error();
   }
 
-  shjson_num_add(reply, "id", idx);
   err = stratum_send_message(user, reply);
   shjson_free(&reply);
 
   return (err);
 }
 
-static int stratum_request_account_info(int ifaceIndex, user_t *user, int idx, char *account, char *pkey_str)
+static int stratum_request_account_info(int ifaceIndex, user_t *user, char *account, char *pkey_str)
 {
   shjson_t *reply;
   int err;
@@ -388,19 +390,18 @@ static int stratum_request_account_info(int ifaceIndex, user_t *user, int idx, c
   if (account && pkey_str) {
     reply = stratum_json(stratum_getaccountinfo(ifaceIndex, account, pkey_str));
     if (!reply)
-      reply = stratum_json(stratum_error_get(idx));
+      reply = stratum_json(stratum_error_get(atoi(user->cur_id)));
   } else {
     reply = stratum_generic_error();
   }
 
-  shjson_num_add(reply, "id", idx);
   err = stratum_send_message(user, reply);
   shjson_free(&reply);
 
   return (err);
 }
 
-static int stratum_request_wallet_private_info(int ifaceIndex, user_t *user, int idx, char *account, char *key_str)
+static int stratum_request_wallet_private_info(int ifaceIndex, user_t *user, char *account, char *key_str)
 {
   shkey_t *r_key;
   shjson_t *reply;
@@ -412,7 +413,7 @@ static int stratum_request_wallet_private_info(int ifaceIndex, user_t *user, int
   if (!r_key) {
     ok = FALSE;
   } else {
-fprintf(stderr, "DEBUG: stratum_request_wallet_private_info: invalid key '%s'\n", key_str);
+//fprintf(stderr, "DEBUG: stratum_request_wallet_private_info: invalid key '%s'\n", key_str);
     ok = shkey_cmp(r_key, stratum_sync_key());
 
 /* DEBUG: todo.. verify shaddr(user->fd) == a USER_SYNC node */
@@ -430,7 +431,6 @@ fprintf(stderr, "DEBUG: stratum_request_wallet_private_info: invalid key '%s'\n"
     reply = stratum_generic_error();
   }
 
-  shjson_num_add(reply, "id", idx);
   err = stratum_send_message(user, reply);
   shjson_free(&reply);
 
@@ -509,14 +509,25 @@ int stratum_request_message(user_t *user, shjson_t *json)
   char buf[256];
   char uname[256];
   char *method;
+  char *text;
+  uint32_t val;
   double block_avg;
-  long idx;
   int ifaceIndex;
   int err;
   int i;
 
-  idx = (int)shjson_num(json, "id", -1);
-  if (idx != -1 && idx == user->cli_id && shjson_strlen(json, "result")) {
+  memset(user->cur_id, 0, sizeof(user->cur_id));
+  val = shjson_num(json, "id", 0);
+  if (val) {
+    sprintf(user->cur_id, "%u", (unsigned int)val);
+  } else {
+    text = shjson_str(json, "id", "");
+    if (text && *text)
+      strncpy(user->cur_id, text, sizeof(user->cur_id)-1);
+  }
+
+  if (0 == strcmp(user->cur_id, user->cli_id) && 
+      shjson_strlen(json, "result")) {
     /* response from 'client.get_version' method. */ 
     strncpy(user->cli_ver, shjson_astr(json, "result", ""), sizeof(user->cli_ver));
     return (0);
@@ -543,7 +554,6 @@ int stratum_request_message(user_t *user, shjson_t *json)
 
   if (0 == strcmp(method, "mining.ping")) {
     reply = shjson_init(NULL);
-    shjson_num_add(reply, "id", idx);
     shjson_null_add(reply, "error");
     shjson_null_add(reply, "result");
     err = stratum_send_message(user, reply);
@@ -552,10 +562,9 @@ int stratum_request_message(user_t *user, shjson_t *json)
   }
 
   if (0 == strcmp(method, "mining.subscribe")) {
-    err = stratum_subscribe(user, idx);
+    err = stratum_subscribe(user);
     if (!err) {
-      //user->ifaceIndex = ifaceIndex;
-      stratum_set_difficulty(user, 128);
+      stratum_set_difficulty(user, DEFAULT_WORK_DIFFICULTY);
     }
 
     //reset_task_work_time();
@@ -584,6 +593,9 @@ int stratum_request_message(user_t *user, shjson_t *json)
 #endif
     }
 
+    /* Note: Support for "x:<diff>" is not permitted. */
+
+
     if (!t_user) {
       reply = shjson_init(NULL);
       set_stratum_error(reply, -2, "unknown user");
@@ -599,13 +611,11 @@ int stratum_request_message(user_t *user, shjson_t *json)
     err = stratum_send_message(user, reply);
     shjson_free(&reply);
 
-    stratum_set_difficulty(user, 128);
-
-    /* does not support password "x:<diff>" */
-    //stratum_set_difficulty(user, MAX(32, atoi(password)));
-
+    /* ask client for their version */
     stratum_send_client_ver(user);
 
+    /* redundant */
+    user->work_diff = DEFAULT_WORK_DIFFICULTY;
 
     return (err);
   }
@@ -616,11 +626,10 @@ int stratum_request_message(user_t *user, shjson_t *json)
     sess_id = shjson_array_astr(json, "params", 0);
 
     reply = shjson_init(NULL);
-    shjson_num_add(reply, "id", idx);
 
     /* compare previous session hash */
     if (0 != strcmp(sess_id, stratum_runtime_session()))
-      return (stratum_send_error(user, idx, BLKERR_BAD_SESSION));
+      return (stratum_send_error(user, BLKERR_BAD_SESSION));
 
     shjson_bool_add(reply, "result", TRUE);
     shjson_null_add(reply, "error"); 
@@ -630,10 +639,9 @@ int stratum_request_message(user_t *user, shjson_t *json)
   }
 
   if (0 == strcmp(method, "mining.submit")) {
-    err = stratum_validate_submit(user, idx, json);
+    err = stratum_validate_submit(user, json);
 
     reply = shjson_init(NULL);
-    shjson_num_add(reply, "id", idx);
     if (!err) {
       shjson_bool_add(reply, "result", TRUE);
       shjson_null_add(reply, "error");
@@ -719,7 +727,6 @@ int stratum_request_message(user_t *user, shjson_t *json)
       }
     }
     shjson_null_add(reply, "error");
-    shjson_num_add(reply, "id", idx);
     err = stratum_send_message(user, reply);
     shjson_free(&reply);
     return (err);
@@ -727,7 +734,6 @@ int stratum_request_message(user_t *user, shjson_t *json)
   if (0 == strcmp(method, "mining.info")) {
     reply = shjson_init(getmininginfo(ifaceIndex));
     if (reply) {
-      shjson_num_add(reply, "id", idx);
       err = stratum_send_message(user, reply);
       shjson_free(&reply);
       return (err);
@@ -753,7 +759,6 @@ int stratum_request_message(user_t *user, shjson_t *json)
         shjson_null_add(reply, "result");
       }
     }
-    shjson_num_add(reply, "id", idx);
     err = stratum_send_message(user, reply);
     shjson_free(&reply);
     return (err);
@@ -797,14 +802,13 @@ int stratum_request_message(user_t *user, shjson_t *json)
     } else {
       reply = shjson_init(json_data);
     }
-    shjson_num_add(reply, "id", idx);
     err = stratum_send_message(user, reply);
     shjson_free(&reply);
     return (err);
   }
 
   if (0 == strcmp(method, "account.create")) {
-    return (stratum_request_account_create(ifaceIndex, user, idx, 
+    return (stratum_request_account_create(ifaceIndex, user,
           shjson_array_astr(json, "params", 0)));
   }
 #if 0
@@ -816,33 +820,33 @@ int stratum_request_message(user_t *user, shjson_t *json)
   }
 #endif
   if (0 == strcmp(method, "account.address")) {
-    return (stratum_request_account_address(ifaceIndex, user, idx, 
+    return (stratum_request_account_address(ifaceIndex, user,
           shjson_array_astr(json, "params", 0)));
   }
   if (0 == strcmp(method, "account.secret")) {
-    return (stratum_request_account_secret(ifaceIndex, user, idx, 
+    return (stratum_request_account_secret(ifaceIndex, user,
           shjson_array_astr(json, "params", 0),
           shjson_array_astr(json, "params", 1)));
   }
   if (0 == strcmp(method, "account.import")) {
-    return (stratum_request_account_import(ifaceIndex, user, idx, 
+    return (stratum_request_account_import(ifaceIndex, user,
           shjson_array_astr(json, "params", 0),
           shjson_array_astr(json, "params", 1)));
   }
   if (0 == strcmp(method, "account.transfer")) {
-    return (stratum_request_account_transfer(ifaceIndex, user, idx,
+    return (stratum_request_account_transfer(ifaceIndex, user,
           shjson_array_astr(json, "params", 0),
           shjson_array_astr(json, "params", 1),
           shjson_array_astr(json, "params", 2),
           shjson_array_num(json, "params", 3)));
   }
   if (0 == strcmp(method, "account.info")) {
-    return (stratum_request_account_info(ifaceIndex, user, idx,
+    return (stratum_request_account_info(ifaceIndex, user,
           shjson_array_astr(json, "params", 0),
           shjson_array_astr(json, "params", 1)));
   }
   if (0 == strcmp(method, "wallet.private")) {
-    return (stratum_request_wallet_private_info(ifaceIndex, user, idx,
+    return (stratum_request_wallet_private_info(ifaceIndex, user,
           shjson_array_astr(json, "params", 0),
           shjson_array_astr(json, "params", 1)));
   }
@@ -877,7 +881,6 @@ fprintf(stderr, "DEBUG: stratum_request_message: error parsing JSON: %s\n", ret_
     }
 
     /* send RPC response */
-    shjson_num_add(reply, "id", idx);
     err = stratum_send_message(user, reply);
     shjson_free(&reply);
     return (0);
@@ -887,7 +890,6 @@ fprintf(stderr, "DEBUG: stratum_request_message: error parsing JSON: %s\n", ret_
 
   /* unknown request in proper JSON format. */
   reply = shjson_init(NULL);
-  shjson_num_add(reply, "id", idx);
   set_stratum_error(reply, -5, "invalid");
   shjson_null_add(reply, "result");
   err = stratum_send_message(user, reply);

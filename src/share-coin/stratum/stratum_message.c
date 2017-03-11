@@ -7,6 +7,7 @@
  */
 int stratum_send_message(user_t *user, shjson_t *msg)
 {
+  uint32_t val;
   char *text;
   int err;
 
@@ -23,6 +24,14 @@ int stratum_send_message(user_t *user, shjson_t *msg)
     return (0);
   }
 
+  if (!*user->cur_id) {
+    shjson_null_add(msg, "id");
+  } else if ((val = (uint32_t)atoi(user->cur_id)) != 0) {
+    shjson_num_add(msg, "id", val);
+  } else {
+    shjson_str_add(msg, "id", user->cur_id);
+  }
+
   text = shjson_print(msg);
   if (text) {
     unet_write(user->fd, text, strlen(text));
@@ -34,7 +43,7 @@ int stratum_send_message(user_t *user, shjson_t *msg)
   return (0);
 }
 
-int stratum_send_error(user_t *user, int req_id, int err_code)
+int stratum_send_error(user_t *user, int err_code)
 {
   shjson_t *reply;
   shjson_t *error;
@@ -59,7 +68,6 @@ int stratum_send_error(user_t *user, int req_id, int err_code)
     err_msg = "Other/Unknown";
 
   reply = shjson_init(NULL);
-  shjson_num_add(reply, "id", req_id); 
   set_stratum_error(reply, err_code, err_msg);
 /*
   error = shjson_array_add(reply, "error");
@@ -74,7 +82,7 @@ int stratum_send_error(user_t *user, int req_id, int err_code)
   return (err);
 }
 
-int stratum_send_subscribe(user_t *user, int req_id)
+int stratum_send_subscribe(user_t *user)
 {
   shjson_t *reply;
   shjson_t *data;
@@ -83,14 +91,13 @@ int stratum_send_subscribe(user_t *user, int req_id)
   char key_str[64];
   int err;
 
-
   reply = shjson_init(NULL);
-  shjson_num_add(reply, "id", req_id);
   shjson_null_add(reply, "error");
   data = shjson_array_add(reply, "result");
   data2 = shjson_array_add(data, NULL);
   shjson_str_add(data2, NULL, "mining.notify");
-  shjson_str_add(data2, NULL, shkey_print(ashkey_str(user->peer.nonce1)));
+  shjson_str_add(data2, NULL, 
+      (char *)shkey_print(ashkey_str(user->peer.nonce1)));
   shjson_str_add(data, NULL, user->peer.nonce1);
   shjson_num_add(data, NULL, 4);
 //  shjson_str_add(data, NULL, stratum_runtime_session());
@@ -151,8 +158,9 @@ int stratum_send_task(user_t *user, task_t *task, int clean)
   memset(prev_hash, 0, sizeof(prev_hash));
   bin2hex(prev_hash, prev_bin, 32);
 
+  strcpy(user->cur_id, "");
+
   reply = shjson_init(NULL);
-  shjson_null_add(reply, "id");
   shjson_str_add(reply, "method", "mining.notify");
   param = shjson_array_add(reply, "params");
   shjson_str_add(param, NULL, task_id);
