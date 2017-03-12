@@ -1209,17 +1209,12 @@ const char *c_getminingtransactions(int ifaceIndex, unsigned int workId)
  
   pblock = mapWork[workId];
 
-//  CTxDB txdb(ifaceIndex, "r");
   BOOST_FOREACH (CTransaction& tx, pblock->vtx)
   {
-//    uint256 txHash = tx.GetHash();
-//    setTxIndex[txHash] = i++;
     Object entry;
 
-/*
     if (tx.IsCoinBase())
       continue;
-*/
 
     CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION(iface));
     ssTx << tx;

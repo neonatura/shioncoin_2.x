@@ -164,7 +164,7 @@ static int _bc_map_alloc(bc_t *bc, bc_map_t *map, bcsize_t len)
 
     memset(&hdr, 0, sizeof(hdr));
     lseek(map->fd, 0L, SEEK_SET);
-    read(map->fd, &hdr, sizeof(bc_hdr_t));
+    (void)read(map->fd, &hdr, sizeof(bc_hdr_t));
     map_of = hdr.of;
   } else {
     /* map has already been allocated */
