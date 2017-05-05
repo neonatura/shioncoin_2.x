@@ -71,7 +71,6 @@ common_includes = \
 	server/chain.h \
 	server/global.h \
 	server/allocators.h \
-	server/base58.h \
 	server/bignum.h \
 	server/rpc_proto.h \
 	server/rpcalias_proto.h \
@@ -108,7 +107,6 @@ common_includes = \
 	shcoind.h
 
 common_sources = \
-	$(blockchain_sources) \
 	server/mnemonic.cpp \
 	shcoind_rpc.c \
 	shcoind_log.c \
@@ -126,13 +124,14 @@ common_sources = \
 	unet/unet_peer.c \
 	unet/unet_event.c \
 	unet/unet_local.c \
-	server/base58.cpp \
 	server/netbase.cpp \
 	server/version.cpp \
 	server/util.cpp
 
 server_sources = \
+	$(blockchain_sources) \
 	$(proto_sources) \
+	$(stratum_sources) \
 	fractal/fractal.c \
 	fractal/fractal_bmp.c \
 	server/test/test_wallet.cpp \
@@ -202,14 +201,19 @@ server_sources = \
 	server/scrypt.c \
 	server/addrman.h \
 	server/addrman.cpp \
+	server/base58.h \
+	server/base58.cpp \
 	wallet_iface.cpp \
 	block_iface.cpp \
 	server_iface.cpp
 
 tool_sources = \
-	tool/tool_irc.cpp
+	tool/tool_irc.cpp \
+	server/base58.h \
+	server/base58.cpp
 
 noinst_PROGRAMS = test_shcoind shcointool
+noinst_LIBRARIES = libshcoin.a
 sbin_PROGRAMS = shcoind
 bin_SCRIPTS = shc
 
@@ -231,7 +235,6 @@ shc: shcointool
 	cp -f shcointool shc
 
 test_shcoind_SOURCES = \
-	$(common_includes) $(common_sources) \
 	$(server_sources) \
 	test/CuTest.c \
 	test/CuTest.h \
@@ -246,10 +249,12 @@ test_shcoind_SOURCES = \
 	test/testcoin_json.cpp \
 	test/testcoin_bloom.cpp
 
-test_shcoind_LDADD = $(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
+test_shcoind_LDADD = \
+	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
+	libshcoin.a \
 	-lboost_system -lboost_filesystem -lboost_thread -ldb_cxx -ldl
-test_shcoind_CFLAGS = -DSHCOIN_SERVER -g -O0 -DTEST_SHCOIND
-test_shcoind_CXXFLAGS = -DOS_LINUX -DSHCOIN_SERVER -g -O0 -DTEST_SHCOIND
+test_shcoind_CFLAGS = -g -O0 -DTEST_SHCOIND
+test_shcoind_CXXFLAGS = -g -O0 -DTEST_SHCOIND
 if STATIC_LIBSHARE
 test_shcoind_LDADD += \
 	$(LIBSHARE)/src/share-lib/libshare.a \
@@ -259,32 +264,35 @@ test_shcoind_CXXFLAGS += -I$(LIBSHARE)/include
 endif
 
 
+libshcoin_a_SOURCES = \
+	$(common_includes) $(common_sources)
+libshcoin_a_LIBADD = $(top_builddir)/src/share-ssl-lib/libshare_ssl.a
+
 
 shcoind_SOURCES = \
-	$(common_includes) $(common_sources) \
-	$(server_sources) $(stratum_sources) \
+	$(server_sources) \
 	shcoind.c \
 	shcoind_daemon.c \
 	shcoind_daemon.h
 
-
 shcoind_LDADD = \
-	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a
-shcoind_CFLAGS = -DSHCOIN_SERVER
-shcoind_CXXFLAGS = -DOS_LINUX -DSHCOIN_SERVER
+	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
+	libshcoin.a
 if STATIC_LIBSHARE
 shcoind_LDADD += \
 	$(LIBSHARE)/src/share-lib/libshare.a \
 	$(LIBSHARE)/src/sexe/libshare_sexe.a
-shcoind_CFLAGS += -I$(LIBSHARE)/include
-shcoind_CXXFLAGS += -I$(LIBSHARE)/include
+shcoind_CFLAGS = -I$(LIBSHARE)/include
+shcoind_CXXFLAGS = -I$(LIBSHARE)/include
 endif
 shcoind_LDADD += -lboost_system -lboost_filesystem -lboost_thread -ldb_cxx -ldl
 
-shcointool_SOURCES = $(common_includes) $(common_sources) \
+shcointool_SOURCES = \
 	shcoind_tool.cpp clientrpc_iface.cpp $(tool_sources)
 shcointool_LDADD = \
-	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a 
+	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
+	libshcoin.a \
+	-lboost_system -lboost_filesystem -lboost_thread -ldb_cxx -ldl
 shcointool_CFLAGS = -DSHCOIN_CLIENT
 shcointool_CXXFLAGS = -DSHCOIN_CLIENT -DOS_LINUX
 if STATIC_LIBSHARE
@@ -294,7 +302,6 @@ shcointool_LDADD += \
 shcointool_CFLAGS += -I$(LIBSHARE)/include
 shcointool_CXXFLAGS += -I$(LIBSHARE)/include
 endif
-shcointool_LDADD += -lboost_system -lboost_filesystem -lboost_thread -ldb_cxx -ldl
 
 #noinst_LIBRARIES = libleveldb.a
 #libleveldb_a_CXXFLAGS = \

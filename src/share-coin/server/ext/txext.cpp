@@ -136,13 +136,16 @@ bool CSign::SignContext(cbuff& vchContext, string hexSeed)
   char sig_r[1024];
   char sig_s[1024];
 
-  if (nAlg & ALG_ECDSA)
-    return error(SHERR_INVAL, "CSign:SignContext: address signature is already signed.");
+  if (nAlg & ALG_ECDSA) {
+    return error(SHERR_INVAL, 
+        "CSign:SignContext: certificate is already signed.");
+  }
 
   if (vchContext.size() == 0) { /* use blank message */
     static unsigned char blank_hash[BLANK_HASH_SIZE];
     vchContext = cbuff(blank_hash, blank_hash + sizeof(blank_hash));
   }
+
 
   if (hexSeed.size() == 0) { /* use machine's unique "priveleged key" */
     char priv_key_hex[256];
@@ -157,6 +160,7 @@ bool CSign::SignContext(cbuff& vchContext, string hexSeed)
   char *seed_hex = (char *)hexSeed.c_str();
   unsigned char *data = (unsigned char *)vchContext.data();
   size_t data_len = vchContext.size();
+fprintf(stderr, "DEBUG: TXExt.SignContext: DATA: \"%s\"\n", shhex_str(data, data_len)); 
 
   nAlg = ALG_ECDSA; 
 
@@ -182,6 +186,7 @@ bool CSign::SignContext(cbuff& vchContext, string hexSeed)
   /* sign content */
   shecdsa_sign(priv_key, sig_r, sig_s, data, data_len);
 
+fprintf(stderr, "DEBUG: SignContext: [shecdsa_sign] sig_r(%s) sig_s(%s)\n", sig_r, sig_s); 
   vSig.push_back(vchFromString(string(sig_r)));
   vSig.push_back(vchFromString(string(sig_s)));
   

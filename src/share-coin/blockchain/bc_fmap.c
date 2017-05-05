@@ -39,7 +39,6 @@
 
 static int bc_iface_index(char *name)
 {
-#ifdef SHCOIN_SERVER
   int idx;
 
   for (idx = 1; idx < MAX_COIN_IFACE; idx++) {
@@ -47,7 +46,6 @@ static int bc_iface_index(char *name)
     if (0 == strncmp(iface->name, name, strlen(iface->name)))
       return (idx);
   }
-#endif
 
   return (0);
 }
@@ -278,11 +276,7 @@ static void _bc_map_close(bc_map_t *map)
 {
 
   if (map->fd) {
-#ifdef SHCOIN_SERVER
-    descriptor_release(map->fd);
-#else
-    close(map->fd);
-#endif
+    descriptor_release(map->fd); /* close() */
     map->fd = 0;
   }
   bc_map_free(map);

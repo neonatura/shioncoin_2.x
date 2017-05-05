@@ -484,6 +484,14 @@ int CommitContextTx(CIface *iface, CTransaction& tx, unsigned int nHeight)
   /* assign context to internal map */
   wallet->mapContext[hContext] = tx.GetHash();
 
+  /* propagate via share runtime library */
+  shctx_set_key(ctx.hashIssuer.GetKey(), 
+      ctx.vContext.data(), ctx.vContext.size());
+#if 0
+/* DEBUG: */ /* record in libshare runtime */
+  ctx.NotifySharenet(GetCoinIndex(iface));
+#endif
+
   return (0);
 }
 
@@ -603,11 +611,27 @@ bool CContext::SetValue(string name, cbuff value)
   return (true);
 }
 
+static string GetObjectValue(Object obj, string cmp_name)
+{
+  for( Object::size_type i = 0; i != obj.size(); ++i )
+  {
+    const Pair& pair = obj[i];
+    const string& name = pair.name_;
+
+    if (cmp_name == name) {
+      const Value& value = pair.value_;
+      return (value.get_str());
+    }
+  }
+
+  return (string());
+}
+
 void CContext::NotifySharenet(int ifaceIndex)
 {
   CIface *iface = GetCoinByIndex(ifaceIndex);
   shkey_t key;
-  unsigned char data[5000];
+  unsigned char *data;
   size_t data_len;
   uint32_t val;
 
@@ -615,32 +639,34 @@ void CContext::NotifySharenet(int ifaceIndex)
     return;
   }
 
-#if 0
   if (ifaceIndex != SHC_COIN_IFACE) {
     return;
   }
-#endif
 
-
-  memset(data, 0, sizeof(data));
-
-  /* encapsulate data */
-  val = htonl((uint32_t)vContext.size());
-  memcpy(&key, hashIssuer.GetKey(), sizeof(shkey_t));
+  data = (unsigned char *)calloc(vContext.size() + 256, sizeof(char));
+  if (!data)
+    return; /* NOMEM */
 
   /* context name */
+  memcpy(&key, hashIssuer.GetKey(), sizeof(shkey_t));
   memcpy(data, &key, sizeof(shkey_t)); 
   data_len += sizeof(shkey_t); 
 
   /* context size */
+  val = htonl((uint32_t)vContext.size());
   memcpy(data + data_len, &val, sizeof(uint32_t));
   data_len += sizeof(uint32_t);
 
   /* context payload */
   memcpy(data + data_len, vContext.data(), vContext.size());
+fprintf(stderr, "DEBUG: CContext:NotifySharenet: key '%s' = '%s'\n", shkey_print(&key), (data + data_len));
   data_len += vContext.size();
 
   shnet_inform(iface, TX_CONTEXT, data, data_len);
+
+  free(data);
+
+
 }
 
 bool FormatGeoContext(CIface *iface, string& strGeo, shnum_t& lat, shnum_t& lon)
@@ -673,6 +699,51 @@ bool FormatGeoContext(CIface *iface, string& strGeo, shnum_t& lat, shnum_t& lon)
 fprintf(stderr, "DEBUG: FormatGeoContext: lat(%Lf) lon(%Lf)\n", lat, lon);
 
   return (true);
+}
+
+void share_geo_save(CContext *ctx, string label)
+{
+  shloc_t loc;
+  int err;
+  shnum_t lat, lon;
+
+  if (0 != strncmp(label.c_str(), "geo:", 4))
+    return;
+
+  memset(&loc, 0, sizeof(loc));
+
+  shgeo_loc(&ctx->geo, &lat, &lon, NULL);
+
+  Value val;
+  if (!read_string(stringFromVch(ctx->vContext), val))
+    return;
+
+  (void)shgeodb_loc_unset(&ctx->geo);
+
+  Object ret_obj = val.get_obj();
+  string strPlaceName = GetObjectValue(ret_obj, "name");
+  string strPlaceType = GetObjectValue(ret_obj, "code");
+  string strPlaceLocale = GetObjectValue(ret_obj, "country");
+  string strPlaceSummary = GetObjectValue(ret_obj, "summary");
+
+
+  if (strPlaceName.length() != 0)
+    strncpy(loc.loc_name, strPlaceName.c_str(), sizeof(loc.loc_name)-1);
+
+  if (strPlaceType.length() != 0)
+    strncpy(loc.loc_type, strPlaceType.c_str(), sizeof(loc.loc_type)-1);
+
+  if (strPlaceLocale.length() == 2)
+    strncpy(loc.loc_locale, strPlaceLocale.c_str(), sizeof(loc.loc_locale)-1);
+
+  if (strPlaceSummary.length() != 0)
+    strncpy(loc.loc_summary, strPlaceSummary.c_str(), sizeof(loc.loc_summary)-1);
+
+  err = shgeodb_loc_set(&ctx->geo, &loc);    
+  if (err) {
+fprintf(stderr, "DEBUG: %d = shgeodb_loc_set(%Lf,%Lf)\n", err, lat, lon);
+  }
+
 }
 
 int init_ctx_tx(CIface *iface, CWalletTx& wtx, string strAccount, string strName, cbuff vchValue, shgeo_t *loc, bool fAddr)
@@ -753,6 +824,10 @@ int init_ctx_tx(CIface *iface, CWalletTx& wtx, string strAccount, string strName
   }
 
   Debug("SENT:CONTEXTNEW : title=%s, ctxhash=%s, tx=%s\n", ctx->GetLabel().c_str(), hContext.GetHex().c_str(), wtx.GetHash().GetHex().c_str());
+
+  if (GetCoinIndex(iface) == SHC_COIN_IFACE) {
+    share_geo_save(ctx, strName);
+  }
 
   return (0);
 }
@@ -846,6 +921,10 @@ int update_ctx_tx(CIface *iface, CWalletTx& wtx, string strAccount, string strNa
   }
 
   Debug("SENT:CONTEXTUPDATE : title=%s, ctxhash=%s, tx=%s\n", ctx->GetLabel().c_str(), hContext.GetHex().c_str(), wtx.GetHash().GetHex().c_str());
+
+  if (GetCoinIndex(iface) == SHC_COIN_IFACE) {
+    share_geo_save(ctx, strName);
+  }
 
   return (0);
 }

@@ -32,8 +32,7 @@
 #include "serialize.h"
 
 
-typedef shcert_t SHCert;
-typedef shent_t SHCertEnt;
+typedef shesig_t SHCert;
 typedef shlic_t SHLicense;
 typedef shref_t SHAlias;
 typedef shasset_t SHAsset;

@@ -341,8 +341,6 @@ class CCert : public CIdent
       return (cbuff(raw, raw+16));
     }
 
-    void FillEntity(SHCertEnt *entity);
-
     void NotifySharenet(int ifaceIndex);
 
     std::string ToString();

@@ -1301,100 +1301,110 @@ int init_license_tx(CIface *iface, string strAccount, uint160 hashCert, CWalletT
 }
 #endif
 
-void CCert::FillEntity(SHCertEnt *entity)
-{
-  memset(entity, 0, sizeof(entity));
-#if 0
-  if (vchSecret.data()) {
-    entity->ent_len = MIN(sizeof(entity->ent_data), vchSecret.size());
-    memcpy(entity->ent_data, vchSecret.data(), entity->ent_len);
-  }
-  string strLabel = GetLabel();
-  strncpy(entity->ent_name, strLabel.c_str(), sizeof(entity->ent_name)-1);
-  memcpy(&entity->ent_peer, &peer.peer, sizeof(entity->ent_peer));
-  memcpy(&entity->ent_sig, &sig.sig, sizeof(entity->ent_sig));
-#endif
-}
 
 static void FillSharenetCertificate(SHCert *cert, CCert *c_cert, CCert *iss)
 {
-  shkey_t *pubkey;
   int err;
 
   memset(cert, 0, sizeof(SHCert));
 
-  cert->cert_sub.ent_len = cert->cert_iss.ent_len = 21; /* default ecdsa */
-
-  if (c_cert->vContext.size() == 16)
-    memcpy(shcert_sub_ser(cert), c_cert->vContext.data(), 16); 
-
-  cert->cert_flag = c_cert->nFlag;
-
+  /* core attributes */
   if (iss) {
-    /* issuer's cert */
-    cert->cert_ver = iss->GetVersion();
-
-    if (iss->vContext.size() == 16)
-      memcpy(shcert_iss_ser(cert), iss->vContext.data(), 16); 
-
-    const string& iss_label = iss->GetLabel();
-    strncpy(cert->cert_iss.ent_name, iss_label.c_str(), MAX_SHARE_NAME_LENGTH - 1);
-
-    if (iss->vContext.size() == 16)
-      memcpy(shcert_iss_ser(cert), iss->vContext.data(), 16); 
-
-    const string& iss_pubkey = stringFromVch(iss->signature.vPubKey);
-    pubkey = shecdsa_key((char *)iss_pubkey.c_str());
-    if (!pubkey) {
-      error(SHERR_INVAL, "CCert.NotifySharenet: iss pubkey failure");
-      return;
-    }
-    memcpy(&cert->cert_iss.ent_sig.sig_key, pubkey, sizeof(shkey_t)); 
-    shkey_free(&pubkey);
-
-    cert->cert_sub.ent_len = stringFromVch(iss->signature.vPubKey).size() / 2;
-    cert->cert_iss.ent_len = cert->cert_sub.ent_len;
-
-    cert->cert_iss.ent_sig.sig_stamp = shtime();
-    cert->cert_iss.ent_sig.sig_expire = iss->tExpire;
-#if 0
-    shcert_iss_stamp(&cert) = shtime(); 
-    shcert_iss_expire(&cert) = iss->tExpire;
-#endif
+    err = shesig_init(cert, (char *)c_cert->GetLabel().c_str(), SHALG_ECDSA160R, c_cert->nFlag);
+  } else {
+    err = shesig_ca_init(cert, (char *)c_cert->GetLabel().c_str(), SHALG_ECDSA160R, c_cert->nFlag);
   }
-
-/* subject */
-  strncpy(cert->cert_sub.ent_name, c_cert->GetLabel().c_str(), sizeof(cert->cert_sub.ent_name)-1);
-  memcpy(&cert->cert_sub.ent_peer, ashpeer(), sizeof(cert->cert_sub.ent_peer));
-
-  const string& pubkey_str = stringFromVch(c_cert->signature.vPubKey);
-  pubkey = shecdsa_key((char *)pubkey_str.c_str());
-  if (!pubkey) {
-    error(SHERR_INVAL, "CCert.NotifySharenet: pubkey failure");
+fprintf(stderr, "DEBUG: FillSharenetCertificate: %d = shesig_init('%s')\n", err, c_cert->GetLabel().c_str());
+  if (err) {
+    shcoind_err(err, "shesig_init", (char *)c_cert->GetLabel().c_str());
     return;
   }
-  memcpy(&cert->cert_sub.ent_sig.sig_key, pubkey, sizeof(shkey_t)); 
-  shkey_free(&pubkey);
 
-  strcpy(cert->cert_sub.ent_sig.key.ecdsa.sig_r,
-      stringFromVch(c_cert->signature.vSig[0]).c_str());
-  strcpy(cert->cert_sub.ent_sig.key.ecdsa.sig_s, 
-      stringFromVch(c_cert->signature.vSig[1]).c_str());
+  /* certificate version */
+  shesig_version_set(cert, c_cert->GetVersion());
 
-  shcert_sub_stamp(cert) = shtime(); 
-  shcert_sub_expire(cert) = c_cert->tExpire;
+  /* serial number */
+  shesig_serial_set(cert, c_cert->vContext.data(), c_cert->vContext.size()); 
+fprintf(stderr, "DEBUG: FillSharenetCert: serial no '%s'\n", shhex_str(cert->ser, 16));
 
+  /* expiration time-stamp */
+  shesig_expire_set(cert, c_cert->tExpire); 
+
+  /* prepare public key */
+  const string& pubkey_str = stringFromVch(c_cert->signature.vPubKey);
+  cbuff vchContext = ParseHex(pubkey_str);
+  memcpy(cert->pub, vchContext.data(), vchContext.size());
+  shalg_size(cert->pub) = vchContext.size();
+fprintf(stderr, "DEBUG: FIllSharenetCerti: PUB: \"%s\"\n", shhex_str((unsigned char *)cert->pub, shalg_size(cert->pub))); 
+
+  {
+    /* prepare signature */
+    memset(cert->data_sig, 0, sizeof(cert->data_sig));
+    const string& sig_r_str = stringFromVch(c_cert->signature.vSig[0]);
+    const string& sig_s_str = stringFromVch(c_cert->signature.vSig[1]);
+fprintf(stderr, "DEBUG: sig_r_str '%s'\n", sig_r_str.c_str());
+fprintf(stderr, "DEBUG: sig_s_str '%s'\n", sig_s_str.c_str());
+    cbuff vchContext_r = ParseHex(sig_r_str);
+    cbuff vchContext_s = ParseHex(sig_s_str);
+    memcpy(cert->data_sig, vchContext_r.data(), vchContext_r.size());
+    memcpy((unsigned char *)cert->data_sig + vchContext_r.size(), vchContext_s.data(), vchContext_s.size());
+    shalg_size(cert->data_sig) = vchContext_r.size() + vchContext_s.size();
+  }
+fprintf(stderr, "DEBUG: FIllSharenetCerti: SIG: \"%s\"\n", shhex_str((unsigned char *)cert->data_sig, shalg_size(cert->data_sig))); 
+
+  shtime_t now = shtime();
+  if (!shtime_after(now, cert->stamp)) { 
+fprintf(stderr, "DEBUG: FillSharenetCert: !shtime_after(now, cert>stamp)\n");
+}
+
+
+
+  shalg_t iss_pub;
+  memset(iss_pub, 0, sizeof(iss_pub));
+  if (iss) {
+    const string& iss_label = iss->GetLabel();
+fprintf(stderr, "DEBUG: iss_label: %s\n",iss_label.c_str());
+
+    const string& pubkey_str = stringFromVch(iss->signature.vPubKey);
+    shhex_bin((char *)pubkey_str.c_str(), (unsigned char *)iss_pub, pubkey_str.size()/2);
+    shalg_size(iss_pub) = pubkey_str.size()/2;
+
+#if 0
+    {
+      unsigned char *raw = (unsigned char *)iss_pub;
+      cbuff ctx(raw, raw + shalg_size(iss_pub));
+      bool ok = c_cert->signature.VerifyContext(ctx.data(), ctx.size());
+      fprintf(stderr, "DEBUG: FillSharenetCert: VERIFY: %s = VerifyCOntext <%d bytes>\n", (ok ? "true" : "false"), ctx.size());
+fprintf(stderr, "DEBUG: DEBUG: FillSharenetCert: VERIFY: data \"%s\"\n", shhex_str(raw, shalg_size(iss_pub)));
+    }
+#endif
+    
+    err = shesig_import(cert, (char *)iss_label.c_str(), iss_pub);
+  } else {
+    err = shesig_import(cert, NULL, iss_pub);
+  }
+  if (err) {
+    shcoind_err(err, "shesig_import", c_cert->GetLabel().c_str());
+    return;
+  }
+
+fprintf(stderr, "DEBUG: FillSharenetCert: serial no '%s'\n", shhex_str(cert->ser, 16));
+fprintf(stderr, "DEBUG: FIllSharenetCert: ID '%s'\n", shkey_hex(&cert->id));
 }
 
 void CCert::NotifySharenet(int ifaceIndex)
 {
   SHCert cert;
   char tag[SHFS_PATH_MAX];
+  shbuf_t *buff;
   int err;
 
+#if 0
+/* DEBUG: */
   /* only applies to ShareCoin block-chain transaction */
   if (ifaceIndex != SHC_COIN_IFACE)
     return;
+#endif
 
   CCert *iss = NULL;
   CIface *iface = GetCoinByIndex(ifaceIndex);
@@ -1403,14 +1413,19 @@ void CCert::NotifySharenet(int ifaceIndex)
     iss = &tx.certificate;
   }
 
-  memset(&cert, 0, sizeof(shcert_t));
+fprintf(stderr, "DEBUG: CCert: hash '%s'\n", GetHash().GetHex().c_str());
+fprintf(stderr, "DEBUG: CCert: hashIssuer '%s'\n", hashIssuer.GetHex().c_str());
+
+  memset(&cert, 0, sizeof(shesig_t));
   FillSharenetCertificate(&cert, this, iss);
 
+#if 0
   sprintf(tag, "alias/%s", GetLabel().c_str());
   err = shfs_cert_save(&cert, tag);
   if (err) {
     error(SHERR_INVAL, "error saving cert '%s'", tag);
   }
+#endif
 
 }
 
@@ -1418,15 +1433,19 @@ void CLicense::NotifySharenet(int ifaceIndex)
 {
   CIface *iface = GetCoinByIndex(ifaceIndex);
   if (!iface || !iface->enabled) return;
+  shbuf_t *buff;
   char tag[SHFS_PATH_MAX];
   char sig_r[256];
   char sig_s[256];
   int err;
   int i;
 
+#if 0
+/* DEBUG: */
   /* only applies to ShareCoin block-chain transaction */
   if (ifaceIndex != SHC_COIN_IFACE)
     return;
+#endif
 
   uint160 hLic = GetHash();
   shkey_t *pubkey;
@@ -1443,16 +1462,22 @@ void CLicense::NotifySharenet(int ifaceIndex)
   if (GetTxOfCert(iface, hashIssuer, tx))
     iss = &tx.certificate;
 
+fprintf(stderr, "DEBUG: CLisense: hLic '%s'\n", hLic.GetHex().c_str());
+fprintf(stderr, "DEBUG: CLisense: hashIssuer '%s'\n", hashIssuer.GetHex().c_str());
+
   memset(&cert, 0, sizeof(cert));
   FillSharenetCertificate(&cert, this, iss);
 
+
+#if 0
   memset(&pcert, 0, sizeof(pcert));
   FillSharenetCertificate(&pcert, iss, NULL);
 
-  err = shlic_save(&pcert, &cert);
-  if (err) {
-    error(err, "CLicense.NotifySharenet: error saving license.");
-  }
+  buff = shbuf_init();
+  shbuf_cat(buff, &cert, sizeof(shesig_t));
+  err = shesig_save(&cert, buff);
+  shbuf_free(&buff);
+#endif
 
 #if 0
   memset(&lic, 0, sizeof(lic));
@@ -1714,8 +1739,10 @@ fprintf(stderr, "DEBUG: init_ident_certcoin_tx: error commiting tx '%s' [nFeeReq
 bool CCert::Sign(int ifaceIndex, CCoinAddr& addr, cbuff vchContext, string hexSeed) 
 {
   shkey_t *kpriv;
-  char priv_key_hex[256];
   bool ret;
+
+fprintf(stderr, "DEBUG: CCert.Sign: vchContext <%d bytes>\n", vchContext.size());
+fprintf(stderr, "DEBUG: CCert.Sign: hexSeed \"%s\"\n", hexSeed.c_str());
 
   if (!hashIssuer.IsNull())
     nFlag |= SHCERT_CERT_CHAIN; 

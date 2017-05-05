@@ -645,7 +645,7 @@ _TEST(certtx)
   unsigned int nBestHeight = GetBestHeight(iface) + 1;
   {
     string hexSeed;
-    err = init_cert_tx(iface, wtx, strLabel, "test CA", hexSeed, 1);
+    err = init_cert_tx(iface, wtx, strLabel, "SHCOIND TEST CA", hexSeed, 1);
 if (err) fprintf(stderr, "DEBUG: TEST: init_cert_tx: error %d\n", err);
     _TRUE(0 == err);
   }
@@ -672,7 +672,7 @@ if (err) fprintf(stderr, "DEBUG: TEST: init_cert_tx: error %d\n", err);
 
   /* chained certificate */
   CWalletTx chain_wtx;
-  string strTitle("test CHAIN");
+  string strTitle("SHCOIND TEST CHAIN");
   err = derive_cert_tx(iface, chain_wtx, hashCert, strLabel, strTitle);
 if (err) fprintf(stderr, "DEBUG: certtx: error (%d) derive cert tx\n", err); 
   _TRUE(err == 0);
@@ -723,6 +723,7 @@ _TEST(ctxtx)
 {
   CWallet *wallet = GetWallet(TEST_COIN_IFACE);
   CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
+  shgeo_t geo;
   int idx;
   int err;
 
@@ -766,6 +767,22 @@ if (err) fprintf(stderr, "DEBUG: TEST: init_ctx_tx: error %d\n", err);
   _TRUEPTR(GetContextByHash(iface, hashContext, t_tx));
   _TRUE(t_tx.GetHash() == wtx.GetHash());
   _TRUE(wtx.IsInMemoryPool(TEST_COIN_IFACE) == false);
+
+  /* test geodetic context */
+  shgeo_set(&geo, 46.7467, -114.1096, NULL);
+  string strName = "geo:46.7467,-114.1096";
+  const char *payload = "{\"name\":\"mountain\",\"code\":\"AREA\"}";
+  cbuff vchValue(payload, payload + strlen(payload));
+  err = init_ctx_tx(iface, wtx, strLabel, strName, vchValue, &geo);
+  _TRUE(err == 0);
+
+  /* insert ctx into chain + create a coin balance */
+  {
+    CBlock *block = test_GenerateBlock();
+    _TRUEPTR(block);
+    _TRUE(ProcessBlock(NULL, block) == true);
+    delete block;
+  }
 
 }
 

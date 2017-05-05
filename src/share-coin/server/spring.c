@@ -40,23 +40,21 @@ typedef struct spring_bits
   unsigned int lon1, lon2;
 } spring_bits;
 
-/*not needed */
-extern uint8_t* shsha1_result(shsha1_t *s);
 
 static unsigned int spring_matrix_bit(uint64_t seed)
 {
-  shsha1_t s;
-  uint8_t *result;
+  sh_sha_t s;
+  uint8_t result[64];
   uint32_t val;
   unsigned int *i_ptr;
   int i;
 
   seed = htonll(seed);
+  memset(result, 0, sizeof(result));
 
-  memset(&s, 0, sizeof(s));
-  shsha1_init(&s);
-  shsha1_write(&s, (const char *)&seed, sizeof(seed));
-  result = shsha1_result(&s);
+  sh_sha1_init(&s);
+  sh_sha1_write(&s, (const char *)&seed, sizeof(seed));
+  (void)sh_sha1_result(&s, result);
 
   val = 0;
   i_ptr = (uint32_t *)result;

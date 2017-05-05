@@ -77,8 +77,8 @@ inline shpeer_t *sharenet_peer(void)
 class CSign
 {
   public:
-    static const int ALG_ECDSA = SHKEY_ALG_ECDSA;
-    static const int ALG_U160 = SHKEY_ALG_U160;
+    static const int ALG_ECDSA = SHALG_ECDSA; // SHKEY_ALG_ECDSA
+    static const int ALG_U160 = SHALG_SHR; // SHKEY_ALG_U160
 
     unsigned int nAlg;
     cbuff vPubKey;

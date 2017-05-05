@@ -805,7 +805,6 @@ bc_t *GetBlockCoinChain(CIface *iface)
 
 static void _bc_chain_idle(void)
 {
-#ifdef SHCOIN_SERVER
   CIface *iface;
   bc_t *bc;
   int ifaceIndex;
@@ -823,7 +822,6 @@ static void _bc_chain_idle(void)
     if (bc)
       bc_idle(bc);
   }
-#endif
 }
 
 void bc_chain_idle(void)

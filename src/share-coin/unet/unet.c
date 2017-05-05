@@ -83,18 +83,13 @@ int unet_mode(SOCKET sk)
   return (t->mode);
 }
 
-void bc_chain_idle(void);
 
 void unet_idle(void)
 {
-  CIface *iface;
-  int ifaceIndex;
-  bc_t *bc;
 
   /* purge idle sockets */
   unet_close_idle(); 
 
-  bc_chain_idle();
 }
 
 

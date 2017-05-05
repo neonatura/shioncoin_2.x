@@ -142,6 +142,8 @@ void shcoind_poll_msg_queue(void)
 #define RUN_SHUTDOWN 2
 #define RUN_RESTART 3 /* not used */
 
+extern void bc_chain_idle(void);
+
 
 void daemon_server(void)
 {
@@ -158,6 +160,8 @@ void daemon_server(void)
 
     /* handle network communication. */
     unet_cycle(0.12); /* max idle 120ms */
+
+    bc_chain_idle();
 
     /* handle libshare message queue */
     shcoind_poll_msg_queue();

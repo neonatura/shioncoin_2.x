@@ -26,7 +26,9 @@
 #ifndef __COIN_PROTO_H__
 #define __COIN_PROTO_H__
 
-#include "shcoind.h"
+#include "blockchain/bc.h"
+
+
 
 
 #ifdef __cplusplus
@@ -34,20 +36,6 @@
 extern "C" {
 #endif
 
-
-#define TEST_COIN_IFACE 0
-#define SHC_COIN_IFACE 1
-#define USDE_COIN_IFACE 2
-#define EMC2_COIN_IFACE 3
-#define MAX_COIN_IFACE 4 
-
-
-#define COINF_DL_SCAN (1 << 0)
-#define COINF_DL_SYNC (1 << 1)
-#define COINF_WALLET_SCAN (1 << 3)
-#define COINF_WALLET_SYNC (1 << 4)
-#define COINF_PEER_SCAN (1 << 5)
-#define COINF_PEER_SYNC (1 << 6)
 
 
 #define COIN_IFACE_VERSION(_maj, _min, _rev, _bui) \
@@ -57,6 +45,7 @@ extern "C" {
    (100 * (_rev)) + \
    (1 * (_bui)) \
   )
+
 
 
 #define MAX_BLOCK_SIGOPS(_iface) \
@@ -82,6 +71,23 @@ extern "C" {
 
 #define COIN_SERVICES(_iface) \
   ((_iface)->services)
+
+#define TEST_COIN_IFACE 0
+#define SHC_COIN_IFACE 1
+#define USDE_COIN_IFACE 2
+#define EMC2_COIN_IFACE 3
+#define MAX_COIN_IFACE 4 
+
+
+
+
+#define COINF_DL_SCAN (1 << 0)
+#define COINF_DL_SYNC (1 << 1)
+#define COINF_WALLET_SCAN (1 << 3)
+#define COINF_WALLET_SYNC (1 << 4)
+#define COINF_PEER_SCAN (1 << 5)
+#define COINF_PEER_SYNC (1 << 6)
+
 
 
 #define STAT_BLOCK_ACCEPTS(_iface) (_iface)->stat.tot_block_accept

@@ -158,7 +158,7 @@ AM_CONDITIONAL([FREEBSD], [test x$opsys = xfreebsd])
 
 # Checks for programs.
 AC_PROG_CC
-gl_EARLY
+#gl_EARLY
 
 AC_PROG_CXX
 AM_PROG_AS
@@ -232,7 +232,7 @@ AC_TYPE_UINT8_T
 AC_CHECK_TYPES([ptrdiff_t stdout fpos_t])
 
 gt_TYPE_SSIZE_T
-gl_INIT
+#gl_INIT
 
 AC_CHECK_DECLS([getgrgid],,, [#include <grp.h>])
 AC_CHECK_DECLS([getpwuid],,, [#include <pwd.h>])
@@ -338,6 +338,9 @@ if test "x$enable_rpc" != "xno" ; then
   AC_DEFINE_UNQUOTED([RPC_SERVICE], 1, [Define to enable RPC service.])
 fi
 
+#enable_wallet="yes"
+#AM_CONDITIONAL(ENABLE_WALLET, [test "x$enable_wallet" != "xno"])
+#AM_CONDITIONAL([ENABLE_WALLET], 1, [Define to share-wallet functionality.])
 
-AC_OUTPUT(Makefile src/gnu/Makefile src/share-ssl-lib/Makefile src/share-coin/Makefile doc/Makefile bin/Makefile)
+AC_OUTPUT(Makefile src/share-ssl-lib/Makefile src/share-coin/Makefile doc/Makefile bin/Makefile)
 

@@ -287,7 +287,6 @@ bool VerifyAsset(CTransaction& tx)
 
   /* core verification */
   if (!IsAssetTx(tx)) {
-fprintf(stderr, "DEBUG: VerifyAsset: !IsAssetTx\n");
     return (false); /* tx not flagged as asset */
 }
 

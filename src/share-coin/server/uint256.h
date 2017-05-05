@@ -485,6 +485,9 @@ public:
       memset(&key, 0, sizeof(key));
       for (int i = 0; i < WIDTH; i++)
         key.code[i] = pn[i];
+      key.alg = SHALG_SHR160;
+      key.crc = 0;
+      key.crc = (uint16_t)(shkey_crc(&key) & 0xFFFF);
 
       return (&key);
     }
