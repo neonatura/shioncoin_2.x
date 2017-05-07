@@ -493,7 +493,6 @@ CBlock* shc_CreateNewBlock(const CPubKey& rkey)
   int64 nFees = 0;
   {
     LOCK2(cs_main, SHCBlock::mempool.cs);
-    SHCTxDB txdb;
 
     // Priority order to process transactions
     list<SHCOrphan> vOrphan; // list memory doesn't move
@@ -580,8 +579,16 @@ continue;
       map<uint256, CTxIndex> mapTestPoolTmp(mapTestPool);
       MapPrevTx mapInputs;
       bool fInvalid;
-      if (!tx.FetchInputs(txdb, mapTestPoolTmp, NULL, true, mapInputs, fInvalid))
-        continue;
+      {
+        SHCTxDB txdb;
+        bool ok;
+
+        ok = tx.FetchInputs(txdb, 
+            mapTestPoolTmp, NULL, true, mapInputs, fInvalid);
+        txdb.Close();
+        if (!ok)
+          continue;
+      }
 
       int64 nTxFees = tx.GetValueIn(mapInputs)-tx.GetValueOut();
       if (nTxFees < nMinFee)
@@ -965,30 +972,35 @@ bool shc_ProcessBlock(CNode* pfrom, CBlock* pblock)
     }
   }
 
+  /*
+   * SHC: If previous hash and it is unknown.
+   */ 
+  if (pblock->hashPrevBlock != 0 &&
+      !blockIndex->count(pblock->hashPrevBlock)) {
+    Debug("(shc) ProcessBlock: ORPHAN BLOCK, prev=%s\n", pblock->hashPrevBlock.GetHex().c_str());
 
-  /* block is considered orphan when previous block or one of the transaction's input hashes is unknown. */
-  if (!blockIndex->count(pblock->hashPrevBlock) ||
-      !pblock->CheckTransactionInputs(SHC_COIN_IFACE))
-  {
-    error(SHERR_INVAL, "(usde) ProcessBlock: warning: ORPHAN BLOCK, prev=%s\n", pblock->hashPrevBlock.GetHex().c_str());
-
-    SHCBlock* pblock2 = new SHCBlock(*pblock);
-    SHC_mapOrphanBlocks.insert(make_pair(hash, pblock2));
-    SHC_mapOrphanBlocksByPrev.insert(make_pair(pblock2->hashPrevBlock, pblock2));
-
-    /* request missing blocks */
+    /* Accept orphan if origin is known. */
     if (pfrom) {
+      SHCBlock* orphan = new SHCBlock(*pblock);
+      SHC_mapOrphanBlocks.insert(make_pair(hash, orphan));
+      SHC_mapOrphanBlocksByPrev.insert(make_pair(orphan->hashPrevBlock, orphan));
+
+      /* request missing blocks */
       CBlockIndex *pindexBest = GetBestBlockIndex(SHC_COIN_IFACE);
       if (pindexBest) {
         Debug("(shc) ProcessBlocks: requesting blocks from height %d due to orphan '%s'.\n", pindexBest->nHeight, pblock->GetHash().GetHex().c_str()); 
-        pfrom->PushGetBlocks(GetBestBlockIndex(SHC_COIN_IFACE), shc_GetOrphanRoot(pblock2));
+        pfrom->PushGetBlocks(GetBestBlockIndex(SHC_COIN_IFACE), shc_GetOrphanRoot(orphan));
       }
     }
     return true;
   }
 
-  // Store to disk
+  if (!pblock->CheckTransactionInputs(SHC_COIN_IFACE)) {
+    Debug("(shc) ProcessBlock: invalid input transaction [prev %s].", pblock->hashPrevBlock.GetHex().c_str());
+    return (true);
+  }
 
+  /* store to disk */
   if (!pblock->AcceptBlock()) {
     iface->net_invalid = time(NULL);
     return error(SHERR_IO, "SHCBlock::AcceptBlock: error adding block '%s'.", pblock->GetHash().GetHex().c_str());
@@ -1478,8 +1490,25 @@ bool SHCBlock::IsBestChain()
 
 bool SHCBlock::AcceptBlock()
 {
+  blkidx_t *blockIndex = GetBlockTable(SHC_COIN_IFACE);
   CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);
   int mode;
+
+  map<uint256, CBlockIndex*>::iterator mi = blockIndex->find(hashPrevBlock);
+  if (mi == blockIndex->end()) {
+    return error(SHERR_INVAL, "(shc) AcceptBlock: prev block '%s' not found", hashPrevBlock.GetHex().c_str());
+  }
+  CBlockIndex* pindexPrev = (*mi).second;
+
+  if (GetBlockTime() > GetAdjustedTime() + SHC_MAX_DRIFT_TIME) {
+    print();
+    return error(SHERR_INVAL, "(shc) AcceptBlock: block's timestamp more than fifteen minutes in the future.");
+
+  }
+  if (GetBlockTime() <= pindexPrev->GetBlockTime() - SHC_MAX_DRIFT_TIME) {
+    print();
+    return error(SHERR_INVAL, "(shc) AcceptBlock: block's timestamp more than fifteen minutes old.");
+  }
 
   if (vtx.size() != 0 && VerifyMatrixTx(vtx[0], mode)) {
     bool fCheck = false;
@@ -1487,17 +1516,15 @@ bool SHCBlock::AcceptBlock()
       bool fValMatrix = false;
       fValMatrix = BlockAcceptValidateMatrix(iface, vtx[0], fCheck);
       if (fValMatrix && !fCheck)
-        return error(SHERR_ILSEQ, "AcceptBlock: ValidateMatrix verification failure.");
+        return error(SHERR_ILSEQ, "(shc) AcceptBlock: ValidateMatrix verification failure.");
     } else if (mode == OP_EXT_PAY) {
       bool fHasSprMatrix = BlockAcceptSpringMatrix(iface, vtx[0], fCheck);
       if (fHasSprMatrix && !fCheck)
-        return error(SHERR_ILSEQ, "AcceptBlock: SpringMatrix verification failure.");
+        return error(SHERR_ILSEQ, "(shc) AcceptBlock: SpringMatrix verification failure.");
     }
   }
 
-  bool ret = core_AcceptBlock(this);
-
-  return (ret);
+  return (core_AcceptBlock(this, pindexPrev));
 }
 
 CScript SHCBlock::GetCoinbaseFlags()
@@ -1808,6 +1835,9 @@ bool shc_Truncate(uint256 hash)
     return error(SHERR_INVAL, "Truncate: WriteHashBestChain '%s' failed", hash.GetHex().c_str());
 
   cur_index->pnext = NULL;
+  SHCBlock::bnBestChainWork = cur_index->bnChainWork;
+  InitServiceBlockEvent(SHC_COIN_IFACE, cur_index->nHeight + 1);
+
   return (true);
 }
 bool SHCBlock::Truncate()
@@ -1857,16 +1887,8 @@ bool SHCBlock::AddToBlockIndex()
     if (!ret)
       return false;
   } else {
-  CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);
-    if (hashPrevBlock == GetBestBlockChain(iface)) {
-      if (!WriteBlock(pindexNew->nHeight)) {
-        return error(SHERR_INVAL, "USDE: AddToBLocKindex: WriteBlock failure");
-      }
-    } else {
-      /* usher to the holding cell */
-      WriteArchBlock();
-      Debug("SHCBlock::AddToBlockIndex: skipping block (%s) SetBestChain() since pindexNew->bnChainWork(%s) <= bnBestChainWork(%s)", pindexNew->GetBlockHash().GetHex().c_str(), pindexNew->bnChainWork.ToString().c_str(), bnBestChainWork.ToString().c_str());
-    }
+    if (!WriteArchBlock())
+      return (false);
   }
 
   return true;

@@ -40,6 +40,9 @@
 
 #define EMC2_MAX_SIGOPS 20000
 
+/** The maximum allowed drift time (past/future) for accepting new blocks. */
+#define EMC2_MAX_DRIFT_TIME 900 /* 15 minutes */ 
+
 static const int EMC2_PROTOCOL_VERSION = 70004;
 
 #define EMC2_COIN (uint64_t)100000000

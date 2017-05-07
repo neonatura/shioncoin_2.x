@@ -422,6 +422,7 @@ bool EMC2TxDB::LoadBlockIndex()
 {
   CIface *iface = GetCoinByIndex(EMC2_COIN_IFACE);
   blkidx_t *mapBlockIndex = GetBlockTable(EMC2_COIN_IFACE);
+  ValidIndexSet *setValid = GetValidIndexSet(EMC2_COIN_IFACE);
   char errbuf[1024];
 
   if (!emc2_FillBlockIndex())
@@ -443,6 +444,7 @@ bool EMC2TxDB::LoadBlockIndex()
   {
     CBlockIndex* pindex = item.second;
     pindex->bnChainWork = (pindex->pprev ? pindex->pprev->bnChainWork : 0) + pindex->GetBlockWork();
+    setValid->insert(pindex);
   }
 
   // Load EMC2Block::hashBestChain pointer to end of best chain

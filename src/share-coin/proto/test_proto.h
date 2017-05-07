@@ -40,6 +40,9 @@
 
 #define TEST_MAX_SIGOPS 32768
 
+/** The maximum allowed drift time (past/future) for accepting new blocks. */
+#define TEST_MAX_DRIFT_TIME 1440 /* 24 minutes */ 
+
 static const int TEST_PROTOCOL_VERSION = 1000000;
 
 #define TEST_COIN (uint64_t)100000000

@@ -46,10 +46,16 @@ using namespace json_spirit;
 #include "matrix.h"
 
 
+#define BIS_FAIL_VALID 32
+#define BIS_FAIL_CHILD 64
+
 
 typedef std::vector<uint256> HashList;
 
 typedef map< uint256, vector<uint256> > tx_map;
+
+
+
 
 
 
@@ -1271,6 +1277,7 @@ class CBlockIndex
     //    unsigned int nFile;
     //    unsigned int nBlockPos;
     int nHeight;
+    int nStatus;
     CBigNum bnChainWork;
 
     // block header
@@ -1289,6 +1296,7 @@ class CBlockIndex
       //       nFile = 0;
       //        nBlockPos = 0;
       nHeight = 0;
+      nStatus = 0;
       bnChainWork = 0;
 
       nVersion       = 0;
@@ -1325,6 +1333,7 @@ class CBlockIndex
       //        nFile = nFileIn;
       //       nBlockPos = nBlockPosIn;
       nHeight = 0;
+      nStatus = 0;
       bnChainWork = 0;
 
       nVersion       = block.nVersion;
@@ -1616,6 +1625,22 @@ public:
 #include "bloom.h"
 
 
+struct CBlockIndexWorkComparator
+{               
+    bool operator()(CBlockIndex *pa, CBlockIndex *pb) {
+        if (pa->bnChainWork > pb->bnChainWork) return false;
+        if (pa->bnChainWork < pb->bnChainWork) return true;
+        
+        if (pa->GetBlockHash() < pb->GetBlockHash()) return false;
+        if (pa->GetBlockHash() > pb->GetBlockHash()) return true;
+
+        return false; // identical blocks
+    }   
+};      
+
+typedef set<CBlockIndex*, CBlockIndexWorkComparator> ValidIndexSet;
+
+
 CBlock *GetBlockByHeight(CIface *iface, int nHeight);
 
 CBlock *GetBlockByHash(CIface *iface, const uint256 hash);
@@ -1653,7 +1678,7 @@ CBlock *GetArchBlockByHash(CIface *iface, const uint256 hash);
 
 uint256 GetGenesisBlockHash(int ifaceIndex);
 
-bool core_AcceptBlock(CBlock *pblock);
+bool core_AcceptBlock(CBlock *pblock, CBlockIndex *pindexPrev);
 
 CBlockIndex *GetBlockIndexByHeight(int ifaceIndex, unsigned int nHeight);
 
@@ -1668,6 +1693,11 @@ bool core_CommitBlock(CTxDB& txdb, CBlock *pblock, CBlockIndex *pindexNew);
 bool core_CommitBlock(CBlock *pblock, CBlockIndex *pindexNew);
 
 int BackupBlockChain(CIface *iface, unsigned int maxHeight);
+
+bool core_ConnectBestBlock(int ifaceIndex, CBlock *block, CBlockIndex *pindexNew);
+
+ValidIndexSet *GetValidIndexSet(int ifaceIndex);
+
 
 
 

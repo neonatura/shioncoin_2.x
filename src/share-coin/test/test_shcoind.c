@@ -15,6 +15,7 @@ extern TEST_coinaddr(CuTest*);
 extern TEST_bignum(CuTest*);
 extern TEST_sha256transform(CuTest*);
 extern TEST_blockchain(CuTest*);
+extern TEST_truncate(CuTest*);
 extern TEST_reorganize(CuTest*);
 extern TEST_serializetx(CuTest*);
 extern TEST_matrix(CuTest*);
@@ -61,7 +62,7 @@ int main(int argc, char *argv[])
 
   test_shcoind_init();
 
-  /* test suits */
+  /* core tests */
   SUITE_ADD_TEST(suite, TEST_coinaddr);
   SUITE_ADD_TEST(suite, TEST_bloom_create_insert_key);
   SUITE_ADD_TEST(suite, TEST_bloom_match);
@@ -74,10 +75,13 @@ int main(int argc, char *argv[])
   SUITE_ADD_TEST(suite, TEST_sha256transform);
   SUITE_ADD_TEST(suite, TEST_blockchain);
   SUITE_ADD_TEST(suite, TEST_matrix);
-  SUITE_ADD_TEST(suite, TEST_reorganize);
   SUITE_ADD_TEST(suite, TEST_serializetx);
+
+  /* block-chain transaction tests */
+  SUITE_ADD_TEST(suite, TEST_reorganize);
   SUITE_ADD_TEST(suite, TEST_matrixtx);
   SUITE_ADD_TEST(suite, TEST_identtx);
+//  SUITE_ADD_TEST(suite, TEST_truncate);
   SUITE_ADD_TEST(suite, TEST_hdtx);
   SUITE_ADD_TEST(suite, TEST_signtx);
   SUITE_ADD_TEST(suite, TEST_cointx);

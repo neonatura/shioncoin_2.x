@@ -1876,8 +1876,7 @@ bool CBlock::WriteArchBlock()
   if (n_height < 0)
     return error(SHERR_INVAL, "block-chain write: %s", sherrstr(n_height));
 
-  Debug("WriteArchBlock: hash '%s'\n", hash.GetHex().c_str());
-
+  Debug("WriteArchBlock: %s", ToString().c_str());
   return (true);
 }
 
@@ -1973,7 +1972,7 @@ extern int ProcessExecTx(CIface *iface, CNode *pfrom, CTransaction& tx);
 /**
  * The core method of accepting a new block onto the block-chain.
  */
-bool core_AcceptBlock(CBlock *pblock)
+bool core_AcceptBlock(CBlock *pblock, CBlockIndex *pindexPrev)
 {
   int ifaceIndex = pblock->ifaceIndex;
   CIface *iface = GetCoinByIndex(ifaceIndex);
@@ -1982,44 +1981,25 @@ bool core_AcceptBlock(CBlock *pblock)
   shtime_t ts;
   bool ret;
 
-  if (blockIndex->count(hash))
-    return error(SHERR_INVAL, "AcceptBlock() : block already in block table.");
-
-  // Get prev block index
-  map<uint256, CBlockIndex*>::iterator mi = blockIndex->find(pblock->hashPrevBlock);
-  if (mi == blockIndex->end()) {
-    return (pblock->trust(-10, "(core) AcceptBlock: prev block '%s' not found", pblock->hashPrevBlock.GetHex().c_str()));
+  if (!pblock || !pindexPrev) {
+    return error(SHERR_INVAL, "(core) AcceptBlock: invalid parameter.");
   }
-  CBlockIndex* pindexPrev = (*mi).second;
-  if (!pindexPrev) {
-    return error(SHERR_INVAL, "AcceptBlock() : prev block '%s' not found: block index has NULL record for hash.", pblock->hashPrevBlock.GetHex().c_str());
+
+  if (blockIndex->count(hash)) {
+    return error(SHERR_INVAL, "(core) AcceptBlock: block already in chain.");
   }
 
   unsigned int nHeight = pindexPrev->nHeight+1;
 
-  // Check proof of work
+  /* check proof of work */
   unsigned int nBits = pblock->GetNextWorkRequired(pindexPrev);
   if (pblock->nBits != nBits) {
     return (pblock->trust(-100, "(core) AcceptBlock: invalid difficulty (%x) specified (next work required is %x) for block height %d [prev '%s']\n", pblock->nBits, nBits, nHeight, pindexPrev->GetBlockHash().GetHex().c_str()));
   }
 
-#if 0
-  if (!CheckDiskSpace(::GetSerializeSize(*pblock, SER_DISK, CLIENT_VERSION))) {
-    return error(SHERR_IO, "AcceptBlock() : out of disk space");
-  }
-#endif
-
-  // Check timestamp against prev
-  if (pblock->GetBlockTime() <= pindexPrev->GetMedianTimePast()) {
-    pblock->print();
-    return error(SHERR_INVAL, "AcceptBlock: block timestamp is too early");
-  }
-
   BOOST_FOREACH(const CTransaction& tx, pblock->vtx) {
-
 #if 0 /* not standard */
-    // Check that all inputs exist
-    if (!tx.IsCoinBase()) {
+    if (!tx.IsCoinBase()) { // Check that all inputs exist
       BOOST_FOREACH(const CTxIn& txin, tx.vin) {
         if (txin.prevout.IsNull())
           return error(SHERR_INVAL, "AcceptBlock(): prevout is null");
@@ -2028,13 +2008,14 @@ bool core_AcceptBlock(CBlock *pblock)
       }
     }
 #endif
-    // Check that all transactions are finalized 
+
+    /* check that all transactions are finalized. */ 
     if (!tx.IsFinal(ifaceIndex, nHeight, pblock->GetBlockTime())) {
       return (pblock->trust(-10, "(core) AcceptBlock: block contains a non-final transaction at height %u", nHeight));
     }
   }
 
-  // Check that the block chain matches the known block chain up to a checkpoint
+  /* check that the block matches the known block hash for last checkpoint. */
   if (!pblock->VerifyCheckpoint(nHeight)) {
     return (pblock->trust(-100, "(core) AcceptBlock: rejected by checkpoint lockin at height %u", nHeight));
   }
@@ -2045,7 +2026,7 @@ bool core_AcceptBlock(CBlock *pblock)
     return error(SHERR_IO, "AcceptBlock: AddToBlockIndex failed");
   }
 
-  /* Relay inventory [but don't relay old inventory during initial block download] */
+  /* inventory relay */
   int nBlockEstimate = pblock->GetTotalBlocksEstimate();
   if (GetBestBlockChain(iface) == hash) {
     timing_init("AcceptBlock:PushInventory", &ts);
@@ -2656,6 +2637,8 @@ Object CBlockHeader::ToValue()
     obj.push_back(Pair("height", pindex->nHeight));
     obj.push_back(Pair("difficulty", GetDifficulty(ifaceIndex, pindex)));
 
+    obj.push_back(Pair("chainwork", pindex->bnChainWork.GetHex()));
+
     if (pindex->pprev)
       obj.push_back(Pair("previousblockhash", pindex->pprev->GetBlockHash().GetHex()));
     if (pindex->pnext)
@@ -3260,6 +3243,125 @@ fin:
   return (fValid);
 }
 
+
+ValidIndexSet setBlockIndexValid[MAX_COIN_IFACE];
+
+ValidIndexSet *GetValidIndexSet(int ifaceIndex)
+{
+  if (ifaceIndex < 0 || ifaceIndex >= MAX_COIN_IFACE)
+    return (NULL);
+
+  return (&setBlockIndexValid[ifaceIndex]);
+}
+
+
+/* determine chain with greatest chain work */
+bool core_ConnectBestBlock(int ifaceIndex, CBlock *block, CBlockIndex *pindexNew)
+{
+  CIface *iface = GetCoinByIndex(ifaceIndex);
+  ValidIndexSet *setValid = GetValidIndexSet(ifaceIndex);
+  CBlockIndex *pindexBest;
+  bool ret_val = true;
+
+  pindexBest = GetBestBlockIndex(ifaceIndex);
+  if (!pindexBest) {
+    /* nothing to compare to */
+    return (block->SetBestChain(pindexNew));
+  } 
+
+  while (true) {
+    /* calculate 'best' known work */
+    CBlockIndex *pindexNewBest;
+    {
+      std::set<CBlockIndex*,CBlockIndexWorkComparator>::reverse_iterator it = setValid->rbegin();
+      if (it == setValid->rend()) {
+        goto bail;
+      }
+      pindexNewBest = *it;
+    }
+
+    if (pindexNewBest == pindexBest ||
+        pindexNewBest->bnChainWork == pindexBest->bnChainWork) {
+      goto bail;
+    }
+
+    /* traverse candidate's ancestry */
+    CBlockIndex *pindexTest = pindexNewBest;
+    std::vector<CBlockIndex*> vAttach;
+    while (true) {
+      if ((pindexTest->nStatus & BIS_FAIL_VALID) ||
+          (pindexTest->nStatus & BIS_FAIL_CHILD)) {
+        CBlockIndex *pindexFailed = pindexNewBest;
+
+        while (pindexTest != pindexFailed) {
+          pindexFailed->nStatus |= BIS_FAIL_CHILD;
+          setValid->erase(pindexFailed);
+          //pblocktree->WriteBlockIndex(CDiskBlockIndex(pindexFailed));
+          pindexFailed = pindexFailed->pprev;
+        }
+
+        //InvalidChainFound(pindexNewBest);
+        error(SHERR_INVAL, "(core) ConnectBestBlock: InvalidChainFound: invalid block=%s  height=%d  work=%s  date=%s status(%u)",
+            pindexNewBest->GetBlockHash().ToString().substr(0,20).c_str(),
+            pindexNewBest->nHeight,
+            pindexNewBest->bnChainWork.ToString().c_str(),
+            DateTimeStrFormat("%x %H:%M:%S", pindexNewBest->GetBlockTime()).c_str(), pindexTest->nStatus);
+        break;
+      }
+
+      if (pindexTest->bnChainWork > pindexBest->bnChainWork) {
+        vAttach.push_back(pindexTest);
+      }
+
+      if (pindexTest->pprev == NULL || /* beginning of alt chain */
+          pindexTest->pnext != NULL) { /* end of alt chain */
+        uint256 cur_hash = block->GetHash();
+
+        /* validate chain */
+        reverse(vAttach.begin(), vAttach.end());
+        BOOST_FOREACH(CBlockIndex *pindexSwitch, vAttach) {
+          const uint256& t_hash = pindexSwitch->GetBlockHash();
+          CBlock *t_block = NULL;
+          bool ok;
+
+          if (t_hash == cur_hash) {
+            t_block = block;
+          } else {
+            t_block = GetBlockByHash(iface, t_hash);
+            if (!t_block)
+              t_block = GetArchBlockByHash(iface, t_hash); /* orphan */
+            if (!t_block) {
+              ret_val = false;
+              error(SHERR_NOENT, "core_ConnectBestBlock: unknown block hash '%s'.", t_hash);
+              goto bail;
+            }
+          }
+
+          ok = t_block->SetBestChain(pindexSwitch);
+          if (t_hash != cur_hash)
+            delete t_block;
+          if (!ok) {
+            ret_val = false;
+            error(SHERR_INVAL, "core_ConnectBestBlock: error setting best chain [hash %s] [height %u]", pindexSwitch->GetBlockHash().GetHex().c_str(), pindexSwitch->nHeight);
+            goto bail;
+          }
+        }
+
+        if (pindexNewBest->GetBlockHash() != pindexNew->GetBlockHash()) 
+            block->WriteArchBlock();
+
+        return (true);
+      }
+
+      pindexTest = pindexTest->pprev;
+    } /* while(true */
+
+  } /* while(true) */
+
+bail:
+  block->WriteArchBlock();
+  return (ret_val);
+}
 
 
 int BackupBlockChain(CIface *iface, unsigned int maxHeight)

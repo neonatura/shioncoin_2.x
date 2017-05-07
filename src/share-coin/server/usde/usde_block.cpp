@@ -611,7 +611,6 @@ CBlock* usde_CreateNewBlock(const CPubKey& rkey)
   int64 nFees = 0;
   {
     LOCK2(cs_main, USDEBlock::mempool.cs);
-    USDETxDB txdb; 
 
     // Priority order to process transactions
     list<USDEOrphan> vOrphan; // list memory doesn't move
@@ -711,8 +710,17 @@ continue;
       map<uint256, CTxIndex> mapTestPoolTmp(mapTestPool);
       MapPrevTx mapInputs;
       bool fInvalid;
-      if (!tx.FetchInputs(txdb, mapTestPoolTmp, NULL, true, mapInputs, fInvalid))
-        continue;
+      {
+        USDETxDB txdb; 
+        bool ok;
+
+        ok = tx.FetchInputs(txdb,
+            mapTestPoolTmp, NULL, true, mapInputs, fInvalid);
+        if (ok)
+          continue;
+
+        txdb.Close();
+      }
 
       int64 nTxFees = tx.GetValueIn(mapInputs)-tx.GetValueOut();
       if (nTxFees < nMinFee)
@@ -750,7 +758,6 @@ continue;
       }
     }
 
-    txdb.Close();
 
 #if 0
     nLastBlockTx = nBlockTx;
@@ -1090,30 +1097,28 @@ pblock->print();
     }
   }
 
+  /*
+   * USDE: unknown previous hash 
+   */
+  if (!blockIndex->count(pblock->hashPrevBlock)) {
+    Debug("(usde) ProcessBlock: warning: ORPHAN BLOCK, prev=%s\n", pblock->hashPrevBlock.GetHex().c_str());
 
-  /* block is considered orphan when previous block or one of the transaction's input hashes is unknown. */
-  if (!blockIndex->count(pblock->hashPrevBlock) ||
-      !pblock->CheckTransactionInputs(USDE_COIN_IFACE)) {
-    error(SHERR_INVAL, "(usde) ProcessBlock: warning: ORPHAN BLOCK, prev=%s\n", pblock->hashPrevBlock.GetHex().c_str());
+    USDEBlock* orphan = new USDEBlock(*pblock);
+    USDE_mapOrphanBlocks.insert(make_pair(hash, orphan));
+    USDE_mapOrphanBlocksByPrev.insert(make_pair(orphan->hashPrevBlock, orphan));
 
-    USDEBlock* pblock2 = new USDEBlock(*pblock);
-    USDE_mapOrphanBlocks.insert(make_pair(hash, pblock2));
-    USDE_mapOrphanBlocksByPrev.insert(make_pair(pblock2->hashPrevBlock, pblock2));
-
-    // Ask this guy to fill in what we're missing
     if (pfrom) {
       CBlockIndex *pindexBest = GetBestBlockIndex(USDE_COIN_IFACE);
       if (pindexBest) {
         fprintf(stderr, "DEBUG: usde_ProcessBlocks: requsesting missing blocks from height %d\n", pindexBest->nHeight); 
-        pfrom->PushGetBlocks(pindexBest, usde_GetOrphanRoot(pblock2));
+        pfrom->PushGetBlocks(pindexBest, usde_GetOrphanRoot(orphan));
       }
     }
 
     return true;
   }
 
-  // Store to disk
-
+  /* store to disk */
   if (!pblock->AcceptBlock()) {
     iface->net_invalid = time(NULL);
     return error(SHERR_INVAL, "ProcessBlock() : AcceptBlock FAILED");
@@ -1763,7 +1768,20 @@ bool USDEBlock::IsBestChain()
 
 bool USDEBlock::AcceptBlock()
 {
-  return (core_AcceptBlock(this));
+  blkidx_t *blockIndex = GetBlockTable(USDE_COIN_IFACE);
+
+  map<uint256, CBlockIndex*>::iterator mi = blockIndex->find(hashPrevBlock);
+  if (mi == blockIndex->end()) {
+    return error(SHERR_INVAL, "(usde) AcceptBlock: prev block '%s' not found", hashPrevBlock.GetHex().c_str());
+  }
+  CBlockIndex* pindexPrev = (*mi).second;
+
+  if (GetBlockTime() <= pindexPrev->GetMedianTimePast()) {
+    print();
+    return error(SHERR_INVAL, "(usde) AcceptBlock: block timestamp is too early");
+  }
+
+  return (core_AcceptBlock(this, pindexPrev));
 }
 
 CScript USDEBlock::GetCoinbaseFlags()
@@ -2103,6 +2121,9 @@ bool usde_Truncate(uint256 hash)
     return error(SHERR_INVAL, "Truncate: WriteHashBestChain '%s' failed", hash.GetHex().c_str());
 
   cur_index->pnext = NULL;
+  USDEBlock::bnBestChainWork = cur_index->bnChainWork;
+  InitServiceBlockEvent(USDE_COIN_IFACE, cur_index->nHeight + 1);
+
   return (true);
 }
 bool USDEBlock::Truncate()
@@ -2153,15 +2174,8 @@ CIface *iface = GetCoinByIndex(USDE_COIN_IFACE);
     if (!ret)
       return false;
   } else {
-    /* usher to the holding cell */
-    if (hashPrevBlock == GetBestBlockChain(iface)) {
-      if (!WriteBlock(pindexNew->nHeight)) {
-        return error(SHERR_INVAL, "USDE: AddToBLocKindex: WriteBlock failure");
-      }
-    } else {
-      WriteArchBlock();
-      Debug("USDEBlock::AddToBlockIndex: skipping block (%s) SetBestChain() since pindexNew->bnChainWork(%s) <= bnBestChainWork(%s)", pindexNew->GetBlockHash().GetHex().c_str(), pindexNew->bnChainWork.ToString().c_str(), bnBestChainWork.ToString().c_str());
-    }
+    if (!WriteArchBlock())
+      return (false);
   }
 
   return true;

@@ -351,7 +351,6 @@ CBlock* test_CreateNewBlock(const CPubKey& rkey, CBlockIndex *pindexPrev)
   int64 nFees = 0;
   {
     LOCK2(cs_main, TESTBlock::mempool.cs);
-    TESTTxDB txdb; 
 
     // Priority order to process transactions
     list<TESTOrphan> vOrphan; // list memory doesn't move
@@ -457,10 +456,16 @@ fprintf(stderr, "DEBUG: test_CrateNewBlock: too many sigops\n");
       map<uint256, CTxIndex> mapTestPoolTmp(mapTestPool);
       MapPrevTx mapInputs;
       bool fInvalid;
-      if (!tx.FetchInputs(txdb, mapTestPoolTmp, NULL, true, mapInputs, fInvalid)) {
-fprintf(stderr, "DEBUG: test_CrateNewBlock: !tx.FetchInputs()\n");
-        continue;
-}
+      {
+        TESTTxDB txdb; 
+        bool ok;
+
+        ok = tx.FetchInputs(txdb,
+            mapTestPoolTmp, NULL, true, mapInputs, fInvalid);
+        txdb.Close();
+        if (!ok)
+          continue;
+      }
 
       int64 nTxFees = tx.GetValueIn(mapInputs)-tx.GetValueOut();
       if (nTxFees < nMinFee) {
@@ -503,8 +508,6 @@ fprintf(stderr, "DEBUG: !test_ConnectInputs()\n");
         }
       }
     }
-
-    txdb.Close();
 
 #if 0
     nLastBlockTx = nBlockTx;
@@ -931,10 +934,9 @@ bool test_ProcessBlock(CNode* pfrom, CBlock* pblock)
   }
 
   /* block is considered orphan when previous block or one of the transaction's input hashes is unknown. */
-  if (!blockIndex->count(pblock->hashPrevBlock) ||
-      !pblock->CheckTransactionInputs(TEST_COIN_IFACE))
-  {
-    error(SHERR_INVAL, "(usde) ProcessBlock: warning: ORPHAN BLOCK, prev=%s\n", pblock->hashPrevBlock.GetHex().c_str());
+  if (pblock->hashPrevBlock != 0 && 
+      !blockIndex->count(pblock->hashPrevBlock)) {
+    Debug("(test) ProcessBlock: ORPHAN BLOCK, prev=%s\n", pblock->hashPrevBlock.GetHex().c_str());
 
     TESTBlock* pblock2 = new TESTBlock(*pblock);
     TEST_mapOrphanBlocks.insert(make_pair(hash, pblock2));
@@ -949,7 +951,10 @@ bool test_ProcessBlock(CNode* pfrom, CBlock* pblock)
     return true;
   }
 
-  // Store to disk
+  if (!pblock->CheckTransactionInputs(TEST_COIN_IFACE)) {
+    error(SHERR_INVAL, "(test) ProcessBlock: check transaction input failure [prev %s]", pblock->hashPrevBlock.GetHex().c_str());
+    return (true);
+  }
 
   if (!pblock->AcceptBlock()) {
     iface->net_invalid = time(NULL);
@@ -1168,6 +1173,11 @@ bool static test_Reorganize(CTxDB& txdb, CBlockIndex* pindexNew, TEST_CTxMemPool
 void TESTBlock::InvalidChainFound(CBlockIndex* pindexNew)
 {
   CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
+  ValidIndexSet *setValid = GetValidIndexSet(TEST_COIN_IFACE);
+
+  pindexNew->nStatus |= BIS_FAIL_VALID;
+  setValid->erase(pindexNew);
+
 
   if (pindexNew->bnChainWork > bnBestInvalidWork)
   {
@@ -1405,9 +1415,26 @@ bool TESTBlock::IsBestChain()
 
 bool TESTBlock::AcceptBlock()
 {
+  blkidx_t *blockIndex = GetBlockTable(TEST_COIN_IFACE);
   CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
-
   int mode;
+
+  map<uint256, CBlockIndex*>::iterator mi = blockIndex->find(hashPrevBlock);
+  if (mi == blockIndex->end()) {
+    return error(SHERR_INVAL, "(usde) AcceptBlock: prev block '%s' not found", hashPrevBlock.GetHex().c_str());
+  }
+  CBlockIndex* pindexPrev = (*mi).second;
+
+  if (GetBlockTime() > GetAdjustedTime() + TEST_MAX_DRIFT_TIME) {
+    print();
+    return error(SHERR_INVAL, "(test) AcceptBlock: block's timestamp more than fifteen minutes in the future.");
+
+  }
+  if (GetBlockTime() <= pindexPrev->GetBlockTime() - TEST_MAX_DRIFT_TIME) {
+    print();
+    return error(SHERR_INVAL, "(test) AcceptBlock: block's timestamp more than fifteen minutes old.");
+  }
+
   if (vtx.size() != 0 && VerifyMatrixTx(vtx[0], mode)) {
     bool fCheck = false;
     if (mode == OP_EXT_VALIDATE) {
@@ -1421,9 +1448,7 @@ bool TESTBlock::AcceptBlock()
     }
   }
 
-  bool ret = core_AcceptBlock(this);
-
-  return (ret);
+  return (core_AcceptBlock(this, pindexPrev));
 }
 
 CScript TESTBlock::GetCoinbaseFlags()
@@ -1443,6 +1468,7 @@ bool TESTBlock::AddToBlockIndex()
 {
   CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
   blkidx_t *blockIndex = GetBlockTable(TEST_COIN_IFACE);
+  ValidIndexSet *setValid = GetValidIndexSet(TEST_COIN_IFACE);
   CBlockIndex *pindexNew;
   shtime_t ts;
 
@@ -1474,28 +1500,17 @@ bool TESTBlock::AddToBlockIndex()
     if (!ret)
       return false;
   } else {
-    if (hashPrevBlock == GetBestBlockChain(iface)) {
-      timing_init("AddToBlockIndex:WriteBlock", &ts);
-      if (!WriteBlock(pindexNew->nHeight)) {
-        return error(SHERR_INVAL, "USDE: AddToBLocKindex: WriteBlock failure");
-      }
-      timing_term(TEST_COIN_IFACE, "AddToBlockIndex:WriteBlock", &ts);
-    } else {
-      /* usher to the holding cell */
-      WriteArchBlock();
-      Debug("TESTBlock::AddToBlockIndex: skipping block (%s) SetBestChain() since pindexNew->bnChainWork(%s) <= bnBestChainWork(%s)", pindexNew->GetBlockHash().GetHex().c_str(), pindexNew->bnChainWork.ToString().c_str(), bnBestChainWork.ToString().c_str());
+    if (!WriteArchBlock()) {
+      return (false);
     }
   }
 
 #if 0
-  if (pindexNew == GetBestBlockIndex(TEST_COIN_IFACE)) {
-    // Notify UI to display prev block's coinbase if it was ours
-    static uint256 hashPrevBestCoinBase;
-    test_UpdatedTransaction(hashPrevBestCoinBase);
-    hashPrevBestCoinBase = vtx[0].GetHash();
+  setValid->insert(pindexNew);
+  if (!core_ConnectBestBlock(TEST_COIN_IFACE, this, pindexNew)) {
+    return error(SHERR_INVAL, "AddToBlockIndex: ConnectBestBlock failure");
   }
 #endif
-
 
   return true;
 }
@@ -1708,48 +1723,65 @@ bool TESTBlock::IsOrphan()
   return (true);
 }
 
-
-bool TESTBlock::Truncate()
+bool test_Truncate(uint256 hash)
 {
   blkidx_t *blockIndex = GetBlockTable(TEST_COIN_IFACE);
   CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
-  uint256 hash = GetHash();
+  CBlockIndex *pBestIndex;
   CBlockIndex *cur_index;
+  CBlockIndex *pindex;
+  unsigned int nHeight;
   int err;
 
-  if (!blockIndex->count(hash))
+  if (!blockIndex || !blockIndex->count(hash))
     return error(SHERR_INVAL, "Erase: block not found in block-index.");
 
   cur_index = (*blockIndex)[hash];
   if (!cur_index)
     return error(SHERR_INVAL, "Erase: block not found in block-index.");
 
-  {
+  pBestIndex = GetBestBlockIndex(iface);
+  if (!pBestIndex)
+    return error(SHERR_INVAL, "Erase: no block-chain established.");
+  if (cur_index->nHeight > pBestIndex->nHeight)
+    return error(SHERR_INVAL, "Erase: height is not valid.");
+
+  bc_t *bc = GetBlockChain(iface);
+  unsigned int nMinHeight = cur_index->nHeight;
+  unsigned int nMaxHeight = (bc_idx_next(bc)-1);
+    
+  TESTTxDB txdb; /* OPEN */
+
+  for (nHeight = nMaxHeight; nHeight > nMinHeight; nHeight--) {
     TESTBlock block;
-    if (block.ReadFromDisk(cur_index)) {
-      TESTTxDB txdb;
-      block.SetBestChain(txdb, cur_index);
-      txdb.Close();
+    if (block.ReadBlock(nHeight)) {
+      uint256 t_hash = block.GetHash();
+      if (hash == cur_index->GetBlockHash())
+        break; /* bad */
+      if (blockIndex->count(t_hash) != 0)
+        block.DisconnectBlock(txdb, (*blockIndex)[t_hash]);
     }
-  }
+    bc_clear(bc, nHeight);
+  }  
 
   SetBestBlockIndex(iface, cur_index);
+  bool ret = txdb.WriteHashBestChain(cur_index->GetBlockHash());
+
+  txdb.Close(); /* CLOSE */
+
+  if (!ret)
+    return error(SHERR_INVAL, "Truncate: WriteHashBestChain '%s' failed", hash.GetHex().c_str());
+
   cur_index->pnext = NULL;
-
-  bc_t *bc = GetBlockChain(GetCoinByIndex(ifaceIndex));
-  bc_clear(bc, cur_index->nHeight + 1); /* isolate chain */
-#if 0
-  bc_t *bc = GetBlockChain(GetCoinByIndex(ifaceIndex));
-  int bestHeight = bc_idx_next(bc) - 1;
-  int idx;
-
-  for (idx = bestHeight; idx > cur_index->nHeight; idx--) {
-/* todo: remove wallet transactions */
-    bc_clear(bc, idx);
-  }
-#endif
+  TESTBlock::bnBestChainWork = cur_index->bnChainWork;
+  InitServiceBlockEvent(TEST_COIN_IFACE, cur_index->nHeight + 1);
 
   return (true);
+}
+
+bool TESTBlock::Truncate()
+{
+  return (test_Truncate(GetHash()));
 }
 
 

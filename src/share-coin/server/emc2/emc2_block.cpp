@@ -452,7 +452,6 @@ CBlock* emc2_CreateNewBlock(const CPubKey& rkey)
   int64 nFees = 0;
   {
     LOCK2(cs_main, EMC2Block::mempool.cs);
-    EMC2TxDB txdb; 
 
     // Priority order to process transactions
     list<EMC2Orphan> vOrphan; // list memory doesn't move
@@ -483,6 +482,7 @@ CBlock* emc2_CreateNewBlock(const CPubKey& rkey)
           continue;
         }
 
+#if 0
 if (txPrev.vout.size() <= txin.prevout.n) {
 fprintf(stderr, "DEBUG: emc2_CreateNewBlock: txPrev.vout.size() %d <= txin.prevout.n %d [tx %s]\n", 
  txPrev.vout.size(),
@@ -490,7 +490,7 @@ fprintf(stderr, "DEBUG: emc2_CreateNewBlock: txPrev.vout.size() %d <= txin.prevo
 txPrev.GetHash().GetHex().c_str());
 continue;
 }
-
+#endif
 
         int64 nValueIn = txPrev.vout[txin.prevout.n].nValue;
 
@@ -498,9 +498,6 @@ continue;
         int nConf = GetTxDepthInMainChain(iface, txPrev.GetHash());
 
         dPriority += (double)nValueIn * nConf;
-
-        if (fDebug && GetBoolArg("-printpriority"))
-          printf("priority     nValueIn=%-12"PRI64d" nConf=%-5d dPriority=%-20.1f\n", nValueIn, nConf, dPriority);
       }
 
       // Priority is sum(valuein * age) / txsize
@@ -510,16 +507,6 @@ continue;
         porphan->dPriority = dPriority;
       else
         mapPriority.insert(make_pair(-dPriority, &(*mi).second));
-
-#if 0
-      if (fDebug && GetBoolArg("-printpriority"))
-      {
-        printf("priority %-20.1f %s\n%s", dPriority, tx.GetHash().ToString().substr(0,10).c_str(), tx.ToString().c_str());
-        if (porphan)
-          porphan->print();
-        printf("\n");
-      }
-#endif
     }
 
     // Collect transactions into block
@@ -554,8 +541,16 @@ continue;
       map<uint256, CTxIndex> mapTestPoolTmp(mapTestPool);
       MapPrevTx mapInputs;
       bool fInvalid;
-      if (!tx.FetchInputs(txdb, mapTestPoolTmp, NULL, true, mapInputs, fInvalid))
-        continue;
+      {
+        EMC2TxDB txdb; 
+        bool ok;
+
+        ok = tx.FetchInputs(txdb, 
+            mapTestPoolTmp, NULL, true, mapInputs, fInvalid);
+        txdb.Close();
+        if (!ok)
+          continue;
+      }
 
       int64 nTxFees = tx.GetValueIn(mapInputs)-tx.GetValueOut();
       if (nTxFees < nMinFee)
@@ -593,7 +588,6 @@ continue;
       }
     }
 
-    txdb.Close();
 
 #if 0
     nLastBlockTx = nBlockTx;
@@ -944,26 +938,22 @@ pblock->print();
     }
   }
 
-
-  /* block is considered orphan when previous block or one of the transaction's input hashes is unknown. */
-  if (!blockIndex->count(pblock->hashPrevBlock) ||
-      !pblock->CheckTransactionInputs(EMC2_COIN_IFACE)) {
-    error(SHERR_INVAL, "(emc2) ProcessBlock: warning: ORPHAN BLOCK, prev=%s\n", pblock->hashPrevBlock.GetHex().c_str());
-
-    EMC2Block* pblock2 = new EMC2Block(*pblock);
-    EMC2_mapOrphanBlocks.insert(make_pair(hash, pblock2));
-    EMC2_mapOrphanBlocksByPrev.insert(make_pair(pblock2->hashPrevBlock, pblock2));
-
-    // Ask this guy to fill in what we're missing
+  /*
+   * EMC2: If previous hash and it is unknown.
+   */
+  if (pblock->hashPrevBlock != 0 &&
+      !blockIndex->count(pblock->hashPrevBlock)) {
+    /* Accept orphan if origin is known. */ 
     if (pfrom) {
-      pfrom->PushGetBlocks(GetBestBlockIndex(EMC2_COIN_IFACE), emc2_GetOrphanRoot(pblock2));
-}
-
+      EMC2Block* orphan = new EMC2Block(*pblock);
+      EMC2_mapOrphanBlocks.insert(make_pair(hash, orphan));
+      EMC2_mapOrphanBlocksByPrev.insert(make_pair(orphan->hashPrevBlock, orphan));
+      pfrom->PushGetBlocks(GetBestBlockIndex(EMC2_COIN_IFACE), emc2_GetOrphanRoot(orphan));
+    }
     return true;
   }
 
-  // Store to disk
-
+  /* store to disk */
   if (!pblock->AcceptBlock()) {
     iface->net_invalid = time(NULL);
     return error(SHERR_INVAL, "ProcessBlock() : AcceptBlock FAILED");
@@ -1202,6 +1192,10 @@ Debug("REORGANIZE: Connect %i blocks; %s..%s\n", vConnect.size(), pfork->GetBloc
 void EMC2Block::InvalidChainFound(CBlockIndex* pindexNew)
 {
   CIface *iface = GetCoinByIndex(EMC2_COIN_IFACE);
+  ValidIndexSet *setValid = GetValidIndexSet(EMC2_COIN_IFACE);
+
+  pindexNew->nStatus |= BIS_FAIL_VALID;
+  setValid->erase(pindexNew);
 
   if (pindexNew->bnChainWork > bnBestInvalidWork)
   {
@@ -1607,7 +1601,25 @@ bool EMC2Block::IsBestChain()
 
 bool EMC2Block::AcceptBlock()
 {
-  return (core_AcceptBlock(this));
+  blkidx_t *blockIndex = GetBlockTable(EMC2_COIN_IFACE);
+
+  map<uint256, CBlockIndex*>::iterator mi = blockIndex->find(hashPrevBlock);
+  if (mi == blockIndex->end()) {
+    return error(SHERR_INVAL, "(emc2) AcceptBlock: prev block '%s' not found", hashPrevBlock.GetHex().c_str());
+  }
+  CBlockIndex* pindexPrev = (*mi).second;
+
+  if (GetBlockTime() > GetAdjustedTime() + EMC2_MAX_DRIFT_TIME) {
+    print();
+    return error(SHERR_INVAL, "(emc2) AcceptBlock() : block's timestamp too far in the future.");
+
+  }
+  if (GetBlockTime() <= pindexPrev->GetBlockTime() - EMC2_MAX_DRIFT_TIME) {
+    print();
+    return error(SHERR_INVAL, "(emc2) AcceptBlock() : block's timestamp too far in the pas.");
+  }
+
+  return (core_AcceptBlock(this, pindexPrev));
 }
 
 CScript EMC2Block::GetCoinbaseFlags()
@@ -1953,6 +1965,9 @@ bool emc2_Truncate(uint256 hash)
     return error(SHERR_INVAL, "Truncate: WriteHashBestChain '%s' failed", hash.GetHex().c_str());
 
   cur_index->pnext = NULL;
+  EMC2Block::bnBestChainWork = cur_index->bnChainWork;
+  InitServiceBlockEvent(EMC2_COIN_IFACE, cur_index->nHeight + 1);
+
   return (true);
 }
 bool EMC2Block::Truncate()
@@ -1971,8 +1986,9 @@ uint64_t EMC2Block::GetTotalBlocksEstimate()
 
 bool EMC2Block::AddToBlockIndex()
 {
-CIface *iface = GetCoinByIndex(EMC2_COIN_IFACE);
+  CIface *iface = GetCoinByIndex(EMC2_COIN_IFACE);
   blkidx_t *blockIndex = GetBlockTable(EMC2_COIN_IFACE);
+  ValidIndexSet *setValid = GetValidIndexSet(EMC2_COIN_IFACE);
   uint256 hash = GetHash();
   CBlockIndex *pindexNew;
   shtime_t ts;
@@ -2003,15 +2019,8 @@ CIface *iface = GetCoinByIndex(EMC2_COIN_IFACE);
     if (!ret)
       return false;
   } else {
-    /* usher to the holding cell */
-    if (hashPrevBlock == GetBestBlockChain(iface)) {
-      if (!WriteBlock(pindexNew->nHeight)) {
-        return error(SHERR_INVAL, "EMC2: AddToBLocKindex: WriteBlock failure");
-      }
-    } else {
-      WriteArchBlock();
-      Debug("EMC2Block::AddToBlockIndex: skipping block (%s) SetBestChain() since pindexNew->bnChainWork(%s) <= bnBestChainWork(%s)", pindexNew->GetBlockHash().GetHex().c_str(), pindexNew->bnChainWork.ToString().c_str(), bnBestChainWork.ToString().c_str());
-    }
+    if (!WriteArchBlock())
+      return (false);
   }
 
   return true;

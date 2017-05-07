@@ -160,7 +160,6 @@ bool CSign::SignContext(cbuff& vchContext, string hexSeed)
   char *seed_hex = (char *)hexSeed.c_str();
   unsigned char *data = (unsigned char *)vchContext.data();
   size_t data_len = vchContext.size();
-fprintf(stderr, "DEBUG: TXExt.SignContext: DATA: \"%s\"\n", shhex_str(data, data_len)); 
 
   nAlg = ALG_ECDSA; 
 
@@ -186,7 +185,6 @@ fprintf(stderr, "DEBUG: TXExt.SignContext: DATA: \"%s\"\n", shhex_str(data, data
   /* sign content */
   shecdsa_sign(priv_key, sig_r, sig_s, data, data_len);
 
-fprintf(stderr, "DEBUG: SignContext: [shecdsa_sign] sig_r(%s) sig_s(%s)\n", sig_r, sig_s); 
   vSig.push_back(vchFromString(string(sig_r)));
   vSig.push_back(vchFromString(string(sig_s)));
   

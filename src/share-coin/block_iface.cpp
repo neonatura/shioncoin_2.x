@@ -57,6 +57,7 @@ using namespace boost;
 using namespace boost::asio;
 using namespace json_spirit;
 
+#define MAX_NONCE_SEQUENCE 24
 
 //std::map<uint256, CBlockIndex*> transactionMap;
 map<int, CBlock*>mapWork;
@@ -109,8 +110,6 @@ static unsigned int templateWeight = 1;
  */
 const char *c_getblocktemplate(int ifaceIndex)
 {
-  NodeList &vNodes = GetNodeList(ifaceIndex);
-  //static CReserveKey reservekey(pwalletMain);
   static unsigned int work_id;
   static time_t last_reset_t;
   static unsigned int nIndex;
@@ -127,39 +126,25 @@ const char *c_getblocktemplate(int ifaceIndex)
   if (!GetWallet(iface))
     return (NULL); /* coin service disabled. */
 
-#if 0
-  if (vNodes.empty())
-    return (NULL);
-#endif
+  CBlockIndex *pindexPrev = GetBestBlockIndex(iface);
+  if (!pindexPrev)
+    return (NULL); /* chain not established */
 
 #if 0
   if (IsInitialBlockDownload(ifaceIndex))
     return (NULL);
 #endif
 
-#if 0
-  if (!pwalletMain) {
-    shcoind_log("c_getblocktemplate: Wallet not initialized.");
-    return (NULL);
-  }
-#endif
-
-  // Update block
-
-
-  if (altHeight[ifaceIndex] != (GetBestHeight(ifaceIndex) + 1)) {
-    /* clear work every five minutes. */
-    if ((last_reset_t + 300) < time(NULL)) {
-      last_reset_t = time(NULL);
-
-      /* delete all worker blocks. */
-      for (map<int, CBlock*>::const_iterator mi = mapWork.begin(); mi != mapWork.end(); ++mi)
-      {
-        CBlock *tblock = mi->second;
-        delete tblock;
-      }
-      mapWork.clear();
+  if ((mapWork.size() > 360) ||
+      (altHeight[ifaceIndex] != (GetBestHeight(ifaceIndex) + 1))) {
+    /* delete all worker blocks. */
+    for (map<int, CBlock*>::const_iterator mi = mapWork.begin(); mi != mapWork.end(); ++mi)
+    {
+      CBlock *tblock = mi->second;
+      delete tblock;
     }
+    mapWork.clear();
+
     altBlock[ifaceIndex] = NULL;
     templateWeight = 1;
   } else {
@@ -169,16 +154,9 @@ const char *c_getblocktemplate(int ifaceIndex)
     }
 
     templateWeight++;
-    if (templateWeight > 10)
-      templateWeight = 5;
+    if (templateWeight > 12)
+      templateWeight = 4;
   }
-
-  CBlockIndex *pindexPrev = GetBestBlockIndex(iface);
-  if (!pindexPrev) {
-    fprintf(stderr, "DEBUG: c_getblocktemplate: best chain index unknown.\n");
-    return (NULL);
-  }
-  
   nHeight = pindexPrev->nHeight + 1;
   altHeight[ifaceIndex] = nHeight;
 
@@ -221,8 +199,10 @@ fprintf(stderr, "DEBUG: c_getblocktemplate: error creating block template\n");
 
   Object result;
 
+#if 0 
   /* all pool mining is defunc when "connections=0". */
   result.push_back(Pair("connections",   (int)vNodes.size()));
+#endif
 
   result.push_back(Pair("version", pblock->nVersion));
   result.push_back(Pair("task", (int64_t)work_id));
@@ -257,7 +237,7 @@ fprintf(stderr, "DEBUG: c_getblocktemplate: error creating block template\n");
   return (blocktemplate_json.c_str());
 }
 
-#define MAX_NONCE_SEQUENCE 32
+#if SUBMIT_ALT_BLOCK_CHAIN
 void c_processaltblock(int altIndex, unsigned int nMinNonce, char *xn_hex)
 {
   shtime_t ts;
@@ -327,6 +307,7 @@ void c_processaltblock(int altIndex, unsigned int nMinNonce, char *xn_hex)
   }
 
 }
+#endif /* SUBMIT_ALT_BLOCK_CHAIN */
 
 /**
  * Called by miner [i.e., via stratum] to submit a new block.
@@ -462,7 +443,7 @@ int c_submitblock(unsigned int workId, unsigned int nTime, unsigned int nNonce, 
   timing_term(pblock->ifaceIndex, "ProcessBlock/Nonce", &ts);
 
   if (idx == MAX_NONCE_SEQUENCE) {
-#if 0
+#if SUBMIT_ALT_BLOCK_CHAIN
     /* try nonce on alt coins */ 
     c_processaltblock(pblock->ifaceIndex, nNonce, xn_hex);
 #endif

@@ -696,13 +696,11 @@ bool VerifyIdent(CTransaction& tx, int& mode)
       mode != OP_EXT_ACTIVATE &&
       mode != OP_EXT_GENERATE &&
       mode != OP_EXT_PAY) {
-fprintf(stderr, "DEBUG: VerifyIdent: invalid mode %d\n",  mode);
     return (false);
 }
 
   CIdent *ident = (CIdent *)&tx.certificate;
   if (hashIdent != ident->GetHash()) {
-fprintf(stderr, "DEBUG: VerifyIdent: invalid hash '%s' vs '%s'\n", ident->GetHash().GetHex().c_str(), hashIdent.GetHex().c_str());
     return (false); /* ident hash mismatch */
 }
 
@@ -1314,7 +1312,6 @@ static void FillSharenetCertificate(SHCert *cert, CCert *c_cert, CCert *iss)
   } else {
     err = shesig_ca_init(cert, (char *)c_cert->GetLabel().c_str(), SHALG_ECDSA160R, c_cert->nFlag);
   }
-fprintf(stderr, "DEBUG: FillSharenetCertificate: %d = shesig_init('%s')\n", err, c_cert->GetLabel().c_str());
   if (err) {
     shcoind_err(err, "shesig_init", (char *)c_cert->GetLabel().c_str());
     return;
@@ -1325,7 +1322,6 @@ fprintf(stderr, "DEBUG: FillSharenetCertificate: %d = shesig_init('%s')\n", err,
 
   /* serial number */
   shesig_serial_set(cert, c_cert->vContext.data(), c_cert->vContext.size()); 
-fprintf(stderr, "DEBUG: FillSharenetCert: serial no '%s'\n", shhex_str(cert->ser, 16));
 
   /* expiration time-stamp */
   shesig_expire_set(cert, c_cert->tExpire); 
@@ -1335,26 +1331,21 @@ fprintf(stderr, "DEBUG: FillSharenetCert: serial no '%s'\n", shhex_str(cert->ser
   cbuff vchContext = ParseHex(pubkey_str);
   memcpy(cert->pub, vchContext.data(), vchContext.size());
   shalg_size(cert->pub) = vchContext.size();
-fprintf(stderr, "DEBUG: FIllSharenetCerti: PUB: \"%s\"\n", shhex_str((unsigned char *)cert->pub, shalg_size(cert->pub))); 
 
   {
     /* prepare signature */
     memset(cert->data_sig, 0, sizeof(cert->data_sig));
     const string& sig_r_str = stringFromVch(c_cert->signature.vSig[0]);
     const string& sig_s_str = stringFromVch(c_cert->signature.vSig[1]);
-fprintf(stderr, "DEBUG: sig_r_str '%s'\n", sig_r_str.c_str());
-fprintf(stderr, "DEBUG: sig_s_str '%s'\n", sig_s_str.c_str());
     cbuff vchContext_r = ParseHex(sig_r_str);
     cbuff vchContext_s = ParseHex(sig_s_str);
     memcpy(cert->data_sig, vchContext_r.data(), vchContext_r.size());
     memcpy((unsigned char *)cert->data_sig + vchContext_r.size(), vchContext_s.data(), vchContext_s.size());
     shalg_size(cert->data_sig) = vchContext_r.size() + vchContext_s.size();
   }
-fprintf(stderr, "DEBUG: FIllSharenetCerti: SIG: \"%s\"\n", shhex_str((unsigned char *)cert->data_sig, shalg_size(cert->data_sig))); 
 
   shtime_t now = shtime();
   if (!shtime_after(now, cert->stamp)) { 
-fprintf(stderr, "DEBUG: FillSharenetCert: !shtime_after(now, cert>stamp)\n");
 }
 
 
@@ -1363,7 +1354,6 @@ fprintf(stderr, "DEBUG: FillSharenetCert: !shtime_after(now, cert>stamp)\n");
   memset(iss_pub, 0, sizeof(iss_pub));
   if (iss) {
     const string& iss_label = iss->GetLabel();
-fprintf(stderr, "DEBUG: iss_label: %s\n",iss_label.c_str());
 
     const string& pubkey_str = stringFromVch(iss->signature.vPubKey);
     shhex_bin((char *)pubkey_str.c_str(), (unsigned char *)iss_pub, pubkey_str.size()/2);
@@ -1388,8 +1378,6 @@ fprintf(stderr, "DEBUG: DEBUG: FillSharenetCert: VERIFY: data \"%s\"\n", shhex_s
     return;
   }
 
-fprintf(stderr, "DEBUG: FillSharenetCert: serial no '%s'\n", shhex_str(cert->ser, 16));
-fprintf(stderr, "DEBUG: FIllSharenetCert: ID '%s'\n", shkey_hex(&cert->id));
 }
 
 void CCert::NotifySharenet(int ifaceIndex)
@@ -1399,12 +1387,9 @@ void CCert::NotifySharenet(int ifaceIndex)
   shbuf_t *buff;
   int err;
 
-#if 0
-/* DEBUG: */
   /* only applies to ShareCoin block-chain transaction */
   if (ifaceIndex != SHC_COIN_IFACE)
     return;
-#endif
 
   CCert *iss = NULL;
   CIface *iface = GetCoinByIndex(ifaceIndex);
@@ -1413,8 +1398,6 @@ void CCert::NotifySharenet(int ifaceIndex)
     iss = &tx.certificate;
   }
 
-fprintf(stderr, "DEBUG: CCert: hash '%s'\n", GetHash().GetHex().c_str());
-fprintf(stderr, "DEBUG: CCert: hashIssuer '%s'\n", hashIssuer.GetHex().c_str());
 
   memset(&cert, 0, sizeof(shesig_t));
   FillSharenetCertificate(&cert, this, iss);
@@ -1462,8 +1445,6 @@ void CLicense::NotifySharenet(int ifaceIndex)
   if (GetTxOfCert(iface, hashIssuer, tx))
     iss = &tx.certificate;
 
-fprintf(stderr, "DEBUG: CLisense: hLic '%s'\n", hLic.GetHex().c_str());
-fprintf(stderr, "DEBUG: CLisense: hashIssuer '%s'\n", hashIssuer.GetHex().c_str());
 
   memset(&cert, 0, sizeof(cert));
   FillSharenetCertificate(&cert, this, iss);
@@ -1697,12 +1678,10 @@ int init_ident_certcoin_tx(CIface *iface, string strAccount, uint64_t nValue, ui
   int64 nFeeRequired;
   if (!wallet->CreateTransaction(scriptPubKey, nValue, wtx, rkey, nFeeRequired)) {
 CTransaction& pr_tx = (CTransaction&)wtx;
-fprintf(stderr, "DEBUG: init_ident_certcoin_tx: error creating tx '%s' [nFeeRquired %llu]\n", pr_tx.ToString(ifaceIndex).c_str(), nFeeRequired); 
     return (SHERR_CANCELED);
   }
   if (!wallet->CommitTransaction(wtx, rkey)) {
 CTransaction *tx = (CTransaction *)&wtx;
-fprintf(stderr, "DEBUG: init_ident_certcoin_tx: error commiting tx '%s' [nFeeRequired %llu]\n", tx->ToString(ifaceIndex).c_str(), nFeeRequired); 
     return (SHERR_CANCELED);
   }
 
@@ -1740,9 +1719,6 @@ bool CCert::Sign(int ifaceIndex, CCoinAddr& addr, cbuff vchContext, string hexSe
 {
   shkey_t *kpriv;
   bool ret;
-
-fprintf(stderr, "DEBUG: CCert.Sign: vchContext <%d bytes>\n", vchContext.size());
-fprintf(stderr, "DEBUG: CCert.Sign: hexSeed \"%s\"\n", hexSeed.c_str());
 
   if (!hashIssuer.IsNull())
     nFlag |= SHCERT_CERT_CHAIN; 

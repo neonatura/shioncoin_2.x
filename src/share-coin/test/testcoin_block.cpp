@@ -117,6 +117,49 @@ n_pos = bc_idx_next(bc);
 
 }
 
+_TEST(truncate)
+{
+  CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
+  CBlock *blocks[30];
+  int of;
+  int i, j;
+
+  of = GetBestHeight(iface) + 1;
+
+  /* create some blocks */
+  for (i = 0; i < 20; i++) { 
+    blocks[i] = test_GenerateBlock();
+    _TRUEPTR(blocks[i]);
+    _TRUE(ProcessBlock(NULL, blocks[i]) == true);
+  }
+
+  blocks[9]->Truncate();
+
+  for (i = 20; i < 30; i++) { 
+    blocks[i] = test_GenerateBlock();
+    _TRUEPTR(blocks[i]);
+    _TRUE(ProcessBlock(NULL, blocks[i]) == true);
+
+    for (j = 10; j < 20; j++) {
+      _TRUE(blocks[j]->GetHash() != blocks[i]->GetHash());
+    }
+
+  }
+
+  for (i = 20; i < 30; i++) {
+    CBlock *cmp_block = GetBlockByHeight(iface, i + of - 10);
+    _TRUE(cmp_block->GetHash() == blocks[i]->GetHash());
+    delete cmp_block;
+  }
+
+  for (j = 10; j < 20; j++) {
+    CBlock *cmp_block = GetBlockByHeight(iface, j + of);
+    _TRUE(cmp_block->GetHash() != blocks[j]->GetHash());
+    delete cmp_block;
+  }
+
+}
+
 _TEST(reorganize)
 {
   blkidx_t *blockIndex = GetBlockTable(TEST_COIN_IFACE);
@@ -366,7 +409,8 @@ _TEST(cointx)
   int ifaceIndex = GetCoinIndex(iface);
   int idx;
 
-  for (idx = 0; idx < 10; idx++) {
+  /* create a coin balance */
+  for (idx = 0; idx < 2; idx++) {
     CBlock *block = test_GenerateBlock();
     _TRUEPTR(block);
     _TRUE(ProcessBlock(NULL, block) == true);
@@ -400,7 +444,6 @@ _TEST(cointx)
   scriptPubKey.SetDestination(extAddr.Get());
 
   for (idx = 0; idx < 3; idx++) {
-    // send transaction
     string strError = wallet->SendMoney(scriptPubKey, nFee, wtx, false);
     _TRUE(strError == "");
 
@@ -418,7 +461,7 @@ _TEST(aliastx)
   string strLabel("");
 
   /* create a coin balance */
-  for (idx = 0; idx < 5; idx++) {
+  for (idx = 0; idx < 2; idx++) {
     CBlock *block = test_GenerateBlock();
     _TRUEPTR(block);
     _TRUE(ProcessBlock(NULL, block) == true);
@@ -435,7 +478,6 @@ _TEST(aliastx)
   _TRUE(wtx.CheckTransaction(TEST_COIN_IFACE)); /* .. */
   _TRUE(VerifyAlias(wtx) == true);
 
-  /* incorporate alias into block-chain + few more coins */
   {
     CBlock *block = test_GenerateBlock();
     _TRUEPTR(block);
@@ -502,7 +544,7 @@ _TEST(assettx)
   string strLabel("");
 
   /* create a coin balance */
-  for (idx = 0; idx < 8; idx++) {
+  for (idx = 0; idx < 2; idx++) {
     CBlock *block = test_GenerateBlock();
     _TRUEPTR(block);
     _TRUE(ProcessBlock(NULL, block) == true);
@@ -522,9 +564,7 @@ _TEST(assettx)
   CAsset asset(wtx.certificate);
   uint160 hashAsset = asset.GetHash();
 
-
-  /* incorporate asset into block-chain + few more coins */
-  for (idx = 0; idx < 8; idx++) {
+  for (idx = 0; idx < 2; idx++) {
     CBlock *block = test_GenerateBlock();
     _TRUEPTR(block);
     _TRUE(ProcessBlock(NULL, block) == true);
@@ -553,6 +593,7 @@ _TEST(identtx)
   int mode;
   int idx;
   int err;
+  int i;
 
   CWalletTx cert_wtx;
   string hexSeed;
@@ -631,7 +672,7 @@ _TEST(certtx)
   string strLabel("");
 
   /* create a coin balance */
-  for (idx = 0; idx < 15; idx++) {
+  for (idx = 0; idx < 2; idx++) {
     CBlock *block = test_GenerateBlock();
     _TRUEPTR(block);
     _TRUE(ProcessBlock(NULL, block) == true);
@@ -655,8 +696,8 @@ if (err) fprintf(stderr, "DEBUG: TEST: init_cert_tx: error %d\n", err);
   _TRUE(VerifyCert(iface, wtx, nBestHeight) == true);
   _TRUE(wtx.IsInMemoryPool(TEST_COIN_IFACE) == true);
 
-  /* insert cert into chain + create a coin balance */
-  for (idx = 0; idx < 3; idx++) {
+  /* insert cert into chain */
+  for (idx = 0; idx < 2; idx++) {
     CBlock *block = test_GenerateBlock();
     _TRUEPTR(block);
     _TRUE(ProcessBlock(NULL, block) == true);
@@ -705,7 +746,8 @@ if (err) fprintf(stderr, "DEBUG: certtx: error (%d) derive cert tx\n", err);
   uint160 licHash = lic.GetHash();
   _TRUE(lic_wtx.IsInMemoryPool(TEST_COIN_IFACE) == true);
 
-  for (idx = 0; idx < 3; idx++) {
+  /* insert license */
+  for (idx = 0; idx < 2; idx++) {
     CBlock *block = test_GenerateBlock();
     _TRUEPTR(block);
     _TRUE(ProcessBlock(NULL, block) == true);
@@ -923,7 +965,8 @@ fprintf(stderr, "DEBUG: TEST: OFFER: offer pay'd .. bal is now %f\n", ((double)t
   }
 #endif
 
-  for (idx = 0; idx < 3; idx++) {
+  /* insert offer */
+  for (idx = 0; idx < 2; idx++) {
     CBlock *block = test_GenerateBlock();
     _TRUEPTR(block);
     _TRUE(ProcessBlock(NULL, block) == true);
@@ -1273,7 +1316,8 @@ _TEST(exectx)
 
   (void)GetAccountAddress(wallet, strAccount, true);
 
-  for (idx = 0; idx < 17; idx++) {
+  /* create a coin balance. */
+  for (idx = 0; idx < 2; idx++) {
     CBlock *block = test_GenerateBlock();
     _TRUEPTR(block);
     _TRUE(ProcessBlock(NULL, block) == true);
