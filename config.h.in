@@ -26,7 +26,7 @@
 /* Define to 1 if using `alloca.c'. */
 #undef C_ALLOCA
 
-/* Define to enable EMC2 coin service. */
+/* Define to enable the EMC2 coin service. */
 #undef EMC2_SERVICE
 
 /* Define for the FreeBSD operating system. */
@@ -552,7 +552,7 @@
 /* Define for UnixWare systems. */
 #undef UNIXWARE
 
-/* Define to enable USDE coin service. */
+/* Define to enable the USDE coin service. */
 #undef USDE_SERVICE
 
 /* Version number of package */

@@ -60,10 +60,13 @@ using namespace json_spirit;
 #define MAX_NONCE_SEQUENCE 24
 
 //std::map<uint256, CBlockIndex*> transactionMap;
-map<int, CBlock*>mapWork;
+
 string blocktemplate_json; 
 string mininginfo_json; 
 string transactioninfo_json;
+
+typedef map<unsigned int, CBlock*> work_map;
+work_map mapWork;
 
 extern std::string HexBits(unsigned int nBits);
 extern string JSONRPCReply(const Value& result, const Value& error, const Value& id);
@@ -135,8 +138,24 @@ const char *c_getblocktemplate(int ifaceIndex)
     return (NULL);
 #endif
 
-  if ((mapWork.size() > 360) ||
-      (altHeight[ifaceIndex] != (GetBestHeight(ifaceIndex) + 1))) {
+  /* prune worker blocks (< 5 min) */
+  vector<unsigned int> vDelete;
+  time_t timeExpire = GetAdjustedTime() - 360;
+  for (work_map::const_iterator mi = mapWork.begin(); mi != mapWork.end(); ++mi) {
+    CBlock *tblock = mi->second;
+    if (tblock->nTime < timeExpire) {
+      unsigned int id = (unsigned int)mi->first;
+      vDelete.push_back(id);
+      delete tblock;
+    }
+  }
+  BOOST_FOREACH (unsigned int id, vDelete) {
+    mapWork.erase(id);
+  }
+
+  
+  if (altHeight[ifaceIndex] != (GetBestHeight(ifaceIndex) + 1)) {
+#if 0
     /* delete all worker blocks. */
     for (map<int, CBlock*>::const_iterator mi = mapWork.begin(); mi != mapWork.end(); ++mi)
     {
@@ -144,6 +163,7 @@ const char *c_getblocktemplate(int ifaceIndex)
       delete tblock;
     }
     mapWork.clear();
+#endif
 
     altBlock[ifaceIndex] = NULL;
     templateWeight = 1;

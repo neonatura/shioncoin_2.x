@@ -1647,8 +1647,8 @@ Optional Features:
   --disable-libtool-lock  avoid locking (might break parallel builds)
   --disable-largefile     omit support for large files
   --enable-debug          enable debugging, default: no
-  --disable-usde          Disable USDE coin service.
-  --disable-emc2          Disable EMC2 coin service.
+  --enable-usde           Enable USDE coin service.
+  --enable-emc2           Enable EMC2 coin service.
   --disable-stratum       Disable stratum service.
   --disable-rpc           Disable RPC service.
 
@@ -26466,7 +26466,7 @@ if test "${enable_usde+set}" = set; then
   enableval=$enable_usde;
 fi
 
- if test "x$enable_usde" != "xno"; then
+ if test "x$enable_usde" = "xyes"; then
   USDE_SERVICE_TRUE=
   USDE_SERVICE_FALSE='#'
 else
@@ -26474,7 +26474,7 @@ else
   USDE_SERVICE_FALSE=
 fi
 
-if test "x$enable_usde" != "xno" ; then
+if test "x$enable_usde" = "xyes" ; then
 
 cat >>confdefs.h <<_ACEOF
 #define USDE_SERVICE 1
@@ -26487,7 +26487,7 @@ if test "${enable_emc2+set}" = set; then
   enableval=$enable_emc2;
 fi
 
- if test "x$enable_emc2" != "xno"; then
+ if test "x$enable_emc2" = "xyes"; then
   EMC2_SERVICE_TRUE=
   EMC2_SERVICE_FALSE='#'
 else
@@ -26495,7 +26495,7 @@ else
   EMC2_SERVICE_FALSE=
 fi
 
-if test "x$enable_emc2" != "xno" ; then
+if test "x$enable_emc2" = "xyes" ; then
 
 cat >>confdefs.h <<_ACEOF
 #define EMC2_SERVICE 1
