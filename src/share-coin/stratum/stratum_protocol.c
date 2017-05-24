@@ -401,40 +401,19 @@ static int stratum_request_account_info(int ifaceIndex, user_t *user, char *acco
   return (err);
 }
 
-static int stratum_request_wallet_private_info(int ifaceIndex, user_t *user, char *account, char *key_str)
+static int stratum_request_wallet_sync(int ifaceIndex, user_t *user, uint32_t pin, shjson_t *pub_obj)
 {
-  shkey_t *r_key;
-  shjson_t *reply;
-  int ok;
+  shjson_t *pub;
   int err;
 
-  /* verify "stratum sync key" */
-  r_key = shkey_gen(key_str);
-  if (!r_key) {
-    ok = FALSE;
-  } else {
-//fprintf(stderr, "DEBUG: stratum_request_wallet_private_info: invalid key '%s'\n", key_str);
-    ok = shkey_cmp(r_key, stratum_sync_key());
+  if (!user ||  !pub_obj)
+    return (SHERR_INVAL);
 
-/* DEBUG: todo.. verify shaddr(user->fd) == a USER_SYNC node */
-
-/* DEBUG: todo.. shkey_cmp(pkey(acc)) */
-  }
-  shkey_free(&r_key);
-  if (ok) {
-    const char *json_str = stratum_walletkeylist(ifaceIndex, account);
-    if (json_str)
-      reply = stratum_json(json_str);
-    else
-      reply = stratum_generic_error();
-  } else {
-    reply = stratum_generic_error();
+  for (pub = pub_obj->child; pub; pub = pub->next) {
+    stratum_sync_recv_pub(ifaceIndex, user, pin, pub->string, pub->valuestring);
   }
 
-  err = stratum_send_message(user, reply);
-  shjson_free(&reply);
-
-  return (err);
+  return (0);
 }
 
 /**
@@ -845,11 +824,15 @@ int stratum_request_message(user_t *user, shjson_t *json)
           shjson_array_astr(json, "params", 0),
           shjson_array_astr(json, "params", 1)));
   }
-  if (0 == strcmp(method, "wallet.private")) {
-    return (stratum_request_wallet_private_info(ifaceIndex, user,
-          shjson_array_astr(json, "params", 0),
-          shjson_array_astr(json, "params", 1)));
+
+#if 0
+  if (0 == strcmp(method, "wallet.sync")) {
+    shjson_t *param = shjson_obj_get(json, "params");
+    return (stratum_request_wallet_sync(ifaceIndex, user,
+          (uint32_t)shjson_array_num(json, "params", 0),
+          shjson_array_get(param, 1)));
   }
+#endif
 
   {
     const char *ret_json;

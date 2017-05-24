@@ -31,11 +31,9 @@ void stratum_sync_init(void);
 
 void stratum_sync(void)
 
-int stratum_sync_response(user_t *peer, char *json_text);
 
-shkey_t *stratum_sync_key(void);
 
-user_t *stratum_sync_user(user_t *cli_user, char *password);
+int stratum_sync_recv_pub(int ifaceIndex, user_t *user, uint32_t pin, char *acc_name, char *pub_key);
 
 
 #endif /* ndef __STRATUM__STRATUM_SYNC_H__ */

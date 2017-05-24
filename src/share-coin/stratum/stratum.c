@@ -166,7 +166,7 @@ static void stratum_timer(void)
     } else if (*data == '{') {
       if (peer->flags & USER_SYNC) {
         /* response from a remote stratum service */
-        stratum_sync_response(peer, data);
+        stratum_sync_recv(peer, data);
       } else {
         /* normal user request (miner / api) */
         stratum_register_client_task(peer, data);
