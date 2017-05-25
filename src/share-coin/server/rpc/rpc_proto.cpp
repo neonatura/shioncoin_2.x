@@ -244,8 +244,6 @@ void WalletTxToJSON(int ifaceIndex, const CWalletTx& wtx, Object& entry)
     {
         entry.push_back(Pair("blockhash", wtx.hashBlock.GetHex()));
         entry.push_back(Pair("blockindex", wtx.nIndex));
-    } else {
-//      fprintf(stderr, "DEBUG: WalletTxToJSON: ifaceIndex(%d) wtx(%s): !confirmed; depth = %d\n", ifaceIndex, wtx.GetHash().GetHex().c_str(), confirms);
     }
     entry.push_back(Pair("txid", wtx.GetHash().GetHex()));
     entry.push_back(Pair("time", (boost::int64_t)wtx.GetTxTime()));
@@ -2351,6 +2349,136 @@ Value rpc_wallet_tsend(CIface *iface, const Array& params, bool fStratum)
   return ret_obj;
 }
 
+static int64 wallet_bsend_select(int64 nMaxValue, vector<COutput>& vCoins)
+{
+  const int nMinDepth = 1;
+  CWalletTx wtx;
+  int64 nTotalValue;
+  int64 nInValue;
+  int64 nValue;
+
+  nValue = 0;
+  BOOST_FOREACH(const COutput& out, vCoins) {
+    if (out.nDepth < nMinDepth)
+      continue;
+
+    int64 nInValue = out.tx->vout[out.i].nValue;
+    nTotalValue += nInValue;
+
+    if (nValue + nInValue > nMaxValue)
+      continue;
+    if (nInValue < (nMaxValue / 5))
+      continue;
+
+    nValue += nInValue;
+  }
+
+  if (nValue < (nMaxValue / 2)) {
+    nValue = MIN(nTotalValue, nMaxValue);
+  }
+
+  return (nValue);
+}
+
+static int64 wallet_bsend_purge(const CWalletTx& wtx, vector<COutput>& vCoins)
+{
+  int i;
+
+  for (i = 0; i < wtx.vin.size(); i++) {
+    const CTxIn& in = wtx.vin[i];
+    vector<COutput>::iterator iter;
+    for (iter = vCoins.begin(); iter != vCoins.end(); ++iter) {
+      const COutput& out = (*iter);
+      if (out.tx->GetHash() == in.prevout.hash &&
+          out.i == in.prevout.n) {
+        vCoins.erase(iter);
+        break;
+      }
+    }
+  }
+
+}
+
+Value rpc_wallet_bsend(CIface *iface, const Array& params, bool fStratum)
+{
+  CWallet *wallet = GetWallet(iface);
+  int ifaceIndex = GetCoinIndex(iface);
+  const int nMinDepth = 1;
+  int64 nSent;
+  int64 nValue;
+  int64 nFee;
+  int nBytes;
+  int nInputs;
+
+  if (params.size() < 3)
+    throw runtime_error("invalid parameters");
+
+  /* originating account  */
+  string strAccount = AccountFromValue(params[0]);
+
+  /* destination coin address */
+  CCoinAddr address(params[1].get_str());
+  if (address.GetVersion() != CCoinAddr::GetCoinAddrVersion(ifaceIndex))
+    throw JSONRPCError(-5, "Invalid address for coin service.");
+
+  int64 nAmount = AmountFromValue(params[2]);
+
+  int64 nBalance = GetAccountBalance(ifaceIndex, strAccount, nMinDepth);
+  if (nAmount > nBalance)
+    throw JSONRPCError(-6, "Account has insufficient funds");
+
+  nFee = 0;
+  nSent = 0;
+  nBytes = 0;
+  nValue = nAmount;
+
+  vector<COutput> vCoins;
+  wallet->AvailableCoins(vCoins);
+
+  Array result;
+  while (nSent < nAmount) {
+    CWalletTx wtx;
+    wtx.strFromAccount = strAccount;
+
+    nValue = MIN(nValue, (nAmount - nSent));
+    if (nValue < (iface->min_tx_fee + iface->min_input))
+      break; 
+
+#if 0
+/* redundant */
+    int64 nBalance = GetAccountBalance(ifaceIndex, strAccount, nMinDepth);
+    if (nValue > nBalance) {
+      break; /* pending tx prevents further transaction */
+    }
+#endif
+
+    nValue = wallet_bsend_select(nValue + nFee, vCoins); 
+    string strError = wallet->SendMoney(strAccount, address.Get(), nValue, wtx);
+    if (strError != "") {
+      /* try again using half the coin value */
+      nValue /= 2;
+      continue;
+    }
+
+    nBytes += ::GetSerializeSize(wtx, SER_NETWORK, PROTOCOL_VERSION(iface));
+    nFee += wallet->GetTxFee(wtx);
+    nInputs += wtx.vin.size();
+    result.push_back(wtx.GetHash().GetHex());
+
+    nSent += nValue;
+    wallet_bsend_purge(wtx, vCoins);
+  }
+    
+  Object ret_obj;
+  ret_obj.push_back(Pair("amount", ValueFromAmount(nSent)));
+  ret_obj.push_back(Pair("size", nBytes));
+  ret_obj.push_back(Pair("fee", ValueFromAmount(nFee)));
+  ret_obj.push_back(Pair("inputs", nInputs));
+  ret_obj.push_back(Pair("tx", result));
+
+  return ret_obj;
+}
+
 Value rpc_wallet_set(CIface *iface, const Array& params, bool fStratum)
 {
 
@@ -3120,7 +3248,6 @@ Value rpc_peer_remove(CIface *iface, const Array& params, bool fStratum)
   sk = unet_peer_find(ifaceIndex, shpeer_addr(peer)); 
   shpeer_free(&peer);
   if (sk) {
-fprintf(stderr, "DEBUG: discon fd %d\n", sk);
     unet_shutdown(sk); 
   }
 
@@ -4531,6 +4658,13 @@ const RPCOp WALLET_SEND = {
   "Syntax: <fromaccount> <toaddress> <amount> [minconf=1] [comment] [comment-to]\n"
   "Note: The <amount> is a real and is rounded to the nearest 0.00000001"
 };
+const RPCOp WALLET_BSEND = {
+  &rpc_wallet_bsend, 3, {RPC_ACCOUNT, RPC_COINADDR, RPC_DOUBLE, RPC_INT64, RPC_STRING, RPC_STRING},
+  "Syntax: <fromaccount> <toaddress> <amount> [minconf=1] [comment] [comment-to]\n"
+  "\n"
+  "Create a batch of transactions, as neccessary, in order to send the coin value to the destination address.\n"
+  "Note: The <amount> is a real and is rounded to the nearest 0.00000001"
+};
 const RPCOp WALLET_TSEND = {
   &rpc_wallet_tsend, 3, {RPC_ACCOUNT, RPC_COINADDR, RPC_DOUBLE, RPC_INT64},
   "Syntax: <fromaccount> <toaddress> <amount> [minconf=1]\n"
@@ -4735,6 +4869,8 @@ void RegisterRPCOpDefaults(int ifaceIndex)
 
   RegisterRPCOp(ifaceIndex, "wallet.send", WALLET_SEND);
   RegisterRPCAlias(ifaceIndex, "sendfrom", WALLET_SEND);
+
+  RegisterRPCOp(ifaceIndex, "wallet.bsend", WALLET_BSEND);
 
   RegisterRPCOp(ifaceIndex, "wallet.tsend", WALLET_TSEND);
 
@@ -5693,9 +5829,8 @@ const char *ExecuteStratumRPC(int ifaceIndex, const char *account, shjson_t *jso
   int max_arg = GetRPCMaxArgs(op);
   if (ar_len < op->min_arg ||
       ar_len > max_arg) {
-fprintf(stderr, "DEBUG: ar_len %d, max_arg 0\n", ar_len, max_arg);
     return (NULL);//throw JSONRPCError(-1, rpc_command_help(iface, strMethod)); 
-}
+  }
 
   for (i = 0; op->arg[i] != RPC_NULL && i < MAX_RPC_ARGS; i++) {
     if (i >= op->min_arg)
@@ -5721,7 +5856,6 @@ fprintf(stderr, "DEBUG: ar_len %d, max_arg 0\n", ar_len, max_arg);
         const char *pkey_str = shjson_array_astr(json, "params", i);
         uint256 pkey(pkey_str);
         if (!GetStratumKeyAccount(pkey, acc_str)) {
-fprintf(stderr, "DEBUG: ExecuteStratumRPC: pkey auth fail (%s)\n", pkey_str); 
           return (NULL);
         }
 

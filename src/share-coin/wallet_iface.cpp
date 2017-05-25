@@ -1380,6 +1380,87 @@ const char *stratum_walletkeylist(int ifaceIndex, char *acc_name)
   return (cpp_stratum_walletkeylist(ifaceIndex, (const char *)acc_name));
 }
 
+string stratumRetAddr;
+const char *stratum_getaccountaddress(int ifaceIndex, char *account)
+{
+  CWallet *wallet = GetWallet(ifaceIndex);
+  string strAccount(account); 
+  const CCoinAddr& addr = GetAccountAddress(wallet, strAccount, false);
+  if (!addr.IsValid())
+    return (NULL);
+
+  stratumRetAddr = addr.ToString();
+  return (stratumRetAddr.c_str());
+}
+
+void stratum_listaddrkey(int ifaceIndex, char *account, shjson_t *obj)
+{
+  CWallet *wallet = GetWallet(ifaceIndex);
+  string strListAccount(account);
+  string strListExtAccount = "@" + strListAccount;
+
+  vector<string> vAcc;
+  BOOST_FOREACH(const PAIRTYPE(CTxDestination, string)& entry, wallet->mapAddressBook) {
+    const string& strAccount = entry.second;
+    CKey pkey;
+
+    if (strAccount != strListAccount &&
+        strAccount != strListExtAccount)
+      continue;
+
+    const CCoinAddr& address = CCoinAddr(ifaceIndex, entry.first);
+    if (!address.IsValid())
+      throw JSONRPCError(-5, "Invalid address");
+
+    CKeyID keyID;
+    if (!address.GetKeyID(keyID))
+      throw JSONRPCError(-3, "Address does not refer to a key");
+
+    CSecret vchSecret;
+    bool fCompressed;
+    if (!wallet->GetSecret(keyID, vchSecret, fCompressed))
+      throw JSONRPCError(-4,"Private key for address is not known");
+
+    string priv_str = CCoinSecret(ifaceIndex, vchSecret, fCompressed).ToString();
+    shjson_str_add(obj, NULL, (char *)priv_str.c_str());
+#if 0
+    string pub_str = address.ToString(); 
+    string priv_str = CCoinSecret(ifaceIndex, vchSecret, fCompressed).ToString();
+
+    node = shjson_obj_add(obj, (char *)strAccount.c_str());
+    shjson_str_add(node, (char *)pub_str.c_str(), (char *)priv_str.c_str());
+#endif
+  }
+
+}
+
+
+int stratum_setdefaultkey(int ifaceIndex, char *account, char *pub_key)
+{
+  CWallet *wallet = GetWallet(ifaceIndex);
+  string strAccount(account);
+
+  if (!wallet)
+    return (SHERR_INVAL);
+
+  CCoinAddr address(pub_key);
+  if (!address.IsValid())
+    return (SHERR_INVAL);
+
+  if (wallet->mapAddressBook.count(address.Get()))
+  {
+    string strOldAccount = wallet->mapAddressBook[address.Get()];
+    if (address == GetAccountAddress(wallet, strOldAccount))
+      GetAccountAddress(wallet, strOldAccount, true);
+  }
+
+  wallet->SetAddressBookName(address.Get(), strAccount);
+
+  return (0);
+}
+
+  
+
 #if 0
 const char *stratum_call_rpc(int ifaceIndex, const char *account, const char *pkey_str, shjson_t *json)
 {
