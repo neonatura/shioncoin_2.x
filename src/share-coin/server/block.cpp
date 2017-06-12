@@ -296,6 +296,70 @@ int64 GetBlockValue(int nHeight, int64 nFees)
 }
 #endif
 
+
+typedef map<uint256,int> tx_index_table_t;
+static tx_index_table_t tx_index_table[MAX_COIN_IFACE];
+
+tx_index_table_t *GetTxIndexTable(int ifaceIndex)
+{
+
+  if (ifaceIndex < 0 || ifaceIndex >= MAX_COIN_IFACE)
+    return (NULL);
+
+  return (&tx_index_table[ifaceIndex]);
+}
+
+int GetTxIndex(int ifaceIndex, uint256 txHash, int *txPos)
+{
+  tx_index_table_t *table;
+
+  table = GetTxIndexTable(ifaceIndex);
+  if (!table)
+    return (SHERR_INVAL);
+
+  tx_index_table_t::iterator mi = table->find(txHash);
+  if (mi == table->end())
+    return (SHERR_NOENT);
+
+  *txPos = (*table)[txHash];
+  return (0);
+}
+
+int SetTxIndex(int ifaceIndex, uint256 txHash, int txPos)
+{
+  tx_index_table_t *table;
+
+  table = GetTxIndexTable(ifaceIndex);
+  if (!table)
+    return (SHERR_INVAL);
+
+  (*table)[txHash] = txPos;
+  return (0);
+}
+
+void EraseTxIndex(int ifaceIndex, uint256 txHash)
+{
+  tx_index_table_t *table;
+
+  table = GetTxIndexTable(ifaceIndex);
+  if (!table)
+    return;
+
+  table->erase(txHash);
+}
+
+int GetTxIndexCount(int ifaceIndex)
+{
+  tx_index_table_t *table;
+
+  table = GetTxIndexTable(ifaceIndex);
+  if (!table)
+    return (0);
+
+  return ((int)table->size());
+}
+
+
 const CTransaction *CBlock::GetTx(uint256 hash)
 {
   BOOST_FOREACH(const CTransaction& tx, vtx)
@@ -303,7 +367,6 @@ const CTransaction *CBlock::GetTx(uint256 hash)
       return (&tx);
   return (NULL);
 }
-
 
 bool CTransaction::WriteTx(int ifaceIndex, uint64_t blockHeight)
 {
@@ -319,6 +382,7 @@ bool CTransaction::WriteTx(int ifaceIndex, uint64_t blockHeight)
     return (false);
   }
 
+  //err = GetTxIndex(ifaceIndex, hash, &txPos);
   err = bc_idx_find(bc, hash.GetRaw(), NULL, &txPos);
   if (!err) { /* exists */
     unsigned char *data;
@@ -364,6 +428,9 @@ fprintf(stderr, "DEBUG: critical: CTransaction.WriteTx: bc_get error %d\n", err)
     return (false);
   }
 
+  /* set cache entry */
+  SetTxIndex(ifaceIndex, hash, err); 
+
   return (true);
 }
 
@@ -371,6 +438,7 @@ bool CTransaction::ReadTx(int ifaceIndex, uint256 txHash)
 {
   return (ReadTx(ifaceIndex, txHash, NULL));
 }
+
 
 bool CTransaction::ReadTx(int ifaceIndex, uint256 txHash, uint256 *hashBlock)
 {
@@ -396,10 +464,14 @@ bool CTransaction::ReadTx(int ifaceIndex, uint256 txHash, uint256 *hashBlock)
     return error(SHERR_INVAL, "CTransaction::ReadTx: unable to open block tx database."); 
   }
 
-  err = bc_idx_find(bc, txHash.GetRaw(), NULL, &txPos); 
+  err = GetTxIndex(ifaceIndex, txHash, &txPos);
   if (err) {
-    return (false); /* not an error condition */
-}
+    /* no cache available. */ 
+    err = bc_idx_find(bc, txHash.GetRaw(), NULL, &txPos); 
+    if (err) {
+      return (false); /* not an error condition */
+    }
+  }
 
   err = bc_get(bc, txPos, &data, &data_len);
   if (err) {
@@ -1938,16 +2010,20 @@ bool CTransaction::EraseTx(int ifaceIndex)
 {
   CIface *iface = GetCoinByIndex(ifaceIndex);
   bc_t *bc = GetBlockTxChain(iface);
+  uint256 hash = GetHash();
   int posTx;
   int err;
 
-  err = bc_find(bc, GetHash().GetRaw(), &posTx);
+  err = bc_find(bc, hash.GetRaw(), &posTx);
   if (err)
     return error(err, "CTransaction::EraseTx: tx '%s' not found.", GetHash().GetHex().c_str());
 
   err = bc_idx_clear(bc, posTx);
   if (err)
     return error(err, "CTransaction::EraseTx: error clearing tx pos %d.", posTx);
+
+  /* clear cache entry */
+  EraseTxIndex(ifaceIndex, hash);
  
   Debug("CTransaction::EraseTx: cleared tx '%s'.", GetHash().GetHex().c_str());
   return (true);

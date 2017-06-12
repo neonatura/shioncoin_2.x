@@ -641,6 +641,9 @@ Value rpc_sys_info(CIface *iface, const Array& params, bool fStratum)
   bc = GetBlockTxChain(iface); 
   obj.push_back(Pair("txfmaps", (int)bc_fmap_total(bc)));
 
+  /* transaction blockchain index cache */
+  obj.push_back(Pair("txindex", GetTxIndexCount(ifaceIndex)));
+
   if (iface->net_valid) {
     sprintf(tbuf, "%-20.20s", ctime(&iface->net_valid));
     string val_str(tbuf);

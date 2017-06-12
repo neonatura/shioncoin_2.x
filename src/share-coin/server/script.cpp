@@ -1750,7 +1750,7 @@ bool SignSignature(const CKeyStore &keystore, const CScript& fromPubKey, CTransa
 
   // Test solution
   bool ret;
-  if (!(nHashType & SIGHASH_HDKEY)) {
+  if (0 == (nHashType & SIGHASH_HDKEY)) {
     ret= VerifyScript(txin.scriptSig, fromPubKey, txTo, nIn, true, 0);
   } else {
     ret= VerifyScript(txin.scriptSig, fromPubKey, txTo, nIn, true, nHashType);
