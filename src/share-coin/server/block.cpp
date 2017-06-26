@@ -466,11 +466,16 @@ bool CTransaction::ReadTx(int ifaceIndex, uint256 txHash, uint256 *hashBlock)
 
   err = GetTxIndex(ifaceIndex, txHash, &txPos);
   if (err) {
+#if 0
     /* no cache available. */ 
     err = bc_idx_find(bc, txHash.GetRaw(), NULL, &txPos); 
     if (err) {
       return (false); /* not an error condition */
     }
+#endif
+
+    /* all tx are cached in mem -- this tx is not known */
+    return (false);
   }
 
   err = bc_get(bc, txPos, &data, &data_len);

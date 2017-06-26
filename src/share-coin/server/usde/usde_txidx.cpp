@@ -106,10 +106,13 @@ bool usde_FillBlockIndex()
   CIface *iface = GetCoinByIndex(USDE_COIN_IFACE);
   blkidx_t *blockIndex = GetBlockTable(USDE_COIN_IFACE);
   bc_t *bc = GetBlockChain(iface);
+  bc_t *tx_bc = GetBlockTxChain(iface);
   CBlockIndex *lastIndex;
   USDEBlock block;
   uint256 hash;
   int nHeight;
+  int txPos;
+  int err;
 
   bool checkBest = false;
   uint256 hashBestChain;
@@ -160,6 +163,17 @@ fprintf(stderr, "DEBUG: usde_FillBlockIndex: stopping at orphan '%s' @ height %d
 
     if (nHeight == 0 && pindexNew->GetBlockHash() == usde_hashGenesisBlock)
       USDEBlock::pindexGenesisBlock = pindexNew;
+
+    BOOST_FOREACH(CTransaction& tx, block.vtx) {
+
+      /* store tx index cache record. */
+      uint256 tx_hash = tx.GetHash();
+      err = bc_idx_find(tx_bc, tx_hash.GetRaw(), NULL, &txPos);
+      if (!err) {
+        SetTxIndex(USDE_COIN_IFACE, tx_hash, txPos);
+      }
+
+    }
 
     lastIndex = pindexNew;
 

@@ -1700,6 +1700,9 @@ ValidIndexSet *GetValidIndexSet(int ifaceIndex);
 
 int GetTxIndexCount(int ifaceIndex);
 
+int SetTxIndex(int ifaceIndex, uint256 txHash, int txPos);
+
+
 
 
 #endif /* ndef __SERVER_BLOCK_H__ */
