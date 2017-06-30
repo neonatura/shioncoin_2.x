@@ -338,7 +338,6 @@ bool emc2_FillBlockIndex()
   EMC2Block block;
   uint256 hash;
   int nHeight;
-  int txPos;
   int err;
 
   bool checkBest = false;
@@ -390,17 +389,6 @@ fprintf(stderr, "DEBUG: emc2_FillBlockIndex: stopping at orphan '%s' @ height %d
 
     if (nHeight == 0 && pindexNew->GetBlockHash() == emc2_hashGenesisBlock)
       EMC2Block::pindexGenesisBlock = pindexNew;
-
-    BOOST_FOREACH(CTransaction& tx, block.vtx) {
-
-      /* store tx index cache record. */
-      uint256 tx_hash = tx.GetHash();
-      err = bc_idx_find(tx_bc, tx_hash.GetRaw(), NULL, &txPos);
-      if (!err) {
-        SetTxIndex(EMC2_COIN_IFACE, tx_hash, txPos);
-      }
-
-    }
 
     lastIndex = pindexNew;
 

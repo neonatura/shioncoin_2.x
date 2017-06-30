@@ -297,6 +297,11 @@ int64 GetBlockValue(int nHeight, int64 nFees)
 #endif
 
 
+
+
+
+
+#if 0
 typedef map<uint256,int> tx_index_table_t;
 static tx_index_table_t tx_index_table[MAX_COIN_IFACE];
 
@@ -358,6 +363,10 @@ int GetTxIndexCount(int ifaceIndex)
 
   return ((int)table->size());
 }
+#endif
+
+
+
 
 
 const CTransaction *CBlock::GetTx(uint256 hash)
@@ -382,7 +391,6 @@ bool CTransaction::WriteTx(int ifaceIndex, uint64_t blockHeight)
     return (false);
   }
 
-  //err = GetTxIndex(ifaceIndex, hash, &txPos);
   err = bc_idx_find(bc, hash.GetRaw(), NULL, &txPos);
   if (!err) { /* exists */
     unsigned char *data;
@@ -428,8 +436,10 @@ fprintf(stderr, "DEBUG: critical: CTransaction.WriteTx: bc_get error %d\n", err)
     return (false);
   }
 
+#if 0
   /* set cache entry */
   SetTxIndex(ifaceIndex, hash, err); 
+#endif
 
   return (true);
 }
@@ -464,18 +474,9 @@ bool CTransaction::ReadTx(int ifaceIndex, uint256 txHash, uint256 *hashBlock)
     return error(SHERR_INVAL, "CTransaction::ReadTx: unable to open block tx database."); 
   }
 
-  err = GetTxIndex(ifaceIndex, txHash, &txPos);
+  err = bc_idx_find(bc, txHash.GetRaw(), NULL, &txPos); 
   if (err) {
-#if 0
-    /* no cache available. */ 
-    err = bc_idx_find(bc, txHash.GetRaw(), NULL, &txPos); 
-    if (err) {
-      return (false); /* not an error condition */
-    }
-#endif
-
-    /* all tx are cached in mem -- this tx is not known */
-    return (false);
+    return (false); /* not an error condition */
   }
 
   err = bc_get(bc, txPos, &data, &data_len);
@@ -1899,6 +1900,7 @@ bool CBlock::WriteBlock(uint64_t nHeight)
     err = bc_clear(bc, nHeight);
     if (err)
       return error(err, "WriteBlock: clear block position %d.", (int)nHeight);
+    bc_table_reset(bc, rawhash);
   }
 
   /* serialize into binary */
@@ -2023,12 +2025,16 @@ bool CTransaction::EraseTx(int ifaceIndex)
   if (err)
     return error(err, "CTransaction::EraseTx: tx '%s' not found.", GetHash().GetHex().c_str());
 
+  bc_table_reset(bc, hash.GetRaw());
   err = bc_idx_clear(bc, posTx);
   if (err)
     return error(err, "CTransaction::EraseTx: error clearing tx pos %d.", posTx);
 
+
+#if 0
   /* clear cache entry */
   EraseTxIndex(ifaceIndex, hash);
+#endif
  
   Debug("CTransaction::EraseTx: cleared tx '%s'.", GetHash().GetHex().c_str());
   return (true);

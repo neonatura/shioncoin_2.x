@@ -99,7 +99,8 @@ libshcoin_a_OBJECTS = $(am_libshcoin_a_OBJECTS)
 am__installdirs = "$(DESTDIR)$(sbindir)" "$(DESTDIR)$(bindir)"
 PROGRAMS = $(noinst_PROGRAMS) $(sbin_PROGRAMS)
 am__objects_3 = shcoind-bc_block.$(OBJEXT) shcoind-bc_index.$(OBJEXT) \
-	shcoind-bc_arch.$(OBJEXT) shcoind-bc_fmap.$(OBJEXT)
+	shcoind-bc_table.$(OBJEXT) shcoind-bc_arch.$(OBJEXT) \
+	shcoind-bc_fmap.$(OBJEXT)
 am__objects_4 = shcoind-coin_proto.$(OBJEXT) \
 	shcoind-shc_proto.$(OBJEXT) shcoind-usde_proto.$(OBJEXT) \
 	shcoind-emc2_proto.$(OBJEXT) shcoind-test_proto.$(OBJEXT)
@@ -161,7 +162,8 @@ shcointool_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(shcointool_CXXFLAGS) \
 	$(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 am__objects_8 = test_shcoind-bc_block.$(OBJEXT) \
-	test_shcoind-bc_index.$(OBJEXT) test_shcoind-bc_arch.$(OBJEXT) \
+	test_shcoind-bc_index.$(OBJEXT) \
+	test_shcoind-bc_table.$(OBJEXT) test_shcoind-bc_arch.$(OBJEXT) \
 	test_shcoind-bc_fmap.$(OBJEXT)
 am__objects_9 = test_shcoind-coin_proto.$(OBJEXT) \
 	test_shcoind-shc_proto.$(OBJEXT) \
@@ -446,11 +448,13 @@ INCLUDES = -I$(top_srcdir)/src/share-ssl-lib/$(OPENSSL_DIR)/include \
 blockchain_sources = \
 	$(srcdir)/blockchain/bc_block.c \
 	$(srcdir)/blockchain/bc_index.c \
+	$(srcdir)/blockchain/bc_table.c \
 	$(srcdir)/blockchain/bc_arch.c \
 	$(srcdir)/blockchain/bc_fmap.c \
 	$(srcdir)/blockchain/bc.h \
 	$(srcdir)/blockchain/bc_block.h \
 	$(srcdir)/blockchain/bc_index.h \
+	$(srcdir)/blockchain/bc_table.h \
 	$(srcdir)/blockchain/bc_arch.h \
 	$(srcdir)/blockchain/bc_arch.h \
 	$(srcdir)/blockchain/bc_fmap.h
@@ -857,6 +861,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-bc_block.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-bc_fmap.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-bc_index.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-bc_table.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-block.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-block_iface.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-block_merkle.Po@am__quote@
@@ -943,6 +948,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-bc_block.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-bc_fmap.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-bc_index.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-bc_table.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-block.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-block_iface.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-block_merkle.Po@am__quote@
@@ -1220,6 +1226,20 @@ shcoind-bc_index.obj: $(srcdir)/blockchain/bc_index.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CFLAGS) $(CFLAGS) -c -o shcoind-bc_index.obj `if test -f '$(srcdir)/blockchain/bc_index.c'; then $(CYGPATH_W) '$(srcdir)/blockchain/bc_index.c'; else $(CYGPATH_W) '$(srcdir)/$(srcdir)/blockchain/bc_index.c'; fi`
 
+shcoind-bc_table.o: $(srcdir)/blockchain/bc_table.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CFLAGS) $(CFLAGS) -MT shcoind-bc_table.o -MD -MP -MF $(DEPDIR)/shcoind-bc_table.Tpo -c -o shcoind-bc_table.o `test -f '$(srcdir)/blockchain/bc_table.c' || echo '$(srcdir)/'`$(srcdir)/blockchain/bc_table.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shcoind-bc_table.Tpo $(DEPDIR)/shcoind-bc_table.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(srcdir)/blockchain/bc_table.c' object='shcoind-bc_table.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CFLAGS) $(CFLAGS) -c -o shcoind-bc_table.o `test -f '$(srcdir)/blockchain/bc_table.c' || echo '$(srcdir)/'`$(srcdir)/blockchain/bc_table.c
+
+shcoind-bc_table.obj: $(srcdir)/blockchain/bc_table.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CFLAGS) $(CFLAGS) -MT shcoind-bc_table.obj -MD -MP -MF $(DEPDIR)/shcoind-bc_table.Tpo -c -o shcoind-bc_table.obj `if test -f '$(srcdir)/blockchain/bc_table.c'; then $(CYGPATH_W) '$(srcdir)/blockchain/bc_table.c'; else $(CYGPATH_W) '$(srcdir)/$(srcdir)/blockchain/bc_table.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shcoind-bc_table.Tpo $(DEPDIR)/shcoind-bc_table.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(srcdir)/blockchain/bc_table.c' object='shcoind-bc_table.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CFLAGS) $(CFLAGS) -c -o shcoind-bc_table.obj `if test -f '$(srcdir)/blockchain/bc_table.c'; then $(CYGPATH_W) '$(srcdir)/blockchain/bc_table.c'; else $(CYGPATH_W) '$(srcdir)/$(srcdir)/blockchain/bc_table.c'; fi`
+
 shcoind-bc_arch.o: $(srcdir)/blockchain/bc_arch.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CFLAGS) $(CFLAGS) -MT shcoind-bc_arch.o -MD -MP -MF $(DEPDIR)/shcoind-bc_arch.Tpo -c -o shcoind-bc_arch.o `test -f '$(srcdir)/blockchain/bc_arch.c' || echo '$(srcdir)/'`$(srcdir)/blockchain/bc_arch.c
 @am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shcoind-bc_arch.Tpo $(DEPDIR)/shcoind-bc_arch.Po
@@ -1471,6 +1491,20 @@ test_shcoind-bc_index.obj: $(srcdir)/blockchain/bc_index.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(srcdir)/blockchain/bc_index.c' object='test_shcoind-bc_index.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-bc_index.obj `if test -f '$(srcdir)/blockchain/bc_index.c'; then $(CYGPATH_W) '$(srcdir)/blockchain/bc_index.c'; else $(CYGPATH_W) '$(srcdir)/$(srcdir)/blockchain/bc_index.c'; fi`
+
+test_shcoind-bc_table.o: $(srcdir)/blockchain/bc_table.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-bc_table.o -MD -MP -MF $(DEPDIR)/test_shcoind-bc_table.Tpo -c -o test_shcoind-bc_table.o `test -f '$(srcdir)/blockchain/bc_table.c' || echo '$(srcdir)/'`$(srcdir)/blockchain/bc_table.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-bc_table.Tpo $(DEPDIR)/test_shcoind-bc_table.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(srcdir)/blockchain/bc_table.c' object='test_shcoind-bc_table.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-bc_table.o `test -f '$(srcdir)/blockchain/bc_table.c' || echo '$(srcdir)/'`$(srcdir)/blockchain/bc_table.c
+
+test_shcoind-bc_table.obj: $(srcdir)/blockchain/bc_table.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-bc_table.obj -MD -MP -MF $(DEPDIR)/test_shcoind-bc_table.Tpo -c -o test_shcoind-bc_table.obj `if test -f '$(srcdir)/blockchain/bc_table.c'; then $(CYGPATH_W) '$(srcdir)/blockchain/bc_table.c'; else $(CYGPATH_W) '$(srcdir)/$(srcdir)/blockchain/bc_table.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-bc_table.Tpo $(DEPDIR)/test_shcoind-bc_table.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(srcdir)/blockchain/bc_table.c' object='test_shcoind-bc_table.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -c -o test_shcoind-bc_table.obj `if test -f '$(srcdir)/blockchain/bc_table.c'; then $(CYGPATH_W) '$(srcdir)/blockchain/bc_table.c'; else $(CYGPATH_W) '$(srcdir)/$(srcdir)/blockchain/bc_table.c'; fi`
 
 test_shcoind-bc_arch.o: $(srcdir)/blockchain/bc_arch.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CFLAGS) $(CFLAGS) -MT test_shcoind-bc_arch.o -MD -MP -MF $(DEPDIR)/test_shcoind-bc_arch.Tpo -c -o test_shcoind-bc_arch.o `test -f '$(srcdir)/blockchain/bc_arch.c' || echo '$(srcdir)/'`$(srcdir)/blockchain/bc_arch.c

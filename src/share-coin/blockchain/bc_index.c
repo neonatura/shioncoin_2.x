@@ -99,53 +99,71 @@ static int _bc_idx_find(bc_t *bc, bc_hash_t hash, bc_idx_t *ret_idx, int *ret_po
   bc_hash_t t_hash;
   bc_idx_t *idx;
   bcsize_t len;
+  uint64_t pos;
+  int pos_high;
+  int tab_hash;
   int crc;
   int err;
   int i;
-
-  err = bc_idx_open(bc);
-  if (err)
-    return (err);
 
   if (ret_idx)
     memset(ret_idx, '\000', sizeof(bc_idx_t));
   if (ret_pos)
     *ret_pos = -1;
 
-#if 0
-  crc = bc_idx_crc(hash);
-#endif
-
-  idx = (bc_idx_t *)bc->idx_map.raw;
-  len = bc->idx_map.hdr->of / sizeof(bc_idx_t);
-  for (i = (len-1); i >= 0; i--) {
-    if (idx[i].size == 0) continue;
-#if 0
-    if (idx[i].crc != crc)
-      continue; /* hash checksum does not match */    
-
-    err = bc_read(bc, i, t_hash, sizeof(t_hash));
-    if (err)
-      return (err);
-
-    if (bc_hash_cmp(hash, t_hash)) {
-      if (ret_idx)
-        memcpy(ret_idx, idx + i, sizeof(bc_idx_t));
-      if (ret_pos)
-        *ret_pos = i;
-      return (0);
-    }
-#endif
-    if (bc_hash_cmp(hash, idx[i].hash)) {
-      if (ret_idx)
-        memcpy(ret_idx, idx + i, sizeof(bc_idx_t));
-      if (ret_pos)
-        *ret_pos = i;
-      return (0);
-    }
+  pos_high = -1;
+  err = bc_table_get(bc, hash, &pos);
+  if (err == SHERR_NOENT)
+    return (SHERR_NOENT);
+  if (err == 0) {
+    /* current highest known position for table hash */
+    pos_high = (int)pos;
   }
 
-  return (SHERR_NOENT);
+  err = bc_idx_open(bc);
+  if (err)
+    return (err);
+
+  idx = (bc_idx_t *)bc->idx_map.raw;
+
+  len = (bc->idx_map.hdr->of / sizeof(bc_idx_t)) - 1;
+  if (pos_high > len)
+    pos_high = -1;
+  if (pos_high != -1)
+    len = pos_high;
+
+  tab_hash = bc_table_hash(hash);
+  for (i = len; i >= 0; i--) {
+    if (idx[i].size == 0) continue;
+
+    if (bc_table_hash(idx[i].hash) == tab_hash)
+      pos_high = MAX(pos_high, i);
+
+    if (bc_hash_cmp(hash, idx[i].hash))
+      break;
+  }
+
+  if (pos_high != -1) {
+    if (pos != (uint64_t)pos_high) {
+      /* record highest index pos for table hash. */
+      bc_table_set(bc, hash, pos_high);
+    }
+  } else if (i < 0) {
+    /* no entries found and no indexes matched table hash */
+    bc_table_unset(bc, hash);
+  }
+
+  if (i < 0) {
+    /* no index position found. */
+    return (SHERR_NOENT);
+  }
+
+  if (ret_idx)
+    memcpy(ret_idx, idx + i, sizeof(bc_idx_t));
+  if (ret_pos)
+    *ret_pos = i;
+
+  return (0);
 }
 
 int bc_idx_find(bc_t *bc, bc_hash_t hash, bc_idx_t *ret_idx, int *ret_pos)
@@ -247,6 +265,9 @@ static int _bc_idx_set(bc_t *bc, bcsize_t pos, bc_idx_t *idx)
   err = bc_map_write(bc, &bc->idx_map, of, idx, sizeof(bc_idx_t)); 
   if (err)
     return (err);
+
+  /* mark table hash entry as requiring new search. */
+  bc_table_reset(bc, idx->hash);
 
   return (0);
 }

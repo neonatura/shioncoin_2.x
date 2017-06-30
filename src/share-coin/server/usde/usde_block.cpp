@@ -2112,6 +2112,7 @@ bool usde_Truncate(uint256 hash)
         break; /* bad */
       if (blockIndex->count(t_hash) != 0)
         block.DisconnectBlock(txdb, (*blockIndex)[t_hash]);
+      bc_table_reset(bc, t_hash.GetRaw());
     }
   }
   for (nHeight = nMaxHeight; nHeight > nMinHeight; nHeight--) {

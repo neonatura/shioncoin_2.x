@@ -105,7 +105,6 @@ bool shc_FillBlockIndex(txlist& vMatrix, txlist& vSpring, txlist& vCert, txlist&
   uint256 hash;
   int nBestIndex;
   int nHeight;
-  int txPos;
   int err;
 
   int nMaxIndex = bc_idx_next(bc) - 1;
@@ -145,14 +144,6 @@ bool shc_FillBlockIndex(txlist& vMatrix, txlist& vSpring, txlist& vCert, txlist&
     }
 
     BOOST_FOREACH(CTransaction& tx, block.vtx) {
-
-      /* store tx index cache record. */
-      uint256 tx_hash = tx.GetHash(); 
-      err = bc_idx_find(tx_bc, tx_hash.GetRaw(), NULL, &txPos);
-      if (!err) {
-        SetTxIndex(SHC_COIN_IFACE, tx_hash, txPos);
-      }
-
       /* register extended transactions. */
       if (tx.IsCoinBase() &&
           tx.isFlag(CTransaction::TXF_MATRIX)) {
@@ -183,7 +174,6 @@ bool shc_FillBlockIndex(txlist& vMatrix, txlist& vSpring, txlist& vCert, txlist&
           IsContextTx(tx)) {
         vContext.push_back(pindexNew);
       }
-
     } /* FOREACH (tx) */
 
     lastIndex = pindexNew;

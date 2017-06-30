@@ -1698,10 +1698,6 @@ bool core_ConnectBestBlock(int ifaceIndex, CBlock *block, CBlockIndex *pindexNew
 
 ValidIndexSet *GetValidIndexSet(int ifaceIndex);
 
-int GetTxIndexCount(int ifaceIndex);
-
-int SetTxIndex(int ifaceIndex, uint256 txHash, int txPos);
-
 
 
 

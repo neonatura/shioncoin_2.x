@@ -279,6 +279,7 @@ bool EraseTxCoins(CIface *iface, uint256 hash)
     if (err) {
       return (error(err, "CTransaction.WriteCoinSpent: error clearing data for db-index #%u.", (unsigned int)txPos));
     }
+    bc_table_reset(bc, hash.GetRaw());
   }
 
   return (true);

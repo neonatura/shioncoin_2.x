@@ -261,6 +261,9 @@
 /* Define to 1 if you have the `open' function. */
 #undef HAVE_OPEN
 
+/* Define to 1 if you have the <pthread.h> header file. */
+#undef HAVE_PTHREAD_H
+
 /* Define to 1 if you have the `pthread_mutex_destroy' function. */
 #undef HAVE_PTHREAD_MUTEX_DESTROY
 

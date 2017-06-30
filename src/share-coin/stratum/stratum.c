@@ -118,6 +118,7 @@ static void stratum_timer(void)
   user_t *peer;
   shbuf_t *buff;
   size_t len;
+  time_t now;
   char *data;
   int err;
 
@@ -177,7 +178,8 @@ static void stratum_timer(void)
 
   stratum_close_free();
 
-  if (last_task_t != time(NULL)) {
+  now = time(NULL);
+  if (last_task_t != now) {
     /* generate new work, as needed */
     stratum_task_gen();
 
@@ -186,7 +188,7 @@ static void stratum_timer(void)
     stratum_sync();
 #endif
 
-    last_task_t = time(NULL);
+    last_task_t = now;
   }
 
 }

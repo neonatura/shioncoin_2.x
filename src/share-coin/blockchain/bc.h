@@ -82,6 +82,7 @@ typedef struct bc_t
   char name[BC_MAX_NAME_LENGTH];
   shkey_t data_key;
   bc_map_t idx_map;
+  bc_map_t tab_map;
   bc_map_t arch_map;
   bc_map_t *data_map;
   size_t data_map_len;
@@ -94,6 +95,7 @@ void bc_unlock(void);
 
 #include "bc_fmap.h"
 #include "bc_index.h"
+#include "bc_table.h"
 #include "bc_arch.h"
 #include "bc_block.h"
 

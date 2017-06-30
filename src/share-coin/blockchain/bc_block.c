@@ -98,6 +98,9 @@ static void _bc_close(bc_t *bc)
   /* close index map */
   bc_idx_close(bc);
 
+  /* close hash table */
+  bc_table_close(bc);
+
   /* close data maps */
   for (i = 0; i < bc->data_map_len; i++) {
     map = bc->data_map + i;
@@ -227,6 +230,7 @@ static int _bc_rewrite(bc_t *bc, bcsize_t pos, bc_hash_t hash, void *raw_data, i
     sprintf(errbuf, "bc_write: error: bc_map_append failure: %s.", sherrstr(err));
     shcoind_log(errbuf);
     bc_idx_clear(bc, pos);
+    bc_table_reset(bc, hash);
     return (err);
   }
 
@@ -294,6 +298,7 @@ static int _bc_write(bc_t *bc, bcsize_t pos, bc_hash_t hash, void *raw_data, int
     sprintf(errbuf, "bc_write: error: bc_map_append failure: %s.", sherrstr(err));
     shcoind_log(errbuf);
     bc_idx_clear(bc, pos);
+    bc_table_reset(bc, hash);
     return (err);
   }
 
@@ -568,6 +573,7 @@ static int _bc_purge(bc_t *bc, bcsize_t pos)
 {
   bc_map_t *map;
   bc_idx_t idx;
+  bc_idx_t t_idx;
   char errbuf[256];
   int err;
   int i;
@@ -597,6 +603,11 @@ static int _bc_purge(bc_t *bc, bcsize_t pos)
   /* clear index of remaining entries */
   for (i = (bc_idx_next(bc)-1); i >= pos; i--) {
     bc_clear(bc, i);
+
+    err = bc_idx_get(bc, pos, &t_idx);
+    if (!err) {
+      bc_table_reset(bc, t_idx.hash);
+    }
 //    bc_idx_clear(bc, i);
   }
 
@@ -627,14 +638,11 @@ int bc_purge(bc_t *bc, bcsize_t pos)
  */
 int bc_hash_cmp(bc_hash_t a_hash, bc_hash_t b_hash)
 {
-  uint32_t *a_val = (uint32_t *)a_hash;
-  uint32_t *b_val = (uint32_t *)b_hash;
   int i;
 
-  for (i = 0; i < 8; i++) {
-    if (a_val[i] != b_val[i])
-      return (FALSE);
-  }
+  if (0 != memcmp((uint32_t *)a_hash, 
+        (uint32_t *)b_hash, sizeof(bc_hash_t)))
+    return (FALSE);
 
   return (TRUE);
 }
