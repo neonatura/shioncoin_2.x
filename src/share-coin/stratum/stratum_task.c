@@ -588,7 +588,7 @@ void stratum_round_reset(time_t stamp)
  */
 void stratum_task_work(task_t *task)
 {
-  static int luck = 1;
+  static int luck = 2;
   static int idx;
   static time_t round_stamp;
   time_t now;
@@ -631,7 +631,7 @@ sprintf(ntime, "%-8.8x", (unsigned int)task->curtime);
 
   err = shscrypt(&task->work, MAX_SERVER_NONCE);
   if (!err && task->work.nonce != MAX_SERVER_NONCE) {
-    luck = MAX(1, (luck / 2));
+    luck = MAX(2, (luck / 2));
 
     err = shscrypt_verify(&task->work);
 

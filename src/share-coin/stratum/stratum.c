@@ -178,7 +178,8 @@ static void stratum_timer(void)
 
   stratum_close_free();
 
-  now = time(NULL);
+  /* minimum two second wait in between new mining work generation. */
+  now = time(NULL) / 2;
   if (last_task_t != now) {
     /* generate new work, as needed */
     stratum_task_gen();
