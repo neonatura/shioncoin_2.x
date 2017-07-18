@@ -730,7 +730,8 @@ bool EMC2_CTxMemPool::accept(CTxDB& txdb, CTransaction &tx, bool fCheckInputs, b
     if (mapNextTx.count(outpoint))
     {
       // emc2 disallow's replacement of previous tx
-      return (error(SHERR_NOTUNIQ, "(emc2) accept: intput from tx '%s' conflicts with existing pool tx.", outpoint.hash));
+      error(SHERR_NOTUNIQ, "(emc2) accept: input from tx conflicts with existing pool tx.");
+      return (SHERR_NOTUNIQ);
     }
   }
 
