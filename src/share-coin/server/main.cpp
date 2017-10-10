@@ -18,6 +18,8 @@
 #include "init.h"
 #include "ui_interface.h"
 #include "block.h"
+#include "script.h"
+#include "txsignature.h"
 #include "usde/usde_netmsg.h"
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/filesystem.hpp>
@@ -76,58 +78,87 @@ fprintf(stderr, "DEBUG: CTransaction::ReadFromDisk(COutPoint)\n");
 // expensive-to-check-upon-redemption script like:
 //   DUP CHECKSIG DROP ... repeated 100 times... OP_1
 //
-bool CTransaction::AreInputsStandard(const MapPrevTx& mapInputs) const
+bool CTransaction::AreInputsStandard(int ifaceIndex, const MapPrevTx& mapInputs) const
 {
-    if (IsCoinBase())
-        return true; // Coinbases don't use vin normally
 
-    for (unsigned int i = 0; i < vin.size(); i++)
-    {
-        const CTxOut& prev = GetOutputFor(vin[i], mapInputs);
+  if (IsCoinBase())
+    return true; // Coinbases don't use vin normally
 
-        vector<vector<unsigned char> > vSolutions;
-        txnouttype whichType;
-        // get the scriptPubKey corresponding to this input:
-        const CScript& prevScript = prev.scriptPubKey;
-        if (!Solver(prevScript, whichType, vSolutions))
-            return false;
-        int nArgsExpected = ScriptSigArgsExpected(whichType, vSolutions);
-        if (nArgsExpected < 0)
-            return false;
+  for (unsigned int i = 0; i < vin.size(); i++)
+  {
+    const CTxOut& prev = GetOutputFor(vin[i], mapInputs);
 
-        // Transactions with extra stuff in their scriptSigs are
-        // non-standard. Note that this EvalScript() call will
-        // be quick, because if there are any operations
-        // beside "push data" in the scriptSig the
-        // IsStandard() call returns false
-        vector<vector<unsigned char> > stack;
-        if (!EvalScript(stack, vin[i].scriptSig, *this, i, 0))
-            return false;
-
-        if (whichType == TX_SCRIPTHASH)
-        {
-            if (stack.empty())
-                return false;
-            CScript subscript(stack.back().begin(), stack.back().end());
-            vector<vector<unsigned char> > vSolutions2;
-            txnouttype whichType2;
-            if (!Solver(subscript, whichType2, vSolutions2))
-                return false;
-            if (whichType2 == TX_SCRIPTHASH)
-                return false;
-
-            int tmpExpected;
-            tmpExpected = ScriptSigArgsExpected(whichType2, vSolutions2);
-            if (tmpExpected < 0)
-                return false;
-            nArgsExpected += tmpExpected;
-        }
-
-        if (stack.size() != (unsigned int)nArgsExpected)
-            return false;
+    vector<vector<unsigned char> > vSolutions;
+    txnouttype whichType;
+    // get the scriptPubKey corresponding to this input:
+    const CScript& prevScript = prev.scriptPubKey;
+    if (!Solver(prevScript, whichType, vSolutions)) {
+      fprintf(stderr, "DEBUG: TEST: ERROR: AreInputsStandard: Solver failure, whichType(%d)\n", whichType);
+      return false;
     }
 
-    return true;
+    int nArgsExpected = ScriptSigArgsExpected(whichType, vSolutions);
+    if (nArgsExpected < 0) {
+      fprintf(stderr, "DEBUG: TEST: ERROR: AreInputsStandard: whichType(%d) nArgsExpected(%d)\n", whichType, nArgsExpected);
+      return false;
+    }
+
+    vector<vector<unsigned char> > stack;
+    CTransaction *txSig = (CTransaction *)this;
+    CSignature sig(ifaceIndex, txSig, i);
+    if (!EvalScript(sig, stack, vin[i].scriptSig, SIGVERSION_BASE, 0)) {
+      fprintf(stderr, "DEBUG: AreInputsStandard: !EvalScript: scriptSig \"%s\"\n", vin[i].scriptSig.ToString().c_str()); 
+      return false;
+    }
+#if 0
+    // Transactions with extra stuff in their scriptSigs are
+    // non-standard. Note that this EvalScript() call will
+    // be quick, because if there are any operations
+    // beside "push data" in the scriptSig the
+    // IsStandard() call returns false
+    vector<vector<unsigned char> > stack;
+    if (!EvalScript(stack, vin[i].scriptSig, *this, i, 0, SIGVERSION_BASE, 0)) {
+      fprintf(stderr, "DEBUG: AreInputsStandard: !EvalScript: scriptSig \"%s\"\n", vin[i].scriptSig.ToString().c_str()); 
+      return false;
+    }
+#endif
+
+    if (whichType == TX_SCRIPTHASH)
+    {
+      if (stack.empty()) {
+fprintf(stderr, "DEBUG: CTransaction.AreInputStandard: TX_SCRIPT_HASH: stack.empty()\n"); 
+        return false;
+      }
+      CScript subscript(stack.back().begin(), stack.back().end());
+      vector<vector<unsigned char> > vSolutions2;
+      txnouttype whichType2;
+      if (!Solver(subscript, whichType2, vSolutions2)) {
+        return (error(SHERR_INVAL, "CTransaction.AreInputStandard: TX_SCRIPT_HASH: !Solver\n"));
+      }
+      if (whichType2 == TX_SCRIPTHASH) {
+        return (error(SHERR_INVAL, "CTransaction.AreInputStandard: TX_SCRIPT_HASH: whichType2 == TX_SCRIPTHASH\n"));
+      }
+
+      if (subscript.GetSigOpCount(true) > 15) {
+        return (SHERR_INVAL, "AreInputsStandard: transaction exceeded 15 sig-ops for a P2SH script."); 
+      }
+
+      int tmpExpected;
+      tmpExpected = ScriptSigArgsExpected(whichType2, vSolutions2);
+      if (tmpExpected < 0) {
+fprintf(stderr, "DEBUG: AreInputsStandard: nArgsExpected += %d [whichType2 %d]\n", tmpExpected, whichType2);
+        return false;
+      }
+      nArgsExpected += tmpExpected;
+    }
+
+    if (stack.size() > (unsigned int)nArgsExpected) {
+      fprintf(stderr, "DEBUG: AreInputsStandard: stack.size(%d) nArgsExpected(%d) whichType(%d)\n", stack.size(), nArgsExpected, whichType); 
+      return false;
+    }
+  }
+
+  return true;
 }
 
 unsigned int
@@ -166,18 +197,47 @@ const CTxOut& CTransaction::GetOutputFor(const CTxIn& input, const MapPrevTx& in
   return txPrev.vout[input.prevout.n];
 }
 
-int64 CTransaction::GetValueIn(const MapPrevTx& inputs) const
+bool CTransaction::GetOutputFor(const CTxIn& input, tx_cache& inputs, CTxOut& retOut)
 {
-    if (IsCoinBase())
-        return 0;
+  char errbuf[1024];
 
-    int64 nResult = 0;
-    for (unsigned int i = 0; i < vin.size(); i++)
-    {
-        nResult += GetOutputFor(vin[i], inputs).nValue;
-    }
-    return nResult;
+  tx_cache::const_iterator mi = inputs.find(input.prevout.hash);
+  if (mi == inputs.end())
+    return (false); 
 
+  const CTransaction& txPrev = (mi->second);
+  if (input.prevout.n >= txPrev.vout.size())
+    return (false);
+
+  retOut = txPrev.vout[input.prevout.n];
+  return (true);
+}
+
+int64 CTransaction::GetValueIn(tx_cache& inputs)
+{
+
+  if (IsCoinBase())
+    return 0;
+
+  int64 nResult = 0;
+  for (unsigned int i = 0; i < vin.size(); i++) {
+    CTxOut out;
+    const CTxIn& in = vin[i];
+    if (GetOutputFor(in, inputs, out))
+      nResult += out.nValue;
+  }
+
+  return nResult;
+}
+
+int64 CTransaction::GetValueIn(const MapPrevTx& inputs)
+{
+  int64 nResult = 0;
+  for (unsigned int i = 0; i < vin.size(); i++)
+  {
+    nResult += GetOutputFor(vin[i], inputs).nValue;
+  }
+  return nResult;
 }
 
 unsigned int CTransaction::GetP2SHSigOpCount(const MapPrevTx& inputs) const

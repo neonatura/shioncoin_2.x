@@ -1,11 +1,30 @@
-// Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2012 The Bitcoin developers
-// Copyright (c) 2011-2012 Litecoin Developers
-// Copyright (c) 2013 usde Developers
-// Distributed under the MIT/X11 software license, see the accompanying
-// file COPYING or http://www.opensource.org/licenses/mit-license.php.
-#ifndef H_BITCOIN_SCRIPT
-#define H_BITCOIN_SCRIPT
+
+/*
+ * @copyright
+ *
+ *  Copyright 2014 Neo Natura
+ *
+ *  This file is part of the Share Library.
+ *  (https://github.com/neonatura/share)
+ *        
+ *  The Share Library is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version. 
+ *
+ *  The Share Library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with The Share Library.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  @endcopyright
+ */  
+
+#ifndef __SERVER__SCRIPT_H__
+#define __SERVER__SCRIPT_H__
 
 #include <string>
 #include <vector>
@@ -16,17 +35,10 @@
 #include "keystore.h"
 #include "bignum.h"
 
-class CTransaction;
 
-/** Signature hash types/flags */
-enum
-{
-    SIGHASH_ALL = 1,
-    SIGHASH_NONE = 2,
-    SIGHASH_SINGLE = 3,
-    SIGHASH_HDKEY = 0x40,
-    SIGHASH_ANYONECANPAY = 0x80,
-};
+class CTransaction;
+class CSignature;
+
 
 
 enum txnouttype
@@ -37,8 +49,31 @@ enum txnouttype
     TX_PUBKEYHASH,
     TX_SCRIPTHASH,
     TX_MULTISIG,
-    TX_RETURN
+    TX_RETURN,
+    TX_WITNESS_V0_SCRIPTHASH,
+    TX_WITNESS_V0_KEYHASH
 };
+
+enum {
+  SCRIPT_VERIFY_NONE      = 0,
+  SCRIPT_VERIFY_P2SH      = (1U << 0),
+  SCRIPT_VERIFY_STRICTENC = (1U << 1),
+  SCRIPT_VERIFY_DERSIG    = (1U << 2),
+  SCRIPT_VERIFY_LOW_S     = (1U << 3),
+  SCRIPT_VERIFY_NULLDUMMY = (1U << 4),
+  SCRIPT_VERIFY_SIGPUSHONLY = (1U << 5),
+  SCRIPT_VERIFY_MINIMALDATA = (1U << 6),
+  SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_NOPS  = (1U << 7),
+  SCRIPT_VERIFY_CLEANSTACK = (1U << 8),
+  SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY = (1U << 9),
+  SCRIPT_VERIFY_CHECKSEQUENCEVERIFY = (1U << 10),
+  SCRIPT_VERIFY_WITNESS = (1U << 11),
+  SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_WITNESS_PROGRAM = (1U << 12),
+  SCRIPT_VERIFY_MINIMALIF = (1U << 13),
+  SCRIPT_VERIFY_NULLFAIL = (1U << 14),
+  SCRIPT_VERIFY_WITNESS_PUBKEYTYPE = (1U << 15),
+};
+
 
 class CNoDestination {
 public:
@@ -225,6 +260,7 @@ enum opcodetype
     OP_INVALIDOPCODE = 0xff,
 };
 
+
 const char* GetOpName(opcodetype opcode);
 
 
@@ -255,6 +291,7 @@ inline std::string StackString(const std::vector<std::vector<unsigned char> >& v
 
 
 class HDPrivKey;
+
 
 /** Serialized script, used inside transaction inputs and outputs */
 class CScript : public std::vector<unsigned char>
@@ -547,6 +584,9 @@ public:
 
     bool IsPayToScriptHash() const;
 
+    bool IsWitnessProgram(int& version, std::vector<unsigned char>& program) const; 
+
+
     // Called by CTransaction::IsStandard
     bool IsPushOnly() const
     {
@@ -613,23 +653,48 @@ public:
 
 
 
+#if 0
+/* replace by CSignature */
+uint256 SignatureHash(CScript scriptCode, const CTransaction& txTo, unsigned int nIn, int nHashType, int sigver);
+#endif
 
-bool EvalScript(std::vector<std::vector<unsigned char> >& stack, const CScript& script, const CTransaction& txTo, unsigned int nIn, int nHashType);
-bool Solver(const CScript& scriptPubKey, txnouttype& typeRet, std::vector<std::vector<unsigned char> >& vSolutionsRet);
+//bool CheckSig(vector<unsigned char> vchSig, vector<unsigned char> vchPubKey, CScript scriptCode, const CTransaction& txTo, unsigned int nIn, int nHashType, int sigver);
+
+
+
+
+bool EvalScript(CSignature& sig, stack_t& stack, const CScript& script, unsigned int sigver, int flags);
+
 int ScriptSigArgsExpected(txnouttype t, const std::vector<std::vector<unsigned char> >& vSolutions);
 bool IsStandard(const CScript& scriptPubKey);
-bool IsMine(const CKeyStore& keystore, const CScript& scriptPubKey);
+//
+//bool IsMine(const CKeyStore& keystore, const CScript& scriptPubKey);
 bool IsMine(const CKeyStore& keystore, const CTxDestination &dest);
+bool IsMine(const CKeyStore &keystore, const CScript& scriptPubKey, bool fWitnessFlag = false);
+
 bool ExtractDestination(const CScript& scriptPubKey, CTxDestination& addressRet);
 bool ExtractDestinations(const CScript& scriptPubKey, txnouttype& typeRet, std::vector<CTxDestination>& addressRet, int& nRequiredRet);
-bool SignSignature(const CKeyStore& keystore, const CScript& fromPubKey, CTransaction& txTo, unsigned int nIn, int nHashType=SIGHASH_ALL);
-bool SignSignature(const CKeyStore& keystore, const CTransaction& txFrom, CTransaction& txTo, unsigned int nIn, int nHashType=SIGHASH_ALL);
-bool VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey, const CTransaction& txTo, unsigned int nIn,
-                  bool fValidatePayToScriptHash, int nHashType);
-bool VerifySignature(const CTransaction& txFrom, const CTransaction& txTo, unsigned int nIn, bool fValidatePayToScriptHash, int nHashType);
+//bool SignSignature(const CKeyStore& keystore, const CScript& fromPubKey, CTransaction& txTo, unsigned int nIn, int nHashType=1);//SIGHASH_ALL);
+//bool SignSignature(const CKeyStore& keystore, const CTransaction& txFrom, CTransaction& txTo, unsigned int nIn, int nHashType=1);// SIGHASH_ALL);
+
+//bool VerifySignature(const CTransaction& txFrom, const CTransaction& txTo, unsigned int nIn, bool fValidatePayToScriptHash, int nHashType);
+bool VerifySignature(int ifaceIndex, const CTransaction& txFrom, const CTransaction& txTo, unsigned int nIn, bool fValidatePayToScriptHash, int nHashType);
+
 
 // Given two sets of signatures for scriptPubKey, possibly with OP_0 placeholders,
 // combine them intelligently and return the result.
-CScript CombineSignatures(CScript scriptPubKey, const CTransaction& txTo, unsigned int nIn, const CScript& scriptSig1, const CScript& scriptSig2);
+CScript CombineSignatures(CSignature& sig, CScript scriptPubKey, unsigned int nIn, const CScript& scriptSig1, const CScript& scriptSig2);
 
+//bool VerifyScript(const CScript& scriptSig, stack_t& witness, CScript& scriptPubKey, CTransaction& txTo, unsigned int nIn, bool fValidatePayToScriptHash, int nHashType, int flags);
+//bool VerifyScript(CSignature& sig, const CScript& scriptSig, stack_t& witness, const CScript& scriptPubKey, unsigned int nIn, bool fValidatePayToScriptHash, int flags);
+bool VerifyScript(CSignature& sig, const CScript& scriptSig, stack_t& witness, const CScript& scriptPubKey, bool fValidatePayToScriptHash, int flags);
+
+
+bool Solver(const CScript& scriptPubKey, txnouttype& typeRet, std::vector<std::vector<unsigned char> >& vSolutionsRet);
+#if 0
+bool Solver(const CKeyStore& keystore, const CScript& scriptPubKey, uint256 hash, int nHashType, CScript& scriptSigRet, txnouttype& whichTypeRet);
 #endif
+
+CScript GetScriptForDestination(const CTxDestination& dest);
+
+#endif /* ndef __SERVER__SCRIPT_H__ */

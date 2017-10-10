@@ -59,6 +59,10 @@ uint64_t *bc_table_pos(bc_t *bc, bc_hash_t hash);
 /** Obtain a hash code identifying the table entry. */
 int bc_table_hash(bc_hash_t hash);
 
+/** Clear all hashes from the entire table. */
+int bc_table_clear(bc_t *bc);
+
+void bc_table_close(bc_t *bc);
 
 
 #ifdef __cplusplus

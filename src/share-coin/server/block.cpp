@@ -28,6 +28,8 @@
 #include "db.h"
 #include <vector>
 #include "spring.h"
+#include "versionbits.h"
+#include "wit_merkle.h"
 
 using namespace std;
 
@@ -946,7 +948,7 @@ bool CTransaction::ClientConnectInputs(int ifaceIndex)
         return false;
 
       // Verify signature
-      if (!VerifySignature(txPrev, *this, i, true, 0))
+      if (!VerifySignature(ifaceIndex, txPrev, *this, i, true, 0))
         return error(SHERR_INVAL, "ConnectInputs() : VerifySignature failed");
 
       ///// this is redundant with the mempool.mapNextTx stuff,
@@ -2169,12 +2171,15 @@ bool core_AcceptBlock(CBlock *pblock, CBlockIndex *pindexPrev)
 bool CTransaction::IsStandard() const
 {
 
-  if (!isFlag(CTransaction::TX_VERSION)) {
+  if (!isFlag(CTransaction::TX_VERSION) &&
+      !isFlag(CTransaction::TX_VERSION_2)) {
     return error(SHERR_INVAL, "version flag not set (%d) [CTransaction::IsStandard]", nFlag);
   }
 
   BOOST_FOREACH(const CTxIn& txin, vin)
   {
+
+
     // Biggest 'standard' txin is a 3-signature 3-of-3 CHECKMULTISIG
     // pay-to-script-hash, which is 3 ~80-byte signatures, 3
     // ~65-byte public keys, plus a few script ops.
@@ -2615,8 +2620,10 @@ Object CTransaction::ToValue(int ifaceIndex)
   Object obj = CTransactionCore::ToValue(ifaceIndex);
 
   obj.push_back(Pair("txid", GetHash().GetHex()));
+  obj.push_back(Pair("hash", GetWitnessHash().GetHex()));
 
   Array obj_vin;
+  unsigned int n = 0;
   BOOST_FOREACH(const CTxIn& txin, vin)
   {
     Object in;
@@ -2631,8 +2638,21 @@ Object CTransaction::ToValue(int ifaceIndex)
 //      o.push_back(Pair("hex", HexStr(txin.scriptSig.begin(), txin.scriptSig.end())));
       in.push_back(Pair("scriptSig", o));
     }   
+
+    /* segwit */
+    if (!wit.IsNull()) {
+      const CTxInWitness& tx_wit = wit.vtxinwit[n];
+      Array ar;
+      for (unsigned int i = 0; i < tx_wit.scriptWitness.stack.size(); i++) {
+        ar.push_back(HexStr(tx_wit.scriptWitness.stack[i].begin(), tx_wit.scriptWitness.stack[i].end()));
+      }
+      in.push_back(Pair("witness", ar));
+    }
+
     in.push_back(Pair("sequence", (boost::int64_t)txin.nSequence));
+
     obj_vin.push_back(in);
+    n++;
   }
   obj.push_back(Pair("vin", obj_vin));
 
@@ -2738,6 +2758,9 @@ Object CBlockHeader::ToValue()
 Object CBlock::ToValue()
 {
   Object obj = CBlockHeader::ToValue();
+
+//  obj.push_back(Pair("size", (int)::GetSerializeSize(*this, SER_NETWORK, PROTOCOL_VERSION)));
+  obj.push_back(Pair("weight", (int)GetBlockWeight()));
 
   Array txs;
   BOOST_FOREACH(const CTransaction&tx, vtx)
@@ -3506,4 +3529,319 @@ int BackupBlockChain(CIface *iface, unsigned int maxHeight)
   
   return (0);
 }   
+
+
+int static inline InvertLowestOne(int n) { return n & (n - 1); }
+
+/** Compute what height to jump back to with the CBlockIndex::pskip pointer. */
+static int GetSkipHeight(int height) 
+{
+
+  if (height < 2)
+    return 0;
+
+  // Determine which height to jump back to. Any number strictly lower than height is acceptable,
+  // but the following expression seems to perform well in simulations (max 110 steps to go back
+  // up to 2**18 blocks).
+  return (height & 1) ? InvertLowestOne(InvertLowestOne(height - 1)) + 1 : InvertLowestOne(height);
+}
+
+CBlockIndex* CBlockIndex::GetAncestor(int height)
+{
+
+  if (height > nHeight || height < 0)
+    return NULL;
+
+  CBlockIndex* pindexWalk = this;
+  int heightWalk = nHeight;
+  while (heightWalk > height) {
+    int heightSkip = GetSkipHeight(heightWalk);
+    int heightSkipPrev = GetSkipHeight(heightWalk - 1);
+    if (pindexWalk->pskip != NULL &&
+        (heightSkip == height ||
+         (heightSkip > height && !(heightSkipPrev < heightSkip - 2 &&
+                                   heightSkipPrev >= height)))) {
+      // Only follow pskip if pprev->pskip isn't better than pskip->pprev.
+      pindexWalk = pindexWalk->pskip;
+      heightWalk = heightSkip;
+    } else {
+      assert(pindexWalk->pprev);
+      pindexWalk = pindexWalk->pprev;
+      heightWalk--;
+    }
+  }
+
+  return pindexWalk;
+}
+
+const CBlockIndex* CBlockIndex::GetAncestor(int height) const
+{
+    return const_cast<CBlockIndex*>(this)->GetAncestor(height);
+}
+
+void CBlockIndex::BuildSkip()
+{
+  if (pprev)
+    pskip = pprev->GetAncestor(GetSkipHeight(nHeight));
+}
+
+
+static VersionBitsCache _version_bits_cache[MAX_COIN_IFACE];
+
+VersionBitsCache *GetVersionBitsCache(CIface *iface)
+{
+  int ifaceIndex = GetCoinIndex(iface);
+  
+  if (ifaceIndex < 0 || ifaceIndex >= MAX_COIN_IFACE) {
+    return (NULL);
+  }
+
+  return (&_version_bits_cache[ifaceIndex]);
+}
+
+bool IsWitnessEnabled(CIface *iface, const CBlockIndex* pindexPrev)
+{
+  VersionBitsCache *cache;
+
+  cache = GetVersionBitsCache(iface);
+  if (!cache)
+    return (false);
+
+  return (VersionBitsState(pindexPrev, iface, DEPLOYMENT_SEGWIT, *cache) == THRESHOLD_ACTIVE);
+}
+
+
+static int GetWitnessCommitmentIndex(const CBlock& block)
+{
+  int commitpos = -1;
+
+  for (size_t o = 0; o < block.vtx[0].vout.size(); o++) {
+    if (block.vtx[0].vout[o].scriptPubKey.size() >= 38 && block.vtx[0].vout[o].scriptPubKey[0] == OP_RETURN && block.vtx[0].vout[o].scriptPubKey[1] == 0x24 && block.vtx[0].vout[o].scriptPubKey[2] == 0xaa && block.vtx[0].vout[o].scriptPubKey[3] == 0x21 && block.vtx[0].vout[o].scriptPubKey[4] == 0xa9 && block.vtx[0].vout[o].scriptPubKey[5] == 0xed) {
+      commitpos = o;
+    }
+  }
+
+  return commitpos;
+}
+
+void core_UpdateUncommittedBlockStructures(CIface *iface, CBlock& block, const CBlockIndex* pindexPrev)
+{
+  int commitpos = GetWitnessCommitmentIndex(block);
+  static const std::vector<unsigned char> nonce(32, 0x00);
+  if (commitpos != -1 && IsWitnessEnabled(iface, pindexPrev) && block.vtx[0].wit.IsEmpty()) {
+    block.vtx[0].wit.vtxinwit.resize(1);
+    block.vtx[0].wit.vtxinwit[0].scriptWitness.stack.resize(1);
+    block.vtx[0].wit.vtxinwit[0].scriptWitness.stack[0] = nonce;
+  }
+}
+
+bool core_GenerateCoinbaseCommitment(CIface *iface, CBlock& block, CBlockIndex *pindexPrev)
+{
+  // std::vector<unsigned char> commitment;
+  int commitpos = GetWitnessCommitmentIndex(block);
+  std::vector<unsigned char> ret(32, 0x00);
+
+  if (iface->vDeployments[DEPLOYMENT_SEGWIT].nTimeout != 0) {
+    if (commitpos == -1) {
+      uint256 witnessroot = BlockWitnessMerkleRoot(block, NULL);
+      uint256 hashCommit;
+
+      CTxOut out;
+      out.nValue = 0;
+      out.scriptPubKey.resize(38);
+      out.scriptPubKey[0] = OP_RETURN; 
+      out.scriptPubKey[1] = 0x24;
+      out.scriptPubKey[2] = 0xaa;
+      out.scriptPubKey[3] = 0x21;
+      out.scriptPubKey[4] = 0xa9;
+      out.scriptPubKey[5] = 0xed;
+
+//      CHash256().Write(witnessroot.begin(), 32).Write(&ret[0], 32).Finalize(witnessroot.begin());
+      hashCommit = Hash(witnessroot.begin(), witnessroot.end(), ret.begin(), ret.end());
+      memcpy(&out.scriptPubKey[6], hashCommit.begin(), 32);
+      
+      //      commitment = std::vector<unsigned char>(out.scriptPubKey.begin(), out.scriptPubKey.end());
+      const_cast<std::vector<CTxOut>*>(&block.vtx[0].vout)->push_back(out);   
+      //      block.vtx[0].UpdateHash();
+    }
+  }
+
+  core_UpdateUncommittedBlockStructures(iface, block, pindexPrev);
+  // return commitment;
+
+  return (false);
+}
+
+
+
+
+int core_ComputeBlockVersion(CIface *params, CBlockIndex *pindexPrev)
+{
+  int32_t nVersion = VERSIONBITS_TOP_BITS;
+  VersionBitsCache *cache;
+
+  cache = GetVersionBitsCache(params);
+  if (!cache)
+    return (1);
+
+  for (int i = 0; i < (int)MAX_VERSION_BITS_DEPLOYMENTS; i++) {
+    ThresholdState state = VersionBitsState(pindexPrev, params, (DeploymentPos)i, *cache);
+    if (state == THRESHOLD_LOCKED_IN || state == THRESHOLD_STARTED) {
+      nVersion |= VersionBitsMask(params, (DeploymentPos)i);
+    }
+  }
+
+  return nVersion;
+}
+
+/**
+ * Validation for witness commitments.
+ * - Compute the witness hash (which is the hash including witnesses) of all the block's transactions, except the coinbase (where 0x0000....0000 is used instead).
+ * - The coinbase scriptWitness is a stack of a single 32-byte vector, containing a witness nonce (unconstrained).
+ * - We build a merkle tree with all those witness hashes as leaves (similar to the hashMerkleRoot in the block header).
+ * - There must be at least one output whose scriptPubKey is a single 36-byte push, the first 4 bytes of which are {0xaa, 0x21, 0xa9, 0xed}, and the following 32 bytes are SHA256^2(witness root, witness nonce). In case there are multiple, the last one is used.
+ */
+bool core_CheckBlockWitness(CIface *iface, CBlock *pblock, CBlockIndex *pindexPrev)
+{
+  bool fHaveWitness = false;
+
+  if (!iface || !pblock || !pindexPrev)
+    return true; /* n/a */
+
+  if (IsWitnessEnabled(iface, pindexPrev)) {
+    int commitpos = GetWitnessCommitmentIndex(*pblock);
+    if (commitpos != -1) {
+      uint256 hashWitness = BlockWitnessMerkleRoot(*pblock, NULL);
+
+      /* The malleation check is ignored; as the transaction tree itself already does not permit it, it is impossible to trigger in the witness tree. */
+      if (pblock->vtx[0].wit.vtxinwit.size() != 1 || 
+          pblock->vtx[0].wit.vtxinwit[0].scriptWitness.stack.size() != 1 || 
+          pblock->vtx[0].wit.vtxinwit[0].scriptWitness.stack[0].size() != 32) {
+        return false;
+      }
+
+      const cbuff& stack = pblock->vtx[0].wit.vtxinwit[0].scriptWitness.stack[0];
+      hashWitness = Hash(hashWitness.begin(), hashWitness.end(), stack.begin(), stack.end());
+//      CHash256().Write(hashWitness.begin(), 32).Write(&block.vtx[0].wit.vtxinwit[0].scriptWitness.stack[0][0], 32).Finalize(hashWitness.begin());
+      if (memcmp(hashWitness.begin(), &pblock->vtx[0].vout[commitpos].scriptPubKey[6], 32)) {
+        return false;
+      }
+
+      fHaveWitness = true;
+    }
+  }
+
+  /* No witness data is allowed in blocks that don't commit to witness data, as this would otherwise leave room for spam. */
+  if (!fHaveWitness) {
+    for (size_t i = 0; i < pblock->vtx.size(); i++) {
+      if (!pblock->vtx[i].wit.IsNull()) {
+        return false;
+      }
+    }
+  }
+
+  return (true);
+}
+
+static size_t WitnessSigOps(int witversion, const std::vector<unsigned char>& witprogram, const CScriptWitness& witness, int flags)
+{
+  if (witversion == 0) {
+    if (witprogram.size() == 20)
+      return 1;
+
+    if (witprogram.size() == 32 && witness.stack.size() > 0) {
+      CScript subscript(witness.stack.back().begin(), witness.stack.back().end());
+      return subscript.GetSigOpCount(true);
+    }
+  }
+
+  // Future flags may be implemented here.
+  return 0;
+}   
+
+
+size_t CountWitnessSigOps(const CScript& scriptSig, const CScript& scriptPubKey, const CScriptWitness* witness, unsigned int flags)
+{
+  static const CScriptWitness witnessEmpty;
+
+  if (flags && !(flags & SCRIPT_VERIFY_WITNESS))
+    return 0;
+//  assert((flags & SCRIPT_VERIFY_P2SH) != 0);
+
+  int witnessversion;
+  std::vector<unsigned char> witnessprogram;
+  if (scriptPubKey.IsWitnessProgram(witnessversion, witnessprogram)) {
+    return WitnessSigOps(witnessversion, witnessprogram, witness ? *witness : witnessEmpty, flags);
+  }
+
+  if (scriptPubKey.IsPayToScriptHash() && scriptSig.IsPushOnly()) {
+    CScript::const_iterator pc = scriptSig.begin();
+    vector<unsigned char> data;
+    while (pc < scriptSig.end()) {
+      opcodetype opcode;
+      scriptSig.GetOp(pc, opcode, data);
+    }
+    CScript subscript(data.begin(), data.end());
+    if (subscript.IsWitnessProgram(witnessversion, witnessprogram)) {
+      return WitnessSigOps(witnessversion, witnessprogram, witness ? *witness : witnessEmpty, flags);
+    }
+  }
+
+  return 0;
+}
+
+int64_t CTransaction::GetSigOpCost(tx_cache& mapInputs, int flags)
+{
+  int64_t nSigOps;
+
+  nSigOps = GetLegacySigOpCount() * SCALE_FACTOR;
+
+  if (IsCoinBase()) 
+    return nSigOps;
+
+  if ((flags == 0) || (flags & SCRIPT_VERIFY_P2SH)) {
+    unsigned int nSigOps = 0;
+    for (unsigned int i = 0; i < vin.size(); i++) {
+      CTxOut prevout;
+
+      if (!GetOutputFor(vin[i], mapInputs, prevout))
+        continue;
+
+      if (prevout.scriptPubKey.IsPayToScriptHash())
+        nSigOps += prevout.scriptPubKey.GetSigOpCount(vin[i].scriptSig) * SCALE_FACTOR;
+    }
+  }
+
+  if ((flags == 0) || (flags & SCRIPT_VERIFY_WITNESS)) {
+    for (unsigned int i = 0; i < vin.size(); i++) {   
+      CTxOut prevout;
+
+      if (!GetOutputFor(vin[i], mapInputs, prevout))
+        continue;
+
+      nSigOps += CountWitnessSigOps(vin[i].scriptSig, prevout.scriptPubKey, i < wit.vtxinwit.size() ? &wit.vtxinwit[i].scriptWitness : NULL, flags);
+    }
+  }
+
+  return nSigOps;
+}
+
+int64_t CTransaction::GetSigOpCost(MapPrevTx& mapInputs, int flags)
+{
+  int64_t nSigOps = GetLegacySigOpCount() * SCALE_FACTOR;
+
+  if (IsCoinBase()) 
+    return nSigOps;
+
+  if (flags && (flags & SCRIPT_VERIFY_P2SH)) {
+    nSigOps += GetP2SHSigOpCount(mapInputs) * SCALE_FACTOR;
+  }
+
+  for (unsigned int i = 0; i < vin.size(); i++) {   
+    const CTxOut &prevout = GetOutputFor(vin[i], mapInputs);
+    nSigOps += CountWitnessSigOps(vin[i].scriptSig, prevout.scriptPubKey, i < wit.vtxinwit.size() ? &wit.vtxinwit[i].scriptWitness : NULL, flags);
+  }
+
+  return nSigOps;
+}
 

@@ -770,7 +770,7 @@ if (err) {
     if (!wallet->CreateTransaction(vecSend, wtx, rkey, nFeeRet)) 
       return (SHERR_CANCELED);
 
-    if (!wallet->CommitTransaction(wtx, rkey))
+    if (!wallet->CommitTransaction(wtx))
       return (SHERR_CANCELED);
 //fprintf(stderr, "DEBUG: ProcessExecGenerateTx: COMMIT: %s\n", wtx.ToString().c_str()); 
   }
@@ -1192,7 +1192,7 @@ fprintf(stderr, "DEBUG: generate_exec_tx: insufficient balance (%llu) .. %llu re
     return (SHERR_CANCELED);
 //const std::vector<std::pair<CScript, int64> >& vecSend, CWalletTx& wtxNew, CReserveKey& reservekey, int64& nFeeRet))
 
-  if (!wallet->CommitTransaction(wtx, rkey))
+  if (!wallet->CommitTransaction(wtx))
     return (SHERR_CANCELED);
 
 #if 0

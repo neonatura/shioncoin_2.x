@@ -40,7 +40,7 @@ class USDEWallet : public CWallet
     void ReacceptWalletTransactions();
     int ScanForWalletTransactions(CBlockIndex* pindexStart, bool fUpdate = false);
     int64 GetTxFee(CTransaction tx);
-    bool CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey);
+    bool CommitTransaction(CWalletTx& wtxNew);
 
     bool CreateTransaction(const std::vector<std::pair<CScript, int64> >& vecSend, CWalletTx& wtxNew, CReserveKey& reservekey, int64& nFeeRet);
     bool CreateTransaction(CScript scriptPubKey, int64 nValue, CWalletTx& wtxNew, CReserveKey& reservekey, int64& nFeeRet);
@@ -53,6 +53,12 @@ class USDEWallet : public CWallet
     bool UnacceptWalletTransaction(const CTransaction& tx);
 
     int64 GetBlockValue(int nHeight, int64 nFees);
+
+    unsigned int GetTransactionWeight(const CTransaction& tx);
+
+    unsigned int GetVirtualTransactionSize(const CTransaction& tx);
+
+    bool AllowFree(double dPriority);
 };
 
 extern USDEWallet *usdeWallet;

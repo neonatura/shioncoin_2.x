@@ -43,7 +43,12 @@
 static const int USDE_PROTOCOL_VERSION = 1000400;
 
 #define USDE_COIN (uint64_t)100000000
-static const unsigned int USDE_MAX_BLOCK_SIZE = 1000000;
+
+#define USDE_MAX_BLOCK_SIZE 1000000
+
+#define USDE_MAX_BLOCK_SIZE_GEN USDE_MAX_BLOCK_SIZE/2
+#define USDE_MAX_TRANSACTION_WEIGHT USDE_MAX_BLOCK_SIZE_GEN/5
+
 static const int64 USDE_MIN_INPUT = 10000;
 static const int64 USDE_MIN_TX_FEE = 10000000;
 static const int64 USDE_MIN_RELAY_TX_FEE = 10000000;
@@ -52,6 +57,10 @@ static const int64 USDE_MAX_MONEY = 1600000000 * USDE_COIN;
 /** The official USDE maturity is 100 depth. */
 static const int USDE_COINBASE_MATURITY = 100;
 
+static const int64 USDE_MAX_TX_FEE = 1000 * SHC_COIN;
+
+/* scaling factor */
+static const int USDE_WITNESS_SCALE_FACTOR = SCALE_FACTOR;
 
 
 #endif /* __USDE_PROTO_H__ */

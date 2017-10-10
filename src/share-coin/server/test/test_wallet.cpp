@@ -47,6 +47,7 @@
 #include "test/test_wallet.h"
 #include "test/test_txidx.h"
 #include "chain.h"
+#include "txsignature.h"
 
 using namespace std;
 using namespace boost;
@@ -58,18 +59,9 @@ CScript TEST_COINBASE_FLAGS;
 
 int test_UpgradeWallet(void)
 {
-  int nMaxVersion = 0;//GetArg("-upgradewallet", 0);
-  if (nMaxVersion == 0) // the -upgradewallet without argument case
-  {
-    nMaxVersion = CLIENT_VERSION;
-    testWallet->SetMinVersion(FEATURE_LATEST); // permanently upgrade the wallet immediately
-  }
-  else
-    printf("Allowing wallet upgrade up to %i\n", nMaxVersion);
 
-  if (nMaxVersion > testWallet->GetVersion()) {
-    testWallet->SetMaxVersion(nMaxVersion);
-  }
+  testWallet->SetMinVersion(FEATURE_LATEST);
+  testWallet->SetMaxVersion(FEATURE_LATEST);
 
 }
 
@@ -111,7 +103,7 @@ bool test_LoadWallet(void)
       strErrors << _("Cannot write default address") << "\n";
   }
 
-  printf("%s", strErrors.str().c_str());
+  //printf("%s", strErrors.str().c_str());
 
   //RegisterWallet(testWallet);
 
@@ -136,9 +128,9 @@ bool test_LoadWallet(void)
     testWallet->ScanForWalletTransactions(pindexRescan, true);
     printf(" rescan      %15"PRI64d"ms\n", GetTimeMillis() - nStart);
   }
+#endif
 
   test_UpgradeWallet();
-#endif
 
   // Add wallet transactions that aren't already in a block to mapTransactions
   testWallet->ReacceptWalletTransactions(); 
@@ -336,19 +328,15 @@ int64 TESTWallet::GetTxFee(CTransaction tx)
 }
 
 
-bool TESTWallet::CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey)
+bool TESTWallet::CommitTransaction(CWalletTx& wtxNew)
 {
   {
     LOCK2(cs_main, cs_wallet);
-//    Debug("CommitTransaction:\n%s", wtxNew.ToString().c_str());
     {
       // This is only to keep the database open to defeat the auto-flush for the
       // duration of this scope.  This is the only place where this optimization
       // maybe makes sense; please don't do it anywhere else.
       CWalletDB* pwalletdb = fFileBacked ? new CWalletDB(strWalletFile,"r") : NULL;
-
-      // Take key pair from key pool so it won't be used again
-      reservekey.KeepKey();
 
       // Add tx to wallet, because if it has change it's also ours,
       // otherwise just for transaction history.
@@ -484,6 +472,19 @@ fprintf(stderr, "DEBUG: CreateTransaction: !SelectCoins\n");
           wtxNew.vin.push_back(CTxIn(coin.first->GetHash(),coin.second));
 }
 
+        unsigned int nIn = 0;
+        BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setCoins) {
+          CSignature sig(TEST_COIN_IFACE, &wtxNew, nIn);
+          const CWalletTx *wtx = coin.first;
+          if (!sig.SignSignature(*wtx)) {
+//fprintf(stderr, "DEBUG: CreateTransaction: !SignSignature(): %s\n", ((CWalletTx *)wtx)->ToString().c_str());
+            txdb.Close();
+            return false;
+          }
+          nIn++;
+        }
+wtxNew.print(TEST_COIN_IFACE);
+#if 0
         // Sign
         int nIn = 0;
         BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setCoins) {
@@ -494,19 +495,21 @@ fprintf(stderr, "DEBUG: CreateTransaction: !SelectCoins\n");
             return false;
           }
         }
+#endif
 
-        // Limit size
-        unsigned int nBytes = ::GetSerializeSize(*(CTransaction*)&wtxNew, SER_NETWORK, TEST_PROTOCOL_VERSION);
-        if (nBytes >= MAX_BLOCK_SIZE_GEN(iface)/5) {
-fprintf(stderr, "DEBUG: CreateTransaction: size exceed failure\n");
+        /* Ensure transaction does not breach a defined size limitation. */
+        unsigned int nWeight = GetTransactionWeight(wtxNew);
+        if (nWeight >= MAX_TRANSACTION_WEIGHT(iface)) {
           txdb.Close();
-          return false;
+          return (error(SHERR_INVAL, "The transaction size is too large."));
         }
+
+        unsigned int nBytes = GetVirtualTransactionSize(wtxNew);
         dPriority /= nBytes;
 
         // Check that enough fee is included
         int64 nPayFee = nTransactionFee * (1 + (int64)nBytes / 1000);
-        bool fAllowFree = CTransaction::AllowFree(dPriority);
+        bool fAllowFree = AllowFree(dPriority);
         int64 nMinFee = wtxNew.GetMinFee(TEST_COIN_IFACE, 1, fAllowFree, GMF_SEND);
         if (nFeeRet < max(nPayFee, nMinFee))
         {
@@ -585,6 +588,8 @@ bool TESTWallet::CreateAccountTransaction(string strFromAccount, const vector<pa
   CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
 
   wtxNew.strFromAccount = strFromAccount;
+
+fprintf(stderr, "DEBUG: TestWallet.CreateAccountTransaction()\n"); 
 
   int64 nValue = 0;
   BOOST_FOREACH (const PAIRTYPE(CScript, int64)& s, vecSend)
@@ -671,6 +676,18 @@ bool TESTWallet::CreateAccountTransaction(string strFromAccount, const vector<pa
         BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setCoins)
           wtxNew.vin.push_back(CTxIn(coin.first->GetHash(),coin.second));
 
+        unsigned int nIn = 0;
+        BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setCoins) {
+          CSignature sig(TEST_COIN_IFACE, &wtxNew, nIn);
+          if (!sig.SignSignature(*coin.first)) {
+            txdb.Close();
+            return false;
+          }
+
+          nIn++;
+        }
+wtxNew.print(TEST_COIN_IFACE);
+#if 0
         // Sign
         int nIn = 0;
         BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setCoins)
@@ -678,18 +695,21 @@ bool TESTWallet::CreateAccountTransaction(string strFromAccount, const vector<pa
             txdb.Close();
             return false;
           }
+#endif
 
-        // Limit size
-        unsigned int nBytes = ::GetSerializeSize(*(CTransaction*)&wtxNew, SER_NETWORK, TEST_PROTOCOL_VERSION);
-        if (nBytes >= MAX_BLOCK_SIZE_GEN(iface)/5) {
+        /* Ensure transaction does not breach a defined size limitation. */
+        unsigned int nWeight = GetTransactionWeight(wtxNew);
+        if (nWeight >= MAX_TRANSACTION_WEIGHT(iface)) {
           txdb.Close();
-          return false;
+          return (error(SHERR_INVAL, "The transaction size is too large."));
         }
+
+        unsigned int nBytes = GetVirtualTransactionSize(wtxNew);
         dPriority /= nBytes;
 
         // Check that enough fee is included
         int64 nPayFee = nTransactionFee * (1 + (int64)nBytes / 1000);
-        bool fAllowFree = CTransaction::AllowFree(dPriority);
+        bool fAllowFree = AllowFree(dPriority);
         int64 nMinFee = wtxNew.GetMinFee(TEST_COIN_IFACE, 1, fAllowFree, GMF_SEND);
         if (nFeeRet < max(nPayFee, nMinFee))
         {
@@ -714,3 +734,27 @@ bool TESTWallet::CreateAccountTransaction(string strFromAccount, CScript scriptP
   vecSend.push_back(make_pair(scriptPubKey, nValue));
   return CreateAccountTransaction(strFromAccount, vecSend, wtxNew, strError, nFeeRet);
 }
+
+
+unsigned int TESTWallet::GetTransactionWeight(const CTransaction& tx)
+{
+  unsigned int nBytes;
+
+  nBytes = ::GetSerializeSize(tx, SER_NETWORK, TEST_PROTOCOL_VERSION);
+
+  return (nBytes);
+}
+
+
+unsigned int TESTWallet::GetVirtualTransactionSize(const CTransaction& tx)
+{
+  return (GetTransactionWeight(tx));
+}
+
+bool TESTWallet::AllowFree(double dPriority)
+{
+  static const double block_daily = 360;
+  static const double block_bytes = 256;
+  return (dPriority > ((double)COIN * block_daily / block_bytes));
+}
+

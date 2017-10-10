@@ -29,6 +29,9 @@ void test_shcoind_init(void)
   //RegisterWallet(testWallet);
   RandAddSeedPerfmon();
 
+  iface->op_init(iface, NULL);
+
+
   /* initialize chain */
   {
     TESTTxDB txdb("cr");
@@ -41,6 +44,9 @@ void test_shcoind_init(void)
   /* initialize wallet */
   test_LoadWallet();
 
+
+  iface->nRuleChangeActivationThreshold = 5;
+  iface->nMinerConfirmationWindow = 5;
 
 //CBlock *test_block = test_GenerateBlock(); /* DEBUG: */
 

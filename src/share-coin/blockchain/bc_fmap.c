@@ -107,6 +107,7 @@ perror("bc_map_open [!reg]");
 
   map->fd = fd;
   map->size = st.st_size;
+  map->hdr = map->raw = NULL;
 
   descriptor_claim(fd, bc_iface_index(bc->name), DF_MAP);
 

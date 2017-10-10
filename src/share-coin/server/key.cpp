@@ -177,6 +177,7 @@ CKey& CKey::operator=(const CKey& b)
     if (!EC_KEY_copy(pkey, b.pkey))
         throw key_error("CKey::operator=(const CKey&) : EC_KEY_copy failed");
     fSet = b.fSet;
+    fCompressedPubKey = b.fCompressedPubKey;
     return (*this);
 }
 
@@ -418,21 +419,37 @@ static void _keyxor(unsigned char *buf, unsigned char *alt, size_t size)
 
 }
 
+/**
+ * Create a new unique key given "tag" context.
+ * @param tag A salt to purturb the calculation.
+ */ 
 CKey CKey::MergeKey(cbuff tag)
 {
   bool fCompr;
-  CSecret secret = GetSecret(fCompr);
-  cbuff pbuff(secret.begin(), secret.end());
-  uint160 mkey = Hash160(tag);
-  cbuff mbuff(mkey.begin(), mkey.end());
+  uint256 pkey;
+  uint256 mkey;
   unsigned char raw[32];
 
-  memcpy(raw, pbuff.data(), 32);
-  _keyxor(raw, mbuff.data(), mbuff.size());
+  /* hash input values */
+  {
+    CSecret secret = GetSecret(fCompr);
+    pkey = Hash(secret.begin(), secret.end());
+  }
+  mkey = Hash(tag.begin(), tag.end());
+  cbuff pbuff(pkey.begin(), pkey.end());
+  cbuff mbuff(mkey.begin(), mkey.end());
 
-  CKey key;
+  /* calculate new key */
+  memset(raw, 0, sizeof(raw));
+  memcpy(raw, pbuff.data(), MIN(32, pbuff.size()));
+  _keyxor(raw, mbuff.data(), MIN(32, mbuff.size()));
+
+  /* create a key secret */
   cbuff kbuff(raw, raw + 32);
   CSecret ksec(kbuff.begin(), kbuff.end());
+
+  /* create a key to return */
+  CKey key;
   key.SetSecret(ksec, fCompr);
   return (key);
 }

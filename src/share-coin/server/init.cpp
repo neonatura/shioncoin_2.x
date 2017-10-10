@@ -31,15 +31,17 @@
 #include "util.h"
 #include "ui_interface.h"
 #include "block.h"
+
+#define stack_t sigstack_t
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <boost/filesystem/convenience.hpp>
 #include <boost/interprocess/sync/file_lock.hpp>
 #include <boost/algorithm/string/predicate.hpp>
-
 #ifndef WIN32
 #include <signal.h>
 #endif
+#undef stack_t
 
 using namespace std;
 using namespace boost;

@@ -157,6 +157,9 @@ fprintf(stderr, "DEBUG: usde_FillBlockIndex: stopping at orphan '%s' @ height %d
     pindexNew->nBits          = block.nBits;
     pindexNew->nNonce         = block.nNonce;
 
+    if (lastIndex)
+      pindexNew->BuildSkip();
+
     if (!pindexNew->CheckIndex())
       return error(SHERR_INVAL, "LoadBlockIndex() : CheckIndex failed at height %d", pindexNew->nHeight);
 
@@ -502,14 +505,23 @@ bool usde_RestoreBlockIndex()
 {
   CIface *iface = GetCoinByIndex(USDE_COIN_IFACE);
   bc_t *chain = GetBlockChain(iface);
+  bc_t *chain_tx = GetBlockTxChain(iface);
   bc_t *bc;
   char path[PATH_MAX+1];
   unsigned char *sBlockData;
   size_t sBlockLen;
   unsigned int maxHeight;
   bcsize_t height;
+  int nBlockPos, nTxPos;
   int err;
   bool ret;
+
+
+  {
+    USDETxDB txdb("cr");
+    txdb.Close();
+  }
+
 
 #if 0
   {
@@ -528,6 +540,12 @@ fprintf(stderr, "DEBUG: usde_RestoreBlockIndex: erased current block-chain index
 
   if (!usde_CreateGenesisBlock())
     return (false);
+
+  /* reset hash-map tables */
+  bc_table_clear(chain);
+  bc_table_clear(chain_tx);
+
+  USDETxDB txdb;
 
   uint256 hash = usde_hashGenesisBlock;
   {
@@ -559,15 +577,23 @@ fprintf(stderr, "DEBUG: usde_RestoreBlockIndex: erased current block-chain index
       /* write tx ref's */
       BOOST_FOREACH(CTransaction& tx, block.vtx) {
         tx.WriteTx(USDE_COIN_IFACE, height);
+
+
+        nBlockPos = nTxPos = -1;
+        (void)bc_idx_find(chain, hash.GetRaw(), NULL, &nBlockPos);
+        (void)bc_idx_find(chain_tx, tx.GetHash().GetRaw(), NULL, &nTxPos);
+        CDiskTxPos posThisTx(USDE_COIN_IFACE, nBlockPos, nTxPos);
+        txdb.AddTxIndex(tx, posThisTx, height);
       }
 
     }
-fprintf(stderr, "DEBUG: usde_RestoreBlocKIndex: wrote %d blocks\n", height);
+    Debug("usde_RestoreBlocKIndex: rebuilt database -- wrote %d blocks\n", height);
 
     bc_close(bc);
   }
+  bc_idle(chain);
+  bc_idle(chain_tx);
 
-  USDETxDB txdb;
   txdb.WriteHashBestChain(hash);
   ret = txdb.LoadBlockIndex();
   txdb.Close();

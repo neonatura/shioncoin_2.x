@@ -105,12 +105,21 @@ CAddress GetLocalAddress(const CNetAddr *paddrPeer = NULL);
 CNode* ConnectNode(int ifaceIndex, CAddress addrConnect, const char *strDest = NULL, int64 nTimeout=0);
 bool SeenLocal(int ifaceIndex, const CService& addr);
 
+#define MSG_TYPE_MAX MSG_BLOCK
 
+#define MSG_WITNESS_FLAG (1 << 30)
+#define MSG_TYPE_MASK (0xffffffff >> 2)
+
+/* inv only uses MSG_TX and MSG_BLOCK */
 enum
 {
-    MSG_TX = 1,
+    MSG_TX = 1, 
     MSG_BLOCK,
-    MSG_FILTERED_BLOCK /* bloom */
+    MSG_FILTERED_BLOCK, /* bloom */
+    MSG_CMPCT_BLOCK,
+    MSG_WITNESS_BLOCK = MSG_BLOCK | MSG_WITNESS_FLAG,
+    MSG_WITNESS_TX = MSG_TX | MSG_WITNESS_FLAG,
+    MSG_FILTERED_WITNESS_BLOCK = MSG_FILTERED_BLOCK | MSG_WITNESS_FLAG
 };
 
 class CRequestTracker

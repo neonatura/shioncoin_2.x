@@ -32,6 +32,7 @@
 #include "test_txidx.h"
 #include "test_wallet.h"
 #include "chain.h"
+#include "coin.h"
 
 #ifdef WIN32
 #include <string.h>
@@ -289,11 +290,11 @@ static bool test_ConnectInputs(CTransaction *tx, MapPrevTx inputs, map<uint256, 
     if (!(fBlock && (GetBestHeight(TEST_COIN_IFACE < TEST_Checkpoints::GetTotalBlocksEstimate()))))
     {
       // Verify signature
-      if (!VerifySignature(txPrev, *tx, i, fStrictPayToScriptHash, 0))
+      if (!VerifySignature(TEST_COIN_IFACE, txPrev, *tx, i, fStrictPayToScriptHash, 0))
       {
         // only during transition phase for P2SH: do not invoke anti-DoS code for
         // potentially old clients relaying bad P2SH transactions
-        if (fStrictPayToScriptHash && VerifySignature(txPrev, *tx, i, false, 0))
+        if (fStrictPayToScriptHash && VerifySignature(TEST_COIN_IFACE, txPrev, *tx, i, false, 0))
           return error(SHERR_INVAL, "ConnectInputs() : %s P2SH VerifySignature failed", tx->GetHash().ToString().substr(0,10).c_str());
 
         return error(SHERR_INVAL, "ConnectInputs() : %s VerifySignature failed", tx->GetHash().ToString().substr(0,10).c_str());
@@ -324,9 +325,27 @@ static bool test_ConnectInputs(CTransaction *tx, MapPrevTx inputs, map<uint256, 
   return true;
 }
 
+int core_ComputeBlockVersion(CIface *params, CBlockIndex *pindexPrev);
+
+
+
+
+static int64_t test_GetTxWeight(const CTransaction& tx)
+{
+  int64_t weight = 0;
+
+  weight += ::GetSerializeSize(tx, SER_NETWORK, TEST_PROTOCOL_VERSION | SERIALIZE_TRANSACTION_NO_WITNESS) * (TEST_WITNESS_SCALE_FACTOR - 1);
+  weight += ::GetSerializeSize(tx, SER_NETWORK, TEST_PROTOCOL_VERSION);
+
+  return (weight);
+}
+
+
+
 CBlock* test_CreateNewBlock(const CPubKey& rkey, CBlockIndex *pindexPrev)
 {
   CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
+  bool fWitnessEnabled;
 
   if (!pindexPrev)
     pindexPrev = GetBestBlockIndex(iface);
@@ -337,6 +356,8 @@ CBlock* test_CreateNewBlock(const CPubKey& rkey, CBlockIndex *pindexPrev)
   if (!pblock.get())
     return NULL;
 
+  fWitnessEnabled = IsWitnessEnabled(iface, pindexPrev);
+
   // Create coinbase tx
   CTransaction txNew;
   txNew.vin.resize(1);
@@ -346,6 +367,8 @@ CBlock* test_CreateNewBlock(const CPubKey& rkey, CBlockIndex *pindexPrev)
 
   // Add our coinbase tx as first transaction
   pblock->vtx.push_back(txNew);
+
+  pblock->nVersion = core_ComputeBlockVersion(iface, pindexPrev);
 
   // Collect memory pool transactions into the block
   int64 nFees = 0;
@@ -360,9 +383,14 @@ CBlock* test_CreateNewBlock(const CPubKey& rkey, CBlockIndex *pindexPrev)
     {
       CTransaction& tx = (*mi).second;
       if (tx.IsCoinBase() || !tx.IsFinal(TEST_COIN_IFACE)) {
-fprintf(stderr, "DEBUG: test_CrateNewBlock: skipping non-finalized mempool\n");
+        fprintf(stderr, "DEBUG: test_CrateNewBlock: skipping non-finalized mempool\n");
         continue;
-}
+      }
+
+      if (!fWitnessEnabled && !tx.wit.IsNull()) {
+        /* cannot reference a witness-enabled tx from a non-witness block */
+        continue;
+      }
 
       TESTOrphan* porphan = NULL;
       double dPriority = 0;
@@ -424,7 +452,8 @@ continue;
     map<uint256, CTxIndex> mapTestPool;
     uint64 nBlockSize = 1000;
     uint64 nBlockTx = 0;
-    int nBlockSigOps = 100;
+    int nSigOpCost = 100;
+    int64_t nBlockWeight = 4000;
     while (!mapPriority.empty())
     {
       // Take highest priority transaction off priority queue
@@ -432,23 +461,17 @@ continue;
       CTransaction& tx = *(*mapPriority.begin()).second;
       mapPriority.erase(mapPriority.begin());
 
+      int64_t nTxWeight = test_GetTxWeight(tx);
+      if (nBlockWeight + nTxWeight > MAX_BLOCK_WEIGHT(iface))
+        continue; /* too many puppies */
+
       // Size limits
       unsigned int nTxSize = ::GetSerializeSize(tx, SER_NETWORK, TEST_PROTOCOL_VERSION);
-      if (nBlockSize + nTxSize >= MAX_BLOCK_SIZE_GEN(iface)) {
-fprintf(stderr, "DEBUG: test_CrateNewBlock: nTxSize too big (%d)\n", nTxSize);
-        continue;
-}
-
-      // Legacy limits on sigOps:
-      unsigned int nTxSigOps = tx.GetLegacySigOpCount();
-      if (nBlockSigOps + nTxSigOps >= MAX_BLOCK_SIGOPS(iface)) {
-fprintf(stderr, "DEBUG: test_CrateNewBlock: too many sigops\n");
-        continue;
-}
 
       // Transaction fee required depends on block size
       // testd: Reduce the exempted free transactions to 500 bytes (from Bitcoin's 3000 bytes)
-      bool fAllowFree = (nBlockSize + nTxSize < 1500 || CTransaction::AllowFree(dPriority));
+      CWallet *wallet = GetWallet(iface);
+      bool fAllowFree = (nBlockSize + nTxSize < 1500 || wallet->AllowFree(dPriority));
       int64 nMinFee = tx.GetMinFee(nBlockSize, fAllowFree, GMF_BLOCK);
 
       // Connecting shouldn't fail due to dependency on other memory pool transactions
@@ -471,26 +494,28 @@ fprintf(stderr, "DEBUG: test_CrateNewBlock: too many sigops\n");
       if (nTxFees < nMinFee) {
 fprintf(stderr, "DEBUG: test_CrateNewBlock: nTxFees < nMinFee\n");
         continue;
-}
+      }
 
-      nTxSigOps += tx.GetP2SHSigOpCount(mapInputs);
-      if (nBlockSigOps + nTxSigOps >= MAX_BLOCK_SIGOPS(iface)) {
-fprintf(stderr, "DEBUG: >MAX_BLOCK_SIGOPS\n");
+      /* restrict maximum sigops. */
+      int64_t nCost = tx.GetSigOpCost(mapInputs);
+      if (nCost > MAX_TX_SIGOP_COST(iface))
         continue;
-}
+      if (nSigOpCost + nCost > MAX_BLOCK_SIGOP_COST(iface))
+        continue;
 
       if (!test_ConnectInputs(&tx, mapInputs, mapTestPoolTmp, CDiskTxPos(0,0,0), pindexPrev, false, true)) {
 fprintf(stderr, "DEBUG: !test_ConnectInputs()\n");
         continue;
-}
+      }
       mapTestPoolTmp[tx.GetHash()] = CTxIndex(CDiskTxPos(0,0,0), tx.vout.size());
       swap(mapTestPool, mapTestPoolTmp);
 
       // Added
       pblock->vtx.push_back(tx);
       nBlockSize += nTxSize;
+      nBlockWeight += nTxWeight;
       ++nBlockTx;
-      nBlockSigOps += nTxSigOps;
+      nSigOpCost += nCost;
       nFees += nTxFees;
 
       // Add transactions that depend on this one to the priority queue
@@ -532,6 +557,8 @@ fprintf(stderr, "DEBUG: !test_ConnectInputs()\n");
   pblock->UpdateTime(pindexPrev);
   pblock->nBits          = pblock->GetNextWorkRequired(pindexPrev);
   pblock->nNonce         = 0;
+
+  core_GenerateCoinbaseCommitment(iface, *pblock, pindexPrev);
 
   return pblock.release();
 }
@@ -748,8 +775,10 @@ fprintf(stderr, "DEBUG: TEST_CTxMemPool:accept: warning: coinbase: %s", tx.ToStr
     }
 
     // Check for non-standard pay-to-script-hash in inputs
-    if (!tx.AreInputsStandard(mapInputs) && !fTestNet)
+    if (!tx.AreInputsStandard(TEST_COIN_IFACE, mapInputs) && !fTestNet) {
+      tx.print(TEST_COIN_IFACE);
       return error(SHERR_INVAL, "CTxMemPool::accept() : nonstandard transaction input");
+    }
 
     // Note: if you modify this code to accept non-standard transactions, then
     // you should add code here to check that the transaction does a
@@ -1009,11 +1038,21 @@ bool TESTBlock::CheckBlock()
 {
   CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
 
-  if (vtx.empty() || vtx.size() > TEST_MAX_BLOCK_SIZE || ::GetSerializeSize(*this, SER_NETWORK, TEST_PROTOCOL_VERSION) > TEST_MAX_BLOCK_SIZE)
-    return error(SHERR_INVAL, "TEST:CheckBlock: size limits failed");
+  if (vtx.empty()) {
+    return (trust(-100, "(test) CheckBlock: block submitted with zero transactions"));
+  }
 
-  if (vtx.empty() || !vtx[0].IsCoinBase())
-    return error(SHERR_INVAL, "CheckBlock() : first tx is not coinbase");
+  int64_t weight = GetBlockWeight();
+  if (weight > MAX_BLOCK_WEIGHT(iface)) {
+    return (trust(-100, "(test) CheckBlock: block weight (%d) > max (%d)", weight, MAX_BLOCK_WEIGHT(iface)));
+  }
+
+  if (!vtx[0].IsCoinBase()) {
+    return (trust(-100, "(test) ChecKBlock: first transaction is not coin base"));
+  }
+
+  if (!vtx[0].IsCoinBase())
+    return error(SHERR_INVAL, "(test) CheckBlock: first tx is not coinbase.");
 
   // Check proof of work matches claimed amount
   if (!test_CheckProofOfWork(GetPoWHash(), nBits)) {
@@ -1061,6 +1100,14 @@ bool TESTBlock::CheckBlock()
   // Check merkleroot
   if (hashMerkleRoot != BuildMerkleTree()) {
     return error(SHERR_INVAL, "CheckBlock() : hashMerkleRoot mismatch");
+  }
+
+  blkidx_t *blockIndex = GetBlockTable(TEST_COIN_IFACE);
+  map<uint256, CBlockIndex*>::iterator miPrev = blockIndex->find(hashPrevBlock);
+  if (miPrev != blockIndex->end()) {
+    CBlockIndex *pindexPrev = (*miPrev).second;
+    if (!core_CheckBlockWitness(iface, (CBlock *)this, pindexPrev))
+      return (trust(-10, "(test) CheckBlock: invalid witness integrity."));
   }
 
   return true;
@@ -1490,8 +1537,14 @@ bool TESTBlock::AddToBlockIndex()
   {
     pindexNew->pprev = (*miPrev).second;
     pindexNew->nHeight = pindexNew->pprev->nHeight + 1;
+    pindexNew->BuildSkip();
   }
+
   pindexNew->bnChainWork = (pindexNew->pprev ? pindexNew->pprev->bnChainWork : 0) + pindexNew->GetBlockWork();
+
+  if (IsWitnessEnabled(iface, pindexNew->pprev)) {
+    pindexNew->nStatus |= BIS_OPT_WITNESS;
+  }
 
   if (pindexNew->bnChainWork > bnBestChainWork) {
     TESTTxDB txdb;
@@ -1553,39 +1606,22 @@ bool TESTBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)
       }
     }
 
-    nSigOps += tx.GetLegacySigOpCount();
-    if (nSigOps > MAX_BLOCK_SIGOPS(iface))
-      return error(SHERR_INVAL, "ConnectBlock() : too many sigops");
-
-#if 0
-    memcpy(b_hash, tx.GetHash().GetRaw(), sizeof(bc_hash_t));
-    err = bc_find(bc, b_hash, &nTxPos); 
-    if (err) {
-      return error(SHERR_INVAL, "TESTBlock::ConncetBlock: error finding tx hash.");
-    }
-#endif
-
     MapPrevTx mapInputs;
     CDiskTxPos posThisTx(TEST_COIN_IFACE, nBlockPos, nTxPos);
-    if (!tx.IsCoinBase())
-    {
+    if (!tx.IsCoinBase()) {
       bool fInvalid;
       if (!tx.FetchInputs(txdb, mapQueuedChanges, this, false, mapInputs, fInvalid)) {
         sprintf(errbuf, "TEST::ConnectBlock: FetchInputs failed for tx '%s' @ height %u\n", tx.GetHash().GetHex().c_str(), (unsigned int)nBlockPos);
         return error(SHERR_INVAL, errbuf);
       }
+    }
 
-      if (fStrictPayToScriptHash)
-      {
-        // Add in sigops done by pay-to-script-hash inputs;
-        // this is to prevent a "rogue miner" from creating
-        // an incredibly-expensive-to-validate block.
-        nSigOps += tx.GetP2SHSigOpCount(mapInputs);
-        if (nSigOps > MAX_BLOCK_SIGOPS(iface)) {
-          return error(SHERR_INVAL, "ConnectBlock() : too many sigops");
-        }
-      }
+    nSigOps += tx.GetSigOpCost(mapInputs);
+    if (nSigOps > MAX_BLOCK_SIGOP_COST(iface)) {
+      return (trust(-100, "(test) ConnectBlock: sigop cost exceeded maximum (%d > %d)", nSigOps, MAX_BLOCK_SIGOP_COST(iface)));
+    }
 
+    if (!tx.IsCoinBase()) {
       nFees += tx.GetValueIn(mapInputs)-tx.GetValueOut();
 
       if (!test_ConnectInputs(&tx, mapInputs, mapQueuedChanges, posThisTx, pindex, true, false, fStrictPayToScriptHash))
@@ -1637,6 +1673,33 @@ return false;
 
   return true;
 }
+
+#if 0
+/* coin.cpp */
+bool TESTBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)
+{
+  CIface *iface = GetCoinByIndex(ifaceIndex);
+  shtime_t ts;
+  bool ret;
+
+  /* redundant */
+  if (!CheckBlock())
+    return false;
+
+  ret = core_ConnectBlock(this, pindex); 
+  if (!ret) {
+    return (error(SHERR_INVAL, "TestBlock.ConnectBlock: error connecting block '%s'.", GetHash().GetHex().c_str()));
+  }
+
+  timing_init("SyncWithWallets", &ts);
+  BOOST_FOREACH(CTransaction& tx, vtx) {
+    SyncWithWallets(iface, tx, this);
+  }
+  timing_term(TEST_COIN_IFACE, "SyncWithWallets", &ts);
+
+  return true;
+}
+#endif
 
 bool TESTBlock::ReadBlock(uint64_t nHeight)
 {
@@ -1872,3 +1935,12 @@ bool TESTBlock::SetBestChain(CBlockIndex* pindexNew)
   return true;
 }
 
+int64_t TESTBlock::GetBlockWeight()
+{
+  int64_t weight = 0;
+
+  weight += ::GetSerializeSize(*this, SER_NETWORK, TEST_PROTOCOL_VERSION | SERIALIZE_TRANSACTION_NO_WITNESS) * (TEST_WITNESS_SCALE_FACTOR - 1);
+  weight += ::GetSerializeSize(*this, SER_NETWORK, TEST_PROTOCOL_VERSION);
+
+  return (weight);
+}

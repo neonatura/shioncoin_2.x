@@ -50,6 +50,10 @@ static int shc_init(CIface *iface, void *_unused_)
   int ifaceIndex = GetCoinIndex(iface);
   int err;
 
+
+  iface->nRuleChangeActivationThreshold = 9072;
+  iface->nMinerConfirmationWindow = 12096;
+
   shc_RegisterRPCOp();
 
   shcWallet = new SHCWallet();
@@ -288,8 +292,10 @@ coin_iface_t shc_coin_iface = {
   SHC_MIN_INPUT,
   SHC_MAX_BLOCK_SIZE,
   SHC_MAX_ORPHAN_TRANSACTIONS,
+  SHC_MAX_TRANSACTION_WEIGHT,
   SHC_MIN_TX_FEE,
   SHC_MIN_RELAY_TX_FEE,
+  SHC_MAX_TX_FEE,
   SHC_MAX_MONEY,
   SHC_COINBASE_MATURITY, 
   SHC_MAX_SIGOPS,

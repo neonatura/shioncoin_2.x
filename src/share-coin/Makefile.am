@@ -87,6 +87,8 @@ common_includes = \
 	server/mruset.h \
 	server/netbase.h \
 	server/net.h \
+	server/txsignature.h \
+	server/versionbits.h \
 	server/protocol.h \
 	server/script.h \
 	server/scrypt.h \
@@ -180,6 +182,8 @@ server_sources = \
 	server/rpc/rpcnet.cpp \
 	server/rpc/rpc_proto.cpp \
 	server/rpc/rpcrawtransaction.cpp \
+	server/versionbits.cpp \
+	server/txsignature.cpp \
 	server/protocol.cpp \
 	server/block.cpp \
 	server/coin.cpp \
@@ -189,6 +193,7 @@ server_sources = \
 	server/bloom.cpp \
 	server/global.cpp \
 	server/block_merkle.cpp \
+	server/wit_merkle.cpp \
 	server/crypter.cpp \
 	server/txidx.cpp \
 	server/init.cpp \

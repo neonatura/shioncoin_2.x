@@ -134,8 +134,22 @@ bool CCoinAddr::GetKeyID(CKeyID &keyID) const
         keyID = CKeyID(id);
         return true;
       }
-    default: return false;
   }
+  return (false);
+}
+
+bool CCoinAddr::GetScriptID(CScriptID& scriptID) const 
+{
+  if (!IsValid())
+    return false;
+  if (nVersion != SCRIPT_ADDRESS &&
+      nVersion != SCRIPT_ADDRESS_TEST)
+    return false;
+
+  uint160 id;
+  memcpy(&id, &vchData[0], 20);
+  scriptID = CScriptID(id);
+  return (true);
 }
 
 

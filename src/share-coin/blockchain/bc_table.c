@@ -264,3 +264,29 @@ void bc_table_close(bc_t *bc)
   bc_unlock();
 
 }
+
+static int _bc_table_clear(bc_t *bc)
+{
+  int err;
+
+  err = bc_table_open(bc);
+  if (err)
+    return (err);
+
+  /* mark entire hash-map table as 'search required'. */
+  memset(bc->tab_map.raw, '\000', bc->tab_map.size - sizeof(bc_hdr_t));
+
+  return (0);
+}
+
+int bc_table_clear(bc_t *bc)
+{
+  int err;
+
+  bc_lock();
+  err = _bc_table_clear(bc);
+  bc_unlock();
+
+  return (err);
+}
+

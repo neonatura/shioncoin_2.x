@@ -46,7 +46,12 @@
 static const int TEST_PROTOCOL_VERSION = 1000000;
 
 #define TEST_COIN (uint64_t)100000000
-static const unsigned int TEST_MAX_BLOCK_SIZE = 1000000;
+
+#define TEST_MAX_BLOCK_SIZE 1000000
+
+#define TEST_MAX_BLOCK_SIZE_GEN TEST_MAX_BLOCK_SIZE/2
+#define TEST_MAX_TRANSACTION_WEIGHT TEST_MAX_BLOCK_SIZE_GEN/5
+
 static const int64 TEST_MIN_INPUT = 100;
 static const int64 TEST_MIN_TX_FEE = 10000;
 static const int64 TEST_MIN_RELAY_TX_FEE = 10000;
@@ -54,7 +59,10 @@ static const int64 TEST_MAX_MONEY = 1600000000 * TEST_COIN;
 //static const int TEST_COINBASE_MATURITY = 100;
 static const int TEST_COINBASE_MATURITY = 10;
 
+static const int64 TEST_MAX_TX_FEE = 1000 * SHC_COIN;
 
+/* scaling factor */
+static const int TEST_WITNESS_SCALE_FACTOR = SCALE_FACTOR;
 
 #endif /* __TEST_PROTO_H__ */
 

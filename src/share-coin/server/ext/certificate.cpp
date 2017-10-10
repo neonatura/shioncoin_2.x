@@ -1174,7 +1174,7 @@ int init_license_tx(CIface *iface, string strAccount, uint160 hashCert, CWalletT
   /* ship 'er off */
   if (!CreateTransactionWithInputTx(iface,
         vecSend, int_wtx, nOut, wtx, rkey, nRetFee) ||
-      !wallet->CommitTransaction(wtx, rkey)) {
+      !wallet->CommitTransaction(wtx)) {
     error(SHERR_CANCELED, "error paying certificate owner the license fee.");
     return (SHERR_CANCELED);
   }
@@ -1287,7 +1287,7 @@ int init_license_tx(CIface *iface, string strAccount, uint160 hashCert, CWalletT
     int64 nRetFee = MAX(iface->min_tx_fee, wtx.vout[0].nValue - nCertFee);
     if (!CreateTransactionWithInputTx(iface,
           vecSend, wtx, nTxOut, l_wtx, rkey, nRetFee) ||
-        !wallet->CommitTransaction(l_wtx, rkey)) {
+        !wallet->CommitTransaction(l_wtx)) {
       error(SHERR_CANCELED, "error paying certificate owner the license fee.");
       return (SHERR_CANCELED);
     }
@@ -1535,7 +1535,7 @@ int init_ident_donate_tx(CIface *iface, string strAccount, uint64_t nValue, uint
     return (SHERR_CANCELED);
 }
 
-  if (!wallet->CommitTransaction(t_wtx, rkey)) {
+  if (!wallet->CommitTransaction(t_wtx)) {
     return (SHERR_CANCELED);
 }
 
@@ -1609,7 +1609,7 @@ int init_ident_stamp_tx(CIface *iface, std::string strAccount, std::string strCo
     return (SHERR_CANCELED);
   }
 
-  if (!wallet->CommitTransaction(wtx, rkey)) {
+  if (!wallet->CommitTransaction(wtx)) {
     return (SHERR_CANCELED);
   }
 
@@ -1680,7 +1680,7 @@ int init_ident_certcoin_tx(CIface *iface, string strAccount, uint64_t nValue, ui
 CTransaction& pr_tx = (CTransaction&)wtx;
     return (SHERR_CANCELED);
   }
-  if (!wallet->CommitTransaction(wtx, rkey)) {
+  if (!wallet->CommitTransaction(wtx)) {
 CTransaction *tx = (CTransaction *)&wtx;
     return (SHERR_CANCELED);
   }

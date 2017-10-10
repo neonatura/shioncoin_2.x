@@ -45,10 +45,11 @@ using namespace json_spirit;
 #include "txext.h"
 #include "matrix.h"
 
+typedef std::map<uint256, CTransaction> tx_cache;
 
 #define BIS_FAIL_VALID 32
 #define BIS_FAIL_CHILD 64
-
+#define BIS_OPT_WITNESS 128
 
 typedef std::vector<uint256> HashList;
 
@@ -464,6 +465,75 @@ typedef std::map<uint256, CBlockIndex*> blkidx_t;
 #define TX_VERSION TXF_VERSION
 #define TX_VERSION_2 TXF_VERSION_2
 
+#define SERIALIZE_TRANSACTION_NO_WITNESS 0x40000000
+
+
+struct CScriptWitness
+{
+    // Note that this encodes the data elements being pushed, rather than
+    // encoding them as a CScript that pushes them.
+    stack_t stack;
+    
+    // Some compilers complain without a default constructor
+    CScriptWitness() { }
+
+    bool IsNull() const { return stack.empty(); }
+
+    std::string ToString() const; 
+};
+
+class CTxInWitness
+{
+
+  public:
+    CScriptWitness scriptWitness;
+
+
+    IMPLEMENT_SERIALIZE
+    (
+        READWRITE(scriptWitness.stack);
+    )
+
+    bool IsNull() const { return scriptWitness.IsNull(); }
+
+    CTxInWitness() { }
+};
+
+class CTxWitness
+{
+
+  public:
+    /** In case vtxinwit is missing, all entries are treated as if they were empty CTxInWitnesses */
+    std::vector<CTxInWitness> vtxinwit;
+
+    bool IsEmpty() const { return vtxinwit.empty(); }
+
+    bool IsNull() const
+    {
+        for (size_t n = 0; n < vtxinwit.size(); n++) {
+            if (!vtxinwit[n].IsNull()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    void SetNull()
+    {
+        vtxinwit.clear();
+    }
+
+
+    IMPLEMENT_SERIALIZE
+    (
+      for (size_t n = 0; n < vtxinwit.size(); n++) {
+        READWRITE(vtxinwit[n]);
+      }
+    )
+
+
+};
+
 class CTransactionCore
 {
   public:
@@ -485,6 +555,7 @@ class CTransactionCore
     int nFlag;
     std::vector<CTxIn> vin;
     std::vector<CTxOut> vout;
+    CTxWitness wit;
     unsigned int nLockTime;
 
     CTransactionCore()
@@ -494,11 +565,52 @@ class CTransactionCore
 
     IMPLEMENT_SERIALIZE
     (
-        //READWRITE(this->nVersion);
+
         READWRITE(this->nFlag);
-        nVersion = 1;//this->nVersion;
-        READWRITE(vin);
-        READWRITE(vout);
+//        nVersion = 1;//this->nVersion;
+
+        if (fRead) {
+          unsigned char flag = 0;
+
+          READWRITE(vin);
+
+          if (vin.size() == 0 && !(nVersion & SERIALIZE_TRANSACTION_NO_WITNESS)) {
+            READWRITE(flag);
+            if (flag != 0) {
+              READWRITE(vin);
+              READWRITE(vout);
+            }
+          } else {
+            READWRITE(vout);
+          }
+          if ((flag & 1) && !(nVersion & SERIALIZE_TRANSACTION_NO_WITNESS)) {
+            flag ^= 1;
+            const_cast<CTxWitness*>(&wit)->vtxinwit.resize(vin.size());
+            //wit.vtxinwit.resize(vin.size());
+            READWRITE(wit);
+          }
+
+        } else {
+          unsigned char flag = 0;
+
+          if (!(nVersion & SERIALIZE_TRANSACTION_NO_WITNESS)) {
+            if (!wit.IsNull()) {
+              flag |= 1;
+            }
+          }
+          if (flag) {
+            std::vector<CTxIn> vinDummy;
+            READWRITE(vinDummy);
+            READWRITE(flag);
+          }
+          READWRITE(vin);
+          READWRITE(vout);
+          if (flag & 1) {
+            const_cast<CTxWitness*>(&wit)->vtxinwit.resize(vin.size());
+            //wit.vtxinwit.resize(vin.size());
+            READWRITE(wit);
+          }
+        }
         READWRITE(nLockTime);
     )
 
@@ -507,6 +619,7 @@ class CTransactionCore
         nFlag = CTransactionCore::TXF_VERSION;
         vin.clear();
         vout.clear();
+        wit.SetNull();
         nLockTime = 0;
     }
 
@@ -515,6 +628,7 @@ class CTransactionCore
       nFlag = tx.nFlag;
       vin = tx.vin;
       vout = tx.vout;
+      wit = tx.wit;
       nLockTime = tx.nLockTime;
     }
 
@@ -610,6 +724,11 @@ public:
 
     uint256 GetHash() const
     {
+      return SerializeHash(*this, SERIALIZE_TRANSACTION_NO_WITNESS);
+    }
+
+    uint256 GetWitnessHash() const
+    {
       return SerializeHash(*this);
     }
 
@@ -659,7 +778,7 @@ public:
         @return True if all inputs (scriptSigs) use only standard transaction forms
         @see CTransaction::FetchInputs
     */
-    bool AreInputsStandard(const MapPrevTx& mapInputs) const;
+    bool AreInputsStandard(int ifaceIndex, const MapPrevTx& mapInputs) const;
 
     /** Count ECDSA signature operations the old-fashioned (pre-0.6) way
         @return number of sigops this transaction's outputs will produce when spent
@@ -674,6 +793,10 @@ public:
         @see CTransaction::FetchInputs
      */
     unsigned int GetP2SHSigOpCount(const MapPrevTx& mapInputs) const;
+
+    int64_t GetSigOpCost(MapPrevTx& mapInputs, int flags = 0);
+
+    int64_t GetSigOpCost(tx_cache& mapInputs, int flags = 0);
 
     /** Amount of bitcoins spent by this transaction.
         @return sum of all outputs (note: does not include fees)
@@ -700,14 +823,10 @@ public:
         @return	Sum of value of all inputs (scriptSigs)
         @see CTransaction::FetchInputs
      */
-    int64 GetValueIn(const MapPrevTx& mapInputs) const;
+    int64 GetValueIn(const MapPrevTx& mapInputs);
 
-    static bool AllowFree(double dPriority)
-    {
-        // Large (in bytes) low-priority (new, small-coin) transactions
-        // need a fee.
-        return dPriority > COIN * 700 / 250; // usde: 480 blocks found a day. Priority cutoff is 1 usde day / 250 bytes.
-    }
+    int64 GetValueIn(tx_cache& mapInputs);
+
 
     int64 GetMinFee(int ifaceIndex, unsigned int nBlockSize=1, bool fAllowFree=true, enum GetMinFee_mode mode=GMF_BLOCK) const
     {
@@ -1005,9 +1124,14 @@ public:
     /* fmap */
     bool ConnectInputs(int ifaceIndex, const CBlockIndex* pindexBlock, tx_map& mapOutput, map<uint256, CTransaction> mapTx, int& nSigOps, int64& nFees, bool fVerifySig = true, bool fVerifyInputs = false, bool fRequireInputs = false);
 
+    bool GetOutputFor(const CTxIn& input, tx_cache& inputs, CTxOut& retOut);
+
 protected:
     /* leveldb */
     const CTxOut& GetOutputFor(const CTxIn& input, const MapPrevTx& inputs) const;
+
+
+
 };
 
 class CBlockHeader
@@ -1248,6 +1372,9 @@ class CBlock : public CBlockHeader
     virtual bool VerifyCheckpoint(int nHeight) = 0;
     virtual uint64_t GetTotalBlocksEstimate() = 0;
 
+    /* a weight based on the block size */
+    virtual int64_t GetBlockWeight() = 0;
+
     /* leveldb */
     virtual bool DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex) = 0;
 
@@ -1274,6 +1401,10 @@ class CBlockIndex
     const uint256* phashBlock;
     CBlockIndex* pprev;
     CBlockIndex* pnext;
+
+    /* block index of a predecessor of this block. */
+    CBlockIndex *pskip;
+
     //    unsigned int nFile;
     //    unsigned int nBlockPos;
     int nHeight;
@@ -1293,6 +1424,7 @@ class CBlockIndex
       phashBlock = NULL;
       pprev = NULL;
       pnext = NULL;
+      pskip = NULL;
       //       nFile = 0;
       //        nBlockPos = 0;
       nHeight = 0;
@@ -1411,7 +1543,11 @@ class CBlockIndex
       return pindex->GetMedianTimePast();
     }
 
+    CBlockIndex *GetAncestor(int height);
 
+    const CBlockIndex* GetAncestor(int height) const;
+
+    void BuildSkip();
 
     std::string ToString() const
     {
@@ -1698,7 +1834,11 @@ bool core_ConnectBestBlock(int ifaceIndex, CBlock *block, CBlockIndex *pindexNew
 
 ValidIndexSet *GetValidIndexSet(int ifaceIndex);
 
+bool IsWitnessEnabled(CIface *iface, const CBlockIndex* pindexPrev);
 
+bool core_GenerateCoinbaseCommitment(CIface *iface, CBlock& block, CBlockIndex *pindexPrev);
+
+bool core_CheckBlockWitness(CIface *iface, CBlock *pblock, CBlockIndex *pindexPrev);
 
 
 #endif /* ndef __SERVER_BLOCK_H__ */

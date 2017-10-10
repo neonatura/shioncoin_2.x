@@ -47,6 +47,7 @@
 #include "usde/usde_txidx.h"
 #include "usde/usde_block.h"
 #include "chain.h"
+#include "txsignature.h"
 
 using namespace std;
 using namespace boost;
@@ -57,6 +58,12 @@ CScript USDE_COINBASE_FLAGS;
 
 int usde_UpgradeWallet(void)
 {
+
+  
+  usdeWallet->SetMinVersion(FEATURE_LATEST); // permanently upgrade the wallet immediately
+  usdeWallet->SetMaxVersion(FEATURE_LATEST); // permanently upgrade the wallet immediately
+
+#if 0
   int nMaxVersion = 0;//GetArg("-upgradewallet", 0);
   if (nMaxVersion == 0) // the -upgradewallet without argument case
   {
@@ -69,6 +76,7 @@ int usde_UpgradeWallet(void)
   if (nMaxVersion > usdeWallet->GetVersion()) {
     usdeWallet->SetMaxVersion(nMaxVersion);
   }
+#endif
 
 }
 
@@ -334,19 +342,15 @@ int64 USDEWallet::GetTxFee(CTransaction tx)
 }
 
 
-bool USDEWallet::CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey)
+bool USDEWallet::CommitTransaction(CWalletTx& wtxNew)
 {
   {
     LOCK2(cs_main, cs_wallet);
-//    Debug("CommitTransaction:\n%s", wtxNew.ToString().c_str());
     {
       // This is only to keep the database open to defeat the auto-flush for the
       // duration of this scope.  This is the only place where this optimization
       // maybe makes sense; please don't do it anywhere else.
       CWalletDB* pwalletdb = fFileBacked ? new CWalletDB(strWalletFile,"r") : NULL;
-
-      // Take key pair from key pool so it won't be used again
-      reservekey.KeepKey();
 
       // Add tx to wallet, because if it has change it's also ours,
       // otherwise just for transaction history.
@@ -474,6 +478,17 @@ bool USDEWallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend,
         BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setCoins)
           wtxNew.vin.push_back(CTxIn(coin.first->GetHash(),coin.second));
 
+        unsigned int nIn = 0;
+        BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setCoins) {
+          CSignature sig(USDE_COIN_IFACE, &wtxNew, nIn);
+          if (!sig.SignSignature(*coin.first)) {
+            txdb.Close();
+            return false;
+          }
+
+          nIn++;
+        }
+#if 0
         // Sign
         int nIn = 0;
         BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setCoins)
@@ -481,18 +496,21 @@ bool USDEWallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend,
             txdb.Close();
             return false;
           }
+#endif
 
-        // Limit size
-        unsigned int nBytes = ::GetSerializeSize(*(CTransaction*)&wtxNew, SER_NETWORK, USDE_PROTOCOL_VERSION);
-        if (nBytes >= MAX_BLOCK_SIZE_GEN(iface)/5) {
-          txdb.Close();
-          return false;
+        /* Ensure transaction does not breach a defined size limitation. */
+        unsigned int nWeight = GetTransactionWeight(wtxNew);
+        if (nWeight >= MAX_TRANSACTION_WEIGHT(iface)) {
+          txdb.Close(); 
+          return (error(SHERR_INVAL, "The transaction size is too large."));
         }
+
+        unsigned int nBytes = GetVirtualTransactionSize(wtxNew);
         dPriority /= nBytes;
 
         // Check that enough fee is included
         int64 nPayFee = nTransactionFee * (1 + (int64)nBytes / 1000);
-        bool fAllowFree = CTransaction::AllowFree(dPriority);
+        bool fAllowFree = AllowFree(dPriority);
         int64 nMinFee = wtxNew.GetMinFee(USDE_COIN_IFACE, 1, fAllowFree, GMF_SEND);
         if (nFeeRet < max(nPayFee, nMinFee))
         {
@@ -662,6 +680,25 @@ bool USDEWallet::CreateAccountTransaction(string strFromAccount, const vector<pa
         BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setCoins)
           wtxNew.vin.push_back(CTxIn(coin.first->GetHash(),coin.second));
 
+        unsigned int nIn = 0;
+        BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setCoins) {
+          CSignature sig(USDE_COIN_IFACE, &wtxNew, nIn);
+          const CWalletTx *s_wtx = coin.first;
+          if (!sig.SignSignature(*s_wtx)) {
+
+#if 0
+            /* failing signing against prevout. mark as spent to prohibit further attempts to use this output. */
+            s_wtx->MarkSpent(nIn);
+#endif
+
+            txdb.Close();
+            strError = strprintf(_("An error occurred signing the transaction [input tx \"%s\", output #%d]."), s_wtx->GetHash().GetHex().c_str(), nIn);
+            return false;
+          }
+
+          nIn++;
+        }
+#if 0
         // Sign
         int nIn = 0;
         BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setCoins) {
@@ -678,19 +715,21 @@ bool USDEWallet::CreateAccountTransaction(string strFromAccount, const vector<pa
             return false;
           }
         }
+#endif
 
-        // Limit size
-        unsigned int nBytes = ::GetSerializeSize(*(CTransaction*)&wtxNew, SER_NETWORK, USDE_PROTOCOL_VERSION);
-        if (nBytes >= MAX_BLOCK_SIZE_GEN(iface)/5) {
-          txdb.Close();
-          strError = strprintf(_("The transaction is too complex (%d of %d max bytes)."), (unsigned int)nBytes, (MAX_BLOCK_SIZE_GEN(iface)/5));
-          return false;
+        /* Ensure transaction does not breach a defined size limitation. */
+        unsigned int nWeight = GetTransactionWeight(wtxNew);
+        if (nWeight >= MAX_TRANSACTION_WEIGHT(iface)) {
+          txdb.Close(); 
+          return (error(SHERR_INVAL, "The transaction size is too large."));
         }
+
+        unsigned int nBytes = GetVirtualTransactionSize(wtxNew);
         dPriority /= nBytes;
 
         // Check that enough fee is included
         int64 nPayFee = nTransactionFee * (1 + (int64)nBytes / 1000);
-        bool fAllowFree = CTransaction::AllowFree(dPriority);
+        bool fAllowFree = AllowFree(dPriority);
         int64 nMinFee = wtxNew.GetMinFee(USDE_COIN_IFACE, 1, fAllowFree, GMF_SEND);
         if (nFeeRet < max(nPayFee, nMinFee))
         {
@@ -714,4 +753,26 @@ bool USDEWallet::CreateAccountTransaction(string strFromAccount, CScript scriptP
   vector< pair<CScript, int64> > vecSend;
   vecSend.push_back(make_pair(scriptPubKey, nValue));
   return CreateAccountTransaction(strFromAccount, vecSend, wtxNew, strError, nFeeRet);
+}
+
+
+unsigned int USDEWallet::GetTransactionWeight(const CTransaction& tx)
+{
+  unsigned int nBytes;
+
+  nBytes = ::GetSerializeSize(tx, SER_NETWORK, USDE_PROTOCOL_VERSION);
+
+  return (nBytes);
+}
+
+unsigned int USDEWallet::GetVirtualTransactionSize(const CTransaction& tx)
+{
+  return (GetTransactionWeight(tx));
+}
+
+
+/** Large (in bytes) low-priority (new, small-coin) transactions require fee. */
+bool USDEWallet::AllowFree(double dPriority)
+{
+  return dPriority > COIN * 700 / 250;
 }

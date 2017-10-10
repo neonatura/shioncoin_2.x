@@ -360,11 +360,11 @@ static bool shc_ConnectInputs(CTransaction *tx, MapPrevTx inputs, map<uint256, C
     if (!(fBlock && (GetBestHeight(SHC_COIN_IFACE) < SHC_Checkpoints::GetTotalBlocksEstimate())))
     {
       // Verify signature
-      if (!VerifySignature(txPrev, *tx, i, fStrictPayToScriptHash, 0))
+      if (!VerifySignature(SHC_COIN_IFACE, txPrev, *tx, i, fStrictPayToScriptHash, 0))
       {
         // only during transition phase for P2SH: do not invoke anti-DoS code for
         // potentially old clients relaying bad P2SH transactions
-        if (fStrictPayToScriptHash && VerifySignature(txPrev, *tx, i, false, 0))
+        if (fStrictPayToScriptHash && VerifySignature(SHC_COIN_IFACE, txPrev, *tx, i, false, 0))
           return error(SHERR_INVAL, "ConnectInputs() : %s P2SH VerifySignature failed", tx->GetHash().ToString().substr(0,10).c_str());
 
         return error(SHERR_INVAL, "ConnectInputs() : %s VerifySignature failed", tx->GetHash().ToString().substr(0,10).c_str());
@@ -471,10 +471,23 @@ bool shc_FetchInputs(CTransaction *tx, CTxDB& txdb, const map<uint256, CTxIndex>
 }
 #endif
 
+
+static int64_t shc_GetTxWeight(const CTransaction& tx)
+{
+  int64_t weight = 0;
+
+  weight += ::GetSerializeSize(tx, SER_NETWORK, SHC_PROTOCOL_VERSION | SERIALIZE_TRANSACTION_NO_WITNESS) * (SHC_WITNESS_SCALE_FACTOR - 1);
+  weight += ::GetSerializeSize(tx, SER_NETWORK, SHC_PROTOCOL_VERSION);
+
+  return (weight);
+}
+
+
 CBlock* shc_CreateNewBlock(const CPubKey& rkey)
 {
   CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);
   CBlockIndex* pindexPrev = GetBestBlockIndex(iface);
+  bool fWitnessEnabled = false;
 
   if (!pindexPrev) {
     shcoind_log("shc_CreateNewBlock: error: no Best Block Index established.");
@@ -486,6 +499,8 @@ CBlock* shc_CreateNewBlock(const CPubKey& rkey)
   auto_ptr<SHCBlock> pblock(new SHCBlock());
   if (!pblock.get())
     return NULL;
+
+  fWitnessEnabled = IsWitnessEnabled(iface, pindexPrev);
 
   // Create coinbase tx
   CTransaction txNew;
@@ -511,6 +526,11 @@ CBlock* shc_CreateNewBlock(const CPubKey& rkey)
       CTransaction& tx = (*mi).second;
       if (tx.IsCoinBase() || !tx.IsFinal(SHC_COIN_IFACE))
         continue;
+
+      if (!fWitnessEnabled && !tx.wit.IsNull()) {
+        /* cannot reference a witness-enabled tx from a non-witness block */
+        continue;
+      }
 
       SHCOrphan* porphan = NULL;
       double dPriority = 0;
@@ -559,7 +579,8 @@ continue;
     map<uint256, CTxIndex> mapTestPool;
     uint64 nBlockSize = 1000;
     uint64 nBlockTx = 0;
-    int nBlockSigOps = 100;
+    int nSigOpCost = 100;
+    int64_t nBlockWeight = 4000;
     while (!mapPriority.empty())
     {
       // Take highest priority transaction off priority queue
@@ -567,19 +588,17 @@ continue;
       CTransaction& tx = *(*mapPriority.begin()).second;
       mapPriority.erase(mapPriority.begin());
 
+      int64_t nTxWeight = shc_GetTxWeight(tx);
+      if (nBlockWeight + nTxWeight > MAX_BLOCK_WEIGHT(iface))
+        continue; /* too many puppies */
+
       // Size limits
       unsigned int nTxSize = ::GetSerializeSize(tx, SER_NETWORK, SHC_PROTOCOL_VERSION);
-      if (nBlockSize + nTxSize >= MAX_BLOCK_SIZE_GEN(iface))
-        continue;
-
-      // Legacy limits on sigOps:
-      unsigned int nTxSigOps = tx.GetLegacySigOpCount();
-      if (nBlockSigOps + nTxSigOps >= MAX_BLOCK_SIGOPS(iface))
-        continue;
 
       // Transaction fee required depends on block size
-      // shcd: Reduce the exempted free transactions to 500 bytes (from Bitcoin's 3000 bytes)
-      bool fAllowFree = (nBlockSize + nTxSize < 1500 || CTransaction::AllowFree(dPriority));
+      // shc: Reduce the exempted free transactions to 500 bytes (from Bitcoin's 3000 bytes)
+      CWallet *wallet = GetWallet(SHC_COIN_IFACE);
+      bool fAllowFree = (nBlockSize + nTxSize < 1500 || wallet->AllowFree(dPriority));
       int64 nMinFee = tx.GetMinFee(nBlockSize, fAllowFree, GMF_BLOCK);
 
       // Connecting shouldn't fail due to dependency on other memory pool transactions
@@ -602,8 +621,11 @@ continue;
       if (nTxFees < nMinFee)
         continue;
 
-      nTxSigOps += tx.GetP2SHSigOpCount(mapInputs);
-      if (nBlockSigOps + nTxSigOps >= MAX_BLOCK_SIGOPS(iface))
+      /* restrict maximum sigops. */
+      int64_t nCost = tx.GetSigOpCost(mapInputs);
+      if (nCost > MAX_TX_SIGOP_COST(iface))
+        continue;
+      if (nSigOpCost + nCost > MAX_BLOCK_SIGOP_COST(iface))
         continue;
 
       if (!shc_ConnectInputs(&tx, mapInputs, mapTestPoolTmp, CDiskTxPos(0,0,0), pindexPrev, false, true))
@@ -614,8 +636,9 @@ continue;
       // Added
       pblock->vtx.push_back(tx);
       nBlockSize += nTxSize;
+      nBlockWeight += nTxWeight;
       ++nBlockTx;
-      nBlockSigOps += nTxSigOps;
+      nSigOpCost += nCost;
       nFees += nTxFees;
 
       // Add transactions that depend on this one to the priority queue
@@ -650,6 +673,8 @@ continue;
   pblock->UpdateTime(pindexPrev);
   pblock->nBits          = pblock->GetNextWorkRequired(pindexPrev);
   pblock->nNonce         = 0;
+
+  core_GenerateCoinbaseCommitment(iface, *pblock, pindexPrev);
 
   return pblock.release();
 }
@@ -796,7 +821,7 @@ bool SHC_CTxMemPool::accept(CTxDB& txdb, CTransaction &tx, bool fCheckInputs, bo
     }
 
     // Check for non-standard pay-to-script-hash in inputs
-    if (!tx.AreInputsStandard(mapInputs) && !fTestNet)
+    if (!tx.AreInputsStandard(SHC_COIN_IFACE, mapInputs) && !fTestNet)
       return error(SHERR_INVAL, "CTxMemPool::accept() : nonstandard transaction input");
 
     // Note: if you modify this code to accept non-standard transactions, then
@@ -1069,8 +1094,14 @@ bool SHCBlock::CheckBlock()
 {
   CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);
 
-  if (vtx.empty() || vtx.size() > SHC_MAX_BLOCK_SIZE || ::GetSerializeSize(*this, SER_NETWORK, SHC_PROTOCOL_VERSION) > SHC_MAX_BLOCK_SIZE)
-    return error(SHERR_INVAL, "USDE::CheckBlock: size limits failed");
+  if (vtx.empty()) { 
+    return (trust(-80, "(shc) CheckBlock: block submitted with zero transactions"));
+  }
+
+  int64_t weight = GetBlockWeight();
+  if (weight > MAX_BLOCK_WEIGHT(iface)) {
+    return (trust(-80, "(shc) CheckBlock: block weight (%d) > max (%d)", weight, MAX_BLOCK_WEIGHT(iface)));
+  }
 
 
 #if 0
@@ -1127,6 +1158,15 @@ bool SHCBlock::CheckBlock()
   if (hashMerkleRoot != BuildMerkleTree()) {
     return error(SHERR_INVAL, "CheckBlock() : hashMerkleRoot mismatch");
   }
+
+  blkidx_t *blockIndex = GetBlockTable(SHC_COIN_IFACE);
+  map<uint256, CBlockIndex*>::iterator miPrev = blockIndex->find(hashPrevBlock);
+  if (miPrev != blockIndex->end()) {
+    CBlockIndex *pindexPrev = (*miPrev).second;
+    if (!core_CheckBlockWitness(iface, (CBlock *)this, pindexPrev))
+      return (trust(-10, "(shc) CheckBlock: invalid witness integrity."));
+  }
+
 
 /* DEBUG: TODO: */
 /* addition verification.. 
@@ -1580,39 +1620,22 @@ fprintf(stderr, "DEBUG: SHCBlock::ConnectBlock: null disk pos, ret false BIP30\n
       }
     }
 
-    nSigOps += tx.GetLegacySigOpCount();
-    if (nSigOps > MAX_BLOCK_SIGOPS(iface))
-      return error(SHERR_INVAL, "ConnectBlock() : too many sigops");
-
-#if 0
-    memcpy(b_hash, tx.GetHash().GetRaw(), sizeof(bc_hash_t));
-    err = bc_find(bc, b_hash, &nTxPos); 
-    if (err) {
-      return error(SHERR_INVAL, "SHCBlock::ConncetBlock: error finding tx hash.");
-    }
-#endif
-
     MapPrevTx mapInputs;
     CDiskTxPos posThisTx(SHC_COIN_IFACE, nBlockPos, nTxPos);
-    if (!tx.IsCoinBase())
-    {
+    if (!tx.IsCoinBase()) {
       bool fInvalid;
       if (!tx.FetchInputs(txdb, mapQueuedChanges, this, false, mapInputs, fInvalid)) {
 fprintf(stderr, "DEBUG: SHCBlock::ConnectBlock: shc_FetchInputs()\n"); 
         return false;
       }
+    }
 
-      //if (fStrictPayToScriptHash)
-      {
-        // Add in sigops done by pay-to-script-hash inputs;
-        // this is to prevent a "rogue miner" from creating
-        // an incredibly-expensive-to-validate block.
-        nSigOps += tx.GetP2SHSigOpCount(mapInputs);
-        if (nSigOps > MAX_BLOCK_SIGOPS(iface)) {
-          return error(SHERR_INVAL, "(shc) ConnectBlock: signature script operations (%d) exceeded maximum limit (%d).", (int)nSigOps, (int)MAX_BLOCK_SIGOPS(iface));
-        }
-      }
+    nSigOps += tx.GetSigOpCost(mapInputs);
+    if (nSigOps > MAX_BLOCK_SIGOP_COST(iface)) {
+      return (trust(-100, "(shc) ConnectBlock: sigop cost exceeded maximum (%d > %d)", nSigOps, MAX_BLOCK_SIGOP_COST(iface)));
+    }
 
+    if (!tx.IsCoinBase()) {
       nFees += tx.GetValueIn(mapInputs)-tx.GetValueOut();
 
       if (!shc_ConnectInputs(&tx, mapInputs, mapQueuedChanges, posThisTx, pindex, true, false)) {
@@ -1888,8 +1911,14 @@ bool SHCBlock::AddToBlockIndex()
   {
     pindexNew->pprev = (*miPrev).second;
     pindexNew->nHeight = pindexNew->pprev->nHeight + 1;
+    pindexNew->BuildSkip();
   }
+
   pindexNew->bnChainWork = (pindexNew->pprev ? pindexNew->pprev->bnChainWork : 0) + pindexNew->GetBlockWork();
+
+  if (IsWitnessEnabled(GetCoinByIndex(SHC_COIN_IFACE), pindexNew->pprev)) {
+    pindexNew->nStatus |= BIS_OPT_WITNESS;
+  }
 
   if (pindexNew->bnChainWork > bnBestChainWork) {
     SHCTxDB txdb;
@@ -1972,4 +2001,15 @@ bool SHCBlock::SetBestChain(CBlockIndex* pindexNew)
   STAT_TX_ACCEPTS(iface)++;
 
   return true;
+}
+
+
+int64_t SHCBlock::GetBlockWeight()
+{
+  int64_t weight = 0;
+
+  weight += ::GetSerializeSize(*this, SER_NETWORK, SHC_PROTOCOL_VERSION | SERIALIZE_TRANSACTION_NO_WITNESS) * (SHC_WITNESS_SCALE_FACTOR - 1);
+  weight += ::GetSerializeSize(*this, SER_NETWORK, SHC_PROTOCOL_VERSION);
+
+  return (weight);
 }

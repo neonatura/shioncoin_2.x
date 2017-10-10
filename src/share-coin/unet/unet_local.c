@@ -74,6 +74,11 @@ static int external_local_discover(char *serv_hostname, struct in_addr *net_addr
   }
 
   text = (char *)shbuf_data(buff);
+  if (!text) {
+    shnet_close(sk);
+    return (SHERR_AGAIN);
+  }
+
   text = strstr(text, CHKIP_IP_TAG);
   if (!text) {
     shnet_close(sk);

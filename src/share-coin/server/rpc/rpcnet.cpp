@@ -42,14 +42,11 @@
 #include "chain.h"
 #include "mnemonic.h"
 
+#define stack_t sigstack_t
 #undef fcntl
 #undef GNULIB_NAMESPACE
 #include <boost/asio.hpp>
 #include <boost/asio/ip/v6_only.hpp>
-#include <boost/bind.hpp>
-#define BOOST_NO_CXX11_SCOPED_ENUMS
-#include <boost/filesystem.hpp>
-#undef BOOST_NO_CXX11_SCOPED_ENUMS
 #include <boost/foreach.hpp>
 #include <boost/iostreams/concepts.hpp>
 #include <boost/iostreams/stream.hpp>
@@ -60,6 +57,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/assign/list_of.hpp>
 #include <list>
+#undef stack_t
 
 #include "rpcnet.h"
 

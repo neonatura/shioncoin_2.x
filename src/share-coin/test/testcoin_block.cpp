@@ -35,7 +35,8 @@
 #include "spring.h"
 #include "hdkey.h"
 #include "context.h"
-
+#include "script.h"
+#include "txsignature.h"
 
 
 
@@ -1069,6 +1070,7 @@ bool ret;
   string strAccount("");
   string strComment("geo:46.7467,-114.1096");
   err = init_ident_stamp_tx(iface, strAccount, strComment, wtx); 
+fprintf(stderr, "DEBUG: matrixtx: %d = init_ident_stamp_tx()\n", err); 
   _TRUE(err == 0);
 
 
@@ -1223,10 +1225,15 @@ _TEST(hdtx)
     CWalletTx wtx;
     wtx.vin.push_back(CTxIn(prevTx.GetHash(), 0));
     wtx.vout.push_back(CTxOut(1, scriptCode));
+
+    CSignature sig(TEST_COIN_IFACE, &wtx, /* nIn = */ 0); 
+    _TRUE(sig.SignSignature(prevTx) == true);
+    _TRUE(VerifySignature(TEST_COIN_IFACE, prevTx, wtx, 0, false, 0) == true);
+#if 0
     _TRUE(SignSignature(*wallet, prevTx, wtx, 0) == true);  
     _TRUE(VerifySignature(prevTx, wtx, 0, false, 0) == true);
-CReserveKey rkey(wallet);
-_TRUE(wallet->CommitTransaction(wtx, rkey) == true);
+#endif
+_TRUE(wallet->CommitTransaction(wtx) == true);
 
 #if 0
     CBlock *block = test_GenerateBlock();
@@ -1249,8 +1256,14 @@ _TRUE(wallet->CommitTransaction(wtx, rkey) == true);
     wtx.SetNull();
     wtx.vin.push_back(CTxIn(prevTx.GetHash(), 0));
     wtx.vout.push_back(CTxOut(1, scriptCode));
+
+    CSignature sig(TEST_COIN_IFACE, &wtx, /* nIn = */ 0, SIGHASH_HDKEY);
+    _TRUE(sig.SignSignature(prevTx) == true);  
+    _TRUE(VerifySignature(TEST_COIN_IFACE, prevTx, wtx, 0, false, SIGHASH_HDKEY) == true);
+#if 0
     _TRUE(SignSignature(*wallet, prevTx, wtx, 0, SIGHASH_HDKEY) == true);  
     _TRUE(VerifySignature(prevTx, wtx, 0, false, SIGHASH_HDKEY) == true);
+#endif
   }
 
 }
@@ -1357,6 +1370,253 @@ if (err) fprintf(stderr, "DEBUG: %d = generate_exec_tx()\n", err);
   }
 
   _term_exectx_sx();
+}
+
+_TEST(scriptid)
+{
+  CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
+  CWallet *wallet = GetWallet(iface);
+  string strAccount("");
+  string strExtAccount("scriptid");
+
+  CCoinAddr ret_addr = GetAccountAddress(wallet, strAccount, true);
+  _TRUE(ret_addr.IsValid());
+  CCoinAddr addr = GetAccountAddress(wallet, strExtAccount, true);
+  _TRUE(addr.IsValid());
+
+  CKeyID keyID;
+  _TRUE(addr.GetKeyID(keyID));
+  CScript script = GetScriptForDestination(keyID);
+ 
+  _TRUE(wallet->AddCScript(script));
+  CScriptID scriptID = CScriptID(script);
+  wallet->SetAddressBookName(scriptID, strExtAccount);
+
+  /* send COIN to scriptID */
+  CTxCreator wtx(wallet, strAccount);
+  wtx.AddOutput(scriptID, COIN);
+  _TRUE(wtx.Send());
+
+  {
+    CBlock *block = test_GenerateBlock();
+    _TRUEPTR(block);
+    _TRUE(ProcessBlock(NULL, block) == true);
+    delete block;
+  }
+  {
+    CBlock *block = test_GenerateBlock();
+    _TRUEPTR(block);
+    _TRUE(ProcessBlock(NULL, block) == true);
+    delete block;
+  }
+int64 nValue = GetAccountBalance(TEST_COIN_IFACE, strExtAccount, 1);
+fprintf(stderr, "DEBUG: TEST: SCRIPTID: bal/before nValue %f\n", (double)nValue / COIN);
+
+  /* redeem scriptID back to origin */
+  CTxCreator wtx2(wallet, strExtAccount);
+  wtx2.AddOutput(ret_addr.Get(), COIN - (iface->min_tx_fee*2));
+  _TRUE(wtx2.Send());
+    
+  {
+    CBlock *block = test_GenerateBlock();
+    _TRUEPTR(block);
+    _TRUE(ProcessBlock(NULL, block) == true);
+    delete block;
+  }
+  {
+    CBlock *block = test_GenerateBlock();
+    _TRUEPTR(block);
+    _TRUE(ProcessBlock(NULL, block) == true);
+    delete block;
+  }
+nValue = GetAccountBalance(TEST_COIN_IFACE, strExtAccount, 1);
+fprintf(stderr, "DEBUG: TEST: SCRIPTID: bal/after %f\n", (double)nValue/COIN);
+
+}
+
+_TEST(segwit)
+{
+  CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
+  CWallet *wallet = GetWallet(iface);
+  CBlock *blocks[100];
+  CBlock *pblock;
+  string strError;
+  bool ok;
+  int i;
+
+  {
+    CBlock *block = test_GenerateBlock();
+    _TRUEPTR(block);
+    _TRUE(ProcessBlock(NULL, block) == true);
+    delete block;
+  }
+
+  iface->vDeployments[DEPLOYMENT_SEGWIT].bit = 1;
+  iface->vDeployments[DEPLOYMENT_SEGWIT].nStartTime = time(NULL);
+  iface->vDeployments[DEPLOYMENT_SEGWIT].nTimeout = time(NULL) + 120;
+
+  /* create some blocks */
+  for (i = 0; i < 1024; i++) { 
+    CBlockIndex *pindexPrev = GetBestBlockIndex(iface);
+
+    blocks[i] = test_GenerateBlock();
+    _TRUEPTR(blocks[i]);
+    _TRUE(ProcessBlock(NULL, blocks[i]) == true);
+
+    if (IsWitnessEnabled(iface, pindexPrev))
+      break;
+
+//    delete block;
+  }
+
+  CBlockIndex *pindexPrev = GetBestBlockIndex(iface);
+  _TRUE(IsWitnessEnabled(iface, pindexPrev));
+
+  bool found = false;
+  string strAccount;
+  CCoinAddr addr(TEST_COIN_IFACE);
+  BOOST_FOREACH(const PAIRTYPE(CTxDestination, string)& item, wallet->mapAddressBook)
+  {
+    const CCoinAddr& address = CCoinAddr(TEST_COIN_IFACE, item.first);
+    const string& account = item.second;
+    if (account != "") continue;
+    addr = address;
+    strAccount = account;
+    found = true;
+    break;
+  }
+  _TRUE(found);
+
+  int64 nValue = GetAccountBalance(TEST_COIN_IFACE, strAccount, 1);
+fprintf(stderr, "DEBUG: TEST: bal nValue %f\n", (double)nValue / COIN);
+
+  /* send to extended tx storage account */
+  string strWitAccount = "witness";
+  CCoinAddr extAddr = GetAccountAddress(wallet, strWitAccount, true);
+
+
+  CTxCreator wtx1(wallet, strAccount);
+  wtx1.AddOutput(extAddr.Get(), COIN);
+  ok = wtx1.Send();
+  strError = wtx1.GetError();
+fprintf(stderr, "DEBUG: strerror = \"%s\"\n", strError.c_str());
+  _TRUE(ok);
+  _TRUE(strError == "");
+  _TRUE(wtx1.CheckTransaction(TEST_COIN_IFACE)); /* .. */
+
+  {
+    CBlock *block = test_GenerateBlock();
+    _TRUEPTR(block);
+    _TRUE(ProcessBlock(NULL, block) == true);
+    delete block;
+  }
+
+  {
+    CBlock *block = test_GenerateBlock();
+    _TRUEPTR(block);
+    _TRUE(ProcessBlock(NULL, block) == true);
+    delete block;
+  }
+  nValue = GetAccountBalance(TEST_COIN_IFACE, strWitAccount, 1);
+fprintf(stderr, "DEBUG: TEST: wit bal %f\n", (double)nValue/COIN);
+
+  CCoinAddr witAddr(TEST_COIN_IFACE);
+  _TRUE(wallet->GetWitnessAddress(extAddr, witAddr) == true);
+fprintf(stderr, "DEBUG: TEST: WITNESS ADDRESS: %s\n", witAddr.ToString().c_str());
+  CTxCreator wit_wtx(wallet, strAccount);
+  wit_wtx.AddOutput(witAddr.Get(), COIN);
+  ok = wit_wtx.Send();
+  strError = wit_wtx.GetError();
+fprintf(stderr, "DEBUG: strerror = \"%s\"\n", strError.c_str());
+  _TRUE(ok);
+  _TRUE(strError == "");
+  _TRUE(wit_wtx.CheckTransaction(TEST_COIN_IFACE)); /* .. */
+/*
+  {
+    const CScript& scriptPubKey = wit_wtx.vout[0].scriptPubKey;
+    int witnessversion;
+    cbuff witnessprogram;
+    if (scriptPubKey.IsWitnessProgram(witnessversion, witnessprogram)) {
+      fprintf(stderr, "DEBUG: TEST: wit_wtx.scriptPubKey IsWitnessProgram: TRUE\n");
+    } else {
+      fprintf(stderr, "DEBUG: TEST: wit_wtx.scriptPubKey IsWitnessProgram: FALSE\n");
+    }
+  }
+*/
+
+/*
+  pblock = test_GenerateBlock();
+  _TRUEPTR(pblock);
+  _TRUE(ProcessBlock(NULL, pblock) == true);
+  const CScript& scriptPubKey = pblock->vtx[1].vout[0].scriptPubKey;
+  int witnessversion;
+  cbuff witnessprogram;
+  if (scriptPubKey.IsWitnessProgram(witnessversion, witnessprogram)) {
+    fprintf(stderr, "DEBUG: TEST: pblock.scriptPubKey IsWitnessProgram: TRUE\n");
+  } else {
+    fprintf(stderr, "DEBUG: TEST: pblock.scriptPubKey IsWitnessProgram: FALSE\n");
+  }
+  delete pblock;
+*/
+
+  {
+    CBlock *block = test_GenerateBlock();
+    _TRUEPTR(block);
+    _TRUE(ProcessBlock(NULL, block) == true);
+    delete block;
+  }
+
+  {
+    CBlock *block = test_GenerateBlock();
+    _TRUEPTR(block);
+    _TRUE(ProcessBlock(NULL, block) == true);
+    delete block;
+  }
+
+  pindexPrev = GetBestBlockIndex(iface);
+  _TRUE(IsWitnessEnabled(iface, pindexPrev));
+
+  {
+    CBlock *block = test_GenerateBlock();
+    _TRUEPTR(block);
+    _TRUE(ProcessBlock(NULL, block) == true);
+    delete block;
+  }
+
+  nValue = GetAccountBalance(TEST_COIN_IFACE, strWitAccount, 1);
+fprintf(stderr, "DEBUG: TEST: wit bal %f\n", (double)nValue/COIN);
+
+  /* return coins back to main account. */
+  CTxCreator wtx3(wallet, strWitAccount);
+  wtx3.AddOutput(addr.Get(), nValue - (MIN_TX_FEE(iface) * 2));
+  _TRUE(wtx3.Send());
+  strError = wtx3.GetError();
+if (strError != "") fprintf(stderr, "DEBUG: wtx3.strerror = \"%s\"\n", strError.c_str());
+  _TRUE(strError == "");
+  _TRUE(wtx3.CheckTransaction(TEST_COIN_IFACE)); /* .. */
+
+  {
+    CBlock *block = test_GenerateBlock();
+    _TRUEPTR(block);
+    _TRUE(ProcessBlock(NULL, block) == true);
+    int nIndex = 0;
+    BOOST_FOREACH(CTransaction& tx, block->vtx) {
+      fprintf(stderr, "DEBUG: TEST: wtx3: block.tx[%d] = \"%s\"\n", nIndex, tx.ToString(TEST_COIN_IFACE).c_str());
+      nIndex++;
+    }
+    delete block;
+  }
+
+  {
+    CBlock *block = test_GenerateBlock();
+    _TRUEPTR(block);
+    _TRUE(ProcessBlock(NULL, block) == true);
+    delete block;
+  }
+
+  nValue = GetAccountBalance(TEST_COIN_IFACE, strWitAccount, 1);
+fprintf(stderr, "DEBUG: TEST: wit bal %f\n", (double)nValue/COIN);
+// _TRUE(nValue < COIN);
 }
 
 

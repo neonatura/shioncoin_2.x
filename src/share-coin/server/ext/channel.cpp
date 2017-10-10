@@ -28,6 +28,7 @@
 #include "json/json_spirit_writer_template.h"
 #include <boost/xpressive/xpressive_dynamic.hpp>
 #include "wallet.h"
+#include "txsignature.h"
 #include "channel.h"
 #include "hdkey.h"
 
@@ -516,7 +517,7 @@ int CommitChannelTransaction(CWallet *wallet, CTransaction& tx)
   CWalletTx wtx(wallet, tx);
   CReserveKey rkey(wallet);
 
-  if (!wallet->CommitTransaction(wtx, rkey))
+  if (!wallet->CommitTransaction(wtx))
     return (SHERR_CANCELED);
 
   return (0);
@@ -868,7 +869,9 @@ int activate_channel_tx(CIface *iface, CTransaction *txIn, int64 nValue, CWallet
   int64 nTotalValue = nValue + channel->GetOriginValue();
   uint160 hChan = channel->GetHash();
 //  scriptPubKey << OP_EXT_ACTIVATE << CScript::EncodeOP_N(OP_CHANNEL) << OP_HASH160 << hChan << OP_2DROP;
-  scriptPubKey << OP_HASH160 << channel->GetHash() << OP_EQUAL;
+  const uint160& hash = channel->GetHash();
+  cbuff vchHash(hash.begin(), hash.end());
+  scriptPubKey << OP_HASH160 << vchHash << OP_EQUAL;
 	wtx.vout.push_back(CTxOut(nTotalValue, scriptPubKey)); 
 
   // relay unsigned transaction
@@ -995,7 +998,12 @@ return (SHERR_INVAL);
   chanIn.GetRedeemScript(redeem);
 */
   int nOut = txIn.vout.size() - 1;
-	scriptIn << OP_0 << chanIn.GetPeer()->addr << chanIn.GetOrigin()->addr << chanIn.GetHash() << OP_HASH160 << chanIn.GetHash() << OP_EQUAL;
+  const uint160& in_hash = chanIn.GetHash();
+	scriptIn << OP_0 << chanIn.GetPeer()->addr << chanIn.GetOrigin()->addr << in_hash;
+// << OP_HASH160 << chanIn.GetHash() << OP_EQUAL;
+  cbuff vchInHash(in_hash.begin(), in_hash.end());
+  scriptIn << OP_HASH160 << vchInHash << OP_EQUAL;
+
   wtx.vin.push_back(CTxIn(txIn.GetHash(), nOut, scriptIn, channel->nSeq));
 
 
@@ -1014,7 +1022,9 @@ return (SHERR_INVAL);
 
   /* insert p2sh output to channel */
   CScript scriptPubKey;
-  scriptPubKey << OP_HASH160 << channel->GetHash() << OP_EQUAL;
+  const uint160& hash = channel->GetHash();
+  cbuff vchHash(hash.begin(), hash.end());
+  scriptPubKey << OP_HASH160 << vchHash << OP_EQUAL;
 	wtx.vout.push_back(CTxOut(nTotalValue - nCounterValue - iface->min_tx_fee, scriptPubKey)); 
 
   CScript scriptExt;
@@ -1163,7 +1173,11 @@ int validate_channel_tx(CIface *iface, CTransaction *txCommit, CWalletTx& wtx)
      CScript redeem;
      chanIn.GetRedeemScript(redeem);
      */
-  scriptIn << OP_0 << chanIn.GetPeer()->addr << chanIn.GetOrigin()->addr << chanIn.GetHash() << OP_HASH160 << chanIn.GetHash() << OP_EQUAL;
+  const uint160& in_hash = chanIn.GetHash();
+  cbuff vchInHash(in_hash.begin(), in_hash.end());
+  scriptIn << OP_0 << chanIn.GetPeer()->addr << chanIn.GetOrigin()->addr << in_hash;
+// << OP_HASH160 << chanIn.GetHash() << OP_EQUAL;
+  scriptIn << OP_HASH160 << vchInHash << OP_EQUAL;
   if (!equal(scriptIn.begin(), scriptIn.end(),
         txCommit->vin[0].scriptSig.begin()) ||
       txCommit->vin[0].nSequence != channel->nSeq) {
@@ -1188,11 +1202,15 @@ int validate_channel_tx(CIface *iface, CTransaction *txCommit, CWalletTx& wtx)
   CScript scriptPubKey;
   int64 nTotalValue = channel->GetOriginValue() + channel->GetPeerValue();
   scriptPubKey << OP_EXT_PAY << CScript::EncodeOP_N(OP_CHANNEL) << OP_HASH160 << hChan << OP_2DROP;
-  scriptPubKey << OP_HASH160 << channel->GetHash() << OP_EQUAL;
+  const uint160& hash = channel->GetHash();
+  cbuff vchHash(hash.begin(), hash.end());
+  scriptPubKey << OP_HASH160 << vchHash << OP_EQUAL;
+fprintf(stderr, "DEBUG: validate_channel_tx: scriptPubKey: \"%s\"\n", scriptPubKey.ToString().c_str()); 
   wtx.vout.push_back(CTxOut(nTotalValue - nCounterValue, scriptPubKey)); 
 
   /* half-sign input */
-  if (!SignSignature(*wallet, txIn, wtx, 0))
+  CSignature sig(wallet->ifaceIndex, &wtx, /* nIn = */ 0);
+  if (!sig.SignSignature(txIn))
     return (SHERR_INVAL);
 
   // relay our version of half-signed commit transaction
@@ -1298,8 +1316,12 @@ int generate_channel_tx(CIface *iface, uint160 hChan, CWalletTx& wtx)
   CScript redeem;
   chanIn.GetRedeemScript(redeem);
   scriptIn << OP_0 << chanIn.GetPeer()->addr << chanIn.GetOrigin()->addr;
-  scriptIn += redeem;
-  scriptIn << OP_HASH160 << chanIn.GetHash() << OP_EQUAL;
+  //scriptIn += redeem;
+  scriptIn << redeem;
+  const uint160& hash = chanIn.GetHash();
+  cbuff vchHash(hash.begin(), hash.end());
+  //scriptIn << OP_HASH160 << chanIn.GetHash() << OP_EQUAL;
+  scriptIn << OP_HASH160 << vchHash << OP_EQUAL;
   wtx.vin.push_back(CTxIn(txIn.GetHash(), nOut + 1, scriptIn, channel->nSeq));
 
   int64 nCounterValue;
@@ -1317,8 +1339,13 @@ int generate_channel_tx(CIface *iface, uint160 hChan, CWalletTx& wtx)
   wtx.vout.push_back(CTxOut(channel->GetPeerValue(), scriptPeer));
 
   /* half-sign input */
+  CSignature sig(wallet->ifaceIndex, &wtx, /* nIn = */ 0);
+  if (!sig.SignSignature(txIn))
+    return (SHERR_INVAL);
+#if 0
   if (!SignSignature(*wallet, txIn, wtx, 0))
     return (SHERR_INVAL);
+#endif
 
   // relay our version of half-signed commit transaction
   uint256 tx_hash = wtx.GetHash();

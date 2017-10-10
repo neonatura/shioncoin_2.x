@@ -47,6 +47,7 @@
 #include "emc2/emc2_wallet.h"
 #include "emc2/emc2_txidx.h"
 #include "chain.h"
+#include "txsignature.h"
 
 using namespace std;
 using namespace boost;
@@ -54,9 +55,15 @@ using namespace boost;
 EMC2Wallet *emc2Wallet;
 CScript EMC2_COINBASE_FLAGS;
 
+static const unsigned int MAX_EMC2_STANDARD_TX_WEIGHT = 400000;
+
 
 int emc2_UpgradeWallet(void)
 {
+
+  emc2Wallet->SetMinVersion(FEATURE_LATEST); // permanently upgrade the wallet immediately
+  emc2Wallet->SetMaxVersion(FEATURE_LATEST); // permanently upgrade the wallet immediately
+#if 0
   int nMaxVersion = 0;//GetArg("-upgradewallet", 0);
   if (nMaxVersion == 0) // the -upgradewallet without argument case
   {
@@ -69,6 +76,7 @@ int emc2_UpgradeWallet(void)
   if (nMaxVersion > emc2Wallet->GetVersion()) {
     emc2Wallet->SetMaxVersion(nMaxVersion);
   }
+#endif
 
 }
 
@@ -343,7 +351,7 @@ int64 EMC2Wallet::GetTxFee(CTransaction tx)
 }
 
 
-bool EMC2Wallet::CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey)
+bool EMC2Wallet::CommitTransaction(CWalletTx& wtxNew)
 {
   {
     LOCK2(cs_main, cs_wallet);
@@ -354,8 +362,6 @@ bool EMC2Wallet::CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey)
       // maybe makes sense; please don't do it anywhere else.
       CWalletDB* pwalletdb = fFileBacked ? new CWalletDB(strWalletFile,"r") : NULL;
 
-      // Take key pair from key pool so it won't be used again
-      reservekey.KeepKey();
 
       // Add tx to wallet, because if it has change it's also ours,
       // otherwise just for transaction history.
@@ -413,33 +419,47 @@ bool EMC2Wallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend,
 
   wtxNew.BindWallet(this);
 
+  /* set nLockTime to current height in order to disallow this tx from being used in a situation where "the value of the transactions in the best block and the mempool can exceed the cost of deliberately attempting to mine two blocks to orphan the current best". */
+  wtxNew.nLockTime = GetBestHeight(iface);
+
   {
     LOCK2(cs_main, cs_wallet);
     // txdb must be opened before the mapWallet lock
     EMC2TxDB txdb;
     {
-      nFeeRet = nTransactionFee;
+
+
+      nFeeRet = 0;
+
       loop
       {
         wtxNew.vin.clear();
         wtxNew.vout.clear();
+        wtxNew.wit.SetNull(); 
         wtxNew.fFromMe = true;
 
-        int64 nTotalValue = nValue + nFeeRet;
-        double dPriority = 0;
-        // vouts to the payees
-        BOOST_FOREACH (const PAIRTYPE(CScript, int64)& s, vecSend)
-          wtxNew.vout.push_back(CTxOut(s.second, s.first));
 
-        // Choose coins to use
+        // vouts to the payees
+        BOOST_FOREACH (const PAIRTYPE(CScript, int64)& s, vecSend) {
+          if (s.second < iface->min_relay_tx_fee)
+            return (error(SHERR_INVAL, "Transaction amount too small"));
+
+          wtxNew.vout.push_back(CTxOut(s.second, s.first));
+        }
+
+        int64 nTotalValue = nValue + nFeeRet;
         set<pair<const CWalletTx*,unsigned int> > setCoins;
         int64 nValueIn = 0;
         if (!SelectCoins(nTotalValue, setCoins, nValueIn))
           return false;
+
+        double dPriority = 0;
         BOOST_FOREACH(PAIRTYPE(const CWalletTx*, unsigned int) pcoin, setCoins)
         {
           int64 nCredit = pcoin.first->vout[pcoin.second].nValue;
-          dPriority += (double)nCredit * pcoin.first->GetDepthInMainChain(ifaceIndex);
+          int age = pcoin.first->GetDepthInMainChain(ifaceIndex);
+          if (age != 0) age++; /* The coin age after the next block (depth+1) is used instead of the current */
+          dPriority += (double)nCredit * age;
         }
 
         int64 nChange = nValueIn - nValue - nFeeRet;
@@ -481,8 +501,20 @@ bool EMC2Wallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend,
 
         // Fill vin
         BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setCoins)
-          wtxNew.vin.push_back(CTxIn(coin.first->GetHash(),coin.second));
+          wtxNew.vin.push_back(CTxIn(coin.first->GetHash(), coin.second, 
+                CScript(), std::numeric_limits<unsigned int>::max()-1));
 
+        unsigned int nIn = 0;
+        BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setCoins) {
+          CSignature sig(EMC2_COIN_IFACE, &wtxNew, nIn);
+          if (!sig.SignSignature(*coin.first)) {
+            txdb.Close();
+            return false;
+          }
+
+          nIn++;
+        }
+#if 0
         // Sign
         int nIn = 0;
         BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setCoins)
@@ -490,18 +522,21 @@ bool EMC2Wallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend,
             txdb.Close();
             return false;
           }
+#endif
 
-        // Limit size
-        unsigned int nBytes = ::GetSerializeSize(*(CTransaction*)&wtxNew, SER_NETWORK, EMC2_PROTOCOL_VERSION);
-        if (nBytes >= MAX_BLOCK_SIZE_GEN(iface)/5) {
-          txdb.Close();
-          return false;
+        /* Ensure transaction does not breach a defined size limitation. */
+        unsigned int nWeight = GetTransactionWeight(wtxNew);
+        if (nWeight >= MAX_TRANSACTION_WEIGHT(iface)) {
+          txdb.Close(); 
+          return (error(SHERR_INVAL, "The transaction size is too large."));
         }
+
+        unsigned int nBytes = GetVirtualTransactionSize(wtxNew);
         dPriority /= nBytes;
 
         // Check that enough fee is included
         int64 nPayFee = nTransactionFee * (1 + (int64)nBytes / 1000);
-        bool fAllowFree = CTransaction::AllowFree(dPriority);
+        bool fAllowFree = AllowFree(dPriority);
         int64 nMinFee = wtxNew.GetMinFee(EMC2_COIN_IFACE, 1, fAllowFree, GMF_SEND);
         if (nFeeRet < max(nPayFee, nMinFee))
         {
@@ -593,23 +628,33 @@ bool EMC2Wallet::CreateAccountTransaction(string strFromAccount, const vector<pa
 
   wtxNew.BindWallet(this);
 
+  /* set nLockTime to current height in order to disallow this tx from being used in a situation where "the value of the transactions in the best block and the mempool can exceed the cost of deliberately attempting to mine two blocks to orphan the current best". */
+  wtxNew.nLockTime = GetBestHeight(iface);
+
   {
     LOCK2(cs_main, cs_wallet);
     // txdb must be opened before the mapWallet lock
     EMC2TxDB txdb;
     {
-      nFeeRet = nTransactionFee;
+      nFeeRet = 0;
+
       loop
       {
         wtxNew.vin.clear();
         wtxNew.vout.clear();
+        wtxNew.wit.SetNull(); 
         wtxNew.fFromMe = true;
 
         int64 nTotalValue = nValue + nFeeRet;
         double dPriority = 0;
+
         // vouts to the payees
-        BOOST_FOREACH (const PAIRTYPE(CScript, int64)& s, vecSend)
+        BOOST_FOREACH (const PAIRTYPE(CScript, int64)& s, vecSend) {
+          if (s.second < iface->min_relay_tx_fee)
+            return (error(SHERR_INVAL, "Transaction amount too small"));
+
           wtxNew.vout.push_back(CTxOut(s.second, s.first));
+        }
 
         // Choose coins to use
         set<pair<const CWalletTx*,unsigned int> > setCoins;
@@ -669,8 +714,29 @@ bool EMC2Wallet::CreateAccountTransaction(string strFromAccount, const vector<pa
 
         // Fill vin
         BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setCoins)
-          wtxNew.vin.push_back(CTxIn(coin.first->GetHash(),coin.second));
+          wtxNew.vin.push_back(CTxIn(coin.first->GetHash(),coin.second,
+                CScript(), std::numeric_limits<unsigned int>::max()-1));
 
+
+        unsigned int nIn = 0;
+        BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setCoins) {
+          CSignature sig(EMC2_COIN_IFACE, &wtxNew, nIn);
+          const CWalletTx *s_wtx = coin.first;
+          if (!sig.SignSignature(*s_wtx)) {
+
+#if 0
+            /* failing signing against prevout. mark as spent to prohibit further attempts to use this output. */
+            s_wtx->MarkSpent(nIn);
+#endif
+
+            txdb.Close();
+            strError = strprintf(_("An error occurred signing the transaction [input tx \"%s\", output #%d]."), s_wtx->GetHash().GetHex().c_str(), nIn);
+            return false;
+          }
+
+          nIn++;
+        }
+#if 0
         // Sign
         int nIn = 0;
         BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setCoins) {
@@ -687,19 +753,21 @@ bool EMC2Wallet::CreateAccountTransaction(string strFromAccount, const vector<pa
             return false;
           }
         }
+#endif
 
-        // Limit size
-        unsigned int nBytes = ::GetSerializeSize(*(CTransaction*)&wtxNew, SER_NETWORK, EMC2_PROTOCOL_VERSION);
-        if (nBytes >= MAX_BLOCK_SIZE_GEN(iface)/5) {
-          txdb.Close();
-          strError = strprintf(_("The transaction is too complex (%d of %d max bytes)."), (unsigned int)nBytes, (MAX_BLOCK_SIZE_GEN(iface)/5));
-          return false;
+        /* Ensure transaction does not breach a defined size limitation. */
+        unsigned int nWeight = GetTransactionWeight(wtxNew);
+        if (nWeight >= MAX_TRANSACTION_WEIGHT(iface)) {
+          txdb.Close(); 
+          return (error(SHERR_INVAL, "The transaction size is too large."));
         }
+
+        unsigned int nBytes = GetVirtualTransactionSize(wtxNew);
         dPriority /= nBytes;
 
         // Check that enough fee is included
         int64 nPayFee = nTransactionFee * (1 + (int64)nBytes / 1000);
-        bool fAllowFree = CTransaction::AllowFree(dPriority);
+        bool fAllowFree = AllowFree(dPriority);
         int64 nMinFee = wtxNew.GetMinFee(EMC2_COIN_IFACE, 1, fAllowFree, GMF_SEND);
         if (nFeeRet < max(nPayFee, nMinFee))
         {
@@ -724,3 +792,42 @@ bool EMC2Wallet::CreateAccountTransaction(string strFromAccount, CScript scriptP
   vecSend.push_back(make_pair(scriptPubKey, nValue));
   return CreateAccountTransaction(strFromAccount, vecSend, wtxNew, strError, nFeeRet);
 }
+
+unsigned int EMC2Wallet::GetTransactionWeight(const CTransaction& tx)
+{
+
+  unsigned int nBytes;
+
+  nBytes = 
+    ::GetSerializeSize(tx, SER_NETWORK, EMC2_PROTOCOL_VERSION | SERIALIZE_TRANSACTION_NO_WITNESS) * (EMC2_WITNESS_SCALE_FACTOR - 1) +
+    ::GetSerializeSize(tx, SER_NETWORK, EMC2_PROTOCOL_VERSION);
+
+  return (nBytes);
+}
+
+static unsigned int emc2_nBytesPerSigOp = EMC2_DEFAULT_BYTES_PER_SIGOP;
+
+int64_t emc2_GetVirtualTransactionSize(int64_t nWeight, int64_t nSigOpCost = 0)
+{ 
+  return (std::max(nWeight, nSigOpCost * emc2_nBytesPerSigOp) + EMC2_WITNESS_SCALE_FACTOR - 1) / EMC2_WITNESS_SCALE_FACTOR; 
+}
+
+
+unsigned int EMC2Wallet::GetVirtualTransactionSize(const CTransaction& tx)
+{
+  return (emc2_GetVirtualTransactionSize(GetTransactionWeight(tx)));
+}
+
+static double emc2_AllowFreeThreshold()
+{
+  return COIN * 144 / 250;
+}
+
+/** Large (in bytes) low-priority (new, small-coin) transactions require fee. */
+bool EMC2Wallet::AllowFree(double dPriority)
+{
+  return dPriority > emc2_AllowFreeThreshold();
+}
+
+
+

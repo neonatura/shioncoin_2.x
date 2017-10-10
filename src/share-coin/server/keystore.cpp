@@ -30,11 +30,13 @@
 
 bool CKeyStore::GetPubKey(const CKeyID &address, CPubKey &vchPubKeyOut) const
 {
-    CKey key;
-    if (!GetKey(address, key))
-        return false;
-    vchPubKeyOut = key.GetPubKey();
-    return true;
+  CKey key;
+
+  if (!GetKey(address, key))
+    return false;
+
+  vchPubKeyOut = key.GetPubKey();
+  return true;
 }
 
 bool CBasicKeyStore::AddKey(const HDPrivKey& key)

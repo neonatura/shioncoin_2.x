@@ -35,29 +35,12 @@
 #include "util.h"
 #include "chain.h"
 
-#include <boost/asio.hpp>
-#include <boost/asio/ip/v6_only.hpp>
-#include <boost/bind.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/foreach.hpp>
-#include <boost/iostreams/concepts.hpp>
-#include <boost/iostreams/stream.hpp>
-#include <boost/algorithm/string.hpp>
-#include <boost/lexical_cast.hpp>
-#include <boost/asio/ssl.hpp>
-#include <boost/filesystem/fstream.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/assign/list_of.hpp>
-#include <list>
-
 #include "context.h"
 #include "spring.h"
 
 using namespace std;
 using namespace boost;
-using namespace boost::asio;
 using namespace json_spirit;
-using namespace boost::assign;
 
 
 extern json_spirit::Value ValueFromAmount(int64 amount);

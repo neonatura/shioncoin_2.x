@@ -45,6 +45,7 @@
 #include <boost/array.hpp>
 #include <share.h>
 #include "walletdb.h"
+#include "txsignature.h"
 #include "shc/shc_wallet.h"
 #include "shc/shc_txidx.h"
 
@@ -60,6 +61,11 @@ CScript SHC_COINBASE_FLAGS;
 
 int shc_UpgradeWallet(void)
 {
+
+    shcWallet->SetMinVersion(FEATURE_LATEST);
+    shcWallet->SetMaxVersion(FEATURE_LATEST);
+
+#if 0
   int nMaxVersion = 0;//GetArg("-upgradewallet", 0);
   if (nMaxVersion == 0) // the -upgradewallet without argument case
   {
@@ -72,6 +78,7 @@ int shc_UpgradeWallet(void)
   if (nMaxVersion > shcWallet->GetVersion()) {
     shcWallet->SetMaxVersion(nMaxVersion);
   }
+#endif
 
 }
 
@@ -386,8 +393,9 @@ int64 SHCWallet::GetTxFee(CTransaction tx)
   return (nFees);
 }
 
-bool SHCWallet::CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey)
+bool SHCWallet::CommitTransaction(CWalletTx& wtxNew)
 {
+
   {
     LOCK2(cs_main, cs_wallet);
 //    Debug("CommitTransaction:\n%s", wtxNew.ToString().c_str());
@@ -396,9 +404,6 @@ bool SHCWallet::CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey)
       // duration of this scope.  This is the only place where this optimization
       // maybe makes sense; please don't do it anywhere else.
       CWalletDB* pwalletdb = fFileBacked ? new CWalletDB(strWalletFile,"r") : NULL;
-
-      // Take key pair from key pool so it won't be used again
-      reservekey.KeepKey();
 
       // Add tx to wallet, because if it has change it's also ours,
       // otherwise just for transaction history.
@@ -537,6 +542,17 @@ bool SHCWallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend, 
         BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setCoins)
           wtxNew.vin.push_back(CTxIn(coin.first->GetHash(),coin.second));
 
+        unsigned int nIn = 0;
+        BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setCoins) {
+          CSignature sig(SHC_COIN_IFACE, &wtxNew, nIn);
+          if (!sig.SignSignature(*coin.first)) {
+            txdb.Close();
+            return false;
+          }
+
+          nIn++;
+        }
+#if 0
         // Sign
         int nIn = 0;
         BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setCoins)
@@ -544,18 +560,21 @@ bool SHCWallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend, 
             txdb.Close();
             return false;
           }
+#endif
 
-        // Limit size
-        unsigned int nBytes = ::GetSerializeSize(*(CTransaction*)&wtxNew, SER_NETWORK, SHC_PROTOCOL_VERSION);
-        if (nBytes >= MAX_BLOCK_SIZE_GEN(iface)/5) {
+        /* Ensure transaction does not breach a defined size limitation. */
+        unsigned int nWeight = GetTransactionWeight(wtxNew);
+        if (nWeight >= MAX_TRANSACTION_WEIGHT(iface)) {
           txdb.Close();
-          return false;
+          return (error(SHERR_INVAL, "The transaction size is too large."));
         }
+
+        unsigned int nBytes = GetVirtualTransactionSize(wtxNew);
         dPriority /= nBytes;
 
         // Check that enough fee is included
         int64 nPayFee = nTransactionFee * (1 + (int64)nBytes / 1000);
-        bool fAllowFree = CTransaction::AllowFree(dPriority);
+        bool fAllowFree = AllowFree(dPriority);
         int64 nMinFee = wtxNew.GetMinFee(SHC_COIN_IFACE, 1, fAllowFree, GMF_SEND);
         if (nFeeRet < max(nPayFee, nMinFee))
         {
@@ -673,6 +692,25 @@ bool SHCWallet::CreateAccountTransaction(string strFromAccount, const vector<pai
         BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setCoins)
           wtxNew.vin.push_back(CTxIn(coin.first->GetHash(),coin.second));
 
+        unsigned int nIn = 0;
+        BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setCoins) {
+          CSignature sig(SHC_COIN_IFACE, &wtxNew, nIn);
+          const CWalletTx *s_wtx = coin.first;
+          if (!sig.SignSignature(*s_wtx)) {
+
+#if 0
+            /* failing signing against prevout. mark as spent to prohibit further attempts to use this output. */
+            s_wtx->MarkSpent(nIn);
+#endif
+
+            txdb.Close();
+            strError = strprintf(_("An error occurred signing the transaction [input tx \"%s\", output #%d]."), s_wtx->GetHash().GetHex().c_str(), nIn);
+            return false;
+          }
+
+          nIn++;
+        }
+#if 0
         // Sign
         int nIn = 0;
         BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setCoins) {
@@ -690,19 +728,21 @@ bool SHCWallet::CreateAccountTransaction(string strFromAccount, const vector<pai
           }
           nIn++;
         }
+#endif
 
-        // Limit size
-        unsigned int nBytes = ::GetSerializeSize(*(CTransaction*)&wtxNew, SER_NETWORK, SHC_PROTOCOL_VERSION);
-        if (nBytes >= MAX_BLOCK_SIZE_GEN(iface)/5) {
+        /* Ensure transaction does not breach a defined size limitation. */
+        unsigned int nWeight = GetTransactionWeight(wtxNew);
+        if (nWeight >= MAX_TRANSACTION_WEIGHT(iface)) {
           txdb.Close();
-          strError = strprintf(_("The transaction is too complex (%d of %d max bytes)."), (unsigned int)nBytes, (MAX_BLOCK_SIZE_GEN(iface)/5));
-          return false;
+          return (error(SHERR_INVAL, "The transaction size is too large."));
         }
+
+        unsigned int nBytes = GetVirtualTransactionSize(wtxNew);
         dPriority /= nBytes;
 
         // Check that enough fee is included
         int64 nPayFee = nTransactionFee * (1 + (int64)nBytes / 1000);
-        bool fAllowFree = CTransaction::AllowFree(dPriority);
+        bool fAllowFree = AllowFree(dPriority);
         int64 nMinFee = wtxNew.GetMinFee(SHC_COIN_IFACE, 1, fAllowFree, GMF_SEND);
         if (nFeeRet < max(nPayFee, nMinFee))
         {
@@ -783,4 +823,28 @@ fprintf(stderr, "DEBUG: TXDB: erased tx '%s'\n", tx.GetHash().GetHex().c_str());
 int64 SHCWallet::GetBlockValue(int nHeight, int64 nFees)
 {
   return (shc_GetBlockValue(nHeight, nFees));
+}
+
+
+unsigned int SHCWallet::GetTransactionWeight(const CTransaction& tx)
+{
+  unsigned int nBytes;
+
+  nBytes = ::GetSerializeSize(tx, SER_NETWORK, SHC_PROTOCOL_VERSION);
+
+  return (nBytes);
+}
+
+
+unsigned int SHCWallet::GetVirtualTransactionSize(const CTransaction& tx)
+{
+  return (GetTransactionWeight(tx));
+}
+
+/** Large (in bytes) low-priority (new, small-coin) transactions require fee. */
+bool SHCWallet::AllowFree(double dPriority)
+{
+  static const double block_daily = 360;
+  static const double block_bytes = 256;
+  return (dPriority > ((double)COIN * block_daily / block_bytes));
 }

@@ -557,11 +557,11 @@ static bool usde_ConnectInputs(CTransaction *tx, MapPrevTx inputs, map<uint256, 
     if (!(fBlock && (GetBestHeight(USDE_COIN_IFACE < USDE_Checkpoints::GetTotalBlocksEstimate()))))
     {
       // Verify signature
-      if (!VerifySignature(txPrev, *tx, i, fStrictPayToScriptHash, 0))
+      if (!VerifySignature(USDE_COIN_IFACE, txPrev, *tx, i, fStrictPayToScriptHash, 0))
       {
         // only during transition phase for P2SH: do not invoke anti-DoS code for
         // potentially old clients relaying bad P2SH transactions
-        if (fStrictPayToScriptHash && VerifySignature(txPrev, *tx, i, false, 0))
+        if (fStrictPayToScriptHash && VerifySignature(USDE_COIN_IFACE, txPrev, *tx, i, false, 0))
           return error(SHERR_INVAL, "ConnectInputs() : %s P2SH VerifySignature failed", tx->GetHash().ToString().substr(0,10).c_str());
 
         return error(SHERR_INVAL, "ConnectInputs() : %s VerifySignature failed", tx->GetHash().ToString().substr(0,10).c_str());
@@ -708,7 +708,9 @@ continue;
 
       // Transaction fee required depends on block size
       // usded: Reduce the exempted free transactions to 500 bytes (from Bitcoin's 3000 bytes)
-      bool fAllowFree = (nBlockSize + nTxSize < 1500 || CTransaction::AllowFree(dPriority));
+    
+      CWallet *wallet = GetWallet(USDE_COIN_IFACE);
+      bool fAllowFree = (nBlockSize + nTxSize < 1500 || wallet->AllowFree(dPriority));
       int64 nMinFee = tx.GetMinFee(nBlockSize, fAllowFree, GMF_BLOCK);
 
       // Connecting shouldn't fail due to dependency on other memory pool transactions
@@ -916,7 +918,7 @@ bool USDE_CTxMemPool::accept(CTxDB& txdb, CTransaction &tx, bool fCheckInputs, b
     }
 
     // Check for non-standard pay-to-script-hash in inputs
-    if (!tx.AreInputsStandard(mapInputs) && !fTestNet)
+    if (!tx.AreInputsStandard(USDE_COIN_IFACE, mapInputs) && !fTestNet)
       return error(SHERR_INVAL, "CTxMemPool::accept() : nonstandard transaction input");
 
     // Note: if you modify this code to accept non-standard transactions, then
@@ -1190,16 +1192,11 @@ bool USDEBlock::CheckBlock()
   if (vtx.size() > USDE_MAX_BLOCK_SIZE) {
     return (trust(-100, "(usde) CheckBlock: vtx.size (%d) > %d", vtx.size(), USDE_MAX_BLOCK_SIZE));
   }
-  size_t ser_len = ::GetSerializeSize(*this, SER_NETWORK, USDE_PROTOCOL_VERSION);
-  if (ser_len > USDE_MAX_BLOCK_SIZE) {
-    return (trust(-100, "(usde) CheckBlock: block size (%d) > max-block-size (%d)", ser_len, USDE_MAX_BLOCK_SIZE));
+
+  int64_t weight = GetBlockWeight();
+  if (weight > MAX_BLOCK_WEIGHT(iface)) {
+    return (trust(-100, "(usde) CheckBlock: block weight (%d) > max-block-weight (%d)", weight, MAX_BLOCK_WEIGHT(iface)));
   }
-#if 0
-  if (vtx.empty() || vtx.size() > USDE_MAX_BLOCK_SIZE || ::GetSerializeSize(*this, SER_NETWORK, USDE_PROTOCOL_VERSION) > USDE_MAX_BLOCK_SIZE) {
-print();
-    return error(SHERR_INVAL, "USDE::CheckBlock: size limits failed");
-  }
-#endif
 
   if (!vtx[0].IsCoinBase()) {
     return (trust(-100, "(usde) ChecKBlock: first transaction is not coin base"));
@@ -2171,7 +2168,9 @@ CIface *iface = GetCoinByIndex(USDE_COIN_IFACE);
   {
     pindexNew->pprev = (*miPrev).second;
     pindexNew->nHeight = pindexNew->pprev->nHeight + 1;
+    pindexNew->BuildSkip();
   }
+
   pindexNew->bnChainWork = (pindexNew->pprev ? pindexNew->pprev->bnChainWork : 0) + pindexNew->GetBlockWork();
 
   if (pindexNew->bnChainWork > bnBestChainWork) {
@@ -2230,3 +2229,13 @@ bool USDEBlock::SetBestChain(CBlockIndex* pindexNew)
 }
 
 
+int64_t USDEBlock::GetBlockWeight()
+{
+  int64_t weight = 0;
+
+  /* no segwit support */
+  weight += ::GetSerializeSize(*this, SER_NETWORK, USDE_PROTOCOL_VERSION);
+  weight *= USDE_WITNESS_SCALE_FACTOR;
+
+  return (weight);
+}

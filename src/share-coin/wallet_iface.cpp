@@ -31,15 +31,17 @@
 #include "init.h"
 #include "util.h"
 #include "ui_interface.h"
+
+#define stack_t sigstack_t
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <boost/filesystem/convenience.hpp>
 #include <boost/interprocess/sync/file_lock.hpp>
 #include <boost/algorithm/string/predicate.hpp>
-
 #ifndef WIN32
 #include <signal.h>
 #endif
+#undef stack_t
 
 #define WALLET_FILENAME_SUFFIX "wallet"
 
@@ -592,8 +594,7 @@ int c_sendblockreward(int ifaceIndex)
   if (!fRet)
     return (-4);
 
-  CReserveKey rkey(wallet);
-  fRet = wallet->CommitTransaction(wtx, rkey);
+  fRet = wallet->CommitTransaction(wtx);
   if (!fRet)
     return (-4);
 
@@ -1055,8 +1056,7 @@ static const char *c_stratum_account_transfer(int ifaceIndex, char *account, cha
       throw JSONRPCError(STERR_ACCESS_UNAVAIL, "Transaction creation failure.");
     }
 
-    CReserveKey rkey(pwalletMain);
-    if (!pwalletMain->CommitTransaction(wtx, rkey)) {
+    if (!pwalletMain->CommitTransaction(wtx)) {
       throw JSONRPCError(STERR_ACCESS_UNAVAIL, "Transaction commit failed.");
     }
   } catch(Object& objError) {

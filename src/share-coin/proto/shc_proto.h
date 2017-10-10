@@ -41,6 +41,7 @@
 
 #define SHC_MAX_ORPHAN_TRANSACTIONS 4096
 
+
 /**
  * The maximum number of signature "script" operations in a single block.
  */
@@ -62,7 +63,10 @@ static const int SHC_PROTOCOL_VERSION = 2000000;
 /**
  * The maximum byte size permitted for a single block.
  */
-static const unsigned int SHC_MAX_BLOCK_SIZE = 4096000;
+#define SHC_MAX_BLOCK_SIZE 4096000
+
+#define SHC_MAX_BLOCK_SIZE_GEN SHC_MAX_BLOCK_SIZE/2
+#define SHC_MAX_TRANSACTION_WEIGHT SHC_MAX_BLOCK_SIZE_GEN/5
 
 /**
  * The minimum "satashi" permitted to be sent in a single transaction.
@@ -81,6 +85,10 @@ static const int64 SHC_MAX_MONEY = 1000000000 * SHC_COIN; /* 1bil max */
 /** The number of blocks generated before a "block reward" is considered spendable. */
 static const int SHC_COINBASE_MATURITY = 60;
 
+static const int64 SHC_MAX_TX_FEE = 1000 * SHC_COIN;
+
+/* scaling factor */
+static const int SHC_WITNESS_SCALE_FACTOR = SCALE_FACTOR;
 
 #endif /* __SHC_PROTO_H__ */
 

@@ -41,6 +41,7 @@
 #include "chain.h"
 #include "mnemonic.h"
 
+#define stack_t sigstack_t
 #undef fcntl
 #undef GNULIB_NAMESPACE
 #include <boost/asio.hpp>
@@ -59,7 +60,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/assign/list_of.hpp>
 #include <list>
-
+#undef sigstack_t
 
 #undef fcntl
 #undef GNULIB_NAMESPACE
@@ -246,6 +247,7 @@ void WalletTxToJSON(int ifaceIndex, const CWalletTx& wtx, Object& entry)
         entry.push_back(Pair("blockindex", wtx.nIndex));
     }
     entry.push_back(Pair("txid", wtx.GetHash().GetHex()));
+    entry.push_back(Pair("hash", wtx.GetWitnessHash().GetHex()));
     entry.push_back(Pair("time", (boost::int64_t)wtx.GetTxTime()));
     BOOST_FOREACH(const PAIRTYPE(string,string)& item, wtx.mapValue)
         entry.push_back(Pair(item.first, item.second));
@@ -661,6 +663,12 @@ Value rpc_sys_info(CIface *iface, const Array& params, bool fStratum)
   /* wallet */
   obj.push_back(Pair("wallettx", (int)pwalletMain->mapWallet.size()));
   obj.push_back(Pair("walletaddr", (int)pwalletMain->mapAddressBook.size()));
+
+  /* witseg */
+  obj.push_back(Pair("segwit",
+        IsWitnessEnabled(iface, GetBestBlockIndex(iface))));
+  obj.push_back(Pair("segwit-commit", 
+        (iface->vDeployments[DEPLOYMENT_SEGWIT].nTimeout != 0) ? "true" : "false"));
 
   return obj;
 }
@@ -2138,6 +2146,128 @@ Value rpc_wallet_addr(CIface *iface, const Array& params, bool fStratum)
   return ret;
 }
 
+
+
+#if 0
+class Witnessifier : public boost::static_visitor<bool>
+{
+  public:
+    CScriptID result;
+
+    bool operator()(CWallet *wallet, const CNoDestination &dest) const { return false; }
+
+    bool operator()(CWallet *wallet, const CKeyID &keyID) {
+      CPubKey pubkey;
+      if (wallet) {
+        CScript basescript = GetScriptForDestination(keyID);
+
+        //isminetype typ;
+        //typ = IsMine(*wallet, basescript, SIGVERSION_WITNESS_V0))
+        //if (typ != ISMINE_SPENDABLE && typ != ISMINE_WATCH_SOLVABLE)
+        if (!IsMine(*wallet, basescript))
+          return false;
+
+        CScript witscript = GetScriptForWitness(basescript);
+        wallet->AddCScript(witscript);
+        result = CScriptID(witscript);
+        return true;
+      }
+      return false;
+    }
+
+    bool operator()(CWallet *wallet, const CScriptID &scriptID) {
+      CScript subscript;
+      if (wallet->GetCScript(scriptID, subscript)) {
+        int witnessversion;
+        std::vector<unsigned char> witprog;
+        if (subscript.IsWitnessProgram(witnessversion, witprog)) {
+          result = scriptID;
+          return true;
+        }
+
+        //isminetype typ;
+        //typ = IsMine(*pwalletMain, subscript, SIGVERSION_WITNESS_V0);
+        //if (typ != ISMINE_SPENDABLE && typ != ISMINE_WATCH_SOLVABLE)
+        if (!IsMine(*wallet, subscript))
+          return false;
+
+        CScript witscript = GetScriptForWitness(subscript);
+        wallet->AddCScript(witscript);
+        result = CScriptID(witscript);
+        return true;
+      }
+      return false;
+    }
+};
+#endif
+
+
+Value rpc_wallet_witaddr(CIface *iface, const Array& params, bool fStratum)
+{
+
+  if (fHelp || params.size() != 1)
+    throw runtime_error(
+        "wallet.witaddr <addr>\n"
+        "Returns a witness program which references the coin address specified.");
+
+  CWallet *wallet = GetWallet(iface);
+  string strAccount;
+
+  // Parse the account first so we don't generate a key if there's an error
+  CCoinAddr address(params[0].get_str());
+  if (!address.IsValid())
+    throw JSONRPCError(-5, "Invalid coin address specified.");
+
+  if (!IsWitnessEnabled(iface, GetBestBlockIndex(iface))) {
+    throw JSONRPCError(-4, "Segregated witness is not enabled on the network.");
+  }
+
+  if (!GetCoinAddr(wallet, address, strAccount)) {
+    throw JSONRPCError(-5, "No account associated with coin address.");
+  }
+
+  CKeyID keyID;
+  CScriptID scriptID;
+  CScriptID result;
+  if (address.GetKeyID(keyID)) {
+    CScript basescript = GetScriptForDestination(keyID);
+
+    if (!IsMine(*wallet, basescript))
+      throw JSONRPCError(-5, "No local account associated with coin address.");
+
+    CScript witscript = GetScriptForWitness(basescript);
+    wallet->AddCScript(witscript);
+    result = CScriptID(witscript);
+  } else if (address.GetScriptID(scriptID)) {
+    CScript subscript;
+    if (wallet->GetCScript(scriptID, subscript)) {
+      int witnessversion;
+      std::vector<unsigned char> witprog;
+      if (subscript.IsWitnessProgram(witnessversion, witprog)) {
+        /* ID is already for a witness program script */
+        result = scriptID;
+      } else {
+        //isminetype typ;
+        //typ = IsMine(*pwalletMain, subscript, SIGVERSION_WITNESS_V0);
+        //if (typ != ISMINE_SPENDABLE && typ != ISMINE_WATCH_SOLVABLE)
+        if (!IsMine(*wallet, subscript))
+          throw JSONRPCError(-5, "No local account associated with coin address.");
+
+        CScript witscript = GetScriptForWitness(subscript);
+        wallet->AddCScript(witscript);
+        result = CScriptID(witscript);
+      }
+    }
+  } else /* ?? */ {
+    throw JSONRPCError(-5, "Coin address could not be parsed.");
+  }
+
+  /* persist */
+  wallet->SetAddressBookName(result, strAccount);
+
+  return (CCoinAddr(result).ToString());
+}
+
 Value rpc_wallet_recvbyaccount(CIface *iface, const Array& params, bool fStratum)
 {
   int ifaceIndex = GetCoinIndex(iface);
@@ -2636,6 +2766,7 @@ Value rpc_wallet_unspent(CIface *iface, const Array& params, bool fStratum)
     const CScript& pk = out.tx->vout[out.i].scriptPubKey;
     Object entry;
     entry.push_back(Pair("txid", out.tx->GetHash().GetHex()));
+    entry.push_back(Pair("hash", out.tx->GetWitnessHash().GetHex()));
     entry.push_back(Pair("vout", out.i));
     entry.push_back(Pair("script", pk.ToString()));
     entry.push_back(Pair("scriptPubKey", HexStr(pk.begin(), pk.end())));
@@ -2675,6 +2806,7 @@ Value rpc_wallet_select(CIface *iface, const Array& params, bool fStratum)
 
     Object entry;
     entry.push_back(Pair("txid", wtx->GetHash().GetHex()));
+    entry.push_back(Pair("hash", wtx->GetWitnessHash().GetHex()));
     entry.push_back(Pair("vout", nOut));
     entry.push_back(Pair("script", pk.ToString()));
     entry.push_back(Pair("scriptPubKey", HexStr(pk.begin(), pk.end())));
@@ -3055,7 +3187,7 @@ Value rpc_wallet_multisend(CIface *iface, const Array& params, bool fStratum)
       throw JSONRPCError(-6, "Insufficient funds");
     throw JSONRPCError(-4, "Transaction creation failed");
   }
-  if (!pwalletMain->CommitTransaction(wtx, keyChange))
+  if (!pwalletMain->CommitTransaction(wtx))
     throw JSONRPCError(-4, "Transaction commit failed");
 
   return wtx.GetHash().GetHex();
@@ -4539,6 +4671,11 @@ const RPCOp WALLET_ADDR = {
   "Syntax: <account>\n"
   "Returns the current hash address for receiving payments to this account."
 }; 
+const RPCOp WALLET_WITADDR = {
+  &rpc_wallet_witaddr, 1, {RPC_STRING},
+  "Syntax: <coin address>\n"
+  "Returns a witness program which references the coin address specified."
+}; 
 const RPCOp WALLET_LISTADDR = {
   &rpc_wallet_addrlist, 1, {RPC_ACCOUNT},
   "Syntax: <account>\n"
@@ -4837,6 +4974,7 @@ void RegisterRPCOpDefaults(int ifaceIndex)
   RegisterRPCOp(ifaceIndex, "tx.validate", TX_VALIDATE);
 
   RegisterRPCOp(ifaceIndex, "wallet.addr", WALLET_ADDR);
+  RegisterRPCOp(ifaceIndex, "wallet.witaddr", WALLET_WITADDR);
   RegisterRPCOp(ifaceIndex, "wallet.listaddr", WALLET_LISTADDR);
   RegisterRPCOp(ifaceIndex, "wallet.balance", WALLET_BALANCE);
   RegisterRPCOp(ifaceIndex, "wallet.export", WALLET_EXPORT);

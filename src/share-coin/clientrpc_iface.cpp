@@ -23,6 +23,8 @@
  *  @endcopyright
  */  
 
+#include <list>
+
 #include "shcoind.h"
 #include "main.h"
 #include "util.h"
@@ -31,6 +33,7 @@
 #include "clientrpc_iface.h"
 #include "netbase.h"
 
+#define stack_t sigstack_t
 #include <boost/asio.hpp>
 #include <boost/asio/ip/v6_only.hpp>
 #include <boost/bind.hpp>
@@ -43,7 +46,7 @@
 #include <boost/asio/ssl.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <boost/shared_ptr.hpp>
-#include <list>
+#undef stack_t
 
 using namespace std;
 using namespace boost;

@@ -132,6 +132,9 @@ bool shc_FillBlockIndex(txlist& vMatrix, txlist& vSpring, txlist& vCert, txlist&
     pindexNew->nBits          = block.nBits;
     pindexNew->nNonce         = block.nNonce;
 
+    if (lastIndex)
+      pindexNew->BuildSkip();
+
     if (!pindexNew->CheckIndex())
       return error(SHERR_INVAL, "LoadBlockIndex() : CheckIndex failed at height %d", pindexNew->nHeight);
 
@@ -557,14 +560,19 @@ bool shc_RestoreBlockIndex()
 {
   CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);
   bc_t *chain = GetBlockChain(iface);
+  bc_t *chain_tx = GetBlockTxChain(iface);
   bc_t *bc;
   char path[PATH_MAX+1];
   unsigned char *sBlockData;
   size_t sBlockLen;
   unsigned int maxHeight;
   bcsize_t height;
+  int nBlockPos;
+  int nTxPos;
   int err;
   bool ret;
+
+/* DEBUG: TODO: remove "shc_block.*" and "shc_tx.*" first */
 
 #if 0
   {
@@ -581,8 +589,32 @@ fprintf(stderr, "DEBUG: shc_RestoreBlockIndex: erased current block-chain index 
   }
 #endif
 
+  /* create fresh "tx.dat" */
+  {
+    SHCTxDB txdb("cr");
+    txdb.Close();
+  }
+
+#if 0
+  {
+    err = bc_idx_open(chain);
+    if (!err) chain->idx_map.hdr->of = 0; /* woopsie-daisy */ 
+
+    bc_t *tx_bc = GetBlockTxChain(iface);
+    err = bc_idx_open(tx_bc);
+    if (!err) tx_bc->idx_map.hdr->of = 0; /* woopsie-daisy */ 
+  }
+#endif
+
+  /* unero numero */
   if (!shc_CreateGenesisBlock())
     return (false);
+
+  /* reset hash tables now that their chain is open */
+  bc_table_clear(chain);
+  bc_table_clear(chain_tx);
+
+  SHCTxDB txdb;
 
   uint256 hash = shc_hashGenesisBlock;
   {
@@ -614,16 +646,21 @@ fprintf(stderr, "DEBUG: shc_RestoreBlockIndex: erased current block-chain index 
       /* write tx ref's */
       BOOST_FOREACH(CTransaction& tx, block.vtx) {
         tx.WriteTx(SHC_COIN_IFACE, height);
-      }
 
+        nBlockPos = nTxPos = -1;
+        (void)bc_idx_find(chain, hash.GetRaw(), NULL, &nBlockPos);
+        (void)bc_idx_find(chain_tx, tx.GetHash().GetRaw(), NULL, &nTxPos);
+        CDiskTxPos posThisTx(SHC_COIN_IFACE, nBlockPos, nTxPos);
+        txdb.AddTxIndex(tx, posThisTx, height);
+      }
     }
-fprintf(stderr, "DEBUG: shc_RestoreBlocKIndex: wrote %d blocks\n", height);
+    Debug("shc_RestoreBlocKIndex: database rebuilt -- wrote %d blocks", height);
 
     bc_close(bc);
   }
   bc_idle(chain);
+  bc_idle(chain_tx);
 
-  SHCTxDB txdb;
   txdb.WriteHashBestChain(hash);
   ret = txdb.LoadBlockIndex();
   txdb.Close();

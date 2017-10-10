@@ -54,6 +54,9 @@ using namespace std;
 using namespace boost;
 
 
+#define EMC2_MAJORITY_WINDOW 2500
+
+
 uint256 emc2_hashGenesisBlock("0x4e56204bb7b8ac06f860ff1c845f03f984303b5b97eb7b42868f714611aed94b");
 static CBigNum emc2_bnProofOfWorkLimit(~uint256(0) >> 20);
 static const int64 emc2_nTargetTimespan = 3.5 * 24 * 60 * 60; // Einsteinium: 3.5 days
@@ -397,11 +400,11 @@ static bool emc2_ConnectInputs(CTransaction *tx, MapPrevTx inputs, map<uint256, 
     if (!(fBlock && (GetBestHeight(EMC2_COIN_IFACE < EMC2_Checkpoints::GetTotalBlocksEstimate()))))
     {
       // Verify signature
-      if (!VerifySignature(txPrev, *tx, i, fStrictPayToScriptHash, 0))
+      if (!VerifySignature(EMC2_COIN_IFACE, txPrev, *tx, i, fStrictPayToScriptHash, 0))
       {
         // only during transition phase for P2SH: do not invoke anti-DoS code for
         // potentially old clients relaying bad P2SH transactions
-        if (fStrictPayToScriptHash && VerifySignature(txPrev, *tx, i, false, 0))
+        if (fStrictPayToScriptHash && VerifySignature(EMC2_COIN_IFACE, txPrev, *tx, i, false, 0))
           return error(SHERR_INVAL, "ConnectInputs() : %s P2SH VerifySignature failed", tx->GetHash().ToString().substr(0,10).c_str());
 
         return error(SHERR_INVAL, "ConnectInputs() : %s VerifySignature failed", tx->GetHash().ToString().substr(0,10).c_str());
@@ -432,16 +435,32 @@ static bool emc2_ConnectInputs(CTransaction *tx, MapPrevTx inputs, map<uint256, 
   return true;
 }
 
+
+static int64_t emc2_GetTxWeight(const CTransaction& tx)
+{
+  int64_t weight = 0;
+
+  weight += ::GetSerializeSize(tx, SER_NETWORK, EMC2_PROTOCOL_VERSION | SERIALIZE_TRANSACTION_NO_WITNESS) * (EMC2_WITNESS_SCALE_FACTOR - 1);
+  weight += ::GetSerializeSize(tx, SER_NETWORK, EMC2_PROTOCOL_VERSION);
+ 
+  return (weight);
+}
+
+
 CBlock* emc2_CreateNewBlock(const CPubKey& rkey)
 {
   CIface *iface = GetCoinByIndex(EMC2_COIN_IFACE);
   CBlockIndex* pindexPrev = GetBestBlockIndex(iface);
+  const int nHeight = GetBestHeight(iface);
+  bool fWitnessEnabled = false;
 
   // Create new block
   //auto_ptr<CBlock> pblock(new CBlock());
   auto_ptr<EMC2Block> pblock(new EMC2Block());
   if (!pblock.get())
     return NULL;
+
+  fWitnessEnabled = IsWitnessEnabled(iface, pindexPrev);
 
   /* create emc2 coinbase tx */
   CTransaction txNew;
@@ -450,6 +469,7 @@ CBlock* emc2_CreateNewBlock(const CPubKey& rkey)
   txNew.vout.resize(2);
   txNew.vout[0].scriptPubKey = EMC2_CHARITY_SCRIPT;
   txNew.vout[1].scriptPubKey << rkey << OP_CHECKSIG;
+  txNew.vin[0].scriptSig = CScript() << nHeight << OP_0;
 
   // Add our coinbase tx as first transaction
   pblock->vtx.push_back(txNew);
@@ -468,6 +488,11 @@ CBlock* emc2_CreateNewBlock(const CPubKey& rkey)
       CTransaction& tx = (*mi).second;
       if (tx.IsCoinBase() || !tx.IsFinal(EMC2_COIN_IFACE))
         continue;
+
+      if (!fWitnessEnabled && !tx.wit.IsNull()) {
+        /* cannot reference a witness-enabled tx from a non-witness block */
+        continue;
+      }
 
       EMC2Orphan* porphan = NULL;
       double dPriority = 0;
@@ -519,7 +544,8 @@ continue;
     map<uint256, CTxIndex> mapTestPool;
     uint64 nBlockSize = 1000;
     uint64 nBlockTx = 0;
-    int nBlockSigOps = 100;
+    int nSigOpCost = 100;
+    int64_t nBlockWeight = 4000;
     while (!mapPriority.empty())
     {
       // Take highest priority transaction off priority queue
@@ -527,20 +553,19 @@ continue;
       CTransaction& tx = *(*mapPriority.begin()).second;
       mapPriority.erase(mapPriority.begin());
 
-      // Size limits
-      unsigned int nTxSize = ::GetSerializeSize(tx, SER_NETWORK, EMC2_PROTOCOL_VERSION);
-      if (nBlockSize + nTxSize >= MAX_BLOCK_SIZE_GEN(iface))
-        continue;
+      int64_t nTxWeight = emc2_GetTxWeight(tx);
+      if (nBlockWeight + nTxWeight > MAX_BLOCK_WEIGHT(iface))
+        continue; /* too many puppies */
 
-      // Legacy limits on sigOps:
-      unsigned int nTxSigOps = tx.GetLegacySigOpCount();
-      if (nBlockSigOps + nTxSigOps >= MAX_BLOCK_SIGOPS(iface))
-        continue;
+      CWallet *wallet = GetWallet(EMC2_COIN_IFACE);
+      bool fAllowFree = false;
+      if (nBlockSize <= 1000 && 
+/* DEBUG: estimateSmartPriority */
+          wallet->AllowFree(dPriority)) {
+        fAllowFree = true;
+      }
 
-      // Transaction fee required depends on block size
-      // emc2d: Reduce the exempted free transactions to 500 bytes (from Bitcoin's 3000 bytes)
-      bool fAllowFree = (nBlockSize + nTxSize < 1500 || CTransaction::AllowFree(dPriority));
-      int64 nMinFee = tx.GetMinFee(nBlockSize, fAllowFree, GMF_BLOCK);
+      int64 nMinFee = tx.GetMinFee(EMC2_COIN_IFACE, nBlockSize, fAllowFree, GMF_BLOCK);
 
       // Connecting shouldn't fail due to dependency on other memory pool transactions
       // because we're already processing them in order of dependency
@@ -562,8 +587,11 @@ continue;
       if (nTxFees < nMinFee)
         continue;
 
-      nTxSigOps += tx.GetP2SHSigOpCount(mapInputs);
-      if (nBlockSigOps + nTxSigOps >= MAX_BLOCK_SIGOPS(iface))
+      /* restrict maximum sigops. */
+      int64_t nCost = tx.GetSigOpCost(mapInputs);
+      if (nCost > MAX_TX_SIGOP_COST(iface))
+        continue;
+      if (nSigOpCost + nCost > MAX_BLOCK_SIGOP_COST(iface))
         continue;
 
       if (!emc2_ConnectInputs(&tx, mapInputs, mapTestPoolTmp, CDiskTxPos(0,0,0), pindexPrev, false, true))
@@ -573,9 +601,10 @@ continue;
 
       // Added
       pblock->vtx.push_back(tx);
-      nBlockSize += nTxSize;
+      nBlockSize += ::GetSerializeSize(tx, SER_NETWORK, EMC2_PROTOCOL_VERSION);
+      nBlockWeight += nTxWeight;
       ++nBlockTx;
-      nBlockSigOps += nTxSigOps;
+      nSigOpCost += nCost;
       nFees += nTxFees;
 
       // Add transactions that depend on this one to the priority queue
@@ -616,6 +645,8 @@ continue;
   pblock->nBits          = pblock->GetNextWorkRequired(pindexPrev);
   pblock->nNonce         = 0;
   pblock->vtx[0].vin[0].scriptSig = CScript() << OP_0 << OP_0;
+
+  core_GenerateCoinbaseCommitment(iface, *pblock, pindexPrev);
 
   return pblock.release();
 }
@@ -750,7 +781,7 @@ bool EMC2_CTxMemPool::accept(CTxDB& txdb, CTransaction &tx, bool fCheckInputs, b
     }
 
     // Check for non-standard pay-to-script-hash in inputs
-    if (!tx.AreInputsStandard(mapInputs) && !fTestNet)
+    if (!tx.AreInputsStandard(EMC2_COIN_IFACE, mapInputs) && !fTestNet)
       return error(SHERR_INVAL, "CTxMemPool::accept() : nonstandard transaction input");
 
     // Note: if you modify this code to accept non-standard transactions, then
@@ -900,6 +931,23 @@ unsigned int emc2_ComputeMinWork(unsigned int nBase, int64 nTime)
 }
 
 
+
+static bool emc2_IsSuperMajority(int minVersion, const CBlockIndex* pstart, unsigned nRequired)
+{
+  unsigned int nFound = 0;
+
+  for (int i = 0; i < EMC2_MAJORITY_WINDOW &&
+      nFound < nRequired && pstart != NULL; i++) {
+    if (pstart->nVersion >= minVersion)
+      ++nFound;
+    pstart = pstart->pprev;
+  }
+
+  return (nFound >= nRequired);
+}
+
+
+
 bool emc2_ProcessBlock(CNode* pfrom, CBlock* pblock)
 {
   int ifaceIndex = EMC2_COIN_IFACE;
@@ -919,6 +967,22 @@ bool emc2_ProcessBlock(CNode* pfrom, CBlock* pblock)
   if (!pblock->CheckBlock()) {
 pblock->print();
     return error(SHERR_INVAL, "ProcessBlock() : CheckBlock FAILED");
+  }
+
+  bool checkHeightMismatch = false;
+  if (pblock->nVersion >= 2) {
+    CBlockIndex *pindexPrev = GetBestBlockIndex(iface);
+    if (emc2_IsSuperMajority(3, pindexPrev, 2375)) {
+      const int nHeight = (int)pindexPrev->nHeight;
+      CScript expect = CScript() << nHeight;
+      if (pblock->vtx[0].vin[0].scriptSig.size() < expect.size() ||
+          !std::equal(expect.begin(), expect.end(), pblock->vtx[0].vin[0].scriptSig.begin())) {
+        if (pfrom)
+          pfrom->Misbehaving(10);
+  pblock->print();
+        return error(SHERR_INVAL, "ProcessBlock: height mismatch.");
+      }
+    }
   }
 
   CBlockIndex* pcheckpoint = EMC2_Checkpoints::GetLastCheckpoint(*blockIndex);
@@ -1017,19 +1081,11 @@ bool EMC2Block::CheckBlock()
   if (vtx.empty()) {
     return (trust(-100, "(emc2) CheckBlock: block submitted with zero transactions"));
   }
-  if (vtx.size() > EMC2_MAX_BLOCK_SIZE) {
-    return (trust(-100, "(emc2) CheckBlock: vtx.size (%d) > %d", vtx.size(), EMC2_MAX_BLOCK_SIZE));
+
+  int64_t weight = GetBlockWeight(); 
+  if (weight > MAX_BLOCK_WEIGHT(iface)) {
+    return (trust(-100, "(emc2) CheckBlock: block weight (%d) > max (%d)", weight, MAX_BLOCK_WEIGHT(iface)));
   }
-  size_t ser_len = ::GetSerializeSize(*this, SER_NETWORK, EMC2_PROTOCOL_VERSION);
-  if (ser_len > EMC2_MAX_BLOCK_SIZE) {
-    return (trust(-100, "(emc2) CheckBlock: block size (%d) > max-block-size (%d)", ser_len, EMC2_MAX_BLOCK_SIZE));
-  }
-#if 0
-  if (vtx.empty() || vtx.size() > EMC2_MAX_BLOCK_SIZE || ::GetSerializeSize(*this, SER_NETWORK, EMC2_PROTOCOL_VERSION) > EMC2_MAX_BLOCK_SIZE) {
-print();
-    return error(SHERR_INVAL, "EMC2::CheckBlock: size limits failed");
-  }
-#endif
 
   if (!vtx[0].IsCoinBase()) {
     return (trust(-100, "(emc2) ChecKBlock: first transaction is not coin base"));
@@ -1081,12 +1137,19 @@ print();
 
   // Check merkleroot
   if (hashMerkleRoot != BuildMerkleTree()) {
-    return (trust(-100, "(emc20 CheckBlock: invalid merkle root hash"));
+    return (trust(-100, "(emc) CheckBlock: invalid merkle root hash"));
+  }
+
+  blkidx_t *blockIndex = GetBlockTable(EMC2_COIN_IFACE);
+  map<uint256, CBlockIndex*>::iterator miPrev = blockIndex->find(hashPrevBlock);
+  if (miPrev != blockIndex->end()) {
+    CBlockIndex *pindexPrev = (*miPrev).second;
+    if (!core_CheckBlockWitness(iface, (CBlock *)this, pindexPrev))
+      return (trust(-10, "(emc) CheckBlock: invalid witness integrity."));
   }
 
   return true;
 }
-
 
 
 
@@ -1691,40 +1754,22 @@ bool EMC2Block::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)
       }
     }
 
-    nSigOps += tx.GetLegacySigOpCount();
-    if (nSigOps > MAX_BLOCK_SIGOPS(iface)) {
-      return (trust(-100, "(emc2) ConnectBlock: too many sigops (%d > %d)", nSigOps, MAX_BLOCK_SIGOPS(iface)));
-    }
-
-#if 0
-    memcpy(b_hash, tx.GetHash().GetRaw(), sizeof(bc_hash_t));
-    err = bc_find(bc, b_hash, &nTxPos); 
-    if (err) {
-      return error(SHERR_INVAL, "EMC2Block::ConncetBlock: error finding tx hash.");
-    }
-#endif
-
     MapPrevTx mapInputs;
     CDiskTxPos posThisTx(EMC2_COIN_IFACE, nBlockPos, nTxPos);
-    if (!tx.IsCoinBase())
-    {
+    if (!tx.IsCoinBase()) {
       bool fInvalid;
       if (!tx.FetchInputs(txdb, mapQueuedChanges, this, false, mapInputs, fInvalid)) {
         sprintf(errbuf, "EMC2::ConnectBlock: FetchInputs failed for tx '%s' @ height %u\n", tx.GetHash().GetHex().c_str(), (unsigned int)nBlockPos);
         return error(SHERR_INVAL, errbuf);
       }
+    }
 
-      if (fStrictPayToScriptHash)
-      {
-        // Add in sigops done by pay-to-script-hash inputs;
-        // this is to prevent a "rogue miner" from creating
-        // an incredibly-expensive-to-validate block.
-        nSigOps += tx.GetP2SHSigOpCount(mapInputs);
-        if (nSigOps > MAX_BLOCK_SIGOPS(iface)) {
-          return (trust(-100, "(emc2) ConnectBlock: too many sigops (%d > %d)", nSigOps, MAX_BLOCK_SIGOPS(iface)));
-        }
-      }
+    nSigOps += tx.GetSigOpCost(mapInputs);
+    if (nSigOps > MAX_BLOCK_SIGOP_COST(iface)) {
+      return (trust(-100, "(emc2) ConnectBlock: sigop cost exceeded maximum (%d > %d)", nSigOps, MAX_BLOCK_SIGOP_COST(iface)));
+    }
 
+    if (!tx.IsCoinBase()) {
       nFees += tx.GetValueIn(mapInputs)-tx.GetValueOut();
 
       if (!emc2_ConnectInputs(&tx, mapInputs, mapQueuedChanges, posThisTx, pindex, true, false, fStrictPayToScriptHash)) {
@@ -2017,8 +2062,15 @@ bool EMC2Block::AddToBlockIndex()
   {
     pindexNew->pprev = (*miPrev).second;
     pindexNew->nHeight = pindexNew->pprev->nHeight + 1;
+    pindexNew->BuildSkip();
   }
+
   pindexNew->bnChainWork = (pindexNew->pprev ? pindexNew->pprev->bnChainWork : 0) + pindexNew->GetBlockWork();
+
+  if (IsWitnessEnabled(iface, pindexNew->pprev)) {
+    pindexNew->nStatus |= BIS_OPT_WITNESS;
+  }
+
 
   if (pindexNew->bnChainWork > bnBestChainWork) {
     EMC2TxDB txdb;
@@ -2074,3 +2126,16 @@ bool EMC2Block::SetBestChain(CBlockIndex* pindexNew)
 
   return true;
 }
+
+int64_t EMC2Block::GetBlockWeight()
+{
+  int64_t weight = 0;
+
+  weight += ::GetSerializeSize(*this, SER_NETWORK, EMC2_PROTOCOL_VERSION | SERIALIZE_TRANSACTION_NO_WITNESS) * (EMC2_WITNESS_SCALE_FACTOR - 1);
+  weight += ::GetSerializeSize(*this, SER_NETWORK, EMC2_PROTOCOL_VERSION);
+
+  return (weight);
+}
+
+
+

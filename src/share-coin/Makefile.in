@@ -127,11 +127,13 @@ am__objects_6 = $(am__objects_3) $(am__objects_4) $(am__objects_5) \
 	shcoind-rpccert_proto.$(OBJEXT) \
 	shcoind-rpccontext_proto.$(OBJEXT) shcoind-rpcdump.$(OBJEXT) \
 	shcoind-rpcnet.$(OBJEXT) shcoind-rpc_proto.$(OBJEXT) \
-	shcoind-rpcrawtransaction.$(OBJEXT) shcoind-protocol.$(OBJEXT) \
-	shcoind-block.$(OBJEXT) shcoind-coin.$(OBJEXT) \
-	shcoind-chain.$(OBJEXT) shcoind-matrix.$(OBJEXT) \
-	shcoind-spring.$(OBJEXT) shcoind-bloom.$(OBJEXT) \
-	shcoind-global.$(OBJEXT) shcoind-block_merkle.$(OBJEXT) \
+	shcoind-rpcrawtransaction.$(OBJEXT) \
+	shcoind-versionbits.$(OBJEXT) shcoind-txsignature.$(OBJEXT) \
+	shcoind-protocol.$(OBJEXT) shcoind-block.$(OBJEXT) \
+	shcoind-coin.$(OBJEXT) shcoind-chain.$(OBJEXT) \
+	shcoind-matrix.$(OBJEXT) shcoind-spring.$(OBJEXT) \
+	shcoind-bloom.$(OBJEXT) shcoind-global.$(OBJEXT) \
+	shcoind-block_merkle.$(OBJEXT) shcoind-wit_merkle.$(OBJEXT) \
 	shcoind-crypter.$(OBJEXT) shcoind-txidx.$(OBJEXT) \
 	shcoind-init.$(OBJEXT) shcoind-key.$(OBJEXT) \
 	shcoind-hdkey.$(OBJEXT) shcoind-keystore.$(OBJEXT) \
@@ -206,11 +208,14 @@ am__objects_11 = $(am__objects_8) $(am__objects_9) $(am__objects_10) \
 	test_shcoind-rpcdump.$(OBJEXT) test_shcoind-rpcnet.$(OBJEXT) \
 	test_shcoind-rpc_proto.$(OBJEXT) \
 	test_shcoind-rpcrawtransaction.$(OBJEXT) \
+	test_shcoind-versionbits.$(OBJEXT) \
+	test_shcoind-txsignature.$(OBJEXT) \
 	test_shcoind-protocol.$(OBJEXT) test_shcoind-block.$(OBJEXT) \
 	test_shcoind-coin.$(OBJEXT) test_shcoind-chain.$(OBJEXT) \
 	test_shcoind-matrix.$(OBJEXT) test_shcoind-spring.$(OBJEXT) \
 	test_shcoind-bloom.$(OBJEXT) test_shcoind-global.$(OBJEXT) \
 	test_shcoind-block_merkle.$(OBJEXT) \
+	test_shcoind-wit_merkle.$(OBJEXT) \
 	test_shcoind-crypter.$(OBJEXT) test_shcoind-txidx.$(OBJEXT) \
 	test_shcoind-init.$(OBJEXT) test_shcoind-key.$(OBJEXT) \
 	test_shcoind-hdkey.$(OBJEXT) test_shcoind-keystore.$(OBJEXT) \
@@ -521,6 +526,8 @@ common_includes = \
 	server/mruset.h \
 	server/netbase.h \
 	server/net.h \
+	server/txsignature.h \
+	server/versionbits.h \
 	server/protocol.h \
 	server/script.h \
 	server/scrypt.h \
@@ -614,6 +621,8 @@ server_sources = \
 	server/rpc/rpcnet.cpp \
 	server/rpc/rpc_proto.cpp \
 	server/rpc/rpcrawtransaction.cpp \
+	server/versionbits.cpp \
+	server/txsignature.cpp \
 	server/protocol.cpp \
 	server/block.cpp \
 	server/coin.cpp \
@@ -623,6 +632,7 @@ server_sources = \
 	server/bloom.cpp \
 	server/global.cpp \
 	server/block_merkle.cpp \
+	server/wit_merkle.cpp \
 	server/crypter.cpp \
 	server/txidx.cpp \
 	server/init.cpp \
@@ -922,14 +932,17 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-test_wallet.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-txext.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-txidx.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-txsignature.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-usde_block.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-usde_netmsg.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-usde_proto.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-usde_txidx.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-usde_wallet.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-versionbits.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-wallet.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-wallet_iface.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-walletdb.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-wit_merkle.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind_descriptor.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind_log.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind_opt.Po@am__quote@
@@ -1016,14 +1029,17 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-testcoin_key.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-txext.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-txidx.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-txsignature.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-usde_block.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-usde_netmsg.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-usde_proto.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-usde_txidx.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-usde_wallet.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-versionbits.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-wallet.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-wallet_iface.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-walletdb.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-wit_merkle.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unet.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unet_accept.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unet_bind.Po@am__quote@
@@ -2283,6 +2299,34 @@ shcoind-rpcrawtransaction.obj: server/rpc/rpcrawtransaction.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-rpcrawtransaction.obj `if test -f 'server/rpc/rpcrawtransaction.cpp'; then $(CYGPATH_W) 'server/rpc/rpcrawtransaction.cpp'; else $(CYGPATH_W) '$(srcdir)/server/rpc/rpcrawtransaction.cpp'; fi`
 
+shcoind-versionbits.o: server/versionbits.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-versionbits.o -MD -MP -MF $(DEPDIR)/shcoind-versionbits.Tpo -c -o shcoind-versionbits.o `test -f 'server/versionbits.cpp' || echo '$(srcdir)/'`server/versionbits.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-versionbits.Tpo $(DEPDIR)/shcoind-versionbits.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/versionbits.cpp' object='shcoind-versionbits.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-versionbits.o `test -f 'server/versionbits.cpp' || echo '$(srcdir)/'`server/versionbits.cpp
+
+shcoind-versionbits.obj: server/versionbits.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-versionbits.obj -MD -MP -MF $(DEPDIR)/shcoind-versionbits.Tpo -c -o shcoind-versionbits.obj `if test -f 'server/versionbits.cpp'; then $(CYGPATH_W) 'server/versionbits.cpp'; else $(CYGPATH_W) '$(srcdir)/server/versionbits.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-versionbits.Tpo $(DEPDIR)/shcoind-versionbits.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/versionbits.cpp' object='shcoind-versionbits.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-versionbits.obj `if test -f 'server/versionbits.cpp'; then $(CYGPATH_W) 'server/versionbits.cpp'; else $(CYGPATH_W) '$(srcdir)/server/versionbits.cpp'; fi`
+
+shcoind-txsignature.o: server/txsignature.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-txsignature.o -MD -MP -MF $(DEPDIR)/shcoind-txsignature.Tpo -c -o shcoind-txsignature.o `test -f 'server/txsignature.cpp' || echo '$(srcdir)/'`server/txsignature.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-txsignature.Tpo $(DEPDIR)/shcoind-txsignature.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/txsignature.cpp' object='shcoind-txsignature.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-txsignature.o `test -f 'server/txsignature.cpp' || echo '$(srcdir)/'`server/txsignature.cpp
+
+shcoind-txsignature.obj: server/txsignature.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-txsignature.obj -MD -MP -MF $(DEPDIR)/shcoind-txsignature.Tpo -c -o shcoind-txsignature.obj `if test -f 'server/txsignature.cpp'; then $(CYGPATH_W) 'server/txsignature.cpp'; else $(CYGPATH_W) '$(srcdir)/server/txsignature.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-txsignature.Tpo $(DEPDIR)/shcoind-txsignature.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/txsignature.cpp' object='shcoind-txsignature.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-txsignature.obj `if test -f 'server/txsignature.cpp'; then $(CYGPATH_W) 'server/txsignature.cpp'; else $(CYGPATH_W) '$(srcdir)/server/txsignature.cpp'; fi`
+
 shcoind-protocol.o: server/protocol.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-protocol.o -MD -MP -MF $(DEPDIR)/shcoind-protocol.Tpo -c -o shcoind-protocol.o `test -f 'server/protocol.cpp' || echo '$(srcdir)/'`server/protocol.cpp
 @am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-protocol.Tpo $(DEPDIR)/shcoind-protocol.Po
@@ -2394,6 +2438,20 @@ shcoind-block_merkle.obj: server/block_merkle.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/block_merkle.cpp' object='shcoind-block_merkle.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-block_merkle.obj `if test -f 'server/block_merkle.cpp'; then $(CYGPATH_W) 'server/block_merkle.cpp'; else $(CYGPATH_W) '$(srcdir)/server/block_merkle.cpp'; fi`
+
+shcoind-wit_merkle.o: server/wit_merkle.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-wit_merkle.o -MD -MP -MF $(DEPDIR)/shcoind-wit_merkle.Tpo -c -o shcoind-wit_merkle.o `test -f 'server/wit_merkle.cpp' || echo '$(srcdir)/'`server/wit_merkle.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-wit_merkle.Tpo $(DEPDIR)/shcoind-wit_merkle.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/wit_merkle.cpp' object='shcoind-wit_merkle.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-wit_merkle.o `test -f 'server/wit_merkle.cpp' || echo '$(srcdir)/'`server/wit_merkle.cpp
+
+shcoind-wit_merkle.obj: server/wit_merkle.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-wit_merkle.obj -MD -MP -MF $(DEPDIR)/shcoind-wit_merkle.Tpo -c -o shcoind-wit_merkle.obj `if test -f 'server/wit_merkle.cpp'; then $(CYGPATH_W) 'server/wit_merkle.cpp'; else $(CYGPATH_W) '$(srcdir)/server/wit_merkle.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-wit_merkle.Tpo $(DEPDIR)/shcoind-wit_merkle.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/wit_merkle.cpp' object='shcoind-wit_merkle.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-wit_merkle.obj `if test -f 'server/wit_merkle.cpp'; then $(CYGPATH_W) 'server/wit_merkle.cpp'; else $(CYGPATH_W) '$(srcdir)/server/wit_merkle.cpp'; fi`
 
 shcoind-crypter.o: server/crypter.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-crypter.o -MD -MP -MF $(DEPDIR)/shcoind-crypter.Tpo -c -o shcoind-crypter.o `test -f 'server/crypter.cpp' || echo '$(srcdir)/'`server/crypter.cpp
@@ -3151,6 +3209,34 @@ test_shcoind-rpcrawtransaction.obj: server/rpc/rpcrawtransaction.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-rpcrawtransaction.obj `if test -f 'server/rpc/rpcrawtransaction.cpp'; then $(CYGPATH_W) 'server/rpc/rpcrawtransaction.cpp'; else $(CYGPATH_W) '$(srcdir)/server/rpc/rpcrawtransaction.cpp'; fi`
 
+test_shcoind-versionbits.o: server/versionbits.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-versionbits.o -MD -MP -MF $(DEPDIR)/test_shcoind-versionbits.Tpo -c -o test_shcoind-versionbits.o `test -f 'server/versionbits.cpp' || echo '$(srcdir)/'`server/versionbits.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-versionbits.Tpo $(DEPDIR)/test_shcoind-versionbits.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/versionbits.cpp' object='test_shcoind-versionbits.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-versionbits.o `test -f 'server/versionbits.cpp' || echo '$(srcdir)/'`server/versionbits.cpp
+
+test_shcoind-versionbits.obj: server/versionbits.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-versionbits.obj -MD -MP -MF $(DEPDIR)/test_shcoind-versionbits.Tpo -c -o test_shcoind-versionbits.obj `if test -f 'server/versionbits.cpp'; then $(CYGPATH_W) 'server/versionbits.cpp'; else $(CYGPATH_W) '$(srcdir)/server/versionbits.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-versionbits.Tpo $(DEPDIR)/test_shcoind-versionbits.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/versionbits.cpp' object='test_shcoind-versionbits.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-versionbits.obj `if test -f 'server/versionbits.cpp'; then $(CYGPATH_W) 'server/versionbits.cpp'; else $(CYGPATH_W) '$(srcdir)/server/versionbits.cpp'; fi`
+
+test_shcoind-txsignature.o: server/txsignature.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-txsignature.o -MD -MP -MF $(DEPDIR)/test_shcoind-txsignature.Tpo -c -o test_shcoind-txsignature.o `test -f 'server/txsignature.cpp' || echo '$(srcdir)/'`server/txsignature.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-txsignature.Tpo $(DEPDIR)/test_shcoind-txsignature.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/txsignature.cpp' object='test_shcoind-txsignature.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-txsignature.o `test -f 'server/txsignature.cpp' || echo '$(srcdir)/'`server/txsignature.cpp
+
+test_shcoind-txsignature.obj: server/txsignature.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-txsignature.obj -MD -MP -MF $(DEPDIR)/test_shcoind-txsignature.Tpo -c -o test_shcoind-txsignature.obj `if test -f 'server/txsignature.cpp'; then $(CYGPATH_W) 'server/txsignature.cpp'; else $(CYGPATH_W) '$(srcdir)/server/txsignature.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-txsignature.Tpo $(DEPDIR)/test_shcoind-txsignature.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/txsignature.cpp' object='test_shcoind-txsignature.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-txsignature.obj `if test -f 'server/txsignature.cpp'; then $(CYGPATH_W) 'server/txsignature.cpp'; else $(CYGPATH_W) '$(srcdir)/server/txsignature.cpp'; fi`
+
 test_shcoind-protocol.o: server/protocol.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-protocol.o -MD -MP -MF $(DEPDIR)/test_shcoind-protocol.Tpo -c -o test_shcoind-protocol.o `test -f 'server/protocol.cpp' || echo '$(srcdir)/'`server/protocol.cpp
 @am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-protocol.Tpo $(DEPDIR)/test_shcoind-protocol.Po
@@ -3262,6 +3348,20 @@ test_shcoind-block_merkle.obj: server/block_merkle.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/block_merkle.cpp' object='test_shcoind-block_merkle.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-block_merkle.obj `if test -f 'server/block_merkle.cpp'; then $(CYGPATH_W) 'server/block_merkle.cpp'; else $(CYGPATH_W) '$(srcdir)/server/block_merkle.cpp'; fi`
+
+test_shcoind-wit_merkle.o: server/wit_merkle.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-wit_merkle.o -MD -MP -MF $(DEPDIR)/test_shcoind-wit_merkle.Tpo -c -o test_shcoind-wit_merkle.o `test -f 'server/wit_merkle.cpp' || echo '$(srcdir)/'`server/wit_merkle.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-wit_merkle.Tpo $(DEPDIR)/test_shcoind-wit_merkle.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/wit_merkle.cpp' object='test_shcoind-wit_merkle.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-wit_merkle.o `test -f 'server/wit_merkle.cpp' || echo '$(srcdir)/'`server/wit_merkle.cpp
+
+test_shcoind-wit_merkle.obj: server/wit_merkle.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-wit_merkle.obj -MD -MP -MF $(DEPDIR)/test_shcoind-wit_merkle.Tpo -c -o test_shcoind-wit_merkle.obj `if test -f 'server/wit_merkle.cpp'; then $(CYGPATH_W) 'server/wit_merkle.cpp'; else $(CYGPATH_W) '$(srcdir)/server/wit_merkle.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-wit_merkle.Tpo $(DEPDIR)/test_shcoind-wit_merkle.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/wit_merkle.cpp' object='test_shcoind-wit_merkle.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-wit_merkle.obj `if test -f 'server/wit_merkle.cpp'; then $(CYGPATH_W) 'server/wit_merkle.cpp'; else $(CYGPATH_W) '$(srcdir)/server/wit_merkle.cpp'; fi`
 
 test_shcoind-crypter.o: server/crypter.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-crypter.o -MD -MP -MF $(DEPDIR)/test_shcoind-crypter.Tpo -c -o test_shcoind-crypter.o `test -f 'server/crypter.cpp' || echo '$(srcdir)/'`server/crypter.cpp

@@ -53,6 +53,21 @@ static int emc2_init(CIface *iface, void *_unused_)
   int ifaceIndex = GetCoinIndex(iface);
   int err;
 
+  iface->nRuleChangeActivationThreshold = 15120; // 75% of 20160
+  iface->nMinerConfirmationWindow = 20160; /* aprox */
+
+  iface->vDeployments[DEPLOYMENT_TESTDUMMY].bit = 28;
+  iface->vDeployments[DEPLOYMENT_TESTDUMMY].nStartTime = 1199145601; /* Jan 1, 2008 */
+  iface->vDeployments[DEPLOYMENT_TESTDUMMY].nTimeout = 1230767999; /* Dec 31, 2008 */
+
+  iface->vDeployments[DEPLOYMENT_CSV].bit = 0;
+  iface->vDeployments[DEPLOYMENT_CSV].nStartTime = 1485561600; /* Jan 28, 2017 */
+  iface->vDeployments[DEPLOYMENT_CSV].nTimeout = 1517356801; /* Jan 31, 2018 */
+
+  iface->vDeployments[DEPLOYMENT_SEGWIT].bit = 1;
+  iface->vDeployments[DEPLOYMENT_SEGWIT].nStartTime = 1485561600; /* Jan 28, 2017 */
+  iface->vDeployments[DEPLOYMENT_SEGWIT].nTimeout = 1517356801; /* Jan 31, 2018 */
+
   RegisterRPCOpDefaults(EMC2_COIN_IFACE);
 
   emc2Wallet = new EMC2Wallet();
@@ -294,8 +309,10 @@ coin_iface_t emc2_coin_iface = {
   EMC2_MIN_INPUT,
   EMC2_MAX_BLOCK_SIZE,
   EMC2_MAX_ORPHAN_TRANSACTIONS,
+  EMC2_MAX_TRANSACTION_WEIGHT,
   EMC2_MIN_TX_FEE,
   EMC2_MIN_RELAY_TX_FEE,
+  EMC2_MAX_TX_FEE,
   EMC2_MAX_MONEY,
   EMC2_COINBASE_MATURITY, 
   EMC2_MAX_SIGOPS,

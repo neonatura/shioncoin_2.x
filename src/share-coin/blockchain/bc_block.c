@@ -770,12 +770,19 @@ int bc_arch_write(bc_t *bc, bc_hash_t hash, void *raw_data, int data_len)
  */
 bc_t *GetBlockChain(CIface *iface)
 {
+  int err;
 
   if (!iface->bc_block) {
-    char name[4096];
+    char name[256];
 
     sprintf(name, "%s_block", iface->name);
-    bc_open(name, &iface->bc_block);
+    err = bc_open(name, &iface->bc_block);
+#if 0
+if (err) {
+fprintf(stderr, "DEBUG: GetBlockChain: %d = bc_open(\"%s\")\n", err, name);
+return (NULL); /* DEBUG: */
+}
+#endif
   }
 
   return (iface->bc_block);
@@ -787,12 +794,19 @@ bc_t *GetBlockChain(CIface *iface)
  */
 bc_t *GetBlockTxChain(CIface *iface)
 {
+  int err;
 
   if (!iface->bc_tx) {
-    char name[4096];
+    char name[256];
 
     sprintf(name, "%s_tx", iface->name);
-    bc_open(name, &iface->bc_tx);
+    err = bc_open(name, &iface->bc_tx);
+#if 0
+if (err) {
+fprintf(stderr, "DEBUG: GetBlockTxChain: %d = bc_open(\"%s\")\n", err, name);
+return (NULL); /* DEBUG: */
+}
+#endif
   }
 
   return (iface->bc_tx);

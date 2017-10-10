@@ -101,6 +101,9 @@ public:
 
     bool SetBestChain(CBlockIndex*);
 
+    int64_t GetBlockWeight();
+
+
 //  protected: bool SetBestChainInner(CTxDB& txdb, CBlockIndex *pindexNew);
 };
 

@@ -33,9 +33,11 @@
 #include <share.h>
 #include "proto/coin_proto.h"
 
+#define stack_t sigstack_t
 #ifndef WIN32
 #include <signal.h>
 #endif
+#undef stack_t
 
 
 using namespace std;

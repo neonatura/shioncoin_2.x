@@ -36,6 +36,8 @@ extern TEST_exectx(CuTest*);
 extern TEST_coin_table(CuTest*);
 extern TEST_coin_spendall(CuTest*);
 extern TEST_ctxtx(CuTest*);
+extern TEST_scriptid(CuTest*);
+extern TEST_segwit(CuTest*);
 
 
 
@@ -90,8 +92,14 @@ int main(int argc, char *argv[])
   SUITE_ADD_TEST(suite, TEST_assettx);
   SUITE_ADD_TEST(suite, TEST_exectx);
   SUITE_ADD_TEST(suite, TEST_ctxtx);
-  SUITE_ADD_TEST(suite, TEST_channeltx);
+//  SUITE_ADD_TEST(suite, TEST_channeltx);
 //  SUITE_ADD_TEST(suite, TEST_offertx);
+  SUITE_ADD_TEST(suite, TEST_scriptid);
+
+  /* segwit tests */
+  SUITE_ADD_TEST(suite, TEST_segwit);
+
+  /* finale */
   SUITE_ADD_TEST(suite, TEST_coin_table);
   SUITE_ADD_TEST(suite, TEST_coin_spendall);
 

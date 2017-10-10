@@ -49,6 +49,9 @@ static int usde_init(CIface *iface, void *_unused_)
   int ifaceIndex = GetCoinIndex(iface);
   int err;
 
+  iface->nRuleChangeActivationThreshold = 15120; // 75% of 20160
+  iface->nMinerConfirmationWindow = 20160; /* aprox */
+
   RegisterRPCOpDefaults(USDE_COIN_IFACE);
 
   usdeWallet = new USDEWallet();
@@ -291,8 +294,10 @@ coin_iface_t usde_coin_iface = {
   USDE_MIN_INPUT,
   USDE_MAX_BLOCK_SIZE,
   USDE_MAX_ORPHAN_TRANSACTIONS,
+  USDE_MAX_TRANSACTION_WEIGHT,
   USDE_MIN_TX_FEE,
   USDE_MIN_RELAY_TX_FEE,
+  USDE_MAX_TX_FEE,
   USDE_MAX_MONEY,
   USDE_COINBASE_MATURITY, 
   USDE_MAX_SIGOPS,

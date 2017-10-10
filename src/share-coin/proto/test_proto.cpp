@@ -46,6 +46,9 @@ int64 TESTBlock::nTargetSpacing = 60; /* one minute */
 static int test_init(CIface *iface, void *_unused_)
 {
 
+  iface->nRuleChangeActivationThreshold = 9072;
+  iface->nMinerConfirmationWindow = 12096;
+
   SetWallet(TEST_COIN_IFACE, testWallet);
   return (0);
 }
@@ -204,8 +207,10 @@ coin_iface_t test_coin_iface = {
   TEST_MIN_INPUT,
   TEST_MAX_BLOCK_SIZE,
   TEST_MAX_ORPHAN_TRANSACTIONS,
+  TEST_MAX_TRANSACTION_WEIGHT,
   TEST_MIN_TX_FEE,
   TEST_MIN_RELAY_TX_FEE,
+  TEST_MAX_TX_FEE,
   TEST_MAX_MONEY,
   TEST_COINBASE_MATURITY, 
   TEST_MAX_SIGOPS,

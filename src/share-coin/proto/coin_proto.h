@@ -47,9 +47,23 @@ extern "C" {
   )
 
 
+#define SCALE_FACTOR 4
+
 
 #define MAX_BLOCK_SIGOPS(_iface) \
   ((_iface)->max_sigops)
+
+#define MAX_BLOCK_SIGOP_COST(_iface) \
+  ((_iface)->max_sigops * 4)
+
+#define MAX_TX_SIGOP_COST(_iface) \
+  (MAX_BLOCK_SIGOP_COST(_iface) / 5)
+
+#define MAX_BLOCK_SIZE(_iface) \
+  ((_iface)->max_block_size)
+
+#define MAX_BLOCK_WEIGHT(_iface) \
+  ((_iface)->max_block_size * 4)
 
 #define MAX_BLOCK_SIZE_GEN(_iface) \
   ((_iface)->max_block_size / 2)
@@ -57,11 +71,20 @@ extern "C" {
 #define MAX_ORPHAN_TRANSACTIONS(_iface) \
   ((_iface)->max_orphan_tx)
 
+#define MAX_TRANSACTION_WEIGHT(_iface) \
+  ((_iface)->max_tx_weight)
+
+#define MAX_TRANSACTION_FEE(_iface) \
+  ((_iface)->max_tx_fee)
+
 /**
  * The minimum fee applied to a tranaction.
  */
 #define MIN_TX_FEE(_iface) \
   (int64)(iface ? ((_iface)->min_tx_fee) : 0)
+
+#define MIN_RELAY_TX_FEE(_iface) \
+  (int64)(iface ? ((_iface)->min_relay_tx_fee) : 0)
 
 /**
  * The minimum coin value allowed to be transfered in a single transaction.
@@ -102,6 +125,33 @@ typedef int (*coin_f)(struct coin_iface_t * /*iface*/, void * /* arg */);
 #define HEADER_PREFIX(_iface) \
   ((_iface)->hdr_magic)
 
+
+
+
+enum DeploymentPos
+{
+    DEPLOYMENT_TESTDUMMY,
+    DEPLOYMENT_CSV, // Deployment of BIP68, BIP112, and BIP113.
+    DEPLOYMENT_SEGWIT, // Deployment of BIP141, BIP143, and BIP147.
+    // NOTE: Also add new deployments to VersionBitsDeploymentInfo in versionbits.cpp
+    MAX_VERSION_BITS_DEPLOYMENTS
+};
+
+/**
+ * Struct for each individual consensus rule change using BIP9.
+ */
+struct BIP9Deployment {
+  /** Bit position to select the particular bit in nVersion. */
+  int bit;
+  /** Start MedianTime for version bits miner confirmation. Can be a date in the past */
+  int64_t nStartTime;
+  /** Timeout/expiry MedianTime for the deployment attempt. */
+  int64_t nTimeout;
+};
+typedef struct BIP9Deployment BIP9Deployment;
+
+
+
 /**
  * A coin interface provides a specialized means to perform service operations.
  */
@@ -124,8 +174,10 @@ typedef struct coin_iface_t
   uint64_t min_input;
   uint64_t max_block_size;
   uint64_t max_orphan_tx;
+  uint64_t max_tx_weight;
   uint64_t min_tx_fee;
   uint64_t min_relay_tx_fee;
+  uint64_t max_tx_fee;
   uint64_t max_money;
   uint64_t coinbase_maturity;
   uint64_t max_sigops;
@@ -143,6 +195,11 @@ typedef struct coin_iface_t
   coin_f op_block_templ;
   coin_f op_tx_new;
   coin_f op_tx_pool;
+
+  /* BIP */
+  uint32_t nRuleChangeActivationThreshold;
+  uint32_t nMinerConfirmationWindow;
+  BIP9Deployment vDeployments[MAX_VERSION_BITS_DEPLOYMENTS];  
 
   bc_t *bc_block;
   bc_t *bc_tx;
@@ -164,6 +221,8 @@ typedef struct coin_iface_t
     uint64_t tot_spring_submit;
     uint64_t tot_spring_accept;
   } stat;
+
+
 } coin_iface_t;
 
 typedef struct coin_iface_t CIface;

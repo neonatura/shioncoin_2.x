@@ -38,7 +38,10 @@
 
 #define EMC2_MAX_ORPHAN_TRANSACTIONS 10000
 
+#define EMC2_MAX_TRANSACTION_WEIGHT 400000
+
 #define EMC2_MAX_SIGOPS 20000
+//#define EMC2_MAX_SIGOPS 80000 /* consensus.h, 07.20.17 */
 
 /** The maximum allowed drift time (past/future) for accepting new blocks. */
 #define EMC2_MAX_DRIFT_TIME 900 /* 15 minutes */ 
@@ -46,14 +49,34 @@
 static const int EMC2_PROTOCOL_VERSION = 70004;
 
 #define EMC2_COIN (uint64_t)100000000
-static const unsigned int EMC2_MAX_BLOCK_SIZE = 1000000;
+
+/** The maximum allowed size for a block excluding witness data, in bytes (network rule) */
+#define EMC2_MAX_BLOCK_SIZE 1000000
+
+#define EMC2_DEFAULT_BYTES_PER_SIGOP 20
+
+
+/** The maximum allowed size for a serialized block, in bytes (only for buffer size limits) */
+static const unsigned int EMC2_MAX_BLOCK_SERIALIZED_SIZE = 4000000;
+
+/** The maximum allowed weight for a block, see BIP 141 (network rule) */
+static const unsigned int EMC2_MAX_BLOCK_WEIGHT = 4000000;
+
+
 static const int64 EMC2_MIN_INPUT = 100000;
 static const int64 EMC2_MIN_TX_FEE = 100000;
 static const int64 EMC2_MIN_RELAY_TX_FEE = 1000;
-static const int64 EMC2_MAX_MONEY = 299792458 * EMC2_COIN;
+
+static const int64 EMC2_MAX_TX_FEE = 0.1 * EMC2_COIN;
+
+//static const int64 EMC2_MAX_MONEY = 299792458 * EMC2_COIN; < v0.13.3.0 
+static const int64 EMC2_MAX_MONEY = 298937393 * EMC2_COIN;
 
 /** The official EMC2 maturity is 40 depth. */
 static const int EMC2_COINBASE_MATURITY = 100;
+
+/* scaling factor */
+static const int EMC2_WITNESS_SCALE_FACTOR = SCALE_FACTOR;
 
 
 

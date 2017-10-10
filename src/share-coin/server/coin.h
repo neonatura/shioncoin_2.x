@@ -27,6 +27,18 @@
 #define __SERVER__COIN_H__
 
 
+bool core_VerifyCoinInputs(int ifaceIndex, CTransaction& tx, unsigned int nIn, CTxOut& prev);
+
+bool core_ConnectBlock(CBlock *block, CBlockIndex* pindex);
+
+bool core_DisconnectInputs(int ifaceIndex, CTransaction *tx);
+
+bool core_AcceptPoolTx(int ifaceIndex, CTransaction& tx, bool fCheckInputs);
+
+bool EraseTxCoins(CIface *iface, uint256 hash);
+
+bool WriteTxCoins(uint256 hash, int ifaceIndex, const vector<uint256>& vOuts);
+
 
 
 

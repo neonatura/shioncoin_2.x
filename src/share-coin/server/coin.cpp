@@ -29,6 +29,8 @@
 #include "block.h"
 #include "db.h"
 #include "wallet.h"
+#include "script.h"
+#include "txsignature.h"
 
 using namespace std;
 
@@ -301,9 +303,9 @@ bool CTransaction::EraseCoins(int ifaceIndex)
 
 typedef map< uint256, vector<uint256> > tx_map;
 
-bool core_VerifyCoinInputs(CTransaction& tx, int i, CTxOut& prev)
+bool core_VerifyCoinInputs(int ifaceIndex, CTransaction& tx, unsigned int nIn, CTxOut& prev)
 {
-  CTxIn& in = tx.vin[i];
+  CTxIn& in = tx.vin[nIn];
   vector<vector<unsigned char> > vSolutions;
   txnouttype whichType;
 
@@ -321,7 +323,8 @@ bool core_VerifyCoinInputs(CTransaction& tx, int i, CTxOut& prev)
   // beside "push data" in the scriptSig the
   // IsStandard() call returns false
   vector<vector<unsigned char> > stack;
-  if (!EvalScript(stack, in.scriptSig, tx, i, 0))
+  CSignature sig(ifaceIndex, &tx, nIn);
+  if (!EvalScript(sig, stack, in.scriptSig, 0, 0))
     return false;
 
   if (whichType == TX_SCRIPTHASH)
@@ -448,13 +451,14 @@ bool core_ConnectCoinInputs(int ifaceIndex, CTransaction *tx, const CBlockIndex*
     nValueIn += prevtx.vout[prevout.n].nValue;
 
 
-    if (fVerifySig &&
-        !VerifySignature(prevtx, *tx, i, fStrictPayToScriptHash, 0)) {
-      return (error(SHERR_ACCESS, "core_ConnectCoinInputs: error verifying signature integrity."));
+    if (fVerifySig) {
+      if (!VerifySignature(ifaceIndex, prevtx, *tx, i, fStrictPayToScriptHash, 0)) {
+        return (error(SHERR_ACCESS, "core_ConnectCoinInputs: error verifying signature integrity."));
+      }
     }
 
     if (fVerifyInputs &&
-        !core_VerifyCoinInputs(*tx, i, prevtx.vout[prevout.n])) {
+        !core_VerifyCoinInputs(ifaceIndex, *tx, i, prevtx.vout[prevout.n])) {
       return (error(SHERR_ACCESS, "core_ConnectCoinInputs: error verifying coin inputs integrity."));
     }
 
@@ -721,7 +725,8 @@ bool core_DisconnectInputs(int ifaceIndex, CTransaction *tx)
   /* erase from 'tx' fmap */
   tx->EraseTx(ifaceIndex);
 
-  wallet->mapWallet.erase(hash); 
+  wallet->EraseFromWallet(hash);
+//  wallet->mapWallet.erase(hash); 
 
   return true;
 }

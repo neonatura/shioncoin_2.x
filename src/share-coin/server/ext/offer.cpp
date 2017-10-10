@@ -929,7 +929,7 @@ fprintf(stderr, "DEBUG: vecSend.insert/2: '%s' @ %f\n", destAddr.ToString().c_st
     if (!ret) {
       return (SHERR_CANCELED);
     }
-    if (!altWallet->CommitTransaction(alt_wtx, reservekey)) {
+    if (!altWallet->CommitTransaction(alt_wtx)) {
       error(SHERR_CANCELED, "error commiting alt-coin generate transaction.");
       return (SHERR_CANCELED);
     }
@@ -947,7 +947,7 @@ fprintf(stderr, "DEBUG: vecSend.insert/2: '%s' @ %f\n", destAddr.ToString().c_st
   ret = CreateTransactionWithInputTx(iface, vecSend, wtxIn, nTxOut, wtx, reservekey);
   if (!ret)
     return (SHERR_CANCELED);
- if (!wallet->CommitTransaction(wtx, reservekey)) {
+ if (!wallet->CommitTransaction(wtx)) {
     error(SHERR_CANCELED, "error commiting native generate transaction.");
     return (SHERR_CANCELED);
   }
@@ -1091,7 +1091,7 @@ int nAltFeeValue = alt_wtxIn.vout[nTxOut].nValue;
       error(SHERR_CANCELED, "error creating alt-coin transaction.");
       return (SHERR_CANCELED);
     }
-    if (!altWallet->CommitTransaction(alt_wtx, reservekey)) {
+    if (!altWallet->CommitTransaction(alt_wtx)) {
       error(SHERR_CANCELED, "error commiting alt-coin transaction.");
       return (SHERR_CANCELED);
     }
@@ -1111,7 +1111,7 @@ int nAltFeeValue = alt_wtxIn.vout[nTxOut].nValue;
     error(SHERR_CANCELED, "error creating native transaction.");
     return (SHERR_CANCELED);
   }
-  if (!wallet->CommitTransaction(wtx, reservekey)) {
+  if (!wallet->CommitTransaction(wtx)) {
     error(SHERR_CANCELED, "error commiting native transaction.");
     return (SHERR_CANCELED);
   }
