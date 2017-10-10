@@ -663,7 +663,7 @@ uint256 SignatureHash(CScript scriptCode, const CTransaction& txTo, unsigned int
 
 
 
-bool EvalScript(CSignature& sig, stack_t& stack, const CScript& script, unsigned int sigver, int flags);
+bool EvalScript(CSignature& sig, cstack_t& stack, const CScript& script, unsigned int sigver, int flags);
 
 int ScriptSigArgsExpected(txnouttype t, const std::vector<std::vector<unsigned char> >& vSolutions);
 bool IsStandard(const CScript& scriptPubKey);
@@ -685,9 +685,9 @@ bool VerifySignature(int ifaceIndex, const CTransaction& txFrom, const CTransact
 // combine them intelligently and return the result.
 CScript CombineSignatures(CSignature& sig, CScript scriptPubKey, unsigned int nIn, const CScript& scriptSig1, const CScript& scriptSig2);
 
-//bool VerifyScript(const CScript& scriptSig, stack_t& witness, CScript& scriptPubKey, CTransaction& txTo, unsigned int nIn, bool fValidatePayToScriptHash, int nHashType, int flags);
-//bool VerifyScript(CSignature& sig, const CScript& scriptSig, stack_t& witness, const CScript& scriptPubKey, unsigned int nIn, bool fValidatePayToScriptHash, int flags);
-bool VerifyScript(CSignature& sig, const CScript& scriptSig, stack_t& witness, const CScript& scriptPubKey, bool fValidatePayToScriptHash, int flags);
+//bool VerifyScript(const CScript& scriptSig, cstack_t& witness, CScript& scriptPubKey, CTransaction& txTo, unsigned int nIn, bool fValidatePayToScriptHash, int nHashType, int flags);
+//bool VerifyScript(CSignature& sig, const CScript& scriptSig, cstack_t& witness, const CScript& scriptPubKey, unsigned int nIn, bool fValidatePayToScriptHash, int flags);
+bool VerifyScript(CSignature& sig, const CScript& scriptSig, cstack_t& witness, const CScript& scriptPubKey, bool fValidatePayToScriptHash, int flags);
 
 
 bool Solver(const CScript& scriptPubKey, txnouttype& typeRet, std::vector<std::vector<unsigned char> >& vSolutionsRet);

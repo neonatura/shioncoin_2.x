@@ -83,7 +83,7 @@ extern shbuf_t *server_msg_buff;
 
 typedef std::vector<unsigned char> cbuff;
 
-typedef std::vector<cbuff> stack_t;
+typedef std::vector<cbuff> cstack_t;
 
 #include <boost/version.hpp>
 #include <boost/foreach.hpp>

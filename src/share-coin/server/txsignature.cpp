@@ -266,8 +266,8 @@ bool CSignature::SignSignature(const CScript& fromPubKey)
   CScript script = fromPubKey;
   unsigned int nIn = nTxIn;
   CTxIn& txin = tx->vin[nIn];
-  stack_t stack;
-  stack_t result;
+  cstack_t stack;
+  cstack_t result;
   bool P2SH = false;
   bool fSolved = true;
 
@@ -456,7 +456,7 @@ bool CSignature::CreateSignature(cbuff& vchSig, const CKeyID& address, const CSc
   return true;
 }
 
-static bool Sign1(CSignature *sig, const CKeyID& address, const CScript& scriptCode, stack_t& ret, int sigversion)
+static bool Sign1(CSignature *sig, const CKeyID& address, const CScript& scriptCode, cstack_t& ret, int sigversion)
 {
   vector<unsigned char> vchSig;
 
@@ -483,7 +483,7 @@ static bool SignN(CSignature *sig, const vector<valtype>& multisigdata, const CS
 }
 
 
-bool CSignature::SignAddress(const CScript& scriptPubKey, stack_t& ret, txnouttype& whichTypeRet, int sigversion)
+bool CSignature::SignAddress(const CScript& scriptPubKey, cstack_t& ret, txnouttype& whichTypeRet, int sigversion)
 {
   CWallet *wallet = GetWallet(ifaceIndex);
   const CKeyStore& keystore = *wallet;

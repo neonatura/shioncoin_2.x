@@ -42,7 +42,6 @@
 #include "chain.h"
 #include "mnemonic.h"
 
-#define stack_t sigstack_t
 #undef fcntl
 #undef GNULIB_NAMESPACE
 #include <boost/asio.hpp>
@@ -57,7 +56,6 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/assign/list_of.hpp>
 #include <list>
-#undef stack_t
 
 #include "rpcnet.h"
 

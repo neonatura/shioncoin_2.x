@@ -32,7 +32,6 @@
 #include "ui_interface.h"
 #include "block.h"
 
-#define stack_t sigstack_t
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <boost/filesystem/convenience.hpp>
@@ -41,7 +40,6 @@
 #ifndef WIN32
 #include <signal.h>
 #endif
-#undef stack_t
 
 using namespace std;
 using namespace boost;

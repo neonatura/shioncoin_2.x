@@ -291,7 +291,7 @@ const char* GetOpName(opcodetype opcode)
 }
 
 //bool EvalScript(vector<vector<unsigned char> >& stack, const CScript& script, const CTransaction& txTo, unsigned int nIn, int nHashType, int sigver, int flags)
-bool EvalScript(CSignature& sig, stack_t& stack, const CScript& script, unsigned int sigver, int flags)
+bool EvalScript(CSignature& sig, cstack_t& stack, const CScript& script, unsigned int sigver, int flags)
 {
   const CTransaction& txTo = *sig.tx;
   int nHashType = sig.nHashType;
@@ -1865,7 +1865,7 @@ std::vector<unsigned char> ToByteVector(const T& in)
     return std::vector<unsigned char>(in.begin(), in.end());
 }   
 
-static bool VerifyWitnessProgram(CSignature& sig, stack_t& witness, int witversion, const std::vector<unsigned char>& program, int flags)
+static bool VerifyWitnessProgram(CSignature& sig, cstack_t& witness, int witversion, const std::vector<unsigned char>& program, int flags)
 {
   unsigned int nIn = sig.nTxIn;
   const CTransaction& txTo = *sig.tx;
@@ -1927,7 +1927,7 @@ fprintf(stderr, "DEBUG:VerifWitnessProgram: invalid size program for ver0\n");
 }
 
 
-bool VerifyScript(CSignature& sig, const CScript& scriptSig, stack_t& witness, const CScript& scriptPubKey, bool fValidatePayToScriptHash, int flags)
+bool VerifyScript(CSignature& sig, const CScript& scriptSig, cstack_t& witness, const CScript& scriptPubKey, bool fValidatePayToScriptHash, int flags)
 {
   unsigned int nIn = sig.nTxIn;
   const CTransaction& txTo = *sig.tx;
@@ -2239,7 +2239,7 @@ bool VerifySignature(int ifaceIndex, const CTransaction& txFrom, const CTransact
 
   CTransaction *txSig = (CTransaction *)&txTo;
   CSignature sig(ifaceIndex, txSig, nIn);
-  stack_t witness;
+  cstack_t witness;
   if (!VerifyScript(sig, txin.scriptSig, witness, txout.scriptPubKey, fValidatePayToScriptHash, 0)){
     txSig->print(ifaceIndex);
     return (false);

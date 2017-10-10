@@ -36,7 +36,6 @@
 #include "server_iface.h" /* BLKERR_XXX */
 
 #undef printf
-#define stack_t sigstack_t
 #include <boost/asio.hpp>
 #include <boost/asio/ip/v6_only.hpp>
 #include <boost/bind.hpp>
@@ -50,7 +49,6 @@
 #include <boost/filesystem/fstream.hpp>
 #include <boost/shared_ptr.hpp>
 #include <list>
-#undef stack_t
 #define printf OutputDebugStringF
 
 using namespace std;

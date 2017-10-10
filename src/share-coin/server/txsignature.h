@@ -82,7 +82,7 @@ class CSignature
     bool CreateSignature(cbuff& vchSig, const CKeyID& address, const CScript& scriptCode, int sigversion);
 
     /* in older "common scrypt coin source common" this is known as Solver(). In newer common code, this is known as "SignStep()" */
-    bool SignAddress(const CScript& scriptPubKey, stack_t& ret, txnouttype& whichTypeRet, int sigversion);
+    bool SignAddress(const CScript& scriptPubKey, cstack_t& ret, txnouttype& whichTypeRet, int sigversion);
 
 };
 
