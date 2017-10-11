@@ -969,7 +969,7 @@ pblock->print();
     return error(SHERR_INVAL, "ProcessBlock() : CheckBlock FAILED");
   }
 
-  bool checkHeightMismatch = false;
+#if 0 /* unimp'd */
   if (pblock->nVersion >= 2) {
     CBlockIndex *pindexPrev = GetBestBlockIndex(iface);
     if (emc2_IsSuperMajority(3, pindexPrev, 2375)) {
@@ -984,6 +984,7 @@ pblock->print();
       }
     }
   }
+#endif
 
   CBlockIndex* pcheckpoint = EMC2_Checkpoints::GetLastCheckpoint(*blockIndex);
   if (pcheckpoint && pblock->hashPrevBlock != GetBestBlockChain(iface))

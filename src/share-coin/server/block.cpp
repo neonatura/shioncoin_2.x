@@ -3717,14 +3717,14 @@ bool core_CheckBlockWitness(CIface *iface, CBlock *pblock, CBlockIndex *pindexPr
       if (pblock->vtx[0].wit.vtxinwit.size() != 1 || 
           pblock->vtx[0].wit.vtxinwit[0].scriptWitness.stack.size() != 1 || 
           pblock->vtx[0].wit.vtxinwit[0].scriptWitness.stack[0].size() != 32) {
-        return false;
+        return (error(SHERR_INVAL, "core_CheckBlockWitness: witness commitment validation error: \"%s\".", pblock->vtx[0].ToString(GetCoinIndex(iface)).c_str()));
       }
 
       const cbuff& stack = pblock->vtx[0].wit.vtxinwit[0].scriptWitness.stack[0];
       hashWitness = Hash(hashWitness.begin(), hashWitness.end(), stack.begin(), stack.end());
 //      CHash256().Write(hashWitness.begin(), 32).Write(&block.vtx[0].wit.vtxinwit[0].scriptWitness.stack[0][0], 32).Finalize(hashWitness.begin());
       if (memcmp(hashWitness.begin(), &pblock->vtx[0].vout[commitpos].scriptPubKey[6], 32)) {
-        return false;
+        return (error(SHERR_INVAL, "core_CheckBlockWitness: witness commitment hash validation error: \"%s\".", pblock->vtx[0].ToString(GetCoinIndex(iface)).c_str()));
       }
 
       fHaveWitness = true;
@@ -3735,7 +3735,7 @@ bool core_CheckBlockWitness(CIface *iface, CBlock *pblock, CBlockIndex *pindexPr
   if (!fHaveWitness) {
     for (size_t i = 0; i < pblock->vtx.size(); i++) {
       if (!pblock->vtx[i].wit.IsNull()) {
-        return false;
+        return (error(SHERR_INVAL, "core_CheckBlockWitness: unexpected witness data error: \"%s\".", pblock->vtx[i].ToString(GetCoinIndex(iface)).c_str()));
       }
     }
   }
