@@ -3711,7 +3711,6 @@ bool core_CheckBlockWitness(CIface *iface, CBlock *pblock, CBlockIndex *pindexPr
   if (IsWitnessEnabled(iface, pindexPrev)) {
     int commitpos = GetWitnessCommitmentIndex(*pblock);
     if (commitpos != -1) {
-      uint256 hashWitness = BlockWitnessMerkleRoot(*pblock, NULL);
 
       /* The malleation check is ignored; as the transaction tree itself already does not permit it, it is impossible to trigger in the witness tree. */
       if (pblock->vtx[0].wit.vtxinwit.size() != 1 || 
@@ -3720,6 +3719,7 @@ bool core_CheckBlockWitness(CIface *iface, CBlock *pblock, CBlockIndex *pindexPr
         return (error(SHERR_INVAL, "core_CheckBlockWitness: witness commitment validation error: \"%s\".", pblock->vtx[0].ToString(GetCoinIndex(iface)).c_str()));
       }
 
+      uint256 hashWitness = BlockWitnessMerkleRoot(*pblock, NULL);
       const cbuff& stack = pblock->vtx[0].wit.vtxinwit[0].scriptWitness.stack[0];
       hashWitness = Hash(hashWitness.begin(), hashWitness.end(), stack.begin(), stack.end());
 //      CHash256().Write(hashWitness.begin(), 32).Write(&block.vtx[0].wit.vtxinwit[0].scriptWitness.stack[0][0], 32).Finalize(hashWitness.begin());

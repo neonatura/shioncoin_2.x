@@ -305,7 +305,7 @@ coin_iface_t emc2_coin_iface = {
   EMC2_PROTOCOL_VERSION, /* network protocol version */ 
   EMC2_COIN_DAEMON_PORT,
   { 0xe8, 0xf1, 0xc4, 0xac },
-  NODE_NETWORK | NODE_BLOOM,
+  NODE_NETWORK | NODE_BLOOM | NODE_WITNESS,
   EMC2_MIN_INPUT,
   EMC2_MAX_BLOCK_SIZE,
   EMC2_MAX_ORPHAN_TRANSACTIONS,
