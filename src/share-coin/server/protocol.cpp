@@ -40,7 +40,11 @@ static const char* ppszTypeName[] =
     "ERROR",
     "tx",
     "block",
-    "filtered block"
+    "filtered block",
+    "compact block",
+    "witness block",
+    "witness tx",
+    "filtered witness block",
 };
 
 CMessageHeader::CMessageHeader()

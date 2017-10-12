@@ -47,10 +47,12 @@
 class CRequestTracker;
 class CNode;
 class CBlockIndex;
+class CBlock;
 class CTransaction;
 class COutPoint;
 extern int nBestHeight;
 
+#define SERIALIZE_TRANSACTION_NO_WITNESS 0x40000000
 
 
 inline unsigned int ReceiveBufferSize() { return 1000*GetArg("-maxreceivebuffer", 5*1000); }
@@ -323,6 +325,7 @@ public:
     bool fNetworkNode;
     bool fSuccessfullyConnected;
     bool fDisconnect;
+    bool fHaveWitness;
     CSemaphoreGrant grantOutbound;
 protected:
     int nRefCount;
@@ -380,6 +383,7 @@ public:
         fNetworkNode = false;
         fSuccessfullyConnected = false;
         fDisconnect = false;
+        fHaveWitness = false;
         nRefCount = 0;
         nReleaseTime = 0;
         hashContinue = 0;
@@ -594,6 +598,30 @@ public:
 
     void PushVersion();
 
+    void PushBlock(const CBlock& block)
+    {
+      if (fHaveWitness) {
+        PushMessage("block", block);
+      } else {
+        CDataStream ss(SER_GETHASH, SERIALIZE_TRANSACTION_NO_WITNESS);
+        ss.reserve(4096);
+        ss << block;
+        cbuff vchBlock(ss.begin(), ss.end());
+        PushMessage("block", block);
+      }
+    }
+    void PushTx(const CTransaction& tx)
+    {
+      if (fHaveWitness) {
+        PushMessage("tx", tx);
+      } else {
+        CDataStream ss(SER_GETHASH, SERIALIZE_TRANSACTION_NO_WITNESS);
+        ss.reserve(1024);
+        ss << tx;
+        cbuff vchTx(ss.begin(), ss.end());
+        PushMessage("tx", tx);
+      }
+    }
 
     void PushMessage(const char* pszCommand)
     {

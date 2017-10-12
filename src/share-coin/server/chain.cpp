@@ -362,6 +362,11 @@ bool ServiceBlockEvent(int ifaceIndex)
 
     if (pfrom->nVersion == 0)
       return (true); /* not ready yet */
+    if (!pfrom->fHaveWitness && 
+        IsWitnessEnabled(iface, GetBestBlockIndex(iface))) {
+      /* incompatible, try next peer. */
+      return (true);
+    }
 
     Debug("(%s) ServiceBlockEvent: requesting blocks (height: %d)\n",
         iface->name, (int)pindexBest->nHeight);

@@ -187,6 +187,7 @@ static bool AlreadyHave(CIface *iface, const CInv& inv)
   switch (inv.type)
   {
     case MSG_TX:
+    case MSG_WITNESS_TX:
       {
         bool fHave;
 
@@ -211,6 +212,7 @@ static bool AlreadyHave(CIface *iface, const CInv& inv)
       }
 
     case MSG_BLOCK:
+    case MSG_WITNESS_BLOCK:
       blkidx_t *blockIndex = GetBlockTable(ifaceIndex); 
       return blockIndex->count(inv.hash) ||
         EMC2_mapOrphanBlocks.count(inv.hash);
@@ -316,6 +318,10 @@ bool emc2_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
       pfrom->PushVersion();
 
     pfrom->fClient = !(pfrom->nServices & NODE_NETWORK);
+
+    if (pfrom->nServices & NODE_WITNESS) {
+      pfrom->fHaveWitness = true;
+    }
 
     AddTimeData(pfrom->addr, nTime);
 
@@ -544,7 +550,10 @@ bool emc2_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
         return true;
 
       inv.ifaceIndex = EMC2_COIN_IFACE;
-      if (inv.type == MSG_BLOCK || inv.type == MSG_FILTERED_BLOCK) {
+      if (inv.type == MSG_BLOCK ||
+          inv.type == MSG_FILTERED_BLOCK || 
+          inv.type == MSG_CMPCT_BLOCK || 
+          inv.type == MSG_WITNESS_BLOCK) {
         map<uint256, CBlockIndex*>::iterator mi = blockIndex->find(inv.hash);
         if (mi != blockIndex->end())
         {
@@ -552,9 +561,12 @@ bool emc2_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
           EMC2Block block;
           if (block.ReadFromDisk(pindex) && block.CheckBlock() &&
               pindex->nHeight <= GetBestHeight(EMC2_COIN_IFACE)) {
-            if (inv.type == MSG_BLOCK) {
-              pfrom->PushMessage("block", block);
-            } else if (inv.type == MSG_FILTERED_BLOCK) { /* bloom */
+            if (inv.type == MSG_BLOCK ||
+                inv.type == MSG_WITNESS_BLOCK ||
+                inv.type == MSG_CMPCT_BLOCK) {
+              pfrom->PushBlock(block);
+            } else if (inv.type == MSG_FILTERED_BLOCK ||
+                inv.type == MSG_FILTERED_WITNESS_BLOCK) { /* bloom */
               LOCK(pfrom->cs_filter);
               CBloomFilter *filter = pfrom->GetBloomFilter();
               if (filter) {
@@ -584,7 +596,7 @@ bool emc2_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
           }
         }
       }
-      else if (inv.IsKnownType())
+      else if (inv.type == MSG_TX || inv_type == MSG_WITNESS_TX)
       {
         // Send stream from relay memory
         bool pushed = false;
@@ -600,10 +612,7 @@ bool emc2_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
           LOCK(EMC2Block::mempool.cs);
           if (EMC2Block::mempool.exists(inv.hash)) {
             CTransaction tx = EMC2Block::mempool.lookup(inv.hash);
-            CDataStream ss(SER_NETWORK, EMC2_PROTOCOL_VERSION);
-            ss.reserve(1000);
-            ss << tx;
-            pfrom->PushMessage("tx", ss);
+            pfrom->PushTx(tx);
             pushed = true;
           }
         }
