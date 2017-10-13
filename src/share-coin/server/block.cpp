@@ -2640,7 +2640,7 @@ Object CTransaction::ToValue(int ifaceIndex)
     }   
 
     /* segwit */
-    if (!wit.IsNull()) {
+    if (wit.vtxinwit.size() != 0) {
       const CTxInWitness& tx_wit = wit.vtxinwit[n];
       Array ar;
       for (unsigned int i = 0; i < tx_wit.scriptWitness.stack.size(); i++) {
@@ -3711,12 +3711,19 @@ bool core_CheckBlockWitness(CIface *iface, CBlock *pblock, CBlockIndex *pindexPr
   if (IsWitnessEnabled(iface, pindexPrev)) {
     int commitpos = GetWitnessCommitmentIndex(*pblock);
     if (commitpos != -1) {
+      const CTransaction& commit_tx = pblock->vtx[0];
+      if (commit_tx.wit.vtxinwit.size() == 0 && 
+          pindexPrev->nHeight < 1600000) {
+        /* non-standard -- fill in missing witness block structure */
+        core_UpdateUncommittedBlockStructures(iface, *pblock, pindexPrev);
+        /* DEBUG: */ error(SHERR_INVAL, "(emc2) core_CheckBlockWitness: filled missing witness nonce for block '%s'.", pblock->GetHash().GetHex().c_str());
+      }
 
       /* The malleation check is ignored; as the transaction tree itself already does not permit it, it is impossible to trigger in the witness tree. */
       if (pblock->vtx[0].wit.vtxinwit.size() != 1 || 
           pblock->vtx[0].wit.vtxinwit[0].scriptWitness.stack.size() != 1 || 
           pblock->vtx[0].wit.vtxinwit[0].scriptWitness.stack[0].size() != 32) {
-        return (error(SHERR_INVAL, "core_CheckBlockWitness: witness commitment validation error: \"%s\".", pblock->vtx[0].ToString(GetCoinIndex(iface)).c_str()));
+        return (error(SHERR_INVAL, "core_CheckBlockWitness: witness commitment validation error: \"%s\" [wit-size %d].", pblock->vtx[0].ToString(GetCoinIndex(iface)).c_str()), (int)pblock->vtx[0].wit.vtxinwit.size());
       }
 
       uint256 hashWitness = BlockWitnessMerkleRoot(*pblock, NULL);
