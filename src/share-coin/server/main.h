@@ -404,17 +404,17 @@ public:
 
     bool CheckSignature(int ifaceIndex)
     {
-        CIface *iface = GetCoinByIndex(ifaceIndex);
-        CKey key;
-        if (!key.SetPubKey(ParseHex("04A9CFD81AF5D53310BE45E6326E706A542B1028DF85D2819D5DE496D8816C83129CE874FE5E3A23B03544BFF35458833779DAB7A6FF687525A4E23CA59F1E2B94")))
-            return error(SHERR_INVAL, "CAlert::CheckSignature() : SetPubKey failed");
-        if (!key.Verify(Hash(vchMsg.begin(), vchMsg.end()), vchSig))
-            return error(SHERR_INVAL, "CAlert::CheckSignature() : verify signature failed");
+      CIface *iface = GetCoinByIndex(ifaceIndex);
+      CKey key;
+      if (!key.SetPubKey(ParseHex("04A9CFD81AF5D53310BE45E6326E706A542B1028DF85D2819D5DE496D8816C83129CE874FE5E3A23B03544BFF35458833779DAB7A6FF687525A4E23CA59F1E2B94")))
+        return error(SHERR_INVAL, "CAlert::CheckSignature() : SetPubKey failed");
+      if (!key.Verify(Hash(vchMsg.begin(), vchMsg.end()), vchSig))
+        return error(SHERR_ACCESS, "(%s) CAlert.CheckSignature: verify signature failed.", iface->name);
 
-        // Now unserialize the data
-        CDataStream sMsg(vchMsg, SER_NETWORK, PROTOCOL_VERSION(iface));
-        sMsg >> *(CUnsignedAlert*)this;
-        return true;
+      // Now unserialize the data
+      CDataStream sMsg(vchMsg, SER_NETWORK, PROTOCOL_VERSION(iface));
+      sMsg >> *(CUnsignedAlert*)this;
+      return true;
     }
 
     bool ProcessAlert(int ifaceIndex);

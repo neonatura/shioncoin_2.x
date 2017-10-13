@@ -684,7 +684,7 @@ void CNode::PushVersion()
 
 
   if (ifaceIndex == EMC2_COIN_IFACE) {
-    PushMessage("version", PROTOCOL_VERSION(iface), COIN_SERVICES(iface), nTime, addrYou, addrMe, nLocalHostNonce, FormatSubVersion("Satoshi", IFACE_VERSION(iface), std::vector<string>()), GetBestHeight(ifaceIndex));
+    PushMessage("version", PROTOCOL_VERSION(iface), COIN_SERVICES(iface), nTime, addrYou, addrMe, nLocalHostNonce, FormatSubVersion("EinsteiniumCore", IFACE_VERSION(iface), std::vector<string>()), GetBestHeight(ifaceIndex));
   } else {
     PushMessage("version", PROTOCOL_VERSION(iface), COIN_SERVICES(iface), nTime, addrYou, addrMe, nLocalHostNonce, FormatSubVersion(GetClientName(iface), IFACE_VERSION(iface), std::vector<string>()), GetBestHeight(ifaceIndex));
   }

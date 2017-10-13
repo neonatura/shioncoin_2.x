@@ -1085,7 +1085,7 @@ void CWallet::AvailableAccountCoins(string strAccount, vector<COutput>& vCoins, 
         } else if (pcoin->strFromAccount == strAccount && 
             0 == mapAddressBook.count(dest)) {
           if (::IsMine(*this, dest)) {
-fprintf(stderr, "DEBUG: AvailableAccountCoins: found change for '%s'\n", pcoin->strFromAccount.c_str());
+//fprintf(stderr, "DEBUG: AvailableAccountCoins: found change for '%s'\n", pcoin->strFromAccount.c_str());
             vCoins.push_back(COutput(pcoin, i, pcoin->GetDepthInMainChain(ifaceIndex)));
           }
         }

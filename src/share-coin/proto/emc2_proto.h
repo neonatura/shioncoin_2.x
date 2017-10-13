@@ -28,8 +28,8 @@
 #define __EMC2_PROTO_H__
 
 #define EMC2_VERSION_MAJOR       0
-#define EMC2_VERSION_MINOR       9
-#define EMC2_VERSION_REVISION    0
+#define EMC2_VERSION_MINOR       13
+#define EMC2_VERSION_REVISION    3
 #define EMC2_VERSION_BUILD       0
 
 #define EMC2_COIN_DAEMON_PORT 41878
