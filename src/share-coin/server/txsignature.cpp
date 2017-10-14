@@ -163,7 +163,7 @@ static uint256 base_SignatureHash(CScript scriptCode, const CTransaction& txTo, 
 
   // Serialize and hash
   CDataStream ss(SER_GETHASH, SERIALIZE_TRANSACTION_NO_WITNESS);
-  ss.reserve(10000);
+  ss.reserve(4096);
   ss << txTmp << nHashType;
   return Hash(ss.begin(), ss.end());
 }

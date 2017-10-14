@@ -963,10 +963,19 @@ bool emc2_ProcessBlock(CNode* pfrom, CBlock* pblock)
   if (EMC2_mapOrphanBlocks.count(hash))
     return Debug("ProcessBlock() : already have block (orphan) %s", hash.ToString().substr(0,20).c_str());
 
+  if (pblock->vtx.size() != 0 && pblock->vtx[0].wit.IsNull()) {
+    CBlockIndex *pindexPrev = GetBestBlockIndex(iface);
+    if (pindexPrev && IsWitnessEnabled(iface, pindexPrev) &&
+        -1 != GetWitnessCommitmentIndex(*pblock)) {
+      core_UpdateUncommittedBlockStructures(iface, *pblock, pindexPrev);
+      error(SHERR_INVAL, "(emc2) ProcessBlock: warning: received block \"%s\" with null witness commitment [height %d].", hash.GetHex().c_str(), (int)pindexPrev->nHeight);
+    }
+  }
+
   // Preliminary checks
   if (!pblock->CheckBlock()) {
-pblock->print();
-    return error(SHERR_INVAL, "ProcessBlock() : CheckBlock FAILED");
+/* DEBUG: */ pblock->print();
+    return error(SHERR_INVAL, "(emc2) ProcessBlock: failure verifying block '%s'.", hash.GetHex().c_str());
   }
 
 #if 0 /* unimp'd */

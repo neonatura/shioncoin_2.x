@@ -145,8 +145,7 @@ public:
         {
             vchData.clear();
             nVersion = 0;
-fprintf(stderr, "DEBUG: CBase58Data: DecodeBase58Check failed\n");
-            return false;
+            return (error(SHERR_INVAL, "CBase58Data.SetString: failure decoding \"%s\".", psz));
         }
         nVersion = vchTemp[0];
         vchData.resize(vchTemp.size() - 1);

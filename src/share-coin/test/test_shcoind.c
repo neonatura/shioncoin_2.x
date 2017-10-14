@@ -38,6 +38,7 @@ extern TEST_coin_spendall(CuTest*);
 extern TEST_ctxtx(CuTest*);
 extern TEST_scriptid(CuTest*);
 extern TEST_segwit(CuTest*);
+extern TEST_segwit_serializetx(CuTest*);
 
 
 
@@ -98,6 +99,7 @@ int main(int argc, char *argv[])
 
   /* segwit tests */
   SUITE_ADD_TEST(suite, TEST_segwit);
+  SUITE_ADD_TEST(suite, TEST_segwit_serializetx);
 
   /* finale */
   SUITE_ADD_TEST(suite, TEST_coin_table);

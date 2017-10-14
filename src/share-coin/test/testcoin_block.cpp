@@ -1619,6 +1619,30 @@ fprintf(stderr, "DEBUG: TEST: wit bal %f\n", (double)nValue/COIN);
 // _TRUE(nValue < COIN);
 }
 
+_TEST(segwit_serializetx)
+{
+  CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
+  CBlockIndex *pindexPrev = GetBestBlockIndex(iface);
+  CTransaction tx;
+  CTransaction cmp_tx;
+
+  CBlock *block = test_GenerateBlock();
+  _TRUEPTR(block);
+  _TRUE(core_CheckBlockWitness(iface, block, pindexPrev)); 
+
+  TESTBlock cmp1_block;
+  CDataStream ser1(SER_DISK, PROTOCOL_VERSION(iface));
+  ser1 << *block;
+  ser1 >> cmp1_block;
+  _TRUE(core_CheckBlockWitness(iface, &cmp1_block, pindexPrev)); 
+
+  TESTBlock cmp2_block;
+  CDataStream ser2(SER_DISK, CLIENT_VERSION);
+  ser2 << *block;
+  ser2 >> cmp2_block;
+  _TRUE(core_CheckBlockWitness(iface, &cmp2_block, pindexPrev)); 
+}
+
 
 
 #ifdef __cplusplus

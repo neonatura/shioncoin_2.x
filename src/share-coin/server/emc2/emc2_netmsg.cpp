@@ -919,12 +919,32 @@ bool emc2_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
     pfrom->fRelayTxes = true;
   }
 
+  else if (strCommand == "sendheaders") {
+fprintf(stderr, "DEBUG: emc2_ProcessBlock: receveed 'sendheaders'\n");
+  }
 
+  else if (strCommand == "sendcmpct") {
+fprintf(stderr, "DEBUG: emc2_ProcessBlock: receveed 'sendcmpct'\n");
+ 
+  }
+
+  else if (strCommand == "cmpctblock") {
+fprintf(stderr, "DEBUG: emc2_ProcessBlock: receveed 'cmpctblock'\n");
+  }
+
+  else if (strCommand == "getblocktxn") {
+fprintf(stderr, "DEBUG: emc2_ProcessBlock: receveed 'getblocktxn'\n");
+  }
+
+  else if (strCommand == "blocktxn") {
+fprintf(stderr, "DEBUG: emc2_ProcessBlock: receveed 'blocktxn'\n");
+  }
 
 
   else
   {
     // Ignore unknown commands for extensibility
+   fprintf(stderr, "DEBUG: emc2_ProcessMessage: unknown cmd '%s'\n", strCommand.c_str()); 
   }
 
 

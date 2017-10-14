@@ -1840,6 +1840,10 @@ bool core_GenerateCoinbaseCommitment(CIface *iface, CBlock& block, CBlockIndex *
 
 bool core_CheckBlockWitness(CIface *iface, CBlock *pblock, CBlockIndex *pindexPrev);
 
+int GetWitnessCommitmentIndex(const CBlock& block);
+
+void core_UpdateUncommittedBlockStructures(CIface *iface, CBlock& block, const CBlockIndex* pindexPrev);
+
 
 #endif /* ndef __SERVER_BLOCK_H__ */
 
