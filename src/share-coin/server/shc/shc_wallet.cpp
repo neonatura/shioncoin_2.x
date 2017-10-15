@@ -848,3 +848,8 @@ bool SHCWallet::AllowFree(double dPriority)
   static const double block_bytes = 256;
   return (dPriority > ((double)COIN * block_daily / block_bytes));
 }
+
+int64 SHCWallet::GetMinFee(const CTransaction& tx)
+{
+  return (0);
+}

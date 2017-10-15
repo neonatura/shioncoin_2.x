@@ -776,3 +776,8 @@ bool USDEWallet::AllowFree(double dPriority)
 {
   return dPriority > COIN * 700 / 250;
 }
+
+int64 USDEWallet::GetMinFee(const CTransaction& tx)
+{
+  return (0);
+}

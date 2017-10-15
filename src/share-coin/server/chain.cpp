@@ -415,21 +415,52 @@ bool ServicePeerEvent(int ifaceIndex)
   int tot;
 
   if (vNodes.empty())
-    return (true); /* keep checking */
+    return (true); /* keep checking. */
 
+  pfrom = NULL;
+  BOOST_FOREACH(CNode *node, vNodes) {
+    if (node->fGetAddr)
+      continue; /* already asked peer for addresses */
+    if (!node->fInbound)
+      continue; /* mitigate fingerprinting */
+    if (node->nVersion == 0)
+      continue; /* stream not initialized */
+
+    /* found match */
+    pfrom = node;
+    break;
+  }
+  if (!pfrom) {
+    pfrom = vNodes.front();
+    if (pfrom->nVersion == 0)
+      return (true); /* keep checking. */
+
+    /* nothing suitable found. */
+    return (false); 
+  }
+
+#if 0
   pfrom = vNodes.front();
   if (pfrom->fGetAddr)
     return (false); /* op already performed against this node */
+  if (!pfrom->fInbound)
+    return (false); /* prevent fingerprinting attack */
 
   if (pfrom->nVersion == 0)
     return (true); /* not ready yet */
+#endif
 
+#if 0
   tot = unet_peer_total(ifaceIndex);
-  if (tot < 500) {
+  if (tot < 5000) {
     pfrom->PushMessage("getaddr");
     pfrom->fGetAddr = true;
     Debug("ServicePeerEvent: requesting node address list for iface #%d (known: %d).\n", ifaceIndex, tot);
   }
+#endif
+  pfrom->PushMessage("getaddr");
+  pfrom->fGetAddr = true;
+  Debug("ServicePeerEvent: requesting node address list for iface #%d (known: %d).\n", ifaceIndex, tot);
 
 #if 0
   if (!pfrom->fInbound) {

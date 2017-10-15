@@ -224,6 +224,41 @@ static bool AlreadyHave(CIface *iface, const CInv& inv)
 
 
 
+template<size_t Limit>
+class LimitedString
+{
+protected:
+    std::string& string;
+public:
+    LimitedString(std::string& string) : string(string) {}
+
+    template<typename Stream>
+    void Unserialize(Stream& s, int, int=0)
+    {
+        size_t size = ReadCompactSize(s);
+        if (size > Limit) {
+            throw std::ios_base::failure("String length limit exceeded");
+        }
+        string.resize(size);
+        if (size != 0)
+            s.read((char*)&string[0], size);
+    }
+
+    template<typename Stream>
+    void Serialize(Stream& s, int, int=0) const
+    {
+        WriteCompactSize(s, string.size());
+        if (!string.empty())
+            s.write((char*)&string[0], string.size());
+    }
+
+    unsigned int GetSerializeSize(int, int=0) const
+    {
+        return GetSizeOfCompactSize(string.size()) + string.size();
+    }
+}; 
+#define LIMITED_STRING(obj,n) REF(LimitedString< n >(REF(obj)))
+
 
 
 
@@ -791,6 +826,13 @@ bool emc2_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
 
   else if (strCommand == "getaddr")
   {
+
+    /* mitigate fingerprinting attack */
+    if (!pfrom->fInbound) {
+      error(SHERR_ACCESS, "(emc2) warning: Outgoing connection requested address list.");
+      return true;
+    }
+
     pfrom->vAddrToSend.clear();
 
 #if 0
@@ -940,6 +982,44 @@ fprintf(stderr, "DEBUG: emc2_ProcessBlock: receveed 'getblocktxn'\n");
 fprintf(stderr, "DEBUG: emc2_ProcessBlock: receveed 'blocktxn'\n");
   }
 
+  else if (strCommand == "reject") { /* remote peer is reporting block/tx error */
+    string strMsg;
+    unsigned char ccode;
+    string strReason; 
+
+    vRecv >> LIMITED_STRING(strMsg, 12) >> ccode >> LIMITED_STRING(strReason, 111);
+    ostringstream ss;
+    ss << strMsg << " code " << itostr(ccode) << ": " << strReason;
+
+    if (strMsg == "block" || strMsg == "tx") {
+      uint256 hash;
+      vRecv >> hash;
+      ss << ": hash " << hash.ToString();
+
+      if (strMsg == "tx") {
+        /* DEBUG: TODO: pool.DecrPriority(hash) */
+      }
+    }
+    error(SHERR_REMOTE, ss.str().c_str()); 
+  }
+
+  else if (strCommand == "feefilter") {
+    int64 newFeeFilter = 0;
+    vRecv >> newFeeFilter;
+
+fprintf(stderr, "DEBUG: emc2_ProcessMessage: \"feefilter\": %d coins.\n", (double)newFeeFilter/COIN);
+    if (MoneyRange(iface, newFeeFilter) &&
+        newFeeFilter >= EMC2_MIN_TX_FEE &&
+        newFeeFilter < EMC2_MAX_TX_FEE) {
+      if (iface->min_tx_fee <= EMC2_MIN_TX_FEE) { /* init */
+        iface->min_tx_fee = newFeeFilter;
+      } else { /* sum */
+        iface->min_tx_fee = (iface->min_tx_fee + newFeeFilter) / 2;
+      }
+fprintf(stderr, "DEBUG: emc2_ProcessMessage: fee filter: iface->min_relay_tx_fee = %f\n", (double)iface->min_tx_fee/COIN);
+      /* DEBUG: TODO: pool.SumMinFee(newFeeFilter); */
+    }
+  }
 
   else
   {

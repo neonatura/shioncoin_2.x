@@ -2411,25 +2411,32 @@ Value rpc_wallet_send(CIface *iface, const Array& params, bool fStratum)
   if (params.size() > 3)
     nMinDepth = params[3].get_int();
 
-  CWalletTx wtx;
-  wtx.strFromAccount = strAccount;
+  CTxCreator wtx(wallet, strAccount);
+  //CWalletTx wtx;
+  //wtx.strFromAccount = strAccount;
   if (params.size() > 4 && params[4].type() != null_type && !params[4].get_str().empty())
     wtx.mapValue["comment"] = params[4].get_str();
   if (params.size() > 5 && params[5].type() != null_type && !params[5].get_str().empty())
     wtx.mapValue["to"]      = params[5].get_str();
 
-  EnsureWalletIsUnlocked();
+  // EnsureWalletIsUnlocked();
 
   // Check funds
   int64 nBalance = GetAccountBalance(ifaceIndex, strAccount, nMinDepth);
   if (nAmount > nBalance)
     throw JSONRPCError(-6, "Account has insufficient funds");
 
-  // Send
+  if (!wtx.AddOutput(address.Get(), nAmount))
+    throw JSONRPCError(-5, "Invalid destination address specified.");
+
+  if (!wtx.Send())
+    throw JSONRPCError(-5, wtx.GetError());
+#if 0
   //string strError = wallet->SendMoneyToDestination(address.Get(), nAmount, wtx);
   string strError = wallet->SendMoney(strAccount, address.Get(), nAmount, wtx);
   if (strError != "")
     throw JSONRPCError(-4, strError);
+#endif
 
   return wtx.GetHash().GetHex();
 }

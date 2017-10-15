@@ -758,3 +758,7 @@ bool TESTWallet::AllowFree(double dPriority)
   return (dPriority > ((double)COIN * block_daily / block_bytes));
 }
 
+int64 TESTWallet::GetMinFee(const CTransaction& tx)
+{
+  return (0);
+}

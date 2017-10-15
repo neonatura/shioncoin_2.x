@@ -318,7 +318,7 @@ Value rpc_wallet_donate(CIface *iface, const Array& params, bool fStratum)
         "Summary: Donate coins as a block transaction fee identified by the specified certificate.\n"
         "Params: [ <account> The coin account name., <value> The coin value to donate, <cert-hash> The associated certificate's hash. ]\n"
         "\n" 
-        "Donated coins are given as part of an upcoming block reward. All donations require assocatied a pre-created certificate."
+        "Donated coins are added to the upcoming block reward. Donations may be optionally associated with a certificate. The maximum donation value in a single transaction is 500 coins."
         );
 
   if (ifaceIndex != TEST_COIN_IFACE &&
@@ -330,7 +330,7 @@ Value rpc_wallet_donate(CIface *iface, const Array& params, bool fStratum)
     throw JSONRPCError(SHERR_INVAL, "Invalid account name specified.");
 
   int64 nValue = AmountFromValue(params[1]);
-  if (nValue < iface->min_tx_fee || nValue >= iface->max_money)
+  if (nValue < iface->min_tx_fee || nValue > (MAX_TRANSACTION_FEE(iface) / 2))
     throw JSONRPCError(err, "Invalid coin value specified.");
 
   uint160 hCert;

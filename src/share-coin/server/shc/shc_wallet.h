@@ -65,6 +65,8 @@ class SHCWallet : public CWallet
     unsigned int GetVirtualTransactionSize(const CTransaction& tx);
 
     bool AllowFree(double dPriority);
+
+    int64 GetMinFee(const CTransaction& tx);
 };
 
 

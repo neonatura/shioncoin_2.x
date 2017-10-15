@@ -629,7 +629,7 @@ bool EMC2Wallet::CreateAccountTransaction(string strFromAccount, const vector<pa
   wtxNew.BindWallet(this);
 
   /* set nLockTime to current height in order to disallow this tx from being used in a situation where "the value of the transactions in the best block and the mempool can exceed the cost of deliberately attempting to mine two blocks to orphan the current best". */
-  wtxNew.nLockTime = GetBestHeight(iface);
+  wtxNew.nLockTime = GetBestHeight(iface) - 1;
 
   {
     LOCK2(cs_main, cs_wallet);
@@ -829,5 +829,11 @@ bool EMC2Wallet::AllowFree(double dPriority)
   return dPriority > emc2_AllowFreeThreshold();
 }
 
+int64 EMC2Wallet::GetMinFee(const CTransaction& tx)
+{
+  CIface *iface = GetCoinByIndex(EMC2_COIN_IFACE);
 
+  /* EMC2 transactions created will always generate a fee. */
+  return (MIN_TX_FEE(iface) * 2);
+}
 

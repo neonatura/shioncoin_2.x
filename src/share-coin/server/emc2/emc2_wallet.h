@@ -59,6 +59,7 @@ class EMC2Wallet : public CWallet
 
     bool AllowFree(double dPriority);
 
+    int64 GetMinFee(const CTransaction& tx);
 
 };
 

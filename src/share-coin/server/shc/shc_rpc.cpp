@@ -51,10 +51,10 @@ const RPCOp WALLET_CSEND = {
 const RPCOp WALLET_DONATE = {
   &rpc_wallet_donate, 2, {RPC_ACCOUNT, RPC_DOUBLE, RPC_STRING},
   "Syntax: <account> <value> [<cert-hash>]\n"
-    "Summary: Donate coins as a block transaction fee identified by the specified certificate.\n"
-    "Params: [ <account> The coin account name., <value> The coin value to donate, <cert-hash> The associated certificate's hash. ]\n"
-    "\n"
-    "Donated coins are given as part of an upcoming block reward. All donations require assocatied a pre-created certificate."
+  "Summary: Donate coins as a block transaction fee identified by the specified certificate.\n"
+  "Params: [ <account> The coin account name., <value> The coin value to donate, <cert-hash> The associated certificate's hash. ]\n"
+  "\n"
+  "Donated coins are added to the upcoming block reward. Donations may be optionally associated with a certificate. The maximum donation value in a single transaction is 500 coins."
 };
 
 const RPCOp WALLET_KEYPHRASE = {

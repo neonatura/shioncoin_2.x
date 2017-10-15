@@ -3369,12 +3369,17 @@ bool CTxCreator::Generate()
 {
   CIface *iface = GetCoinByIndex(pwallet->ifaceIndex);
   int64 nFee;
+  int nBestHeight;
   bool ok;
 
   if (vout.size() == 0) {
     strError = "No outputs have been specified.";
     return (false);
   }
+
+  /* mitigate sniping */
+  nBestHeight = GetBestHeight(iface);
+  nLockTime = nBestHeight - 1;
 
   nFee = CalculateFee();
   while (nDebit + nFee > nCredit) {
@@ -3466,9 +3471,9 @@ bool CTxCreator::Generate()
 
   vin.clear();
   BOOST_FOREACH(const PAIRTYPE(CWalletTx *,unsigned int)& coin, setInput) {
-    vin.push_back(CTxIn(coin.first->GetHash(), coin.second));
+    vin.push_back(CTxIn(coin.first->GetHash(), coin.second, 
+          CScript(), std::numeric_limits<unsigned int>::max()-1));
   }
-
 
   unsigned int nIn = 0;
   BOOST_FOREACH(const PAIRTYPE(CWalletTx *,unsigned int)& coin, setInput) {
@@ -3479,16 +3484,6 @@ bool CTxCreator::Generate()
 
     nIn++;
   }
-#if 0
-  int nIn = 0;
-  BOOST_FOREACH(const PAIRTYPE(CWalletTx*,unsigned int)& coin, setInput) {
-    if (!SignSignature(*pwallet, *coin.first, *this, nIn)) {
-      return error(SHERR_INVAL, "Generate: error signing outputs");
-    }
-
-    nIn++;
-  }
-#endif
 
   /* Ensure transaction does not breach a defined size limitation. */
   unsigned int nWeight = pwallet->GetTransactionWeight(*this);
@@ -3537,6 +3532,7 @@ bool CTxCreator::Send()
 
   /* fill vtxPrev by copying from previous transactions vtxPrev */
   pwallet->AddSupportingTransactions(*this);
+  fTimeReceivedIsTxTime = true;
 
   if (!pwallet->CommitTransaction(*this)) {
     strError = "An error occurred while commiting the transaction.";
@@ -3683,6 +3679,8 @@ int64 CWallet::CalculateFee(CTransaction& tx, int64 nCredit, int64& nBytes, doub
   CIface *iface = GetCoinByIndex(ifaceIndex);
   int64 nFee;
   int64 nDepth;
+
+  nMinFee = MAX(nMinFee, GetMinFee(tx)); /* coin's required minimum */
 
   nDepth = tx.GetDepthInMainChain(ifaceIndex);
   nBytes = GetVirtualTransactionSize(tx);

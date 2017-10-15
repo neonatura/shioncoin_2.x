@@ -65,7 +65,7 @@ static const unsigned int EMC2_MAX_BLOCK_WEIGHT = 4000000;
 
 static const int64 EMC2_MIN_INPUT = 100000;
 static const int64 EMC2_MIN_TX_FEE = 100000;
-static const int64 EMC2_MIN_RELAY_TX_FEE = 1000;
+static const int64 EMC2_MIN_RELAY_TX_FEE = 100000;
 
 static const int64 EMC2_MAX_TX_FEE = 0.1 * EMC2_COIN;
 

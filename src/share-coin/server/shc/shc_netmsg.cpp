@@ -794,6 +794,13 @@ fprintf(stderr, "DEBUG: ProcessMessage[tx]: block.nDoS = %d\n", block.nDoS);
 
   else if (strCommand == "getaddr")
   {
+
+    /* mitigate fingerprinting attack */
+    if (!pfrom->fInbound) {
+      error(SHERR_ACCESS, "(shc) warning: Outgoing connection requested address list.");
+      return true;
+    }
+
     pfrom->vAddrToSend.clear();
 
 #if 0

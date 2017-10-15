@@ -85,6 +85,9 @@ class CPool : public CTxMemPool
     int ifaceIndex;
     int64 nAccept;
 
+    /** The maximum preferred size of each memory pool. */
+    size_t szMemMax;
+
   public:
     mutable CCriticalSection cs;
 
@@ -138,6 +141,7 @@ class CPool : public CTxMemPool
 
     virtual bool VerifyAccept(CTransaction &tx) = 0;
 
+#if 0
     unsigned long size()
     {
         LOCK(cs);
@@ -174,6 +178,7 @@ class CPool : public CTxMemPool
 
       return CTransaction();
     }
+#endif
 
 
     void purge();
@@ -284,7 +289,9 @@ class CPool : public CTxMemPool
     virtual bool AcceptTx(CTransction& tx);
 
     
-
+/* IncrPriority(uint256 hash) */
+/* DecrPriority(uint256 hash) */
+/* SetMinFee(double v) */
 }
 
 class CTxMemPool
