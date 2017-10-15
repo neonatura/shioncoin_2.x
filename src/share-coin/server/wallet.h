@@ -392,12 +392,8 @@
 
     virtual bool AllowFree(double dPriority) = 0; 
 
-    virtual int64 GetMinFee(const CTransaction& tx) = 0;
-
-/*
-    cost per 1000 bytes of transaction data size
-    virtual int64 CalculateBlockFee(const CTransaction& tx) = 0;
-*/
+    /* 1k data cost */
+    virtual int64 CalculateBlockFee() = 0;
 
 };
 

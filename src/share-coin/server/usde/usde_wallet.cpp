@@ -777,7 +777,8 @@ bool USDEWallet::AllowFree(double dPriority)
   return dPriority > COIN * 700 / 250;
 }
 
-int64 USDEWallet::GetMinFee(const CTransaction& tx)
+int64 USDEWallet::CalculateBlockFee()
 {
-  return (0);
+  CIface *iface = GetCoinByIndex(USDE_COIN_IFACE);
+  return (MIN_TX_FEE(iface));
 }

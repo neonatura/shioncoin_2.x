@@ -141,7 +141,6 @@ class CPool : public CTxMemPool
 
     virtual bool VerifyAccept(CTransaction &tx) = 0;
 
-#if 0
     unsigned long size()
     {
         LOCK(cs);
@@ -178,8 +177,6 @@ class CPool : public CTxMemPool
 
       return CTransaction();
     }
-#endif
-
 
     void purge();
 

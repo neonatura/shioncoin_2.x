@@ -313,6 +313,7 @@ public:
     int64 nLastRecv;
     int64 nLastSendEmpty;
     int64 nTimeConnected;
+    int64 nMinFee;
     int nHeaderStart;
     unsigned int nMessageStart;
     CAddress addr;
@@ -326,6 +327,7 @@ public:
     bool fSuccessfullyConnected;
     bool fDisconnect;
     bool fHaveWitness;
+    bool fPreferHeaders;
     CSemaphoreGrant grantOutbound;
 protected:
     int nRefCount;
@@ -372,6 +374,7 @@ public:
         nLastRecv = 0;
         nLastSendEmpty = GetTime();
         nTimeConnected = GetTime();
+        nMinFee = 0;
         nHeaderStart = -1;
         nMessageStart = -1;
         addr = addrIn;
@@ -384,6 +387,7 @@ public:
         fSuccessfullyConnected = false;
         fDisconnect = false;
         fHaveWitness = false;
+        fPreferHeaders = true;
         nRefCount = 0;
         nReleaseTime = 0;
         hashContinue = 0;

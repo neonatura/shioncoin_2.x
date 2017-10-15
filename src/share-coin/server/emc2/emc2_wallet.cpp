@@ -829,11 +829,18 @@ bool EMC2Wallet::AllowFree(double dPriority)
   return dPriority > emc2_AllowFreeThreshold();
 }
 
-int64 EMC2Wallet::GetMinFee(const CTransaction& tx)
+int64 EMC2Wallet::CalculateBlockFee()
 {
   CIface *iface = GetCoinByIndex(EMC2_COIN_IFACE);
+  int64 nValue;
+  int nTotal;
 
-  /* EMC2 transactions created will always generate a fee. */
-  return (MIN_TX_FEE(iface) * 2);
+  nTotal = 1;
+  nValue = MIN_TX_FEE(iface) * 2;
+
+
+  return (nValue / nTotal);
 }
+
+
 

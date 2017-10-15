@@ -125,7 +125,7 @@ void CPool::CalculateFee(CPoolTx& ptx)
   nFee = nCredit - tx.GetValueOut();
 
   /* boosted priority when extra fee is supplied. */
-  dPriority += (double)nFee / COIN;
+  dPriority += (double)nFee / CENT;
 }
 
 bool CPool::VerifyStandards(CPoolTx& ptx)

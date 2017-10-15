@@ -3680,7 +3680,15 @@ int64 CWallet::CalculateFee(CTransaction& tx, int64 nCredit, int64& nBytes, doub
   int64 nFee;
   int64 nDepth;
 
-  nMinFee = MAX(nMinFee, GetMinFee(tx)); /* coin's required minimum */
+  /* determine absolute minimum fee */
+  {
+    LOCK(cs_vNodes);
+    NodeList &vNodes = GetNodeList(ifaceIndex);
+    BOOST_FOREACH(CNode* pnode, vNodes) {
+/* note: consider spoofing */
+      nMinFee = MAX(nMinFee, pnode->nMinFee);
+    }
+  }
 
   nDepth = tx.GetDepthInMainChain(ifaceIndex);
   nBytes = GetVirtualTransactionSize(tx);
@@ -3690,7 +3698,7 @@ int64 CWallet::CalculateFee(CTransaction& tx, int64 nCredit, int64& nBytes, doub
     return (0);
 
   /* base fee */
-  nFee = MIN_TX_FEE(iface) * (nBytes / 1000);
+  nFee = CalculateBlockFee() * (nBytes / 1000);
   /* dust penalty */
   BOOST_FOREACH(const CTxOut& out, tx.vout) {
     if (out.nValue < CENT)

@@ -849,7 +849,8 @@ bool SHCWallet::AllowFree(double dPriority)
   return (dPriority > ((double)COIN * block_daily / block_bytes));
 }
 
-int64 SHCWallet::GetMinFee(const CTransaction& tx)
+int64 SHCWallet::CalculateBlockFee()
 {
-  return (0);
+  CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);
+  return (MIN_TX_FEE(iface));
 }

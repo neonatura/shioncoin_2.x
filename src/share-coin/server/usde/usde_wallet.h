@@ -60,7 +60,8 @@ class USDEWallet : public CWallet
 
     bool AllowFree(double dPriority);
 
-    int64 GetMinFee(const CTransaction& tx);
+    int64 CalculateBlockFee();
+
 };
 
 extern USDEWallet *usdeWallet;

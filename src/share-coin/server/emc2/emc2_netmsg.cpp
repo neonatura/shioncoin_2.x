@@ -60,6 +60,7 @@ extern vector <CAddress> GetAddresses(CIface *iface, int max_peer);
 #define MIN_EMC2_PROTO_VERSION 70002
 #define EMC2_COIN_HEADER_SIZE SIZEOF_COINHDR_T
 
+#define EMC2_SENDHEADERS_VERSION 70012
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -430,6 +431,32 @@ bool emc2_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
   else if (strCommand == "verack")
   {
     pfrom->vRecv.SetVersion(min(pfrom->nVersion, EMC2_PROTOCOL_VERSION));
+
+#if 0
+/* todo: not supported */
+    if (pfrom->nVersion >= EMC2_SENDHEADERS_VERSION) {
+      /* inform peer to use 'sendheaders' protocol */
+      pfrom->PushMessage("sendheaders");
+    }
+#endif
+
+    /* relay old wallet tx's */
+    BOOST_FOREACH(PAIRTYPE(const uint256, CWalletTx)& item, 
+        pwalletMain->mapWallet) {
+
+      CWalletTx& wtx = item.second;
+      if (wtx.IsCoinBase()) 
+        continue;
+
+      const uint256& wtx_hash = wtx.GetHash();
+      if (VerifyTxHash(iface, wtx_hash))
+        continue; /* is known */
+
+      CInv inv(ifaceIndex, MSG_TX, wtx_hash);
+      pfrom->PushInventory(inv);
+
+    }
+
   }
 
 
@@ -962,7 +989,7 @@ bool emc2_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
   }
 
   else if (strCommand == "sendheaders") {
-fprintf(stderr, "DEBUG: emc2_ProcessBlock: receveed 'sendheaders'\n");
+    pfrom->fPreferHeaders = true;
   }
 
   else if (strCommand == "sendcmpct") {
@@ -1007,17 +1034,11 @@ fprintf(stderr, "DEBUG: emc2_ProcessBlock: receveed 'blocktxn'\n");
     int64 newFeeFilter = 0;
     vRecv >> newFeeFilter;
 
-fprintf(stderr, "DEBUG: emc2_ProcessMessage: \"feefilter\": %d coins.\n", (double)newFeeFilter/COIN);
+fprintf(stderr, "DEBUG: emc2_ProcessMessage: \"feefilter\": %f coins.\n", ((double)newFeeFilter/COIN));
     if (MoneyRange(iface, newFeeFilter) &&
         newFeeFilter >= EMC2_MIN_TX_FEE &&
         newFeeFilter < EMC2_MAX_TX_FEE) {
-      if (iface->min_tx_fee <= EMC2_MIN_TX_FEE) { /* init */
-        iface->min_tx_fee = newFeeFilter;
-      } else { /* sum */
-        iface->min_tx_fee = (iface->min_tx_fee + newFeeFilter) / 2;
-      }
-fprintf(stderr, "DEBUG: emc2_ProcessMessage: fee filter: iface->min_relay_tx_fee = %f\n", (double)iface->min_tx_fee/COIN);
-      /* DEBUG: TODO: pool.SumMinFee(newFeeFilter); */
+      pfrom->nMinFee = newFeeFilter;
     }
   }
 
@@ -1235,7 +1256,6 @@ bool emc2_SendMessages(CIface *iface, CNode* pto, bool fSendTrickle)
       if (!vAddr.empty())
         pto->PushMessage("addr", vAddr);
     }
-
 
     //
     // Message: inventory
