@@ -60,7 +60,7 @@ class TESTWallet : public CWallet
 
     bool AllowFree(double dPriority);
 
-    int64 CalculateBlockFee();
+    int64 GetFeeRate();
 };
 
 extern TESTWallet *testWallet;

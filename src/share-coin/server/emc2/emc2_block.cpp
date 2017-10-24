@@ -558,14 +558,15 @@ continue;
         continue; /* too many puppies */
 
       CWallet *wallet = GetWallet(EMC2_COIN_IFACE);
+#if 0
       bool fAllowFree = false;
       if (nBlockSize <= 1000 && 
 /* DEBUG: estimateSmartPriority */
           wallet->AllowFree(dPriority)) {
         fAllowFree = true;
       }
-
       int64 nMinFee = tx.GetMinFee(EMC2_COIN_IFACE, nBlockSize, fAllowFree, GMF_BLOCK);
+#endif
 
       // Connecting shouldn't fail due to dependency on other memory pool transactions
       // because we're already processing them in order of dependency
@@ -582,6 +583,10 @@ continue;
         if (!ok)
           continue;
       }
+
+      int64 nMinFee = 0;
+      if (!wallet->AllowFree(wallet->GetPriority(tx, mapInputs))) 
+        nMinFee = wallet->CalculateFee(tx);
 
       int64 nTxFees = tx.GetValueIn(mapInputs)-tx.GetValueOut();
       if (nTxFees < nMinFee)
@@ -792,8 +797,10 @@ bool EMC2_CTxMemPool::accept(CTxDB& txdb, CTransaction &tx, bool fCheckInputs, b
     unsigned int nSize = ::GetSerializeSize(tx, SER_NETWORK, EMC2_PROTOCOL_VERSION);
 
     // Don't accept it if it can't get into a block
-    if (nFees < tx.GetMinFee(1000, true, GMF_RELAY))
-      return error(SHERR_INVAL, "CTxMemPool::accept() : not enough fees");
+    CWallet *pwallet = GetWallet(EMC2_COIN_IFACE);
+    int64 nMinFee = pwallet->CalculateFee(tx);
+    if (nFees < nMinFee)
+      return error(SHERR_INVAL, "(emc2) CTxMemPool::accept() : not enough fees");
 
     // Continuously rate-limit free transactions
     // This mitigates 'penny-flooding' -- sending thousands of free transactions just to

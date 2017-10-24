@@ -38,6 +38,7 @@ CWallet* pwalletMaster[MAX_COIN_IFACE];
 
 const string NULL_ACCOUNT = "*";
 
+#define RESERVED_CHANGE_SIZE 128
 
 CWallet *GetWallet(int iface_idx)
 {
@@ -108,13 +109,18 @@ CPubKey CWallet::GenerateNewKey(bool fCompressed)
 
 bool CWallet::AddKey(const CKey& key)
 {
-    if (!CCryptoKeyStore::AddKey(key))
-        return false;
-    if (!fFileBacked)
-        return true;
-    if (!IsCrypted())
-        return CWalletDB(strWalletFile).WriteKey(key.GetPubKey(), key.GetPrivKey());
+
+  if (!CCryptoKeyStore::AddKey(key))
+    return (error(SHERR_INVAL, "CWallet.AddKey: error adding key to crypto key-store."));
+  if (!fFileBacked)
     return true;
+  if (!IsCrypted()) {
+    bool ret = CWalletDB(strWalletFile).WriteKey(key.GetPubKey(), key.GetPrivKey());
+    if (!ret)
+      return (error(SHERR_INVAL, "CWallet.AddKey: error writing key to wallet."));
+  }
+
+  return true;
 }
 
 HDPubKey CWallet::GenerateNewHDKey(bool fCompressed)
@@ -2269,8 +2275,12 @@ bool CreateTransactionWithInputTx(CIface *iface,
 
       // Check that enough fee is included
       int64 nPayFee = nTransactionFee * (1 + (int64) nBytes / 1000);
+#if 0
       bool fAllowFree = pwalletMain->AllowFree(dPriority);
       int64 nMinFee = wtxNew.GetMinFee(ifaceIndex, 1, fAllowFree);
+#endif
+      int64 nMinFee = pwalletMain->CalculateFee(wtxNew);
+
       if (nFeeRet < max(nPayFee, nMinFee)) {
         nFeeRet = max(nPayFee, nMinFee);
         Debug("TEST: CreateTransactionWithInputTx: re-iterating (nFreeRet = %s)\n", FormatMoney(nFeeRet).c_str());
@@ -3133,8 +3143,12 @@ bool core_CreateWalletAccountTransaction(CWallet *wallet, string strFromAccount,
 
         // Check that enough fee is included
         int64 nPayFee = nTransactionFee * (1 + (int64)nBytes / 1000);
+#if 0
         bool fAllowFree = wallet->AllowFree(dPriority);
         int64 nMinFee = wtxNew.GetMinFee(wallet->ifaceIndex, 1, fAllowFree, GMF_SEND);
+#endif
+        int64 nMinFee = wallet->CalculateFee(wtxNew);
+
         if (nFeeRet < max(nPayFee, nMinFee))
         {
           nFeeRet = max(nPayFee, nMinFee);
@@ -3317,35 +3331,21 @@ void CTxCreator::SetMinFee(int64 nMinFeeIn)
 
 int64 CTxCreator::CalculateFee()
 {
-#if 0
   CIface *iface = GetCoinByIndex(pwallet->ifaceIndex);
-  double dPriority;
-  size_t nBytes;
-  int64 nFee;
 
-  nBytes = GetSerializedSize();
-  dPriority = GetPriority(nBytes);
-
-  if (nMinFee == 0 && pwallet->AllowFree(dPriority))
-    return (0);
-
-  /* base fee */
-  nFee = MIN_TX_FEE(iface) * (nBytes / 1000);
-  /* dust penalty */
-  BOOST_FOREACH(const CTxOut& out, vout) {
-    if (out.nValue < CENT)
-      nFee += MIN_TX_FEE(iface); 
+#if 0
+  int64 nFee = nMinFee;
+  if (nMinFee == 0) {
+    int64 nBytes = pwallet->GetVirtualTransactionSize(*this);
+    if (nBytes < 10000) {
+      double dPriority  = GetPriority(nBytes);
+      if (pwallet->AllowFree(dPriority))
+        return (0);
+    }
   }
-
-  nFee = MAX(nFee, nMinFee);
-  nFee = MAX(nFee, (int64)MIN_RELAY_TX_FEE(iface));
-  nFee = MIN(nFee, (int64)MAX_TRANSACTION_FEE(iface) - 1);
- 
-  return (nFee);
 #endif
-  double dPriority;
-  int64 nBytes;
-  return (pwallet->CalculateFee(*this, nCredit, nBytes, dPriority, nMinFee));
+
+  return (pwallet->CalculateFee(*this, nMinFee));
 }
 
 void CTxCreator::CreateChangeAddr()
@@ -3381,7 +3381,7 @@ bool CTxCreator::Generate()
   nBestHeight = GetBestHeight(iface);
   nLockTime = nBestHeight - 1;
 
-  nFee = CalculateFee();
+  nFee = 0;
   while (nDebit + nFee > nCredit) {
     set<pair<const CWalletTx*,unsigned int> > setCoins;
     int64 nTotalValue = (nDebit + nFee - nCredit);
@@ -3435,6 +3435,17 @@ bool CTxCreator::Generate()
       /* prevent an endless loop */
       strError = "Insufficient input coins to fund transaction.";
       return (false);
+    }
+
+    /* insert inputs for fee calculation */
+    vin.clear();
+    cbuff sigDummy(72, '\000');
+    cbuff sigPub(64, '\000');
+    BOOST_FOREACH(const PAIRTYPE(CWalletTx *,unsigned int)& coin, setInput) {
+      CTxIn in = CTxIn(coin.first->GetHash(), coin.second, 
+          CScript(), std::numeric_limits<unsigned int>::max()-1);
+      in.scriptSig << sigDummy << sigPub;
+      vin.push_back(in);
     }
 
     nFee = CalculateFee();
@@ -3674,31 +3685,17 @@ bool CWallet::GetWitnessAddress(CCoinAddr& addr, CCoinAddr& witAddr)
 
 
 
-int64 CWallet::CalculateFee(CTransaction& tx, int64 nCredit, int64& nBytes, double& dPriority, int64 nMinFee)
+int64 CWallet::CalculateFee(CTransaction& tx, int64 nMinFee)
 {
   CIface *iface = GetCoinByIndex(ifaceIndex);
+  int64 nBytes;
   int64 nFee;
-  int64 nDepth;
 
-  /* determine absolute minimum fee */
-  {
-    LOCK(cs_vNodes);
-    NodeList &vNodes = GetNodeList(ifaceIndex);
-    BOOST_FOREACH(CNode* pnode, vNodes) {
-/* note: consider spoofing */
-      nMinFee = MAX(nMinFee, pnode->nMinFee);
-    }
-  }
-
-  nDepth = tx.GetDepthInMainChain(ifaceIndex);
-  nBytes = GetVirtualTransactionSize(tx);
-  dPriority = (nCredit * nDepth) / nBytes;
-
-  if (nMinFee == 0 && AllowFree(dPriority))
-    return (0);
+  nBytes = ::GetSerializeSize(tx, SER_NETWORK, PROTOCOL_VERSION(iface));
+  nBytes += RESERVED_CHANGE_SIZE;
 
   /* base fee */
-  nFee = CalculateBlockFee() * (nBytes / 1000);
+  nFee = GetFeeRate() * (1 + (nBytes / 1000));
   /* dust penalty */
   BOOST_FOREACH(const CTxOut& out, tx.vout) {
     if (out.nValue < CENT)
@@ -3712,10 +3709,6 @@ int64 CWallet::CalculateFee(CTransaction& tx, int64 nCredit, int64& nBytes, doub
   return (nFee);
 }
 
-int64 CWallet::CalculateFee(CTransaction& tx, tx_cache& mapInputs, int64& nBytes, double& dPriority, int64 nMinFee)
-{
-  return (CalculateFee(tx, tx.GetValueIn(mapInputs), nBytes, dPriority, nMinFee));
-}
 
 
 bool CWallet::FillInputs(const CTransaction& tx, tx_cache& inputs)
@@ -3751,6 +3744,123 @@ bool CTxCreator::AddInput(uint256 hashTx, unsigned int n)
 
   CWalletTx& wtx = pwallet->mapWallet[hashTx];
   return (AddInput(&wtx, n));
+}
+
+double CTxCreator::GetPriority(int64 nBytes)
+{
+  CIface *iface = GetCoinByIndex(pwallet->ifaceIndex);
+  double dPriority;
+
+  if (nBytes == 0)
+    nBytes = ::GetSerializeSize(*this, SER_NETWORK, PROTOCOL_VERSION(iface));
+
+  dPriority = 0;
+  BOOST_FOREACH(const PAIRTYPE(CWalletTx *,unsigned int)& coin, setInput) {
+    CWalletTx *txPrev = coin.first;
+    unsigned int n = coin.second;
+
+    if (n >= txPrev->vout.size())
+      continue;
+
+    const CTxOut& out = txPrev->vout[n];
+    dPriority += (double)out.nValue * 
+      (double)txPrev->GetDepthInMainChain(pwallet->ifaceIndex);
+  }
+  dPriority /= (nBytes + RESERVED_CHANGE_SIZE);
+
+  return (dPriority);
+}
+
+double CWallet::GetPriority(const CTransaction& tx, MapPrevTx& mapInputs)
+{
+  CIface *iface = GetCoinByIndex(ifaceIndex);
+  double dPriority = 0;
+
+  for (unsigned int i = 0; i < tx.vin.size(); i++) {
+    const CTxIn& input = tx.vin[i];
+    MapPrevTx::const_iterator mi = mapInputs.find(input.prevout.hash);
+    if (mi == mapInputs.end()) continue;
+
+    const CTransaction& txPrev = (mi->second).second;
+    if (input.prevout.n >= txPrev.vout.size()) continue;
+
+    const CTxOut& out = txPrev.vout[input.prevout.n];
+    dPriority += out.nValue * txPrev.GetDepthInMainChain(ifaceIndex);
+  }
+  int64 nBytes = ::GetSerializeSize(tx, SER_NETWORK, PROTOCOL_VERSION(iface));
+  dPriority /= nBytes;
+
+  return (dPriority);
+}
+
+double CWallet::GetPriority(const CTransaction& tx, tx_cache& inputs)
+{
+  CIface *iface = GetCoinByIndex(ifaceIndex);
+  double dPriority = 0;
+
+  for (unsigned int i = 0; i < tx.vin.size(); i++) {
+    const CTxIn& input = tx.vin[i];
+    tx_cache::const_iterator mi = inputs.find(input.prevout.hash);
+    if (mi == inputs.end()) continue;
+
+    const CTransaction& txPrev = (mi->second);
+    if (input.prevout.n >= txPrev.vout.size()) continue;
+
+    const CTxOut& out = txPrev.vout[input.prevout.n];
+    dPriority += out.nValue * txPrev.GetDepthInMainChain(ifaceIndex);
+  }
+  int64 nBytes = ::GetSerializeSize(tx, SER_NETWORK, PROTOCOL_VERSION(iface));
+  dPriority /= nBytes;
+
+  return (dPriority);
+}
+
+int64 core_GetFeeRate(int ifaceIndex)
+{
+  CIface *iface = GetCoinByIndex(ifaceIndex);
+  int64 nVal;
+  int nTot;
+
+  nVal = MIN_TX_FEE(iface);
+  nTot = 1;
+
+  { /* determine absolute minimum fee */
+    LOCK(cs_vNodes);
+    NodeList &vNodes = GetNodeList(ifaceIndex);
+    BOOST_FOREACH(CNode* pnode, vNodes) {
+      if (pnode->nMinFee == 0)
+        continue;
+
+      nVal += pnode->nMinFee;
+      nTot++;
+    }
+  }
+
+  /* scan recent blocks for average tx fee */
+  CBlockIndex *pindexBest = GetBestBlockIndex(ifaceIndex);
+  CWallet *wallet = GetWallet(iface);
+  int nr = 0;
+  while (pindexBest) {
+    nr++;
+    if (nr >= 32) break;
+
+    CBlock *block = GetBlockByHeight(iface, pindexBest->nHeight);
+    BOOST_FOREACH(const CTransaction& tx, block->vtx) {
+      if (tx.IsCoinBase())
+        continue; 
+
+      int64 nFee = wallet->GetTxFee(tx);
+      if (nFee < MIN_TX_FEE(iface) || nFee >= MAX_TRANSACTION_FEE(iface))
+        continue;
+
+      nVal += nFee;
+      nTot++;
+    }
+    
+    delete block;
+  }
+
+  return (nVal / (int64)nTot);
 }
 
 

@@ -1070,7 +1070,6 @@ bool ret;
   string strAccount("");
   string strComment("geo:46.7467,-114.1096");
   err = init_ident_stamp_tx(iface, strAccount, strComment, wtx); 
-fprintf(stderr, "DEBUG: matrixtx: %d = init_ident_stamp_tx()\n", err); 
   _TRUE(err == 0);
 
 

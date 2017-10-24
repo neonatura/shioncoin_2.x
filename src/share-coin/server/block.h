@@ -827,7 +827,7 @@ public:
 
     int64 GetValueIn(tx_cache& mapInputs);
 
-
+#if 0
     int64 GetMinFee(int ifaceIndex, unsigned int nBlockSize=1, bool fAllowFree=true, enum GetMinFee_mode mode=GMF_BLOCK) const
     {
       CIface *iface = GetCoinByIndex(ifaceIndex);
@@ -876,6 +876,7 @@ public:
         nMinFee = iface->max_money;
       return nMinFee;
     }
+#endif
 
 #if 0
     bool ReadFromDisk(CDiskTxPos pos, FILE** pfileRet=NULL)

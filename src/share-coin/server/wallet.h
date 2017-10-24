@@ -361,9 +361,7 @@
 
     bool GetWitnessAddress(CCoinAddr& addr, CCoinAddr& witAddr);
 
-    int64 CalculateFee(CTransaction& tx, int64 nCredit, int64& nBytes, double& dPriority, int64 nMinFee = 0);
-
-    int64 CalculateFee(CTransaction& tx, tx_cache& mapInputs, int64& nBytes, double& dPriority, int64 nMinFee = 0);
+    int64 CalculateFee(CTransaction& tx, int64 nMinFee = 0);
 
     bool FillInputs(const CTransaction& tx, tx_cache& inputs);
 
@@ -392,8 +390,12 @@
 
     virtual bool AllowFree(double dPriority) = 0; 
 
+    double GetPriority(const CTransaction& tx, MapPrevTx& mapInputs);
+
+    double GetPriority(const CTransaction& tx, tx_cache& inputs);
+
     /* 1k data cost */
-    virtual int64 CalculateBlockFee() = 0;
+    virtual int64 GetFeeRate() = 0;
 
 };
 
@@ -958,6 +960,7 @@ class CTxCreator : public CWalletTx
 
     bool Verify();
 
+    double GetPriority(int64 nBytes = 0);
 
 
     string GetError()
@@ -1029,6 +1032,7 @@ bool core_CreateWalletAccountTransaction(CWallet *wallet, string strFromAccount,
 
 CScript GetScriptForWitness(const CScript& redeemscript);
 
+int64 core_GetFeeRate(int ifaceIndex);
 
 #endif
 

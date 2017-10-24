@@ -509,8 +509,12 @@ wtxNew.print(TEST_COIN_IFACE);
 
         // Check that enough fee is included
         int64 nPayFee = nTransactionFee * (1 + (int64)nBytes / 1000);
+#if 0
         bool fAllowFree = AllowFree(dPriority);
         int64 nMinFee = wtxNew.GetMinFee(TEST_COIN_IFACE, 1, fAllowFree, GMF_SEND);
+#endif
+        int64 nMinFee = CalculateFee(wtxNew);
+
         if (nFeeRet < max(nPayFee, nMinFee))
         {
           nFeeRet = max(nPayFee, nMinFee);
@@ -709,8 +713,12 @@ wtxNew.print(TEST_COIN_IFACE);
 
         // Check that enough fee is included
         int64 nPayFee = nTransactionFee * (1 + (int64)nBytes / 1000);
+#if 0
         bool fAllowFree = AllowFree(dPriority);
         int64 nMinFee = wtxNew.GetMinFee(TEST_COIN_IFACE, 1, fAllowFree, GMF_SEND);
+#endif
+        int64 nMinFee = CalculateFee(wtxNew);
+
         if (nFeeRet < max(nPayFee, nMinFee))
         {
           nFeeRet = max(nPayFee, nMinFee);
@@ -758,7 +766,7 @@ bool TESTWallet::AllowFree(double dPriority)
   return (dPriority > ((double)COIN * block_daily / block_bytes));
 }
 
-int64 TESTWallet::CalculateBlockFee()
+int64 TESTWallet::GetFeeRate()
 {
   CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
   return (MIN_TX_FEE(iface));

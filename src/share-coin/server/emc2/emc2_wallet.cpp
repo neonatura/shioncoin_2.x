@@ -536,8 +536,14 @@ bool EMC2Wallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend,
 
         // Check that enough fee is included
         int64 nPayFee = nTransactionFee * (1 + (int64)nBytes / 1000);
-        bool fAllowFree = AllowFree(dPriority);
+#if 0
+        bool fAllowFree = false;
+        if (AllowFree(dPriority) && nBytes < 1000)
+          fAllowFree = true;
         int64 nMinFee = wtxNew.GetMinFee(EMC2_COIN_IFACE, 1, fAllowFree, GMF_SEND);
+#endif
+        int64 nMinFee = CalculateFee(wtxNew);
+
         if (nFeeRet < max(nPayFee, nMinFee))
         {
           nFeeRet = max(nPayFee, nMinFee);
@@ -767,8 +773,14 @@ bool EMC2Wallet::CreateAccountTransaction(string strFromAccount, const vector<pa
 
         // Check that enough fee is included
         int64 nPayFee = nTransactionFee * (1 + (int64)nBytes / 1000);
-        bool fAllowFree = AllowFree(dPriority);
-        int64 nMinFee = wtxNew.GetMinFee(EMC2_COIN_IFACE, 1, fAllowFree, GMF_SEND);
+#if 0
+        bool fAllowFree = false;
+        if (AllowFree(dPriority) && nBytes < 1000)
+          fAllowFree = true;
+       int64 nMinFee = wtxNew.GetMinFee(EMC2_COIN_IFACE, 1, fAllowFree, GMF_SEND);
+#endif
+        int64 nMinFee = CalculateFee(wtxNew);
+
         if (nFeeRet < max(nPayFee, nMinFee))
         {
           nFeeRet = max(nPayFee, nMinFee);
@@ -826,21 +838,21 @@ static double emc2_AllowFreeThreshold()
 /** Large (in bytes) low-priority (new, small-coin) transactions require fee. */
 bool EMC2Wallet::AllowFree(double dPriority)
 {
+#if 0
   return dPriority > emc2_AllowFreeThreshold();
+#endif
+  return (false);
 }
 
-int64 EMC2Wallet::CalculateBlockFee()
+int64 EMC2Wallet::GetFeeRate()
 {
   CIface *iface = GetCoinByIndex(EMC2_COIN_IFACE);
-  int64 nValue;
-  int nTotal;
+  int64 nVal;
 
-  nTotal = 1;
-  nValue = MIN_TX_FEE(iface) * 2;
+  nVal = core_GetFeeRate(EMC2_COIN_IFACE);
+  nVal += MIN_TX_FEE(iface);
 
-
-  return (nValue / nTotal);
+  return (nVal);
 }
-
 
 

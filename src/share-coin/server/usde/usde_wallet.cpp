@@ -510,8 +510,12 @@ bool USDEWallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend,
 
         // Check that enough fee is included
         int64 nPayFee = nTransactionFee * (1 + (int64)nBytes / 1000);
+#if 0
         bool fAllowFree = AllowFree(dPriority);
         int64 nMinFee = wtxNew.GetMinFee(USDE_COIN_IFACE, 1, fAllowFree, GMF_SEND);
+#endif
+        int64 nMinFee = CalculateFee(wtxNew);
+
         if (nFeeRet < max(nPayFee, nMinFee))
         {
           nFeeRet = max(nPayFee, nMinFee);
@@ -729,8 +733,12 @@ bool USDEWallet::CreateAccountTransaction(string strFromAccount, const vector<pa
 
         // Check that enough fee is included
         int64 nPayFee = nTransactionFee * (1 + (int64)nBytes / 1000);
+#if 0
         bool fAllowFree = AllowFree(dPriority);
         int64 nMinFee = wtxNew.GetMinFee(USDE_COIN_IFACE, 1, fAllowFree, GMF_SEND);
+#endif
+        int64 nMinFee = CalculateFee(wtxNew);
+
         if (nFeeRet < max(nPayFee, nMinFee))
         {
           nFeeRet = max(nPayFee, nMinFee);
@@ -777,7 +785,7 @@ bool USDEWallet::AllowFree(double dPriority)
   return dPriority > COIN * 700 / 250;
 }
 
-int64 USDEWallet::CalculateBlockFee()
+int64 USDEWallet::GetFeeRate()
 {
   CIface *iface = GetCoinByIndex(USDE_COIN_IFACE);
   return (MIN_TX_FEE(iface));

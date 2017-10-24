@@ -644,9 +644,19 @@ bool core_AcceptPoolTx(int ifaceIndex, CTransaction& tx, bool fCheckInputs)
     if (!core_ConnectCoinInputs(ifaceIndex, &tx, NULL, mapOutput, mapTx, nSigOps, nFees, true, true, false)) {
       return error(SHERR_INVAL, "core_AcceptPoolTx: ConnectInputs failed for tx '%s'", hash.ToString().c_str());
     }
-    if (nFees < tx.GetMinFee(ifaceIndex, 1000, true, GMF_RELAY)) {
+
+    CWallet *wallet = GetWallet(iface);
+    tx_cache inputs;
+
+    if (!wallet->FillInputs(tx, inputs))
+      return error(SHERR_INVAL, "core_AcceptPoolTx: error retriving inputs.");
+
+    if (wallet->AllowFree(wallet->GetPriority(tx, inputs)))
+      return (true);
+
+    //if (nFees < tx.GetMinFee(ifaceIndex, 1000, true, GMF_RELAY))
+    if (nFees < wallet->CalculateFee(tx)) 
       return error(SHERR_INVAL, "core_AcceptPoolTx: not enough fees");
-    }
   }
 
   // Store transaction in memory

@@ -2462,29 +2462,41 @@ Value rpc_wallet_tsend(CIface *iface, const Array& params, bool fStratum)
   if (params.size() > 3)
     nMinDepth = params[3].get_int();
 
-  CWalletTx wtx;
-  wtx.strFromAccount = strAccount;
-
-  EnsureWalletIsUnlocked();
-
   int64 nBalance = GetAccountBalance(ifaceIndex, strAccount, nMinDepth);
   if (nAmount > nBalance)
     throw JSONRPCError(-6, "Account has insufficient funds");
 
+  CTxCreator wtx(wallet, strAccount);
+/*
   string strError = wallet->SendMoney(strAccount, address.Get(), nAmount, wtx, true);
   if (strError != "" && strError != "ABORTED")
     throw JSONRPCError(-4, strError);
+*/
 
-  unsigned int nBytes = ::GetSerializeSize(wtx, SER_NETWORK, PROTOCOL_VERSION(iface));
-  unsigned int nMaxBytes = MAX_BLOCK_SIZE_GEN(iface) / 5;
+  wtx.AddOutput(address.Get(), nAmount);
+  if (!wtx.Generate())
+    throw JSONRPCError(-4, wtx.GetError());
+
+  unsigned int nBytes = ::GetSerializeSize(wtx, SER_NETWORK, 
+      PROTOCOL_VERSION(iface) | SERIALIZE_TRANSACTION_NO_WITNESS);
   int64 nFee = wallet->GetTxFee(wtx);
+
+  tx_cache inputs;
+  if (!wallet->FillInputs(wtx, inputs))
+    throw JSONRPCError(-4, "error filling inputs");
+  double dPriority = wallet->GetPriority(wtx, inputs);
+
+  int64 nVirtSize = wallet->GetVirtualTransactionSize(wtx);
 
   Object ret_obj;
   ret_obj.push_back(Pair("amount", ValueFromAmount(nAmount)));
+  ret_obj.push_back(Pair("tx-amount", ValueFromAmount(wtx.GetValueOut())));
   ret_obj.push_back(Pair("size", (int)nBytes));
-  ret_obj.push_back(Pair("maxsize", (int)nMaxBytes));
+  ret_obj.push_back(Pair("virt-size", (int)nVirtSize));
+  //ret_obj.push_back(Pair("maxsize", (int)nMaxBytes));
   ret_obj.push_back(Pair("fee", ValueFromAmount(nFee)));
-  ret_obj.push_back(Pair("inputs", (int)wtx.vin.size()));
+  ret_obj.push_back(Pair("inputs", inputs.size()));
+  ret_obj.push_back(Pair("priority", dPriority));
 
   return ret_obj;
 }

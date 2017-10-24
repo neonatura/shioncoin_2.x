@@ -574,8 +574,12 @@ bool SHCWallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend, 
 
         // Check that enough fee is included
         int64 nPayFee = nTransactionFee * (1 + (int64)nBytes / 1000);
+#if 0
         bool fAllowFree = AllowFree(dPriority);
         int64 nMinFee = wtxNew.GetMinFee(SHC_COIN_IFACE, 1, fAllowFree, GMF_SEND);
+#endif
+        int64 nMinFee = CalculateFee(wtxNew);
+
         if (nFeeRet < max(nPayFee, nMinFee))
         {
           nFeeRet = max(nPayFee, nMinFee);
@@ -742,8 +746,12 @@ bool SHCWallet::CreateAccountTransaction(string strFromAccount, const vector<pai
 
         // Check that enough fee is included
         int64 nPayFee = nTransactionFee * (1 + (int64)nBytes / 1000);
+#if 0
         bool fAllowFree = AllowFree(dPriority);
         int64 nMinFee = wtxNew.GetMinFee(SHC_COIN_IFACE, 1, fAllowFree, GMF_SEND);
+#endif
+        int64 nMinFee = CalculateFee(wtxNew); 
+
         if (nFeeRet < max(nPayFee, nMinFee))
         {
           nFeeRet = max(nPayFee, nMinFee);
@@ -849,7 +857,7 @@ bool SHCWallet::AllowFree(double dPriority)
   return (dPriority > ((double)COIN * block_daily / block_bytes));
 }
 
-int64 SHCWallet::CalculateBlockFee()
+int64 SHCWallet::GetFeeRate()
 {
   CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);
   return (MIN_TX_FEE(iface));

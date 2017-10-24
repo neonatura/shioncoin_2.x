@@ -60,7 +60,7 @@ class USDEWallet : public CWallet
 
     bool AllowFree(double dPriority);
 
-    int64 CalculateBlockFee();
+    int64 GetFeeRate();
 
 };
 

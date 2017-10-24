@@ -122,7 +122,7 @@ static bool ServiceWalletEvent(int ifaceIndex)
 
   unsigned int nBestHeight = GetBestHeight(iface);
   unsigned int nHeight = wallet->nScanHeight;
-  unsigned int nMaxHeight = nHeight + 1024;
+  unsigned int nMaxHeight = nHeight + 4096;
 
   if (nHeight <= nBestHeight) {
     LOCK(wallet->cs_wallet);

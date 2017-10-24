@@ -710,8 +710,10 @@ continue;
       // usded: Reduce the exempted free transactions to 500 bytes (from Bitcoin's 3000 bytes)
     
       CWallet *wallet = GetWallet(USDE_COIN_IFACE);
+#if 0
       bool fAllowFree = (nBlockSize + nTxSize < 1500 || wallet->AllowFree(dPriority));
       int64 nMinFee = tx.GetMinFee(nBlockSize, fAllowFree, GMF_BLOCK);
+#endif
 
       // Connecting shouldn't fail due to dependency on other memory pool transactions
       // because we're already processing them in order of dependency
@@ -729,6 +731,10 @@ continue;
 
         txdb.Close();
       }
+
+      int64 nMinFee = 0;
+      if (!wallet->AllowFree(wallet->GetPriority(tx, mapInputs))) 
+        nMinFee = wallet->CalculateFee(tx);
 
       int64 nTxFees = tx.GetValueIn(mapInputs)-tx.GetValueOut();
       if (nTxFees < nMinFee)
@@ -928,9 +934,17 @@ bool USDE_CTxMemPool::accept(CTxDB& txdb, CTransaction &tx, bool fCheckInputs, b
     int64 nFees = tx.GetValueIn(mapInputs)-tx.GetValueOut();
     unsigned int nSize = ::GetSerializeSize(tx, SER_NETWORK, USDE_PROTOCOL_VERSION);
 
+#if 0
     // Don't accept it if it can't get into a block
     if (nFees < tx.GetMinFee(1000, true, GMF_RELAY))
       return error(SHERR_INVAL, "CTxMemPool::accept() : not enough fees");
+#endif
+    CWallet *pwallet = GetWallet(USDE_COIN_IFACE);
+    if (!pwallet->AllowFree(pwallet->GetPriority(tx, mapInputs))) {
+      // Don't accept it if it can't get into a block
+      if (nFees < pwallet->CalculateFee(tx))
+        return error(SHERR_INVAL, "(usde) CTxMemPool.accept: not enough fees");
+    }
 
     // Continuously rate-limit free transactions
     // This mitigates 'penny-flooding' -- sending thousands of free transactions just to
