@@ -292,11 +292,8 @@ static void commit_payout(int ifaceIndex, int block_height)
 static int task_verify(int ifaceIndex, int *work_reset_p)
 {
   uint64_t block_height;
-  time_t now;
 
   *work_reset_p = FALSE;
-
-  now = time(NULL);
 
   block_height = getblockheight(ifaceIndex);
   if (block_height == last_block_height[ifaceIndex]) {
@@ -334,11 +331,39 @@ typedef struct task_stat_t
 
 task_stat_t _task_stat[MAX_COIN_IFACE];
 
+#if 0
+typedef struct task_work_t
+{
+  int timer;
+  int f_reset;
+  double diff;
+} task_work_t;
+
+task_work_t _task_work[MAX_COIN_IFACE];
+
+int task_work_calc(int ifaceIndex)
+{
+  task_work_t *work = &_task_work[ifaceIndex];
+  int err;
+
+  /* count down timer */
+  work->timer--;
+  
+  err = task_verify(ifaceIndex, &work->f_reset);
+  if (err)
+    return (err);
+
+  work->diff += GetNextDifficulty(idx);
+  return (0);
+}
+#endif
+
+
 task_t *task_init(void)
 {
   CIface *iface;
   shjson_t *block;
-  unsigned char hash_swap[32];
+//  unsigned char hash_swap[32];
   shjson_t *tree;
   task_t *task;
   const char *templ_json;
@@ -347,10 +372,8 @@ task_t *task_init(void)
   char *ptr;
   char target[32];
   char errbuf[1024];
-  char path[PATH_MAX+1];
-  uint64_t block_height;
-  unsigned long cb1;
-  unsigned long cb2;
+//  unsigned long cb1;
+//  unsigned long cb2;
   int reset_idx;
   int ifaceIndex;
   int err;
@@ -370,9 +393,8 @@ task_t *task_init(void)
       reset_idx = ifaceIndex;
   }
 
+  int orig_idx = DefaultWorkIndex;
   if (reset_idx) {
-    int orig_idx = DefaultWorkIndex;
-
     int diff_idx = stratum_default_iface();
     if (diff_idx &&
         diff_idx != DefaultWorkIndex &&
@@ -391,17 +413,18 @@ task_t *task_init(void)
     }
   }
 
-  /* concentrate on single coin at a time */
-  ifaceIndex = DefaultWorkIndex;
-  if (!reset_idx) {
-    /* if no block confirmed then delay new work */
-    work_idx++;
-    if (ifaceIndex != (work_idx % MAX_COIN_IFACE))
-      return (NULL);
-  }
-  if (ifaceIndex == 0)
+  if (DefaultWorkIndex == 0)
     return (NULL);
 
+  /* concentrate on single coin at a time */
+  if (reset_idx != orig_idx) {
+    /* if no block confirmed then delay new work */
+    work_idx++;
+    if (0 != (work_idx % 8))
+      return (NULL);
+  }
+
+  ifaceIndex = DefaultWorkIndex;
   iface = GetCoinByIndex(ifaceIndex);
   if (!iface)
     return (NULL);

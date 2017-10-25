@@ -117,8 +117,8 @@ static void stratum_timer(void)
   unet_table_t *t;
   user_t *peer;
   shbuf_t *buff;
-  size_t len;
   time_t now;
+  size_t len;
   char *data;
   int err;
 
@@ -179,7 +179,8 @@ static void stratum_timer(void)
   stratum_close_free();
 
   /* minimum two second wait in between new mining work generation. */
-  if (last_task_t != (time(NULL) / 2)) {
+  now = time(NULL);
+  if (last_task_t != now) {
     /* generate new work, as needed */
     stratum_task_gen();
 
@@ -189,7 +190,7 @@ static void stratum_timer(void)
 #endif
 
     /* based new time off now and not when task was started */
-    last_task_t = (time(NULL) / 2);
+    last_task_t = now;
   }
 
 }
