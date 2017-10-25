@@ -245,7 +245,7 @@ fprintf(stderr, "DEBUG: c_getblocktemplate: error creating block template\n");
 
   /* coinbase */
   CTransaction coinbaseTx = pblock->vtx[0];
-  CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION(iface));
+  CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION(iface) | SERIALIZE_TRANSACTION_NO_WITNESS);
   ssTx << coinbaseTx;
   result.push_back(Pair("coinbase", HexStr(ssTx.begin(), ssTx.end())));
   //  result.push_back(Pair("sigScript", HexStr(pblock->vtx[0].vin[0].scriptSig.begin(), pblock->vtx[0].vin[0].scriptSig.end())));
