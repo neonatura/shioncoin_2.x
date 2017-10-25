@@ -3815,6 +3815,7 @@ double CWallet::GetPriority(const CTransaction& tx, tx_cache& inputs)
   return (dPriority);
 }
 
+#if 0
 int64 core_GetFeeRate(int ifaceIndex)
 {
   CIface *iface = GetCoinByIndex(ifaceIndex);
@@ -3861,6 +3862,11 @@ int64 core_GetFeeRate(int ifaceIndex)
   }
 
   return (nVal / (int64)nTot);
+}
+#endif
+int64 core_GetFeeRate(int ifaceIndex)
+{
+  return (MIN_TX_FEE(iface));
 }
 
 
