@@ -3866,6 +3866,9 @@ int64 core_GetFeeRate(int ifaceIndex)
 #endif
 int64 core_GetFeeRate(int ifaceIndex)
 {
+  CIface *iface = GetCoinByIndex(ifaceIndex);
+  if (!iface)
+    return (0);
   return (MIN_TX_FEE(iface));
 }
 
