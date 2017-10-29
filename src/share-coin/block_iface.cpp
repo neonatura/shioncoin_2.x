@@ -137,6 +137,9 @@ const char *c_getblocktemplate(int ifaceIndex)
     return (NULL);
 #endif
 
+  if (iface->blockscan_max > pindexPrev->nHeight)
+    return (NULL); /* downloading blocks */
+
   /* prune worker blocks (< 5 min) */
   vector<unsigned int> vDelete;
   time_t timeExpire = GetAdjustedTime() - 360;
