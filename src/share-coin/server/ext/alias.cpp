@@ -612,12 +612,15 @@ int init_alias_addr_tx(CIface *iface, const char *title, CCoinAddr& addr, CWalle
     return (SHERR_AGAIN);
   }
 
+#if 0
   /* embed alias content into transaction */
   wtx.SetNull();
   wtx.strFromAccount = strAccount; /* originating account for payment */
+#endif
+  CTxCreator s_wtx(wallet, strAccount);
 
   uint160 deprec_hash;
-  CAlias *alias = wtx.CreateAlias(strTitle, deprec_hash);
+  CAlias *alias = s_wtx.CreateAlias(strTitle, deprec_hash);
   if (!alias)
     return (SHERR_INVAL);
 
@@ -637,14 +640,24 @@ int init_alias_addr_tx(CIface *iface, const char *title, CCoinAddr& addr, CWalle
   scriptPubKey << OP_EXT_ACTIVATE << CScript::EncodeOP_N(OP_ALIAS) << OP_HASH160 << aliasHash << OP_2DROP;
   scriptPubKey += scriptPubKeyOrig;
 
+#if 0
   // send transaction
   string strError = wallet->SendMoney(scriptPubKey, nFee, wtx, false);
   if (strError != "") {
     error(ifaceIndex, strError.c_str());
     return (SHERR_INVAL);
   }
+#endif
+  if (!s_wtx.AddOutput(scriptPubKey, nFee))
+    return (false);
 
-  Debug("SENT:ALIASNEW : title=%s, aliashash=%s, tx=%s\n", title, alias->GetHash().ToString().c_str(), wtx.GetHash().GetHex().c_str());
+  if (!s_wtx.Send())
+    return (false);
+
+  wtx = s_wtx;
+  Debug("(%s) SENT:ALIASNEW : title=%s, aliashash=%s, tx=%s\n", 
+      iface->name, title, alias->GetHash().ToString().c_str(), 
+      s_wtx.GetHash().GetHex().c_str());
 
   return (0);
 }

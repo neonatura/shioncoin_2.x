@@ -5,6 +5,7 @@
 #include "init.h"
 #include "wallet.h"
 #include "walletdb.h"
+#include "test/test_pool.h"
 #include "test/test_block.h"
 
 using namespace std;

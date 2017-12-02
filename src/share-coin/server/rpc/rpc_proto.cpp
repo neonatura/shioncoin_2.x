@@ -40,6 +40,7 @@
 #include "util.h"
 #include "chain.h"
 #include "mnemonic.h"
+#include "txmempool.h"
 
 #undef fcntl
 #undef GNULIB_NAMESPACE
@@ -3930,16 +3931,12 @@ Value rpc_tx_pool(CIface *iface, const Array& params, bool fStratum)
         "Returns all transaction awaiting confirmation.");
 
   CTxMemPool *pool = GetTxMemPool(iface);
-  int ifaceIndex = GetCoinIndex(iface);
 
   Array a;
-  Object obj;
   if (pool) {
-    LOCK(pool->cs);
-
-    BOOST_FOREACH(const PAIRTYPE(uint256, CTransaction)& r, pool->mapTx) {
-      CTransaction *tx = (CTransaction *)(&r.second);
-      a.push_back(tx->ToValue(ifaceIndex));
+    vector<CTransaction> mapTx = pool->GetActiveTx();
+    BOOST_FOREACH(CTransaction& tx, mapTx) {
+      a.push_back(tx.ToValue(GetCoinIndex(iface)));
     }
   }
 
@@ -3960,22 +3957,20 @@ Value rpc_tx_prune(CIface *iface, const Array& params, bool fStratum)
   int ifaceIndex = GetCoinIndex(iface);
 
   Array a;
+  vector<CTransaction> v;
   if (iface && iface->enabled && pool && wallet) {
-    vector<uint256> v;
-
-    LOCK(pool->cs);
-    BOOST_FOREACH(const PAIRTYPE(uint256, CTransaction)& r, pool->mapTx) {
-      const uint256& tx_hash = r.first;
-      CTransaction *tx = (CTransaction *)&r.second;
+    vector<CTransaction> mapTx = pool->GetActiveTx();
+    BOOST_FOREACH(CTransaction& tx, mapTx) {
+      const uint256& tx_hash = tx.GetHash();
 
       bool fValid = true;
 
-      if (!tx->CheckTransaction(ifaceIndex)) {
+      if (!tx.CheckTransaction(ifaceIndex)) {
         fValid = false;
         Debug("rpc_tx_prune: transaction '%s' is invalid.", tx_hash.GetHex().c_str());
       } else {
-        BOOST_FOREACH(const CTxIn& in, tx->vin) {
-          if (pool->mapTx.count(in.prevout.hash) != 0)
+        BOOST_FOREACH(const CTxIn& in, tx.vin) {
+          if (pool->exists(in.prevout.hash))
             continue; /* dependant on another tx in pool */
 
           CTransaction prevtx;
@@ -4012,16 +4007,12 @@ Value rpc_tx_prune(CIface *iface, const Array& params, bool fStratum)
       if (fValid)
         continue; /* a-ok boss */
 
-      v.push_back(tx_hash);
+      v.push_back(tx);
       a.push_back(tx_hash.GetHex());
     }
 
     /* erase invalid entries from pool */
-    BOOST_FOREACH(const uint256 tx_hash, v) {
-      if (pool->mapTx.count(tx_hash) == 0)
-        continue;
-
-      const CTransaction& tx = pool->mapTx[tx_hash];
+    BOOST_FOREACH(CTransaction& tx, v) {
       wallet->UnacceptWalletTransaction(tx);
     }
   }
@@ -4041,14 +4032,11 @@ Value rpc_tx_purge(CIface *iface, const Array& params, bool fStratum)
   CWallet *wallet = GetWallet(iface);
 
   Array a;
-  Object obj;
+  vector<CTransaction> v;
   if (iface->enabled && pool && wallet) {
-    LOCK(pool->cs);
-
-    vector<CTransaction> v;
-    BOOST_FOREACH(const PAIRTYPE(uint256, CTransaction)& r, pool->mapTx) {
-      const CTransaction& tx = r.second;
-      const uint256& hash = r.first;
+    vector<CTransaction> mapTx = pool->GetActiveTx();
+    BOOST_FOREACH(CTransaction& tx, mapTx) {
+      const uint256& hash = tx.GetHash();
 
       v.push_back(tx);
       a.push_back(hash.GetHex());
@@ -4057,7 +4045,7 @@ Value rpc_tx_purge(CIface *iface, const Array& params, bool fStratum)
       wallet->UnacceptWalletTransaction(tx);
     }
 
-    pool->mapTx.clear();
+//    pool->mapTx.clear();
   }
 
   return a;

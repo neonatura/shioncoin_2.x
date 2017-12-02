@@ -31,6 +31,7 @@
 #include "wallet.h"
 #include "script.h"
 #include "txsignature.h"
+#include "txmempool.h"
 
 using namespace std;
 
@@ -383,13 +384,10 @@ bool core_ConnectCoinInputs(int ifaceIndex, CTransaction *tx, const CBlockIndex*
     } else {
       /* check prev tx from single transactions in memory */
       CTxMemPool *mempool = GetTxMemPool(iface);
-      {
-        LOCK(mempool->cs);
-        if (mempool->exists(prevout.hash)) {
-          /* exists in memory pool */
-          fFound = true;
-        }
+      if (mempool->exists(prevout.hash)) {
+        /* exists in memory pool */
         prevtx = mempool->lookup(prevout.hash);
+        fFound = true;
       }
     }
 
@@ -561,6 +559,7 @@ bool CBlock::ConnectBlock(CBlockIndex* pindex)
   return (core_ConnectBlock(this, pindex));
 }
 
+#if 0
 bool core_AcceptPoolTx(int ifaceIndex, CTransaction& tx, bool fCheckInputs)
 {
   CIface *iface = GetCoinByIndex(ifaceIndex);
@@ -681,6 +680,14 @@ bool core_AcceptPoolTx(int ifaceIndex, CTransaction& tx, bool fCheckInputs)
 
   STAT_TX_SUBMITS(iface)++;
   return (true);
+}
+#endif
+
+bool core_AcceptPoolTx(int ifaceIndex, CTransaction& tx, bool fCheckInputs)
+{
+  CIface *iface = GetCoinByIndex(ifaceIndex);
+  CTxMemPool *pool = GetTxMemPool(iface);
+  return (pool->AddTx(tx));
 }
 
 bool CTransaction::AcceptPool(int ifaceIndex, bool fCheckInputs)

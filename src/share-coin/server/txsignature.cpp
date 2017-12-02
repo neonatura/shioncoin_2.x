@@ -372,7 +372,7 @@ fprintf(stderr, "DEBUG: SIgnSignature: appended witness pub-key \"%s\"\n", HexSt
   if (stack.size() != 0 || tx->wit.vtxinwit.size() > nIn) {
     tx->wit.vtxinwit.resize(tx->vin.size());
     tx->wit.vtxinwit[nIn].scriptWitness.stack = stack;
-fprintf(stderr, "DEBUG: SignSignature: [nIn %d] stack-size %d: %s\n", nIn, stack.size(), tx->ToString(ifaceIndex).c_str()); 
+//fprintf(stderr, "DEBUG: SignSignature: [nIn %d] stack-size %d: %s\n", nIn, stack.size(), tx->ToString(ifaceIndex).c_str()); 
   }
   if (!fSolved) {
     return (error(SHERR_INVAL, "SignSignature: error generating signature."));

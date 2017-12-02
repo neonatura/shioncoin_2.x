@@ -34,8 +34,8 @@
 #include "addrman.h"
 #include "util.h"
 #include "chain.h"
-
 #include "wallet.h"
+#include "txmempool.h"
 #include "certificate.h"
 
 using namespace std;
@@ -106,7 +106,7 @@ Value rpc_cert_list(CIface *iface, const Array& params, bool fStratum)
     if (!GetTransaction(iface, hTx, tx, NULL)) {
       CTxMemPool *mempool = GetTxMemPool(iface);
       {
-        LOCK(mempool->cs);
+        //LOCK(mempool->cs);
         if (!mempool->exists(hTx))
           continue;
 
@@ -157,7 +157,7 @@ Value rpc_cert_get(CIface *iface, const Array& params, bool fStratum)
 
     CTxMemPool *mempool = GetTxMemPool(iface);
     {
-      LOCK(mempool->cs);
+      //LOCK(mempool->cs);
       if (!mempool->exists(hTx))
         throw JSONRPCError(-5, "Invalid certificate hash specified.");
 

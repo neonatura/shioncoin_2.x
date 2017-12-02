@@ -720,6 +720,11 @@ public:
     void SetNull()
     {
       CTransactionCore::SetNull();
+      certificate.SetNull();
+      alias.SetNull();
+      offer.SetNull();
+      matrix.SetNull();
+      channel.SetNull();
     }
 
     uint256 GetHash() const
@@ -1587,6 +1592,8 @@ public:
 #endif
 
 
+
+#if 0
 class CTxMemPool
 {
 public:
@@ -1620,6 +1627,7 @@ public:
 
 
 };
+#endif
 
 blkidx_t *GetBlockTable(int ifaceIndex);
 
@@ -1786,8 +1794,6 @@ CBlock *GetBlockByTx(CIface *iface, const uint256 hash);
 
 CBlock *CreateBlockTemplate(CIface *iface);
 
-CTxMemPool *GetTxMemPool(CIface *iface);
-
 bool ProcessBlock(CNode* pfrom, CBlock* pblock);
 
 int GetBestHeight(CIface *iface);
@@ -1845,6 +1851,7 @@ int GetWitnessCommitmentIndex(const CBlock& block);
 
 void core_UpdateUncommittedBlockStructures(CIface *iface, CBlock& block, const CBlockIndex* pindexPrev);
 
+int core_ComputeBlockVersion(CIface *params, CBlockIndex *pindexPrev);
 
 #endif /* ndef __SERVER_BLOCK_H__ */
 

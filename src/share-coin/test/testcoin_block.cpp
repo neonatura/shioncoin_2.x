@@ -27,6 +27,7 @@
 #include <string>
 #include <vector>
 #include "wallet.h"
+#include "test/test_pool.h"
 #include "test/test_block.h"
 #include "test/test_txidx.h"
 
@@ -586,6 +587,7 @@ _TEST(identtx)
 {
   CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
   CWallet *wallet = GetWallet(iface);
+  CTxMemPool *pool = GetTxMemPool(iface);
   CWalletTx wtx;
   string strAccount("");
   int64 certFee;
@@ -595,6 +597,20 @@ _TEST(identtx)
   int idx;
   int err;
   int i;
+
+  {
+    CBlock *block = test_GenerateBlock();
+    _TRUEPTR(block);
+    _TRUE(ProcessBlock(NULL, block) == true);
+    delete block;
+  }
+  {
+    CBlock *block = test_GenerateBlock();
+    _TRUEPTR(block);
+    _TRUE(ProcessBlock(NULL, block) == true);
+    delete block;
+  }
+
 
   CWalletTx cert_wtx;
   string hexSeed;
@@ -611,29 +627,30 @@ _TEST(identtx)
   }
 
   orig_bal = GetAccountBalance(TEST_COIN_IFACE, strAccount, 1);
-  _TRUE(orig_bal > (iface->min_tx_fee * 2));
+  _TRUE(orig_bal > COIN + (iface->min_tx_fee * 2));
 
-  certFee = GetCertOpFee(iface, GetBestHeight(iface));
+  certFee = GetCertOpFee(iface, GetBestHeight(iface)) + COIN;
   err = init_ident_donate_tx(iface, strAccount, certFee, hashCert, wtx);  
 if (err) fprintf(stderr, "DEBUG: TEST: init_ident_donate: error %d\n", err);
   _TRUE(err == 0);
   _TRUE(wtx.CheckTransaction(TEST_COIN_IFACE)); /* .. */
-//wtx.print();
   _TRUE(VerifyIdent(wtx, mode) == true);
   _TRUE(wtx.IsInMemoryPool(TEST_COIN_IFACE) == true);
 
-  {
+  for (i = 0; i < 2; i++) {
     CBlock *block = test_GenerateBlock();
     _TRUEPTR(block);
     _TRUE(ProcessBlock(NULL, block) == true);
     delete block;
+
+    orig_bal += GetBestHeight(iface) * (int64)COIN;
   }
 
   /* verify insertion into block-chain */
   _TRUE(wtx.IsInMemoryPool(TEST_COIN_IFACE) == false);
 
   bal = GetAccountBalance(TEST_COIN_IFACE, strAccount, 1);
-  _TRUE((bal + GetBestHeight(iface)) < orig_bal);
+  _TRUE(bal < orig_bal);
 
   orig_bal = bal;
 
@@ -745,8 +762,8 @@ if (err) fprintf(stderr, "DEBUG: certtx: error (%d) derive cert tx\n", err);
   _TRUE(VerifyLicense(lic_wtx) == true);
   CLicense lic(lic_wtx.certificate);
   uint160 licHash = lic.GetHash();
-  _TRUE(lic_wtx.IsInMemoryPool(TEST_COIN_IFACE) == true);
 
+  _TRUE(lic_wtx.IsInMemoryPool(TEST_COIN_IFACE) == true);
   /* insert license */
   for (idx = 0; idx < 2; idx++) {
     CBlock *block = test_GenerateBlock();
@@ -754,11 +771,11 @@ if (err) fprintf(stderr, "DEBUG: certtx: error (%d) derive cert tx\n", err);
     _TRUE(ProcessBlock(NULL, block) == true);
     delete block;
   }
+  _TRUE(lic_wtx.IsInMemoryPool(TEST_COIN_IFACE) == false);
 
   /* verify insertion */
   CTransaction t2_tx;
   _TRUE(GetTxOfLicense(iface, licHash, t2_tx) == true);
-  _TRUE(lic_wtx.IsInMemoryPool(TEST_COIN_IFACE) == false);
 
 }
 
@@ -1408,14 +1425,16 @@ _TEST(scriptid)
     _TRUE(ProcessBlock(NULL, block) == true);
     delete block;
   }
-int64 nValue = GetAccountBalance(TEST_COIN_IFACE, strExtAccount, 1);
-fprintf(stderr, "DEBUG: TEST: SCRIPTID: bal/before nValue %f\n", (double)nValue / COIN);
+//int64 nValue = GetAccountBalance(TEST_COIN_IFACE, strExtAccount, 1);
+//fprintf(stderr, "DEBUG: TEST: SCRIPTID: bal/before nValue %f\n", (double)nValue / COIN);
+  _TRUE(COIN == GetAccountBalance(TEST_COIN_IFACE, strExtAccount, 1));
 
   /* redeem scriptID back to origin */
   CTxCreator wtx2(wallet, strExtAccount);
   wtx2.AddOutput(ret_addr.Get(), COIN - (iface->min_tx_fee*2));
   _TRUE(wtx2.Send());
     
+  _TRUE(wtx2.IsInMemoryPool(TEST_COIN_IFACE) == true);
   {
     CBlock *block = test_GenerateBlock();
     _TRUEPTR(block);
@@ -1428,9 +1447,12 @@ fprintf(stderr, "DEBUG: TEST: SCRIPTID: bal/before nValue %f\n", (double)nValue 
     _TRUE(ProcessBlock(NULL, block) == true);
     delete block;
   }
-nValue = GetAccountBalance(TEST_COIN_IFACE, strExtAccount, 1);
-fprintf(stderr, "DEBUG: TEST: SCRIPTID: bal/after %f\n", (double)nValue/COIN);
+  _TRUE(wtx2.IsInMemoryPool(TEST_COIN_IFACE) == false);
+//nValue = GetAccountBalance(TEST_COIN_IFACE, strExtAccount, 1);
+//fprintf(stderr, "DEBUG: TEST: SCRIPTID: bal/after %f\n", (double)nValue/COIN);
 
+
+  _TRUE(0 == GetAccountBalance(TEST_COIN_IFACE, strExtAccount, 1));
 }
 
 _TEST(segwit)
@@ -1517,16 +1539,16 @@ fprintf(stderr, "DEBUG: strerror = \"%s\"\n", strError.c_str());
     delete block;
   }
   nValue = GetAccountBalance(TEST_COIN_IFACE, strWitAccount, 1);
-fprintf(stderr, "DEBUG: TEST: wit bal %f\n", (double)nValue/COIN);
+//fprintf(stderr, "DEBUG: TEST: wit bal %f\n", (double)nValue/COIN);
 
   CCoinAddr witAddr(TEST_COIN_IFACE);
   _TRUE(wallet->GetWitnessAddress(extAddr, witAddr) == true);
-fprintf(stderr, "DEBUG: TEST: WITNESS ADDRESS: %s\n", witAddr.ToString().c_str());
+//fprintf(stderr, "DEBUG: TEST: WITNESS ADDRESS: %s\n", witAddr.ToString().c_str());
   CTxCreator wit_wtx(wallet, strAccount);
   wit_wtx.AddOutput(witAddr.Get(), COIN);
   ok = wit_wtx.Send();
   strError = wit_wtx.GetError();
-fprintf(stderr, "DEBUG: strerror = \"%s\"\n", strError.c_str());
+if (strError != "") fprintf(stderr, "DEBUG: strerror = \"%s\"\n", strError.c_str());
   _TRUE(ok);
   _TRUE(strError == "");
   _TRUE(wit_wtx.CheckTransaction(TEST_COIN_IFACE)); /* .. */
@@ -1583,7 +1605,8 @@ fprintf(stderr, "DEBUG: strerror = \"%s\"\n", strError.c_str());
   }
 
   nValue = GetAccountBalance(TEST_COIN_IFACE, strWitAccount, 1);
-fprintf(stderr, "DEBUG: TEST: wit bal %f\n", (double)nValue/COIN);
+fprintf(stderr, "DEBUG: TEST: wit bal/1 %f\n", (double)nValue/COIN);
+  _TRUE(((int64)COIN * 2) == nValue); 
 
   /* return coins back to main account. */
   CTxCreator wtx3(wallet, strWitAccount);
@@ -1598,11 +1621,13 @@ if (strError != "") fprintf(stderr, "DEBUG: wtx3.strerror = \"%s\"\n", strError.
     CBlock *block = test_GenerateBlock();
     _TRUEPTR(block);
     _TRUE(ProcessBlock(NULL, block) == true);
+#if 0
     int nIndex = 0;
     BOOST_FOREACH(CTransaction& tx, block->vtx) {
       fprintf(stderr, "DEBUG: TEST: wtx3: block.tx[%d] = \"%s\"\n", nIndex, tx.ToString(TEST_COIN_IFACE).c_str());
       nIndex++;
     }
+#endif
     delete block;
   }
 
@@ -1614,8 +1639,9 @@ if (strError != "") fprintf(stderr, "DEBUG: wtx3.strerror = \"%s\"\n", strError.
   }
 
   nValue = GetAccountBalance(TEST_COIN_IFACE, strWitAccount, 1);
-fprintf(stderr, "DEBUG: TEST: wit bal %f\n", (double)nValue/COIN);
-// _TRUE(nValue < COIN);
+fprintf(stderr, "DEBUG: TEST: wit bal/2 %f\n", (double)nValue/COIN);
+  _TRUE(0 == nValue); 
+
 }
 
 _TEST(segwit_serializetx)

@@ -77,6 +77,9 @@ extern "C" {
 #define MAX_TRANSACTION_FEE(_iface) \
   ((_iface)->max_tx_fee)
 
+#define MAX_MONEY(_iface) \
+  ((_iface)->max_money)
+
 /**
  * The minimum fee applied to a tranaction.
  */
@@ -94,6 +97,12 @@ extern "C" {
 
 #define COIN_SERVICES(_iface) \
   ((_iface)->services)
+
+#define MAX_FREE_TX_SIZE(_size) \
+  ((_iface)->max_free_tx_size)
+
+
+
 
 #define TEST_COIN_IFACE 0
 #define SHC_COIN_IFACE 1
@@ -178,6 +187,7 @@ typedef struct coin_iface_t
   uint64_t min_tx_fee;
   uint64_t min_relay_tx_fee;
   uint64_t max_tx_fee;
+  uint64_t max_free_tx_size;
   uint64_t max_money;
   uint64_t coinbase_maturity;
   uint64_t max_sigops;

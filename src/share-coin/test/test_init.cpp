@@ -2,6 +2,7 @@
 
 #include "test_shcoind.h"
 #include "server/wallet.h"
+#include "server/test/test_pool.h"
 #include "server/test/test_block.h"
 #include "server/test/test_wallet.h"
 #include "server/test/test_txidx.h"

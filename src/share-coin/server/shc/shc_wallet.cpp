@@ -29,6 +29,7 @@
 #include "strlcpy.h"
 #include "ui_interface.h"
 #include "chain.h"
+#include "shc_pool.h"
 #include "shc_block.h"
 
 #ifdef WIN32
@@ -46,6 +47,8 @@
 #include <share.h>
 #include "walletdb.h"
 #include "txsignature.h"
+#include "shc/shc_pool.h"
+#include "shc/shc_block.h"
 #include "shc/shc_wallet.h"
 #include "shc/shc_txidx.h"
 
@@ -57,6 +60,8 @@ CScript SHC_COINBASE_FLAGS;
 
 
 //extern void shc_RelayTransaction(const CTransaction& tx, const uint256& hash);
+
+static unsigned int shc_nBytesPerSigOp = SHC_DEFAULT_BYTES_PER_SIGOP;
 
 
 int shc_UpgradeWallet(void)
@@ -442,6 +447,10 @@ bool SHCWallet::CommitTransaction(CWalletTx& wtxNew)
       return false;
     }
   }
+
+  CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);
+  STAT_TX_SUBMITS(iface)++;
+
   return true;
 }
 
@@ -833,28 +842,35 @@ int64 SHCWallet::GetBlockValue(int nHeight, int64 nFees)
   return (shc_GetBlockValue(nHeight, nFees));
 }
 
-
 unsigned int SHCWallet::GetTransactionWeight(const CTransaction& tx)
 {
+
   unsigned int nBytes;
 
-  nBytes = ::GetSerializeSize(tx, SER_NETWORK, SHC_PROTOCOL_VERSION);
+  nBytes = 
+    ::GetSerializeSize(tx, SER_NETWORK, SHC_PROTOCOL_VERSION | SERIALIZE_TRANSACTION_NO_WITNESS) * (SHC_WITNESS_SCALE_FACTOR - 1) +
+    ::GetSerializeSize(tx, SER_NETWORK, SHC_PROTOCOL_VERSION);
 
   return (nBytes);
 }
 
-
+unsigned int SHCWallet::GetVirtualTransactionSize(int64 nWeight, int64 nSigOpCost)
+{
+  return (std::max(nWeight, nSigOpCost * shc_nBytesPerSigOp) + SHC_WITNESS_SCALE_FACTOR - 1) / SHC_WITNESS_SCALE_FACTOR;
+}
 unsigned int SHCWallet::GetVirtualTransactionSize(const CTransaction& tx)
 {
-  return (GetTransactionWeight(tx));
+  unsigned int nWeight = GetTransactionWeight(tx);
+  int nSigOpCost = 0;
+  return (GetVirtualTransactionSize(nWeight, nSigOpCost));
 }
 
 /** Large (in bytes) low-priority (new, small-coin) transactions require fee. */
-bool SHCWallet::AllowFree(double dPriority)
+double SHCWallet::AllowFreeThreshold()
 {
   static const double block_daily = 360;
   static const double block_bytes = 256;
-  return (dPriority > ((double)COIN * block_daily / block_bytes));
+  return ((double)COIN * block_daily / block_bytes);
 }
 
 int64 SHCWallet::GetFeeRate()

@@ -31,6 +31,8 @@
 #include "base58.h"
 #include "chain.h"
 #include "txsignature.h"
+#include "txmempool.h"
+#include "txfeerate.h"
 
 using namespace std;
 
@@ -38,7 +40,6 @@ CWallet* pwalletMaster[MAX_COIN_IFACE];
 
 const string NULL_ACCOUNT = "*";
 
-#define RESERVED_CHANGE_SIZE 128
 
 CWallet *GetWallet(int iface_idx)
 {
@@ -2507,7 +2508,6 @@ bool CWalletTx::AcceptWalletTransaction(CTxDB& txdb, bool fCheckInputs)
   }
 
   {
-    LOCK(pool->cs);
     // Add previous supporting transactions first
     BOOST_FOREACH(CMerkleTx& tx, vtxPrev)
     {
@@ -2949,13 +2949,12 @@ bool core_UnacceptWalletTransaction(CIface *iface, const CTransaction& tx)
   CTxMemPool *pool = GetTxMemPool(iface);
   CWallet *wallet = GetWallet(iface);
 
-  LOCK(pool->cs);
-
-  if (pool->mapTx.count(tx_hash) == 0)
+  if (!pool->exists(tx_hash))
     return (false); /* not in pool */
 
   /* remove from pool. */
-  pool->mapTx.erase(tx_hash);
+//  pool->mapTx.erase(tx_hash);
+  pool->RemoveTx(tx_hash);
 
   /* remove from wallet */
   wallet->EraseFromWallet(tx_hash);
@@ -2965,7 +2964,11 @@ bool core_UnacceptWalletTransaction(CIface *iface, const CTransaction& tx)
     const uint256& prevhash = in.prevout.hash;
     CTransaction prevtx;
 
+#if 0
     if (pool->mapTx.count(prevhash) != 0)
+      continue; /* prevout is in pool */
+#endif
+    if (pool->exists(prevhash))
       continue; /* prevout is in pool */
 
     if (!::GetTransaction(iface, prevhash, prevtx, NULL))
@@ -3247,8 +3250,15 @@ bool CTxCreator::AddExtTx(CWalletTx *tx, const CScript& scriptPubKey, int64 nTxF
     return (false);
   }
 
-  SetMinFee(nTxFee);
+  /* ext tx input */
+  AddInput(tx, nTxOut);
+
+  /* add tx output */
   AddOutput(scriptPubKey, nValue, true);
+
+  /* ext tx fee */
+  SetMinFee(nTxFee);
+
   return (true);
 }
 
@@ -3368,9 +3378,12 @@ void CTxCreator::CreateChangeAddr()
 bool CTxCreator::Generate()
 {
   CIface *iface = GetCoinByIndex(pwallet->ifaceIndex);
+  CWallet *wallet = GetWallet(iface);
   int64 nFee;
   int nBestHeight;
   bool ok;
+    cbuff sigDummy(72, '\000');
+    cbuff sigPub(64, '\000');
 
   if (vout.size() == 0) {
     strError = "No outputs have been specified.";
@@ -3379,8 +3392,29 @@ bool CTxCreator::Generate()
 
   /* mitigate sniping */
   nBestHeight = GetBestHeight(iface);
-  nLockTime = nBestHeight - 1;
+  nLockTime = nBestHeight - 60;
 
+  /* establish "coin change" destination address */
+  int ext_idx = IndexOfExtOutput(*this);
+  if (fAccount && (ext_idx == -1) && !changePubKey.IsValid()) {
+    CPubKey changePubKey;
+
+    ok = pwallet->GetMergedPubKey(strFromAccount, "change", changePubKey);
+    if (ok) {
+      SetChange(changePubKey);
+    }
+  }
+  if (!changePubKey.IsValid()) {
+    /* pull a reserved key from the pool. */
+    CreateChangeAddr();
+#if 0
+    /* done in Send() instead */
+    if (fAccount)
+      pwallet->SetAddressBookName(changePubKey.GetID(), strFromAccount);
+#endif
+  }
+
+#if 0
   nFee = 0;
   while (nDebit + nFee > nCredit) {
     set<pair<const CWalletTx*,unsigned int> > setCoins;
@@ -3454,38 +3488,120 @@ bool CTxCreator::Generate()
     strError = "The calculated fee is out-of-range.";
     return (false);
   }
+#endif
+  nFee = MIN_RELAY_TX_FEE(iface);
+  set<pair<const CWalletTx*,unsigned int> > setCoinsCopy;
+  int64 nTotCredit = nCredit;
+  while (nDebit + nFee > nTotCredit) {
+    setCoinsCopy.clear();
+
+    set<pair<const CWalletTx*,unsigned int> > setCoins;
+    int64 nTotalValue = (nDebit + nFee - nTotCredit);
+    int64 nValueIn = 0;
+
+    /* add inputs to use */
+    if (fAccount) {
+      ok = pwallet->SelectAccountCoins(strFromAccount, (nDebit + nFee), setCoins, nValueIn);
+    } else {
+      ok = pwallet->SelectCoins((nDebit + nFee), setCoins, nValueIn);
+    }
+    if (!ok) {
+      strError = "Insufficient input coins to fund transaction.";
+      return (false);
+    }
+
+    nValueIn = 0;
+    BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setCoins) {
+      CWalletTx *wtx = (CWalletTx *)coin.first;
+      unsigned int n = coin.second;
+
+      if (n < 0 || n >= wtx->vout.size())
+        continue; /* inval */
+
+      if (HaveInput(wtx, n))
+        continue; /* already used */
+
+      setCoinsCopy.insert(setCoinsCopy.end(), make_pair(wtx, n));
+      nValueIn += wtx->vout[n].nValue;
+    }
+    if (nValueIn < nTotalValue) {
+      strError = "Insufficient input coins to fund transaction.";
+      return (false);
+    } 
+
+    CWalletTx t_wtx(wallet);
+
+    /* add inputs */
+    int nCount = 0;
+    nTotCredit = nCredit;
+    BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setCoinsCopy) {
+      CWalletTx *wtx = (CWalletTx *)coin.first;
+      unsigned int n = coin.second;
+
+      CTxIn in = CTxIn(coin.first->GetHash(), coin.second, 
+          CScript(), std::numeric_limits<unsigned int>::max()-1);
+      in.scriptSig << sigDummy << sigPub;
+      t_wtx.vin.push_back(in);
+
+      nCount++;
+      nTotCredit += wtx->vout[n].nValue;
+      if (nDebit + nFee <= nTotCredit)
+        break;
+    }
+    if (!nCount) {
+      /* prevent an endless loop */
+      strError = "Insufficient input coins to fund transaction.";
+      return (false);
+    }
+
+    /* add outputs */
+    BOOST_FOREACH(const CTxOut& out, vout) {
+      t_wtx.vout.insert(t_wtx.vout.end(), out);
+    }
+
+    int64 nChange = (nTotCredit - nDebit - nFee);
+    if (nChange >= CENT) {
+      CScript script;
+
+      script.SetDestination(changePubKey.GetID());
+      t_wtx.vout.insert(t_wtx.vout.end(), CTxOut(nChange, script));
+    }
+
+    nFee = wallet->CalculateFee(t_wtx, nMinFee);
+  }
+  if (!MoneyRange(iface, nFee)) {
+    strError = "The calculated fee is out-of-range.";
+    return (false);
+  }
 
 
+  /* parse inputs */
+  BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setCoinsCopy) {
+    CWalletTx *wtx = (CWalletTx *)coin.first;
+    unsigned int n = coin.second;
+
+    if (!AddInput(wtx, n)) {
+      strError = "A wallet transaction is invalid.";
+      return (false);
+    }
+  }
+
+  /* handle coin change */
   int64 nChange = (nCredit - nDebit - nFee);
   if (nChange >= MIN_INPUT_VALUE(iface) &&
       nChange >= MIN_TX_FEE(iface) &&
       nChange >= CENT) {
-    int ext_idx = IndexOfExtOutput(*this);
-    if (fAccount && (ext_idx == -1) && !changePubKey.IsValid()) {
-      CPubKey changePubKey;
-
-      ok = pwallet->GetMergedPubKey(strFromAccount, "change", changePubKey);
-      if (ok) {
-        SetChange(changePubKey);
-      }
-    }
-
-    if (!changePubKey.IsValid()) {
-      /* pull a reserved key from the pool. */
-      CreateChangeAddr();
-      if (fAccount)
-        pwallet->SetAddressBookName(changePubKey.GetID(), strFromAccount);
-    }
-
     AddOutput(changePubKey, nChange); 
   }
 
+  /* add inputs to transaction */
   vin.clear();
   BOOST_FOREACH(const PAIRTYPE(CWalletTx *,unsigned int)& coin, setInput) {
     vin.push_back(CTxIn(coin.first->GetHash(), coin.second, 
           CScript(), std::numeric_limits<unsigned int>::max()-1));
   }
 
+  /* sign inputs */
   unsigned int nIn = 0;
   BOOST_FOREACH(const PAIRTYPE(CWalletTx *,unsigned int)& coin, setInput) {
     CSignature sig(pwallet->ifaceIndex, this, nIn);
@@ -3496,7 +3612,7 @@ bool CTxCreator::Generate()
     nIn++;
   }
 
-  /* Ensure transaction does not breach a defined size limitation. */
+  /* ensure transaction does not breach a defined size limitation. */
   unsigned int nWeight = pwallet->GetTransactionWeight(*this);
   if (nWeight >= MAX_TRANSACTION_WEIGHT(iface)) {
     strError = "The transaction size exceeds the maximum complexity allowed.";
@@ -3513,6 +3629,16 @@ bool CTxCreator::Generate()
     strError = "The transaction integrity is invalid.";
     return (false);
   }
+
+#if 0
+  /* redundant */
+  int64 nInputValue = GetValueIn(mapInputs);
+  int64 nOutputValue = GetValueOut();
+  if (nInputValue < nOutputValue) {
+    error(SHERR_INVAL, "CTxCreator: tx \"%s\" has input value (%f) lower than output value (%f).", GetHash().GetHex().c_str(), (double)nInputValue/COIN, (double)nOutputValue/COIN);
+    continue; 
+  }
+#endif
 
   fGenerate = true;
   return (true);
@@ -3691,8 +3817,8 @@ int64 CWallet::CalculateFee(CTransaction& tx, int64 nMinFee)
   int64 nBytes;
   int64 nFee;
 
-  nBytes = ::GetSerializeSize(tx, SER_NETWORK, PROTOCOL_VERSION(iface));
-  nBytes += RESERVED_CHANGE_SIZE;
+  nBytes = (int64)GetVirtualTransactionSize(tx); 
+  //nBytes = ::GetSerializeSize(tx, SER_NETWORK, PROTOCOL_VERSION(iface));
 
   /* base fee */
   nFee = GetFeeRate() * (1 + (nBytes / 1000));
@@ -3701,14 +3827,24 @@ int64 CWallet::CalculateFee(CTransaction& tx, int64 nMinFee)
     if (out.nValue < CENT)
       nFee += MIN_TX_FEE(iface);
   }
-
   nFee = MAX(nFee, nMinFee);
+
+  CBlockPolicyEstimator *est = GetFeeEstimator(iface);
+  if (est) {
+    static const unsigned int confTarget = 2;
+    int64 nEstFee = est->estimateSmartFee(confTarget, NULL).GetFee(nBytes);
+    if (nEstFee > nFee) {
+      nFee = nEstFee;
+      Debug("CWallet.CalculateFee: using estimated fee %f.", (double)nFee/COIN);
+    }
+  }
+
+  /* constraints */
   nFee = MAX(nFee, (int64)MIN_RELAY_TX_FEE(iface));
   nFee = MIN(nFee, (int64)MAX_TRANSACTION_FEE(iface) - 1);
 
   return (nFee);
 }
-
 
 
 bool CWallet::FillInputs(const CTransaction& tx, tx_cache& inputs)
@@ -3766,7 +3902,7 @@ double CTxCreator::GetPriority(int64 nBytes)
     dPriority += (double)out.nValue * 
       (double)txPrev->GetDepthInMainChain(pwallet->ifaceIndex);
   }
-  dPriority /= (nBytes + RESERVED_CHANGE_SIZE);
+  dPriority /= nBytes;
 
   return (dPriority);
 }

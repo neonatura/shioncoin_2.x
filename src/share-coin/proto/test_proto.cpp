@@ -29,6 +29,7 @@
 #include "wallet.h"
 #include "coin_proto.h"
 //#include "test/test_netmsg.h"
+#include "test/test_pool.h"
 #include "test/test_block.h"
 #include "test/test_wallet.h"
 #include "test/test_txidx.h"
@@ -211,6 +212,7 @@ coin_iface_t test_coin_iface = {
   TEST_MIN_TX_FEE,
   TEST_MIN_RELAY_TX_FEE,
   TEST_MAX_TX_FEE,
+  TEST_MAX_FREE_TX_SIZE,
   TEST_MAX_MONEY,
   TEST_COINBASE_MATURITY, 
   TEST_MAX_SIGOPS,

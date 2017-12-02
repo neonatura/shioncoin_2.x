@@ -28,6 +28,7 @@
 #include "init.h"
 #include "strlcpy.h"
 #include "ui_interface.h"
+#include "shc_pool.h"
 #include "shc_block.h"
 #include "shc_txidx.h"
 #include "chain.h"

@@ -62,9 +62,11 @@ class SHCWallet : public CWallet
 
     unsigned int GetTransactionWeight(const CTransaction& tx);
 
+    unsigned int GetVirtualTransactionSize(int64 nWeight, int64 nSigOpCost = 0);
+
     unsigned int GetVirtualTransactionSize(const CTransaction& tx);
 
-    bool AllowFree(double dPriority);
+    double AllowFreeThreshold();
 
     int64 GetFeeRate();
 };

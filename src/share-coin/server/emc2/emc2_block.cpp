@@ -28,6 +28,7 @@
 #include "init.h"
 #include "strlcpy.h"
 #include "ui_interface.h"
+#include "emc2_pool.h"
 #include "emc2_block.h"
 #include "emc2_txidx.h"
 #include "emc2_wallet.h"
@@ -342,7 +343,7 @@ namespace EMC2_Checkpoints
 }
 
 
-static bool emc2_ConnectInputs(CTransaction *tx, MapPrevTx inputs, map<uint256, CTxIndex>& mapTestPool, const CDiskTxPos& posThisTx, const CBlockIndex* pindexBlock, bool fBlock, bool fMiner, bool fStrictPayToScriptHash=true)
+bool emc2_ConnectInputs(CTransaction *tx, MapPrevTx inputs, map<uint256, CTxIndex>& mapTestPool, const CDiskTxPos& posThisTx, const CBlockIndex* pindexBlock, bool fBlock, bool fMiner, bool fStrictPayToScriptHash=true)
 {
 
   if (tx->IsCoinBase())
@@ -446,7 +447,7 @@ static int64_t emc2_GetTxWeight(const CTransaction& tx)
   return (weight);
 }
 
-
+#if 0
 CBlock* emc2_CreateNewBlock(const CPubKey& rkey)
 {
   CIface *iface = GetCoinByIndex(EMC2_COIN_IFACE);
@@ -655,6 +656,65 @@ continue;
 
   return pblock.release();
 }
+#endif
+
+CBlock* emc2_CreateNewBlock(const CPubKey& rkey)
+{
+  CIface *iface = GetCoinByIndex(EMC2_COIN_IFACE);
+  CBlockIndex *pindexPrev = GetBestBlockIndex(iface);
+  const int nHeight = GetBestHeight(iface);
+
+  // Create new block
+  //auto_ptr<CBlock> pblock(new CBlock());
+  auto_ptr<EMC2Block> pblock(new EMC2Block());
+  if (!pblock.get())
+    return NULL;
+
+  /* coinbase */
+  CTransaction txNew;
+  txNew.vin.resize(1);
+  txNew.vin[0].prevout.SetNull();
+  txNew.vout.resize(2);
+  txNew.vout[0].scriptPubKey = EMC2_CHARITY_SCRIPT;
+  txNew.vout[1].scriptPubKey << rkey << OP_CHECKSIG;
+  txNew.vin[0].scriptSig = CScript() << nHeight << OP_0;
+  pblock->vtx.push_back(txNew);
+
+  /* attributes */
+  pblock->nVersion = core_ComputeBlockVersion(iface, pindexPrev);
+
+  int64 nFees = 0;
+  CTxMemPool *pool = GetTxMemPool(iface); 
+  vector<CTransaction> vPriority = pool->GetActiveTx(); 
+  BOOST_FOREACH(CTransaction tx, vPriority) {
+    const uint256& hash = tx.GetHash();
+    tx_cache mapInputs;
+
+    if (pool->FetchInputs(hash, mapInputs)) {
+      int64 nTxFee = tx.GetValueIn(mapInputs)-tx.GetValueOut();
+      nFees += nTxFee;
+      pblock->vtx.push_back(tx);
+    }
+  }
+
+  /* assign reward(s) */
+  int64 nReward = emc2_GetBlockValue(pindexPrev->nHeight+1, 0);
+  int64 nCharity = nReward * 2.5 / 100;
+  pblock->vtx[0].vout[0].nValue = nCharity;
+  pblock->vtx[0].vout[1].nValue = (nReward - nCharity) + nFees;
+
+  // Fill in header
+  pblock->hashPrevBlock  = pindexPrev->GetBlockHash();
+  pblock->hashMerkleRoot = pblock->BuildMerkleTree();
+  pblock->UpdateTime(pindexPrev);
+  pblock->nBits          = pblock->GetNextWorkRequired(pindexPrev);
+  pblock->nNonce         = 0;
+  pblock->vtx[0].vin[0].scriptSig = CScript() << OP_0 << OP_0;
+
+  core_GenerateCoinbaseCommitment(iface, *pblock, pindexPrev);
+
+  return pblock.release();
+}
 
 
 bool emc2_CreateGenesisBlock()
@@ -727,179 +787,6 @@ static void emc2_EraseFromWallets(uint256 hash)
 
 
 
-bool EMC2_CTxMemPool::accept(CTxDB& txdb, CTransaction &tx, bool fCheckInputs, bool* pfMissingInputs)
-{
-  if (pfMissingInputs)
-    *pfMissingInputs = false;
-
-  if (!tx.CheckTransaction(EMC2_COIN_IFACE))
-    return error(SHERR_INVAL, "CTxMemPool::accept() : CheckTransaction failed");
-
-  // Coinbase is only valid in a block, not as a loose transaction
-  if (tx.IsCoinBase())
-    return error(SHERR_INVAL, "CTxMemPool::accept() : coinbase as individual tx");
-
-  // To help v0.1.5 clients who would see it as a negative number
-  if ((int64)tx.nLockTime > std::numeric_limits<int>::max())
-    return error(SHERR_INVAL, "CTxMemPool::accept() : not accepting nLockTime beyond 2038 yet");
-
-  // Rather not work on nonstandard transactions (unless -testnet)
-  if (!fTestNet && !tx.IsStandard())
-    return error(SHERR_INVAL, "CTxMemPool::accept() : nonstandard transaction type");
-
-  // Do we already have it?
-  uint256 hash = tx.GetHash();
-  {
-    LOCK(cs);
-    if (mapTx.count(hash))
-      return false;
-  }
-  if (fCheckInputs)
-    if (txdb.ContainsTx(hash))
-      return false;
-
-  // Check for conflicts with in-memory transactions
-  CTransaction* ptxOld = NULL;
-  for (unsigned int i = 0; i < tx.vin.size(); i++)
-  {
-    COutPoint outpoint = tx.vin[i].prevout;
-    if (mapNextTx.count(outpoint))
-    {
-      // emc2 disallow's replacement of previous tx
-      error(SHERR_NOTUNIQ, "(emc2) accept: input from tx conflicts with existing pool tx.");
-      return (SHERR_NOTUNIQ);
-    }
-  }
-
-  if (fCheckInputs)
-  {
-    MapPrevTx mapInputs;
-    map<uint256, CTxIndex> mapUnused;
-    bool fInvalid = false;
-    if (!tx.FetchInputs(txdb, mapUnused, NULL, false, mapInputs, fInvalid))
-    {
-      if (fInvalid)
-        return error(SHERR_INVAL, "CTxMemPool::accept() : FetchInputs found invalid tx %s", hash.GetHex().c_str());
-      if (pfMissingInputs)
-        *pfMissingInputs = true;
-      return error(SHERR_INVAL, "CTxMemPool::accept() : FetchInputs found tx '%s' has missing inputs", hash.GetHex().c_str());
-    }
-
-    // Check for non-standard pay-to-script-hash in inputs
-    if (!tx.AreInputsStandard(EMC2_COIN_IFACE, mapInputs) && !fTestNet)
-      return error(SHERR_INVAL, "CTxMemPool::accept() : nonstandard transaction input");
-
-    // Note: if you modify this code to accept non-standard transactions, then
-    // you should add code here to check that the transaction does a
-    // reasonable number of ECDSA signature verifications.
-
-    int64 nFees = tx.GetValueIn(mapInputs)-tx.GetValueOut();
-    unsigned int nSize = ::GetSerializeSize(tx, SER_NETWORK, EMC2_PROTOCOL_VERSION);
-
-    // Don't accept it if it can't get into a block
-    CWallet *pwallet = GetWallet(EMC2_COIN_IFACE);
-    int64 nMinFee = pwallet->CalculateFee(tx);
-    if (nFees < nMinFee)
-      return error(SHERR_INVAL, "(emc2) CTxMemPool::accept() : not enough fees");
-
-    // Continuously rate-limit free transactions
-    // This mitigates 'penny-flooding' -- sending thousands of free transactions just to
-    // be annoying or make other's transactions take longer to confirm.
-    if (nFees < EMC2_MIN_RELAY_TX_FEE)
-    {
-      static CCriticalSection cs;
-      static double dFreeCount;
-      static int64 nLastTime;
-      int64 nNow = GetTime();
-
-      {
-        LOCK(cs);
-        // Use an exponentially decaying ~10-minute window:
-        dFreeCount *= pow(1.0 - 1.0/600.0, (double)(nNow - nLastTime));
-        nLastTime = nNow;
-        // -limitfreerelay unit is thousand-bytes-per-minute
-        // At default rate it would take over a month to fill 1GB
-        if (dFreeCount > GetArg("-limitfreerelay", 15)*10*1000 && !emc2_IsFromMe(tx))
-          return error(SHERR_INVAL, "CTxMemPool::accept() : free transaction rejected by rate limiter");
-        Debug("Rate limit dFreeCount: %g => %g\n", dFreeCount, dFreeCount+nSize);
-        dFreeCount += nSize;
-      }
-    }
-
-    // Check against previous transactions
-    // This is done last to help prevent CPU exhaustion denial-of-service attacks.
-
-    if (!emc2_ConnectInputs(&tx, mapInputs, mapUnused, CDiskTxPos(0,0,0), GetBestBlockIndex(EMC2_COIN_IFACE), false, false))
-    {
-      return error(SHERR_INVAL, "CTxMemPool::accept() : ConnectInputs failed %s", hash.ToString().substr(0,10).c_str());
-    }
-  }
-
-  // Store transaction in memory
-  {
-    LOCK(cs);
-    if (ptxOld)
-    {
-      Debug("CTxMemPool::accept() : replacing tx %s with new version\n", ptxOld->GetHash().ToString().c_str());
-      remove(*ptxOld);
-    }
-    addUnchecked(hash, tx);
-  }
-
-  ///// are we sure this is ok when loading transactions or restoring block txes
-  // If updated, erase old tx from wallet
-  if (ptxOld)
-    emc2_EraseFromWallets(ptxOld->GetHash());
-
-  Debug("(emc2) mempool accepted %s (pool-size %u)\n",
-      hash.ToString().c_str(), mapTx.size());
-  return true;
-}
-
-bool EMC2_CTxMemPool::addUnchecked(const uint256& hash, CTransaction &tx)
-{
-  CIface *iface = GetCoinByIndex(EMC2_COIN_IFACE);
-
-  // Add to memory pool without checking anything.  Don't call this directly,
-  // call CTxMemPool::accept to properly check the transaction first.
-  {
-    mapTx[hash] = tx;
-    for (unsigned int i = 0; i < tx.vin.size(); i++)
-      mapNextTx[tx.vin[i].prevout] = CInPoint(&mapTx[hash], i);
-    STAT_TX_ACCEPTS(iface)++;
-  }
-  return true;
-}
-
-
-bool EMC2_CTxMemPool::remove(CTransaction &tx)
-{
-  CIface *iface = GetCoinByIndex(EMC2_COIN_IFACE);
-
-  // Remove transaction from memory pool
-  {
-    LOCK(cs);
-    uint256 hash = tx.GetHash();
-    if (mapTx.count(hash))
-    {
-      BOOST_FOREACH(const CTxIn& txin, tx.vin)
-        mapNextTx.erase(txin.prevout);
-      mapTx.erase(hash);
-      STAT_TX_ACCEPTS(iface)++;
-    }
-  }
-  return true;
-}
-
-void EMC2_CTxMemPool::queryHashes(std::vector<uint256>& vtxid)
-{
-    vtxid.clear();
-
-    LOCK(cs);
-    vtxid.reserve(mapTx.size());
-    for (map<uint256, CTransaction>::iterator mi = mapTx.begin(); mi != mapTx.end(); ++mi)
-        vtxid.push_back((*mi).first);
-}
 
 uint256 emc2_GetOrphanRoot(const CBlock* pblock)
 {
@@ -1227,7 +1114,7 @@ Debug("REORGANIZE: Connect %i blocks; %s..%s\n", vConnect.size(), pfork->GetBloc
   }
 
   // Connect longer branch
-  vector<CTransaction> vDelete;
+  vector<EMC2Block> vDelete;
   for (unsigned int i = 0; i < vConnect.size(); i++)
   {
     CBlockIndex* pindex = vConnect[i];
@@ -1244,8 +1131,7 @@ Debug("REORGANIZE: Connect %i blocks; %s..%s\n", vConnect.size(), pfork->GetBloc
     }
 
     // Queue memory transactions to delete
-    BOOST_FOREACH(const CTransaction& tx, block.vtx)
-      vDelete.push_back(tx);
+    vDelete.push_back(block);
   }
 
   if (!txdb.WriteHashBestChain(pindexNew->GetBlockHash()))
@@ -1270,8 +1156,9 @@ Debug("REORGANIZE: Connect %i blocks; %s..%s\n", vConnect.size(), pfork->GetBloc
     tx.AcceptToMemoryPool(txdb, false);
 
   // Delete redundant memory transactions that are in the connected branch
-  BOOST_FOREACH(CTransaction& tx, vDelete)
-    mempool->remove(tx);
+  BOOST_FOREACH(CBlock& block, vDelete) {
+    mempool->Commit(block);
+  }
 
   return true;
 }
@@ -1322,8 +1209,7 @@ bool emc2_SetBestChainInner(CBlock *block, CTxDB& txdb, CBlockIndex *pindexNew)
   pindexNew->pprev->pnext = pindexNew;
 
   // Delete redundant memory transactions
-  BOOST_FOREACH(CTransaction& tx, block->vtx)
-    EMC2Block::mempool.remove(tx);
+  EMC2Block::mempool.Commit(block);
 
   return true;
 }
@@ -1492,7 +1378,7 @@ bool emc2_Reindex(CTxDB& txdb, CBlockIndex *pindexNew)
 
   // Delete redundant memory transactions that are in the connected branch
   BOOST_FOREACH(CTransaction& tx, vDelete)
-    EMC2Block::mempool.remove(tx);
+    EMC2Block::mempool.CommitTx(tx);
 
   return true;
 }
@@ -2156,3 +2042,179 @@ int64_t EMC2Block::GetBlockWeight()
 
 
 
+
+#if 0
+bool EMC2_CTxMemPool::accept(CTxDB& txdb, CTransaction &tx, bool fCheckInputs, bool* pfMissingInputs)
+{
+  if (pfMissingInputs)
+    *pfMissingInputs = false;
+
+  if (!tx.CheckTransaction(EMC2_COIN_IFACE))
+    return error(SHERR_INVAL, "CTxMemPool::accept() : CheckTransaction failed");
+
+  // Coinbase is only valid in a block, not as a loose transaction
+  if (tx.IsCoinBase())
+    return error(SHERR_INVAL, "CTxMemPool::accept() : coinbase as individual tx");
+
+  // To help v0.1.5 clients who would see it as a negative number
+  if ((int64)tx.nLockTime > std::numeric_limits<int>::max())
+    return error(SHERR_INVAL, "CTxMemPool::accept() : not accepting nLockTime beyond 2038 yet");
+
+  // Rather not work on nonstandard transactions (unless -testnet)
+  if (!fTestNet && !tx.IsStandard())
+    return error(SHERR_INVAL, "CTxMemPool::accept() : nonstandard transaction type");
+
+  // Do we already have it?
+  uint256 hash = tx.GetHash();
+  {
+    LOCK(cs);
+    if (mapTx.count(hash))
+      return false;
+  }
+  if (fCheckInputs)
+    if (txdb.ContainsTx(hash))
+      return false;
+
+  // Check for conflicts with in-memory transactions
+  CTransaction* ptxOld = NULL;
+  for (unsigned int i = 0; i < tx.vin.size(); i++)
+  {
+    COutPoint outpoint = tx.vin[i].prevout;
+    if (mapNextTx.count(outpoint))
+    {
+      // emc2 disallow's replacement of previous tx
+      error(SHERR_NOTUNIQ, "(emc2) accept: input from tx conflicts with existing pool tx.");
+      return (SHERR_NOTUNIQ);
+    }
+  }
+
+  if (fCheckInputs)
+  {
+    MapPrevTx mapInputs;
+    map<uint256, CTxIndex> mapUnused;
+    bool fInvalid = false;
+    if (!tx.FetchInputs(txdb, mapUnused, NULL, false, mapInputs, fInvalid))
+    {
+      if (fInvalid)
+        return error(SHERR_INVAL, "CTxMemPool::accept() : FetchInputs found invalid tx %s", hash.GetHex().c_str());
+      if (pfMissingInputs)
+        *pfMissingInputs = true;
+      return error(SHERR_INVAL, "CTxMemPool::accept() : FetchInputs found tx '%s' has missing inputs", hash.GetHex().c_str());
+    }
+
+    // Check for non-standard pay-to-script-hash in inputs
+    if (!tx.AreInputsStandard(EMC2_COIN_IFACE, mapInputs) && !fTestNet)
+      return error(SHERR_INVAL, "CTxMemPool::accept() : nonstandard transaction input");
+
+    // Note: if you modify this code to accept non-standard transactions, then
+    // you should add code here to check that the transaction does a
+    // reasonable number of ECDSA signature verifications.
+
+    int64 nFees = tx.GetValueIn(mapInputs)-tx.GetValueOut();
+    unsigned int nSize = ::GetSerializeSize(tx, SER_NETWORK, EMC2_PROTOCOL_VERSION);
+
+    // Don't accept it if it can't get into a block
+    CWallet *pwallet = GetWallet(EMC2_COIN_IFACE);
+    int64 nMinFee = pwallet->CalculateFee(tx);
+    if (nFees < nMinFee)
+      return error(SHERR_INVAL, "(emc2) CTxMemPool::accept() : not enough fees");
+
+    // Continuously rate-limit free transactions
+    // This mitigates 'penny-flooding' -- sending thousands of free transactions just to
+    // be annoying or make other's transactions take longer to confirm.
+    if (nFees < EMC2_MIN_RELAY_TX_FEE)
+    {
+      static CCriticalSection cs;
+      static double dFreeCount;
+      static int64 nLastTime;
+      int64 nNow = GetTime();
+
+      {
+        LOCK(cs);
+        // Use an exponentially decaying ~10-minute window:
+        dFreeCount *= pow(1.0 - 1.0/600.0, (double)(nNow - nLastTime));
+        nLastTime = nNow;
+        // -limitfreerelay unit is thousand-bytes-per-minute
+        // At default rate it would take over a month to fill 1GB
+        if (dFreeCount > GetArg("-limitfreerelay", 15)*10*1000 && !emc2_IsFromMe(tx))
+          return error(SHERR_INVAL, "CTxMemPool::accept() : free transaction rejected by rate limiter");
+        Debug("Rate limit dFreeCount: %g => %g\n", dFreeCount, dFreeCount+nSize);
+        dFreeCount += nSize;
+      }
+    }
+
+    // Check against previous transactions
+    // This is done last to help prevent CPU exhaustion denial-of-service attacks.
+
+    if (!emc2_ConnectInputs(&tx, mapInputs, mapUnused, CDiskTxPos(0,0,0), GetBestBlockIndex(EMC2_COIN_IFACE), false, false))
+    {
+      return error(SHERR_INVAL, "CTxMemPool::accept() : ConnectInputs failed %s", hash.ToString().substr(0,10).c_str());
+    }
+  }
+
+  // Store transaction in memory
+  {
+    LOCK(cs);
+    if (ptxOld)
+    {
+      Debug("CTxMemPool::accept() : replacing tx %s with new version\n", ptxOld->GetHash().ToString().c_str());
+      remove(*ptxOld);
+    }
+    addUnchecked(hash, tx);
+  }
+
+  ///// are we sure this is ok when loading transactions or restoring block txes
+  // If updated, erase old tx from wallet
+  if (ptxOld)
+    emc2_EraseFromWallets(ptxOld->GetHash());
+
+  Debug("(emc2) mempool accepted %s (pool-size %u)\n",
+      hash.ToString().c_str(), mapTx.size());
+  return true;
+}
+
+bool EMC2_CTxMemPool::addUnchecked(const uint256& hash, CTransaction &tx)
+{
+  CIface *iface = GetCoinByIndex(EMC2_COIN_IFACE);
+
+  // Add to memory pool without checking anything.  Don't call this directly,
+  // call CTxMemPool::accept to properly check the transaction first.
+  {
+    mapTx[hash] = tx;
+    for (unsigned int i = 0; i < tx.vin.size(); i++)
+      mapNextTx[tx.vin[i].prevout] = CInPoint(&mapTx[hash], i);
+    STAT_TX_ACCEPTS(iface)++;
+  }
+  return true;
+}
+
+
+bool EMC2_CTxMemPool::remove(CTransaction &tx)
+{
+  CIface *iface = GetCoinByIndex(EMC2_COIN_IFACE);
+
+  // Remove transaction from memory pool
+  {
+    LOCK(cs);
+    uint256 hash = tx.GetHash();
+    if (mapTx.count(hash))
+    {
+      BOOST_FOREACH(const CTxIn& txin, tx.vin)
+        mapNextTx.erase(txin.prevout);
+      mapTx.erase(hash);
+      STAT_TX_ACCEPTS(iface)++;
+    }
+  }
+  return true;
+}
+
+void EMC2_CTxMemPool::queryHashes(std::vector<uint256>& vtxid)
+{
+    vtxid.clear();
+
+    LOCK(cs);
+    vtxid.reserve(mapTx.size());
+    for (map<uint256, CTransaction>::iterator mi = mapTx.begin(); mi != mapTx.end(); ++mi)
+        vtxid.push_back((*mi).first);
+}
+#endif

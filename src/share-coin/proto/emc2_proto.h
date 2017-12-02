@@ -55,6 +55,12 @@ static const int EMC2_PROTOCOL_VERSION = 70015;
 
 #define EMC2_DEFAULT_BYTES_PER_SIGOP 20
 
+#define EMC2_MAX_STANDARD_TX_WEIGHT 400000
+#define EMC2_MAX_STANDARD_TX_SIGOP_COST 16000
+
+/** Largest byte size permitted for potential no-fee transaction. */
+#define EMC2_MAX_FREE_TX_SIZE 1000
+
 
 /** The maximum allowed size for a serialized block, in bytes (only for buffer size limits) */
 static const unsigned int EMC2_MAX_BLOCK_SERIALIZED_SIZE = 4000000;

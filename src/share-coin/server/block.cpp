@@ -30,6 +30,7 @@
 #include "spring.h"
 #include "versionbits.h"
 #include "wit_merkle.h"
+#include "txmempool.h"
 
 using namespace std;
 
@@ -855,34 +856,6 @@ CBlock *CreateBlockTemplate(CIface *iface)
   return (block);
 }
 
-CTxMemPool *GetTxMemPool(CIface *iface)
-{
-  CTxMemPool *pool;
-  int err;
-
-  if (!iface->op_tx_pool) {
-    int ifaceIndex = GetCoinIndex(iface);
-    unet_log(ifaceIndex, "GetTxMemPool: error obtaining tx memory pool: Operation not supported.");
-    return (NULL);
-  }
-
-  err = iface->op_tx_pool(iface, &pool);
-  if (err) {
-    int ifaceIndex = GetCoinIndex(iface);
-    char errbuf[256];
-    sprintf(errbuf, "GetTxMemPool: error obtaining tx memory pool: %s [sherr %d].", sherrstr(err), err);
-    unet_log(ifaceIndex, errbuf);
-    return (NULL);
-  }
-
-  return (pool);
-}
-
-
-
-
-
-
 bool ProcessBlock(CNode* pfrom, CBlock* pblock)
 {
   CIface *iface = GetCoinByIndex(pblock->ifaceIndex);
@@ -934,7 +907,6 @@ bool CTransaction::ClientConnectInputs(int ifaceIndex)
 
   // Take over previous transactions' spent pointers
   {
-    LOCK(pool->cs);
     int64 nValueIn = 0;
     for (unsigned int i = 0; i < vin.size(); i++)
     {
@@ -1680,7 +1652,7 @@ bool CTransaction::CheckTransaction(int ifaceIndex)
   BOOST_FOREACH(const CTxOut& txout, vout)
   {
     if (txout.nValue < 0)
-      return error(SHERR_INVAL, "CTransaction::CheckTransaction() : txout.nValue negative");
+      return error(SHERR_INVAL, "CTransaction.CheckTransaction: invalid coin output [negative value]: %s", ToString(ifaceIndex).c_str());
     if (txout.nValue > iface->max_money)
       return error(SHERR_INVAL, "CTransaction::CheckTransaction() : txout.nValue too high");
     nValueOut += txout.nValue;
@@ -1821,13 +1793,10 @@ bool CTransaction::FetchInputs(CTxDB& txdb, const map<uint256, CTxIndex>& mapTes
     {
       // Get prev tx from single transactions in memory
       CTxMemPool *mempool = GetTxMemPool(iface);
-      {
-        LOCK(mempool->cs);
-        if (!mempool->exists(prevout.hash)) {
-          return error(SHERR_INVAL, "FetchInputs: %s: mempool Tx prev not found %s: %s", GetHash().ToString().c_str(),  prevout.hash.ToString().c_str(), ToString(ifaceIndex).c_str());
-}
-        txPrev = mempool->lookup(prevout.hash);
+      if (!mempool->exists(prevout.hash)) {
+        return (error(SHERR_INVAL, "FetchInputs: mempool tx \"%s\" input \"%s\" not found.", GetHash().ToString().c_str(),  prevout.hash.ToString().c_str()));
       }
+      txPrev = mempool->lookup(prevout.hash);
       if (!fFound)
         txindex.vSpent.resize(txPrev.vout.size());
     }
@@ -2787,9 +2756,9 @@ bool CTransaction::AcceptToMemoryPool(CTxDB& txdb, bool fCheckInputs, bool* pfMi
     return (false);
   }
 
-  bool ret = pool->accept(txdb, *this, fCheckInputs, pfMissingInputs);
-  if (ret)
-    STAT_TX_SUBMITS(iface)++;
+  //bool ret = pool->accept(txdb, *this, fCheckInputs, pfMissingInputs);
+  bool ret = pool->accept(*this);
+//  if (ret) STAT_TX_SUBMITS(iface)++;
   return (ret);
 }
 
@@ -3171,10 +3140,10 @@ bool core_CommitBlock(CTxDB& txdb, CBlock *pblock, CBlockIndex *pindexNew)
       break;
     }
 
+#if 0
     /* remove connectd block tx's from pool */ 
-    BOOST_FOREACH(CTransaction& tx, block->vtx) {
-      pool->remove(tx);
-    }
+    pool->Commit(*block);
+#endif
   }
   if (!fValid)
     goto fin;
@@ -3201,6 +3170,13 @@ bool core_CommitBlock(CTxDB& txdb, CBlock *pblock, CBlockIndex *pindexNew)
   BOOST_FOREACH(CBlockIndex* pindex, vConnect)
     if (pindex->pprev)
       pindex->pprev->pnext = pindex;
+
+  /* remove connectd block tx's from mempool */ 
+  BOOST_FOREACH(PAIRTYPE(CBlockIndex *, CBlock *) r, mConnectBlocks) {
+    CBlock *block = r.second;
+
+    pool->Commit(*block);
+  }
 
 fin:
   if (!fValid) {
@@ -3334,10 +3310,7 @@ bool core_CommitBlock(CBlock *pblock, CBlockIndex *pindexNew)
   /* remove connectd block tx's from pool */ 
   BOOST_FOREACH(PAIRTYPE(CBlockIndex *, CBlock *) r, mConnectBlocks) {
     CBlock *block = r.second;
-
-    BOOST_FOREACH(CTransaction& tx, block->vtx) {
-      pool->remove(tx);
-    }
+    pool->Commit(*block);
   }
 
 fin:

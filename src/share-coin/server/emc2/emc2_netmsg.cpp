@@ -29,6 +29,7 @@
 #include "strlcpy.h"
 #include "ui_interface.h"
 #include "chain.h"
+#include "emc2_pool.h"
 #include "emc2_block.h"
 #include "emc2_txidx.h"
 
@@ -433,7 +434,6 @@ bool emc2_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
     pfrom->vRecv.SetVersion(min(pfrom->nVersion, EMC2_PROTOCOL_VERSION));
 
 #if 0
-/* todo: not supported */
     if (pfrom->nVersion >= EMC2_SENDHEADERS_VERSION) {
       /* inform peer to use 'sendheaders' protocol */
       pfrom->PushMessage("sendheaders");
@@ -662,13 +662,24 @@ bool emc2_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
       }
       else if (inv.type == MSG_TX || inv.type == MSG_WITNESS_TX)
       {
+        bool pushed = false;
+        if (EMC2Block::mempool.exists(inv.hash)) {
+          CTransaction tx = EMC2Block::mempool.lookup(inv.hash);
+          pfrom->PushTx(tx, 
+              (inv.type == MSG_TX) ? SERIALIZE_TRANSACTION_NO_WITNESS : 0);
+fprintf(stderr, "DEBUG: emc2_ProcessMessage[inv/tx]: pfrom->PushTx('%s', %d)\n", tx.GetHash().GetHex().c_str(), inv.type); 
+          pushed = true;
+        }
+
+#if 0
         // Send stream from relay memory
         bool pushed = false;
         {
           LOCK(cs_mapRelay);
           map<CInv, CDataStream>::iterator mi = mapRelay.find(inv);
           if (mi != mapRelay.end()) {
-            pfrom->PushMessage(inv.GetCommand(), (*mi).second);
+            string cmd = inv.GetCommand()
+            pfrom->PushMessage(cmd.c_str(), (*mi).second);
             pushed = true;
           }
         }
@@ -676,12 +687,12 @@ bool emc2_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
           LOCK(EMC2Block::mempool.cs);
           if (EMC2Block::mempool.exists(inv.hash)) {
             CTransaction tx = EMC2Block::mempool.lookup(inv.hash);
-            pfrom->PushTx(tx);
+            pfrom->PushTx(tx, 
+                (inv.type == MSG_TX) ? SERIALIZE_TRANSACTION_NO_WITNESS : 0);
             pushed = true;
           }
         }
 
-#if 0
         if (!pushed) {
           vNotFound.push_back(inv);
         }
@@ -748,7 +759,8 @@ bool emc2_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
         pindex = pindex->pnext;
     }
 
-    vector<CBlockHeader> vHeaders;
+    // we must use CBlocks, as CBlockHeaders won't include the 0x00 nTx count at the end
+    vector<EMC2Block> vHeaders;
     int nLimit = 2000;
     for (; pindex; pindex = pindex->pnext)
     {
@@ -1007,6 +1019,9 @@ fprintf(stderr, "DEBUG: emc2_ProcessBlock: receveed 'getblocktxn'\n");
 
   else if (strCommand == "blocktxn") {
 fprintf(stderr, "DEBUG: emc2_ProcessBlock: receveed 'blocktxn'\n");
+  }
+  else if (strCommand == "headers") {
+fprintf(stderr, "DEBUG: emc2_ProcessBlock: receveed 'headers'\n");
   }
 
   else if (strCommand == "reject") { /* remote peer is reporting block/tx error */

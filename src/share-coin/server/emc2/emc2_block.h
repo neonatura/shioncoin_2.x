@@ -40,6 +40,7 @@
 
 
 
+#if 0
 class EMC2_CTxMemPool : public CTxMemPool
 {
 
@@ -50,6 +51,7 @@ class EMC2_CTxMemPool : public CTxMemPool
     void queryHashes(std::vector<uint256>& vtxid);
 
 };
+#endif
 
 class EMC2Block : public CBlock
 {
@@ -65,15 +67,22 @@ public:
 
     EMC2Block()
     {
-        ifaceIndex = EMC2_COIN_IFACE;
-        SetNull();
+      ifaceIndex = EMC2_COIN_IFACE;
+      SetNull();
     }
 
     EMC2Block(const CBlock &block)
     {
-        ifaceIndex = EMC2_COIN_IFACE;
-        SetNull();
-        *((CBlock*)this) = block;
+      ifaceIndex = EMC2_COIN_IFACE;
+      SetNull();
+      *((CBlock*)this) = block;
+    }
+
+    EMC2Block(const CBlockHeader &header)
+    {
+      ifaceIndex = EMC2_COIN_IFACE;
+      SetNull();
+      *((CBlockHeader*)this) = header;
     }
 
     void SetNull()

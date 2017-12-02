@@ -43,6 +43,7 @@
 #include <boost/array.hpp>
 #include <share.h>
 #include "walletdb.h"
+#include "emc2/emc2_pool.h"
 #include "emc2/emc2_block.h"
 #include "emc2/emc2_wallet.h"
 #include "emc2/emc2_txidx.h"
@@ -400,6 +401,10 @@ bool EMC2Wallet::CommitTransaction(CWalletTx& wtxNew)
       return false;
     }
   }
+
+  CIface *iface = GetCoinByIndex(EMC2_COIN_IFACE);
+  STAT_TX_SUBMITS(iface)++;
+
   return true;
 }
 
@@ -819,7 +824,7 @@ unsigned int EMC2Wallet::GetTransactionWeight(const CTransaction& tx)
 
 static unsigned int emc2_nBytesPerSigOp = EMC2_DEFAULT_BYTES_PER_SIGOP;
 
-int64_t emc2_GetVirtualTransactionSize(int64_t nWeight, int64_t nSigOpCost = 0)
+unsigned int EMC2Wallet::GetVirtualTransactionSize(int64 nWeight, int64 nSigOpCost)
 { 
   return (std::max(nWeight, nSigOpCost * emc2_nBytesPerSigOp) + EMC2_WITNESS_SCALE_FACTOR - 1) / EMC2_WITNESS_SCALE_FACTOR; 
 }
@@ -827,22 +832,20 @@ int64_t emc2_GetVirtualTransactionSize(int64_t nWeight, int64_t nSigOpCost = 0)
 
 unsigned int EMC2Wallet::GetVirtualTransactionSize(const CTransaction& tx)
 {
-  return (emc2_GetVirtualTransactionSize(GetTransactionWeight(tx)));
-}
-
-static double emc2_AllowFreeThreshold()
-{
-  return COIN * 144 / 250;
+  int nSigOpCost = 0;
+  return (GetVirtualTransactionSize(GetTransactionWeight(tx), nSigOpCost));
 }
 
 /** Large (in bytes) low-priority (new, small-coin) transactions require fee. */
-bool EMC2Wallet::AllowFree(double dPriority)
+double EMC2Wallet::AllowFreeThreshold()
 {
-#if 0
-  return dPriority > emc2_AllowFreeThreshold();
-#endif
-  return (false);
+  return COIN * 144 / 250;
 }
+#if 0
+bool AllowFree() {
+  return dPriority > emc2_AllowFreeThreshold();
+}
+#endif
 
 int64 EMC2Wallet::GetFeeRate()
 {

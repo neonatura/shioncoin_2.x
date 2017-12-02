@@ -29,6 +29,7 @@
 #include "strlcpy.h"
 #include "ui_interface.h"
 #include "chain.h"
+#include "usde_pool.h"
 #include "usde_block.h"
 #include "usde_txidx.h"
 
@@ -594,8 +595,10 @@ if (pindexBest) fprintf(stderr, "DEBUG: inv.type == MSG_BLOCK, request blocks fr
         {
           LOCK(cs_mapRelay);
           map<CInv, CDataStream>::iterator mi = mapRelay.find(inv);
-          if (mi != mapRelay.end())
-            pfrom->PushMessage(inv.GetCommand(), (*mi).second);
+          if (mi != mapRelay.end()) {
+            string cmd = inv.GetCommand();
+            pfrom->PushMessage(cmd.c_str(), (*mi).second);
+          }
         }
       }
 

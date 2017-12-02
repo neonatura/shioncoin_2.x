@@ -52,6 +52,15 @@ static const int TEST_PROTOCOL_VERSION = 1000000;
 #define TEST_MAX_BLOCK_SIZE_GEN TEST_MAX_BLOCK_SIZE/2
 #define TEST_MAX_TRANSACTION_WEIGHT TEST_MAX_BLOCK_SIZE_GEN/5
 
+#define TEST_MAX_STANDARD_TX_WEIGHT 400000
+
+#define TEST_MAX_STANDARD_TX_SIGOP_COST 16000
+
+#define TEST_DEFAULT_BYTES_PER_SIGOP 20
+
+/** Largest byte size permitted for potential no-fee transaction. */
+#define TEST_MAX_FREE_TX_SIZE 10000
+
 static const int64 TEST_MIN_INPUT = 100;
 static const int64 TEST_MIN_TX_FEE = 10000;
 static const int64 TEST_MIN_RELAY_TX_FEE = 10000;

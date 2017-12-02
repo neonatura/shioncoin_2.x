@@ -68,7 +68,6 @@ common_includes = \
 	$(top_srcdir)/src/share-lib/delta/xdelta3.h \
 	$(top_srcdir)/src/share-lib/net/shnet.h \
 	unet/unet.h \
-	server/block.h \
 	server/coin.h \
 	server/chain.h \
 	server/global.h \
@@ -111,7 +110,6 @@ common_includes = \
 	shcoind.h
 
 common_sources = \
-	server/mnemonic.cpp \
 	shcoind_rpc.c \
 	shcoind_log.c \
 	shcoind_opt.c \
@@ -128,11 +126,13 @@ common_sources = \
 	unet/unet_peer.c \
 	unet/unet_event.c \
 	unet/unet_local.c \
+	server/mnemonic.cpp \
 	server/netbase.cpp \
 	server/version.cpp \
 	server/util.cpp
 
 server_sources = \
+	server/txfeerate.cpp \
 	$(blockchain_sources) \
 	$(proto_sources) \
 	$(stratum_sources) \
@@ -142,6 +142,8 @@ server_sources = \
 	server/test/test_wallet.h \
 	server/test/test_block.cpp \
 	server/test/test_block.h \
+	server/test/test_pool.cpp \
+	server/test/test_pool.h \
 	server/shc/shc_netmsg.cpp \
 	server/shc/shc_netmsg.h \
 	server/shc/shc_block.cpp \
@@ -151,6 +153,8 @@ server_sources = \
 	server/shc/shc_txidx.cpp \
 	server/shc/shc_txidx.h \
 	server/shc/shc_rpc.cpp \
+	server/shc/shc_pool.cpp \
+	server/shc/shc_pool.h \
 	server/usde/usde_netmsg.cpp \
 	server/usde/usde_netmsg.h \
 	server/usde/usde_block.cpp \
@@ -159,6 +163,8 @@ server_sources = \
 	server/usde/usde_wallet.h \
 	server/usde/usde_txidx.cpp \
 	server/usde/usde_txidx.h \
+	server/usde/usde_pool.cpp \
+	server/usde/usde_pool.h \
 	server/emc2/emc2_txidx.cpp \
 	server/emc2/emc2_txidx.h \
 	server/emc2/emc2_block.cpp \
@@ -167,6 +173,8 @@ server_sources = \
 	server/emc2/emc2_wallet.h \
 	server/emc2/emc2_netmsg.cpp \
 	server/emc2/emc2_netmsg.h \
+	server/emc2/emc2_pool.cpp \
+	server/emc2/emc2_pool.h \
 	server/ext/txext.cpp \
 	server/ext/alias.cpp \
 	server/ext/certificate.cpp \
@@ -186,6 +194,9 @@ server_sources = \
 	server/txsignature.cpp \
 	server/protocol.cpp \
 	server/block.cpp \
+	server/block.h \
+	server/txmempool.cpp \
+	server/txmempool.h \
 	server/coin.cpp \
 	server/chain.cpp \
 	server/matrix.cpp \

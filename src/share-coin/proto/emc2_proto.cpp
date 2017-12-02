@@ -29,6 +29,7 @@
 #include "wallet.h"
 #include "coin_proto.h"
 #include "emc2/emc2_netmsg.h"
+#include "emc2/emc2_pool.h"
 #include "emc2/emc2_block.h"
 #include "emc2/emc2_wallet.h"
 #include "emc2/emc2_txidx.h"
@@ -313,6 +314,7 @@ coin_iface_t emc2_coin_iface = {
   EMC2_MIN_TX_FEE,
   EMC2_MIN_RELAY_TX_FEE,
   EMC2_MAX_TX_FEE,
+  EMC2_MAX_FREE_TX_SIZE,
   EMC2_MAX_MONEY,
   EMC2_COINBASE_MATURITY, 
   EMC2_MAX_SIGOPS,

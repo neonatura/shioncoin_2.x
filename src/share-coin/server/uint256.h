@@ -40,6 +40,9 @@ public:
     void SetRaw(unsigned int *val)
     {
       int i;
+
+      SetNull();
+
       for (i = 0; i < WIDTH; i++)
         pn[i] = val[i];
     }
@@ -92,10 +95,13 @@ public:
 
     base_uint& operator=(uint64 b)
     {
+SetNull();
         pn[0] = (unsigned int)b;
         pn[1] = (unsigned int)(b >> 32);
+#if 0
         for (int i = 2; i < WIDTH; i++)
             pn[i] = 0;
+#endif
         return *this;
     }
 
@@ -316,11 +322,10 @@ public:
         return (!(a == b));
     }
 
-
-
     std::string GetHex() const
     {
         char psz[sizeof(pn)*2 + 1];
+        memset(psz, 0, sizeof(psz));
         for (unsigned int i = 0; i < sizeof(pn); i++)
             sprintf(psz + i*2, "%02x", ((unsigned char*)pn)[sizeof(pn) - i - 1]);
         return std::string(psz, psz + sizeof(pn)*2);
@@ -328,34 +333,37 @@ public:
 
     void SetHex(const char* psz)
     {
-        for (int i = 0; i < WIDTH; i++)
-            pn[i] = 0;
 
-        // skip leading spaces
-        while (isspace(*psz))
-            psz++;
+      SetNull();
 
-        // skip 0x
-        if (psz[0] == '0' && tolower(psz[1]) == 'x')
-            psz += 2;
+      for (int i = 0; i < WIDTH; i++)
+        pn[i] = 0;
 
-        // hex string to uint
-        static unsigned char phexdigit[256] = { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,1,2,3,4,5,6,7,8,9,0,0,0,0,0,0, 0,0xa,0xb,0xc,0xd,0xe,0xf,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0xa,0xb,0xc,0xd,0xe,0xf,0,0,0,0,0,0,0,0,0 };
-        const char* pbegin = psz;
-        while (phexdigit[(unsigned char)*psz] || *psz == '0')
-            psz++;
-        psz--;
-        unsigned char* p1 = (unsigned char*)pn;
-        unsigned char* pend = p1 + WIDTH * 4;
-        while (psz >= pbegin && p1 < pend)
+      // skip leading spaces
+      while (isspace(*psz))
+        psz++;
+
+      // skip 0x
+      if (psz[0] == '0' && tolower(psz[1]) == 'x')
+        psz += 2;
+
+      // hex string to uint
+      static unsigned char phexdigit[256] = { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,1,2,3,4,5,6,7,8,9,0,0,0,0,0,0, 0,0xa,0xb,0xc,0xd,0xe,0xf,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0xa,0xb,0xc,0xd,0xe,0xf,0,0,0,0,0,0,0,0,0 };
+      const char* pbegin = psz;
+      while (phexdigit[(unsigned char)*psz] || *psz == '0')
+        psz++;
+      psz--;
+      unsigned char* p1 = (unsigned char*)pn;
+      unsigned char* pend = p1 + WIDTH * 4;
+      while (psz >= pbegin && p1 < pend)
+      {
+        *p1 = phexdigit[(unsigned char)*psz--];
+        if (psz >= pbegin)
         {
-            *p1 = phexdigit[(unsigned char)*psz--];
-            if (psz >= pbegin)
-            {
-                *p1 |= (phexdigit[(unsigned char)*psz--] << 4);
-                p1++;
-            }
+          *p1 |= (phexdigit[(unsigned char)*psz--] << 4);
+          p1++;
         }
+      }
     }
 
     void SetHex(const std::string& str)
@@ -454,18 +462,23 @@ public:
 
     uint160()
     {
+SetNull();
+#if 0
         for (int i = 0; i < WIDTH; i++)
             pn[i] = 0;
+#endif
     }
 
     uint160(const basetype& b)
     {
+SetNull();
         for (int i = 0; i < WIDTH; i++)
             pn[i] = b.pn[i];
     }
 
     uint160& operator=(const basetype& b)
     {
+SetNull();
         for (int i = 0; i < WIDTH; i++)
             pn[i] = b.pn[i];
         return *this;
@@ -473,7 +486,8 @@ public:
 
     uint160& operator=(const shkey_t& b)
     {
-      for (int i = 0; i < WIDTH; i++)
+SetNull();
+      for (int i = 0; i < WIDTH && i < SHKEY_WORDS; i++)
         pn[i] = b.code[i];
       return *this;
     }
@@ -483,7 +497,7 @@ public:
       static shkey_t key;
 
       memset(&key, 0, sizeof(key));
-      for (int i = 0; i < WIDTH; i++)
+      for (int i = 0; i < WIDTH && i < SHKEY_WORDS; i++)
         key.code[i] = pn[i];
       key.alg = SHALG_SHR160;
       key.crc = 0;
@@ -494,18 +508,24 @@ public:
 
     uint160(uint64 b)
     {
+SetNull();
         pn[0] = (unsigned int)b;
         pn[1] = (unsigned int)(b >> 32);
+#if 0
         for (int i = 2; i < WIDTH; i++)
             pn[i] = 0;
+#endif
     }
 
     uint160& operator=(uint64 b)
     {
+SetNull();
         pn[0] = (unsigned int)b;
         pn[1] = (unsigned int)(b >> 32);
+#if 0
         for (int i = 2; i < WIDTH; i++)
             pn[i] = 0;
+#endif
         return *this;
     }
 
@@ -516,10 +536,13 @@ public:
 
     explicit uint160(const std::vector<unsigned char>& vch)
     {
+SetNull();
         if (vch.size() == sizeof(pn))
             memcpy(pn, &vch[0], sizeof(pn));
+#if 0
         else
             *this = 0;
+#endif
     }
 };
 
@@ -594,18 +617,23 @@ public:
 
     uint256()
     {
+SetNull();
+#if 0
         for (int i = 0; i < WIDTH; i++)
             pn[i] = 0;
+#endif
     }
 
     uint256(const basetype& b)
     {
+SetNull();
         for (int i = 0; i < WIDTH; i++)
             pn[i] = b.pn[i];
     }
 
     uint256& operator=(const basetype& b)
     {
+SetNull();
         for (int i = 0; i < WIDTH; i++)
             pn[i] = b.pn[i];
         return *this;
@@ -613,10 +641,13 @@ public:
 
     uint256(uint64 b)
     {
+SetNull();
         pn[0] = (unsigned int)b;
         pn[1] = (unsigned int)(b >> 32);
+#if 0
         for (int i = 2; i < WIDTH; i++)
             pn[i] = 0;
+#endif
     }
 
     uint256& operator=(uint64 b)
@@ -635,10 +666,13 @@ public:
 
     explicit uint256(const std::vector<unsigned char>& vch)
     {
+SetNull();
         if (vch.size() == sizeof(pn))
             memcpy(pn, &vch[0], sizeof(pn));
+#if 0
         else
             *this = 0;
+#endif
     }
 };
 

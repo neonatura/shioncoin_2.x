@@ -29,6 +29,7 @@
 #include "strlcpy.h"
 #include "ui_interface.h"
 #include "chain.h"
+#include "shc_pool.h"
 #include "shc_block.h"
 #include "shc_txidx.h"
 
@@ -516,8 +517,9 @@ fprintf(stderr, "DEBUG: ProcessMessage: Must have a version message before anyth
         pfrom->AddInventoryKnown(inv);
 
         bool fAlreadyHave = AlreadyHave(iface, inv);
-        Debug("(shc) INVENTORY: %s [%s]", 
-            inv.ToString().c_str(), fAlreadyHave ? "have" : "new");
+        Debug("(shc) INVENTORY: %s(%s) [%s]", 
+            inv.GetCommand().c_str(), inv.hash.GetHex().c_str(), 
+            fAlreadyHave ? "have" : "new");
 
         if (!fAlreadyHave)
           pfrom->AskFor(inv);
@@ -610,8 +612,10 @@ fprintf(stderr, "DEBUG: ProcessMessage: Must have a version message before anyth
         {
           LOCK(cs_mapRelay);
           map<CInv, CDataStream>::iterator mi = mapRelay.find(inv);
-          if (mi != mapRelay.end())
-            pfrom->PushMessage(inv.GetCommand(), (*mi).second);
+          if (mi != mapRelay.end()) {
+            string cmd = inv.GetCommand();
+            pfrom->PushMessage(cmd.c_str(), (*mi).second);
+          }
         }
       }
 

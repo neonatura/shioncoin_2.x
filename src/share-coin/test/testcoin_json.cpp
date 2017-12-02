@@ -27,6 +27,7 @@
 #include <string>
 #include <vector>
 #include "wallet.h"
+#include "test/test_pool.h"
 #include "test/test_block.h"
 #include "test/test_txidx.h"
 

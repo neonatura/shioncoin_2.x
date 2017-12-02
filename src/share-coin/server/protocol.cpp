@@ -155,19 +155,46 @@ bool operator<(const CInv& a, const CInv& b)
 
 bool CInv::IsKnownType() const
 {
-    return (type >= 1 && type < (int)ARRAYLEN(ppszTypeName));
+  int masked = type & MSG_TYPE_MASK;
+//    return (type >= 1 && type < (int)ARRAYLEN(ppszTypeName));
+  return (
+      masked == MSG_TX ||
+      masked == MSG_BLOCK ||
+      masked == MSG_FILTERED_BLOCK ||
+      masked == MSG_CMPCT_BLOCK
+      );
 }
 
-const char* CInv::GetCommand() const
+std::string CInv::GetCommand() const
 {
+
+  int masked = type & MSG_TYPE_MASK;
+  string cmd;
+
+  if (type & MSG_WITNESS_FLAG)
+    cmd.append("witness-");
+
+  switch (masked)
+  {
+    case MSG_TX:             cmd.append("tx"); break;
+    case MSG_BLOCK:          cmd.append("block"); break;
+    case MSG_FILTERED_BLOCK: cmd.append("merkleblock"); break;
+    case MSG_CMPCT_BLOCK:    cmd.append("cmpctblock"); break;
+    default:                 cmd.append("unknown"); break;
+  }    
+
+  return (cmd);
+
+#if 0
     if (!IsKnownType())
         throw std::out_of_range(strprintf("CInv::GetCommand() : type=%d unknown type", type));
     return ppszTypeName[type];
+#endif
 }
 
 std::string CInv::ToString() const
 {
-    return strprintf("%s %s", GetCommand(), hash.ToString().substr(0,20).c_str());
+    return strprintf("%s(%s)", GetCommand(), hash.ToString());
 }
 
 void CInv::print() const

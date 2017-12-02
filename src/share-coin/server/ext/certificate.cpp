@@ -1502,7 +1502,7 @@ int init_ident_donate_tx(CIface *iface, string strAccount, uint64_t nValue, uint
   if (!addr.IsValid())
     return (SHERR_INVAL);
 
-  CWalletTx t_wtx;
+  CTxCreator t_wtx(wallet, strAccount); /* first tx */
   if (hasCert) {
     if (!IsCertAccount(iface, tx, strAccount)) { 
       error(SHERR_ACCESS, "init_ident_donate_tx: certificate is not local.");
@@ -1519,9 +1519,11 @@ int init_ident_donate_tx(CIface *iface, string strAccount, uint64_t nValue, uint
 
   uint160 hashIdent = ident->GetHash();
 
+#if 0
   /* sent to intermediate account. */
   CReserveKey rkey(wallet);
   t_wtx.strFromAccount = strAccount;
+#endif
 
   //CPubKey vchPubKey = rkey.GetReservedKey();
   CScript scriptPubKeyOrig;
@@ -1531,6 +1533,8 @@ int init_ident_donate_tx(CIface *iface, string strAccount, uint64_t nValue, uint
   scriptPubKey += scriptPubKeyOrig;
 //  string strError = wallet->SendMoney(scriptPubKey, nValue, t_wtx, false);
   int64 nFeeRequired;
+
+#if 0
   if (!wallet->CreateTransaction(scriptPubKey, nValue, t_wtx, rkey, nFeeRequired)) {
     return (SHERR_CANCELED);
 }
@@ -1538,22 +1542,42 @@ int init_ident_donate_tx(CIface *iface, string strAccount, uint64_t nValue, uint
   if (!wallet->CommitTransaction(t_wtx)) {
     return (SHERR_CANCELED);
 }
+#endif
+  if (!t_wtx.AddOutput(scriptPubKey, nValue, true))
+    return SHERR_CANCELED;
+  if (!t_wtx.Send())
+    return (SHERR_CANCELED);
+
+  /* second tx */
+  CTxCreator s_wtx(wallet, strAccount);
 
   /* deduct intermediate tx fee */
   nFee -= nFeeRequired;
   nFee = MAX(iface->min_tx_fee, nFee);
 
   /* send from intermediate as tx fee */
-  wtx.SetNull();
-  wtx.strFromAccount = strAccount;
-  wtx.CreateIdent(ident);
+#if 0
+  s_wtx.SetNull();
+  s_wtx.strFromAccount = strAccount;
+#endif
+  s_wtx.CreateIdent(ident);
   CScript feePubKey;
-  vector<pair<CScript, int64> > vecSend;
 
-  wtx.strFromAccount = strAccount;
+  s_wtx.strFromAccount = strAccount;
   feePubKey << OP_EXT_GENERATE << CScript::EncodeOP_N(OP_IDENT) << OP_HASH160 << hashIdent << OP_2DROP << OP_RETURN;
-  if (!SendMoneyWithExtTx(iface, t_wtx, wtx, feePubKey, vecSend, nFee))
+
+#if 0
+  vector<pair<CScript, int64> > vecSend;
+  if (!SendMoneyWithExtTx(iface, t_wtx, s_wtx, feePubKey, vecSend, nFee))
     return (error(SHERR_INVAL, "init_ident_donate_tx:: !SendMoneyWithExtTx"));
+#endif
+  if (!s_wtx.AddExtTx(&t_wtx, feePubKey, nFee))
+    return (false);
+
+  if (!s_wtx.Send())
+    return (false);
+
+  wtx = s_wtx;
 
   return (0);
 }

@@ -49,6 +49,13 @@ static const int USDE_PROTOCOL_VERSION = 1000400;
 #define USDE_MAX_BLOCK_SIZE_GEN USDE_MAX_BLOCK_SIZE/2
 #define USDE_MAX_TRANSACTION_WEIGHT USDE_MAX_BLOCK_SIZE_GEN/5
 
+#define USDE_MAX_STANDARD_TX_WEIGHT 100000
+
+#define USDE_MAX_STANDARD_TX_SIGOP_COST 16000
+
+/** Largest byte size permitted for potential no-fee transaction. */
+#define USDE_MAX_FREE_TX_SIZE 10000
+
 static const int64 USDE_MIN_INPUT = 10000;
 static const int64 USDE_MIN_TX_FEE = 10000000;
 static const int64 USDE_MIN_RELAY_TX_FEE = 10000000;

@@ -43,9 +43,10 @@
 #include <boost/array.hpp>
 #include <share.h>
 #include "walletdb.h"
+#include "usde/usde_pool.h"
+#include "usde/usde_block.h"
 #include "usde/usde_wallet.h"
 #include "usde/usde_txidx.h"
-#include "usde/usde_block.h"
 #include "chain.h"
 #include "txsignature.h"
 
@@ -389,6 +390,10 @@ bool USDEWallet::CommitTransaction(CWalletTx& wtxNew)
       return false;
     }
   }
+
+  CIface *iface = GetCoinByIndex(USDE_COIN_IFACE);
+  STAT_TX_SUBMITS(iface)++;
+
   return true;
 }
 
@@ -773,16 +778,21 @@ unsigned int USDEWallet::GetTransactionWeight(const CTransaction& tx)
   return (nBytes);
 }
 
+unsigned int USDEWallet::GetVirtualTransactionSize(int64 nWeight, int64 nSigOpCost)
+{
+  return ((unsigned int)nWeight);
+}
+
 unsigned int USDEWallet::GetVirtualTransactionSize(const CTransaction& tx)
 {
-  return (GetTransactionWeight(tx));
+  return (GetVirtualTransactionSize(GetTransactionWeight(tx), 0));
 }
 
 
 /** Large (in bytes) low-priority (new, small-coin) transactions require fee. */
-bool USDEWallet::AllowFree(double dPriority)
+double USDEWallet::AllowFreeThreshold()
 {
-  return dPriority > COIN * 700 / 250;
+  return COIN * 700 / 250;
 }
 
 int64 USDEWallet::GetFeeRate()

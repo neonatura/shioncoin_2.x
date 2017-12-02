@@ -43,6 +43,7 @@
 #include <boost/array.hpp>
 #include <share.h>
 #include "walletdb.h"
+#include "test/test_pool.h"
 #include "test/test_block.h"
 #include "test/test_wallet.h"
 #include "test/test_txidx.h"
@@ -55,6 +56,9 @@ using namespace boost;
 TESTWallet *testWallet;
 
 CScript TEST_COINBASE_FLAGS;
+
+
+static unsigned int test_nBytesPerSigOp = TEST_DEFAULT_BYTES_PER_SIGOP;
 
 
 int test_UpgradeWallet(void)
@@ -375,6 +379,9 @@ bool TESTWallet::CommitTransaction(CWalletTx& wtxNew)
       return false;
     }
   }
+
+  CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
+  STAT_TX_SUBMITS(iface)++;
 
   return true;
 }
@@ -743,27 +750,34 @@ bool TESTWallet::CreateAccountTransaction(string strFromAccount, CScript scriptP
   return CreateAccountTransaction(strFromAccount, vecSend, wtxNew, strError, nFeeRet);
 }
 
-
 unsigned int TESTWallet::GetTransactionWeight(const CTransaction& tx)
 {
   unsigned int nBytes;
 
-  nBytes = ::GetSerializeSize(tx, SER_NETWORK, TEST_PROTOCOL_VERSION);
+  nBytes =
+    ::GetSerializeSize(tx, SER_NETWORK, TEST_PROTOCOL_VERSION | SERIALIZE_TRANSACTION_NO_WITNESS) * (TEST_WITNESS_SCALE_FACTOR - 1) +
+    ::GetSerializeSize(tx, SER_NETWORK, TEST_PROTOCOL_VERSION);
 
   return (nBytes);
 }
 
+unsigned int TESTWallet::GetVirtualTransactionSize(int64 nWeight, int64 nSigOpCost)
+{
+  return (std::max(nWeight, nSigOpCost * test_nBytesPerSigOp) + TEST_WITNESS_SCALE_FACTOR - 1) / TEST_WITNESS_SCALE_FACTOR;
+}
 
 unsigned int TESTWallet::GetVirtualTransactionSize(const CTransaction& tx)
 {
-  return (GetTransactionWeight(tx));
+  unsigned int nWeight = GetTransactionWeight(tx);
+  int nSigOpCost = 0;
+  return (GetVirtualTransactionSize(nWeight, nSigOpCost));
 }
 
-bool TESTWallet::AllowFree(double dPriority)
+double TESTWallet::AllowFreeThreshold()
 {
   static const double block_daily = 360;
   static const double block_bytes = 256;
-  return (dPriority > ((double)COIN * block_daily / block_bytes));
+  return ((double)COIN * block_daily / block_bytes);
 }
 
 int64 TESTWallet::GetFeeRate()

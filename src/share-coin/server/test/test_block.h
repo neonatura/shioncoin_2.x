@@ -30,7 +30,7 @@
 
 
 
-
+#if 0
 class TEST_CTxMemPool : public CTxMemPool
 {
 
@@ -41,6 +41,7 @@ class TEST_CTxMemPool : public CTxMemPool
     void queryHashes(std::vector<uint256>& vtxid);
 
 };
+#endif
 
 
 class TESTBlock : public CBlock

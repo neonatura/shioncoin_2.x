@@ -28,6 +28,7 @@
 #include "init.h"
 #include "strlcpy.h"
 #include "ui_interface.h"
+#include "usde_pool.h"
 #include "usde_block.h"
 #include "usde_txidx.h"
 #include "chain.h"

@@ -223,8 +223,11 @@ int64 CTransaction::GetValueIn(tx_cache& inputs)
   for (unsigned int i = 0; i < vin.size(); i++) {
     CTxOut out;
     const CTxIn& in = vin[i];
-    if (GetOutputFor(in, inputs, out))
-      nResult += out.nValue;
+    if (!GetOutputFor(in, inputs, out)) {
+      error(SHERR_INVAL, "CTransaction.GetValueIn: warning: unknown input tx \"%s\" [x%d].", in.prevout.hash.GetHex().c_str(), inputs.size());
+      continue;
+    }
+    nResult += out.nValue;
   }
 
   return nResult;

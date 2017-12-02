@@ -267,6 +267,11 @@ void scrypt_1024_1_1_256_sp(const char *input, char *output, char *scratchpad)
 	uint32_t *V;
 	uint32_t i, j, k;
 
+  for (i = 0; i < 128; i++)
+    B[i] = 0;
+  for (i = 0; i < 32; i++)
+    X[i] = 0;
+
 	V = (uint32_t *)(((uintptr_t)(scratchpad) + 63) & ~ (uintptr_t)(63));
 	
 	PBKDF2_SHA256((const uint8_t *)input, 80, (const uint8_t *)input, 80, 1, B, 128);
@@ -296,5 +301,6 @@ void scrypt_1024_1_1_256_sp(const char *input, char *output, char *scratchpad)
 void scrypt_1024_1_1_256(const char *input, char *output)
 {
 	char scratchpad[SCRYPT_SCRATCHPAD_SIZE];
+  memset(scratchpad, 0, SCRYPT_SCRATCHPAD_SIZE);
 	scrypt_1024_1_1_256_sp(input, output, scratchpad);
 }

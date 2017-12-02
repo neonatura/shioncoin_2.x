@@ -333,6 +333,11 @@
         return setKeyPool.size();
     }
 
+    bool AllowFree(double dPriority)
+    {
+      return (dPriority > AllowFreeThreshold());
+    }
+
     bool GetTransaction(const uint256 &hashTx, CWalletTx& wtx);
 
     bool SetDefaultKey(const CPubKey &vchPubKey);
@@ -365,6 +370,9 @@
 
     bool FillInputs(const CTransaction& tx, tx_cache& inputs);
 
+    double GetPriority(const CTransaction& tx, MapPrevTx& mapInputs);
+
+    double GetPriority(const CTransaction& tx, tx_cache& inputs);
 
 
     virtual void RelayWalletTransaction(CWalletTx& wtx) = 0;
@@ -386,13 +394,12 @@
     /* the serialized size of the transaction. */
     virtual unsigned int GetTransactionWeight(const CTransaction& tx) = 0;  
 
+    virtual unsigned int GetVirtualTransactionSize(int64 nWeight, int64 nSigOpCost = 0) = 0;
+
     virtual unsigned int GetVirtualTransactionSize(const CTransaction& tx) = 0;
 
-    virtual bool AllowFree(double dPriority) = 0; 
+    virtual double AllowFreeThreshold() = 0;
 
-    double GetPriority(const CTransaction& tx, MapPrevTx& mapInputs);
-
-    double GetPriority(const CTransaction& tx, tx_cache& inputs);
 
     /* 1k data cost */
     virtual int64 GetFeeRate() = 0;

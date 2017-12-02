@@ -29,6 +29,7 @@
 #include "wallet.h"
 #include "coin_proto.h"
 #include "usde/usde_netmsg.h"
+#include "usde/usde_pool.h"
 #include "usde/usde_block.h"
 #include "usde/usde_wallet.h"
 #include "usde/usde_txidx.h"
@@ -298,6 +299,7 @@ coin_iface_t usde_coin_iface = {
   USDE_MIN_TX_FEE,
   USDE_MIN_RELAY_TX_FEE,
   USDE_MAX_TX_FEE,
+  USDE_MAX_FREE_TX_SIZE,
   USDE_MAX_MONEY,
   USDE_COINBASE_MATURITY, 
   USDE_MAX_SIGOPS,

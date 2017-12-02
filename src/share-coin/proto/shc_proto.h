@@ -68,6 +68,16 @@ static const int SHC_PROTOCOL_VERSION = 2000000;
 #define SHC_MAX_BLOCK_SIZE_GEN SHC_MAX_BLOCK_SIZE/2
 #define SHC_MAX_TRANSACTION_WEIGHT SHC_MAX_BLOCK_SIZE_GEN/5
 
+#define SHC_MAX_STANDARD_TX_WEIGHT 1600000
+
+#define SHC_MAX_STANDARD_TX_SIGOP_COST 16000
+
+#define SHC_DEFAULT_BYTES_PER_SIGOP 20
+
+/** Largest byte size permitted for potential no-fee transaction. */
+#define SHC_MAX_FREE_TX_SIZE 10000
+
+
 /**
  * The minimum "satashi" permitted to be sent in a single transaction.
  */

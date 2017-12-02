@@ -29,6 +29,7 @@
 #include "wallet.h"
 #include "coin_proto.h"
 #include "shc/shc_netmsg.h"
+#include "shc/shc_pool.h"
 #include "shc/shc_block.h"
 #include "shc/shc_wallet.h"
 #include "shc/shc_txidx.h"
@@ -60,7 +61,7 @@ static int shc_init(CIface *iface, void *_unused_)
   SetWallet(SHC_COIN_IFACE, shcWallet);
 
 
-  if (!opt_bool(OPT_SHC_BACKUP_RESTORE)) {
+  if (!opt_bool((char *)OPT_SHC_BACKUP_RESTORE)) {
     /* normal startup */
     if (!shc_InitBlockIndex()) {
       error(SHERR_INVAL, "shc_proto: unable to initialize block index table.");
@@ -296,6 +297,7 @@ coin_iface_t shc_coin_iface = {
   SHC_MIN_TX_FEE,
   SHC_MIN_RELAY_TX_FEE,
   SHC_MAX_TX_FEE,
+  SHC_MAX_FREE_TX_SIZE,
   SHC_MAX_MONEY,
   SHC_COINBASE_MATURITY, 
   SHC_MAX_SIGOPS,

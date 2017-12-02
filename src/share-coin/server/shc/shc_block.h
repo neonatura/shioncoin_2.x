@@ -46,7 +46,7 @@
 
 
 
-
+#if 0
 class SHC_CTxMemPool : public CTxMemPool
 {
 
@@ -57,6 +57,7 @@ class SHC_CTxMemPool : public CTxMemPool
     void queryHashes(std::vector<uint256>& vtxid);
 
 };
+#endif
 
 class SHCBlock : public CBlock
 {

@@ -38,6 +38,7 @@
 #include <boost/algorithm/string/replace.hpp>
 #include <share.h>
 
+#if 0
 class USDE_CTxMemPool : public CTxMemPool
 {
 
@@ -48,6 +49,7 @@ class USDE_CTxMemPool : public CTxMemPool
     void queryHashes(std::vector<uint256>& vtxid);
 
 };
+#endif
 
 class USDEBlock : public CBlock
 {
