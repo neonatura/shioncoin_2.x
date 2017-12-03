@@ -1670,6 +1670,57 @@ _TEST(segwit_serializetx)
 
 
 
+_TEST(txmempool_pending)
+{
+  CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
+  CWallet *wallet = GetWallet(iface);
+  CTxMemPool *pool = GetTxMemPool(iface);
+  string strAccount("");
+
+  /* test transaction */
+  CTxCreator inv_tx(wallet, strAccount);
+
+  /* generate transaction without commiting to pool. */
+  CCoinAddr addr = GetAccountAddress(wallet, strAccount, true);
+  _TRUE(true == inv_tx.AddOutput(addr.Get(), (int64)COIN));
+  _TRUE(true == inv_tx.Generate());
+
+  /* alter input prev-hash */
+  inv_tx.vin[0].prevout.hash = 0x1;
+
+  /* verify txmempool fails commit and adds to pending hash list. */
+  _TRUE(false == pool->AddTx(inv_tx));
+  _TRUE(true == pool->IsPendingTx(inv_tx.GetHash()));
+  
+}
+
+
+_TEST(txmempool_inval)
+{
+  CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
+  CWallet *wallet = GetWallet(iface);
+  CTxMemPool *pool = GetTxMemPool(iface);
+  string strAccount("");
+
+  /* test transaction */
+  CTxCreator inv_tx(wallet, strAccount);
+
+  /* generate transaction without commiting to pool. */
+  CCoinAddr addr = GetAccountAddress(wallet, strAccount, true);
+  _TRUE(true == inv_tx.AddOutput(addr.Get(), (int64)COIN));
+  _TRUE(true == inv_tx.Generate());
+
+  /* alter contents to invalid -- one milliiionnn coihns. */
+  inv_tx.vout[0].nValue = 1000000 * (int64)COIN;
+
+  /* verify txmempool fails commit and adds to invalid hash list. */
+  _TRUE(false == pool->AddTx(inv_tx));
+  _TRUE(true == pool->IsInvalidTx(inv_tx.GetHash()));
+
+}
+
+
+
 #ifdef __cplusplus
 }
 #endif

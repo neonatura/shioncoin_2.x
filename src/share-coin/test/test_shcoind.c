@@ -39,6 +39,8 @@ extern TEST_ctxtx(CuTest*);
 extern TEST_scriptid(CuTest*);
 extern TEST_segwit(CuTest*);
 extern TEST_segwit_serializetx(CuTest*);
+extern TEST_txmempool_pending(CuTest*);
+extern TEST_txmempool_inval(CuTest*);
 
 
 
@@ -96,6 +98,10 @@ int main(int argc, char *argv[])
 //  SUITE_ADD_TEST(suite, TEST_channeltx);
 //  SUITE_ADD_TEST(suite, TEST_offertx);
   SUITE_ADD_TEST(suite, TEST_scriptid);
+
+  /* tx memory pool */
+  SUITE_ADD_TEST(suite, TEST_txmempool_pending);
+  SUITE_ADD_TEST(suite, TEST_txmempool_inval);
 
   /* segwit tests */
   SUITE_ADD_TEST(suite, TEST_segwit);
