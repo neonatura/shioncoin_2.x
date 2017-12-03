@@ -33,6 +33,7 @@
 #include "usde_wallet.h"
 #include "usde_txidx.h"
 #include "chain.h"
+#include "txsignature.h"
 
 #ifdef WIN32
 #include <string.h>
@@ -111,7 +112,7 @@ int64_t USDE_CTxMemPool::GetSoftSigOpCost()
   return (USDE_MAX_STANDARD_TX_SIGOP_COST);
 }
 
-bool USDE_CTxMemPool::VerifyCoinStandards(const CTransaction& tx, tx_cache mapInputs)
+bool USDE_CTxMemPool::VerifyCoinStandards(CTransaction& tx, tx_cache& mapInputs)
 {
   return (true);
 }

@@ -8,6 +8,8 @@ AM_INIT_AUTOMAKE(share-coin, 2.29)
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
 
+AC_CONFIG_HEADERS([src/secp256k1/libsecp256k1-config.h])
+
 AC_SUBST([with_kernel], [`uname -r`])
 AC_SUBST([with_kerneldir], [/lib/modules/$with_kernel])
 AC_PATH_KERNEL_SOURCE
@@ -207,6 +209,7 @@ AC_HEADER_STDC
 
 AC_CHECK_LIB([m], [fabs])
 AC_CHECK_LIB([share], [get_libshare_version])
+AC_CHECK_LIB([gmp], [__gmp_version])
 AC_ARG_WITH([libshare],
   [AS_HELP_STRING([--with-libshare],
   [specify a path to the libshare build directory])],
@@ -356,5 +359,5 @@ fi
 #AM_CONDITIONAL(ENABLE_WALLET, [test "x$enable_wallet" != "xno"])
 #AM_CONDITIONAL([ENABLE_WALLET], 1, [Define to share-wallet functionality.])
 
-AC_OUTPUT(Makefile src/share-ssl-lib/Makefile src/share-coin/Makefile doc/Makefile bin/Makefile)
+AC_OUTPUT(Makefile src/secp256k1/Makefile src/share-ssl-lib/Makefile src/share-coin/Makefile doc/Makefile bin/Makefile)
 

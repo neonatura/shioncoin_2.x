@@ -1652,6 +1652,66 @@ Value rpc_wallet_export(CIface *iface, const Array& params, bool fStratum)
   return Value::null;
 }
 
+/** removes from address book only -- does not remove from keystore */
+Value rpc_wallet_prune(CIface *iface, const Array& params, bool fStratum)
+{
+  int ifaceIndex = GetCoinIndex(iface);
+  CWallet *pwalletMain = GetWallet(iface);
+
+  if (fStratum)
+    throw runtime_error("unsupported operation");
+    
+  if (params.size() != 1)
+    throw runtime_error("wallet.prune");
+
+  string strAccount = AccountFromValue(params[0]);
+
+  vector<CTxDestination> vRemove;
+  BOOST_FOREACH(const PAIRTYPE(CTxDestination, string)& entry, pwalletMain->mapAddressBook) {
+    CTxDestination book_dest = entry.first;
+    string strLabel = entry.second;
+
+    if (!IsMine(*pwalletMain, book_dest))
+      continue;
+
+    CKeyID key;
+    CCoinAddr(ifaceIndex, book_dest).GetKeyID(key);
+
+    /* was this key ever used. */
+    int nTxInput = 0;
+    int nTxSpent = 0;
+    BOOST_FOREACH(PAIRTYPE(const uint256, CWalletTx)& item, pwalletMain->mapWallet) {
+      const CWalletTx& tx = item.second;
+      int i;
+      for (i = 0; i < tx.vout.size(); i++) {
+        CTxDestination dest;
+        if (!ExtractDestination(tx.vout[i].scriptPubKey, dest))
+          continue;
+        CKeyID k1;
+        CCoinAddr(ifaceIndex, dest).GetKeyID(k1);
+        if (k1 == key) {
+          if (tx.IsSpent(i)) {
+            nTxSpent++;
+          }
+          nTxInput++;
+        }
+      }
+    }
+
+    if (nTxInput == 0 || (nTxSpent >= nTxInput)) {
+      /* never used or spent */
+      vRemove.push_back(book_dest);
+    }
+
+  }
+
+  BOOST_FOREACH(const CTxDestination& dest, vRemove) {
+    pwalletMain->mapAddressBook.erase(dest);  
+  }
+
+  return Value::null;
+}
+
 bool BackupWallet(const CWallet& wallet, const string& strDest)
 {
   if (!wallet.fFileBacked)

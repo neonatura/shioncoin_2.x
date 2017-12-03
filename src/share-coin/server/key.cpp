@@ -205,12 +205,14 @@ void CKey::MakeNewKey(bool fCompressed)
     fSet = true;
 }
 
-bool CKey::SetPrivKey(const CPrivKey& vchPrivKey)
+bool CKey::SetPrivKey(const CPrivKey& vchPrivKey, bool fCompressed)
 {
     const unsigned char* pbegin = &vchPrivKey[0];
     if (!d2i_ECPrivateKey(&pkey, &pbegin, vchPrivKey.size()))
         return false;
     fSet = true;
+    if (fCompressed || fCompressedPubKey)
+        SetCompressedPubKey();
     return true;
 }
 

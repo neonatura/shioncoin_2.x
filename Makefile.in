@@ -52,7 +52,8 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
  configure.lineno config.status.lineno
 mkinstalldirs = $(install_sh) -d
-CONFIG_HEADER = config.h
+CONFIG_HEADER = config.h \
+	$(top_builddir)/src/secp256k1/libsecp256k1-config.h
 CONFIG_CLEAN_FILES = scripts/initd/shcoind
 CONFIG_CLEAN_VPATH_FILES =
 SOURCES =
@@ -253,7 +254,7 @@ with_kernel = @with_kernel@
 with_kerneldir = @with_kerneldir@
 ACLOCAL_AMFLAGS = -I m4
 AUTOMAKE_OPTIONS = foreign
-SUBDIRS = src/share-ssl-lib src/share-coin doc bin 
+SUBDIRS = src/secp256k1 src/share-ssl-lib src/share-coin doc bin 
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
 

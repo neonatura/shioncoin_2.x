@@ -276,7 +276,7 @@ static void commit_payout(int ifaceIndex, int block_height)
     }
   }
 
-  if (nBankFee[ifaceIndex] > 1.0) {
+  if (nBankFee[ifaceIndex] > 100.0) {
     if (bal > nBankFee[ifaceIndex]) {
       if (0 == addblockreward(ifaceIndex, "bank", nBankFee[ifaceIndex])) {
         sprintf(buf, "(%s) commit_payout: 'bank' account tax'd %f coins.\n", iface->name, nBankFee[ifaceIndex]); 
@@ -357,6 +357,7 @@ int task_work_calc(int ifaceIndex)
   return (0);
 }
 #endif
+
 
 
 task_t *task_init(void)

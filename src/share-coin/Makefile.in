@@ -77,14 +77,16 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/ac-path-kernel-source.m4 \
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 mkinstalldirs = $(install_sh) -d
-CONFIG_HEADER = $(top_builddir)/config.h
+CONFIG_HEADER = $(top_builddir)/config.h \
+	$(top_builddir)/src/secp256k1/libsecp256k1-config.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 LIBRARIES = $(noinst_LIBRARIES)
 ARFLAGS = cru
 libshcoin_a_AR = $(AR) $(ARFLAGS)
 libshcoin_a_DEPENDENCIES =  \
-	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a
+	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
+	$(top_builddir)/src/secp256k1/libsecp256k1.a
 am__objects_1 =
 am__objects_2 = shcoind_rpc.$(OBJEXT) shcoind_log.$(OBJEXT) \
 	shcoind_opt.$(OBJEXT) shcoind_signal.$(OBJEXT) \
@@ -139,7 +141,7 @@ am__objects_6 = shcoind-txfeerate.$(OBJEXT) $(am__objects_3) \
 	shcoind-global.$(OBJEXT) shcoind-block_merkle.$(OBJEXT) \
 	shcoind-wit_merkle.$(OBJEXT) shcoind-crypter.$(OBJEXT) \
 	shcoind-txidx.$(OBJEXT) shcoind-init.$(OBJEXT) \
-	shcoind-key.$(OBJEXT) shcoind-hdkey.$(OBJEXT) \
+	shcoind-derkey.$(OBJEXT) shcoind-hdkey.$(OBJEXT) \
 	shcoind-keystore.$(OBJEXT) shcoind-main.$(OBJEXT) \
 	shcoind-script.$(OBJEXT) shcoind-sync.$(OBJEXT) \
 	shcoind-wallet.$(OBJEXT) shcoind-walletdb.$(OBJEXT) \
@@ -150,7 +152,8 @@ am_shcoind_OBJECTS = $(am__objects_6) shcoind-shcoind.$(OBJEXT) \
 	shcoind-shcoind_daemon.$(OBJEXT)
 shcoind_OBJECTS = $(am_shcoind_OBJECTS)
 shcoind_DEPENDENCIES =  \
-	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a libshcoin.a \
+	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
+	$(top_builddir)/src/secp256k1/libsecp256k1.a libshcoin.a \
 	$(am__append_6)
 shcoind_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CXXLD) $(shcoind_CXXFLAGS) $(CXXFLAGS) \
@@ -161,7 +164,8 @@ am_shcointool_OBJECTS = shcointool-shcoind_tool.$(OBJEXT) \
 	shcointool-clientrpc_iface.$(OBJEXT) $(am__objects_7)
 shcointool_OBJECTS = $(am_shcointool_OBJECTS)
 shcointool_DEPENDENCIES =  \
-	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a libshcoin.a \
+	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
+	$(top_builddir)/src/secp256k1/libsecp256k1.a libshcoin.a \
 	$(am__append_7)
 shcointool_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(shcointool_CXXFLAGS) \
@@ -225,7 +229,7 @@ am__objects_11 = test_shcoind-txfeerate.$(OBJEXT) $(am__objects_8) \
 	test_shcoind-block_merkle.$(OBJEXT) \
 	test_shcoind-wit_merkle.$(OBJEXT) \
 	test_shcoind-crypter.$(OBJEXT) test_shcoind-txidx.$(OBJEXT) \
-	test_shcoind-init.$(OBJEXT) test_shcoind-key.$(OBJEXT) \
+	test_shcoind-init.$(OBJEXT) test_shcoind-derkey.$(OBJEXT) \
 	test_shcoind-hdkey.$(OBJEXT) test_shcoind-keystore.$(OBJEXT) \
 	test_shcoind-main.$(OBJEXT) test_shcoind-script.$(OBJEXT) \
 	test_shcoind-sync.$(OBJEXT) test_shcoind-wallet.$(OBJEXT) \
@@ -247,7 +251,8 @@ am_test_shcoind_OBJECTS = $(am__objects_11) \
 	test_shcoind-testcoin_bloom.$(OBJEXT)
 test_shcoind_OBJECTS = $(am_test_shcoind_OBJECTS)
 test_shcoind_DEPENDENCIES =  \
-	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a libshcoin.a \
+	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
+	$(top_builddir)/src/secp256k1/libsecp256k1.a libshcoin.a \
 	$(am__append_3)
 test_shcoind_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(test_shcoind_CXXFLAGS) \
@@ -274,7 +279,7 @@ am__base_list = \
   sed '$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;s/\n/ /g' | \
   sed '$$!N;$$!N;$$!N;$$!N;s/\n/ /g'
 SCRIPTS = $(bin_SCRIPTS)
-DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
+DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/src/secp256k1
 depcomp = $(SHELL) $(top_srcdir)/build-aux/depcomp
 am__depfiles_maybe = depfiles
 am__mv = mv -f
@@ -450,6 +455,7 @@ with_kernel = @with_kernel@
 with_kerneldir = @with_kerneldir@
 AUTOMAKE_OPTIONS = foreign
 INCLUDES = -I$(top_srcdir)/src/share-ssl-lib/$(OPENSSL_DIR)/include \
+	-I$(top_srcdir)/src/secp256k1/include \
 	-I$(top_srcdir)/src/share-lib \
 	-I$(srcdir)/proto \
 	-I$(srcdir)/fractal \
@@ -655,7 +661,7 @@ server_sources = \
 	server/crypter.cpp \
 	server/txidx.cpp \
 	server/init.cpp \
-	server/key.cpp \
+	server/derkey.cpp \
 	server/hdkey.cpp \
 	server/keystore.cpp \
 	server/main.cpp \
@@ -695,14 +701,18 @@ test_shcoind_SOURCES = \
 	test/testcoin_bloom.cpp
 
 test_shcoind_LDADD = $(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
-	libshcoin.a -lboost_system -lboost_filesystem -lboost_thread \
-	-ldb_cxx -ldl $(am__append_3)
+	$(top_builddir)/src/secp256k1/libsecp256k1.a libshcoin.a \
+	-lboost_system -lboost_filesystem -lboost_thread -ldb_cxx -ldl \
+	$(am__append_3)
 test_shcoind_CFLAGS = -g -O0 -DTEST_SHCOIND $(am__append_4)
 test_shcoind_CXXFLAGS = -g -O0 -DTEST_SHCOIND $(am__append_5)
 libshcoin_a_SOURCES = \
 	$(common_includes) $(common_sources)
 
-libshcoin_a_LIBADD = $(top_builddir)/src/share-ssl-lib/libshare_ssl.a
+libshcoin_a_LIBADD = \
+	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
+	$(top_builddir)/src/secp256k1/libsecp256k1.a
+
 shcoind_SOURCES = \
 	$(server_sources) \
 	shcoind.c \
@@ -710,7 +720,8 @@ shcoind_SOURCES = \
 	shcoind_daemon.h
 
 shcoind_LDADD = $(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
-	libshcoin.a $(am__append_6) -lboost_system -lboost_filesystem \
+	$(top_builddir)/src/secp256k1/libsecp256k1.a libshcoin.a \
+	$(am__append_6) -lboost_system -lboost_filesystem \
 	-lboost_thread -ldb_cxx -ldl
 @STATIC_LIBSHARE_TRUE@shcoind_CFLAGS = -I$(LIBSHARE)/include
 @STATIC_LIBSHARE_TRUE@shcoind_CXXFLAGS = -I$(LIBSHARE)/include
@@ -718,8 +729,9 @@ shcointool_SOURCES = \
 	shcoind_tool.cpp clientrpc_iface.cpp $(tool_sources)
 
 shcointool_LDADD = $(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
-	libshcoin.a -lboost_system -lboost_filesystem -lboost_thread \
-	-ldb_cxx -ldl $(am__append_7)
+	$(top_builddir)/src/secp256k1/libsecp256k1.a libshcoin.a \
+	-lboost_system -lboost_filesystem -lboost_thread -ldb_cxx -ldl \
+	$(am__append_7)
 shcointool_CFLAGS = -DSHCOIN_CLIENT $(am__append_8)
 shcointool_CXXFLAGS = -DSHCOIN_CLIENT -DOS_LINUX $(am__append_9)
 
@@ -902,6 +914,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-coin_proto.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-context.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-crypter.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-derkey.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-emc2_block.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-emc2_netmsg.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-emc2_pool.Po@am__quote@
@@ -914,7 +927,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-global.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-hdkey.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-init.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-key.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-keystore.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-main.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcoind-matrix.Po@am__quote@
@@ -998,6 +1010,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-coin_proto.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-context.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-crypter.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-derkey.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-emc2_block.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-emc2_netmsg.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-emc2_pool.Po@am__quote@
@@ -1010,7 +1023,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-global.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-hdkey.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-init.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-key.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-keystore.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-main.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_shcoind-matrix.Po@am__quote@
@@ -2610,19 +2622,19 @@ shcoind-init.obj: server/init.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-init.obj `if test -f 'server/init.cpp'; then $(CYGPATH_W) 'server/init.cpp'; else $(CYGPATH_W) '$(srcdir)/server/init.cpp'; fi`
 
-shcoind-key.o: server/key.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-key.o -MD -MP -MF $(DEPDIR)/shcoind-key.Tpo -c -o shcoind-key.o `test -f 'server/key.cpp' || echo '$(srcdir)/'`server/key.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-key.Tpo $(DEPDIR)/shcoind-key.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/key.cpp' object='shcoind-key.o' libtool=no @AMDEPBACKSLASH@
+shcoind-derkey.o: server/derkey.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-derkey.o -MD -MP -MF $(DEPDIR)/shcoind-derkey.Tpo -c -o shcoind-derkey.o `test -f 'server/derkey.cpp' || echo '$(srcdir)/'`server/derkey.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-derkey.Tpo $(DEPDIR)/shcoind-derkey.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/derkey.cpp' object='shcoind-derkey.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-key.o `test -f 'server/key.cpp' || echo '$(srcdir)/'`server/key.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-derkey.o `test -f 'server/derkey.cpp' || echo '$(srcdir)/'`server/derkey.cpp
 
-shcoind-key.obj: server/key.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-key.obj -MD -MP -MF $(DEPDIR)/shcoind-key.Tpo -c -o shcoind-key.obj `if test -f 'server/key.cpp'; then $(CYGPATH_W) 'server/key.cpp'; else $(CYGPATH_W) '$(srcdir)/server/key.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-key.Tpo $(DEPDIR)/shcoind-key.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/key.cpp' object='shcoind-key.obj' libtool=no @AMDEPBACKSLASH@
+shcoind-derkey.obj: server/derkey.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-derkey.obj -MD -MP -MF $(DEPDIR)/shcoind-derkey.Tpo -c -o shcoind-derkey.obj `if test -f 'server/derkey.cpp'; then $(CYGPATH_W) 'server/derkey.cpp'; else $(CYGPATH_W) '$(srcdir)/server/derkey.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/shcoind-derkey.Tpo $(DEPDIR)/shcoind-derkey.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/derkey.cpp' object='shcoind-derkey.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-key.obj `if test -f 'server/key.cpp'; then $(CYGPATH_W) 'server/key.cpp'; else $(CYGPATH_W) '$(srcdir)/server/key.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -c -o shcoind-derkey.obj `if test -f 'server/derkey.cpp'; then $(CYGPATH_W) 'server/derkey.cpp'; else $(CYGPATH_W) '$(srcdir)/server/derkey.cpp'; fi`
 
 shcoind-hdkey.o: server/hdkey.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcoind_CXXFLAGS) $(CXXFLAGS) -MT shcoind-hdkey.o -MD -MP -MF $(DEPDIR)/shcoind-hdkey.Tpo -c -o shcoind-hdkey.o `test -f 'server/hdkey.cpp' || echo '$(srcdir)/'`server/hdkey.cpp
@@ -3604,19 +3616,19 @@ test_shcoind-init.obj: server/init.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-init.obj `if test -f 'server/init.cpp'; then $(CYGPATH_W) 'server/init.cpp'; else $(CYGPATH_W) '$(srcdir)/server/init.cpp'; fi`
 
-test_shcoind-key.o: server/key.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-key.o -MD -MP -MF $(DEPDIR)/test_shcoind-key.Tpo -c -o test_shcoind-key.o `test -f 'server/key.cpp' || echo '$(srcdir)/'`server/key.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-key.Tpo $(DEPDIR)/test_shcoind-key.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/key.cpp' object='test_shcoind-key.o' libtool=no @AMDEPBACKSLASH@
+test_shcoind-derkey.o: server/derkey.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-derkey.o -MD -MP -MF $(DEPDIR)/test_shcoind-derkey.Tpo -c -o test_shcoind-derkey.o `test -f 'server/derkey.cpp' || echo '$(srcdir)/'`server/derkey.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-derkey.Tpo $(DEPDIR)/test_shcoind-derkey.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/derkey.cpp' object='test_shcoind-derkey.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-key.o `test -f 'server/key.cpp' || echo '$(srcdir)/'`server/key.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-derkey.o `test -f 'server/derkey.cpp' || echo '$(srcdir)/'`server/derkey.cpp
 
-test_shcoind-key.obj: server/key.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-key.obj -MD -MP -MF $(DEPDIR)/test_shcoind-key.Tpo -c -o test_shcoind-key.obj `if test -f 'server/key.cpp'; then $(CYGPATH_W) 'server/key.cpp'; else $(CYGPATH_W) '$(srcdir)/server/key.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-key.Tpo $(DEPDIR)/test_shcoind-key.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/key.cpp' object='test_shcoind-key.obj' libtool=no @AMDEPBACKSLASH@
+test_shcoind-derkey.obj: server/derkey.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-derkey.obj -MD -MP -MF $(DEPDIR)/test_shcoind-derkey.Tpo -c -o test_shcoind-derkey.obj `if test -f 'server/derkey.cpp'; then $(CYGPATH_W) 'server/derkey.cpp'; else $(CYGPATH_W) '$(srcdir)/server/derkey.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/test_shcoind-derkey.Tpo $(DEPDIR)/test_shcoind-derkey.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='server/derkey.cpp' object='test_shcoind-derkey.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-key.obj `if test -f 'server/key.cpp'; then $(CYGPATH_W) 'server/key.cpp'; else $(CYGPATH_W) '$(srcdir)/server/key.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -c -o test_shcoind-derkey.obj `if test -f 'server/derkey.cpp'; then $(CYGPATH_W) 'server/derkey.cpp'; else $(CYGPATH_W) '$(srcdir)/server/derkey.cpp'; fi`
 
 test_shcoind-hdkey.o: server/hdkey.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_shcoind_CXXFLAGS) $(CXXFLAGS) -MT test_shcoind-hdkey.o -MD -MP -MF $(DEPDIR)/test_shcoind-hdkey.Tpo -c -o test_shcoind-hdkey.o `test -f 'server/hdkey.cpp' || echo '$(srcdir)/'`server/hdkey.cpp

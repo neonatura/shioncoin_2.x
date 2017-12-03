@@ -3618,6 +3618,13 @@ bool CTxCreator::Generate()
           CScript(), std::numeric_limits<unsigned int>::max()-1));
   }
 
+  /* redundantly check before signing as signing takes the longest time */
+  unsigned int nWeight = pwallet->GetTransactionWeight(*this);
+  if (nWeight >= MAX_TRANSACTION_WEIGHT(iface)) {
+    strError = "The transaction size exceeds the maximum complexity allowed.";
+    return (false);
+  }
+
   /* sign inputs */
   unsigned int nIn = 0;
   BOOST_FOREACH(const PAIRTYPE(CWalletTx *,unsigned int)& coin, setInput) {
@@ -3630,7 +3637,7 @@ bool CTxCreator::Generate()
   }
 
   /* ensure transaction does not breach a defined size limitation. */
-  unsigned int nWeight = pwallet->GetTransactionWeight(*this);
+  nWeight = pwallet->GetTransactionWeight(*this);
   if (nWeight >= MAX_TRANSACTION_WEIGHT(iface)) {
     strError = "The transaction size exceeds the maximum complexity allowed.";
     return (false);

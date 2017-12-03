@@ -550,7 +550,7 @@ class CPool : public CTxMemPool
 
     virtual int64_t GetSoftSigOpCost() = 0;
 
-    virtual bool VerifyCoinStandards(const CTransaction& tx, tx_cache mapInputs) = 0;
+    virtual bool VerifyCoinStandards(CTransaction& tx, tx_cache& mapInputs) = 0;
 
     virtual bool AcceptTx(CTransaction& tx) = 0;
 

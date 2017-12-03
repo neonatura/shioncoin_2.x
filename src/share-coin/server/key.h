@@ -165,7 +165,10 @@ class CKey
 {
 protected:
     EC_KEY* pkey;
+    unsigned char vch[32];
+    cbuff vchPub;
     bool fSet;
+    bool fPubSet;
     bool fCompressedPubKey;
 
     void SetCompressedPubKey();
@@ -185,7 +188,7 @@ public:
     bool IsCompressed() const;
 
     void MakeNewKey(bool fCompressed);
-    bool SetPrivKey(const CPrivKey& vchPrivKey);
+    bool SetPrivKey(const CPrivKey& vchPrivKey, bool fCompressed = false);
     bool SetSecret(const CSecret& vchSecret, bool fCompressed = false);
     CSecret GetSecret(bool &fCompressed) const;
     CPrivKey GetPrivKey() const;

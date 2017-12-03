@@ -57,7 +57,7 @@ class USDE_CTxMemPool : public CPool
 //    bool VerifyAccept(CTransaction &tx) ;
     int64_t GetSoftWeight() ;
     int64_t GetSoftSigOpCost() ;
-    bool VerifyCoinStandards(const CTransaction& tx, tx_cache mapInputs) ;
+    bool VerifyCoinStandards(CTransaction& tx, tx_cache& mapInputs) ;
     bool AcceptTx(CTransaction& tx);
     int64 CalculateSoftFee(CTransaction& tx);
 

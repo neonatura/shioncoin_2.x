@@ -803,8 +803,8 @@ fprintf(stderr, "DEBUG: emc2_ProcessMessage[inv/tx]: pfrom->PushTx('%s', %d)\n",
     pfrom->AddInventoryKnown(inv);
 
     bool fMissingInputs = false;
-    if (tx.AcceptToMemoryPool(txdb, true, &fMissingInputs))
-    {
+    if (!AlreadyHave(iface, inv) &&
+        tx.AcceptToMemoryPool(txdb, true, &fMissingInputs)) {
       SyncWithWallets(iface, tx);
       RelayMessage(inv, vMsg);
       mapAlreadyAskedFor.erase(inv);
@@ -860,6 +860,7 @@ fprintf(stderr, "DEBUG: emc2_ProcessMessage[inv/tx]: pfrom->PushTx('%s', %d)\n",
       pfrom->Misbehaving(tx.nDoS);
 #endif
     txdb.Close();
+
   }
 
 

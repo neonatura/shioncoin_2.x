@@ -704,8 +704,8 @@ if (pindexBest) fprintf(stderr, "DEBUG: inv.type == MSG_BLOCK, request blocks fr
 
     bool fMissingInputs = false;
     USDETxDB txdb;
-    if (tx.AcceptToMemoryPool(txdb, true, &fMissingInputs))
-    {
+    if (!AlreadyHave(iface, inv) &&
+        tx.AcceptToMemoryPool(txdb, true, &fMissingInputs)) {
       SyncWithWallets(iface, tx);
       RelayMessage(inv, vMsg);
       mapAlreadyAskedFor.erase(inv);

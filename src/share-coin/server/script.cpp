@@ -41,6 +41,7 @@ using namespace boost;
 #include "sync.h"
 #include "util.h"
 
+#include "secp256k1.h"
 
 
 CScriptID::CScriptID(const CScript& in) : uint160(Hash160(cbuff(in.begin(), in.end()))) {}
@@ -289,6 +290,32 @@ const char* GetOpName(opcodetype opcode)
         return "OP_UNKNOWN";
     }
 }
+
+bool static _CheckLowS(const std::vector<unsigned char>& vchSig)
+{
+
+  if (vchSig.size() == 0)
+    return (true);
+
+  secp256k1_context *secp256k1_context_verify = secp256k1_context_create(SECP256K1_CONTEXT_VERIFY);
+  secp256k1_ecdsa_signature sig;
+  bool ok;
+
+  memset(&sig, 0, sizeof(sig));
+  if (!ecdsa_signature_parse_der_lax(secp256k1_context_verify, &sig, &vchSig[0], vchSig.size())) {
+    secp256k1_context_destroy(secp256k1_context_verify);
+    return error(SHERR_INVAL, "CheckLowS: warning: error parsing DER: vchSig(\"%s)\".", HexStr(vchSig).c_str());
+  }
+
+  if (secp256k1_ecdsa_signature_normalize(secp256k1_context_verify, NULL, &sig)) {
+    secp256k1_context_destroy(secp256k1_context_verify);
+    return error(SHERR_INVAL, "CheckLowS: warning: error normalizing DER: \"%s\".", HexStr(vchSig).c_str());
+  };
+
+  secp256k1_context_destroy(secp256k1_context_verify);
+  return (true);
+}
+
 
 //bool EvalScript(vector<vector<unsigned char> >& stack, const CScript& script, const CTransaction& txTo, unsigned int nIn, int nHashType, int sigver, int flags)
 bool EvalScript(CSignature& sig, cstack_t& stack, const CScript& script, unsigned int sigver, int flags)
@@ -769,7 +796,7 @@ bool EvalScript(CSignature& sig, cstack_t& stack, const CScript& script, unsigne
               valtype& vch2 = stacktop(-1);
               bool fEqual = (vch1 == vch2);
 if (!fEqual) {
-fprintf(stderr, "DEBUG: EvalScript: OP_EQUALVERIFY: \"%s\" != \"%s\"\n", HexStr(vch1).c_str(), HexStr(vch2).c_str());
+fprintf(stderr, "DEBUG: EvalScript: OP_EQUALVERIFY: \"%s\" != \"%s\" [tx %s] [script %s]\n", HexStr(vch1).c_str(), HexStr(vch2).c_str(), sig.tx->GetHash().GetHex().c_str(), script.ToString().c_str());
 }
               // OP_NOTEQUAL is disabled because it would be too easy to say
               // something like n != 1 and have some wiseguy pass in 1 with extra
@@ -994,7 +1021,15 @@ fprintf(stderr, "DEBUG: EvalScript: OP_EQUALVERIFY: \"%s\" != \"%s\"\n", HexStr(
                 scriptCode.FindAndDelete(CScript(vchSig));
               }
 
+              {
+                std::vector<unsigned char> vchSigCopy(vchSig.begin(), vchSig.begin() + vchSig.size() - 1);
+                bool lows_ok = _CheckLowS(vchSigCopy);
+                if (flags & SCRIPT_VERIFY_LOW_S)
+                  return (false); 
+              }
+
               bool fSuccess = sig.CheckSig(vchSig, vchPubKey, scriptCode, sigver);
+//fprintf(stderr, "DEBUG: EvalScript: sig.checkSig(%s): vchPubKey(%s) vchSig(%s)\n", (fSuccess ? "success" : "failure"), HexStr(vchPubKey).c_str(), HexStr(vchSig).c_str()); 
 if (!fSuccess) { fprintf(stderr, "DEBUG: EvalScript: CheckSig !fSuccess: vchSig-size(%d): \"%s\"\n",  vchSig.size(), CScript(vchSig).ToString().c_str()); }
 
               popstack(stack);

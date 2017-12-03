@@ -26,6 +26,8 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string.hpp>
 
+#include "secp256k1.h"
+#include "secp256k1_recovery.h"
 
 #include "hdkey.h"
 
@@ -59,6 +61,91 @@ static const CCoinAddr addr4C ("GJgcXeqegX3BW2AihD6q1gbetgYqpAkrxD");
 
 static const string strAddressBad("1HV9Lc3sNHZxwj4Zk6fB38tEmBryq2cBiF");
 
+
+bool static _IsValidSignatureEncoding(const std::vector<unsigned char> &sig) 
+{
+  // Minimum and maximum size constraints.
+  if (sig.size() < 9) return false;
+  if (sig.size() > 73) return false;
+
+  // A signature is of type 0x30 (compound).
+  if (sig[0] != 0x30) return false;
+
+  // Make sure the length covers the entire signature.
+  if (sig[1] != sig.size() - 3) return false;
+
+  // Extract the length of the R element.
+  unsigned int lenR = sig[3];
+
+  // Make sure the length of the S element is still inside the signature.
+  if (5 + lenR >= sig.size()) return false;
+
+  // Extract the length of the S element.
+  unsigned int lenS = sig[5 + lenR];
+
+  // Verify that the length of the signature matches the sum of the length
+  // of the elements.
+  if ((size_t)(lenR + lenS + 7) != sig.size()) return false;
+
+  // Check whether the R element is an integer.
+  if (sig[2] != 0x02) return false;
+
+  // Zero-length integers are not allowed for R.
+  if (lenR == 0) return false;
+
+  // Negative numbers are not allowed for R.
+  if (sig[4] & 0x80) return false;
+
+  // Null bytes at the start of R are not allowed, unless R would
+  // otherwise be interpreted as a negative number.
+  if (lenR > 1 && (sig[4] == 0x00) && !(sig[5] & 0x80)) return false;
+
+  // Check whether the S element is an integer.
+  if (sig[lenR + 4] != 0x02) return false;
+
+  // Zero-length integers are not allowed for S.
+  if (lenS == 0) return false;
+
+  // Negative numbers are not allowed for S.
+  if (sig[lenR + 6] & 0x80) return false;
+
+  // Null bytes at the start of S are not allowed, unless S would otherwise be
+  // interpreted as a negative number.
+  if (lenS > 1 && (sig[lenR + 6] == 0x00) && !(sig[lenR + 7] & 0x80)) return false;
+
+  return true;
+}
+
+bool static _CheckLowS(const std::vector<unsigned char>& vchSig) 
+{
+  secp256k1_context *secp256k1_context_verify = secp256k1_context_create(SECP256K1_CONTEXT_VERIFY);
+  secp256k1_ecdsa_signature sig;
+  bool ok;
+
+  memset(&sig, 0, sizeof(sig));
+  if (!ecdsa_signature_parse_der_lax(secp256k1_context_verify, &sig, &vchSig[0], vchSig.size())) {
+    secp256k1_context_destroy(secp256k1_context_verify);
+    return false;
+  }
+
+  if (!secp256k1_ecdsa_signature_normalize(secp256k1_context_verify, NULL, &sig)) {
+    secp256k1_context_destroy(secp256k1_context_verify);
+    return false;
+  };
+
+  secp256k1_context_destroy(secp256k1_context_verify);
+  return (true);
+}
+
+bool static _IsLowDERSignature(const cbuff& vchSig)
+{
+  std::vector<unsigned char> vchSigCopy(vchSig.begin(), vchSig.begin() + vchSig.size() - 1);
+  if (!_CheckLowS(vchSigCopy))
+    return false;
+  return true;
+}
+
+
 _TEST(coin_key)
 {
   CCoinSecret bsecret3, bsecret4;
@@ -84,37 +171,13 @@ _TEST(coin_key)
   _TRUE(fCompressed == true);
   _TRUE(secret3 == secret3C);
   _TRUE(secret4 == secret4C);
-#if 0
-  CSecret secret1  = bsecret1.GetSecret (fCompressed);
-  _TRUE(fCompressed == false);
-  CSecret secret2  = bsecret2.GetSecret (fCompressed);
-  _TRUE(fCompressed == false);
-  CSecret secret1C = bsecret1C.GetSecret(fCompressed);
-  _TRUE(fCompressed == true);
-  CSecret secret2C = bsecret2C.GetSecret(fCompressed);
-  _TRUE(fCompressed == true);
 
-  _TRUE(secret1 == secret1C);
-  _TRUE(secret2 == secret2C);
-#endif
-
-#if 0
-  CKey key1, key2, key1C, key2C;
-  key1.SetSecret(secret1, false);
-  key2.SetSecret(secret2, false);
-  key1C.SetSecret(secret1, true);
-  key2C.SetSecret(secret2, true);
-  _TRUE(addr1.Get()  == CTxDestination(key1.GetPubKey().GetID()));
-  _TRUE(addr2.Get()  == CTxDestination(key2.GetPubKey().GetID()));
-  _TRUE(addr1C.Get() == CTxDestination(key1C.GetPubKey().GetID()));
-  _TRUE(addr2C.Get() == CTxDestination(key2C.GetPubKey().GetID()));
-#endif
   CKey key3, key4;
   key3.SetSecret(secret3, false);
   key4.SetSecret(secret4, false);
   CKey key3C, key4C;
-  key3C.SetSecret(secret3, true);
-  key4C.SetSecret(secret4, true);
+  _TRUE(true == key3C.SetSecret(secret3, true));
+  _TRUE(true == key4C.SetSecret(secret4, true));
 
   _TRUE(addr3.Get()  == CTxDestination(key3.GetPubKey().GetID()));
   _TRUE(addr4.Get()  == CTxDestination(key4.GetPubKey().GetID()));
@@ -129,31 +192,17 @@ _TEST(coin_key)
 
     // normal signatures
 
-
     vector<unsigned char> sign3, sign4;
     _TRUE(key3.Sign (hashMsg, sign3));
     _TRUE(key4.Sign (hashMsg, sign4));
     vector<unsigned char> sign3C, sign4C;
     _TRUE(key3C.Sign(hashMsg, sign3C));
     _TRUE(key4C.Sign(hashMsg, sign4C));
-#if 0
-    vector<unsigned char> sign1, sign2, sign1C, sign2C;
-    _TRUE(key1.Sign (hashMsg, sign1));
-    _TRUE(key2.Sign (hashMsg, sign2));
-    _TRUE(key1C.Sign(hashMsg, sign1C));
-    _TRUE(key2C.Sign(hashMsg, sign2C));
-#endif
 
     _TRUE( key3.Verify(hashMsg, sign3));
     _TRUE(!key3.Verify(hashMsg, sign4));
     _TRUE( key3.Verify(hashMsg, sign3C));
     _TRUE(!key3.Verify(hashMsg, sign4C));
-#if 0
-    _TRUE( key1.Verify(hashMsg, sign1));
-    _TRUE(!key1.Verify(hashMsg, sign2));
-    _TRUE( key1.Verify(hashMsg, sign1C));
-    _TRUE(!key1.Verify(hashMsg, sign2C));
-#endif
 
     _TRUE(!key4.Verify(hashMsg, sign3));
     _TRUE( key4.Verify(hashMsg, sign4));
@@ -169,22 +218,9 @@ _TEST(coin_key)
     _TRUE( key4C.Verify(hashMsg, sign4));
     _TRUE(!key4C.Verify(hashMsg, sign3C));
     _TRUE( key4C.Verify(hashMsg, sign4C));
-#if 0
-    _TRUE(!key2.Verify(hashMsg, sign1));
-    _TRUE( key2.Verify(hashMsg, sign2));
-    _TRUE(!key2.Verify(hashMsg, sign1C));
-    _TRUE( key2.Verify(hashMsg, sign2C));
 
-    _TRUE( key1C.Verify(hashMsg, sign1));
-    _TRUE(!key1C.Verify(hashMsg, sign2));
-    _TRUE( key1C.Verify(hashMsg, sign1C));
-    _TRUE(!key1C.Verify(hashMsg, sign2C));
-
-    _TRUE(!key2C.Verify(hashMsg, sign1));
-    _TRUE( key2C.Verify(hashMsg, sign2));
-    _TRUE(!key2C.Verify(hashMsg, sign1C));
-    _TRUE( key2C.Verify(hashMsg, sign2C));
-#endif
+//    _TRUE(true == _IsValidSignatureEncoding(sign3C));
+//    _TRUE(true == _IsLowDERSignature(sign3C));
 
     // compact signatures (with key recovery)
 
@@ -195,14 +231,6 @@ _TEST(coin_key)
     _TRUE(key3C.SignCompact(hashMsg, csign3C));
     _TRUE(key4C.SignCompact(hashMsg, csign4C));
 
-#if 0
-    vector<unsigned char> csign1, csign2, csign1C, csign2C;
-
-    _TRUE(key1.SignCompact (hashMsg, csign1));
-    _TRUE(key2.SignCompact (hashMsg, csign2));
-    _TRUE(key1C.SignCompact(hashMsg, csign1C));
-    _TRUE(key2C.SignCompact(hashMsg, csign2C));
-#endif
 
     CKey rkey3, rkey4;
     CKey rkey3C, rkey4C;
@@ -215,19 +243,8 @@ _TEST(coin_key)
     _TRUE(rkey4.GetPubKey()  == key4.GetPubKey());
     _TRUE(rkey3C.GetPubKey() == key3C.GetPubKey());
     _TRUE(rkey4C.GetPubKey() == key4C.GetPubKey());
-#if 0
-    CKey rkey1, rkey2, rkey1C, rkey2C;
 
-    _TRUE(rkey1.SetCompactSignature (hashMsg, csign1));
-    _TRUE(rkey2.SetCompactSignature (hashMsg, csign2));
-    _TRUE(rkey1C.SetCompactSignature(hashMsg, csign1C));
-    _TRUE(rkey2C.SetCompactSignature(hashMsg, csign2C));
-
-    _TRUE(rkey1.GetPubKey()  == key1.GetPubKey());
-    _TRUE(rkey2.GetPubKey()  == key2.GetPubKey());
-    _TRUE(rkey1C.GetPubKey() == key1C.GetPubKey());
-    _TRUE(rkey2C.GetPubKey() == key2C.GetPubKey());
-#endif
+//    _TRUE(true == _IsValidSignatureEncoding(sign3C));
   }
 
   char teststr[64];

@@ -35,6 +35,7 @@
 #include "emc2_wallet.h"
 #include "emc2_txidx.h"
 #include "chain.h"
+#include "txsignature.h"
 
 #ifdef WIN32
 #include <string.h>
@@ -79,8 +80,36 @@ int64_t EMC2_CTxMemPool::GetSoftSigOpCost()
   return (EMC2_MAX_STANDARD_TX_SIGOP_COST);
 }
 
-bool EMC2_CTxMemPool::VerifyCoinStandards(const CTransaction& tx, tx_cache mapInputs)
+bool EMC2_CTxMemPool::VerifyCoinStandards(CTransaction& tx, tx_cache& mapInputs)
 {
+
+  if (tx.IsCoinBase())
+    return (true);
+
+  /* SCRIPT_VERIFY_LOW_S */
+  for (unsigned int i = 0; i < tx.vin.size(); i++) {
+    CTxOut prev;
+    if (!tx.GetOutputFor(tx.vin[i], mapInputs, prev))
+      continue; /* only verifying what is currently available */
+
+    /* ensure output script is valid */
+    vector<vector<unsigned char> > vSolutions;
+    txnouttype whichType;
+    const CScript& prevScript = prev.scriptPubKey;
+    if (!Solver(prevScript, whichType, vSolutions))
+      return false;
+    if (whichType == TX_NONSTANDARD)
+      return false;
+
+    /* evaluate signature */
+    vector<vector<unsigned char> > stack;
+    CTransaction *txSig = (CTransaction *)this;
+    CSignature sig(EMC2_COIN_IFACE, txSig, i);
+    if (!EvalScript(sig, stack, tx.vin[i].scriptSig, SIGVERSION_BASE, SCRIPT_VERIFY_LOW_S)) {
+      return (error(SHERR_INVAL, "(emc2) "
+            "CTxMemPool.VerifyCoinStandards: error evaluating signature. [SCRIPT_VERIFY_LOW_S]"));
+    }
+  }
   return (true);
 }
 

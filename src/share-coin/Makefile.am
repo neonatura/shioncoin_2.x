@@ -3,6 +3,7 @@ AUTOMAKE_OPTIONS = foreign
 TESTS = test_shcoind
 
 INCLUDES = -I$(top_srcdir)/src/share-ssl-lib/$(OPENSSL_DIR)/include \
+	-I$(top_srcdir)/src/secp256k1/include \
 	-I$(top_srcdir)/src/share-lib \
 	-I$(srcdir)/proto \
 	-I$(srcdir)/fractal \
@@ -208,7 +209,7 @@ server_sources = \
 	server/crypter.cpp \
 	server/txidx.cpp \
 	server/init.cpp \
-	server/key.cpp \
+	server/derkey.cpp \
 	server/hdkey.cpp \
 	server/keystore.cpp \
 	server/main.cpp \
@@ -269,6 +270,7 @@ test_shcoind_SOURCES = \
 
 test_shcoind_LDADD = \
 	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
+	$(top_builddir)/src/secp256k1/libsecp256k1.a \
 	libshcoin.a \
 	-lboost_system -lboost_filesystem -lboost_thread -ldb_cxx -ldl
 test_shcoind_CFLAGS = -g -O0 -DTEST_SHCOIND
@@ -284,7 +286,9 @@ endif
 
 libshcoin_a_SOURCES = \
 	$(common_includes) $(common_sources)
-libshcoin_a_LIBADD = $(top_builddir)/src/share-ssl-lib/libshare_ssl.a
+libshcoin_a_LIBADD = \
+	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
+	$(top_builddir)/src/secp256k1/libsecp256k1.a
 
 
 shcoind_SOURCES = \
@@ -295,6 +299,7 @@ shcoind_SOURCES = \
 
 shcoind_LDADD = \
 	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
+	$(top_builddir)/src/secp256k1/libsecp256k1.a \
 	libshcoin.a
 if STATIC_LIBSHARE
 shcoind_LDADD += \
@@ -309,6 +314,7 @@ shcointool_SOURCES = \
 	shcoind_tool.cpp clientrpc_iface.cpp $(tool_sources)
 shcointool_LDADD = \
 	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
+	$(top_builddir)/src/secp256k1/libsecp256k1.a \
 	libshcoin.a \
 	-lboost_system -lboost_filesystem -lboost_thread -ldb_cxx -ldl
 shcointool_CFLAGS = -DSHCOIN_CLIENT
