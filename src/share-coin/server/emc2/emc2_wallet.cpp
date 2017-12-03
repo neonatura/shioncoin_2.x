@@ -446,7 +446,7 @@ bool EMC2Wallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend,
 
         // vouts to the payees
         BOOST_FOREACH (const PAIRTYPE(CScript, int64)& s, vecSend) {
-          if (s.second < iface->min_relay_tx_fee)
+          if (s.second < MIN_RELAY_TX_FEE(iface))
             return (error(SHERR_INVAL, "Transaction amount too small"));
 
           wtxNew.vout.push_back(CTxOut(s.second, s.first));
@@ -661,7 +661,7 @@ bool EMC2Wallet::CreateAccountTransaction(string strFromAccount, const vector<pa
 
         // vouts to the payees
         BOOST_FOREACH (const PAIRTYPE(CScript, int64)& s, vecSend) {
-          if (s.second < iface->min_relay_tx_fee)
+          if (s.second < MIN_RELAY_TX_FEE(iface))
             return (error(SHERR_INVAL, "Transaction amount too small"));
 
           wtxNew.vout.push_back(CTxOut(s.second, s.first));

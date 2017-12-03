@@ -65,7 +65,7 @@ Value rpc_ctx_fee(CIface *iface, const Array& params, bool fStratum)
   if (params.size() != 0)
     nSize = params[0].get_int(); 
 
-  return ValueFromAmount(GetContextOpFee(nBestHeight, nSize));
+  return ValueFromAmount(GetContextOpFee(iface, nBestHeight, nSize));
 }
 
 Value rpc_ctx_info(CIface *iface, const Array& params, bool fStratum)
@@ -74,7 +74,7 @@ Value rpc_ctx_info(CIface *iface, const Array& params, bool fStratum)
   int nBestHeight = GetBestHeight(iface); 
 
   Object ret_obj;
-  ret_obj.push_back(Pair("fee", ValueFromAmount(GetContextOpFee(nBestHeight))));
+  ret_obj.push_back(Pair("fee", ValueFromAmount(GetContextOpFee(iface, nBestHeight))));
   ret_obj.push_back(Pair("total", (int)wallet->mapContext.size()));
 
   return (ret_obj);

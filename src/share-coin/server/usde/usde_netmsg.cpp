@@ -235,6 +235,7 @@ bool usde_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
   NodeList &vNodes = GetNodeList(iface);
   static map<CService, CPubKey> mapReuseKey;
   CWallet *pwalletMain = GetWallet(iface);
+  CTxMemPool *pool = GetTxMemPool(iface);
   int ifaceIndex = GetCoinIndex(iface);
   blkidx_t *blockIndex;
   char errbuf[1024];
@@ -588,7 +589,15 @@ if (pindexBest) fprintf(stderr, "DEBUG: inv.type == MSG_BLOCK, request blocks fr
             pfrom->hashContinue = 0;
           }
         }
+      } else if (inv.type == MSG_TX) {
+        /* relay tx from mempool (no witness support) */
+        CTransaction tx;
+        if (pool->GetTx(inv.hash, tx)) {
+          pfrom->PushTx(tx, SERIALIZE_TRANSACTION_NO_WITNESS);
+        }
       }
+
+#if 0
       else if (inv.IsKnownType())
       {
         // Send stream from relay memory
@@ -601,6 +610,7 @@ if (pindexBest) fprintf(stderr, "DEBUG: inv.type == MSG_BLOCK, request blocks fr
           }
         }
       }
+#endif
 
       // Track requests for our stuff
       Inventory(inv.hash);

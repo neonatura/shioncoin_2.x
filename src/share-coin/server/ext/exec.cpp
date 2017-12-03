@@ -260,13 +260,15 @@ int64 GetExecOpFee(CIface *iface, int nHeight)
   double base = ((nHeight+1) / 10240) + 1;
   double nRes = 5040 / base * COIN;
   double nDif = 5000 /base * COIN;
-  int64 fee = (int64)(nRes - nDif);
+  int64 nFee = (int64)(nRes - nDif);
 
   /* floor */
-  fee /= 1000;
-  fee *= 1000;
+  nFee /= 1000;
+  nFee *= 1000;
 
-  return (MAX(iface->min_tx_fee*2, fee));
+  nFee = MAX(MIN_TX_FEE(iface) * 2, nFee);
+  nFee = MIN(MAX_TX_FEE(iface), nFee);
+  return (nFee);
 }
 
 

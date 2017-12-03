@@ -308,6 +308,9 @@ namespace EMC2_Checkpoints
     ( 1315703, uint256("0x8dc088b551c042a92c6b52e14ff83bbe8a39f2a15a66108fc66a5aac12e5721b") )
     ( 1315704, uint256("0x4ffe997b4ab52d56c04a015b0f5f81f7cb0e1aadff63c6d83a5331e06b90804d") )
 
+    /* Dec '17 */
+    ( 1410100, uint256("0xf6736ff2a7743014ab1902e442328f5c9928ce7f4edb2b4fd0130010cb4cebc4") )
+
     ;
 
 
@@ -1872,11 +1875,15 @@ bool emc2_Truncate(uint256 hash)
 {
   blkidx_t *blockIndex = GetBlockTable(EMC2_COIN_IFACE);
   CIface *iface = GetCoinByIndex(EMC2_COIN_IFACE);
+  CWallet *wallet = GetWallet(iface);
   CBlockIndex *pBestIndex;
   CBlockIndex *cur_index;
   CBlockIndex *pindex;
   unsigned int nHeight;
   int err;
+
+  if (!iface || !iface->enabled)
+    return (SHERR_OPNOTSUPP);
 
   if (!blockIndex || !blockIndex->count(hash))
     return error(SHERR_INVAL, "Erase: block not found in block-index.");
@@ -1903,8 +1910,16 @@ bool emc2_Truncate(uint256 hash)
       uint256 t_hash = block.GetHash();
       if (hash == cur_index->GetBlockHash())
         break; /* bad */
+
+      /* remove from wallet */
+      BOOST_FOREACH(CTransaction& tx, block.vtx)
+        wallet->EraseFromWallet(tx.GetHash());
+
+      /* remove from block-chain */
       if (blockIndex->count(t_hash) != 0)
         block.DisconnectBlock(txdb, (*blockIndex)[t_hash]);
+
+      /* remove table of hash cache */
       bc_table_reset(bc, t_hash.GetRaw());
     }
   }

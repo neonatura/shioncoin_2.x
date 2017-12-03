@@ -3236,8 +3236,7 @@ bool CTxCreator::AddExtTx(CWalletTx *tx, const CScript& scriptPubKey, int64 nTxF
 
   /* value left from previous extended transaction. */
   nTxValue = tx->vout[nTxOut].nValue;
-  if (nTxFee == 0)
-    nTxFee = MAX(0, MIN(nTxValue - MIN_TX_FEE(iface), nTxFee));
+  nTxFee = MAX(0, MIN(nTxValue - MIN_TX_FEE(iface), nTxFee));
   nTxFee = MAX(nTxFee, MIN_TX_FEE(iface));
   nValue = nTxValue - nTxFee;
 
@@ -3342,6 +3341,7 @@ void CTxCreator::SetMinFee(int64 nMinFeeIn)
 int64 CTxCreator::CalculateFee()
 {
   CIface *iface = GetCoinByIndex(pwallet->ifaceIndex);
+  int64 nFee;
 
 #if 0
   int64 nFee = nMinFee;
@@ -3355,7 +3355,24 @@ int64 CTxCreator::CalculateFee()
   }
 #endif
 
-  return (pwallet->CalculateFee(*this, nMinFee));
+  /* core */
+  nFee = pwallet->CalculateFee(*this, nMinFee);
+
+  /* rolling */
+  CBlockPolicyEstimator *fee = GetFeeEstimator(iface);
+  if (fee) {
+    static const int confTarget = 2;
+    int64 nSoftFee;
+    int64 nBytes;
+
+    nBytes = pwallet->GetVirtualTransactionSize(*this);
+    nSoftFee = fee->estimateSmartFee(confTarget, NULL).GetFee(nBytes);
+    if (nSoftFee > MIN_TX_FEE(iface) &&
+        nSoftFee < MAX_TX_FEE(iface))
+      nFee = MAX(nFee, nSoftFee);
+  }
+
+  return (nFee);
 }
 
 void CTxCreator::CreateChangeAddr()

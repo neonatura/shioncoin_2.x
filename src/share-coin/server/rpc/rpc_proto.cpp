@@ -1558,6 +1558,7 @@ Value rpc_wallet_export(CIface *iface, const Array& params, bool fStratum)
   BOOST_FOREACH(const CKeyID& key, keys) {
     if (pwalletMain->mapAddressBook.count(key) == 0) { /* loner */
 
+/* todo: try again w/ txdb removed */
 #if 0
 /* DEBUG: commented out; takes too long with large wallet */
       /* was this key ever used. */

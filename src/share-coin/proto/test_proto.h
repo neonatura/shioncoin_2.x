@@ -63,7 +63,7 @@ static const int TEST_PROTOCOL_VERSION = 1000000;
 
 static const int64 TEST_MIN_INPUT = 100;
 static const int64 TEST_MIN_TX_FEE = 10000;
-static const int64 TEST_MIN_RELAY_TX_FEE = 10000;
+//static const int64 TEST_MIN_RELAY_TX_FEE = 10000;
 static const int64 TEST_MAX_MONEY = 1600000000 * TEST_COIN;
 //static const int TEST_COINBASE_MATURITY = 100;
 static const int TEST_COINBASE_MATURITY = 10;

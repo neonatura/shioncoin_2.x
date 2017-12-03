@@ -253,22 +253,25 @@ CScript RemoveContextScriptPrefix(const CScript& scriptIn)
 	return CScript(pc, scriptIn.end());
 }
 
-int64 GetContextOpFee(int nHeight, int nSize) 
+int64 GetContextOpFee(CIface *iface, int nHeight, int nSize) 
 {
   double base = ((nHeight+1) / 10240) + 1;
   double nRes = 5200 / base * COIN;
   double nDif = 5000 /base * COIN;
-  int64 fee = (int64)(nRes - nDif);
+  int64 nFee = (int64)(nRes - nDif);
   double nFact;
 
   nFact = 4096 / (double)MIN(4096, MAX(32, nSize));
-  fee = (int64)((double)fee / nFact);
+  nFee = (int64)((double)nFee / nFact);
 
   /* floor */
-  fee /= 100000;
-  fee *= 100000;
+  nFee /= 100000;
+  nFee *= 100000;
 
-  return (MAX(100000, fee));
+  nFee = MAX(100000, nFee);
+  nFee = MAX(MIN_TX_FEE(iface), nFee);
+  nFee = MIN(MAX_TX_FEE(iface), nFee);
+  return (nFee);
 }
 
 
@@ -383,7 +386,7 @@ bool VerifyContextTx(CIface *iface, CTransaction& tx, int& mode)
   if (hashContext != ctx.GetHash())
     return error(SHERR_INVAL, "ctx hash mismatch");
 
-  int64 nFee = GetContextOpFee(GetBestHeight(iface), ctx.vContext.size());
+  int64 nFee = GetContextOpFee(iface, GetBestHeight(iface), ctx.vContext.size());
   if (tx.vout[nOut].nValue < nFee)
     return error(SHERR_INVAL, "insufficient funds in coin output");
 
@@ -762,7 +765,7 @@ int init_ctx_tx(CIface *iface, CWalletTx& wtx, string strAccount, string strName
     return (SHERR_INVAL);
   }
 
-  int64 nFee = GetContextOpFee(GetBestHeight(iface), vchValue.size());
+  int64 nFee = GetContextOpFee(iface, GetBestHeight(iface), vchValue.size());
   int64 bal = GetAccountBalance(ifaceIndex, strAccount, 1);
   if (bal < nFee) {
     return (SHERR_AGAIN);
@@ -859,7 +862,7 @@ int update_ctx_tx(CIface *iface, CWalletTx& wtx, string strAccount, string strNa
   if (nOut == -1)
     return (SHERR_INVAL);
 
-  int64 nFee = GetContextOpFee(GetBestHeight(iface), vchValue.size());
+  int64 nFee = GetContextOpFee(iface, GetBestHeight(iface), vchValue.size());
   int64 bal = GetAccountBalance(ifaceIndex, strAccount, 1);
   if (bal < nFee)
     return (SHERR_AGAIN);

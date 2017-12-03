@@ -126,7 +126,7 @@ int CommitContextTx(CIface *iface, CTransaction& tx, unsigned int nHeight);
 
 bool DisconnectContextTx(CIface *iface, CTransaction& tx);
 
-int64 GetContextOpFee(int nHeight, int nSize = 4096);
+int64 GetContextOpFee(CIface *iface, int nHeight, int nSize = 4096);
 
 CContext *GetContextByHash(CIface *iface, uint160 hashName, CTransaction& ctx_tx);
 

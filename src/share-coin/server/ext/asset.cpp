@@ -184,8 +184,10 @@ int64 GetAssetOpFee(CIface *iface, int nHeight)
   double base = ((nHeight+1) / 10240) + 1;
   double nRes = 5140 / base * COIN;
   double nDif = 4982 /base * COIN;
-  int64 fee = (int64)(nRes - nDif);
-  return (MAX(iface->min_tx_fee, fee));
+  int64 nFee = (int64)(nRes - nDif);
+  nFee = MAX(MIN_TX_FEE(iface), nFee);
+  nFee = MIN(MAX_TX_FEE(iface), nFee);
+  return (nFee);
 }
 
 
@@ -330,9 +332,13 @@ int init_asset_tx(CIface *iface, string strAccount, string strTitle, string strH
   CCoinAddr extAddr = GetAccountAddress(wallet, strExtAccount, true);
 
   /* embed asset content into transaction */
+#if 0
   wtx.SetNull();
   asset = wtx.CreateAsset(strTitle, strHash);
   wtx.strFromAccount = strAccount; /* originating account for payment */
+#endif
+  CTxCreator s_wtx(wallet, strAccount);
+  asset = s_wtx.CreateAsset(strTitle, strHash);
 
   int64 nFee = GetAssetOpFee(iface, GetBestHeight(iface));
   int64 bal = GetAccountBalance(ifaceIndex, strAccount, 1);
@@ -350,17 +356,26 @@ int init_asset_tx(CIface *iface, string strAccount, string strTitle, string strH
   scriptPubKey << OP_EXT_NEW << CScript::EncodeOP_N(OP_ASSET) << OP_HASH160 << assetHash << OP_2DROP;
   scriptPubKey += scriptPubKeyOrig;
 
+  if (!s_wtx.AddOutput(scriptPubKey, nFee))
+    return (SHERR_INVAL);
+
+  if (!s_wtx.Send())
+    return (SHERR_CANCELED);
+
+#if 0
   // send transaction
   string strError = wallet->SendMoney(scriptPubKey, nFee, wtx, false);
   if (strError != "") {
     error(ifaceIndex, strError.c_str());
     return (SHERR_INVAL);
   }
+#endif
 
-  /* todo: add to pending instead */
-  wallet->mapAsset[assetHash] = wtx.GetHash();
-
-  Debug("SENT:ASSETNEW : title=%s, ref=%s, assethash=%s, tx=%s\n", strTitle.c_str(), strHash.c_str(), assetHash.ToString().c_str(), wtx.GetHash().GetHex().c_str());
+  wtx = (CWalletTx)s_wtx; 
+  wallet->mapAsset[assetHash] = wtx.GetHash(); /* todo:add to pending instead */
+  Debug("(%s) SENT:ASSETNEW : title=%s, ref=%s, assethash=%s, tx=%s\n",
+      iface->name, strTitle.c_str(), strHash.c_str(), 
+      assetHash.ToString().c_str(), wtx.GetHash().GetHex().c_str());
 
   return (0);
 }
@@ -372,30 +387,27 @@ int update_asset_tx(CIface *iface, string strAccount, const uint160& hashAsset, 
   CWallet *wallet = GetWallet(iface);
 
   if(strTitle.length() == 0 || strTitle.length() > 135) {
-fprintf(stderr, "DEBUG: strTitle.length()=%d\n", strTitle.length());
     return (SHERR_INVAL);
-}
+  }
+
   if(strHash.length() == 0 || strHash.length() > 135) {
-fprintf(stderr, "DEBUG: strHash.length()=%d\n", strHash.length());
     return (SHERR_INVAL);
-}
+  }
 
   /* verify original asset */
   CTransaction tx;
   if (!GetTxOfAsset(iface, hashAsset, tx)) {
-fprintf(stderr, "DEBUG: update_asset_tx: !GetTxOfAsset\n");
     return (SHERR_NOENT);
-}
+  }
   if(!IsLocalAsset(iface, tx)) {
-fprintf(stderr, "DEBUG: update_asset_tx: !IsLocalAsset\n");
     return (SHERR_REMOTE);
-}
+  }
 
   /* establish original tx */
   uint256 wtxInHash = tx.GetHash();
   if (wallet->mapWallet.count(wtxInHash) == 0) {
     return (SHERR_REMOTE);
-}
+  }
 
   /* establish account */
   CCoinAddr addr = GetAccountAddress(wallet, strAccount, false);
@@ -416,11 +428,11 @@ fprintf(stderr, "DEBUG: update_asset_tx: !IsLocalAsset\n");
   /* generate tx */
   CCert *asset;
 	CScript scriptPubKey;
-  wtx.SetNull();
-  asset = wtx.UpdateAsset(CAsset(tx.certificate), strTitle, strHash);
+
+  CTxCreator s_wtx(wallet, strAccount);
+  asset = s_wtx.UpdateAsset(CAsset(tx.certificate), strTitle, strHash);
   uint160 assetHash = asset->GetHash();
 
-  vector<pair<CScript, int64> > vecSend;
   CWalletTx& wtxIn = wallet->mapWallet[wtxInHash];
 
   /* generate output script */
@@ -434,18 +446,34 @@ fprintf(stderr, "DEBUG: update_asset_tx: !IsLocalAsset\n");
   if (bal < nNetFee) {
     return (SHERR_AGAIN);
   }
-  if (nNetFee) { /* supplemental tx payment */
-    CScript scriptFee;
-    scriptFee << OP_EXT_UPDATE << CScript::EncodeOP_N(OP_ASSET) << OP_HASH160 << assetHash << OP_2DROP << OP_RETURN;
-    vecSend.push_back(make_pair(scriptFee, nNetFee));
-  }
+
+  /* activation fee */
+  CScript scriptFee;
+  scriptFee << OP_EXT_UPDATE << CScript::EncodeOP_N(OP_ASSET) << OP_HASH160 << assetHash << OP_2DROP << OP_RETURN;
+  if (!s_wtx.AddOutput(scriptFee, nNetFee))
+    return (SHERR_INVAL);
+
+  /* link previous asset input */
+  if (!s_wtx.AddExtTx(&wtxIn, scriptPubKey))
+    return (SHERR_INVAL);
+
+  if (!s_wtx.Send())
+    return (SHERR_CANCELED);
+
+#if 0
+  /* supplemental tx payment */
+  vector<pair<CScript, int64> > vecSend;
+  vecSend.push_back(make_pair(scriptFee, nNetFee));
 
   if (!SendMoneyWithExtTx(iface, wtxIn, wtx, scriptPubKey, vecSend)) {
 fprintf(stderr, "DEBUG: update_asset_tx: !SendMoneyWithExtTx\n"); 
     return (SHERR_INVAL);
 }
+#endif
 
+  wtx = (CWalletTx)s_wtx;
   wallet->mapAsset[assetHash] = wtx.GetHash();
+  Debug("SENT:ASSETUPDATE : assethash=%s, tx=%s", asset->GetHash().ToString().c_str(), wtx.GetHash().GetHex().c_str());
 
 	return (0);
 }
@@ -494,11 +522,11 @@ int activate_asset_tx(CIface *iface, string strAccount, const uint160& hashAsset
   /* generate tx */
   CCert *asset;
 	CScript scriptPubKey;
-  wtx.SetNull();
-  asset = wtx.SignAsset(CAsset(tx.certificate), &cert_tx.certificate);
+
+  CTxCreator s_wtx(wallet, strAccount);
+  asset = s_wtx.SignAsset(CAsset(tx.certificate), &cert_tx.certificate);
   uint160 assetHash = asset->GetHash();
 
-  vector<pair<CScript, int64> > vecSend;
   CWalletTx& wtxIn = wallet->mapWallet[wtxInHash];
 
   /* generate output script */
@@ -512,18 +540,34 @@ int activate_asset_tx(CIface *iface, string strAccount, const uint160& hashAsset
   if (bal < nNetFee) {
     return (SHERR_AGAIN);
   }
-  if (nNetFee) { /* supplemental tx payment */
-    CScript scriptFee;
-    scriptFee << OP_EXT_ACTIVATE << CScript::EncodeOP_N(OP_ASSET) << OP_HASH160 << assetHash << OP_2DROP << OP_RETURN;
-    vecSend.push_back(make_pair(scriptFee, nNetFee));
-  }
+
+  /* activation fee */
+  CScript scriptFee;
+  scriptFee << OP_EXT_ACTIVATE << CScript::EncodeOP_N(OP_ASSET) << OP_HASH160 << assetHash << OP_2DROP << OP_RETURN;
+  if (!s_wtx.AddOutput(scriptFee, nNetFee))
+    return (SHERR_INVAL);
+
+  /* link asset input */
+  if (!s_wtx.AddExtTx(&wtxIn, scriptPubKey))
+    return (SHERR_INVAL);
+
+  if (!s_wtx.Send())
+    return (SHERR_CANCELED);
+
+#if 0
+  /* supplemental tx payment */
+  vector<pair<CScript, int64> > vecSend;
+  vecSend.push_back(make_pair(scriptFee, nNetFee));
 
   if (!SendMoneyWithExtTx(iface, wtxIn, wtx, scriptPubKey, vecSend)) {
 fprintf(stderr, "DEBUG: update_asset_tx: !SendMoneyWithExtTx\n"); 
     return (SHERR_INVAL);
 }
+#endif
 
+  wtx = (CWalletTx)s_wtx;
   wallet->mapAsset[assetHash] = wtx.GetHash();
+  Debug("(%s) SENT:ASSETACTIVATE : assethash=%s, tx=%s", iface->name, asset->GetHash().ToString().c_str(), wtx.GetHash().GetHex().c_str());
 
 	return (0);
 }
@@ -567,8 +611,9 @@ int remove_asset_tx(CIface *iface, string strAccount, const uint160& hashAsset, 
   /* generate tx */
   CCert *asset;
 	CScript scriptPubKey;
-  wtx.SetNull();
-  asset = wtx.RemoveAsset(CAsset(tx.certificate));
+
+  CTxCreator s_wtx(wallet, strAccount);
+  asset = s_wtx.RemoveAsset(CAsset(tx.certificate));
   uint160 assetHash = asset->GetHash();
 
   vector<pair<CScript, int64> > vecSend;
@@ -585,9 +630,23 @@ int remove_asset_tx(CIface *iface, string strAccount, const uint160& hashAsset, 
   if (bal < nNetFee) {
     return (SHERR_AGAIN);
   }
+
+  /* removal fee */
+  CScript scriptFee;
+  scriptFee << OP_EXT_REMOVE << CScript::EncodeOP_N(OP_ASSET) << OP_HASH160 << assetHash << OP_2DROP << OP_RETURN;
+  if (!s_wtx.AddOutput(scriptFee, nNetFee))
+    return (SHERR_INVAL);
+
+  /* link asset */
+  if (!s_wtx.AddExtTx(&wtxIn, scriptPubKey))
+    return (SHERR_INVAL);
+
+  if (!s_wtx.Send())
+    return (SHERR_CANCELED);
+  
+
+#if 0
   if (nNetFee) { /* supplemental tx payment */
-    CScript scriptFee;
-    scriptFee << OP_EXT_REMOVE << CScript::EncodeOP_N(OP_ASSET) << OP_HASH160 << assetHash << OP_2DROP << OP_RETURN;
     vecSend.push_back(make_pair(scriptFee, nNetFee));
   }
 
@@ -595,8 +654,12 @@ int remove_asset_tx(CIface *iface, string strAccount, const uint160& hashAsset, 
 fprintf(stderr, "DEBUG: update_asset_tx: !SendMoneyWithExtTx\n"); 
     return (SHERR_INVAL);
 }
+#endif
 
+
+  wtx = (CWalletTx)s_wtx;
   wallet->mapAsset[assetHash] = wtx.GetHash();
+  Debug("(%s) SENT:ASSETACTIVATE : assethash=%s, tx=%s", iface->name, asset->GetHash().ToString().c_str(), wtx.GetHash().GetHex().c_str());
 
 	return (0);
 }

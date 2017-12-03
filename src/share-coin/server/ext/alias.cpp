@@ -191,8 +191,10 @@ int64 GetAliasOpFee(CIface *iface, int nHeight)
   double base = ((nHeight+1) / 10240) + 1;
   double nRes = 5000 / base * COIN;
   double nDif = 4750 /base * COIN;
-  int64 fee = (int64)(nRes - nDif);
-  return (MAX(iface->min_tx_fee, fee));
+  int64 nFee = (int64)(nRes - nDif);
+  nFee = MAX(MIN_TX_FEE(iface), nFee);
+  nFee = MIN(MAX_TX_FEE(iface), nFee);
+  return (nFee);
 }
 
 
@@ -716,11 +718,10 @@ int update_alias_addr_tx(CIface *iface, const char *title, CCoinAddr& addr, CWal
   CAlias *alias;
 	CScript scriptPubKey;
 
-  wtx.SetNull();
-  wtx.strFromAccount = strAccount;
+  CTxCreator s_wtx(wallet, strAccount);
 
   uint160 deprec_hash;
-  alias = wtx.UpdateAlias(strTitle, deprec_hash);
+  alias = s_wtx.UpdateAlias(strTitle, deprec_hash);
   alias->SetType(tx.alias.GetType());
   alias->SetCoinAddr(addr);
 
@@ -734,9 +735,17 @@ int update_alias_addr_tx(CIface *iface, const char *title, CCoinAddr& addr, CWal
 	scriptPubKey << OP_EXT_UPDATE << CScript::EncodeOP_N(OP_ALIAS) << OP_HASH160 << aliasHash << OP_2DROP;
   scriptPubKey += scriptPubKeyOrig;
 
+  if (!s_wtx.AddExtTx(&wtxIn, scriptPubKey))
+    return (SHERR_CANCELED);
 
+  if (!s_wtx.Send())
+    return (SHERR_CANCELED);
+#if 0
   if (!SendMoneyWithExtTx(iface, wtxIn, wtx, scriptPubKey, vecSend))
     return (SHERR_INVAL);
+#endif
+
+  wtx = (CWalletTx)s_wtx;
 
   Debug("SENT:ALIASUPDATE : title=%s, aliashash=%s, tx=%s\n", title, alias->GetHash().ToString().c_str(), wtx.GetHash().GetHex().c_str());
 
@@ -773,13 +782,10 @@ int remove_alias_addr_tx(CIface *iface, string strAccount, string strTitle, CWal
   CAlias *alias;
 	CScript scriptPubKey;
 
-  wtx.SetNull();
-  wtx.strFromAccount = strAccount;
-
-  alias = wtx.RemoveAlias(strTitle);
+  CTxCreator s_wtx(wallet, strAccount);
+  alias = s_wtx.RemoveAlias(strTitle);
   uint160 aliasHash = alias->GetHash();
 
-  vector<pair<CScript, int64> > vecSend;
   CWalletTx& wtxIn = wallet->mapWallet[wtxInHash];
 
   /* generate output script */
@@ -791,10 +797,23 @@ int remove_alias_addr_tx(CIface *iface, string strAccount, string strTitle, CWal
     return (SHERR_AGAIN);
   }
 
+  if (!s_wtx.AddExtTx(&wtxIn, scriptPubKey))
+    return (SHERR_CANCELED);
+
+  if (!s_wtx.Send())
+    return (SHERR_CANCELED);
+
+#if 0
+  vector<pair<CScript, int64> > vecSend;
   if (!SendMoneyWithExtTx(iface, wtxIn, wtx, scriptPubKey, vecSend))
     return (SHERR_INVAL);
+#endif
 
-Debug("SENT:ALIASREMOVE : title=%s, aliashash=%s, tx=%s\n", strTitle.c_str(),  alias->GetHash().ToString().c_str(), wtx.GetHash().GetHex().c_str());
+  wtx = (CWalletTx)s_wtx;
+
+  Debug("(%s) SENT:ALIASREMOVE : title \"%s\", aliashash \"%s\", tx \"%s\"", 
+      iface->name, strTitle.c_str(), 
+      alias->GetHash().ToString().c_str(), wtx.GetHash().GetHex().c_str());
 
 	return (0);
 }

@@ -252,6 +252,7 @@ bool shc_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataStr
   NodeList &vNodes = GetNodeList(iface);
   static map<CService, CPubKey> mapReuseKey;
   CWallet *pwalletMain = GetWallet(iface);
+  CTxMemPool *pool = GetTxMemPool(iface);
   int ifaceIndex = GetCoinIndex(iface);
   blkidx_t *blockIndex;
   char errbuf[256];
@@ -605,7 +606,20 @@ fprintf(stderr, "DEBUG: ProcessMessage: Must have a version message before anyth
             pfrom->hashContinue = 0;
           }
         }
+      } else if (inv.type == MSG_TX) {
+        /* relay tx from mempool */
+        CTransaction tx;
+        if (pool->GetTx(inv.hash, tx)) {
+          pfrom->PushTx(tx, SERIALIZE_TRANSACTION_NO_WITNESS);
+        }
+      } else if (inv.type == MSG_WITNESS_TX) {
+        /* relay wit-tx from mempool */
+        CTransaction tx;
+        if (pool->GetTx(inv.hash, tx)) {
+          pfrom->PushTx(tx);
+        }
       }
+#if 0
       else if (inv.IsKnownType())
       {
         // Send stream from relay memory
@@ -618,6 +632,7 @@ fprintf(stderr, "DEBUG: ProcessMessage: Must have a version message before anyth
           }
         }
       }
+#endif
 
       // Track requests for our stuff
       Inventory(inv.hash);

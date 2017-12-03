@@ -87,10 +87,13 @@ NodeList vServerNodes[MAX_COIN_IFACE];
 
 vector<CNode*> vNodes;
 CCriticalSection cs_vNodes;
-map<CInv, CDataStream> mapRelay;
-deque<pair<int64, CInv> > vRelayExpiration;
-CCriticalSection cs_mapRelay;
 map<CInv, int64> mapAlreadyAskedFor;
+
+#if 0
+deque<pair<int64, CInv> > vRelayExpiration;
+map<CInv, CDataStream> mapRelay;
+CCriticalSection cs_mapRelay;
+#endif
 
 static deque<string> vOneShots;
 CCriticalSection cs_vOneShots;

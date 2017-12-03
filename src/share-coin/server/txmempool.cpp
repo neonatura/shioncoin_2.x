@@ -105,6 +105,17 @@ bool CPool::AddTx(CTransaction& tx, CNode *pfrom)
     return (false); /* hard limit failure. */
   }
 
+  /* mark height at which tx entered pool */
+  ptx.nHeight = GetBestHeight(iface);
+
+  if (!hasInputs) { /* orphan tx */
+    ptx.SetFlag(POOL_NO_INPUT);
+    AddPendingTx(ptx);
+
+    /* return as invalid */
+    return (false);
+  }
+
   /* individual coin standards */
   if (!VerifyStandards(ptx)) {
     AddInvalTx(ptx);
@@ -116,17 +127,6 @@ bool CPool::AddTx(CTransaction& tx, CNode *pfrom)
   if (ptx.nFee < ptx.nMinFee && ptx.nFee < MIN_RELAY_TX_FEE(iface)) {
     /* invalid fee rate */
     AddInvalTx(ptx);
-    return (false);
-  }
-
-  /* transaction sans dependencies is valid. */
-  ptx.nHeight = GetBestHeight(iface);
-
-  if (!hasInputs) { /* orphan tx */
-    ptx.SetFlag(POOL_NO_INPUT);
-    AddPendingTx(ptx);
-
-    /* return as invalid */
     return (false);
   }
 
@@ -223,13 +223,19 @@ bool CPool::VerifyStandards(CPoolTx& ptx)
 
   /* verify inputs */
   if (!wtx.IsCoinBase()) {
+#if 0
     if (!FillInputs(ptx))
       return false;
+#endif
 
     for (unsigned int i = 0; i < wtx.vin.size(); i++) {
       CTxOut prev;
+#if 0
       if (!ptx.GetOutput(wtx.vin[i], prev))
         return false;
+#endif
+      if (!ptx.GetOutput(wtx.vin[i], prev))
+        continue;
 
       /* ensure output script is valid */
       vector<vector<unsigned char> > vSolutions;
@@ -253,7 +259,7 @@ bool CPool::VerifyStandards(CPoolTx& ptx)
     int64 nInputValue = wtx.GetValueIn(ptx.GetInputs());
     int64 nOutputValue = wtx.GetValueOut();
     if (nInputValue < nOutputValue) {
-      return (error(SHERR_INVAL, "CPool.VerifyStandards: input value (%f) is lower than output value (%f): %s", (double)nInputValue/COIN, (double)nOutputValue/COIN), wtx.ToString(ifaceIndex).c_str());
+      return (error(SHERR_INVAL, "CPool.VerifyStandards: input value (%f) is lower than output value (%f).", (double)nInputValue/COIN, (double)nOutputValue/COIN));
     }
   }
 
@@ -439,8 +445,13 @@ bool CPool::FillInputs(CPoolTx& ptx)
         /* verify whether inputs are now correct */
         ok = RefillInputs(orphan);
         if (ok) {
-          /* re-accept tx into active pool. */
-          ok = AddActiveTx(orphan);
+          /* ensure integrity of inputs */
+          ok = VerifyStandards(orphan);
+          if (ok) {
+            /* re-accept tx into active pool. */
+            CalculateFee(ptx);
+            ok = AddActiveTx(orphan);
+          }
         }
         if (ok) {
           /* orphan is now an active pool tx */
@@ -525,9 +536,11 @@ bool CPool::AddActiveTx(CPoolTx& ptx)
     return (false);
   }
 
-  if (!AcceptTx(ptx.tx)) {
-    AddInvalTx(ptx);
-    return (error(SHERR_INVAL, "CPool.AddTx: error accepting transaction into memory pool."));
+  if (!ptx.IsLocal()) { /* todo: prevents recursive mutex lock on txdb, this is redudant txdb inputs check when called via core_CommitBlock() */
+    if (!AcceptTx(ptx.tx)) {
+      AddInvalTx(ptx);
+      return (error(SHERR_INVAL, "CPool.AddTx: error accepting transaction into memory pool."));
+    }
   }
 
   active[hash] = ptx;
@@ -585,10 +598,9 @@ void CPool::AddInvalTx(CPoolTx& ptx)
   uint256 hash = ptx.GetHash();
   if (inval.count(hash) == 0)
     inval.insert(inval.begin(), hash);
-#if 0
-  if (inval.size() > 1000) /* todo */
-    inval.resize(1000);
-#endif
+
+  while (inval.size() > 1000)
+    inval.erase(inval.begin());
 }
 
 void CPool::PurgeOverflowTx()

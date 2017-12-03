@@ -334,6 +334,11 @@ class CTxMemPool
     virtual bool Commit(CBlock &block) = 0;
 
     virtual bool GetFee(uint256 hash, int64& nFee) = 0;
+
+    virtual bool IsInvalidTx(const uint256 hash) const = 0;
+
+    virtual bool IsPendingTx(const uint256 hash) const = 0;
+
 };
 
 class CPool : public CTxMemPool
@@ -458,6 +463,24 @@ class CPool : public CTxMemPool
   
       cacheRet = ptx->GetInputs();
       return (true);
+    }
+
+    bool IsInvalidTx(const uint256 hash) const
+    {
+
+      if (inval.count(hash) != 0)
+        return (true);
+
+      return (false);
+    }
+
+    bool IsPendingTx(const uint256 hash) const
+    {
+
+      if (pending.count(hash) != 0)
+        return (true);
+
+      return (false);
     }
 
     void CalculateDependencyMetric(CPoolTx& ptx);

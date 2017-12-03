@@ -87,7 +87,7 @@ static const int64 SHC_MIN_INPUT = 100;
  * The minimum block transaction fee applied.
  */
 static const int64 SHC_MIN_TX_FEE = 10000;
-static const int64 SHC_MIN_RELAY_TX_FEE = 10000;
+//static const int64 SHC_MIN_RELAY_TX_FEE = 10000;
 
 /** The maximum number of coins that will be generated during the life-time of the currency. */
 static const int64 SHC_MAX_MONEY = 1000000000 * SHC_COIN; /* 1bil max */

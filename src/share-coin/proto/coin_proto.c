@@ -84,8 +84,6 @@ int GetCoinAttr(const char *name, char *attr)
     return (iface->max_block_size);
   if (0 == strcasecmp(attr, "min-tx-fee"))
     return (iface->min_tx_fee);
-  if (0 == strcasecmp(attr, "min-relay-tx-fee"))
-    return (iface->min_relay_tx_fee);
   if (0 == strcasecmp(attr, "max-money"))
     return (iface->max_money);
   if (0 == strcasecmp(attr, "coinbase-maturity"))

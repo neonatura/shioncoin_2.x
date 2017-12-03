@@ -273,6 +273,7 @@ bool emc2_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
   NodeList &vNodes = GetNodeList(iface);
   static map<CService, CPubKey> mapReuseKey;
   CWallet *pwalletMain = GetWallet(iface);
+  CTxMemPool *pool = GetTxMemPool(iface);
   int ifaceIndex = GetCoinIndex(iface);
   blkidx_t *blockIndex;
   char errbuf[256];
@@ -659,7 +660,23 @@ bool emc2_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
             pfrom->hashContinue = 0;
           }
         }
+      } else if (inv.type == MSG_TX) {
+        /* relay tx from mempool */
+        CTransaction tx;
+        if (pool->GetTx(inv.hash, tx)) {
+          pfrom->PushTx(tx, SERIALIZE_TRANSACTION_NO_WITNESS);
+          Debug("(emc2) PushTx: tx \"%s\" to peer \"%s\".", inv.hash.GetHex().c_str(), pfrom->addrName.c_str());
+        }
+      } else if (inv.type == MSG_WITNESS_TX) {
+        /* relay wit-tx from mempool */
+        CTransaction tx;
+        if (pool->GetTx(inv.hash, tx)) {
+          pfrom->PushTx(tx);
+          Debug("(emc2) PushTx: wit-tx \"%s\" to peer \"%s\".", inv.hash.GetHex().c_str(), pfrom->addrName.c_str());
+        }
       }
+
+#if 0
       else if (inv.type == MSG_TX || inv.type == MSG_WITNESS_TX)
       {
         bool pushed = false;
@@ -670,6 +687,7 @@ bool emc2_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataSt
 fprintf(stderr, "DEBUG: emc2_ProcessMessage[inv/tx]: pfrom->PushTx('%s', %d)\n", tx.GetHash().GetHex().c_str(), inv.type); 
           pushed = true;
         }
+#endif
 
 #if 0
         // Send stream from relay memory
@@ -696,8 +714,8 @@ fprintf(stderr, "DEBUG: emc2_ProcessMessage[inv/tx]: pfrom->PushTx('%s', %d)\n",
         if (!pushed) {
           vNotFound.push_back(inv);
         }
-#endif
       }
+#endif
 
       // Track requests for our stuff
       Inventory(inv.hash);

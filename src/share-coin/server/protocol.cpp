@@ -194,7 +194,7 @@ std::string CInv::GetCommand() const
 
 std::string CInv::ToString() const
 {
-    return strprintf("%s(%s)", GetCommand(), hash.ToString());
+  return (hash.ToString());
 }
 
 void CInv::print() const

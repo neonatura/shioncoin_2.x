@@ -501,13 +501,15 @@ int64 GetCertOpFee(CIface *iface, int nHeight)
   double base = ((nHeight+1) / 10240) + 1;
   double nRes = 5100 / base * COIN;
   double nDif = 4982 /base * COIN;
-  int64 fee = (int64)(nRes - nDif);
+  int64 nFee = (int64)(nRes - nDif);
 
   /* round down */
-  fee /= 1000;
-  fee *= 1000;
+  nFee /= 1000;
+  nFee *= 1000;
 
-  return (MAX(iface->min_tx_fee, fee));
+  nFee = MAX(MIN_TX_FEE(iface), nFee);
+  nFee = MIN(MAX_TX_FEE(iface), nFee);
+  return (nFee);
 }
 
 

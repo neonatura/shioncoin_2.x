@@ -168,11 +168,15 @@ extern uint64 nLocalHostNonce;
 extern boost::array<int, THREAD_MAX> vnThreadsRunning;
 
 extern CCriticalSection cs_vNodes;
-extern std::map<CInv, CDataStream> mapRelay;
-extern std::deque<std::pair<int64, CInv> > vRelayExpiration;
-extern CCriticalSection cs_mapRelay;
+
+
 extern std::map<CInv, int64> mapAlreadyAskedFor;
 
+#if 0
+extern std::deque<std::pair<int64, CInv> > vRelayExpiration;
+extern std::map<CInv, CDataStream> mapRelay;
+extern CCriticalSection cs_mapRelay;
+#endif
 
 
 
@@ -635,6 +639,8 @@ fprintf(stderr, "DEBUG: PushTx '%s' to peer [wit]\n", tx.GetHash().c_str());
 fprintf(stderr, "DEBUG: PushTx '%s' to peer [!wit]\n", tx.GetHash().c_str());
       }
 #endif
+
+      //Debug("PushTx: tx \"%s\" to peer \"%s\" [flag %d]\n", tx.GetHash().c_str(), addrName.c_str(), flags);
     }
 
     void PushMessage(const char* pszCommand)
@@ -911,6 +917,8 @@ void RelayMessage(const CInv& inv, const T& a)
 template<>
 inline void RelayMessage<>(const CInv& inv, const CDataStream& ss)
 {
+
+#if 0
     {
         LOCK(cs_mapRelay);
         // Expire old relay messages
@@ -924,6 +932,7 @@ inline void RelayMessage<>(const CInv& inv, const CDataStream& ss)
         mapRelay.insert(std::make_pair(inv, ss));
         vRelayExpiration.push_back(std::make_pair(GetTime() + 15 * 60, inv));
     }
+#endif
 
     RelayInventory(inv);
 }
