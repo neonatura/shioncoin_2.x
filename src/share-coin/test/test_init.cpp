@@ -6,6 +6,7 @@
 #include "server/test/test_block.h"
 #include "server/test/test_wallet.h"
 #include "server/test/test_txidx.h"
+#include "server/derkey.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -19,6 +20,8 @@ void test_shcoind_init(void)
 
   /* initialize configuration options */
   opt_init();
+
+  INIT_SECP256K1();
 
   /* initialize chains */
   bc_t *tx_bc = GetBlockTxChain(iface);

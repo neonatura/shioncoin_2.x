@@ -62,6 +62,9 @@ void shcoind_term(void)
     server_shutdown();
   }
 
+  /* de-allocate libsecp256k1 */
+  TERM_SECP256K1();
+
   /* de-allocation options */
   opt_term();
 
@@ -208,7 +211,11 @@ int main(int argc, char *argv[])
   if (!opt_no_fork)
     daemon(0, 1);
 
+  /* process signal handling */
   shcoind_signal_init();
+
+  /* initialize libsecp256k1 */
+  INIT_SECP256K1();
 
   /* initialize libshare */
   server_peer = shapp_init("shcoind", "127.0.0.1:9448", 0);

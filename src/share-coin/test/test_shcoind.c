@@ -67,6 +67,7 @@ int main(int argc, char *argv[])
 
   test_shcoind_init();
 
+#if 0
   /* core tests */
   SUITE_ADD_TEST(suite, TEST_coinaddr);
   SUITE_ADD_TEST(suite, TEST_bloom_create_insert_key);
@@ -81,11 +82,13 @@ int main(int argc, char *argv[])
   SUITE_ADD_TEST(suite, TEST_blockchain);
   SUITE_ADD_TEST(suite, TEST_matrix);
   SUITE_ADD_TEST(suite, TEST_serializetx);
+#endif
 
   /* block-chain transaction tests */
   SUITE_ADD_TEST(suite, TEST_reorganize);
   SUITE_ADD_TEST(suite, TEST_matrixtx);
   SUITE_ADD_TEST(suite, TEST_identtx);
+#if 0
 //  SUITE_ADD_TEST(suite, TEST_truncate);
   SUITE_ADD_TEST(suite, TEST_hdtx);
   SUITE_ADD_TEST(suite, TEST_signtx);
@@ -110,6 +113,7 @@ int main(int argc, char *argv[])
   /* finale */
   SUITE_ADD_TEST(suite, TEST_coin_table);
   SUITE_ADD_TEST(suite, TEST_coin_spendall);
+#endif
 
   CuSuiteRun(suite);
   CuSuiteSummary(suite, output);
@@ -122,6 +126,8 @@ int main(int argc, char *argv[])
 
   CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
   iface->op_term(iface, NULL);
+
+  TERM_SECP256K1();
 
   shpeer_free(&serv_peer);
 

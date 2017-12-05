@@ -37,11 +37,10 @@ using namespace boost;
 #include "keystore.h"
 #include "bignum.h"
 #include "key.h"
+#include "derkey.h"
 #include "main.h"
 #include "sync.h"
 #include "util.h"
-
-#include "secp256k1.h"
 
 
 CScriptID::CScriptID(const CScript& in) : uint160(Hash160(cbuff(in.begin(), in.end()))) {}
@@ -293,26 +292,22 @@ const char* GetOpName(opcodetype opcode)
 
 bool static _CheckLowS(const std::vector<unsigned char>& vchSig)
 {
+  secp256k1_context *secp256k1_context_verify = SECP256K1_VERIFY_CONTEXT();
+  secp256k1_ecdsa_signature sig;
+  bool ok;
 
   if (vchSig.size() == 0)
     return (true);
 
-  secp256k1_context *secp256k1_context_verify = secp256k1_context_create(SECP256K1_CONTEXT_VERIFY);
-  secp256k1_ecdsa_signature sig;
-  bool ok;
-
   memset(&sig, 0, sizeof(sig));
   if (!ecdsa_signature_parse_der_lax(secp256k1_context_verify, &sig, &vchSig[0], vchSig.size())) {
-    secp256k1_context_destroy(secp256k1_context_verify);
     return error(SHERR_INVAL, "CheckLowS: warning: error parsing DER: vchSig(\"%s)\".", HexStr(vchSig).c_str());
   }
 
   if (secp256k1_ecdsa_signature_normalize(secp256k1_context_verify, NULL, &sig)) {
-    secp256k1_context_destroy(secp256k1_context_verify);
     return error(SHERR_INVAL, "CheckLowS: warning: error normalizing DER: \"%s\".", HexStr(vchSig).c_str());
   };
 
-  secp256k1_context_destroy(secp256k1_context_verify);
   return (true);
 }
 

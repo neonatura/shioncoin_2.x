@@ -27,23 +27,46 @@
 #include "main.h"
 #include <map>
 #include "key.h"
-
-/* libsecp256k1 */
-#include "secp256k1.h"
-#include "secp256k1_recovery.h"
+#include "derkey.h"
 
 static secp256k1_context* secp256k1_context_sign = NULL;
 static secp256k1_context* secp256k1_context_verify = NULL;
 
-
-
-
-
+#ifdef __cplusplus
+extern "C" {
+#endif
 void INIT_SECP256K1(void)
 {
-  secp256k1_context_sign = secp256k1_context_create(SECP256K1_CONTEXT_SIGN);
-  secp256k1_context_verify = secp256k1_context_create(SECP256K1_CONTEXT_VERIFY);
+
+  if (!secp256k1_context_sign)
+    secp256k1_context_sign = secp256k1_context_create(SECP256K1_CONTEXT_SIGN);
+
+  if (!secp256k1_context_verify)
+    secp256k1_context_verify = secp256k1_context_create(SECP256K1_CONTEXT_VERIFY);
+
 }
+secp256k1_context *SECP256K1_VERIFY_CONTEXT(void)
+{
+  return (secp256k1_context_verify);
+}
+secp256k1_context *SECP256K1_SIGN_CONTEXT(void)
+{
+  return (secp256k1_context_sign);
+}
+void TERM_SECP256K1(void)
+{
+
+  if (secp256k1_context_sign)
+    secp256k1_context_destroy(secp256k1_context_sign);
+  secp256k1_context_sign = NULL;
+
+  if (secp256k1_context_verify)
+    secp256k1_context_destroy(secp256k1_context_verify);
+  secp256k1_context_verify = NULL;
+}
+#ifdef __cplusplus
+};
+#endif
 
 void CKey::SetCompressedPubKey()
 {
@@ -96,8 +119,6 @@ void CKey::MakeNewKey(bool fCompressed)
 {
   int i;
 
-  INIT_SECP256K1();
-
   do {
     uint64_t *v_ptr = (uint64_t *)vch;
     for (i = 0; i < 4; i++) { /* 4 * 8 = 32b */
@@ -107,13 +128,14 @@ void CKey::MakeNewKey(bool fCompressed)
 
   if (fCompressed)
     SetCompressedPubKey();
+
   fSet = true;
+  fPubSet = false;
+
 }
 
 bool CKey::SetPrivKey(const CPrivKey& vchPrivKey, bool fCompressed)
 {
-
-  INIT_SECP256K1();
 
   if (!ec_privkey_import_der(secp256k1_context_sign, (unsigned char*)vch, vchPrivKey.data(), vchPrivKey.size()))
     return (false);
@@ -131,8 +153,6 @@ bool CKey::SetPrivKey(const CPrivKey& vchPrivKey, bool fCompressed)
 bool CKey::SetSecret(const CSecret& vchSecret, bool fCompressed)
 {
   unsigned char buf[32];
-
-  INIT_SECP256K1();
 
   if (vchSecret.size() != 32) {
     return (error(SHERR_INVAL, "CKey.SetSecret: invalid secret size (%d) specified.", vchSecret.size()));
@@ -167,8 +187,6 @@ CPrivKey CKey::GetPrivKey() const
 {
 //  CPrivKey privkey;
   int ret;
-
-  INIT_SECP256K1();
 
   if (!fSet)
     return (CPrivKey());
@@ -214,8 +232,6 @@ bool CKey::SetPubKey(const CPubKey& vchPubKey)
 CPubKey CKey::GetPubKey() const
 {
 
-  INIT_SECP256K1();
-
   if (!fSet) {
     if (fPubSet) {
       /* key is carring a public key */
@@ -252,8 +268,6 @@ CPubKey CKey::GetPubKey() const
 bool CKey::Sign(uint256 hash, std::vector<unsigned char>& vchSig)
 {
 
-  INIT_SECP256K1();
-
   if (!fSet)
     return false;
 
@@ -280,8 +294,6 @@ bool CKey::SignCompact(uint256 hash, std::vector<unsigned char>& vchSig)
   secp256k1_ecdsa_recoverable_signature sig;
   int rec;
   int ret;
-
-  INIT_SECP256K1();
 
   if (!fSet) {
     return (error(SHERR_INVAL, "CKey.SignCompact: error signing unitialized key."));
@@ -462,8 +474,6 @@ bool CKey::VerifyCompact(uint256 hash, const std::vector<unsigned char>& vchSig)
 bool CKey::IsValid()
 {
 
-  INIT_SECP256K1();
-
   if (!fSet)
     return (false);
 
@@ -511,8 +521,6 @@ CKey CKey::MergeKey(cbuff tag)
   cbuff secret(vch, vch + 32);
   cbuff kbuff;
   unsigned char test_vch[32];
-
-  INIT_SECP256K1();
 
   kbuff = secret;
   do {
