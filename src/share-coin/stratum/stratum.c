@@ -113,13 +113,17 @@ static void stratum_close_free(void)
 
 static void stratum_timer(void)
 {
-  static time_t last_task_t;
+  static task_attr_t attr;
   unet_table_t *t;
   user_t *peer;
   shbuf_t *buff;
-  time_t now;
-  size_t len;
+  char errbuf[256];
   char *data;
+  time_t now;
+  time_t tnow;
+  size_t len;
+  int is_new;
+  int blk_iface;
   int err;
 
   for (peer = client_list; peer; peer = peer->next) {
@@ -178,7 +182,40 @@ static void stratum_timer(void)
 
   stratum_close_free();
 
-  /* minimum two second wait in between new mining work generation. */
+  now = time(NULL);
+  tnow = now / 4;
+  blk_iface = 0;
+  is_new = is_stratum_task_pending(&blk_iface);
+  if (is_new || (attr.tnow != tnow)) {
+    attr.tnow = tnow;
+    if (attr.ifaceIndex == 0) {
+      /* init */
+      attr.flags |= TASKF_RESET;
+    } else if (blk_iface && is_new) {
+      /* new block */
+      attr.blk_stamp[blk_iface] = now;
+      attr.flags |= TASKF_RESET;
+    }
+
+    { /* debug */
+      CIface *iface = GetCoinByIndex(blk_iface);
+      if (iface) {
+        sprintf(errbuf, "stratum_timer: detected new %s block.", iface->name);
+        shcoind_log(errbuf);
+      }
+    }
+
+    /* generate new work, as needed */
+    stratum_task_gen(&attr);
+
+#if 0
+    /* synchronize with remote stratum services, as needed */
+    stratum_sync();
+#endif
+  }
+  
+#if 0
+  /* wait four seconds between new tasks unless a new block forms. */
   now = time(NULL);
   if (last_task_t != now) {
     /* generate new work, as needed */
@@ -192,6 +229,7 @@ static void stratum_timer(void)
     /* based new time off now and not when task was started */
     last_task_t = now;
   }
+#endif
 
 }
 

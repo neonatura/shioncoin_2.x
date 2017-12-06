@@ -2060,8 +2060,7 @@ CPubKey GetAccountPubKey(CWallet *wallet, string strAccount, bool bForceNew)
   walletdb.ReadAccount(strAccount, account);
 
   // Check if the current key has been used
-  if (account.vchPubKey.IsValid())
-  {
+  if (!bForceNew && account.vchPubKey.IsValid()) {
     CScript scriptPubKey;
     scriptPubKey.SetDestination(account.vchPubKey.GetID());
     for (map<uint256, CWalletTx>::iterator it = wallet->mapWallet.begin();
@@ -2078,9 +2077,13 @@ CPubKey GetAccountPubKey(CWallet *wallet, string strAccount, bool bForceNew)
   // Generate a new key
   if (!account.vchPubKey.IsValid() || bForceNew || bKeyUsed)
   {
+
+#if 0
     if (!wallet->GetKeyFromPool(account.vchPubKey, false))
       return CPubKey();
+#endif
 
+    account.vchPubKey = wallet->GenerateNewKey(true);
     wallet->SetAddressBookName(account.vchPubKey.GetID(), strAccount);
     walletdb.WriteAccount(strAccount, account);
   }

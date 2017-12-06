@@ -37,6 +37,11 @@
 #define MAX_SPEED_STEP 60
 #define MAX_ROUNDS_PER_HOUR 6
 
+
+#define TASKF_RESET (1 << 0)
+
+
+
 typedef struct user_t
 {
   scrypt_peer peer;
@@ -132,6 +137,16 @@ typedef struct task_t
 
   struct task_t *next;
 } task_t;
+
+typedef struct task_attr_t
+{
+  double weight[MAX_COIN_IFACE];
+  time_t blk_stamp[MAX_COIN_IFACE];
+  time_t commit_stamp[MAX_COIN_IFACE];
+  time_t tnow;
+  int ifaceIndex;
+  int flags;
+} task_attr_t;
 
 #include "stratum_user.h"
 #include "stratum_protocol.h"

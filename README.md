@@ -18,6 +18,11 @@ To install on linux run 'yum install libboost*' or 'apt-get install libboost*'.
 
 The 'openssl version 1.0.1g' distribution has been included in the directory '/src/share-ssl-lib'. This version will automatically be compiled and linked against the shcoind and shcoin programs. The Open SSL library is used for RPC protocol communication between the shcoind daemon and shcoin utility program.
 
+The GMP library is required.  In order to install the GMP library;
+Run "yum install gmp-devel" on CentOS.
+Run "apt-get install libgmp-dev" on Ubuntu.
+Run "pacman -S libgmp-devel" from MSYS2 64-bit.
+
 <h2>SHC Specifications</h2>
 The share-coin is unique in that it allows for additional types of transactions than regular coin transfers. Examples of these capabilities include exchanging coins between currencies, providing certified licenses for custom use, and assigning names to otherwise hard to remember hash tags. Compatibilty with the 'share library' file-system and network providing methods to utilize SHC block-chain transactions via external programs.
  

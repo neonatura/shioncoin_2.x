@@ -2752,19 +2752,29 @@ Value rpc_wallet_setkey(CIface *iface, const Array& params, bool fStratum)
   if (!fGood) throw JSONRPCError(-5,"Invalid private key");
 
   CKey key;
-  bool fCompressed;
-  CSecret secret = vchSecret.GetSecret(fCompressed);
+  bool fCompressed = true;
+  CSecret secret = vchSecret.GetSecret(fCompressed); /* set's fCompressed */
   key.SetSecret(secret, fCompressed);
   CKeyID vchAddress = key.GetPubKey().GetID();
+
   {
     LOCK2(cs_main, pwalletMain->cs_wallet);
 
-    pwalletMain->MarkDirty();
+    if (pwalletMain->HaveKey(vchAddress)) {
+      /* pubkey has already been assigned to an account. */
+      throw JSONRPCError(-8, "Private key already exists.");
+    }
+
+    if (!pwalletMain->AddKey(key)) {
+      /* error adding key to wallet */
+      throw JSONRPCError(-4, "Error adding key to wallet."); 
+    }
+
+    /* create a link between account and coin address. */ 
     pwalletMain->SetAddressBookName(vchAddress, strLabel);
+    pwalletMain->MarkDirty();
 
-    if (!pwalletMain->AddKey(key))
-      throw JSONRPCError(-4,"Error adding key to wallet");
-
+    /* rescan entire block-chain for unspent coins */
     pwalletMain->ScanForWalletTransactions(GetGenesisBlockIndex(iface), true);
     pwalletMain->ReacceptWalletTransactions();
   }

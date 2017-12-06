@@ -83,8 +83,12 @@ bool CPool::AddTx(CTransaction& tx, CNode *pfrom)
   uint256 hash = tx.GetHash();
   bool ok;
 
-  /* do not re-process transactions */
+  /* do not re-process mempool transactions */
   if (HaveTx(hash))
+    return (false); /* dup */
+
+  /* verify this tx is not in block-chain */
+  if (VerifyTxHash(iface, hash))
     return (false); /* dup */
 
   /* verify core integrity of transaction */

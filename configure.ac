@@ -207,9 +207,15 @@ AC_HEADER_MAJOR
 AC_HEADER_STAT
 AC_HEADER_STDC
 
-AC_CHECK_LIB([m], [fabs])
+AC_CHECK_LIB([m], [fabs], ,
+  AC_MSG_ERROR("libm (math library) is required")
+)
+
+AC_CHECK_LIB([gmp], [__gmp_version], ,
+  AC_MSG_ERROR("libgmp (math library) is required")
+)
+
 AC_CHECK_LIB([share], [get_libshare_version])
-AC_CHECK_LIB([gmp], [__gmp_version])
 AC_ARG_WITH([libshare],
   [AS_HELP_STRING([--with-libshare],
   [specify a path to the libshare build directory])],

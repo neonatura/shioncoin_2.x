@@ -140,9 +140,10 @@ bool InsertCertTable(CIface *iface, CTransaction& tx, unsigned int nHeight, bool
 
   CCert& cert = tx.certificate;
 
-  int count = wallet->mapCertLabel.count(cert.GetLabel());
+  string strCertLabel = cert.GetLabel();
+  int count = wallet->mapCertLabel.count(strCertLabel);
   if (count != 0) {
-    return (error(SHERR_NOTUNIQ, "CommitCertTx: non-unique certificate name '%s' rejected.", cert.GetLabel().c_str()));
+    return (error(SHERR_NOTUNIQ, "CommitCertTx: non-unique certificate name '%s' rejected.", strCertLabel.c_str()));
   }
 
   const uint160& hCert = cert.GetHash();
@@ -169,7 +170,7 @@ bool InsertCertTable(CIface *iface, CTransaction& tx, unsigned int nHeight, bool
   }
 
   wallet->mapCert[hCert] = tx.GetHash();
-  wallet->mapCertLabel[cert.GetLabel()] = hCert;
+  wallet->mapCertLabel[strCertLabel] = hCert;
 
   /* save to sharefs sub-system. */
   cert.NotifySharenet(GetCoinIndex(iface));
@@ -942,7 +943,9 @@ int init_cert_tx(CIface *iface, CWalletTx& wtx, string strAccount, string strTit
     return (SHERR_INVAL);
 
   CCert *cert;
-  string strExtAccount = "@" + strAccount;
+  //string strExtAccount = "@" + strAccount;
+  string strExtAccount(strAccount);
+  strExtAccount.insert(0, 1, '@'); /* ext account prefix */
   CCoinAddr extAddr = GetAccountAddress(wallet, strExtAccount, true);
 
   /* embed cert content into transaction */

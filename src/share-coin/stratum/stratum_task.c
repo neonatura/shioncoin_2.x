@@ -360,8 +360,9 @@ int task_work_calc(int ifaceIndex)
 
 
 
-task_t *task_init(void)
+task_t *task_init(task_attr_t *attr)
 {
+  static time_t last_reset_t;
   CIface *iface;
   shjson_t *block;
 //  unsigned char hash_swap[32];
@@ -379,9 +380,49 @@ task_t *task_init(void)
   int ifaceIndex;
   int err;
   int i;
+  double max_weight = 0;
+  int max_iface = 0;
 
   reset_idx = 0;
+  if (attr->flags & TASKF_RESET) {
+    /* determine weightiest iface */
+    stratum_task_weight(attr);
+    for (ifaceIndex = 1; ifaceIndex < MAX_COIN_IFACE; ifaceIndex++) {
+      if (attr->weight[ifaceIndex] > max_weight) {
+        max_weight = attr->weight[ifaceIndex];
+        max_iface = ifaceIndex;
+      }
+    }
+    if (max_iface && max_iface != attr->ifaceIndex) {
+      iface = GetCoinByIndex(max_iface);
+      if (iface && iface->enabled) {
+        /* assign */
+        attr->ifaceIndex = max_iface;
+ 
+        /* log */
+        sprintf(errbuf, "task_init: mining %s coins [weight %f].",
+            iface->name, max_weight);
+        shcoind_log(errbuf);
+      }
+    }
+    reset_idx = max_iface;
+  } 
+  if (attr->flags & TASKF_RESET) {
+    for (ifaceIndex = 1; ifaceIndex < MAX_COIN_IFACE; ifaceIndex++) {
+      if (attr->commit_stamp[ifaceIndex] != attr->blk_stamp[ifaceIndex]) {
+        /* reward miners */
+        check_payout(ifaceIndex);
+        commit_payout(ifaceIndex,
+            getblockheight(ifaceIndex) - 1);
 
+        /* assign */
+        attr->commit_stamp[ifaceIndex] = attr->blk_stamp[ifaceIndex];
+      }
+    }
+  }
+
+#if 0
+  reset_idx = 0;
   if (DefaultWorkIndex == 0)
     DefaultWorkIndex = stratum_default_iface(); 
   for (ifaceIndex = 1; ifaceIndex < MAX_COIN_IFACE; ifaceIndex++) {
@@ -421,11 +462,16 @@ task_t *task_init(void)
   if (reset_idx != orig_idx) {
     /* if no block confirmed then delay new work */
     work_idx++;
-    if (0 != (work_idx % 8))
+    if (0 != (work_idx % 6))
       return (NULL);
   }
 
   ifaceIndex = DefaultWorkIndex;
+#endif
+
+  /* current assigned mining coin interface. */
+  ifaceIndex = attr->ifaceIndex;
+
   iface = GetCoinByIndex(ifaceIndex);
   if (!iface)
     return (NULL);
@@ -460,7 +506,16 @@ task_t *task_init(void)
   }
 
   task->ifaceIndex = ifaceIndex;
+#if 0
   task->work_reset = work_reset[ifaceIndex];
+#endif
+  if (reset_idx != ifaceIndex ||
+      attr->blk_stamp[ifaceIndex] != last_reset_t) {
+    task->work_reset = (reset_idx ? TRUE : FALSE);
+    last_reset_t = attr->blk_stamp[ifaceIndex];
+  } else {
+    task->work_reset = FALSE;
+  }
 
   memset(target, 0, sizeof(target));
   strncpy(target, shjson_astr(block, "target", "ffff"), 12);
@@ -677,10 +732,38 @@ sprintf(ntime, "%-8.8x", (unsigned int)task->curtime);
 
 }
 
+static uint64_t pend_block_height[MAX_COIN_IFACE];
+int is_stratum_task_pending(int *ret_iface)
+{
+  uint64_t block_height;
+  int ifaceIndex;
+
+  for (ifaceIndex = 1; ifaceIndex < MAX_COIN_IFACE; ifaceIndex++) {
+    CIface *iface = GetCoinByIndex(ifaceIndex);
+    if (!iface || !iface->enabled) 
+      continue; /* iface not enabled */
+
+    if (iface->blockscan_max &&
+        block_height < (iface->blockscan_max - 1))
+      continue; /* downloading blocks.. */
+
+    block_height = (uint64_t)getblockheight(ifaceIndex);
+    if (block_height == pend_block_height[ifaceIndex])
+      continue; /* no new block. */
+
+    pend_block_height[ifaceIndex] = block_height;
+    if (ret_iface)
+      *ret_iface = ifaceIndex;
+    return (TRUE);
+  }
+
+  return (FALSE);
+}
+
 /**
  * @note This function is spaced 1 second apart being called intentionally as to avoid producing orphans.
  */
-void stratum_task_gen(void)
+void stratum_task_gen(task_attr_t *attr)
 {
   task_t *task;
   scrypt_peer peer;
@@ -688,8 +771,7 @@ void stratum_task_gen(void)
   int time;
   int err;
 
-
-  task = task_init();
+  task = task_init(attr);
   if (!task)
     return;
 
@@ -704,3 +786,42 @@ void stratum_task_gen(void)
 
 
 
+
+void stratum_task_weight(task_attr_t *attr)
+{
+  CIface *iface;
+  double weight;
+  time_t now;
+  int idx;
+
+  now = time(NULL);
+  for (idx = 1; idx < MAX_COIN_IFACE; idx++) {
+    iface = GetCoinByIndex(idx);
+    if (!iface || !iface->enabled) continue;
+
+    weight = 0;
+
+    /* add weight in relation to time since last block. */
+    weight += MAX(0.0001, MIN(600, 
+          (double)(now - iface->net_valid)));
+
+    /* add weight in relation to difficulty */
+    weight += MAX(0.0001, 
+        MIN(299, (double)GetNextDifficulty(idx)));
+
+    /* add weight in relation to last time pool submitted block */
+    weight += MAX(0.0001, MIN(299, 
+          (double)(now - attr->blk_stamp[idx]) / 100));
+
+    /* subtract weight in relation to block lapse */
+    weight -= MAX(0.0001, (iface->blockscan_max - getblockheight(idx)));
+
+    /* half weight in case this iface is current mining interface */
+    if (attr->ifaceIndex == idx)
+      weight /= 2;
+
+    /* running average */
+    attr->weight[idx] = (attr->weight[idx] + weight) / 2;
+  }
+  
+}

@@ -724,8 +724,7 @@ fprintf(stderr, "DEBUG: getheaders %d to %s\n", (pindex ? pindex->nHeight : -1),
 
     bool fMissingInputs = false;
     SHCTxDB txdb;
-    if (!AlreadyHave(iface, inv) &&
-        tx.AcceptToMemoryPool(txdb, true, &fMissingInputs)) {
+    if (tx.AcceptToMemoryPool(txdb, true, &fMissingInputs)) {
       SyncWithWallets(iface, tx); /* newer scrypt-coins skip this step */
 
       shc_RelayTransaction(tx, inv.hash);

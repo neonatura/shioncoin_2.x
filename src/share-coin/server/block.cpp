@@ -2516,7 +2516,6 @@ bool CBlock::trust(int deg, const char *msg, ...)
   va_list arg_ptr;
   char errbuf[4096];
   char msgbuf[4096];
-  int ret;
 
   if (deg == 0)
     return (true);
@@ -2524,13 +2523,15 @@ bool CBlock::trust(int deg, const char *msg, ...)
   if (!iface || !iface->enabled)
     return ((deg > 0) ? true : false);
 
-  va_start(arg_ptr, msg);
   memset(msgbuf, 0, sizeof(msgbuf));
-  ret = vsnprintf(msgbuf, sizeof(msgbuf) - 1, msg, arg_ptr);
-  va_end(arg_ptr);
+  if (msg) {
+    va_start(arg_ptr, msg);
+    (void)vsnprintf(msgbuf, sizeof(msgbuf) - 1, msg, arg_ptr);
+    va_end(arg_ptr);
+  }
 
   sprintf(errbuf, "TRUST %s%d", (deg >= 0) ? "+" : "", deg);
-  if (msg)
+  if (*msgbuf)
     sprintf(errbuf + strlen(errbuf), " (%s)", msgbuf);
 
   if (deg > 0) {

@@ -21,8 +21,13 @@ void task_free(task_t **task_p);
 /** */
 task_t *stratum_task(unsigned int task_id);
 
+int is_stratum_task_pending(int *ret_iface);
 
-task_t *task_init(void);
+void stratum_task_gen(task_attr_t *attr);
+
+task_t *task_init(task_attr_t *attr);
+
+void stratum_task_weight(task_attr_t *attr);
 
 
 

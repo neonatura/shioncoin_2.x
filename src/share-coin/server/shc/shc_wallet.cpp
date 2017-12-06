@@ -327,8 +327,8 @@ void SHCWallet::ReacceptWalletTransactions()
       {
         // Reaccept any txes of ours that aren't already in a block
         if (!wtx.IsCoinBase()) {
-          wtx.AcceptWalletTransaction(txdb, false);
-fprintf(stderr, "DEBUG: reaccepting tx '%s' into pool (not in block)\n", wtx.GetHash().GetHex().c_str());
+          if (wtx.AcceptWalletTransaction(txdb, false))
+            Debug("(shc) ReacceptWalletTransaction: reaccepting tx '%s' into pool (not in block)\n", wtx.GetHash().GetHex().c_str());
         }
       }
     }

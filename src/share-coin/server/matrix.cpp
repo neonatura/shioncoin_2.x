@@ -201,6 +201,7 @@ bool BlockAcceptSpringMatrix(CIface *iface, CTransaction& tx, bool& fCheck)
   shnum_t lat, lon;
   int mode = -1;;
 
+  lat = lon = 0;
   if (VerifyMatrixTx(tx, mode) && mode == OP_EXT_PAY) {
     CBlockIndex *pindex = GetBestBlockIndex(ifaceIndex);
     CTxMatrix& matrix = *tx.GetMatrix();
@@ -328,7 +329,7 @@ void BlockRetractSpringMatrix(CIface *iface, CTransaction& tx, CBlockIndex *pind
 Object CTxMatrix::ToValue()
 {
   Object obj;
-  char buf[1024];
+  char buf[2048];
   int row;
   int col;
 
