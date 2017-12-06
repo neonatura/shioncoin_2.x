@@ -143,6 +143,7 @@ typedef struct task_attr_t
   double weight[MAX_COIN_IFACE];
   time_t blk_stamp[MAX_COIN_IFACE];
   time_t commit_stamp[MAX_COIN_IFACE];
+  time_t mine_stamp[MAX_COIN_IFACE];
   time_t tnow;
   int ifaceIndex;
   int flags;

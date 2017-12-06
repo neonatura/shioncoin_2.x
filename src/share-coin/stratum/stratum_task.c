@@ -398,6 +398,7 @@ task_t *task_init(task_attr_t *attr)
       if (iface && iface->enabled) {
         /* assign */
         attr->ifaceIndex = max_iface;
+        attr->mine_stamp[max_iface] = time(NULL);
  
         /* log */
         sprintf(errbuf, "task_init: mining %s coins [weight %f].",

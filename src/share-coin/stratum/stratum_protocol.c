@@ -197,6 +197,11 @@ fprintf(stderr, "DEBUG: stratum_validate_submit: be_nonce (%x) is lower hash tha
   }
 #endif
 
+  if (*submit_hash && 0 == strcmp(user->block_hash, submit_hash)) {
+    /* duplicate of last received by miner */
+    return (SHERR_ALREADY);
+  }
+
   /* add share to current round */
   stratum_user_block(user, share_diff);
 
