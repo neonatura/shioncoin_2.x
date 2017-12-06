@@ -109,6 +109,11 @@ bool CPool::AddTx(CTransaction& tx, CNode *pfrom)
     return (false); /* hard limit failure. */
   }
 
+  if (AreInputsSpent(ptx)) {
+    AddInvalTx(ptx);
+    return (false); /* double spend */
+  }
+
   /* mark height at which tx entered pool */
   ptx.nHeight = GetBestHeight(iface);
 
@@ -256,8 +261,15 @@ bool CPool::VerifyStandards(CPoolTx& ptx)
       CTransaction *txSig = (CTransaction *)this;
       CSignature sig(ifaceIndex, txSig, i);
       if (!EvalScript(sig, stack, wtx.vin[i].scriptSig, SIGVERSION_BASE, 0)) {
-        return false;
+        return (error(SHERR_INVAL, "CPool.VerifyStandards: error evaluating input script."));
       }
+
+#if 0
+      if (!VerifySignature(ifaceIndex, txPrev, *this, i, true, 0)) {
+        return (error(SHERR_INVAL, "CPool.VerifyStandards: error verifying signature."));
+      }
+#endif
+
     }
 
     int64 nInputValue = wtx.GetValueIn(ptx.GetInputs());
@@ -905,6 +917,11 @@ bool CPool::GetTx(uint256 hash, CTransaction& retTx, int flags)
 #endif
 
   retTx = CTransaction();
+  return (false);
+}
+
+bool CPool::AreInputsSpent(CPoolTx& ptx)
+{
   return (false);
 }
 

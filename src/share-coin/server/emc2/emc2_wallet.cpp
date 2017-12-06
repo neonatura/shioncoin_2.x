@@ -354,6 +354,9 @@ int64 EMC2Wallet::GetTxFee(CTransaction tx)
 
 bool EMC2Wallet::CommitTransaction(CWalletTx& wtxNew)
 {
+  CIface *iface = GetCoinByIndex(EMC2_COIN_IFACE);
+  CTxMemPool *pool = GetTxMemPool(iface);
+
   {
     LOCK2(cs_main, cs_wallet);
 //    Debug("CommitTransaction:\n%s", wtxNew.ToString().c_str());
@@ -386,8 +389,8 @@ bool EMC2Wallet::CommitTransaction(CWalletTx& wtxNew)
     // Track how many getdata requests our transaction gets
     mapRequestCount[wtxNew.GetHash()] = 0;
 
+#if 0
     // Broadcast
-       
     EMC2TxDB txdb;
     bool ret = wtxNew.AcceptToMemoryPool(txdb);
     if (ret) {
@@ -400,9 +403,13 @@ bool EMC2Wallet::CommitTransaction(CWalletTx& wtxNew)
       printf("CommitTransaction() : Error: Transaction not valid");
       return false;
     }
+#endif
+    if (!pool->AddTx(wtxNew))
+      return (false);
+
+    RelayWalletTransaction(wtxNew); 
   }
 
-  CIface *iface = GetCoinByIndex(EMC2_COIN_IFACE);
   STAT_TX_SUBMITS(iface)++;
 
   return true;

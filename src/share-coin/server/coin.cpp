@@ -440,7 +440,8 @@ bool core_ConnectCoinInputs(int ifaceIndex, CTransaction *tx, const CBlockIndex*
       return (error(SHERR_IO, "core_ConnectInputs: error obtaining spent coins"));
     }
 
-    if (!outs[prevout.n].IsNull()) {
+    if (!outs[prevout.n].IsNull() && /* spent on something */
+        outs[prevout.n] != tx->GetHash()) { /* check for repeat */ 
       /* already spent */
       return (error(SHERR_INVAL, "core_ConnectInputs: double spend"));
     }
@@ -683,6 +684,7 @@ bool core_AcceptPoolTx(int ifaceIndex, CTransaction& tx, bool fCheckInputs)
 }
 #endif
 
+#if 0
 bool core_AcceptPoolTx(int ifaceIndex, CTransaction& tx, bool fCheckInputs)
 {
   CIface *iface = GetCoinByIndex(ifaceIndex);
@@ -694,6 +696,7 @@ bool CTransaction::AcceptPool(int ifaceIndex, bool fCheckInputs)
 {
   return (core_AcceptPoolTx(ifaceIndex, *this, fCheckInputs));
 }
+#endif
 
 bool core_DisconnectInputs(int ifaceIndex, CTransaction *tx)
 {
@@ -818,3 +821,5 @@ bool CTransaction::DisconnectInputs(CTxDB& txdb)
 
   return true;
 }
+
+

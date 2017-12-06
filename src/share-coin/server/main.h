@@ -192,9 +192,12 @@ public:
 
 
     bool IsInMainChain(int ifaceIndex) const { return GetDepthInMainChain(ifaceIndex) > 0; }
+
+#if 0
     bool AcceptToMemoryPool(CTxDB& txdb, bool fCheckInputs=true);
-//    bool AcceptToMemoryPool();
     bool AcceptToMemoryPool(int ifaceIndex);
+#endif
+
     int GetBlocksToMaturity(int ifaceIndex) const;
     int SetMerkleBranch(const CBlock* pblock);
     int SetMerkleBranch(int ifaceIndex);

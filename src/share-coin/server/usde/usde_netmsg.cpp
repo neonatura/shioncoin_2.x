@@ -693,8 +693,6 @@ if (pindexBest) fprintf(stderr, "DEBUG: inv.type == MSG_BLOCK, request blocks fr
 
   else if (strCommand == "tx")
   {
-    vector<uint256> vWorkQueue;
-    vector<uint256> vEraseQueue;
     CDataStream vMsg(vRecv);
     CTransaction tx;
     vRecv >> tx;
@@ -702,6 +700,15 @@ if (pindexBest) fprintf(stderr, "DEBUG: inv.type == MSG_BLOCK, request blocks fr
     CInv inv(ifaceIndex, MSG_TX, tx.GetHash());
     pfrom->AddInventoryKnown(inv);
 
+    /* add to mempool */
+    if (pool->AddTx(tx, pfrom)) {
+      SyncWithWallets(iface, tx);
+      RelayMessage(inv, vMsg);
+      mapAlreadyAskedFor.erase(inv);
+    }
+#if 0
+    vector<uint256> vWorkQueue;
+    vector<uint256> vEraseQueue;
     bool fMissingInputs = false;
     USDETxDB txdb;
     if (tx.AcceptToMemoryPool(txdb, true, &fMissingInputs)) {
@@ -755,11 +762,8 @@ if (pindexBest) fprintf(stderr, "DEBUG: inv.type == MSG_BLOCK, request blocks fr
       if (nEvicted > 0)
         printf("mapOrphan overflow, removed %u tx\n", nEvicted);
     }
-#if 0
-    if (tx.nDoS) 
-      pfrom->Misbehaving(tx.nDoS);
-#endif
     txdb.Close();
+#endif
   }
 
 

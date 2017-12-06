@@ -2742,7 +2742,7 @@ Object CBlock::ToValue()
 
 
 
-
+#if 0
 bool CTransaction::AcceptToMemoryPool(CTxDB& txdb, bool fCheckInputs, bool* pfMissingInputs)
 {
   CIface *iface = GetCoinByIndex(txdb.ifaceIndex);
@@ -2762,6 +2762,7 @@ bool CTransaction::AcceptToMemoryPool(CTxDB& txdb, bool fCheckInputs, bool* pfMi
 //  if (ret) STAT_TX_SUBMITS(iface)++;
   return (ret);
 }
+#endif
 
 bool CTransaction::IsInMemoryPool(int ifaceIndex)
 {
@@ -3124,7 +3125,7 @@ bool core_CommitBlock(CTxDB& txdb, CBlock *pblock, CBlockIndex *pindexNew)
     BOOST_FOREACH(CTransaction& tx, block->vtx) {
       if (tx.IsCoinBase())
         continue;
-      tx.AcceptToMemoryPool(txdb, false);
+      pool->AddTx(tx);
     }
   }
   if (!fValid)
@@ -3304,7 +3305,7 @@ bool core_CommitBlock(CBlock *pblock, CBlockIndex *pindexNew)
     BOOST_FOREACH(CTransaction& tx, block->vtx) {
       if (tx.IsCoinBase())
         continue;
-      tx.AcceptPool(false);
+      pool->AddTx(tx);
     }
   }
 

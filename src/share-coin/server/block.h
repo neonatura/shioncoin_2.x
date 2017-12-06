@@ -1097,15 +1097,6 @@ public:
 
     bool CheckTransactionInputs(int ifaceIndex);
 
-
-    /* leveldb */
-    bool AcceptToMemoryPool(CTxDB& txdb, bool fCheckInputs=true, bool* pfMissingInputs=NULL);
-
-    /* fmap */
-    bool AcceptPool(int ifaceIndex, bool fCheckInputs=true);
-
-
-
     bool IsInMemoryPool(int ifaceIndex);
 
     Object ToValue(int ifaceIndex);

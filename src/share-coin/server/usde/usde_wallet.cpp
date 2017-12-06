@@ -345,6 +345,9 @@ int64 USDEWallet::GetTxFee(CTransaction tx)
 
 bool USDEWallet::CommitTransaction(CWalletTx& wtxNew)
 {
+  CIface *iface = GetCoinByIndex(USDE_COIN_IFACE);
+  CTxMemPool *pool = GetTxMemPool(iface);
+
   {
     LOCK2(cs_main, cs_wallet);
     {
@@ -375,8 +378,8 @@ bool USDEWallet::CommitTransaction(CWalletTx& wtxNew)
     // Track how many getdata requests our transaction gets
     mapRequestCount[wtxNew.GetHash()] = 0;
 
+#if 0
     // Broadcast
-       
     USDETxDB txdb;
     bool ret = wtxNew.AcceptToMemoryPool(txdb);
     if (ret) {
@@ -389,9 +392,14 @@ bool USDEWallet::CommitTransaction(CWalletTx& wtxNew)
       printf("CommitTransaction() : Error: Transaction not valid");
       return false;
     }
+#endif
+
+    if (!pool->AddTx(wtxNew))
+      return (false);
+
+    RelayWalletTransaction(wtxNew);
   }
 
-  CIface *iface = GetCoinByIndex(USDE_COIN_IFACE);
   STAT_TX_SUBMITS(iface)++;
 
   return true;

@@ -770,6 +770,7 @@ bool TESTBlock::CheckBlock()
 
 
 
+#ifdef USE_LEVELDB_TXDB
 bool static test_Reorganize(CTxDB& txdb, CBlockIndex* pindexNew, TEST_CTxMemPool *mempool)
 {
   char errbuf[1024];
@@ -862,7 +863,7 @@ bool static test_Reorganize(CTxDB& txdb, CBlockIndex* pindexNew, TEST_CTxMemPool
 
   // Resurrect memory transactions that were in the disconnected branch
   BOOST_FOREACH(CTransaction& tx, vResurrect)
-    tx.AcceptToMemoryPool(txdb, false);
+    mempool->AddTx(tx);
 
 #if 0
   BOOST_FOREACH(CTransaction& tx, vDelete)
@@ -875,6 +876,7 @@ bool static test_Reorganize(CTxDB& txdb, CBlockIndex* pindexNew, TEST_CTxMemPool
 
   return true;
 }
+#endif
 
 void TESTBlock::InvalidChainFound(CBlockIndex* pindexNew)
 {
@@ -1334,7 +1336,7 @@ return false;
 }
 
 #if 0
-/* coin.cpp */
+/* DEBUG: test: coin.cpp */
 bool TESTBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)
 {
   CIface *iface = GetCoinByIndex(ifaceIndex);
@@ -1551,6 +1553,39 @@ bool TESTBlock::DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex)
 
   return true;
 }
+
+#if 0
+/* TEST: coin.cpp */
+bool TESTBlock::DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex)
+{
+  CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
+
+  if (!core_DisconnectBlock(pindex, this))
+    return (false);
+
+  if (pindex->pprev) {
+    BOOST_FOREACH(CTransaction& tx, vtx) {
+      if (tx.IsCoinBase()) {
+        if (tx.isFlag(CTransaction::TXF_MATRIX)) {
+          CTxMatrix& matrix = tx.matrix;
+          if (matrix.GetType() == CTxMatrix::M_VALIDATE) {
+            /* retract block hash from Validate matrix */
+            matrixValidate.Retract(matrix.nHeight, pindex->GetBlockHash());
+          } else if (matrix.GetType() == CTxMatrix::M_SPRING) {
+            BlockRetractSpringMatrix(iface, tx, pindex);
+          }
+        }
+      } else {
+        if (tx.isFlag(CTransaction::TXF_CERTIFICATE)) {
+          DisconnectCertificate(iface, tx);
+        }
+      }
+    }
+  }
+
+  return true;
+}
+#endif
 
 bool TESTBlock::SetBestChain(CBlockIndex* pindexNew)
 {

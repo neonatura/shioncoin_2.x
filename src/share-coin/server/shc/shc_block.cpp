@@ -1160,7 +1160,7 @@ bool static SHC_Reorganize(CTxDB& txdb, CBlockIndex* pindexNew, SHC_CTxMemPool *
 
   // Resurrect memory transactions that were in the disconnected branch
   BOOST_FOREACH(CTransaction& tx, vResurrect)
-    tx.AcceptToMemoryPool(txdb, false);
+    mempool->AddTx(tx);
 
 #if 0
   // Delete redundant memory transactions that are in the connected branch

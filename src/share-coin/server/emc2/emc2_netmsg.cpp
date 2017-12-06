@@ -792,24 +792,26 @@ fprintf(stderr, "DEBUG: emc2_ProcessMessage[inv/tx]: pfrom->PushTx('%s', %d)\n",
 
   else if (strCommand == "tx")
   {
-    vector<uint256> vWorkQueue;
-    vector<uint256> vEraseQueue;
     CDataStream vMsg(vRecv);
-    EMC2TxDB txdb;
     CTransaction tx;
     vRecv >> tx;
 
     CInv inv(ifaceIndex, MSG_TX, tx.GetHash());
     pfrom->AddInventoryKnown(inv);
 
-    bool fMissingInputs = false;
-    if (tx.AcceptToMemoryPool(txdb, true, &fMissingInputs)) {
+    /* add to mempool */
+    if (pool->AddTx(tx, pfrom)) {
       SyncWithWallets(iface, tx);
       RelayMessage(inv, vMsg);
       mapAlreadyAskedFor.erase(inv);
-      vWorkQueue.push_back(inv.hash);
-      vEraseQueue.push_back(inv.hash);
+    }
 
+#if 0
+    vector<uint256> vWorkQueue;
+    vector<uint256> vEraseQueue;
+    EMC2TxDB txdb;
+    bool fMissingInputs = false;
+    if (tx.AcceptToMemoryPool(txdb, true, &fMissingInputs)) {
       // Recursively process any orphan transactions that depended on this one
       for (unsigned int i = 0; i < vWorkQueue.size(); i++)
       {
@@ -854,11 +856,8 @@ fprintf(stderr, "DEBUG: emc2_ProcessMessage[inv/tx]: pfrom->PushTx('%s', %d)\n",
       if (nEvicted > 0)
         printf("mapOrphan overflow, removed %u tx\n", nEvicted);
     }
-#if 0
-    if (tx.nDoS) 
-      pfrom->Misbehaving(tx.nDoS);
-#endif
     txdb.Close();
+#endif
 
   }
 

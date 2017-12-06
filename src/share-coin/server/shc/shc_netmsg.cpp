@@ -713,8 +713,6 @@ fprintf(stderr, "DEBUG: getheaders %d to %s\n", (pindex ? pindex->nHeight : -1),
 
   else if (strCommand == "tx")
   {
-    vector<uint256> vWorkQueue;
-    vector<uint256> vEraseQueue;
     CDataStream vMsg(vRecv);
     CTransaction tx;
     vRecv >> tx;
@@ -722,6 +720,15 @@ fprintf(stderr, "DEBUG: getheaders %d to %s\n", (pindex ? pindex->nHeight : -1),
     CInv inv(ifaceIndex, MSG_TX, tx.GetHash());
     pfrom->AddInventoryKnown(inv);
 
+    /* add to mempool */
+    if (pool->AddTx(tx, pfrom)) {
+      SyncWithWallets(iface, tx);
+      RelayMessage(inv, vMsg);
+      mapAlreadyAskedFor.erase(inv);
+    }
+#if 0
+    vector<uint256> vWorkQueue;
+    vector<uint256> vEraseQueue;
     bool fMissingInputs = false;
     SHCTxDB txdb;
     if (tx.AcceptToMemoryPool(txdb, true, &fMissingInputs)) {
@@ -781,13 +788,8 @@ fprintf(stderr, "DEBUG: getheaders %d to %s\n", (pindex ? pindex->nHeight : -1),
       if (nEvicted > 0)
         fprintf(stderr, "DEBUG: SHC_mapOrphan overflow, removed %u tx\n", nEvicted);
     }
-#if 0
-    if (tx.nDoS) { 
-fprintf(stderr, "DEBUG: ProcessMessage[tx]: tx.NDoS = %d\n", tx.nDoS); 
-      pfrom->Misbehaving(tx.nDoS);
-    }
-#endif
     txdb.Close();
+#endif
   }
 
 

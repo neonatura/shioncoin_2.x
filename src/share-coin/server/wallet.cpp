@@ -2484,6 +2484,7 @@ bool VerifyMatrixTx(CTransaction& tx, int& mode)
   return (true);
 }
 
+#if 0
 bool CMerkleTx::AcceptToMemoryPool(CTxDB& txdb, bool fCheckInputs)
 {
   if (fClient)
@@ -2497,6 +2498,7 @@ bool CMerkleTx::AcceptToMemoryPool(CTxDB& txdb, bool fCheckInputs)
     return CTransaction::AcceptToMemoryPool(txdb, fCheckInputs);
   }
 }
+#endif
 
 
 bool CWalletTx::AcceptWalletTransaction(CTxDB& txdb, bool fCheckInputs)
@@ -2510,21 +2512,18 @@ bool CWalletTx::AcceptWalletTransaction(CTxDB& txdb, bool fCheckInputs)
     return (false);
   }
 
+  // Add previous supporting transactions first
+  BOOST_FOREACH(CMerkleTx& tx, vtxPrev)
   {
-    // Add previous supporting transactions first
-    BOOST_FOREACH(CMerkleTx& tx, vtxPrev)
+    if (!tx.IsCoinBase())
     {
-      if (!tx.IsCoinBase())
-      {
-        uint256 hash = tx.GetHash();
-        if (!pool->exists(hash) && !txdb.ContainsTx(hash))
-          tx.AcceptToMemoryPool(txdb, fCheckInputs);
-      }
+      uint256 hash = tx.GetHash();
+      if (!pool->exists(hash) && !txdb.ContainsTx(hash))
+        pool->AddTx(tx);
     }
-    return AcceptToMemoryPool(txdb, fCheckInputs);
   }
 
-  return false;
+  return pool->AddTx(*this);//AcceptToMemoryPool(txdb, fCheckInputs);
 }
 
 bool IsAccountValid(CIface *iface, std::string strAccount)

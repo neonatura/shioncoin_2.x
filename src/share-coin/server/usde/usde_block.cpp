@@ -1249,7 +1249,7 @@ Debug("REORGANIZE: Connect %i blocks; %s..%s\n", vConnect.size(), pfork->GetBloc
 
   // Resurrect memory transactions that were in the disconnected branch
   BOOST_FOREACH(CTransaction& tx, vResurrect)
-    tx.AcceptToMemoryPool(txdb, false);
+    mempool->AddTx(tx);
 
   // Delete redundant memory transactions that are in the connected branch
 #if 0

@@ -436,6 +436,7 @@ bool emc2_ConnectInputs(CTransaction *tx, MapPrevTx inputs, map<uint256, CTxInde
   if (!MoneyRange(EMC2_COIN_IFACE, nFees))
     return error(SHERR_INVAL, "ConnectInputs() : nFees out of range");
 
+
   return true;
 }
 
@@ -1156,7 +1157,7 @@ Debug("REORGANIZE: Connect %i blocks; %s..%s\n", vConnect.size(), pfork->GetBloc
 
   // Resurrect memory transactions that were in the disconnected branch
   BOOST_FOREACH(CTransaction& tx, vResurrect)
-    tx.AcceptToMemoryPool(txdb, false);
+    mempool->AddTx(tx);
 
   // Delete redundant memory transactions that are in the connected branch
   BOOST_FOREACH(CBlock& block, vDelete) {

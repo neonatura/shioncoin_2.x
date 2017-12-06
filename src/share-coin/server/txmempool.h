@@ -537,8 +537,9 @@ class CPool : public CTxMemPool
 
     bool PopTx(const CTransaction& tx, CPoolTx& ptx);
 
-
     bool GetFee(uint256 hash, int64& nFee);
+
+    bool AreInputsSpent(CPoolTx& ptx);
 
 
     /* revert transaction from wallet (like tx.purge rpc cmd). */
