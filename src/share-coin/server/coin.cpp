@@ -262,6 +262,21 @@ bool CTransaction::ReadCoins(int ifaceIndex, vector<uint256>& vOuts)
   return (true);
 }
 
+bool HasTxCoins(CIface *iface, uint256 hash)
+{
+  if (!iface || !iface->enabled) return (false);
+
+  bc_t *bc = GetBlockCoinChain(iface);
+  int txPos;
+  int err;
+
+  err = bc_idx_find(bc, hash.GetRaw(), NULL, &txPos);
+  if (!err)
+    return (true);
+
+  return (false);
+}
+
 
 bool EraseTxCoins(CIface *iface, uint256 hash)
 {

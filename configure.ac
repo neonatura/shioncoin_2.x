@@ -215,6 +215,10 @@ AC_CHECK_LIB([gmp], [__gmp_version], ,
   AC_MSG_ERROR("libgmp (math library) is required")
 )
 
+AC_CHECK_LIB([ssl], [SSL_version], ,
+  AC_MSG_ERROR("libssl (crypt library) is required")
+)
+
 AC_CHECK_LIB([share], [get_libshare_version])
 AC_ARG_WITH([libshare],
   [AS_HELP_STRING([--with-libshare],
@@ -291,7 +295,7 @@ AM_CONDITIONAL(HAVE_INITD_DIR, [test -d /etc/rc.d])
 INITD_DIR="/etc/rc.d"
 AC_SUBST(INITD_DIR)
 
-AC_SUBST(OPENSSL_DIR, "openssl-1.0.1g")
+#AC_SUBST(OPENSSL_DIR, "openssl-1.0.1g")
 AC_CHECK_PROGS([CP], [cp])
 
 AC_CHECK_PROGS([PERL], [perl])
@@ -365,5 +369,5 @@ fi
 #AM_CONDITIONAL(ENABLE_WALLET, [test "x$enable_wallet" != "xno"])
 #AM_CONDITIONAL([ENABLE_WALLET], 1, [Define to share-wallet functionality.])
 
-AC_OUTPUT(Makefile src/secp256k1/Makefile src/share-ssl-lib/Makefile src/share-coin/Makefile doc/Makefile bin/Makefile)
+AC_OUTPUT(Makefile src/secp256k1/Makefile src/share-coin/Makefile doc/Makefile bin/Makefile)
 

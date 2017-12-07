@@ -36,7 +36,7 @@
 #include "uint256.h"
 #include "util.h"
 
-#include <openssl/ec.h> // for EC_KEY definition
+//#include <openssl/ec.h> // for EC_KEY definition
 
 // secp160k1
 // const unsigned int PRIVATE_KEY_SIZE = 192;
@@ -164,7 +164,7 @@ typedef std::vector<unsigned char, secure_allocator<unsigned char> > CSecret;
 class CKey
 {
 protected:
-    EC_KEY* pkey;
+//    EC_KEY* pkey;
     unsigned char vch[32];
     cbuff vchPub;
     bool fSet;

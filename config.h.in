@@ -203,6 +203,9 @@
 /* Define to 1 if you have the `share_sexe' library (-lshare_sexe). */
 #undef HAVE_LIBSHARE_SEXE
 
+/* Define to 1 if you have the `ssl' library (-lssl). */
+#undef HAVE_LIBSSL
+
 /* Define to 1 if you have the <limits.h> header file. */
 #undef HAVE_LIMITS_H
 

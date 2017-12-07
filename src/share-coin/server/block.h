@@ -658,8 +658,8 @@ class CTransactionCore
  */
 class CTransaction : public CTransactionCore
 {
-public:
 
+  public:
     CCert certificate;
     CAlias alias;
     COffer offer;

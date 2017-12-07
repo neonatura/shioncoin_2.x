@@ -45,6 +45,7 @@ bool ReadHashBestChain(CIface *iface, uint256& ret_hash);
 
 bool core_Truncate(CIface *iface, uint256 hash);
 
+bool HasTxCoins(CIface *iface, uint256 hash);
 
 
 #endif /* ndef __SERVER_COIN_H__ */

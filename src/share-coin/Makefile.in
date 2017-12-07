@@ -47,6 +47,7 @@ sbin_PROGRAMS = shcoind$(EXEEXT)
 
 @STATIC_LIBSHARE_TRUE@am__append_4 = -I$(LIBSHARE)/include
 @STATIC_LIBSHARE_TRUE@am__append_5 = -I$(LIBSHARE)/include
+#$(top_builddir)/src/share-ssl-lib/libshare_ssl.a
 @STATIC_LIBSHARE_TRUE@am__append_6 = \
 @STATIC_LIBSHARE_TRUE@	$(LIBSHARE)/src/share-lib/libshare.a \
 @STATIC_LIBSHARE_TRUE@	$(LIBSHARE)/src/sexe/libshare_sexe.a
@@ -85,7 +86,6 @@ LIBRARIES = $(noinst_LIBRARIES)
 ARFLAGS = cru
 libshcoin_a_AR = $(AR) $(ARFLAGS)
 libshcoin_a_DEPENDENCIES =  \
-	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
 	$(top_builddir)/src/secp256k1/libsecp256k1.a
 am__objects_1 =
 am__objects_2 = shcoind_rpc.$(OBJEXT) shcoind_log.$(OBJEXT) \
@@ -151,10 +151,8 @@ am__objects_6 = shcoind-txfeerate.$(OBJEXT) $(am__objects_3) \
 am_shcoind_OBJECTS = $(am__objects_6) shcoind-shcoind.$(OBJEXT) \
 	shcoind-shcoind_daemon.$(OBJEXT)
 shcoind_OBJECTS = $(am_shcoind_OBJECTS)
-shcoind_DEPENDENCIES =  \
-	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
-	$(top_builddir)/src/secp256k1/libsecp256k1.a libshcoin.a \
-	$(am__append_6)
+shcoind_DEPENDENCIES = $(top_builddir)/src/secp256k1/libsecp256k1.a \
+	libshcoin.a $(am__append_6)
 shcoind_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CXXLD) $(shcoind_CXXFLAGS) $(CXXFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
@@ -164,7 +162,6 @@ am_shcointool_OBJECTS = shcointool-shcoind_tool.$(OBJEXT) \
 	shcointool-clientrpc_iface.$(OBJEXT) $(am__objects_7)
 shcointool_OBJECTS = $(am_shcointool_OBJECTS)
 shcointool_DEPENDENCIES =  \
-	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
 	$(top_builddir)/src/secp256k1/libsecp256k1.a libshcoin.a \
 	$(am__append_7)
 shcointool_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
@@ -251,7 +248,6 @@ am_test_shcoind_OBJECTS = $(am__objects_11) \
 	test_shcoind-testcoin_bloom.$(OBJEXT)
 test_shcoind_OBJECTS = $(am_test_shcoind_OBJECTS)
 test_shcoind_DEPENDENCIES =  \
-	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
 	$(top_builddir)/src/secp256k1/libsecp256k1.a libshcoin.a \
 	$(am__append_3)
 test_shcoind_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
@@ -371,7 +367,6 @@ NM = @NM@
 NMEDIT = @NMEDIT@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
-OPENSSL_DIR = @OPENSSL_DIR@
 OTOOL = @OTOOL@
 OTOOL64 = @OTOOL64@
 PACKAGE = @PACKAGE@
@@ -454,7 +449,7 @@ version_patch = @version_patch@
 with_kernel = @with_kernel@
 with_kerneldir = @with_kerneldir@
 AUTOMAKE_OPTIONS = foreign
-INCLUDES = -I$(top_srcdir)/src/share-ssl-lib/$(OPENSSL_DIR)/include \
+INCLUDES = \
 	-I$(top_srcdir)/src/secp256k1/include \
 	-I$(top_srcdir)/src/share-lib \
 	-I$(srcdir)/proto \
@@ -464,6 +459,7 @@ INCLUDES = -I$(top_srcdir)/src/share-ssl-lib/$(OPENSSL_DIR)/include \
 	-I$(srcdir)/server/blockchain \
 	-I$(srcdir)/server/rpc
 
+#-I$(top_srcdir)/src/share-ssl-lib/$(OPENSSL_DIR)/include 
 blockchain_sources = \
 	$(srcdir)/blockchain/bc_block.c \
 	$(srcdir)/blockchain/bc_index.c \
@@ -700,38 +696,37 @@ test_shcoind_SOURCES = \
 	test/testcoin_json.cpp \
 	test/testcoin_bloom.cpp
 
-test_shcoind_LDADD = $(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
-	$(top_builddir)/src/secp256k1/libsecp256k1.a libshcoin.a \
-	-lboost_system -lboost_filesystem -lboost_thread -ldb_cxx -ldl \
-	$(am__append_3)
+test_shcoind_LDADD = $(top_builddir)/src/secp256k1/libsecp256k1.a \
+	libshcoin.a -lboost_system -lboost_filesystem -lboost_thread \
+	-ldb_cxx -ldl $(am__append_3)
+#$(top_builddir)/src/share-ssl-lib/libshare_ssl.a
 test_shcoind_CFLAGS = -g -O0 -DTEST_SHCOIND $(am__append_4)
 test_shcoind_CXXFLAGS = -g -O0 -DTEST_SHCOIND $(am__append_5)
 libshcoin_a_SOURCES = \
 	$(common_includes) $(common_sources)
 
 libshcoin_a_LIBADD = \
-	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
 	$(top_builddir)/src/secp256k1/libsecp256k1.a
 
+#$(top_builddir)/src/share-ssl-lib/libshare_ssl.a
 shcoind_SOURCES = \
 	$(server_sources) \
 	shcoind.c \
 	shcoind_daemon.c \
 	shcoind_daemon.h
 
-shcoind_LDADD = $(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
-	$(top_builddir)/src/secp256k1/libsecp256k1.a libshcoin.a \
-	$(am__append_6) -lboost_system -lboost_filesystem \
+shcoind_LDADD = $(top_builddir)/src/secp256k1/libsecp256k1.a \
+	libshcoin.a $(am__append_6) -lboost_system -lboost_filesystem \
 	-lboost_thread -ldb_cxx -ldl
 @STATIC_LIBSHARE_TRUE@shcoind_CFLAGS = -I$(LIBSHARE)/include
 @STATIC_LIBSHARE_TRUE@shcoind_CXXFLAGS = -I$(LIBSHARE)/include
 shcointool_SOURCES = \
 	shcoind_tool.cpp clientrpc_iface.cpp $(tool_sources)
 
-shcointool_LDADD = $(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
-	$(top_builddir)/src/secp256k1/libsecp256k1.a libshcoin.a \
-	-lboost_system -lboost_filesystem -lboost_thread -ldb_cxx -ldl \
-	$(am__append_7)
+shcointool_LDADD = $(top_builddir)/src/secp256k1/libsecp256k1.a \
+	libshcoin.a -lboost_system -lboost_filesystem -lboost_thread \
+	-ldb_cxx -ldl $(am__append_7)
+#$(top_builddir)/src/share-ssl-lib/libshare_ssl.a
 shcointool_CFLAGS = -DSHCOIN_CLIENT $(am__append_8)
 shcointool_CXXFLAGS = -DSHCOIN_CLIENT -DOS_LINUX $(am__append_9)
 

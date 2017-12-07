@@ -66,6 +66,10 @@ void CloseBlockChain(CIface *iface)
     bc_close(iface->bc_tx);
     iface->bc_tx = NULL;
   }
+  if (iface->bc_coin) {
+    bc_close(iface->bc_coin);
+    iface->bc_coin = NULL;
+  }
 }
 
 CBlockIndex *GetBlockIndexByHeight(int ifaceIndex, unsigned int nHeight)
@@ -1957,7 +1961,7 @@ Object CTransaction::ToValue(int ifaceIndex)
     out.push_back(Pair("value", ValueFromAmount(txout.nValue)));
     out.push_back(Pair("n", (boost::int64_t)i));
     out.push_back(Pair("scriptpubkey", txout.scriptPubKey.ToString().c_str()));
-    if (n < vOuts.size() && !vOuts[i].IsNull())
+    if (i < vOuts.size() && !vOuts[i].IsNull())
       out.push_back(Pair("spent-tx", vOuts[i].GetHex()));
     ScriptPubKeyToJSON(ifaceIndex, txout.scriptPubKey, out);
 

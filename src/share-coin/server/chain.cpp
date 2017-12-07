@@ -26,6 +26,8 @@
 #include "shcoind.h"
 #include "wallet.h"
 #include "chain.h"
+#include "coin.h"
+
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
@@ -115,7 +117,13 @@ void core_UpdateCoins(int ifaceIndex, const CTransaction& tx, bool fLocal = true
 {
   CIface *iface = GetCoinByIndex(ifaceIndex);
   CWallet *wallet = GetWallet(iface);
-  const uint256& tx_hash = tx.GetHash();
+  uint256 tx_hash = tx.GetHash();
+
+  if (tx.IsCoinBase())
+    return;
+  bool fHasTxCoins = false;
+  if (!fLocal)
+    fHasTxCoins = HasTxCoins(iface, tx_hash);
 
   BOOST_FOREACH(const CTxIn& txin, tx.vin) {
     const uint256& hash = txin.prevout.hash;
@@ -127,16 +135,24 @@ void core_UpdateCoins(int ifaceIndex, const CTransaction& tx, bool fLocal = true
       if (wtx.ReadCoins(ifaceIndex, vOuts) &&
           nOut < vOuts.size() && vOuts[nOut].IsNull()) {
         vOuts[nOut] = tx_hash;
-        wtx.WriteCoins(ifaceIndex, vOuts);
+        if (wtx.WriteCoins(ifaceIndex, vOuts)) {
+          Debug("(%s) core_UpdateCoins: updated tx \"%s\" [ref \"%s\" (wallet)].", hash.GetHex().c_str(), tx_hash.GetHex().c_str());
+        } else {
+          error(SHERR_IO, "WriteCoins: error [wallet]");
+        }
       }
-    } else if (!fLocal) {
-      CTransaction tx;
-      if (::GetTransaction(iface, hash, tx, NULL)) {
+    } else if (!fLocal && !fHasTxCoins) {
+      CTransaction l_tx;
+      if (::GetTransaction(iface, hash, l_tx, NULL)) {
         vector<uint256> vOuts;
-        if (tx.ReadCoins(ifaceIndex, vOuts) &&
+        if (l_tx.ReadCoins(ifaceIndex, vOuts) &&
             nOut < vOuts.size() && vOuts[nOut].IsNull()) {
           vOuts[nOut] = tx_hash;
-          tx.WriteCoins(ifaceIndex, vOuts);
+          if (l_tx.WriteCoins(ifaceIndex, vOuts)) {
+            Debug("(%s) core_UpdateCoins: updated tx \"%s\" [ref \"%s\" (chain)].", iface->name, hash.GetHex().c_str(), tx_hash.GetHex().c_str());
+          } else {
+            error(SHERR_IO, "WriteCoins: error [chain]");
+          }
         }
       }
     }
@@ -172,8 +188,8 @@ static bool ServiceWalletEvent(int ifaceIndex)
       }
       BOOST_FOREACH(const CTransaction& tx, block->vtx) {
         /* enforce validity on wallet & recent tx's spent chain */
-        bool fLocal = ((nBestHeight - nHeight) > 16384) ? true : false;
-        core_UpdateCoins(ifaceIndex, tx, fLocal);
+        //bool fLocal = ((nBestHeight - nHeight) > 16384) ? true : false;
+        core_UpdateCoins(ifaceIndex, tx, false);
       }
 
       delete block;

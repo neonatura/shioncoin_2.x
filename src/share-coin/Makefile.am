@@ -2,7 +2,7 @@ AUTOMAKE_OPTIONS = foreign
 
 TESTS = test_shcoind
 
-INCLUDES = -I$(top_srcdir)/src/share-ssl-lib/$(OPENSSL_DIR)/include \
+INCLUDES = \
 	-I$(top_srcdir)/src/secp256k1/include \
 	-I$(top_srcdir)/src/share-lib \
 	-I$(srcdir)/proto \
@@ -11,6 +11,7 @@ INCLUDES = -I$(top_srcdir)/src/share-ssl-lib/$(OPENSSL_DIR)/include \
 	-I$(srcdir)/server/ext \
 	-I$(srcdir)/server/blockchain \
 	-I$(srcdir)/server/rpc
+#-I$(top_srcdir)/src/share-ssl-lib/$(OPENSSL_DIR)/include 
 
 blockchain_sources = \
 	$(srcdir)/blockchain/bc_block.c \
@@ -269,10 +270,10 @@ test_shcoind_SOURCES = \
 	test/testcoin_bloom.cpp
 
 test_shcoind_LDADD = \
-	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
 	$(top_builddir)/src/secp256k1/libsecp256k1.a \
 	libshcoin.a \
 	-lboost_system -lboost_filesystem -lboost_thread -ldb_cxx -ldl
+#$(top_builddir)/src/share-ssl-lib/libshare_ssl.a
 test_shcoind_CFLAGS = -g -O0 -DTEST_SHCOIND
 test_shcoind_CXXFLAGS = -g -O0 -DTEST_SHCOIND
 if STATIC_LIBSHARE
@@ -287,8 +288,8 @@ endif
 libshcoin_a_SOURCES = \
 	$(common_includes) $(common_sources)
 libshcoin_a_LIBADD = \
-	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
 	$(top_builddir)/src/secp256k1/libsecp256k1.a
+#$(top_builddir)/src/share-ssl-lib/libshare_ssl.a
 
 
 shcoind_SOURCES = \
@@ -298,9 +299,9 @@ shcoind_SOURCES = \
 	shcoind_daemon.h
 
 shcoind_LDADD = \
-	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
 	$(top_builddir)/src/secp256k1/libsecp256k1.a \
 	libshcoin.a
+#$(top_builddir)/src/share-ssl-lib/libshare_ssl.a
 if STATIC_LIBSHARE
 shcoind_LDADD += \
 	$(LIBSHARE)/src/share-lib/libshare.a \
@@ -313,10 +314,10 @@ shcoind_LDADD += -lboost_system -lboost_filesystem -lboost_thread -ldb_cxx -ldl
 shcointool_SOURCES = \
 	shcoind_tool.cpp clientrpc_iface.cpp $(tool_sources)
 shcointool_LDADD = \
-	$(top_builddir)/src/share-ssl-lib/libshare_ssl.a \
 	$(top_builddir)/src/secp256k1/libsecp256k1.a \
 	libshcoin.a \
 	-lboost_system -lboost_filesystem -lboost_thread -ldb_cxx -ldl
+#$(top_builddir)/src/share-ssl-lib/libshare_ssl.a
 shcointool_CFLAGS = -DSHCOIN_CLIENT
 shcointool_CXXFLAGS = -DSHCOIN_CLIENT -DOS_LINUX
 if STATIC_LIBSHARE

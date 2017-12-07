@@ -13,15 +13,10 @@
 
 
 
-//#include <array>
 #include <cstddef>
-//#include <cstdint>
-//#include <initializer_list>
-//#include <queue>
 #include <vector>
 #include <openssl/ec.h>
 #include <openssl/hmac.h>
-#include <openssl/ecdsa.h>
 #include <openssl/obj_mac.h>
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string.hpp>

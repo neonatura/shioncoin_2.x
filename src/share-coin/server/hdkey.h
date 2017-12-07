@@ -215,7 +215,7 @@ class HDPrivKey : public CKey
 
     void SetNull()
     {
-      pkey = NULL;
+      //pkey = NULL;
       CKey::Reset();
 
       depth = 0;
