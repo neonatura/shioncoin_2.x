@@ -216,9 +216,12 @@ static bool AlreadyHave(CIface *iface, const CInv& inv)
         /* committed to database */
         fHave = false;
         {
+#if 0
           SHCTxDB txdb;
           fHave = txdb.ContainsTx(inv.hash);
           txdb.Close();
+#endif
+          fHave = VerifyTxHash(iface, inv.hash);
         }
         if (fHave)
           return (true);

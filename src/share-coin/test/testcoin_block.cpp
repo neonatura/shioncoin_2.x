@@ -1515,6 +1515,7 @@ fprintf(stderr, "DEBUG: TEST: bal nValue %f\n", (double)nValue / COIN);
   string strWitAccount = "witness";
   CCoinAddr extAddr = GetAccountAddress(wallet, strWitAccount, true);
 
+Debug("SEGWIT/START");
 
   CTxCreator wtx1(wallet, strAccount);
   wtx1.AddOutput(extAddr.Get(), COIN);
@@ -1525,12 +1526,14 @@ fprintf(stderr, "DEBUG: strerror = \"%s\"\n", strError.c_str());
   _TRUE(strError == "");
   _TRUE(wtx1.CheckTransaction(TEST_COIN_IFACE)); /* .. */
 
+
   {
     CBlock *block = test_GenerateBlock();
     _TRUEPTR(block);
     _TRUE(ProcessBlock(NULL, block) == true);
     delete block;
   }
+
 
   {
     CBlock *block = test_GenerateBlock();
@@ -1631,6 +1634,7 @@ if (strError != "") fprintf(stderr, "DEBUG: wtx3.strerror = \"%s\"\n", strError.
     delete block;
   }
 
+Debug("SEGWIT/START/END");
   {
     CBlock *block = test_GenerateBlock();
     _TRUEPTR(block);
@@ -1719,6 +1723,47 @@ _TEST(txmempool_inval)
 
 }
 
+_TEST(respend)
+{
+  CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
+  CWallet *wallet = GetWallet(iface);
+  uint256 reuseHash;
+  string strAccount("");
+  int reuseOut;
+
+  /* obtain test coin address */
+  CCoinAddr addr = GetAccountAddress(wallet, strAccount, true);
+
+  /* create transaction and track primary input */
+  CTxCreator tx(wallet, strAccount);
+  _TRUE(true == tx.AddOutput(addr.Get(), (int64)COIN));
+  _TRUE(true == tx.Generate());
+
+  reuseHash = tx.vin[0].prevout.hash;
+  reuseOut = tx.vin[0].prevout.n;
+  _TRUE(true == tx.Send());
+
+  {
+    CBlock *block = test_GenerateBlock();
+    _TRUEPTR(block);
+    _TRUE(ProcessBlock(NULL, block) == true);
+    delete block;
+  }
+
+  /* attempt send of tx w/ spent input */
+  CTxCreator s_tx(wallet, strAccount);
+  _TRUE(true == s_tx.AddInput(reuseHash, reuseOut));
+  _TRUE(true == s_tx.AddOutput(addr.Get(), (int64)COIN));
+  _TRUE(false == s_tx.Send());
+
+  {
+    CBlock *block = test_GenerateBlock();
+    _TRUEPTR(block);
+    _TRUE(ProcessBlock(NULL, block) == true);
+    delete block;
+  }
+
+}
 
 
 #ifdef __cplusplus

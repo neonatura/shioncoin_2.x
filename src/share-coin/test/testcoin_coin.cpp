@@ -12,7 +12,7 @@ using namespace std;
 
 
 // how many times to run all the tests to have a chance to catch errors that only show up with particular random shuffles
-#define RUN_TESTS 64
+#define RUN_TESTS 8
 
 // some tests fail 1% of the time due to bad luck.
 // we repeat those tests this many times and only complain if all iterations of the test fail

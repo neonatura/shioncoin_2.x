@@ -922,99 +922,9 @@ static CBlockIndex *findTransaction(int ifaceIndex, uint256 hashTx, CTransaction
   
   return ((*blockIndex)[hashBlock]);
 }
-#if 0
-static CBlockIndex *findTransaction(int ifaceIndex, uint256 hashTx, CTransaction& ret_tx, time_t dur)
-{
-  CTxDB txdb(ifaceIndex, "r");
-  CBlockIndex *pblockindex;
-  CTxIndex txindex;
-  time_t min_t;
-  bool ok;
-
-  /* find transaction (weed out false requests) */
-  ok = txdb.ReadTxIndex(hashTx, txindex);
-  if (!ok)
-    return (NULL);
-
-  min_t = 0;
-  if (dur)
-    min_t = time(NULL) - dur;
-
-#if 0
-  /* load transaction */
-  ok = ret_tx.ReadFromDisk(txindex.pos);
-  if (!ok)
-    return (NULL);
-#endif
-
-  /* find block (slow disk crawl) */
-  for (pblockindex = pindexBest; pblockindex; pblockindex = pblockindex->pprev)  {
-    USDEBlock block;
-    CTransaction tx;
-
-    block.ReadFromDisk(pblockindex, true);
-    if (min_t && ((time_t)block.GetBlockTime() < min_t)) {
-      /* exceeds duration limit */
-      return (NULL);
-    }
-
-    BOOST_FOREACH(CTransaction&tx, block.vtx) {
-      if (hashTx == tx.GetHash()) {
-        ret_tx = tx;
-//        transactionMap[hashTx] = pblockindex;
-        return (pblockindex);
-      }
-    }
-  }
-
-  return (NULL);
-}
-#endif
 
 
-#if 0
-CBlockIndex *findBlockByTransaction(const char *tx_id)
-{
-  CBlockIndex *pblockindex;
 
-  for (pblockindex = pindexBest; pblockindex; pblockindex = pblockindex->pprev)  {
-    CBlock block;
-
-    block.ReadFromDisk(pblockindex, true);
-    BOOST_FOREACH(const CTransaction&tx, block.vtx) {
-      std::string txStr = tx.GetHash().GetHex();
-      if (0 == strcasecmp(txStr.c_str(), tx_id))
-        return (pblockindex);
-    }
-  }
-
-  return (NULL);
-}
-#endif
-
-#if 0
-static int64 GetTxFee(int ifaceIndex, CTransaction tx)
-{
-  map<uint256, CTxIndex> mapQueuedChanges;
-  MapPrevTx inputs;
-  int64 nFees;
-  int i;
-
-  if (tx.IsCoinBase())
-    return (0);
-
-  CTxDB txdb(ifaceIndex, "r+");
-
-  nFees = 0;
-  bool fInvalid = false;
-  if (tx.FetchInputs(txdb, mapQueuedChanges, true, false, inputs, fInvalid))
-    nFees += tx.GetValueIn(inputs) - tx.GetValueOut();
-
-  txdb.Close();
-
-  return (nFees);
-}
-#endif
 
 #define MAX_HISTORY_TIME 10454400 /* 1/3 year */
 const char *c_gettransactioninfo(int ifaceIndex, const char *tx_id)
@@ -1228,61 +1138,6 @@ const char *c_getminingtransactions(int ifaceIndex, unsigned int workId)
   miningtransactioninfo_json = JSONRPCReply(result, Value::null, Value::null);
   return (miningtransactioninfo_json.c_str());
 }
-
-#if 0
-string block_save_json;
-bool WriteToShareNet(CBlock* pBlock, int nHeight)
-{
-  Object result;
-  Array transactions;
-  int err;
-
-  result.push_back(Pair("version", pBlock->nVersion));
-  result.push_back(Pair("height", (int64_t)nHeight));
-  result.push_back(Pair("hash", pBlock->GetHash().ToString()));
-  result.push_back(Pair("prevblock", pBlock->hashPrevBlock.GetHex()));
-  result.push_back(Pair("merkleroot", pBlock->hashMerkleRoot.GetHex()));
-  result.push_back(Pair("time", (int64_t)pBlock->nTime));
-  result.push_back(Pair("bits", (int64_t)pBlock->nBits));
-  result.push_back(Pair("nonce", (int64_t)pBlock->nNonce));
-
-  //CTxDB txdb("r");
-  BOOST_FOREACH (CTransaction& tx, pBlock->vtx)
-  {
-    uint256 txHash = tx.GetHash();
-
-    Object entry;
-
-    CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION);
-    ssTx << tx;
-    transactions.push_back(HexStr(ssTx.begin(), ssTx.end()));
-  }
-  result.push_back(Pair("transactions", transactions));
-
-  block_save_json = JSONRPCReply(result, Value::null, Value::null);
-  err = block_save(nHeight, block_save_json.c_str());
-  if (err)
-    return false;
-
-  return true;
-}
-#endif
-
-#if 0
-extern bool LoadExternalBlockFile(FILE* fileIn);
-const int cxx_reloadblockfile(const char *path)
-{
-  string strFile(path);
-  FILE *file;
-
-  file = fopen(path, "rb");
-  if (!file)
-    return (-1);
-
-  LoadExternalBlockFile(file);
-  return (0);
-}
-#endif
 
 int GetBlockDepthInMainChain(CIface *iface, uint256 blockHash)
 {

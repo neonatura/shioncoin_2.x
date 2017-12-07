@@ -368,7 +368,7 @@
 
     int64 CalculateFee(CTransaction& tx, int64 nMinFee = 0);
 
-    bool FillInputs(const CTransaction& tx, tx_cache& inputs);
+    bool FillInputs(const CTransaction& tx, tx_cache& inputs, bool fAllowSpent = true);
 
     double GetPriority(const CTransaction& tx, MapPrevTx& mapInputs);
 
@@ -726,12 +726,14 @@ public:
     int64 GetTxTime() const;
     int GetRequestCount() const;
 
-    void AddSupportingTransactions(CTxDB& txdb);
+    void AddSupportingTransactions();
 
+#ifdef USE_LEVELDB_COINDB
     bool AcceptWalletTransaction(CTxDB& txdb, bool fCheckInputs=true);
-
-
 //    void RelayWalletTransaction(CTxDB& txdb);
+#else
+    bool AcceptWalletTransaction();
+#endif
 
 };
 

@@ -91,14 +91,12 @@ public:
       CBlock::SetNull();
     }
 
-    bool SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew);
     void InvalidChainFound(CBlockIndex* pindexNew);
     unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast);
     bool AcceptBlock();
     bool IsBestChain();
     CScript GetCoinbaseFlags();
     bool AddToBlockIndex();
-    bool ConnectBlock(CTxDB& txdb, CBlockIndex* pindex);
     bool CheckBlock();
     bool ReadBlock(uint64_t nHeight);
     bool ReadArchBlock(uint256 hash);
@@ -106,12 +104,19 @@ public:
     bool Truncate();
     bool VerifyCheckpoint(int nHeight);
     uint64_t GetTotalBlocksEstimate();
-    bool DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex);
 
-    bool SetBestChain(CBlockIndex*);
 
     int64_t GetBlockWeight();
 
+#ifdef USE_LEVELDB_COINDB
+    bool SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew);
+    bool ConnectBlock(CTxDB& txdb, CBlockIndex* pindex);
+    bool DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex);
+#else
+    bool SetBestChain(CBlockIndex* pindexNew);
+    bool ConnectBlock(CBlockIndex* pindex);
+    bool DisconnectBlock(CBlockIndex* pindex);
+#endif
 
 //  protected: bool SetBestChainInner(CTxDB& txdb, CBlockIndex *pindexNew);
 };

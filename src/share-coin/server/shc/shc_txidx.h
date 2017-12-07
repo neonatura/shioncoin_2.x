@@ -39,6 +39,9 @@
  * @{
  */
 
+
+#ifdef USE_LEVELDB_COINDB
+
 class SHCTxDB : public CTxDB
 {
   public:
@@ -73,6 +76,8 @@ class SHCTxDB : public CTxDB
   private:
     bool LoadBlockIndexGuts();
 };
+
+#endif
 
 
 static bool IsChainFile(std::string strFile)

@@ -33,6 +33,7 @@
 #include "shc_txidx.h"
 #include "chain.h"
 #include "spring.h"
+#include "coin.h"
 
 #include <boost/array.hpp>
 #include <boost/assign/list_of.hpp>
@@ -42,32 +43,6 @@ using namespace std;
 using namespace boost;
 
 extern bool IsIdentTx(const CTransaction& tx);
-
-
-bool SHCTxDB::ReadDiskTx(uint256 hash, CTransaction& tx, CTxIndex& txindex)
-{
-  tx.SetNull();
-  if (!ReadTxIndex(hash, txindex))
-    return false;
-  return (tx.ReadFromDisk(txindex.pos));
-}
-
-bool SHCTxDB::ReadDiskTx(uint256 hash, CTransaction& tx)
-{
-  CTxIndex txindex;
-  return ReadDiskTx(hash, tx, txindex);
-}
-
-bool SHCTxDB::ReadDiskTx(COutPoint outpoint, CTransaction& tx, CTxIndex& txindex)
-{
-  return ReadDiskTx(outpoint.hash, tx, txindex);
-}
-
-bool SHCTxDB::ReadDiskTx(COutPoint outpoint, CTransaction& tx)
-{
-  CTxIndex txindex;
-  return ReadDiskTx(outpoint.hash, tx, txindex);
-}
 
 
 
@@ -205,9 +180,13 @@ static bool hasGenesisRoot(CBlockIndex *pindexBest)
   return (true);
 }
 
-
+#ifdef USE_LEVELDB_TXDB
 bool SHCTxDB::LoadBlockIndex()
+#else
+static bool shc_LoadBlockIndex()
+#endif
 {
+  int ifaceIndex = SHC_COIN_IFACE;
   CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);
   blkidx_t *mapBlockIndex = GetBlockTable(SHC_COIN_IFACE);
   char errbuf[1024];
@@ -247,7 +226,7 @@ bool SHCTxDB::LoadBlockIndex()
 
   // Load SHCBlock::hashBestChain pointer to end of best chain
   uint256 hashBestChain;
-  if (!ReadHashBestChain(hashBestChain))
+  if (!ReadHashBestChain(iface, hashBestChain))
   {
     if (SHCBlock::pindexGenesisBlock == NULL) {
       fprintf(stderr, "DEBUG: SHCTxDB::LoadBlockIndex() : SHCBlock::hashBestChain not loaded, but pindexGenesisBlock == NULL");
@@ -297,8 +276,10 @@ bool SHCTxDB::LoadBlockIndex()
 
   //printf("LoadBlockIndex(): SHCBlock::hashBestChain=%s  height=%d  date=%s\n", hashBestChain.ToString().substr(0,20).c_str(), GetBestHeight(iface), DateTimeStrFormat("%x %H:%M:%S", pindexBest->GetBlockTime()).c_str());
 
+#ifdef USE_LEVELDB_COINDB
   // Load bnBestInvalidWork, OK if it doesn't exist
   ReadBestInvalidWork(SHCBlock::bnBestInvalidWork);
+#endif
 
   int nCheckDepth = (GetBestHeight(SHC_COIN_IFACE) / 100) + 10240;
   int total = 0;
@@ -341,9 +322,11 @@ bool SHCTxDB::LoadBlockIndex()
     SHCBlock block;
     if (!block.ReadFromDisk(pindexFork))
       return error(SHERR_INVAL, "LoadBlockIndex() : block.ReadFromDisk failed");
+#ifdef USE_LEVELDB_COINDB
     SHCTxDB txdb;
     block.SetBestChain(txdb, pindexFork);
     txdb.Close();
+#endif
 
     pindexBest = pindexFork;
   }
@@ -545,9 +528,13 @@ bool shc_InitBlockIndex()
 {
   bool ret;
 
+#ifdef USE_LEVELDB_COINDB
   SHCTxDB txdb("cr");
   ret = txdb.LoadBlockIndex();
   txdb.Close();
+#else
+  ret = shc_LoadBlockIndex();
+#endif
   if (!ret)
     return (false);
 
@@ -590,11 +577,13 @@ fprintf(stderr, "DEBUG: shc_RestoreBlockIndex: erased current block-chain index 
   }
 #endif
 
+#ifdef USE_LEVELDB_COINDB
   /* create fresh "tx.dat" */
   {
     SHCTxDB txdb("cr");
     txdb.Close();
   }
+#endif
 
 #if 0
   {
@@ -615,7 +604,9 @@ fprintf(stderr, "DEBUG: shc_RestoreBlockIndex: erased current block-chain index 
   bc_table_clear(chain);
   bc_table_clear(chain_tx);
 
+#ifdef USE_LEVELDB_COINDB
   SHCTxDB txdb;
+#endif
 
   uint256 hash = shc_hashGenesisBlock;
   {
@@ -648,11 +639,13 @@ fprintf(stderr, "DEBUG: shc_RestoreBlockIndex: erased current block-chain index 
       BOOST_FOREACH(CTransaction& tx, block.vtx) {
         tx.WriteTx(SHC_COIN_IFACE, height);
 
+#ifdef USE_LEVELDB_COINDB
         nBlockPos = nTxPos = -1;
         (void)bc_idx_find(chain, hash.GetRaw(), NULL, &nBlockPos);
         (void)bc_idx_find(chain_tx, tx.GetHash().GetRaw(), NULL, &nTxPos);
         CDiskTxPos posThisTx(SHC_COIN_IFACE, nBlockPos, nTxPos);
         txdb.AddTxIndex(tx, posThisTx, height);
+#endif
       }
     }
     Debug("shc_RestoreBlocKIndex: database rebuilt -- wrote %d blocks", height);
@@ -662,11 +655,46 @@ fprintf(stderr, "DEBUG: shc_RestoreBlockIndex: erased current block-chain index 
   bc_idle(chain);
   bc_idle(chain_tx);
 
+#ifdef USE_LEVELDB_COINDB
   txdb.WriteHashBestChain(hash);
   ret = txdb.LoadBlockIndex();
   txdb.Close();
   if (!ret)
     return (false);
+#else
+  WriteHashBestChain(iface, hash);
+#endif
 
   return (true);
 }
+
+
+#ifdef USE_LEVELDB_COINDB
+
+bool SHCTxDB::ReadDiskTx(COutPoint outpoint, CTransaction& tx, CTxIndex& txindex)
+{
+  return ReadDiskTx(outpoint.hash, tx, txindex);
+}
+
+bool SHCTxDB::ReadDiskTx(COutPoint outpoint, CTransaction& tx)
+{
+  CTxIndex txindex;
+  return ReadDiskTx(outpoint.hash, tx, txindex);
+}
+bool SHCTxDB::ReadDiskTx(uint256 hash, CTransaction& tx, CTxIndex& txindex)
+{
+  tx.SetNull();
+  if (!ReadTxIndex(hash, txindex))
+    return false;
+  return (tx.ReadFromDisk(txindex.pos));
+}
+
+bool SHCTxDB::ReadDiskTx(uint256 hash, CTransaction& tx)
+{
+  CTxIndex txindex;
+  return ReadDiskTx(hash, tx, txindex);
+}
+
+
+
+#endif

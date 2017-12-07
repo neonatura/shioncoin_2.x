@@ -35,6 +35,9 @@
 #define __TEST_TXIDX_H__
 
 
+
+#ifdef USE_LEVELDB_COINDB
+
 class TESTTxDB : public CTxDB
 {
   public:
@@ -69,6 +72,8 @@ class TESTTxDB : public CTxDB
   private:
     bool LoadBlockIndexGuts();
 };
+
+#endif
 
 
 static bool IsChainFile(std::string strFile)

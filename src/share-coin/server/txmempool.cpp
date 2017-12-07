@@ -44,12 +44,12 @@ bool CPool::VerifyTx(CTransaction& tx)
   CBlockIndex *pindexPrev;
   bool ok;
 
-  if (!tx.CheckTransaction(ifaceIndex)) {
-    return (error(SHERR_INVAL, "CPool.AddTx: rejecting transaction after integrity verification failure."));
-  }
-
   if (tx.IsCoinBase()) {
     return (error(SHERR_INVAL, "CPool.AddTx: rejecting coinbase transaction."));
+  }
+
+  if (!tx.CheckTransaction(ifaceIndex)) {
+    return (error(SHERR_INVAL, "CPool.AddTx: rejecting transaction after integrity verification failure."));
   }
 
   if ((int64)tx.nLockTime > std::numeric_limits<int>::max()) {
@@ -109,10 +109,13 @@ bool CPool::AddTx(CTransaction& tx, CNode *pfrom)
     return (false); /* hard limit failure. */
   }
 
+#if 0
+  /* redudant check -- happens again before commit */
   if (AreInputsSpent(ptx)) {
     AddInvalTx(ptx);
-    return (false); /* double spend */
+    return (error(SHERR_INVAL, "CPool.AddTx: rejecting tx \"%s\" with spent input(s).", ptx.GetHash().GetHex().c_str()));
   }
+#endif
 
   /* mark height at which tx entered pool */
   ptx.nHeight = GetBestHeight(iface);
@@ -552,12 +555,17 @@ bool CPool::AddActiveTx(CPoolTx& ptx)
     return (false);
   }
 
-  if (!ptx.IsLocal()) { /* todo: prevents recursive mutex lock on txdb, this is redudant txdb inputs check when called via core_CommitBlock() */
+  if (AreInputsSpent(ptx)) {
+    AddInvalTx(ptx);
+    return (error(SHERR_INVAL, "CPool.AddActiveTx: rejecting tx \"%s\" with spent input(s).", ptx.GetHash().GetHex().c_str()));
+  }
+
+//  if (!ptx.IsLocal()) { /* todo: prevents recursive mutex lock on txdb, this is redudant txdb inputs check when called via core_CommitBlock() */
     if (!AcceptTx(ptx.tx)) {
       AddInvalTx(ptx);
       return (error(SHERR_INVAL, "CPool.AddTx: error accepting transaction into memory pool."));
     }
-  }
+//  }
 
   active[hash] = ptx;
   STAT_TX_ACCEPTS(iface)++;
@@ -726,10 +734,17 @@ int CPool::GetActiveTotal()
 vector<CTransaction> CPool::GetActiveTx()
 {
   vector<CPoolTx> vPoolTx;
+  vector<uint256> vRemove;
   vector<CTransaction> vTx;
 
   BOOST_FOREACH(PAIRTYPE(const uint256, CPoolTx)& item, active) {
     CPoolTx& ptx = item.second;
+#if 0
+    if (AreInputsSpent(ptx)) {
+      vRemove.push_back(ptx.GetHash());
+      continue;
+    }
+#endif
     vPoolTx.push_back(ptx);
   }
   sort(vPoolTx.begin(), vPoolTx.end()); 
@@ -737,6 +752,9 @@ vector<CTransaction> CPool::GetActiveTx()
   BOOST_FOREACH(CPoolTx& ptx, vPoolTx) {
     CTransaction& tx = ptx.GetTx();
     vTx.insert(vTx.end(), tx);
+  }
+  BOOST_FOREACH(uint256& hash, vRemove) {
+    RemoveTx(hash);
   }
 
   return (vTx);
@@ -814,6 +832,44 @@ bool CPool::PopTx(const CTransaction& tx, CPoolTx& ptx)
   return (true);
 }
 
+static void cpool_RemoveTxWithInput(CPool *pool, const CTxIn& txin)
+{
+  vector<uint256> vRemove;
+
+  BOOST_FOREACH(PAIRTYPE(const uint256, CPoolTx)& item, pool->active) {
+    CPoolTx& a_ptx = item.second;
+    BOOST_FOREACH(const CTxIn& a_txin, a_ptx.GetTx().vin) {
+      if (a_txin.prevout == txin.prevout) {
+        /* remove mempool tx due to conflict. */
+        vRemove.push_back(a_ptx.GetHash());
+      }
+    }
+  }
+  BOOST_FOREACH(PAIRTYPE(const uint256, CPoolTx)& item, pool->overflow) {
+    CPoolTx& a_ptx = item.second;
+    BOOST_FOREACH(const CTxIn& a_txin, a_ptx.GetTx().vin) {
+      if (a_txin.prevout == txin.prevout) {
+        /* remove mempool tx due to conflict. */
+        vRemove.push_back(a_ptx.GetHash());
+      }
+    }
+  }
+  BOOST_FOREACH(PAIRTYPE(const uint256, CPoolTx)& item, pool->pending) {
+    CPoolTx& a_ptx = item.second;
+    BOOST_FOREACH(const CTxIn& a_txin, a_ptx.GetTx().vin) {
+      if (a_txin.prevout == txin.prevout) {
+        /* remove mempool tx due to conflict. */
+        vRemove.push_back(a_ptx.GetHash());
+      }
+    }
+  }
+
+  BOOST_FOREACH(uint256& hash, vRemove) {
+    pool->RemoveTx(hash);
+  }
+
+}
+
 bool CPool::Commit(CBlock& block)
 {
   const uint256& hash = block.GetHash();
@@ -837,6 +893,13 @@ bool CPool::Commit(CBlock& block)
       continue;
 
     entries.push_back(ptx);
+  }
+
+  BOOST_FOREACH(const CTransaction& tx, block.vtx) {
+    BOOST_FOREACH(const CTxIn& txin, tx.vin) {
+      /* remove any tx's from mempool with non-unique inputs */ 
+      cpool_RemoveTxWithInput(this, txin);
+    }
   }
 
   CBlockPolicyEstimator *fee = GetFeeEstimator(GetIface());
@@ -922,6 +985,32 @@ bool CPool::GetTx(uint256 hash, CTransaction& retTx, int flags)
 
 bool CPool::AreInputsSpent(CPoolTx& ptx)
 {
+  const CTransaction& tx = ptx.GetTx();
+  tx_cache& inputs = ptx.GetInputs();
+  int i;
+
+  for (i = 0; i < tx.vin.size(); i++) {
+    const CTxIn& in = tx.vin[i];
+    if (inputs.count(in.prevout.hash) == 0)
+      continue;
+    CTransaction& prevTx = inputs[in.prevout.hash];
+    int nOut = in.prevout.n;
+    vector<uint256> vOuts;
+  
+    if (!prevTx.ReadCoins(ifaceIndex, vOuts)) {
+      return (error(SHERR_INVAL, "AreInputsSpent: error obtanining tx \'%s\".", prevTx.GetHash().GetHex().c_str()));
+    }
+
+    if (nOut >= vOuts.size()) {
+      return (error(SHERR_INVAL, "AreInputsSpent: nOut(%d) >= vOuts.size(%d)\n", nOut, tx.vout.size()));
+    }
+
+    if (!vOuts[nOut].IsNull()) {
+      /* this is already spent */
+      return (true);
+    }
+  }
+
   return (false);
 }
 

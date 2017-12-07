@@ -203,9 +203,12 @@ static bool AlreadyHave(CIface *iface, const CInv& inv)
 
         fHave = false;
         {
+#if 0
           EMC2TxDB txdb;
           fHave = txdb.ContainsTx(inv.hash);
           txdb.Close();
+#endif
+          fHave = VerifyTxHash(iface, inv.hash);
         }
         if (fHave)
           return (true);

@@ -32,6 +32,7 @@
 #include "script.h"
 #include "txsignature.h"
 #include "txmempool.h"
+#include "chain.h"
 
 using namespace std;
 
@@ -104,26 +105,24 @@ bool WriteTxCoins(uint256 hash, int ifaceIndex, const vector<uint256>& vOuts)
 
   /* store new coin outputs */
   if (txPos < 0) {
-    txPos = bc_append(bc, hash.GetRaw(), data, data_len);
-    if (txPos < 0) {
-      free(data);
-      return (false);
-    }
+    err = bc_append(bc, hash.GetRaw(), data, data_len);
   } else {
     err = bc_write(bc, txPos, hash.GetRaw(), data, data_len);
   }
   free(data);
   if (err < 0)
-    return (false);
+    return (error(err, "WriteTxCoins"));
 
   return (true);
 }
 
 bool CTransaction::WriteCoins(int ifaceIndex, const vector<uint256>& vOuts)
 {
+
   if (vOuts.size() != vout.size()) {
-    return (false); /* nerp */
+    return (error(SHERR_INVAL, "CTransaction.WriteCoins: tx \"%s\": vOuts.size(%d) != vout.size(%d)\n", GetHash().GetHex().c_str(), vOuts.size(), vout.size()));
   }
+
   return (WriteTxCoins(GetHash(), ifaceIndex, vOuts));
 }
 
@@ -355,7 +354,7 @@ bool core_VerifyCoinInputs(int ifaceIndex, CTransaction& tx, unsigned int nIn, C
 
 //int core_ConnectCoinInputs(int ifaceIndex, CTransaction *tx, const CBlockIndex* pindexBlock, tx_map& mapOutput, map<uint256, CTransaction> mapTx, int& nSigOps, int64& nFees, bool fVerifySig = true, bool fVerifyInputs = false);
 
-bool core_ConnectCoinInputs(int ifaceIndex, CTransaction *tx, const CBlockIndex* pindexBlock, tx_map& mapOutput, map<uint256, CTransaction> mapTx, int& nSigOps, int64& nFees, bool fVerifySig, bool fVerifyInputs, bool fRequireInputs)
+static bool core_ConnectCoinInputs(int ifaceIndex, CTransaction *tx, const CBlockIndex* pindexBlock, tx_map& mapOutput, map<uint256, CTransaction>& mapTx, int& nSigOps, int64& nFees, bool fVerifySig, bool fVerifyInputs, bool fRequireInputs)
 {
   CIface *iface = GetCoinByIndex(ifaceIndex);
   const bool fStrictPayToScriptHash=true;
@@ -555,207 +554,20 @@ bool core_ConnectBlock(CBlock *block, CBlockIndex* pindex)
   return true;
 }
 
+#if 0
 bool CBlock::ConnectBlock(CBlockIndex* pindex)
 {
   return (core_ConnectBlock(this, pindex));
 }
-
-#if 0
-bool core_AcceptPoolTx(int ifaceIndex, CTransaction& tx, bool fCheckInputs)
-{
-  CIface *iface = GetCoinByIndex(ifaceIndex);
-
-  if (!iface) {
-    unet_log(ifaceIndex, "error obtaining coin interface");
-    return (false);
-  } 
-
-  CTxMemPool *pool = GetTxMemPool(iface);
-  if (!pool) {
-    unet_log(ifaceIndex, "error obtaining tx memory pool");
-    return (false);
-  }
-
-  if (!tx.CheckTransaction(ifaceIndex))
-    return error(SHERR_INVAL, "CTxMemPool::accept() : CheckTransaction failed");
-
-  // Coinbase is only valid in a block, not as a loose transaction
-  if (tx.IsCoinBase())
-    return error(SHERR_INVAL, "CTxMemPool::accept() : coinbase as individual tx");
-
-  // To help v0.1.5 clients who would see it as a negative number
-  if ((int64)tx.nLockTime > std::numeric_limits<int>::max())
-    return error(SHERR_INVAL, "CTxMemPool::accept() : not accepting nLockTime beyond 2038 yet");
-
-  // Rather not work on nonstandard transactions (unless -testnet)
-  if (!tx.IsStandard())
-    return error(SHERR_INVAL, "CTxMemPool::accept() : nonstandard transaction type");
-
-  // Do we already have it?
-  uint256 hash = tx.GetHash();
-  {
-    LOCK(pool->cs);
-    if (pool->mapTx.count(hash))
-      return false;
-  }
-
-  if (fCheckInputs) {
-    CTransaction tx;
-    if (GetTransaction(iface, hash, tx, NULL)) {
-      return (error(SHERR_INVAL, "AcceptPoolTx: tx hash '%s' already exists.", hash.GetHex().c_str()));
-    }
-  }
-
-  // Check for conflicts with in-memory transactions
-  CTransaction* ptxOld = NULL;
-  for (unsigned int i = 0; i < tx.vin.size(); i++)
-  {
-    COutPoint outpoint = tx.vin[i].prevout;
-    if (pool->mapNextTx.count(outpoint))
-    {
-      if (!tx.isFlag(CTransaction::TXF_CHANNEL)) {
-        return false;
-      }
-
-      // Allow replacing with a newer version of the same transaction
-      if (i != 0)
-        return false;
-      ptxOld = pool->mapNextTx[outpoint].ptx;
-      if (ptxOld->IsFinal(ifaceIndex))
-        return false;
-      if (!tx.IsNewerThan(*ptxOld))
-        return false;
-      for (unsigned int i = 0; i < tx.vin.size(); i++)
-      {
-        COutPoint outpoint = tx.vin[i].prevout;
-        if (!pool->mapNextTx.count(outpoint) || 
-            pool->mapNextTx[outpoint].ptx != ptxOld)
-          return false;
-      }
-      break;
-    }
-  }
-
-  if (fCheckInputs) {
-    int nSigOps = 0;
-    int64 nFees = 0;
-    tx_map mapOutput;
-    map<uint256, CTransaction> mapTx;
-    if (!core_ConnectCoinInputs(ifaceIndex, &tx, NULL, mapOutput, mapTx, nSigOps, nFees, true, true, false)) {
-      return error(SHERR_INVAL, "core_AcceptPoolTx: ConnectInputs failed for tx '%s'", hash.ToString().c_str());
-    }
-
-    CWallet *wallet = GetWallet(iface);
-    tx_cache inputs;
-
-    if (!wallet->FillInputs(tx, inputs))
-      return error(SHERR_INVAL, "core_AcceptPoolTx: error retriving inputs.");
-
-    if (wallet->AllowFree(wallet->GetPriority(tx, inputs)))
-      return (true);
-
-    //if (nFees < tx.GetMinFee(ifaceIndex, 1000, true, GMF_RELAY))
-    if (nFees < wallet->CalculateFee(tx)) 
-      return error(SHERR_INVAL, "core_AcceptPoolTx: not enough fees");
-  }
-
-  // Store transaction in memory
-  {
-    LOCK(pool->cs);
-    if (ptxOld)
-    {
-      Debug("CTxMemPool::accept() : replacing tx %s with new version\n", ptxOld->GetHash().ToString().c_str());
-      pool->remove(*ptxOld);
-    }
-    pool->addUnchecked(tx.GetHash(), tx);
-  }
-
-  ///// are we sure this is ok when loading transactions or restoring block txes
-  // If updated, erase old tx from wallet
-  if (ptxOld) {
-    CWallet *wallet = GetWallet(iface);
-//    shc_EraseFromWallets(ptxOld->GetHash());
-    if (wallet)
-      wallet->EraseFromWallet(ptxOld->GetHash());
-  }
-
-  STAT_TX_SUBMITS(iface)++;
-  return (true);
-}
 #endif
 
-#if 0
-bool core_AcceptPoolTx(int ifaceIndex, CTransaction& tx, bool fCheckInputs)
-{
-  CIface *iface = GetCoinByIndex(ifaceIndex);
-  CTxMemPool *pool = GetTxMemPool(iface);
-  return (pool->AddTx(tx));
-}
 
-bool CTransaction::AcceptPool(int ifaceIndex, bool fCheckInputs)
-{
-  return (core_AcceptPoolTx(ifaceIndex, *this, fCheckInputs));
-}
-#endif
 
-bool core_DisconnectInputs(int ifaceIndex, CTransaction *tx)
-{
-  CIface *iface = GetCoinByIndex(ifaceIndex);
-  CWallet *wallet = GetWallet(iface);
-  uint256 hash = tx->GetHash();
-  uint256 blank_hash;
 
-  // Relinquish previous transactions' spent pointers
-  if (!tx->IsCoinBase())
-  {
-    BOOST_FOREACH(const CTxIn& txin, tx->vin)
-    {
-      COutPoint prevout = txin.prevout;
-      vector<uint256> outs;
-      CTransaction prevtx;
 
-      if (!GetTransaction(iface, prevout.hash, prevtx, NULL)) {
-        error(SHERR_INVAL, "core_DisconnectInputs: invalid input tx \"%s\".", prevout.hash.GetHex().c_str());
-        continue;
-      }
 
-      prevtx.WriteCoins(ifaceIndex, prevout.n, blank_hash);
-    }
-  }
 
-  if (IsCertTx(*tx)) {
-    if (!DisconnectCertificate(iface, *tx)) {
-      error(SHERR_INVAL, "core_DisconnectInputs: error disconnecting certificate");
-    }
-  }
-  if (IsAliasTx(*tx)) {
-    if (!DisconnectAliasTx(iface, *tx)) {
-      error(SHERR_INVAL, "core_DisconnectInputs: error disconnecting alias");
-    }
-  }
-  if (IsContextTx(*tx)) {
-    if (!DisconnectContextTx(iface, *tx)) {
-      error(SHERR_INVAL, "core_DisconnectInputs: error disconnecting alias");
-    }
-  }
-
-  /* erase from 'coin' fmap */
-  tx->EraseCoins(ifaceIndex);
-
-  /* erase from 'tx' fmap */
-  tx->EraseTx(ifaceIndex);
-
-  wallet->EraseFromWallet(hash);
-//  wallet->mapWallet.erase(hash); 
-
-  return true;
-}
-
-bool CTransaction::DisconnectInputs(int ifaceIndex)
-{
-  return (core_DisconnectInputs(ifaceIndex, this));
-}
-
+#ifdef USE_LEVELDB_COINDB
 
 bool CTransaction::DisconnectInputs(CTxDB& txdb)
 {
@@ -822,4 +634,154 @@ bool CTransaction::DisconnectInputs(CTxDB& txdb)
   return true;
 }
 
+#else
 
+bool core_DisconnectInputs(int ifaceIndex, CTransaction *tx)
+{
+  CIface *iface = GetCoinByIndex(ifaceIndex);
+  CWallet *wallet = GetWallet(iface);
+  uint256 hash = tx->GetHash();
+  uint256 blank_hash;
+
+  // Relinquish previous transactions' spent pointers
+  if (!tx->IsCoinBase())
+  {
+    BOOST_FOREACH(const CTxIn& txin, tx->vin)
+    {
+      COutPoint prevout = txin.prevout;
+      vector<uint256> outs;
+      CTransaction prevtx;
+
+      if (!GetTransaction(iface, prevout.hash, prevtx, NULL)) {
+        error(SHERR_INVAL, "core_DisconnectInputs: invalid input tx \"%s\".", prevout.hash.GetHex().c_str());
+        continue;
+      }
+
+      prevtx.WriteCoins(ifaceIndex, prevout.n, blank_hash);
+    }
+  }
+
+  if (IsCertTx(*tx)) {
+    if (!DisconnectCertificate(iface, *tx)) {
+      error(SHERR_INVAL, "core_DisconnectInputs: error disconnecting certificate");
+    }
+  }
+  if (IsAliasTx(*tx)) {
+    if (!DisconnectAliasTx(iface, *tx)) {
+      error(SHERR_INVAL, "core_DisconnectInputs: error disconnecting alias");
+    }
+  }
+  if (IsContextTx(*tx)) {
+    if (!DisconnectContextTx(iface, *tx)) {
+      error(SHERR_INVAL, "core_DisconnectInputs: error disconnecting alias");
+    }
+  }
+
+  /* erase from 'coin' fmap */
+  tx->EraseCoins(ifaceIndex);
+
+  /* erase from 'tx' fmap */
+  tx->EraseTx(ifaceIndex);
+
+  wallet->EraseFromWallet(hash);
+//  wallet->mapWallet.erase(hash); 
+
+  return true;
+}
+
+bool CTransaction::DisconnectInputs(int ifaceIndex)
+{
+  return (core_DisconnectInputs(ifaceIndex, this));
+}
+
+#endif
+
+
+
+void WriteHashBestChain(CIface *iface, uint256 hash)
+{
+  char opt_name[256];
+  char buf[256];
+
+  if (!iface || !iface->enabled)
+    return;
+
+  memset(buf, 0, sizeof(buf));
+  sprintf(buf, "%s", hash.GetHex().c_str());
+  sprintf(opt_name, "shcoind.%s.chain", iface->name);
+  shpref_set(opt_name, buf);
+}
+bool ReadHashBestChain(CIface *iface, uint256& ret_hash)
+{
+  char opt_name[256];
+  char buf[256];
+
+  if (!iface || !iface->enabled)
+    return (false);
+
+  memset(buf, 0, sizeof(buf));
+  sprintf(opt_name, "shcoind.%s.chain", iface->name);
+  strncpy(buf, shpref_get(opt_name, ""), sizeof(buf)-1);
+
+  ret_hash = uint256(buf);
+  return (!ret_hash.IsNull());
+}
+
+
+bool core_Truncate(CIface *iface, uint256 hash)
+{
+  if (!iface || !iface->enabled) return (false);
+  int ifaceIndex = GetCoinIndex(iface);
+  blkidx_t *blockIndex = GetBlockTable(ifaceIndex);
+  CBlockIndex *pBestIndex;
+  CBlockIndex *cur_index;
+  CBlockIndex *pindex;
+  unsigned int nHeight;
+  int err;
+
+  if (!blockIndex || !blockIndex->count(hash))
+    return error(SHERR_INVAL, "Erase: block not found in block-index.");
+
+  cur_index = (*blockIndex)[hash];
+  if (!cur_index)
+    return error(SHERR_INVAL, "Erase: block not found in block-index.");
+
+  pBestIndex = GetBestBlockIndex(iface);
+  if (!pBestIndex)
+    return error(SHERR_INVAL, "Erase: no block-chain established.");
+  if (cur_index->nHeight > pBestIndex->nHeight)
+    return error(SHERR_INVAL, "Erase: height is not valid.");
+
+  bc_t *bc = GetBlockChain(iface);
+  unsigned int nMinHeight = cur_index->nHeight;
+  unsigned int nMaxHeight = (bc_idx_next(bc)-1);
+    
+  for (nHeight = nMaxHeight; nHeight > nMinHeight; nHeight--) {
+    CBlock *block = GetBlockByHeight(iface, nHeight);
+    if (block) {
+      uint256 t_hash = block->GetHash();
+      if (hash == cur_index->GetBlockHash()) {
+        delete block;
+        break; /* bad */
+      }
+
+      if (blockIndex->count(t_hash) != 0)
+        block->DisconnectBlock((*blockIndex)[t_hash]);
+      bc_table_reset(bc, t_hash.GetRaw());
+
+      delete block;
+    }
+  }
+  for (nHeight = nMaxHeight; nHeight > nMinHeight; nHeight--) {
+    bc_clear(bc, nHeight);
+  }  
+
+  SetBestBlockIndex(iface, cur_index);
+  WriteHashBestChain(iface, cur_index->GetBlockHash());
+
+  cur_index->pnext = NULL;
+  //TESTBlock::bnBestChainWork = cur_index->bnChainWork;
+  InitServiceBlockEvent(ifaceIndex, cur_index->nHeight + 1);
+
+  return (true);
+}

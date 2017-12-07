@@ -201,6 +201,7 @@ static void stratum_timer(void)
       }
     }
 
+#if 0
     { /* debug */
       CIface *iface = GetCoinByIndex(blk_iface);
       if (iface) {
@@ -208,6 +209,7 @@ static void stratum_timer(void)
         shcoind_log(errbuf);
       }
     }
+#endif
 
     /* generate new work, as needed */
     stratum_task_gen(&attr);

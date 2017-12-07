@@ -1872,73 +1872,6 @@ bool SyncWithWallets(CIface *iface, CTransaction& tx, CBlock *pblock)
   return (pwallet->AddToWalletIfInvolvingMe(tx, pblock, true));
 }
 
-void CWalletTx::AddSupportingTransactions(CTxDB& txdb)
-{
-  int ifaceIndex = txdb.ifaceIndex;
-
-  vtxPrev.clear();
-
-  const int COPY_DEPTH = 3;
-  if (SetMerkleBranch(ifaceIndex) < COPY_DEPTH)
-  {
-    vector<uint256> vWorkQueue;
-    BOOST_FOREACH(const CTxIn& txin, vin) {
-      vWorkQueue.push_back(txin.prevout.hash);
-}
-
-    // This critsect is OK because txdb is already open
-    {
-      LOCK(pwallet->cs_wallet);
-      map<uint256, const CMerkleTx*> mapWalletPrev;
-      set<uint256> setAlreadyDone;
-      for (unsigned int i = 0; i < vWorkQueue.size(); i++)
-      {
-        uint256 hash = vWorkQueue[i];
-        if (setAlreadyDone.count(hash))
-          continue;
-        setAlreadyDone.insert(hash);
-
-        CMerkleTx tx;
-        map<uint256, CWalletTx>::const_iterator mi = pwallet->mapWallet.find(hash);
-        if (mi != pwallet->mapWallet.end())
-        {
-          tx = (*mi).second;
-          BOOST_FOREACH(const CMerkleTx& txWalletPrev, (*mi).second.vtxPrev)
-            mapWalletPrev[txWalletPrev.GetHash()] = &txWalletPrev;
-        }
-        else if (mapWalletPrev.count(hash))
-        {
-          tx = *mapWalletPrev[hash];
-        }
-        else if (!fClient && txdb.ReadDiskTx(hash, tx))
-        {
-          ;
-        }
-        else
-        {
-          error(SHERR_INVAL, "AddSupportingTransactions: unsupported transaction: %s", hash.GetHex().c_str());
-          continue;
-        }
-
-        if (tx.IsCoinBase())
-          continue;
-
-        int nDepth = tx.SetMerkleBranch(ifaceIndex);
-        vtxPrev.push_back(tx);
-
-        if (nDepth < COPY_DEPTH)
-        {
-          BOOST_FOREACH(const CTxIn& txin, tx.vin) {
-            vWorkQueue.push_back(txin.prevout.hash);
-          }
-        }
-      }
-    }
-  }
-
-  reverse(vtxPrev.begin(), vtxPrev.end());
-}
-
 int CMerkleTx::GetBlocksToMaturity(int ifaceIndex) const
 {
 
@@ -2501,31 +2434,6 @@ bool CMerkleTx::AcceptToMemoryPool(CTxDB& txdb, bool fCheckInputs)
 #endif
 
 
-bool CWalletTx::AcceptWalletTransaction(CTxDB& txdb, bool fCheckInputs)
-{
-  CIface *iface = GetCoinByIndex(txdb.ifaceIndex);
-  CTxMemPool *pool;
-
-  pool = GetTxMemPool(iface);
-  if (!pool) {
-    unet_log(txdb.ifaceIndex, "error obtaining tx memory pool");
-    return (false);
-  }
-
-  // Add previous supporting transactions first
-  BOOST_FOREACH(CMerkleTx& tx, vtxPrev)
-  {
-    if (!tx.IsCoinBase())
-    {
-      uint256 hash = tx.GetHash();
-      if (!pool->exists(hash) && !txdb.ContainsTx(hash))
-        pool->AddTx(tx);
-    }
-  }
-
-  return pool->AddTx(*this);//AcceptToMemoryPool(txdb, fCheckInputs);
-}
-
 bool IsAccountValid(CIface *iface, std::string strAccount)
 {
   int ifaceIndex = GetCoinIndex(iface);
@@ -2947,6 +2855,7 @@ bool CreateExtTransactionFromAddrTx(CIface *iface,
  */
 bool core_UnacceptWalletTransaction(CIface *iface, const CTransaction& tx)
 {
+  int ifaceIndex = GetCoinIndex(iface);
   const uint256& tx_hash = tx.GetHash();
   CTxMemPool *pool = GetTxMemPool(iface);
   CWallet *wallet = GetWallet(iface);
@@ -3002,6 +2911,29 @@ fprintf(stderr, "DEBUG: core_UnacceptWalletTransaction: abandoning tx '%s' -- no
     /* push pool transaction's inputs back into wallet. */
     wallet->mapWallet[prevhash] = wtx;
   }
+
+#ifndef USE_LEVELDB_COINDB
+  BOOST_FOREACH(const CTxIn& in, tx.vin) {
+    const uint256& prev_hash = in.prevout.hash; 
+    int nTxOut = in.prevout.n;
+    vector<uint256> vOuts;
+
+    CTransaction prevTx;
+    if (!GetTransaction(iface, prev_hash, prevTx, NULL))
+      continue;
+
+    if (prevTx.ReadCoins(ifaceIndex, vOuts))
+      continue;
+
+    /* sanity */
+    if (nTxOut >= vOuts.size())
+      continue;
+
+    /* set output as unspent */
+    vOuts[nTxOut].SetNull();
+    prevTx.WriteCoins(ifaceIndex, vOuts);
+  }
+#endif
 
   return (true);
 }
@@ -3873,7 +3805,7 @@ int64 CWallet::CalculateFee(CTransaction& tx, int64 nMinFee)
 }
 
 
-bool CWallet::FillInputs(const CTransaction& tx, tx_cache& inputs)
+bool CWallet::FillInputs(const CTransaction& tx, tx_cache& inputs, bool fAllowSpent)
 {
   CIface *iface = GetCoinByIndex(ifaceIndex);
 
@@ -3890,6 +3822,22 @@ bool CWallet::FillInputs(const CTransaction& tx, tx_cache& inputs)
     const uint256& prev_hash = prevout.hash;
     if (!::GetTransaction(iface, prev_hash, prevTx, NULL))
       return (false);
+
+#ifndef USE_LEVELDB_COINDB
+    if (!fAllowSpent) {
+      vector<uint256> vOuts;
+      if (!prevTx.ReadCoins(ifaceIndex, vOuts)) {
+        return (error(SHERR_INVAL, "FillInputs: error reading tx from coin database."));
+      }
+      if (prevout.n >= vOuts.size()) {
+        return (error(SHERR_INVAL, "FillInputs: error reading tx from coin database [invalid index]."));
+      }
+      if (!vOuts[prevout.n].IsNull()) {
+        /* already spent */
+        return (error(SHERR_ALREADY, "FillInputs: transaction has spent coins."));
+      }
+    }
+#endif
 
     inputs[prev_hash] = prevTx;
   }
@@ -4034,4 +3982,192 @@ int64 core_GetFeeRate(int ifaceIndex)
   return (MIN_TX_FEE(iface));
 }
 
+void CWalletTx::AddSupportingTransactions()
+{
+  int ifaceIndex = pwallet->ifaceIndex;
+
+  vtxPrev.clear();
+
+  const int COPY_DEPTH = 3;
+  if (SetMerkleBranch(ifaceIndex) < COPY_DEPTH)
+  {
+    vector<uint256> vWorkQueue;
+    BOOST_FOREACH(const CTxIn& txin, vin) {
+      vWorkQueue.push_back(txin.prevout.hash);
+    }
+
+    {
+      LOCK(pwallet->cs_wallet);
+      map<uint256, const CMerkleTx*> mapWalletPrev;
+      set<uint256> setAlreadyDone;
+      for (unsigned int i = 0; i < vWorkQueue.size(); i++)
+      {
+        uint256 hash = vWorkQueue[i];
+        if (setAlreadyDone.count(hash))
+          continue;
+        setAlreadyDone.insert(hash);
+
+        CMerkleTx tx;
+        map<uint256, CWalletTx>::const_iterator mi = pwallet->mapWallet.find(hash);
+        if (mi != pwallet->mapWallet.end())
+        {
+          tx = (*mi).second;
+          BOOST_FOREACH(const CMerkleTx& txWalletPrev, (*mi).second.vtxPrev)
+            mapWalletPrev[txWalletPrev.GetHash()] = &txWalletPrev;
+        }
+        else if (mapWalletPrev.count(hash))
+        {
+          tx = *mapWalletPrev[hash];
+        }
+        else if (!fClient && tx.ReadTx(ifaceIndex, hash))
+        {
+          ;
+        }
+        else
+        {
+          error(SHERR_INVAL, "AddSupportingTransactions: unsupported transaction: %s", hash.GetHex().c_str());
+          continue;
+        }
+
+        if (tx.IsCoinBase())
+          continue;
+
+        int nDepth = tx.SetMerkleBranch(ifaceIndex);
+        vtxPrev.push_back(tx);
+
+        if (nDepth < COPY_DEPTH)
+        {
+          BOOST_FOREACH(const CTxIn& txin, tx.vin) {
+            vWorkQueue.push_back(txin.prevout.hash);
+          }
+        }
+      }
+    }
+  }
+
+  reverse(vtxPrev.begin(), vtxPrev.end());
+}
+
+
+
+#ifdef USE_LEVELDB_COINDB
+
+#if 0
+void CWalletTx::AddSupportingTransactions(CTxDB& txdb)
+{
+  int ifaceIndex = txdb.ifaceIndex;
+
+  vtxPrev.clear();
+
+  const int COPY_DEPTH = 3;
+  if (SetMerkleBranch(ifaceIndex) < COPY_DEPTH)
+  {
+    vector<uint256> vWorkQueue;
+    BOOST_FOREACH(const CTxIn& txin, vin) {
+      vWorkQueue.push_back(txin.prevout.hash);
+}
+
+    // This critsect is OK because txdb is already open
+    {
+      LOCK(pwallet->cs_wallet);
+      map<uint256, const CMerkleTx*> mapWalletPrev;
+      set<uint256> setAlreadyDone;
+      for (unsigned int i = 0; i < vWorkQueue.size(); i++)
+      {
+        uint256 hash = vWorkQueue[i];
+        if (setAlreadyDone.count(hash))
+          continue;
+        setAlreadyDone.insert(hash);
+
+        CMerkleTx tx;
+        map<uint256, CWalletTx>::const_iterator mi = pwallet->mapWallet.find(hash);
+        if (mi != pwallet->mapWallet.end())
+        {
+          tx = (*mi).second;
+          BOOST_FOREACH(const CMerkleTx& txWalletPrev, (*mi).second.vtxPrev)
+            mapWalletPrev[txWalletPrev.GetHash()] = &txWalletPrev;
+        }
+        else if (mapWalletPrev.count(hash))
+        {
+          tx = *mapWalletPrev[hash];
+        }
+        else if (!fClient && txdb.ReadDiskTx(hash, tx))
+        {
+          ;
+        }
+        else
+        {
+          error(SHERR_INVAL, "AddSupportingTransactions: unsupported transaction: %s", hash.GetHex().c_str());
+          continue;
+        }
+
+        if (tx.IsCoinBase())
+          continue;
+
+        int nDepth = tx.SetMerkleBranch(ifaceIndex);
+        vtxPrev.push_back(tx);
+
+        if (nDepth < COPY_DEPTH)
+        {
+          BOOST_FOREACH(const CTxIn& txin, tx.vin) {
+            vWorkQueue.push_back(txin.prevout.hash);
+          }
+        }
+      }
+    }
+  }
+
+  reverse(vtxPrev.begin(), vtxPrev.end());
+}
+#endif
+
+bool CWalletTx::AcceptWalletTransaction(CTxDB& txdb, bool fCheckInputs)
+{
+  CIface *iface = GetCoinByIndex(txdb.ifaceIndex);
+  CTxMemPool *pool;
+
+  pool = GetTxMemPool(iface);
+  if (!pool) {
+    unet_log(txdb.ifaceIndex, "error obtaining tx memory pool");
+    return (false);
+  }
+
+  // Add previous supporting transactions first
+  BOOST_FOREACH(CMerkleTx& tx, vtxPrev)
+  {
+    if (!tx.IsCoinBase())
+    {
+      uint256 hash = tx.GetHash();
+      if (!pool->exists(hash) && !txdb.ContainsTx(hash))
+        pool->AddTx(tx);
+    }
+  }
+
+  return pool->AddTx(*this);//AcceptToMemoryPool(txdb, fCheckInputs);
+}
+
+#else
+
+
+bool CWalletTx::AcceptWalletTransaction()
+{
+  CIface *iface = GetCoinByIndex(pwallet->ifaceIndex);
+  CTxMemPool *pool;
+
+  pool = GetTxMemPool(iface);
+  if (!pool) {
+    unet_log(pwallet->ifaceIndex, "error obtaining tx memory pool");
+    return (false);
+  }
+
+  /* Add previous supporting transactions first */
+  BOOST_FOREACH(CMerkleTx& tx, vtxPrev) {
+    pool->AddTx(tx);
+  }
+
+  return pool->AddTx(*this);
+}
+
+
+#endif
 

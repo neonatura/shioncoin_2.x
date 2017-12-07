@@ -103,8 +103,10 @@ static const uint64 nMinDiskSpace = 52428800;
 
 
 class CReserveKey;
+#ifdef USE_LEVELDB_COINDB
 class CTxDB;
 class CTxIndex;
+#endif
 
 bool ProcessBlock(CNode* pfrom, CBlock* pblock);
 bool CheckDiskSpace(uint64 nAdditionalBytes=0);

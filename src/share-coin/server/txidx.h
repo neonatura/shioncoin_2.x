@@ -286,7 +286,7 @@ public:
 
 class CDiskBlockIndex;
 
-
+#ifdef USE_LEVELDB_COINDB
 /** Access to the transaction database (xxx_tx.dat) */
 class CTxDB : public CDB
 {
@@ -319,6 +319,7 @@ class CTxDB : public CDB
 //    bool LoadBlockIndexGuts(CIface *iface);
 
 };
+#endif
 
 
 CBlockIndex *InsertBlockIndex(blkidx_t *blockIndex, uint256 hash);

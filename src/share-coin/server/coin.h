@@ -39,6 +39,11 @@ bool EraseTxCoins(CIface *iface, uint256 hash);
 
 bool WriteTxCoins(uint256 hash, int ifaceIndex, const vector<uint256>& vOuts);
 
+void WriteHashBestChain(CIface *iface, uint256 hash);
+
+bool ReadHashBestChain(CIface *iface, uint256& ret_hash);
+
+bool core_Truncate(CIface *iface, uint256 hash);
 
 
 

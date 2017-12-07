@@ -59,8 +59,9 @@ typedef map< uint256, vector<uint256> > tx_map;
 
 
 
-
+#if defined(USE_LEVELDB_COINDB) || defined(USE_LEVELDB_TXDB)
 class CTxDB;
+#endif
 
 
 
@@ -883,41 +884,6 @@ public:
     }
 #endif
 
-#if 0
-    bool ReadFromDisk(CDiskTxPos pos, FILE** pfileRet=NULL)
-    {
-        CAutoFile filein = CAutoFile(OpenBlockFile(pos.nFile, 0, pfileRet ? "rb+" : "rb"), SER_DISK, CLIENT_VERSION);
-        if (!filein)
-            return error(SHERR_IO, "CTransaction::ReadFromDisk() : OpenBlockFile failed");
-
-        // Read transaction
-        if (fseek(filein, pos.nTxPos, SEEK_SET) != 0)
-            return error(SHERR_IO, "CTransaction::ReadFromDisk() : fseek failed");
-
-        try {
-            filein >> *this;
-        }
-        catch (std::exception &e) {
-            return error(SHERR_IO, "%s() : deserialize or I/O error", __PRETTY_FUNCTION__);
-        }
-
-        // Return file pointer
-        if (pfileRet)
-        {
-            if (fseek(filein, pos.nTxPos, SEEK_SET) != 0)
-                return error(SHERR_IO, "CTransaction::ReadFromDisk() : second fseek failed");
-            *pfileRet = filein.release();
-        }
-        return true;
-    }
-#endif
-
-#if 0
-    bool ReadFromDisk(int ifaceIndex, CDiskTxPos pos)
-    {
-      ReadTx(ifaceIndex, pos.hashTx);
-    }
-#endif
 
     bool ReadTx(int ifaceIndex, uint256 txHash);
 
@@ -925,10 +891,8 @@ public:
 
     bool WriteTx(int ifaceIndex, uint64_t blockHeight);
 
-    bool ReadFromDisk(CDiskTxPos pos);
     bool ReadFromDisk(int ifaceIndex, COutPoint prevout);
 
-    bool ReadFromDisk(CTxDB& txdb, COutPoint prevout, CTxIndex& txindexRet);
 
     bool FillTx(int ifaceIndex, CDiskTxPos &pos);
 
@@ -1012,27 +976,6 @@ public:
 
     CChannel *RemoveChannel(const CChannel& channelIn);
 
-    /**
-     * Verifies whether a vSpent has been spent.
-     * @param hashTx The hash of the transaction attempting to spend the input.
-     */
-    bool IsSpentTx(const CDiskTxPos& pos)
-    {
-      uint256 hashTx = GetHash();
-
-      if (pos.IsNull())
-        return (false);
-
-      /* this coin has been marked as spent. ensure this is not a re-write of the same transaction. */
-      CTransaction spent;
-      if (!spent.ReadFromDisk(pos))
-        return false; /* spent being referenced does not exist. */
-
-      if (hashTx == spent.GetHash())
-        return false; /* spent was already cataloged in past */
-
-      return true;
-    }
 
     friend bool operator==(const CTransaction& a, const CTransaction& b)
     {
@@ -1071,25 +1014,8 @@ public:
     }
 
 
-    /* leveldb */
-    bool DisconnectInputs(CTxDB& txdb);
-
-    /* fmap */
-    bool DisconnectInputs(int ifaceIndex);
 
 
-    /** 
-     * Fetch from memory and/or disk. inputsRet keys are transaction hashes.
-     *
-     * @param[in] txdb  Transaction database
-     * @param[in] mapTestPool List of pending changes to the transaction index database
-     * @param[in] fBlock  True if being called to add a new best-block to the chain
-     * @param[in] fMiner  True if being called by CreateNewBlock
-     * @param[out] inputsRet  Pointers to this transaction's inputs
-     * @param[out] fInvalid returns true if transaction is invalid
-     * @return  Returns true if all inputs are in txdb or mapTestPool
-     */
-    bool FetchInputs(CTxDB& txdb, const std::map<uint256, CTxIndex>& mapTestPool, CBlock *pblockNew, bool fMiner, MapPrevTx& inputsRet, bool& fInvalid);
 
     bool ClientConnectInputs(int ifaceIndex);
 
@@ -1121,7 +1047,40 @@ public:
     /* fmap */
     bool ConnectInputs(int ifaceIndex, const CBlockIndex* pindexBlock, tx_map& mapOutput, map<uint256, CTransaction> mapTx, int& nSigOps, int64& nFees, bool fVerifySig = true, bool fVerifyInputs = false, bool fRequireInputs = false);
 
+
     bool GetOutputFor(const CTxIn& input, tx_cache& inputs, CTxOut& retOut);
+
+#ifdef USE_LEVELDB_COINDB
+    /**
+     * Verifies whether a vSpent has been spent.
+     * @param hashTx The hash of the transaction attempting to spend the input.
+     */
+    bool IsSpentTx(const CDiskTxPos& pos);
+
+    bool ReadFromDisk(CDiskTxPos pos);
+
+
+    /** 
+     * Fetch from memory and/or disk. inputsRet keys are transaction hashes.
+     *
+     * @param[in] txdb  Transaction database
+     * @param[in] mapTestPool List of pending changes to the transaction index database
+     * @param[in] fBlock  True if being called to add a new best-block to the chain
+     * @param[in] fMiner  True if being called by CreateNewBlock
+     * @param[out] inputsRet  Pointers to this transaction's inputs
+     * @param[out] fInvalid returns true if transaction is invalid
+     * @return  Returns true if all inputs are in txdb or mapTestPool
+     */
+    bool FetchInputs(CTxDB& txdb, const std::map<uint256, CTxIndex>& mapTestPool, CBlock *pblockNew, bool fMiner, MapPrevTx& inputsRet, bool& fInvalid);
+
+    /* leveldb */
+    bool DisconnectInputs(CTxDB& txdb);
+
+    bool ReadFromDisk(CTxDB& txdb, COutPoint prevout, CTxIndex& txindexRet);
+#else
+    /* fmap */
+    bool DisconnectInputs(int ifaceIndex);
+#endif
 
 protected:
     /* leveldb */
@@ -1345,18 +1304,7 @@ class CBlock : public CBlockHeader
     virtual bool ReadArchBlock(uint256 hash) = 0;
     virtual bool CheckBlock() = 0;
 
-    /* leveldb */
-    virtual bool SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew) = 0;
-//    virtual bool SetBestChainInner(CTxDB& txdb, CBlockIndex *pindexNew) = 0;
 
-    /* fmap */
-    virtual bool SetBestChain(CBlockIndex* pindexNew) = 0;
-
-    /* leveldb */
-    virtual bool ConnectBlock(CTxDB& txdb, CBlockIndex* pindex) = 0;
-
-    /* fmap */
-    virtual bool ConnectBlock(CBlockIndex* pindex);
 
 
     virtual bool IsBestChain() = 0;
@@ -1372,11 +1320,17 @@ class CBlock : public CBlockHeader
     /* a weight based on the block size */
     virtual int64_t GetBlockWeight() = 0;
 
+#ifdef USE_LEVELDB_COINDB
     /* leveldb */
     virtual bool DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex) = 0;
-
+    virtual bool SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew) = 0;
+    virtual bool ConnectBlock(CTxDB& txdb, CBlockIndex* pindex) = 0;
+#else
     /* fmap */
-    bool DisconnectBlock(CBlockIndex* pindex);
+    virtual bool DisconnectBlock(CBlockIndex* pindex) = 0;
+    virtual bool SetBestChain(CBlockIndex* pindexNew) = 0;
+    virtual bool ConnectBlock(CBlockIndex* pindex) = 0;
+#endif
 
 };
 
@@ -1559,66 +1513,6 @@ class CBlockIndex
       printf("%s\n", ToString().c_str());
     }
 };
-
-
-#if 0
-class GMCBlock : public CBlock
-{
-public:
-    // header
-    static const int CURRENT_VERSION=2;
-
-    GMCBlock()
-    {
-//        ifaceIndex = GMC_COIN_IFACE;
-        SetNull();
-    }
-
-    void SetNull()
-    {
-      nVersion = GMCBlock::CURRENT_VERSION;
-      CBlock::SetNull();
-    }
-};
-#endif
-
-
-
-#if 0
-class CTxMemPool
-{
-public:
-    mutable CCriticalSection cs;
-    std::map<uint256, CTransaction> mapTx;
-    std::map<COutPoint, CInPoint> mapNextTx;
-
-    virtual bool accept(CTxDB& txdb, CTransaction &tx, bool fCheckInputs, bool* pfMissingInputs) = 0;
-
-    unsigned long size()
-    {
-        LOCK(cs);
-        return mapTx.size();
-    }
-
-    bool exists(uint256 hash)
-    {
-        return (mapTx.count(hash) != 0);
-    }
-
-    CTransaction& lookup(uint256 hash)
-    {
-        return mapTx[hash];
-    }
-
-    virtual void queryHashes(std::vector<uint256>& vtxid) = 0;
-
-    virtual bool remove(CTransaction &tx) = 0;
-
-    virtual bool addUnchecked(const uint256& hash, CTransaction &tx) = 0;
-
-
-};
-#endif
 
 blkidx_t *GetBlockTable(int ifaceIndex);
 
@@ -1816,15 +1710,19 @@ bool core_AcceptBlock(CBlock *pblock, CBlockIndex *pindexPrev);
 
 CBlockIndex *GetBlockIndexByHeight(int ifaceIndex, unsigned int nHeight);
 
-bool core_DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex, CBlock *pblock);
 
 void CloseBlockChain(CIface *iface);
 
 void CloseBlockChains(void);
 
+#ifdef USE_LEVELDB_COINDB
 bool core_CommitBlock(CTxDB& txdb, CBlock *pblock, CBlockIndex *pindexNew);
-
+bool core_DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex, CBlock *pblock);
+#else
 bool core_CommitBlock(CBlock *pblock, CBlockIndex *pindexNew);
+bool core_DisconnectBlock(CBlockIndex* pindex, CBlock *pblock);
+#endif
+
 
 int BackupBlockChain(CIface *iface, unsigned int maxHeight);
 

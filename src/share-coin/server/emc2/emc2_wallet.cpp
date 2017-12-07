@@ -152,7 +152,7 @@ bool emc2_LoadWallet(void)
   return (true);
 }
 
-
+#ifdef USE_LEVELDB_COINDB
 void EMC2Wallet::RelayWalletTransaction(CWalletTx& wtx)
 {
   EMC2TxDB txdb;
@@ -178,6 +178,28 @@ void EMC2Wallet::RelayWalletTransaction(CWalletTx& wtx)
 
   txdb.Close();
 }
+#else
+void EMC2Wallet::RelayWalletTransaction(CWalletTx& wtx)
+{
+  CIface *iface = GetCoinByIndex(EMC2_COIN_IFACE);
+
+  BOOST_FOREACH(const CMerkleTx& tx, wtx.vtxPrev) { 
+    if (!tx.IsCoinBase() && !tx.vin.empty()) {
+      uint256 hash = tx.GetHash();
+      if (!VerifyTxHash(iface, hash))
+        RelayMessage(CInv(ifaceIndex, MSG_TX, hash), (CTransaction)tx);
+    }
+  }
+
+  if (!wtx.IsCoinBase()) {
+    uint256 hash = wtx.GetHash();
+    if (!VerifyTxHash(iface, hash)) {
+      RelayMessage(CInv(ifaceIndex, MSG_TX, hash), (CTransaction)wtx);
+    }
+  }
+
+}
+#endif
 
 
 void EMC2Wallet::ResendWalletTransactions()
@@ -199,7 +221,6 @@ void EMC2Wallet::ResendWalletTransactions()
   nLastTime = GetTime();
 
   // Rebroadcast any of our txes that aren't in a block yet
-  EMC2TxDB txdb;
   {
     LOCK(cs_wallet);
     // Sort them in chronological order
@@ -219,9 +240,9 @@ void EMC2Wallet::ResendWalletTransactions()
       RelayWalletTransaction(wtx);
     }
   }
-  txdb.Close();
 }
 
+#ifdef USE_LEVELDB_COINDB
 void EMC2Wallet::ReacceptWalletTransactions()
 {
   EMC2TxDB txdb;
@@ -296,6 +317,90 @@ void EMC2Wallet::ReacceptWalletTransactions()
   }
   txdb.Close();
 }
+#else
+void EMC2Wallet::ReacceptWalletTransactions()
+{
+  CIface *iface = GetCoinByIndex(ifaceIndex);
+  blkidx_t *blockIndex = GetBlockTable(ifaceIndex);
+  vector<CWalletTx> vMissingTx;
+  bool fRepeat = true;
+  bool spent;
+
+  {
+    LOCK(cs_wallet);
+    fRepeat = false;
+    BOOST_FOREACH(PAIRTYPE(const uint256, CWalletTx)& item, mapWallet)
+    {
+      CWalletTx& wtx = item.second;
+      vector<uint256> vOuts; 
+
+      if (wtx.ReadCoins(ifaceIndex, vOuts) &&
+          VerifyTxHash(iface, wtx.GetHash())) { /* in block-chain */
+        /* sanity */
+        if (vOuts.size() != wtx.vout.size()) {
+          error(SHERR_INVAL, "ReacceptWalletTransactions: txindex.vSpent.size() %d != wtx.vout.size() %d\n", vOuts.size(), wtx.vout.size());
+          continue;
+        }
+
+        /* check for mis-marked spents */
+        for (unsigned int i = 0; i < vOuts.size(); i++) {
+          if (vOuts[i].IsNull())
+            continue; /* not spent */
+
+          if (!IsMine(wtx.vout[i]))
+            continue; /* not local */
+
+          spent = !vOuts[i].IsNull();
+          if (spent != wtx.vfSpent[i]) {
+            /* over-ride wallet with coin db */
+            wtx.vfSpent[i] = spent;
+            vMissingTx.push_back(wtx);
+          }
+        }
+      } else if (!wtx.IsCoinBase()) {
+        /* reaccept into mempool. */
+        if (!wtx.AcceptWalletTransaction()) {
+          error(SHERR_INVAL, "ReacceptWalletTransactions: !wtx.AcceptWalletTransaction()");
+        }
+      }
+    }
+
+    if (!vMissingTx.empty()) { /* mis-marked tx's */
+      CBlockIndex *min_pindex = NULL;
+      int64 min_height = GetBestHeight(iface) + 1;
+      BOOST_FOREACH(CWalletTx& wtx, vMissingTx) {
+        uint256 hash = wtx.GetHash();
+
+        Debug("ReacceptWalletTransaction: found spent coin (%f) \"%s\".", FormatMoney(wtx.GetCredit()).c_str(), hash.ToString().c_str());
+
+        /* update to disk */
+        wtx.MarkDirty();
+        wtx.WriteToDisk();
+
+        /* find earliest block-index involved. */
+        CTransaction t_tx;
+        uint256 blk_hash; 
+        if (::GetTransaction(iface, hash, t_tx, &blk_hash) &&
+            blockIndex->count(blk_hash) != 0) {
+          CBlockIndex *pindex = (*blockIndex)[blk_hash];
+          if (pindex->nHeight >= min_height) {
+            min_pindex = pindex;
+            min_height = pindex->nHeight;
+          }
+        }
+      }
+      if (min_pindex) {
+        if (min_pindex->pprev)
+          min_pindex = min_pindex->pprev;
+        ScanForWalletTransactions(min_pindex);
+      } else {
+        ScanForWalletTransactions(EMC2Block::pindexGenesisBlock);
+      }
+    }
+  }
+
+}
+#endif
 
 int EMC2Wallet::ScanForWalletTransactions(CBlockIndex* pindexStart, bool fUpdate)
 {
@@ -327,25 +432,29 @@ int EMC2Wallet::ScanForWalletTransactions(CBlockIndex* pindexStart, bool fUpdate
 
 int64 EMC2Wallet::GetTxFee(CTransaction tx)
 {
-  map<uint256, CTxIndex> mapQueuedChanges;
-  MapPrevTx inputs;
+  CIface *iface = GetCoinByIndex(EMC2_COIN_IFACE);
+  CBlock *pblock = GetBlockByTx(iface, tx.GetHash());
   int64 nFees;
   int i;
 
   if (tx.IsCoinBase())
     return (0);
 
-  CIface *iface = GetCoinByIndex(EMC2_COIN_IFACE);
-  CBlock *pblock = GetBlockByTx(iface, tx.GetHash());
-
-  EMC2TxDB txdb;
-
   nFees = 0;
+#ifdef USE_LEVELDB_COINDB
   bool fInvalid = false;
+  map<uint256, CTxIndex> mapQueuedChanges;
+  MapPrevTx inputs;
+  EMC2TxDB txdb;
   if (tx.FetchInputs(txdb, mapQueuedChanges, pblock, false, inputs, fInvalid))
     nFees += tx.GetValueIn(inputs) - tx.GetValueOut();
-
   txdb.Close();
+#else
+  tx_cache inputs;
+  if (FillInputs(tx, inputs)) {
+    nFees += tx.GetValueIn(inputs) - tx.GetValueOut();
+  }
+#endif
 
   if (pblock) delete pblock;
   return (nFees);
@@ -356,6 +465,10 @@ bool EMC2Wallet::CommitTransaction(CWalletTx& wtxNew)
 {
   CIface *iface = GetCoinByIndex(EMC2_COIN_IFACE);
   CTxMemPool *pool = GetTxMemPool(iface);
+
+  /* perform final checks & submit to pool. */
+    if (!pool->AddTx(wtxNew))
+      return (false);
 
   {
     LOCK2(cs_main, cs_wallet);
@@ -404,8 +517,6 @@ bool EMC2Wallet::CommitTransaction(CWalletTx& wtxNew)
       return false;
     }
 #endif
-    if (!pool->AddTx(wtxNew))
-      return (false);
 
     RelayWalletTransaction(wtxNew); 
   }
@@ -436,8 +547,6 @@ bool EMC2Wallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend,
 
   {
     LOCK2(cs_main, cs_wallet);
-    // txdb must be opened before the mapWallet lock
-    EMC2TxDB txdb;
     {
 
 
@@ -520,7 +629,6 @@ bool EMC2Wallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend,
         BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setCoins) {
           CSignature sig(EMC2_COIN_IFACE, &wtxNew, nIn);
           if (!sig.SignSignature(*coin.first)) {
-            txdb.Close();
             return false;
           }
 
@@ -531,7 +639,6 @@ bool EMC2Wallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend,
         int nIn = 0;
         BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setCoins)
           if (!SignSignature(*this, *coin.first, wtxNew, nIn++)) {
-            txdb.Close();
             return false;
           }
 #endif
@@ -539,7 +646,6 @@ bool EMC2Wallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend,
         /* Ensure transaction does not breach a defined size limitation. */
         unsigned int nWeight = GetTransactionWeight(wtxNew);
         if (nWeight >= MAX_TRANSACTION_WEIGHT(iface)) {
-          txdb.Close(); 
           return (error(SHERR_INVAL, "The transaction size is too large."));
         }
 
@@ -563,13 +669,12 @@ bool EMC2Wallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend,
         }
 
         // Fill vtxPrev by copying from previous transactions vtxPrev
-        wtxNew.AddSupportingTransactions(txdb);
+        wtxNew.AddSupportingTransactions();
         wtxNew.fTimeReceivedIsTxTime = true;
 
         break;
       }
     }
-    txdb.Close();
   }
   return true;
 }
@@ -583,11 +688,10 @@ bool EMC2Wallet::CreateTransaction(CScript scriptPubKey, int64 nValue, CWalletTx
 
 void EMC2Wallet::AddSupportingTransactions(CWalletTx& wtx)
 {
-  EMC2TxDB txdb;
-  wtx.AddSupportingTransactions(txdb);
-  txdb.Close();
+  wtx.AddSupportingTransactions();
 }
 
+#ifdef USE_LEVELDB_COINDB
 bool EMC2Wallet::UnacceptWalletTransaction(const CTransaction& tx)
 {
   CIface *iface = GetCoinByIndex(EMC2_COIN_IFACE);
@@ -622,6 +726,13 @@ bool EMC2Wallet::UnacceptWalletTransaction(const CTransaction& tx)
 
   return (true);
 }
+#else
+bool EMC2Wallet::UnacceptWalletTransaction(const CTransaction& tx)
+{
+  CIface *iface = GetCoinByIndex(EMC2_COIN_IFACE);
+  return (core_UnacceptWalletTransaction(iface, tx));
+}
+#endif
 
 int64 EMC2Wallet::GetBlockValue(int nHeight, int64 nFees)
 {
@@ -651,8 +762,6 @@ bool EMC2Wallet::CreateAccountTransaction(string strFromAccount, const vector<pa
 
   {
     LOCK2(cs_main, cs_wallet);
-    // txdb must be opened before the mapWallet lock
-    EMC2TxDB txdb;
     {
       nFeeRet = 0;
 
@@ -747,7 +856,6 @@ bool EMC2Wallet::CreateAccountTransaction(string strFromAccount, const vector<pa
             s_wtx->MarkSpent(nIn);
 #endif
 
-            txdb.Close();
             strError = strprintf(_("An error occurred signing the transaction [input tx \"%s\", output #%d]."), s_wtx->GetHash().GetHex().c_str(), nIn);
             return false;
           }
@@ -766,7 +874,6 @@ bool EMC2Wallet::CreateAccountTransaction(string strFromAccount, const vector<pa
             s_wtx->MarkSpent(nIn);
 #endif
 
-            txdb.Close();
             strError = strprintf(_("An error occurred signing the transaction [input tx \"%s\", output #%d]."), s_wtx->GetHash().GetHex().c_str(), nIn);
             return false;
           }
@@ -776,7 +883,6 @@ bool EMC2Wallet::CreateAccountTransaction(string strFromAccount, const vector<pa
         /* Ensure transaction does not breach a defined size limitation. */
         unsigned int nWeight = GetTransactionWeight(wtxNew);
         if (nWeight >= MAX_TRANSACTION_WEIGHT(iface)) {
-          txdb.Close(); 
           return (error(SHERR_INVAL, "The transaction size is too large."));
         }
 
@@ -800,13 +906,12 @@ bool EMC2Wallet::CreateAccountTransaction(string strFromAccount, const vector<pa
         }
 
         // Fill vtxPrev by copying from previous transactions vtxPrev
-        wtxNew.AddSupportingTransactions(txdb);
+        wtxNew.AddSupportingTransactions();
         wtxNew.fTimeReceivedIsTxTime = true;
 
         break;
       }
     }
-    txdb.Close();
   }
   return true;
 }

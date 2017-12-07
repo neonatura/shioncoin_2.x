@@ -34,6 +34,7 @@
 #include "emc2_txidx.h"
 #include "chain.h"
 #include "spring.h"
+#include "coin.h"
 
 #include <boost/array.hpp>
 #include <boost/assign/list_of.hpp>
@@ -275,35 +276,6 @@ bool EMC2TxDB::LoadBlockIndexGuts()
 
 
 
-
-
-bool EMC2TxDB::ReadDiskTx(uint256 hash, CTransaction& tx, CTxIndex& txindex)
-{
-  tx.SetNull();
-  if (!ReadTxIndex(hash, txindex))
-    return false;
-  return (tx.ReadFromDisk(txindex.pos));
-}
-
-bool EMC2TxDB::ReadDiskTx(uint256 hash, CTransaction& tx)
-{
-  CTxIndex txindex;
-  return ReadDiskTx(hash, tx, txindex);
-}
-
-bool EMC2TxDB::ReadDiskTx(COutPoint outpoint, CTransaction& tx, CTxIndex& txindex)
-{
-  return ReadDiskTx(outpoint.hash, tx, txindex);
-}
-
-bool EMC2TxDB::ReadDiskTx(COutPoint outpoint, CTransaction& tx)
-{
-  CTxIndex txindex;
-  return ReadDiskTx(outpoint.hash, tx, txindex);
-}
-
-
-
 CBlockIndex static * InsertBlockIndex(uint256 hash)
 {
 
@@ -341,12 +313,14 @@ bool emc2_FillBlockIndex()
   int nHeight;
   int err;
 
+#ifdef USE_LEVELDB_COINDB
   bool checkBest = false;
   uint256 hashBestChain;
   EMC2TxDB txdb;
   if (txdb.ReadHashBestChain(hashBestChain))
     checkBest = true;
   txdb.Close();
+#endif
 
   int nMaxIndex = bc_idx_next(bc);
 
@@ -396,9 +370,11 @@ fprintf(stderr, "DEBUG: emc2_FillBlockIndex: stopping at orphan '%s' @ height %d
 
     lastIndex = pindexNew;
 
+#ifdef USE_LEVELDB_COINDB
     if (checkBest && hash == hashBestChain) {
       break;
     } 
+#endif
   }
   SetBestBlockIndex(iface, lastIndex);
 
@@ -423,8 +399,11 @@ static bool hasGenesisRoot(CBlockIndex *pindexBest)
   return (true);
 }
 
-
+#ifdef USE_LEVELDB_COINDB
 bool EMC2TxDB::LoadBlockIndex()
+#else
+static bool emc2_LoadBlockIndex()
+#endif
 {
   CIface *iface = GetCoinByIndex(EMC2_COIN_IFACE);
   blkidx_t *mapBlockIndex = GetBlockTable(EMC2_COIN_IFACE);
@@ -455,7 +434,11 @@ bool EMC2TxDB::LoadBlockIndex()
 
   // Load EMC2Block::hashBestChain pointer to end of best chain
   uint256 hashBestChain;
+#ifdef USE_LEVELDB_COINDB
   if (!ReadHashBestChain(hashBestChain))
+#else
+  if (!::ReadHashBestChain(iface, hashBestChain))
+#endif
   {
     if (EMC2Block::pindexGenesisBlock == NULL) {
       fprintf(stderr, "DEBUG: EMC2TxDB::LoadBlockIndex() : EMC2Block::hashBestChain not loaded, but pindexGenesisBlock == NULL");
@@ -496,8 +479,10 @@ bool EMC2TxDB::LoadBlockIndex()
 
   //printf("LoadBlockIndex(): EMC2Block::hashBestChain=%s  height=%d  date=%s\n", hashBestChain.ToString().substr(0,20).c_str(), GetBestHeight(iface), DateTimeStrFormat("%x %H:%M:%S", pindexBest->GetBlockTime()).c_str());
 
+#ifdef USE_LEVELDB_COINDB
   // Load bnBestInvalidWork, OK if it doesn't exist
   ReadBestInvalidWork(EMC2Block::bnBestInvalidWork);
+#endif
 
   int nCheckDepth = (GetBestHeight(EMC2_COIN_IFACE) / 100) + 10240;
   int total = 0;
@@ -540,9 +525,11 @@ bool EMC2TxDB::LoadBlockIndex()
     EMC2Block block;
     if (!block.ReadFromDisk(pindexFork))
       return error(SHERR_INVAL, "LoadBlockIndex() : block.ReadFromDisk failed");
+#ifdef USE_LEVELDB_COINDB
     EMC2TxDB txdb;
     block.SetBestChain(txdb, pindexFork);
     txdb.Close();
+#endif
 
     pindexBest = pindexFork;
   }
@@ -569,9 +556,13 @@ bool emc2_InitBlockIndex()
 #define CHARITY_ADDRESS "1cec44c9f9b769ae08ebf9d694c7611a16edf615"
   EMC2_CHARITY_SCRIPT << OP_DUP << OP_HASH160 << ParseHex(CHARITY_ADDRESS) << OP_EQUALVERIFY << OP_CHECKSIG;
 
+#ifdef USE_LEVELDB_COINDB
   EMC2TxDB txdb("cr");
   ret = txdb.LoadBlockIndex();
   txdb.Close();
+#else
+  ret = emc2_LoadBlockIndex();
+#endif
   if (!ret)
     return (false);
 
@@ -581,19 +572,6 @@ bool emc2_InitBlockIndex()
   return (true);
 }
    
-bool EMC2TxDB::WriteFlag(const std::string &name, bool fValue) 
-{
-  return Write(std::make_pair('F', name), fValue ? '1' : '0');
-}
-
-bool EMC2TxDB::ReadFlag(const std::string &name, bool &fValue) 
-{
-  char ch;
-  if (!Read(std::make_pair('F', name), ch))
-    return false;
-  fValue = ch == '1';
-  return true;
-}
 
 
 bool emc2_RestoreBlockIndex()
@@ -611,10 +589,12 @@ bool emc2_RestoreBlockIndex()
   int err;
   bool ret;
 
+#ifdef USE_LEVELDB_COINDB
   {
     EMC2TxDB txdb("cr");
     txdb.Close();
   }
+#endif
 
   if (!emc2_CreateGenesisBlock())
     return (false);
@@ -622,7 +602,9 @@ bool emc2_RestoreBlockIndex()
   bc_table_clear(chain);
   bc_table_clear(chain_tx);
 
+#ifdef USE_LEVELDB_COINDB
   EMC2TxDB txdb;
+#endif
 
   uint256 hash = emc2_hashGenesisBlock;
   {
@@ -655,11 +637,13 @@ bool emc2_RestoreBlockIndex()
       BOOST_FOREACH(CTransaction& tx, block.vtx) {
         tx.WriteTx(EMC2_COIN_IFACE, height);
 
+#ifdef USE_LEVELDB_COINDB
         nBlockPos = nTxPos = -1;
         (void)bc_idx_find(chain, hash.GetRaw(), NULL, &nBlockPos);
         (void)bc_idx_find(chain_tx, tx.GetHash().GetRaw(), NULL, &nTxPos);
         CDiskTxPos posThisTx(EMC2_COIN_IFACE, nBlockPos, nTxPos);
         txdb.AddTxIndex(tx, posThisTx, height);
+#endif
       }
 
     }
@@ -670,11 +654,61 @@ bool emc2_RestoreBlockIndex()
   bc_idle(chain);
   bc_idle(chain_tx);
 
+#ifdef USE_LEVELDB_COINDB
   txdb.WriteHashBestChain(hash);
   ret = txdb.LoadBlockIndex();
   txdb.Close();
   if (!ret)
     return (false);
+#else
+  WriteHashBestChain(iface, hash);
+#endif
 
   return (true);
 }
+
+
+#ifdef USE_LEVELDB_COINDB
+
+bool EMC2TxDB::WriteFlag(const std::string &name, bool fValue) 
+{
+  return Write(std::make_pair('F', name), fValue ? '1' : '0');
+}
+
+bool EMC2TxDB::ReadFlag(const std::string &name, bool &fValue) 
+{
+  char ch;
+  if (!Read(std::make_pair('F', name), ch))
+    return false;
+  fValue = ch == '1';
+  return true;
+}
+
+bool EMC2TxDB::ReadDiskTx(uint256 hash, CTransaction& tx, CTxIndex& txindex)
+{
+  tx.SetNull();
+  if (!ReadTxIndex(hash, txindex))
+    return false;
+  return (tx.ReadFromDisk(txindex.pos));
+}
+
+bool EMC2TxDB::ReadDiskTx(uint256 hash, CTransaction& tx)
+{
+  CTxIndex txindex;
+  return ReadDiskTx(hash, tx, txindex);
+}
+
+bool EMC2TxDB::ReadDiskTx(COutPoint outpoint, CTransaction& tx, CTxIndex& txindex)
+{
+  return ReadDiskTx(outpoint.hash, tx, txindex);
+}
+
+bool EMC2TxDB::ReadDiskTx(COutPoint outpoint, CTransaction& tx)
+{
+  CTxIndex txindex;
+  return ReadDiskTx(outpoint.hash, tx, txindex);
+}
+
+#endif
+
+

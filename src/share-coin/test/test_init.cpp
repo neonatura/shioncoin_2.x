@@ -36,12 +36,14 @@ void test_shcoind_init(void)
   iface->op_init(iface, NULL);
 
 
+#ifdef USE_LEVELDB_COINDB
   /* initialize chain */
   {
     TESTTxDB txdb("cr");
  //   txdb.ReadHashBestChain(thash);
     txdb.Close();
   }
+#endif
   test_CreateGenesisBlock();
 
 

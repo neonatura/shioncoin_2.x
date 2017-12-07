@@ -41,6 +41,7 @@ extern TEST_segwit(CuTest*);
 extern TEST_segwit_serializetx(CuTest*);
 extern TEST_txmempool_pending(CuTest*);
 extern TEST_txmempool_inval(CuTest*);
+extern TEST_respend(CuTest*);
 
 
 
@@ -67,7 +68,6 @@ int main(int argc, char *argv[])
 
   test_shcoind_init();
 
-#if 0
   /* core tests */
   SUITE_ADD_TEST(suite, TEST_coinaddr);
   SUITE_ADD_TEST(suite, TEST_bloom_create_insert_key);
@@ -82,13 +82,11 @@ int main(int argc, char *argv[])
   SUITE_ADD_TEST(suite, TEST_blockchain);
   SUITE_ADD_TEST(suite, TEST_matrix);
   SUITE_ADD_TEST(suite, TEST_serializetx);
-#endif
 
   /* block-chain transaction tests */
   SUITE_ADD_TEST(suite, TEST_reorganize);
   SUITE_ADD_TEST(suite, TEST_matrixtx);
   SUITE_ADD_TEST(suite, TEST_identtx);
-#if 0
 //  SUITE_ADD_TEST(suite, TEST_truncate);
   SUITE_ADD_TEST(suite, TEST_hdtx);
   SUITE_ADD_TEST(suite, TEST_signtx);
@@ -105,6 +103,7 @@ int main(int argc, char *argv[])
   /* tx memory pool */
   SUITE_ADD_TEST(suite, TEST_txmempool_pending);
   SUITE_ADD_TEST(suite, TEST_txmempool_inval);
+  SUITE_ADD_TEST(suite, TEST_respend);
 
   /* segwit tests */
   SUITE_ADD_TEST(suite, TEST_segwit);
@@ -113,7 +112,6 @@ int main(int argc, char *argv[])
   /* finale */
   SUITE_ADD_TEST(suite, TEST_coin_table);
   SUITE_ADD_TEST(suite, TEST_coin_spendall);
-#endif
 
   CuSuiteRun(suite);
   CuSuiteSummary(suite, output);

@@ -110,6 +110,41 @@ static bool serv_state(CIface *iface, int flag)
 #endif
 
 
+
+void core_UpdateCoins(int ifaceIndex, const CTransaction& tx, bool fLocal = true)
+{
+  CIface *iface = GetCoinByIndex(ifaceIndex);
+  CWallet *wallet = GetWallet(iface);
+  const uint256& tx_hash = tx.GetHash();
+
+  BOOST_FOREACH(const CTxIn& txin, tx.vin) {
+    const uint256& hash = txin.prevout.hash;
+    int nOut = txin.prevout.n;
+
+    if (wallet->mapWallet.count(hash) != 0) {
+      vector<uint256> vOuts;
+      CWalletTx& wtx = wallet->mapWallet[hash];
+      if (wtx.ReadCoins(ifaceIndex, vOuts) &&
+          nOut < vOuts.size() && vOuts[nOut].IsNull()) {
+        vOuts[nOut] = tx_hash;
+        wtx.WriteCoins(ifaceIndex, vOuts);
+      }
+    } else if (!fLocal) {
+      CTransaction tx;
+      if (::GetTransaction(iface, hash, tx, NULL)) {
+        vector<uint256> vOuts;
+        if (tx.ReadCoins(ifaceIndex, vOuts) &&
+            nOut < vOuts.size() && vOuts[nOut].IsNull()) {
+          vOuts[nOut] = tx_hash;
+          tx.WriteCoins(ifaceIndex, vOuts);
+        }
+      }
+    }
+  
+  }
+ 
+}
+
 static bool ServiceWalletEvent(int ifaceIndex)
 {
   CIface *iface = GetCoinByIndex(ifaceIndex);
@@ -134,6 +169,9 @@ static bool ServiceWalletEvent(int ifaceIndex)
       BOOST_FOREACH(const CTransaction& tx, block->vtx) {
 /* opt_bool(OPT_WALLET_REACCEPT */
         wallet->AddToWalletIfInvolvingMe(tx, block, false, false);
+      }
+      BOOST_FOREACH(const CTransaction& tx, block->vtx) {
+        core_UpdateCoins(ifaceIndex, tx);
       }
 
       delete block;

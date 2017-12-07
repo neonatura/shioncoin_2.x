@@ -73,7 +73,7 @@ public:
 #endif
 
 
-
+#ifdef USE_LEVELDB_COINDB
 
 class EMC2TxDB : public CTxDB
 {
@@ -93,6 +93,8 @@ class EMC2TxDB : public CTxDB
     void operator=(const EMC2TxDB&);
     bool LoadBlockIndexGuts();
 };
+
+#endif
 
 
 static bool IsChainFile(std::string strFile)

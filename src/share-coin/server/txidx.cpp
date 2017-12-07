@@ -385,6 +385,53 @@ void CDBEnv::Flush(bool fShutdown)
 
 
 
+CBlockIndex *InsertBlockIndex(blkidx_t *blockIndex, uint256 hash)
+{
+    if (hash == 0)
+        return NULL;
+
+    // Return existing
+    map<uint256, CBlockIndex*>::iterator mi = blockIndex->find(hash);
+    if (mi != blockIndex->end())
+        return (*mi).second;
+
+    // Create new
+    CBlockIndex* pindexNew = new CBlockIndex();
+    if (!pindexNew)
+        throw runtime_error("LoadBlockIndex() : new CBlockIndex failed");
+    mi = blockIndex->insert(make_pair(hash, pindexNew)).first;
+    pindexNew->phashBlock = &((*mi).first);
+
+    return pindexNew;
+}
+
+
+#if 0
+/** FOLLOWING NOT USED YET **/
+
+
+int txdb_hashlist_cb(void *p, int arg_nr, char **args, char **cols)
+{
+  HashList *list = (HashList *)p;
+  uint256 hash;
+
+  if (arg_nr > 0 && *args) {
+    hash.SetHex(*args);
+    list->push_back(hash);
+  }
+
+  return (0);
+}
+
+
+
+
+#endif
+
+
+
+
+#ifdef USE_LEVELDB_COINDB
 
 //
 // CTxDB
@@ -435,48 +482,10 @@ bool CTxDB::ReadDiskTx(uint256 hash, CTransaction& tx)
   return (tx.ReadTx(ifaceIndex, hash));
 }
 
-#if 0
-bool CTxDB::ReadDiskTx(uint256 hash, CTransaction& tx, CTxIndex& txindex)
-{
-return (GetTransaction(GetCoinByIndex(ifaceIndex), hash, tx, (*blkidx)[
-    assert(!fClient);
-    tx.SetNull();
-    if (!ReadTxIndex(hash, txindex))
-        return false;
-    return (tx.ReadFromDisk(txindex.pos));
-}
-#endif
-
-#if 0
-bool CTxDB::ReadDiskTx(uint256 hash, CTransaction& tx)
-{
-    CTxIndex txindex;
-    return ReadDiskTx(hash, tx, txindex);
-}
-#endif
-
-#if 0
-bool CTxDB::ReadDiskTx(COutPoint outpoint, CTransaction& tx, CTxIndex& txindex)
-{
-    return ReadDiskTx(outpoint.hash, tx, txindex);
-}
-#endif
-
 bool CTxDB::ReadDiskTx(COutPoint outpoint, CTransaction& tx)
 {
   return (ReadDiskTx(outpoint.hash, tx));
-#if 0
-    CTxIndex txindex;
-    return ReadDiskTx(outpoint.hash, tx, txindex);
-#endif
 }
-
-#if 0
-bool CTxDB::WriteBlockIndex(const CDiskBlockIndex& blockindex)
-{
-    return Write(make_pair(string("blockindex"), blockindex.GetBlockHash()), blockindex);
-}
-#endif
 
 bool CTxDB::ReadHashBestChain(uint256& hashBestChain)
 {
@@ -498,206 +507,7 @@ bool CTxDB::WriteBestInvalidWork(CBigNum bnBestInvalidWork)
     return Write(string("bnBestInvalidWork"), bnBestInvalidWork);
 }
 
-CBlockIndex *InsertBlockIndex(blkidx_t *blockIndex, uint256 hash)
-{
-    if (hash == 0)
-        return NULL;
-
-    // Return existing
-    map<uint256, CBlockIndex*>::iterator mi = blockIndex->find(hash);
-    if (mi != blockIndex->end())
-        return (*mi).second;
-
-    // Create new
-    CBlockIndex* pindexNew = new CBlockIndex();
-    if (!pindexNew)
-        throw runtime_error("LoadBlockIndex() : new CBlockIndex failed");
-    mi = blockIndex->insert(make_pair(hash, pindexNew)).first;
-    pindexNew->phashBlock = &((*mi).first);
-
-    return pindexNew;
-}
-
-
-/** FOLLOWING NOT USED YET **/
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#define TXIDX_TABLE "txidx"
-
-#if 0
-shdb_t *txdb_open(CIface *iface)
-{
-  shdb_t *db;
-
-  db = shdb_open(iface->name);
-  if (!db)
-    return (NULL);
-
-  if (0 == shdb_table_new(db, TXIDX_TABLE)) {
-    shdb_col_new(db, TXIDX_TABLE, "origin");
-    shdb_col_new(db, TXIDX_TABLE, "spent");
-  }
-
-  return (db);
-}
-
-
-void txdb_close(shdb_t **db_p)
-{
-  shdb_t *db;
-
-  if (!db_p)
-    return;
-
-  db = *db_p;
-  *db_p = NULL;
-
-  shdb_close(db);
-}
-#endif
-
-#if 0
-bool WriteTxIndex(CIface *iface, uint256 txOrigin, uint256 txSpent)
-{
-  shdb_t *db;
-  shdb_idx_t rowid;
-  char sql_str[1024];
-  char hash[512];
-  char *ret_val;
-  int err;
-
-  db = txdb_open(iface);
-  if (!db)
-    return (false);
-
-  ret_val = NULL;
-  sprintf(sql_str, "select origin from %s where origin = '%s' and spent = '%s'", TXIDX_TABLE, txOrigin.GetHex().c_str(), txSpent.GetHex().c_str());
-  err = shdb_exec_cb(db, sql_str, shdb_col_value_cb, &ret_val);
-  if (!err) {
-    /* entry already exists */
-    free(ret_val);
-    return (0);
-  }
-
-  err = shdb_row_new(db, TXIDX_TABLE, &rowid);
-  if (err) goto error;
-  strcpy(hash, txOrigin.GetHex().c_str());
-  err = shdb_row_set(db, TXIDX_TABLE, rowid, "origin", hash);
-  if (err) goto error;
-  strcpy(hash, txSpent.GetHex().c_str()); 
-  err = shdb_row_set(db, TXIDX_TABLE, rowid, "spent", hash);
-  if (err) goto error;
-
-  err = 0;
-
-error:
-  txdb_close(&db);
-  return (err);
-}
-#endif
-
-#ifdef __cplusplus
-}
 #endif
 
 
-int txdb_hashlist_cb(void *p, int arg_nr, char **args, char **cols)
-{
-  HashList *list = (HashList *)p;
-  uint256 hash;
-
-  if (arg_nr > 0 && *args) {
-    hash.SetHex(*args);
-    list->push_back(hash);
-  }
-
-  return (0);
-}
-
-
-#if 0
-bool ReadTxIndexOrigin(CIface *iface, uint256 txSpent, HashList& txOrigin)
-{
-  vector<uint256> origin; 
-  shdb_t *db;
-  shdb_idx_t rowid;
-  char sql_str[1024];
-  char *ret_val;
-  int err;
-
-  db = txdb_open(iface);
-  if (!db)
-    return (false);
-
-  ret_val = NULL;
-  sprintf(sql_str, "select origin from %s where spent = '%s'", TXIDX_TABLE, txSpent.GetHex().c_str());
-  shdb_exec_cb(db, sql_str, txdb_hashlist_cb, &origin);
-
-  txOrigin = origin;
-
-  txdb_close(&db);
-  
-  return (true);
-}
-#endif
-
-
-#if 0
-bool ReadTxIndexSpent(CIface *iface, uint256 txOrigin, HashList& txSpent)
-{
-  vector<uint256> spent;
-  shdb_t *db;
-  shdb_idx_t rowid;
-  char sql_str[1024];
-  char *ret_val;
-  int err;
-
-  db = txdb_open(iface);
-  if (!db)
-    return (false);
-
-  ret_val = NULL;
-  sprintf(sql_str, "select spent from %s where origin = '%s'", TXIDX_TABLE, txOrigin.GetHex().c_str());
-  shdb_exec_cb(db, sql_str, txdb_hashlist_cb, &spent);
-
-  txSpent = spent;
-
-  txdb_close(&db);
-  
-  return (true);
-}
-#endif
-
-
-#if 0
-bool CTxDB::ReadHashBestChain(uint256& hashBestChain)
-{
-  CIface *iface = GetCoinByIndex(ifaceIndex);
-  hashBestChain = ReadBestChain(iface);
-  return (true);
-}
-
-bool CTxDB::WriteHashBestChain(uint256 hashBestChain)
-{
-  CIface *iface = GetCoinByIndex(ifaceIndex);
-  WriteBestChain(iface, hashBestChain);
-  return (true);
-}
-bool CTxDB::ReadBestInvalidWork(CBigNum& bnBestInvalidWork)
-{
-  CIface *iface = GetCoinByIndex(ifaceIndex);
-  bnBestInvalidWork = ReadBestInvalid(iface);
-  return (true);
-}
-
-bool CTxDB::WriteBestInvalidWork(CBigNum bnBestInvalidWork)
-{
-  CIface *iface = GetCoinByIndex(ifaceIndex);
-  WriteBestInvalid(iface, bnBestInvalidWork);
-  return (true);
-}
-#endif
 

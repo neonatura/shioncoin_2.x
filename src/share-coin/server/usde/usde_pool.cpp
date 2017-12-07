@@ -119,6 +119,7 @@ bool USDE_CTxMemPool::VerifyCoinStandards(CTransaction& tx, tx_cache& mapInputs)
 
 bool USDE_CTxMemPool::AcceptTx(CTransaction& tx)
 {
+#ifdef USE_LEVELDB_COINDB
   uint256 hash = tx.GetHash();
   bool fCheckInputs = true;
 
@@ -149,6 +150,7 @@ bool USDE_CTxMemPool::AcceptTx(CTransaction& tx)
   }
 
   Debug("(usde) mempool accepted tx \"%s\".", hash.ToString().c_str());
+#endif
   return true;
 }
 

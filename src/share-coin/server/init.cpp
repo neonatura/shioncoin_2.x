@@ -607,6 +607,7 @@ bool AppInit2()
 
     // ********************************************************* Step 6: load blockchain
 
+#if 0
     if (GetBoolArg("-loadblockindextest"))
     {
         CTxDB txdb("r");
@@ -614,8 +615,8 @@ bool AppInit2()
         PrintBlockTree();
         return false;
     }
+#endif
 
-    printf("Loading USDE...\n");
     nStart = GetTimeMillis();
     if (!LoadBlockIndex())
         strErrors << _("Error loading blkindex.dat") << "\n";

@@ -49,6 +49,7 @@
 #include "test/test_txidx.h"
 #include "chain.h"
 #include "txsignature.h"
+#include "coin.h"
 
 using namespace std;
 using namespace boost;
@@ -143,6 +144,7 @@ bool test_LoadWallet(void)
 }
 
 
+#ifdef USE_LEVELDB_COINDB
 void TESTWallet::RelayWalletTransaction(CWalletTx& wtx)
 {
 
@@ -165,6 +167,33 @@ void TESTWallet::RelayWalletTransaction(CWalletTx& wtx)
   }
 
 }
+#else
+void TESTWallet::RelayWalletTransaction(CWalletTx& wtx)
+{
+  CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
+
+  BOOST_FOREACH(const CMerkleTx& tx, wtx.vtxPrev)
+  {
+    // Important: versions of bitcoin before 0.8.6 had a bug that inserted
+    // empty transactions into the vtxPrev, which will cause the node to be
+    // banned when retransmitted, hence the check for !tx.vin.empty()
+    if (!tx.IsCoinBase() && !tx.vin.empty()) {
+      uint256 hash = tx.GetHash();
+      if (!VerifyTxHash(iface, hash)) { //tx.GetDepthInMainChain(SHC_COIN_IFACE) == 0)
+        RelayTransaction(TEST_COIN_IFACE, (CTransaction)tx, tx.GetHash());
+      }
+    }
+  }
+
+  if (!wtx.IsCoinBase()) {
+    uint256 hash = wtx.GetHash();
+    if (!VerifyTxHash(iface, hash)) { //wtx.GetDepthInMainChain(SHC_COIN_IFACE) == 0) {
+      RelayTransaction(TEST_COIN_IFACE, (CTransaction)wtx, hash);
+    }
+  }
+
+}
+#endif
 
 
 void TESTWallet::ResendWalletTransactions()
@@ -186,7 +215,6 @@ void TESTWallet::ResendWalletTransactions()
   nLastTime = GetTime();
 
   // Rebroadcast any of our txes that aren't in a block yet
-  TESTTxDB txdb;
   {
     LOCK(cs_wallet);
     // Sort them in chronological order
@@ -206,16 +234,14 @@ void TESTWallet::ResendWalletTransactions()
       RelayWalletTransaction(wtx);
     }
   }
-  txdb.Close();
 }
 
 void TESTWallet::ReacceptWalletTransactions()
 {
-  TESTTxDB txdb;
+  CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
   bool fRepeat = true;
 
-/* erase previous transactions */
-  {
+  { /* erase previous transactions */
     LOCK(cs_wallet);
     fRepeat = false;
     vector<CDiskTxPos> vMissingTx;
@@ -223,58 +249,16 @@ void TESTWallet::ReacceptWalletTransactions()
     {
       CWalletTx& wtx = item.second;
 
+#ifdef USE_LEVELDB_COINDB
+      TESTTxDB txdb;
       txdb.EraseTxIndex(wtx);
-
-#if 0
-      if (wtx.IsCoinBase() && wtx.IsSpent(0))
-        continue;
-      CTxIndex txindex;
-      bool fUpdated = false;
-      if (txdb.ReadTxIndex(wtx.GetHash(), txindex))
-      {
-        // Update fSpent if a tx got spent somewhere else by a copy of wallet.dat
-        if (txindex.vSpent.size() != wtx.vout.size())
-        {
-          printf("ERROR: ReacceptWalletTransactions() : txindex.vSpent.size() %d != wtx.vout.size() %d\n", txindex.vSpent.size(), wtx.vout.size());
-          continue;
-        }
-        for (unsigned int i = 0; i < txindex.vSpent.size(); i++)
-        {
-          if (wtx.IsSpent(i))
-            continue;
-          if (!txindex.vSpent[i].IsNull() && IsMine(wtx.vout[i]))
-          {
-            wtx.MarkSpent(i);
-            fUpdated = true;
-            vMissingTx.push_back(txindex.vSpent[i]);
-          }
-        }
-        if (fUpdated)
-        {
-          printf("ReacceptWalletTransactions found spent coin %sbc %s\n", FormatMoney(wtx.GetCredit()).c_str(), wtx.GetHash().ToString().c_str());
-          wtx.MarkDirty();
-          wtx.WriteToDisk();
-        }
-      }
-      else
-      {
-        // Reaccept any txes of ours that aren't already in a block
-        if (!wtx.IsCoinBase())
-          wtx.AcceptWalletTransaction(txdb, false);
-      }
+      txdb.Close();
+#else
+      EraseTxCoins(iface, wtx.GetHash());
 #endif
     }
-#if 0
-    if (!vMissingTx.empty())
-    {
-      // TODO: optimize this to scan just part of the block chain?
-      if (ScanForWalletTransactions(TESTBlock::pindexGenesisBlock))
-        fRepeat = true;  // Found missing transactions: re-do Reaccept.
-    }
-#endif
   }
 
-  txdb.Close();
 }
 
 int TESTWallet::ScanForWalletTransactions(CBlockIndex* pindexStart, bool fUpdate)
@@ -307,25 +291,29 @@ int TESTWallet::ScanForWalletTransactions(CBlockIndex* pindexStart, bool fUpdate
 
 int64 TESTWallet::GetTxFee(CTransaction tx)
 {
-  map<uint256, CTxIndex> mapQueuedChanges;
-  MapPrevTx inputs;
+  CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
+  CBlock *pblock = GetBlockByTx(iface, tx.GetHash());
   int64 nFees;
   int i;
 
   if (tx.IsCoinBase())
     return (0);
 
-  CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
-  CBlock *pblock = GetBlockByTx(iface, tx.GetHash());
-
-  TESTTxDB txdb;
-
   nFees = 0;
+#ifdef USE_LEVELDB_COINDB
   bool fInvalid = false;
+  TESTTxDB txdb;
+  map<uint256, CTxIndex> mapQueuedChanges;
+  MapPrevTx inputs;
   if (tx.FetchInputs(txdb, mapQueuedChanges, pblock, false, inputs, fInvalid))
     nFees += tx.GetValueIn(inputs) - tx.GetValueOut();
-
   txdb.Close();
+#else
+  tx_cache inputs;
+  if (FillInputs(tx, inputs)) {
+    nFees += tx.GetValueIn(inputs) - tx.GetValueOut();
+  }
+#endif
 
   if (pblock) delete pblock;
   return (nFees);
@@ -336,6 +324,10 @@ bool TESTWallet::CommitTransaction(CWalletTx& wtxNew)
 {
   CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
   CTxMemPool *pool = GetTxMemPool(iface);
+
+  /* perform final checks & submit to pool. */
+  if (!pool->AddTx(wtxNew))
+    return (error(SHERR_INVAL, "CommitTransaction: error adding tx \"%s\" to mempool.", wtxNew.GetHash().GetHex().c_str()));
 
   {
     LOCK2(cs_main, cs_wallet);
@@ -382,8 +374,6 @@ bool TESTWallet::CommitTransaction(CWalletTx& wtxNew)
       return false;
     }
 #endif
-    if (!pool->AddTx(wtxNew))
-      return (false);
 
     RelayWalletTransaction(wtxNew); 
   }
@@ -414,8 +404,6 @@ fprintf(stderr, "DEBUG: CreateTransaction: zero outputs specified failure\n");
 
   {
     LOCK2(cs_main, cs_wallet);
-    // txdb must be opened before the mapWallet lock
-    TESTTxDB txdb;
     {
       nFeeRet = nTransactionFee;
       loop
@@ -435,7 +423,6 @@ fprintf(stderr, "DEBUG: CreateTransaction: zero outputs specified failure\n");
         int64 nValueIn = 0;
         if (!SelectCoins(nTotalValue, setCoins, nValueIn)) {
 fprintf(stderr, "DEBUG: CreateTransaction: !SelectCoins\n"); 
-          txdb.Close();
           return false;
 }
         BOOST_FOREACH(PAIRTYPE(const CWalletTx*, unsigned int) pcoin, setCoins)
@@ -492,7 +479,6 @@ fprintf(stderr, "DEBUG: CreateTransaction: !SelectCoins\n");
           const CWalletTx *wtx = coin.first;
           if (!sig.SignSignature(*wtx)) {
 //fprintf(stderr, "DEBUG: CreateTransaction: !SignSignature(): %s\n", ((CWalletTx *)wtx)->ToString().c_str());
-            txdb.Close();
             return false;
           }
           nIn++;
@@ -505,7 +491,6 @@ wtxNew.print(TEST_COIN_IFACE);
           const CWalletTx *wtx = coin.first;
           if (!SignSignature(*this, *wtx, wtxNew, nIn++)) {
 //fprintf(stderr, "DEBUG: CreateTransaction: !SignSignature(): %s\n", ((CWalletTx *)wtx)->ToString().c_str());
-            txdb.Close();
             return false;
           }
         }
@@ -514,7 +499,6 @@ wtxNew.print(TEST_COIN_IFACE);
         /* Ensure transaction does not breach a defined size limitation. */
         unsigned int nWeight = GetTransactionWeight(wtxNew);
         if (nWeight >= MAX_TRANSACTION_WEIGHT(iface)) {
-          txdb.Close();
           return (error(SHERR_INVAL, "The transaction size is too large."));
         }
 
@@ -536,13 +520,12 @@ wtxNew.print(TEST_COIN_IFACE);
         }
 
         // Fill vtxPrev by copying from previous transactions vtxPrev
-        wtxNew.AddSupportingTransactions(txdb);
+        wtxNew.AddSupportingTransactions();
         wtxNew.fTimeReceivedIsTxTime = true;
 
         break;
       }
     }
-    txdb.Close();
   }
   return true;
 }
@@ -556,11 +539,10 @@ bool TESTWallet::CreateTransaction(CScript scriptPubKey, int64 nValue, CWalletTx
 
 void TESTWallet::AddSupportingTransactions(CWalletTx& wtx)
 {
-  TESTTxDB txdb;
-  wtx.AddSupportingTransactions(txdb);
-  txdb.Close();
+  wtx.AddSupportingTransactions();
 }
 
+#ifdef USE_LEVELDB_COINDB
 bool TESTWallet::UnacceptWalletTransaction(const CTransaction& tx)
 {
   CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
@@ -595,6 +577,13 @@ bool TESTWallet::UnacceptWalletTransaction(const CTransaction& tx)
 
   return (true);
 }
+#else
+bool TESTWallet::UnacceptWalletTransaction(const CTransaction& tx)
+{
+  CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
+  return (core_UnacceptWalletTransaction(iface, tx));
+}
+#endif
 
 int64 TESTWallet::GetBlockValue(int nHeight, int64 nFees)
 {
@@ -623,8 +612,6 @@ fprintf(stderr, "DEBUG: TestWallet.CreateAccountTransaction()\n");
 
   {
     LOCK2(cs_main, cs_wallet);
-    // txdb must be opened before the mapWallet lock
-    TESTTxDB txdb;
     {
       nFeeRet = nTransactionFee;
       loop
@@ -698,7 +685,6 @@ fprintf(stderr, "DEBUG: TestWallet.CreateAccountTransaction()\n");
         BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setCoins) {
           CSignature sig(TEST_COIN_IFACE, &wtxNew, nIn);
           if (!sig.SignSignature(*coin.first)) {
-            txdb.Close();
             return false;
           }
 
@@ -710,7 +696,6 @@ wtxNew.print(TEST_COIN_IFACE);
         int nIn = 0;
         BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setCoins)
           if (!SignSignature(*this, *coin.first, wtxNew, nIn++)) {
-            txdb.Close();
             return false;
           }
 #endif
@@ -718,7 +703,6 @@ wtxNew.print(TEST_COIN_IFACE);
         /* Ensure transaction does not breach a defined size limitation. */
         unsigned int nWeight = GetTransactionWeight(wtxNew);
         if (nWeight >= MAX_TRANSACTION_WEIGHT(iface)) {
-          txdb.Close();
           return (error(SHERR_INVAL, "The transaction size is too large."));
         }
 
@@ -740,13 +724,12 @@ wtxNew.print(TEST_COIN_IFACE);
         }
 
         // Fill vtxPrev by copying from previous transactions vtxPrev
-        wtxNew.AddSupportingTransactions(txdb);
+        wtxNew.AddSupportingTransactions();
         wtxNew.fTimeReceivedIsTxTime = true;
 
         break;
       }
     }
-    txdb.Close();
   }
   return true;
 }

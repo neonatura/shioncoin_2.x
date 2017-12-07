@@ -116,6 +116,7 @@ bool TEST_CTxMemPool::VerifyCoinStandards(CTransaction& tx, tx_cache& mapInputs)
 
 bool TEST_CTxMemPool::AcceptTx(CTransaction& tx)
 {
+#ifdef USE_LEVELDB_COINDB
   uint256 hash = tx.GetHash();
   bool fCheckInputs = true;
 
@@ -146,6 +147,7 @@ bool TEST_CTxMemPool::AcceptTx(CTransaction& tx)
   }
 
   Debug("(test) mempool accepted tx \"%s\".", hash.ToString().c_str());
+#endif
   return true;
 }
 

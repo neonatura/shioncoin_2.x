@@ -33,6 +33,7 @@
 #include "shc_wallet.h"
 #include "shc_txidx.h"
 #include "chain.h"
+#include "coin.h"
 
 #ifdef WIN32
 #include <string.h>
@@ -303,98 +304,6 @@ namespace SHC_Checkpoints
 
 }
 
-bool shc_ConnectInputs(CTransaction *tx, MapPrevTx inputs, map<uint256, CTxIndex>& mapTestPool, const CDiskTxPos& posThisTx, const CBlockIndex* pindexBlock, bool fBlock, bool fMiner)
-{
-  bool fStrictPayToScriptHash=true;
-
-  if (tx->IsCoinBase())
-    return (true);
-
-  // Take over previous transactions' spent pointers
-  // fBlock is true when this is called from AcceptBlock when a new best-block is added to the blockchain
-  // fMiner is true when called from the internal shc miner
-  // ... both are false when called from CTransaction::AcceptToMemoryPool
-
-  int64 nValueIn = 0;
-  int64 nFees = 0;
-  for (unsigned int i = 0; i < tx->vin.size(); i++)
-  {
-    COutPoint prevout = tx->vin[i].prevout;
-    assert(inputs.count(prevout.hash) > 0);
-    CTxIndex& txindex = inputs[prevout.hash].first;
-    CTransaction& txPrev = inputs[prevout.hash].second;
-
-    if (prevout.n >= txPrev.vout.size() || prevout.n >= txindex.vSpent.size())
-      return error(SHERR_INVAL, "ConnectInputs() : %s prevout.n out of range %d %d %d prev tx %s", tx->GetHash().ToString().substr(0,10).c_str(), prevout.n, txPrev.vout.size(), txindex.vSpent.size(), prevout.hash.ToString().substr(0,10).c_str());
-
-    // If prev is coinbase, check that it's matured
-    if (txPrev.IsCoinBase())
-      for (const CBlockIndex* pindex = pindexBlock; pindex && pindexBlock->nHeight - pindex->nHeight < SHC_COINBASE_MATURITY; pindex = pindex->pprev)
-        //if (pindex->nBlockPos == txindex.pos.nBlockPos && pindex->nFile == txindex.pos.nFile)
-        if (pindex->nHeight == txindex.pos.nBlockPos)// && pindex->nFile == txindex.pos.nFile)
-          return error(SHERR_INVAL, "ConnectInputs() : tried to spend coinbase at depth %d", pindexBlock->nHeight - pindex->nHeight);
-
-    // Check for negative or overflow input values
-    nValueIn += txPrev.vout[prevout.n].nValue;
-    if (!MoneyRange(SHC_COIN_IFACE, txPrev.vout[prevout.n].nValue) || !MoneyRange(SHC_COIN_IFACE, nValueIn))
-      return error(SHERR_INVAL, "ConnectInputs() : txin values out of range");
-
-  }
-  // The first loop above does all the inexpensive checks.
-  // Only if ALL inputs pass do we perform expensive ECDSA signature checks.
-  // Helps prevent CPU exhaustion attacks.
-  for (unsigned int i = 0; i < tx->vin.size(); i++)
-  {
-    COutPoint prevout = tx->vin[i].prevout;
-    assert(inputs.count(prevout.hash) > 0);
-    CTxIndex& txindex = inputs[prevout.hash].first;
-    CTransaction& txPrev = inputs[prevout.hash].second;
-
-    if (tx->IsSpentTx(txindex.vSpent[prevout.n])) {
-      if (fMiner) return false;
-      return error(SHERR_INVAL, "(shc) ConnectInputs: %s prev tx (%s) already used at %s", tx->GetHash().GetHex().c_str(), txPrev.GetHash().GetHex().c_str(), txindex.vSpent[prevout.n].ToString().c_str());
-    }
-
-    // Skip ECDSA signature verification when connecting blocks (fBlock=true)
-    // before the last blockchain checkpoint. This is safe because block merkle hashes are
-    // still computed and checked, and any change will be caught at the next checkpoint.
-    if (!(fBlock && (GetBestHeight(SHC_COIN_IFACE) < SHC_Checkpoints::GetTotalBlocksEstimate())))
-    {
-      // Verify signature
-      if (!VerifySignature(SHC_COIN_IFACE, txPrev, *tx, i, fStrictPayToScriptHash, 0))
-      {
-        // only during transition phase for P2SH: do not invoke anti-DoS code for
-        // potentially old clients relaying bad P2SH transactions
-        if (fStrictPayToScriptHash && VerifySignature(SHC_COIN_IFACE, txPrev, *tx, i, false, 0))
-          return error(SHERR_INVAL, "ConnectInputs() : %s P2SH VerifySignature failed", tx->GetHash().ToString().substr(0,10).c_str());
-
-        return error(SHERR_INVAL, "ConnectInputs() : %s VerifySignature failed", tx->GetHash().ToString().substr(0,10).c_str());
-      }
-    }
-
-    // Mark outpoints as spent
-    txindex.vSpent[prevout.n] = posThisTx;
-
-    // Write back
-    if (fBlock || fMiner)
-    {
-      mapTestPool[prevout.hash] = txindex;
-    }
-  }
-
-  if (nValueIn < tx->GetValueOut())
-    return error(SHERR_INVAL, "ConnectInputs() : %s value in < value out", tx->GetHash().ToString().substr(0,10).c_str());
-
-  // Tally transaction fees
-  int64 nTxFee = nValueIn - tx->GetValueOut();
-  if (nTxFee < 0)
-    return error(SHERR_INVAL, "ConnectInputs() : %s nTxFee < 0", tx->GetHash().ToString().substr(0,10).c_str());
-  nFees += nTxFee;
-  if (!MoneyRange(SHC_COIN_IFACE, nFees))
-    return error(SHERR_INVAL, "ConnectInputs() : nFees out of range");
-
-  return true;
-}
 
 #if 0
 bool shc_FetchInputs(CTransaction *tx, CTxDB& txdb, const map<uint256, CTxIndex>& mapTestPool, bool fBlock, bool fMiner, MapPrevTx& inputsRet, bool& fInvalid)
@@ -783,9 +692,13 @@ bool shc_CreateGenesisBlock()
     return (false);
   }
 
+#ifdef USE_LEVELDB_COINDB
   SHCTxDB txdb;
   block.SetBestChain(txdb, (*blockIndex)[shc_hashGenesisBlock]);
   txdb.Close();
+#else
+  block.SetBestChain((*blockIndex)[shc_hashGenesisBlock]);
+#endif
 
   return (true);
 }
@@ -1056,12 +969,7 @@ bool SHCBlock::CheckBlock()
   return true;
 }
 
-
-
-
-
-
-
+#if 0
 bool static SHC_Reorganize(CTxDB& txdb, CBlockIndex* pindexNew, SHC_CTxMemPool *mempool)
 {
   char errbuf[1024];
@@ -1174,6 +1082,7 @@ bool static SHC_Reorganize(CTxDB& txdb, CBlockIndex* pindexNew, SHC_CTxMemPool *
 
   return true;
 }
+#endif
 
 void SHCBlock::InvalidChainFound(CBlockIndex* pindexNew)
 {
@@ -1183,9 +1092,11 @@ void SHCBlock::InvalidChainFound(CBlockIndex* pindexNew)
   if (pindexNew->bnChainWork > bnBestInvalidWork)
   {
     bnBestInvalidWork = pindexNew->bnChainWork;
+#ifdef USE_LEVELDB_COINDB
     SHCTxDB txdb;
     txdb.WriteBestInvalidWork(bnBestInvalidWork);
     txdb.Close();
+#endif
     //    uiInterface.NotifyBlocksChanged();
   }
 
@@ -1368,52 +1279,6 @@ fprintf(stderr, "DEBUG: SHC_Reorganize(): error reorganizing.\n");
 }
 #endif
 
-#ifndef USE_LEVELDB_TXDB
-bool SHCBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
-{
-  uint256 hash = GetHash();
-  shtime_t ts;
-  bool ret;
-
-  if (SHCBlock::pindexGenesisBlock == NULL && hash == shc_hashGenesisBlock)
-  {
-    if (!txdb.TxnBegin())
-      return error(SHERR_INVAL, "SetBestChain() : TxnBegin failed");
-    txdb.WriteHashBestChain(hash);
-    if (!txdb.TxnCommit())
-      return error(SHERR_INVAL, "SetBestChain() : TxnCommit failed");
-    SHCBlock::pindexGenesisBlock = pindexNew;
-  } else {
-    timing_init("SetBestChain/commit", &ts);
-    ret = core_CommitBlock(txdb, this, pindexNew);
-    timing_term(SHC_COIN_IFACE, "SetBestChain/commit", &ts);
-    if (!ret)
-      return (false);
-  }
-
-  // Update best block in wallet (so we can detect restored wallets)
-  bool fIsInitialDownload = IsInitialBlockDownload(SHC_COIN_IFACE);
-  if (!fIsInitialDownload) {
-    const CBlockLocator locator(SHC_COIN_IFACE, pindexNew);
-    timing_init("SetBestChain/locator", &ts);
-    SHC_SetBestChain(locator);
-    timing_term(SHC_COIN_IFACE, "SetBestChain/locator", &ts);
-  }
-
-  // New best block
-  SetBestBlockIndex(SHC_COIN_IFACE, pindexNew);
-  bnBestChainWork = pindexNew->bnChainWork;
-  nTimeBestReceived = GetTime();
-
-  {
-    CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);
-    if (iface)
-      STAT_TX_ACCEPTS(iface)++;
-  }
-
-  return true;
-}
-#endif
 
 bool SHCBlock::IsBestChain()
 {
@@ -1471,112 +1336,6 @@ static void shc_UpdatedTransaction(const uint256& hashTx)
   CWallet *pwallet = GetWallet(SHC_COIN_IFACE);
 
   pwallet->UpdatedTransaction(hashTx);
-}
-
-bool SHCBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)
-{
-
-  /* redundant */
-  if (!CheckBlock())
-    return false;
-
-  CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);
-  bc_t *bc = GetBlockTxChain(iface);
-  unsigned int nFile = SHC_COIN_IFACE;
-  unsigned int nBlockPos = pindex->nHeight;;
-  bc_hash_t b_hash;
-  int err;
-
-  map<uint256, CTxIndex> mapQueuedChanges;
-  int64 nFees = 0;
-  unsigned int nSigOps = 0;
-  BOOST_FOREACH(CTransaction& tx, vtx)
-  {
-    uint256 hashTx = tx.GetHash();
-    int nTxPos;
-
-    { /* BIP30 */
-      CTxIndex txindexOld;
-      if (txdb.ReadTxIndex(hashTx, txindexOld)) {
-        BOOST_FOREACH(CDiskTxPos &pos, txindexOld.vSpent)
-          if (tx.IsSpentTx(pos)) {
-fprintf(stderr, "DEBUG: SHCBlock::ConnectBlock: null disk pos, ret false BIP30\n");
-            return false;
-          }
-      }
-    }
-
-    MapPrevTx mapInputs;
-    CDiskTxPos posThisTx(SHC_COIN_IFACE, nBlockPos, nTxPos);
-    if (!tx.IsCoinBase()) {
-      bool fInvalid;
-      if (!tx.FetchInputs(txdb, mapQueuedChanges, this, false, mapInputs, fInvalid)) {
-fprintf(stderr, "DEBUG: SHCBlock::ConnectBlock: shc_FetchInputs()\n"); 
-        return false;
-      }
-    }
-
-    nSigOps += tx.GetSigOpCost(mapInputs);
-    if (nSigOps > MAX_BLOCK_SIGOP_COST(iface)) {
-      return (trust(-100, "(shc) ConnectBlock: sigop cost exceeded maximum (%d > %d)", nSigOps, MAX_BLOCK_SIGOP_COST(iface)));
-    }
-
-    if (!tx.IsCoinBase()) {
-      nFees += tx.GetValueIn(mapInputs)-tx.GetValueOut();
-
-      if (!shc_ConnectInputs(&tx, mapInputs, mapQueuedChanges, posThisTx, pindex, true, false)) {
-fprintf(stderr, "DEBUG: shc_ConnectInputs failure\n");
-        return false;
-      }
-    }
-
-    mapQueuedChanges[hashTx] = CTxIndex(posThisTx, tx.vout.size());
-  }
-
-  // Write queued txindex changes
-  for (map<uint256, CTxIndex>::iterator mi = mapQueuedChanges.begin(); mi != mapQueuedChanges.end(); ++mi)
-  {
-    if (!txdb.UpdateTxIndex((*mi).first, (*mi).second)) {
-      return error(SHERR_INVAL, "ConnectBlock() : UpdateTxIndex failed");
-    }
-  }
-
-#if 0
-if (vtx.size() == 0) {
-fprintf(stderr, "DEBUG: ConnectBlock: vtx.size() == 0\n");
-return false;
-}
-#endif
-
-  if (vtx[0].GetValueOut() > shc_GetBlockValue(pindex->nHeight, nFees)) {
-fprintf(stderr, "DEBUG: SHCBlock::ConnectBlock: critical: coinbaseValueOut(%llu) > BlockValue(%llu) @ height %d [fee %llu]\n", (unsigned long long)vtx[0].GetValueOut(), (unsigned long long)shc_GetBlockValue(pindex->nHeight, nFees), pindex->nHeight, (unsigned long long)nFees); 
-    return false;
-  }
-
-  if (pindex->pprev)
-  {
-    if (pindex->pprev->nHeight + 1 != pindex->nHeight) {
-      fprintf(stderr, "DEBUG: shc_ConnectBlock: block-index for hash '%s' height changed from %d to %d.\n", pindex->GetBlockHash().GetHex().c_str(), pindex->nHeight, (pindex->pprev->nHeight + 1));
-      pindex->nHeight = pindex->pprev->nHeight + 1;
-    }
-    if (!WriteBlock(pindex->nHeight)) {
-      return (error(SHERR_INVAL, "shc_ConnectBlock: error writing block hash '%s' to height %d\n", GetHash().GetHex().c_str(), pindex->nHeight));
-    }
-
-#if 0
-    // Update block index on disk without changing it in memory.
-    // The memory index structure will be changed after the db commits.
-    CDiskBlockIndex blockindexPrev(pindex->pprev);
-    blockindexPrev.hashNext = pindex->GetBlockHash();
-    if (!txdb.WriteBlockIndex(blockindexPrev))
-      return error(SHERR_INVAL, "ConnectBlock() : WriteBlockIndex failed");
-#endif
-  }
-
-  BOOST_FOREACH(CTransaction& tx, vtx)
-    SyncWithWallets(iface, tx, this);
-
-  return true;
 }
 
 bool SHCBlock::ReadBlock(uint64_t nHeight)
@@ -1701,7 +1460,7 @@ bool SHCBlock::IsOrphan()
   return (true);
 }
 
-
+#ifdef USE_LEVELDB_COINDB
 bool shc_Truncate(uint256 hash)
 {
   blkidx_t *blockIndex = GetBlockTable(SHC_COIN_IFACE);
@@ -1764,6 +1523,13 @@ bool SHCBlock::Truncate()
 {
   return (shc_Truncate(GetHash()));
 }
+#else
+bool SHCBlock::Truncate()
+{
+  CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);
+  return (core_Truncate(iface, GetHash()));
+}
+#endif
 
 bool SHCBlock::VerifyCheckpoint(int nHeight)
 {
@@ -1807,11 +1573,17 @@ bool SHCBlock::AddToBlockIndex()
   }
 
   if (pindexNew->bnChainWork > bnBestChainWork) {
+#ifdef USE_LEVELDB_COINDB
     SHCTxDB txdb;
     bool ret = SetBestChain(txdb, pindexNew);
     txdb.Close();
     if (!ret)
       return false;
+#else
+    bool ret = SetBestChain(pindexNew);
+    if (!ret)
+      return (false);
+#endif
   } else {
     if (!WriteArchBlock())
       return (false);
@@ -1819,76 +1591,6 @@ bool SHCBlock::AddToBlockIndex()
 
   return true;
 }
-
-bool SHCBlock::DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex)
-{
-  CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);
-
-  if (!core_DisconnectBlock(txdb, pindex, this))
-    return (false);
-
-  if (pindex->pprev) {
-    BOOST_FOREACH(CTransaction& tx, vtx) {
-      if (tx.IsCoinBase()) {
-        if (tx.isFlag(CTransaction::TXF_MATRIX)) {
-          CTxMatrix& matrix = tx.matrix;
-          if (matrix.GetType() == CTxMatrix::M_VALIDATE) {
-            /* retract block hash from Validate matrix */
-            matrixValidate.Retract(pindex->nHeight, pindex->GetBlockHash());
-          } else if (matrix.GetType() == CTxMatrix::M_SPRING) {
-            BlockRetractSpringMatrix(iface, tx, pindex);
-          }
-        }
-      } else {
-        if (tx.isFlag(CTransaction::TXF_CERTIFICATE)) {
-          DisconnectCertificate(iface, tx);
-        }
-        if (tx.isFlag(CTransaction::TXF_EXEC)) {
-//          DisconnectExecTx(iface, tx);
-        }
-      }
-    }
-  }
-
-  return true;
-}
-
-bool SHCBlock::SetBestChain(CBlockIndex* pindexNew)
-{
-  CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);
-  uint256 hash = GetHash();
-  shtime_t ts;
-  bool ret;
-
-  if (SHCBlock::pindexGenesisBlock == NULL && hash == shc_hashGenesisBlock)
-  {
-    SHCBlock::pindexGenesisBlock = pindexNew;
-  } else {
-    timing_init("SetBestChain/commit", &ts);
-    ret = core_CommitBlock(this, pindexNew); 
-    timing_term(SHC_COIN_IFACE, "SetBestChain/commit", &ts);
-    if (!ret)
-      return (false);
-  }
-
-  // Update best block in wallet (so we can detect restored wallets)
-  bool fIsInitialDownload = IsInitialBlockDownload(SHC_COIN_IFACE);
-  if (!fIsInitialDownload) {
-    const CBlockLocator locator(SHC_COIN_IFACE, pindexNew);
-    timing_init("SetBestChain/locator", &ts);
-    SHC_SetBestChain(locator);
-    timing_term(SHC_COIN_IFACE, "SetBestChain/locator", &ts);
-  }
-
-  // New best block
-  SetBestBlockIndex(SHC_COIN_IFACE, pindexNew);
-  bnBestChainWork = pindexNew->bnChainWork;
-  nTimeBestReceived = GetTime();
-  STAT_TX_ACCEPTS(iface)++;
-
-  return true;
-}
-
 
 int64_t SHCBlock::GetBlockWeight()
 {
@@ -2098,4 +1800,344 @@ void SHC_CTxMemPool::queryHashes(std::vector<uint256>& vtxid)
     for (map<uint256, CTransaction>::iterator mi = mapTx.begin(); mi != mapTx.end(); ++mi)
         vtxid.push_back((*mi).first);
 }
+#endif
+
+
+
+
+#ifdef USE_LEVELDB_COINDB
+
+#ifndef USE_LEVELDB_TXDB
+bool SHCBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
+{
+  uint256 hash = GetHash();
+  shtime_t ts;
+  bool ret;
+
+  if (SHCBlock::pindexGenesisBlock == NULL && hash == shc_hashGenesisBlock)
+  {
+    if (!txdb.TxnBegin())
+      return error(SHERR_INVAL, "SetBestChain() : TxnBegin failed");
+    txdb.WriteHashBestChain(hash);
+    if (!txdb.TxnCommit())
+      return error(SHERR_INVAL, "SetBestChain() : TxnCommit failed");
+    SHCBlock::pindexGenesisBlock = pindexNew;
+  } else {
+    timing_init("SetBestChain/commit", &ts);
+    ret = core_CommitBlock(txdb, this, pindexNew);
+    timing_term(SHC_COIN_IFACE, "SetBestChain/commit", &ts);
+    if (!ret)
+      return (false);
+  }
+
+  // Update best block in wallet (so we can detect restored wallets)
+  bool fIsInitialDownload = IsInitialBlockDownload(SHC_COIN_IFACE);
+  if (!fIsInitialDownload) {
+    const CBlockLocator locator(SHC_COIN_IFACE, pindexNew);
+    timing_init("SetBestChain/locator", &ts);
+    SHC_SetBestChain(locator);
+    timing_term(SHC_COIN_IFACE, "SetBestChain/locator", &ts);
+  }
+
+  // New best block
+  SetBestBlockIndex(SHC_COIN_IFACE, pindexNew);
+  bnBestChainWork = pindexNew->bnChainWork;
+  nTimeBestReceived = GetTime();
+
+  {
+    CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);
+    if (iface)
+      STAT_TX_ACCEPTS(iface)++;
+  }
+
+  return true;
+}
+#endif
+
+bool SHCBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)
+{
+
+  /* redundant */
+  if (!CheckBlock())
+    return false;
+
+  CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);
+  bc_t *bc = GetBlockTxChain(iface);
+  unsigned int nFile = SHC_COIN_IFACE;
+  unsigned int nBlockPos = pindex->nHeight;;
+  bc_hash_t b_hash;
+  int err;
+
+  map<uint256, CTxIndex> mapQueuedChanges;
+  int64 nFees = 0;
+  unsigned int nSigOps = 0;
+  BOOST_FOREACH(CTransaction& tx, vtx)
+  {
+    uint256 hashTx = tx.GetHash();
+    int nTxPos;
+
+    { /* BIP30 */
+      CTxIndex txindexOld;
+      if (txdb.ReadTxIndex(hashTx, txindexOld)) {
+        BOOST_FOREACH(CDiskTxPos &pos, txindexOld.vSpent)
+          if (tx.IsSpentTx(pos)) {
+fprintf(stderr, "DEBUG: SHCBlock::ConnectBlock: null disk pos, ret false BIP30\n");
+            return false;
+          }
+      }
+    }
+
+    MapPrevTx mapInputs;
+    CDiskTxPos posThisTx(SHC_COIN_IFACE, nBlockPos, nTxPos);
+    if (!tx.IsCoinBase()) {
+      bool fInvalid;
+      if (!tx.FetchInputs(txdb, mapQueuedChanges, this, false, mapInputs, fInvalid)) {
+fprintf(stderr, "DEBUG: SHCBlock::ConnectBlock: shc_FetchInputs()\n"); 
+        return false;
+      }
+    }
+
+    nSigOps += tx.GetSigOpCost(mapInputs);
+    if (nSigOps > MAX_BLOCK_SIGOP_COST(iface)) {
+      return (trust(-100, "(shc) ConnectBlock: sigop cost exceeded maximum (%d > %d)", nSigOps, MAX_BLOCK_SIGOP_COST(iface)));
+    }
+
+    if (!tx.IsCoinBase()) {
+      nFees += tx.GetValueIn(mapInputs)-tx.GetValueOut();
+
+      if (!shc_ConnectInputs(&tx, mapInputs, mapQueuedChanges, posThisTx, pindex, true, false)) {
+fprintf(stderr, "DEBUG: shc_ConnectInputs failure\n");
+        return false;
+      }
+    }
+
+    mapQueuedChanges[hashTx] = CTxIndex(posThisTx, tx.vout.size());
+  }
+
+  // Write queued txindex changes
+  for (map<uint256, CTxIndex>::iterator mi = mapQueuedChanges.begin(); mi != mapQueuedChanges.end(); ++mi)
+  {
+    if (!txdb.UpdateTxIndex((*mi).first, (*mi).second)) {
+      return error(SHERR_INVAL, "ConnectBlock() : UpdateTxIndex failed");
+    }
+  }
+
+#if 0
+if (vtx.size() == 0) {
+fprintf(stderr, "DEBUG: ConnectBlock: vtx.size() == 0\n");
+return false;
+}
+#endif
+
+  if (vtx[0].GetValueOut() > shc_GetBlockValue(pindex->nHeight, nFees)) {
+fprintf(stderr, "DEBUG: SHCBlock::ConnectBlock: critical: coinbaseValueOut(%llu) > BlockValue(%llu) @ height %d [fee %llu]\n", (unsigned long long)vtx[0].GetValueOut(), (unsigned long long)shc_GetBlockValue(pindex->nHeight, nFees), pindex->nHeight, (unsigned long long)nFees); 
+    return false;
+  }
+
+  if (pindex->pprev)
+  {
+    if (pindex->pprev->nHeight + 1 != pindex->nHeight) {
+      fprintf(stderr, "DEBUG: shc_ConnectBlock: block-index for hash '%s' height changed from %d to %d.\n", pindex->GetBlockHash().GetHex().c_str(), pindex->nHeight, (pindex->pprev->nHeight + 1));
+      pindex->nHeight = pindex->pprev->nHeight + 1;
+    }
+    if (!WriteBlock(pindex->nHeight)) {
+      return (error(SHERR_INVAL, "shc_ConnectBlock: error writing block hash '%s' to height %d\n", GetHash().GetHex().c_str(), pindex->nHeight));
+    }
+
+#if 0
+    // Update block index on disk without changing it in memory.
+    // The memory index structure will be changed after the db commits.
+    CDiskBlockIndex blockindexPrev(pindex->pprev);
+    blockindexPrev.hashNext = pindex->GetBlockHash();
+    if (!txdb.WriteBlockIndex(blockindexPrev))
+      return error(SHERR_INVAL, "ConnectBlock() : WriteBlockIndex failed");
+#endif
+  }
+
+  BOOST_FOREACH(CTransaction& tx, vtx)
+    SyncWithWallets(iface, tx, this);
+
+  return true;
+}
+
+bool SHCBlock::DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex)
+{
+  CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);
+
+  if (!core_DisconnectBlock(txdb, pindex, this))
+    return (false);
+
+  if (pindex->pprev) {
+    BOOST_FOREACH(CTransaction& tx, vtx) {
+      if (tx.IsCoinBase()) {
+        if (tx.isFlag(CTransaction::TXF_MATRIX)) {
+          CTxMatrix& matrix = tx.matrix;
+          if (matrix.GetType() == CTxMatrix::M_VALIDATE) {
+            /* retract block hash from Validate matrix */
+            matrixValidate.Retract(pindex->nHeight, pindex->GetBlockHash());
+          } else if (matrix.GetType() == CTxMatrix::M_SPRING) {
+            BlockRetractSpringMatrix(iface, tx, pindex);
+          }
+        }
+      } else {
+        if (tx.isFlag(CTransaction::TXF_CERTIFICATE)) {
+          DisconnectCertificate(iface, tx);
+        }
+        if (tx.isFlag(CTransaction::TXF_EXEC)) {
+//          DisconnectExecTx(iface, tx);
+        }
+      }
+    }
+  }
+
+  return true;
+}
+
+bool shc_ConnectInputs(CTransaction *tx, MapPrevTx inputs, map<uint256, CTxIndex>& mapTestPool, const CDiskTxPos& posThisTx, const CBlockIndex* pindexBlock, bool fBlock, bool fMiner)
+{
+  bool fStrictPayToScriptHash=true;
+
+  if (tx->IsCoinBase())
+    return (true);
+
+  // Take over previous transactions' spent pointers
+  // fBlock is true when this is called from AcceptBlock when a new best-block is added to the blockchain
+  // fMiner is true when called from the internal shc miner
+  // ... both are false when called from CTransaction::AcceptToMemoryPool
+
+  int64 nValueIn = 0;
+  int64 nFees = 0;
+  for (unsigned int i = 0; i < tx->vin.size(); i++)
+  {
+    COutPoint prevout = tx->vin[i].prevout;
+    assert(inputs.count(prevout.hash) > 0);
+    CTxIndex& txindex = inputs[prevout.hash].first;
+    CTransaction& txPrev = inputs[prevout.hash].second;
+
+    if (prevout.n >= txPrev.vout.size() || prevout.n >= txindex.vSpent.size())
+      return error(SHERR_INVAL, "ConnectInputs() : %s prevout.n out of range %d %d %d prev tx %s", tx->GetHash().ToString().substr(0,10).c_str(), prevout.n, txPrev.vout.size(), txindex.vSpent.size(), prevout.hash.ToString().substr(0,10).c_str());
+
+    // If prev is coinbase, check that it's matured
+    if (txPrev.IsCoinBase())
+      for (const CBlockIndex* pindex = pindexBlock; pindex && pindexBlock->nHeight - pindex->nHeight < SHC_COINBASE_MATURITY; pindex = pindex->pprev)
+        //if (pindex->nBlockPos == txindex.pos.nBlockPos && pindex->nFile == txindex.pos.nFile)
+        if (pindex->nHeight == txindex.pos.nBlockPos)// && pindex->nFile == txindex.pos.nFile)
+          return error(SHERR_INVAL, "ConnectInputs() : tried to spend coinbase at depth %d", pindexBlock->nHeight - pindex->nHeight);
+
+    // Check for negative or overflow input values
+    nValueIn += txPrev.vout[prevout.n].nValue;
+    if (!MoneyRange(SHC_COIN_IFACE, txPrev.vout[prevout.n].nValue) || !MoneyRange(SHC_COIN_IFACE, nValueIn))
+      return error(SHERR_INVAL, "ConnectInputs() : txin values out of range");
+
+  }
+  // The first loop above does all the inexpensive checks.
+  // Only if ALL inputs pass do we perform expensive ECDSA signature checks.
+  // Helps prevent CPU exhaustion attacks.
+  for (unsigned int i = 0; i < tx->vin.size(); i++)
+  {
+    COutPoint prevout = tx->vin[i].prevout;
+    assert(inputs.count(prevout.hash) > 0);
+    CTxIndex& txindex = inputs[prevout.hash].first;
+    CTransaction& txPrev = inputs[prevout.hash].second;
+
+    if (tx->IsSpentTx(txindex.vSpent[prevout.n])) {
+      if (fMiner) return false;
+      return error(SHERR_INVAL, "(shc) ConnectInputs: %s prev tx (%s) already used at %s", tx->GetHash().GetHex().c_str(), txPrev.GetHash().GetHex().c_str(), txindex.vSpent[prevout.n].ToString().c_str());
+    }
+
+    // Skip ECDSA signature verification when connecting blocks (fBlock=true)
+    // before the last blockchain checkpoint. This is safe because block merkle hashes are
+    // still computed and checked, and any change will be caught at the next checkpoint.
+    if (!(fBlock && (GetBestHeight(SHC_COIN_IFACE) < SHC_Checkpoints::GetTotalBlocksEstimate())))
+    {
+      // Verify signature
+      if (!VerifySignature(SHC_COIN_IFACE, txPrev, *tx, i, fStrictPayToScriptHash, 0))
+      {
+        // only during transition phase for P2SH: do not invoke anti-DoS code for
+        // potentially old clients relaying bad P2SH transactions
+        if (fStrictPayToScriptHash && VerifySignature(SHC_COIN_IFACE, txPrev, *tx, i, false, 0))
+          return error(SHERR_INVAL, "ConnectInputs() : %s P2SH VerifySignature failed", tx->GetHash().ToString().substr(0,10).c_str());
+
+        return error(SHERR_INVAL, "ConnectInputs() : %s VerifySignature failed", tx->GetHash().ToString().substr(0,10).c_str());
+      }
+    }
+
+    // Mark outpoints as spent
+    txindex.vSpent[prevout.n] = posThisTx;
+
+    // Write back
+    if (fBlock || fMiner)
+    {
+      mapTestPool[prevout.hash] = txindex;
+    }
+  }
+
+  if (nValueIn < tx->GetValueOut())
+    return error(SHERR_INVAL, "ConnectInputs() : %s value in < value out", tx->GetHash().ToString().substr(0,10).c_str());
+
+  // Tally transaction fees
+  int64 nTxFee = nValueIn - tx->GetValueOut();
+  if (nTxFee < 0)
+    return error(SHERR_INVAL, "ConnectInputs() : %s nTxFee < 0", tx->GetHash().ToString().substr(0,10).c_str());
+  nFees += nTxFee;
+  if (!MoneyRange(SHC_COIN_IFACE, nFees))
+    return error(SHERR_INVAL, "ConnectInputs() : nFees out of range");
+
+  return true;
+}
+
+
+
+#else
+
+bool SHCBlock::SetBestChain(CBlockIndex* pindexNew)
+{
+  CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);
+  uint256 hash = GetHash();
+  shtime_t ts;
+  bool ret;
+
+  if (SHCBlock::pindexGenesisBlock == NULL && hash == shc_hashGenesisBlock)
+  {
+    SHCBlock::pindexGenesisBlock = pindexNew;
+  } else {
+    timing_init("SetBestChain/commit", &ts);
+    ret = core_CommitBlock(this, pindexNew); 
+    timing_term(SHC_COIN_IFACE, "SetBestChain/commit", &ts);
+    if (!ret)
+      return (false);
+  }
+
+  // Update best block in wallet (so we can detect restored wallets)
+  bool fIsInitialDownload = IsInitialBlockDownload(SHC_COIN_IFACE);
+  if (!fIsInitialDownload) {
+    const CBlockLocator locator(SHC_COIN_IFACE, pindexNew);
+    timing_init("SetBestChain/locator", &ts);
+    SHC_SetBestChain(locator);
+    timing_term(SHC_COIN_IFACE, "SetBestChain/locator", &ts);
+
+#ifndef USE_LEVELDB_COINDB
+    WriteHashBestChain(iface, hash);
+#endif
+  }
+
+  // New best block
+  SetBestBlockIndex(SHC_COIN_IFACE, pindexNew);
+  bnBestChainWork = pindexNew->bnChainWork;
+  nTimeBestReceived = GetTime();
+
+  return true;
+}
+
+bool SHCBlock::ConnectBlock(CBlockIndex* pindex)
+{
+  return (core_ConnectBlock(this, pindex));
+}
+
+bool SHCBlock::DisconnectBlock(CBlockIndex* pindex)
+{
+  CBlock *block = (CBlock *)this;
+  return (core_DisconnectBlock(pindex, block));
+}
+
 #endif

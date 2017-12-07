@@ -843,6 +843,10 @@ static void _bc_chain_idle(void)
     bc = GetBlockTxChain(iface);
     if (bc)
       bc_idle(bc);
+
+    bc = GetBlockCoinChain(iface);
+    if (bc)
+      bc_idle(bc);
   }
 }
 

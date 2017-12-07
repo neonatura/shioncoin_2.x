@@ -33,6 +33,7 @@
 #include "emc2_txidx.h"
 #include "emc2_wallet.h"
 #include "chain.h"
+#include "coin.h"
 
 #ifdef WIN32
 #include <string.h>
@@ -346,99 +347,6 @@ namespace EMC2_Checkpoints
 }
 
 
-bool emc2_ConnectInputs(CTransaction *tx, MapPrevTx inputs, map<uint256, CTxIndex>& mapTestPool, const CDiskTxPos& posThisTx, const CBlockIndex* pindexBlock, bool fBlock, bool fMiner, bool fStrictPayToScriptHash=true)
-{
-
-  if (tx->IsCoinBase())
-    return (true);
-
-  // Take over previous transactions' spent pointers
-  // fBlock is true when this is called from AcceptBlock when a new best-block is added to the blockchain
-  // fMiner is true when called from the internal emc2 miner
-  // ... both are false when called from CTransaction::AcceptToMemoryPool
-
-  int64 nValueIn = 0;
-  int64 nFees = 0;
-  for (unsigned int i = 0; i < tx->vin.size(); i++)
-  {
-    COutPoint prevout = tx->vin[i].prevout;
-    assert(inputs.count(prevout.hash) > 0);
-    CTxIndex& txindex = inputs[prevout.hash].first;
-    CTransaction& txPrev = inputs[prevout.hash].second;
-
-    if (prevout.n >= txPrev.vout.size() || prevout.n >= txindex.vSpent.size())
-      return error(SHERR_INVAL, "ConnectInputs() : %s prevout.n out of range %d %d %d prev tx %s", tx->GetHash().ToString().substr(0,10).c_str(), prevout.n, txPrev.vout.size(), txindex.vSpent.size(), prevout.hash.ToString().substr(0,10).c_str());
-
-    // If prev is coinbase, check that it's matured
-    if (txPrev.IsCoinBase())
-      for (const CBlockIndex* pindex = pindexBlock; pindex && pindexBlock->nHeight - pindex->nHeight < EMC2_COINBASE_MATURITY; pindex = pindex->pprev)
-        //if (pindex->nBlockPos == txindex.pos.nBlockPos && pindex->nFile == txindex.pos.nFile)
-        if (pindex->nHeight == txindex.pos.nBlockPos)// && pindex->nFile == txindex.pos.nFile)
-          return error(SHERR_INVAL, "ConnectInputs() : tried to spend coinbase at depth %d", pindexBlock->nHeight - pindex->nHeight);
-
-    // Check for negative or overflow input values
-    nValueIn += txPrev.vout[prevout.n].nValue;
-    if (!MoneyRange(EMC2_COIN_IFACE, txPrev.vout[prevout.n].nValue) || !MoneyRange(EMC2_COIN_IFACE, nValueIn))
-      return error(SHERR_INVAL, "ConnectInputs() : txin values out of range");
-
-  }
-  // The first loop above does all the inexpensive checks.
-  // Only if ALL inputs pass do we perform expensive ECDSA signature checks.
-  // Helps prevent CPU exhaustion attacks.
-  for (unsigned int i = 0; i < tx->vin.size(); i++)
-  {
-    COutPoint prevout = tx->vin[i].prevout;
-    assert(inputs.count(prevout.hash) > 0);
-    CTxIndex& txindex = inputs[prevout.hash].first;
-    CTransaction& txPrev = inputs[prevout.hash].second;
-
-    /* this coin has been marked as spent. ensure this is not a re-write of the same transaction. */
-    if (tx->IsSpentTx(txindex.vSpent[prevout.n])) {
-      if (fMiner) return false;
-      return error(SHERR_INVAL, "(emc2) ConnectInputs: %s prev tx (%s) already used at %s", tx->GetHash().GetHex().c_str(), txPrev.GetHash().GetHex().c_str(), txindex.vSpent[prevout.n].ToString().c_str());
-    }
-
-    // Skip ECDSA signature verification when connecting blocks (fBlock=true)
-    // before the last blockchain checkpoint. This is safe because block merkle hashes are
-    // still computed and checked, and any change will be caught at the next checkpoint.
-    if (!(fBlock && (GetBestHeight(EMC2_COIN_IFACE < EMC2_Checkpoints::GetTotalBlocksEstimate()))))
-    {
-      // Verify signature
-      if (!VerifySignature(EMC2_COIN_IFACE, txPrev, *tx, i, fStrictPayToScriptHash, 0))
-      {
-        // only during transition phase for P2SH: do not invoke anti-DoS code for
-        // potentially old clients relaying bad P2SH transactions
-        if (fStrictPayToScriptHash && VerifySignature(EMC2_COIN_IFACE, txPrev, *tx, i, false, 0))
-          return error(SHERR_INVAL, "ConnectInputs() : %s P2SH VerifySignature failed", tx->GetHash().ToString().substr(0,10).c_str());
-
-        return error(SHERR_INVAL, "ConnectInputs() : %s VerifySignature failed", tx->GetHash().ToString().substr(0,10).c_str());
-      }
-    }
-
-    // Mark outpoints as spent
-    txindex.vSpent[prevout.n] = posThisTx;
-
-    // Write back
-    if (fBlock || fMiner)
-    {
-      mapTestPool[prevout.hash] = txindex;
-    }
-  }
-
-  if (nValueIn < tx->GetValueOut())
-    return error(SHERR_INVAL, "ConnectInputs() : %s value in < value out", tx->GetHash().ToString().substr(0,10).c_str());
-
-  // Tally transaction fees
-  int64 nTxFee = nValueIn - tx->GetValueOut();
-  if (nTxFee < 0)
-    return error(SHERR_INVAL, "ConnectInputs() : %s nTxFee < 0", tx->GetHash().ToString().substr(0,10).c_str());
-  nFees += nTxFee;
-  if (!MoneyRange(EMC2_COIN_IFACE, nFees))
-    return error(SHERR_INVAL, "ConnectInputs() : nFees out of range");
-
-
-  return true;
-}
 
 
 static int64_t emc2_GetTxWeight(const CTransaction& tx)
@@ -762,9 +670,13 @@ bool emc2_CreateGenesisBlock()
   if (!ret)
     return (false);
 
+#ifdef USE_LEVELDB_COINDB
   EMC2TxDB txdb;
   block.SetBestChain(txdb, (*blockIndex)[emc2_hashGenesisBlock]);
   txdb.Close();
+#else
+  block.SetBestChain((*blockIndex)[emc2_hashGenesisBlock]);
+#endif
 
   return (true);
 }
@@ -1060,7 +972,7 @@ bool EMC2Block::CheckBlock()
 }
 
 
-
+#if 0
 bool static EMC2_Reorganize(CTxDB& txdb, CBlockIndex* pindexNew, EMC2_CTxMemPool *mempool)
 {
   char errbuf[1024];
@@ -1166,6 +1078,7 @@ Debug("REORGANIZE: Connect %i blocks; %s..%s\n", vConnect.size(), pfork->GetBloc
 
   return true;
 }
+#endif
 
 void EMC2Block::InvalidChainFound(CBlockIndex* pindexNew)
 {
@@ -1178,9 +1091,11 @@ void EMC2Block::InvalidChainFound(CBlockIndex* pindexNew)
   if (pindexNew->bnChainWork > bnBestInvalidWork)
   {
     bnBestInvalidWork = pindexNew->bnChainWork;
+#ifdef USE_LEVELDB_COINDB
     EMC2TxDB txdb;
     txdb.WriteBestInvalidWork(bnBestInvalidWork);
     txdb.Close();
+#endif
     //    uiInterface.NotifyBlocksChanged();
   }
   error(SHERR_INVAL, "EMC2: InvalidChainFound: invalid block=%s  height=%d  work=%s  date=%s\n",
@@ -1227,166 +1142,7 @@ void static EMC2_SetBestChain(const CBlockLocator& loc)
   pwallet->SetBestChain(loc);
 }
 
-#if 0
-/* if block is over one day old than consider it history. */
-static bool EMC2_IsInitialBlockDownload()
-{
 
-  if (pindexBest == NULL || GetBestHeight(EMC2_COIN_IFACE) < EMC2_Checkpoints::GetTotalBlocksEstimate())
-    return true;
-
-  static int64 nLastUpdate;
-  static CBlockIndex* pindexLastBest;
-  if (pindexBest != pindexLastBest)
-  {
-    pindexLastBest = pindexBest;
-    nLastUpdate = GetTime();
-  }
-  return (GetTime() - nLastUpdate < 15 &&
-      pindexBest->GetBlockTime() < GetTime() - 24 * 60 * 60);
-}
-#endif
-
-#if 0
-/* not currently used */
-bool emc2_Reindex(CTxDB& txdb, CBlockIndex *pindexNew)
-{
-  CIface *iface = GetCoinByIndex(EMC2_COIN_IFACE);
-  bc_t *bc = GetBlockChain(iface);
-  vector<CTransaction> vResurrect;
-  vector<CTransaction> vDelete;
-  vector<CBlockIndex*> vConnect;
-  map<int, CBlock *>mLinkBlock; 
-  map<int, CBlockIndex *>mLinkIndex;
-  map<int, CBlock *>mUnlinkBlock; 
-  map<int, CBlockIndex *>mUnlinkIndex;
-  CBlockIndex *pindexIntermediate = pindexNew;
-  CBlockIndex *pindex;
-  char errbuf[1024];
-  unsigned int nHeight;
-  unsigned int nLinkHeight;
-  unsigned int nUnlinkHeight;
-  unsigned int nStartHeight;
-
-  CBlockIndex* pindexBest = GetBestBlockIndex(EMC2_COIN_IFACE);
-  if (!pindexBest)
-    return error(SHERR_INVAL, "no established block-chain.");
-  fprintf(stderr, "DEBUG: EMC2Block::Reindex: block height %d\n", pindexNew->nHeight);
-
-  while (pindexIntermediate->pprev && 
-      pindexIntermediate->pprev->bnChainWork > pindexBest->bnChainWork)
-  {
-    pindexIntermediate = pindexIntermediate->pprev;
-  }
-
-  // Find the fork
-  CBlockIndex* pfork = pindexBest;
-  CBlockIndex* plonger = pindexIntermediate;
-  while (pfork != plonger)
-  {
-    while (plonger->nHeight > pfork->nHeight)
-      if (!(plonger = plonger->pprev))
-        return error(SHERR_INVAL, "Reorganize() : plonger->pprev is null");
-    if (pfork == plonger)
-      break;
-    if (!pfork->pprev) {
-      sprintf(errbuf, "EMC2_Reorganize: no previous chain for '%s' height %d\n", pfork->GetBlockHash().GetHex().c_str(), pfork->nHeight); 
-      return error(SHERR_INVAL, errbuf);
-    }
-    pfork = pfork->pprev;
-  }
-  nStartHeight = pfork->nHeight;
-
-
-  /* gather unlink chain */
-  for (pindex = pindexBest; pindex->pprev && pindex->nHeight > nStartHeight; pindex = pindex->pprev) {
-    mUnlinkIndex[pindex->nHeight] = pindex;
-  }
-  for (nHeight = pindexBest->nHeight; nHeight > nStartHeight; nHeight--) {
-    CBlock *block = GetBlockByHeight(iface, nHeight);
-    if (!block) {
-      sprintf(errbuf, "no block height %d established in block-chain.");
-      unet_log(EMC2_COIN_IFACE, errbuf);
-      continue;
-    }
-    mUnlinkBlock[nHeight] = block;
-  }
-  nUnlinkHeight = pindexBest->nHeight;
-
-  /* gather new chain */
-  for (pindex = pindexNew; pindex != pfork; pindex = pindex->pprev) {
-    vConnect.push_back(pindex);
-  }
-  nLinkHeight = nStartHeight + vConnect.size(); 
-
-  nHeight = nLinkHeight; 
-  BOOST_FOREACH(CBlockIndex* dis_pindex, vConnect) {
-    CBlock *block;
-
-    block = GetArchBlockByHash(iface, dis_pindex->GetBlockHash()); 
-    if (!block)
-      block = GetBlockByHash(iface, dis_pindex->GetBlockHash()); 
-
-#if 0
-    if (!block)
-      return error(SHERR_INVAL, "EMC2::Reindex/Connect: unable to load block hash '%s' for new chain height %d.", dis_pindex->GetBlockHash().c_str(), nHeight);
-#endif
-
-    mLinkBlock[nHeight] = block;
-    mLinkIndex[nHeight] = pindex; 
-
-    nHeight--;
-  }
-
-  /* disconect (down) */
-  for (nHeight = nUnlinkHeight; nHeight > nStartHeight; nHeight--) {
-    pindex = mUnlinkIndex[nHeight];
-    CBlock *block = mUnlinkBlock[nHeight];
-
-    if (block && pindex) {
-      block->DisconnectBlock(txdb, pindex); 
-      BOOST_FOREACH(const CTransaction& tx, block->vtx) {
-        if (!tx.IsCoinBase())
-          vResurrect.push_back(tx);
-      }
-    }
-    if (pindex && pindex->pprev) {
-      pindex->pprev->pnext = NULL;
-    }
-    bc_clear(bc, nHeight);
-  }
-
-  /* connect (up) */
-  pindex = pfork;
-  for (nHeight = nStartHeight + 1; nHeight <= nLinkHeight; nHeight++) {
-    pindex = mLinkIndex[nHeight];
-    CBlock *block = mLinkBlock[nHeight];
-    if (!pindex || !block)
-      break;
-    if (!block->ConnectBlock(txdb, pindex))
-      break;
-    pindex->pprev->pnext = pindex;
-    BOOST_FOREACH(const CTransaction& tx, block->vtx)
-      vDelete.push_back(tx);
-  }
-
-  if (!txdb.WriteHashBestChain(pindex->GetBlockHash()))
-    return error(SHERR_INVAL, "EMC2:Reindex: WriteHashBestChain failed");
-
-  if (!txdb.TxnCommit())
-    return error(SHERR_INVAL, "Reorganize() : TxnCommit failed");
-
-  // Resurrect memory transactions that were in the disconnected branch
-  BOOST_FOREACH(CTransaction& tx, vResurrect)
-    tx.AcceptToMemoryPool(txdb, false);
-
-  // Delete redundant memory transactions that are in the connected branch
-  BOOST_FOREACH(CTransaction& tx, vDelete)
-    EMC2Block::mempool.CommitTx(tx);
-
-  return true;
-}
-#endif
 
 #ifdef USE_LEVELDB_TXDB
 bool EMC2Block::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
@@ -1417,53 +1173,6 @@ bool EMC2Block::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
   {
 /* DEBUG: 060316 - reorg will try to load this block from db. */
     WriteArchBlock();
-
-#if 0
-    //Reindex(pindexNew);
-    // the first block in the new chain that will cause it to become the new best chain
-    CBlockIndex *pindexIntermediate = pindexNew;
-
-    // list of blocks that need to be connected afterwards
-    std::vector<CBlockIndex*> vpindexSecondary;
-
-    // Reorganize is costly in terms of db load, as it works in a single db transaction.
-    // Try to limit how much needs to be done inside
-    while (pindexIntermediate->pprev && pindexIntermediate->pprev->bnChainWork > GetBestBlockIndex(EMC2_COIN_IFACE)->bnChainWork)
-    {
-      vpindexSecondary.push_back(pindexIntermediate);
-      pindexIntermediate = pindexIntermediate->pprev;
-    }
-
-    if (!vpindexSecondary.empty())
-      Debug("Postponing %i reconnects\n", vpindexSecondary.size());
-
-    // Switch to new best branch
-    
-    ret = EMC2_Reorganize(txdb, pindexIntermediate, &mempool);
-    if (!ret) {
-      txdb.TxnAbort();
-      InvalidChainFound(pindexNew);
-      return error(SHERR_INVAL, "SetBestChain() : Reorganize failed");
-    }
-
-    // Connect futher blocks
-    BOOST_REVERSE_FOREACH(CBlockIndex *pindex, vpindexSecondary)
-    {
-      EMC2Block block;
-      if (!block.ReadFromDisk(pindex) &&
-          !block.ReadArchBlock(pindex->GetBlockHash())) {
-        error(SHERR_IO, "SetBestChain() : ReadFromDisk failed\n");
-        break;
-      }
-      if (!txdb.TxnBegin()) {
-        error(SHERR_INVAL, "SetBestChain() : TxnBegin 2 failed\n");
-        break;
-      }
-      // errors now are not fatal, we still did a reorganisation to a new chain in a valid way
-      if (!block.SetBestChainInner(txdb, pindex))
-        break;
-    }
-#endif
 
     ret = EMC2_Reorganize(txdb, pindexNew, &mempool);
     if (!ret) {
@@ -1521,52 +1230,6 @@ bool EMC2Block::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
 }
 #endif
 
-#ifndef USE_LEVELDB_TXDB
-bool EMC2Block::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
-{
-  uint256 hash = GetHash();
-  shtime_t ts;
-  bool ret;
-
-  if (EMC2Block::pindexGenesisBlock == NULL && hash == emc2_hashGenesisBlock)
-  {
-    if (!txdb.TxnBegin())
-      return error(SHERR_INVAL, "SetBestChain() : TxnBegin failed");
-    txdb.WriteHashBestChain(hash);
-    if (!txdb.TxnCommit())
-      return error(SHERR_INVAL, "SetBestChain() : TxnCommit failed");
-    EMC2Block::pindexGenesisBlock = pindexNew;
-  } else {
-    timing_init("SetBestChain/commit", &ts);
-    ret = core_CommitBlock(txdb, this, pindexNew);
-    timing_term(EMC2_COIN_IFACE, "SetBestChain/commit", &ts);
-    if (!ret)
-      return (false);
-  }
-
-  // Update best block in wallet (so we can detect restored wallets)
-  bool fIsInitialDownload = IsInitialBlockDownload(EMC2_COIN_IFACE);
-  if (!fIsInitialDownload) {
-    const CBlockLocator locator(EMC2_COIN_IFACE, pindexNew);
-    timing_init("SetBestChain/locator", &ts);
-    EMC2_SetBestChain(locator);
-    timing_term(EMC2_COIN_IFACE, "SetBestChain/locator", &ts);
-  }
-
-  // New best block
-  SetBestBlockIndex(EMC2_COIN_IFACE, pindexNew);
-  bnBestChainWork = pindexNew->bnChainWork;
-  nTimeBestReceived = GetTime();
-
-  {
-    CIface *iface = GetCoinByIndex(EMC2_COIN_IFACE);
-    if (iface)
-      STAT_TX_ACCEPTS(iface)++;
-  }
-
-  return true;
-}
-#endif
 
 
 
@@ -1611,135 +1274,6 @@ static void emc2_UpdatedTransaction(const uint256& hashTx)
   pwallet->UpdatedTransaction(hashTx);
 }
 
-bool EMC2Block::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)
-{
-  char errbuf[1024];
-
-  /* "Check it again in case a previous version let a bad block in" */
-#if 1 /* DEBUG: */
-  if (!CheckBlock())
-    return false;
-#endif
-
-  CIface *iface = GetCoinByIndex(EMC2_COIN_IFACE);
-  bc_t *bc = GetBlockTxChain(iface);
-  unsigned int nFile = EMC2_COIN_IFACE;
-  unsigned int nBlockPos = pindex->nHeight;;
-  bc_hash_t b_hash;
-  int err;
-
-  // Do not allow blocks that contain transactions which 'overwrite' older transactions,
-  // unless those are already completely spent.
-  // If such overwrites are allowed, coinbases and transactions depending upon those
-  // can be duplicated to remove the ability to spend the first instance -- even after
-  // being sent to another address.
-  // See BIP30 and http://r6.ca/blog/20120206T005236Z.html for more information.
-  // This logic is not necessary for memory pool transactions, as AcceptToMemoryPool
-  // already refuses previously-known transaction id's entirely.
-  // This rule applies to all blocks whose timestamp is after October 1, 2012, 0:00 UTC.
-  int64 nBIP30SwitchTime = 1349049600;
-  bool fEnforceBIP30 = (pindex->nTime > nBIP30SwitchTime);
-
-  // BIP16 didn't become active until October 1 2012
-  int64 nBIP16SwitchTime = 1349049600;
-  bool fStrictPayToScriptHash = (pindex->nTime >= nBIP16SwitchTime);
-
-  map<uint256, CTxIndex> mapQueuedChanges;
-  int64 nFees = 0;
-  unsigned int nSigOps = 0;
-  BOOST_FOREACH(CTransaction& tx, vtx)
-  {
-    uint256 hashTx = tx.GetHash();
-    int nTxPos;
-
-    if (fEnforceBIP30) {
-      CTxIndex txindexOld;
-      if (txdb.ReadTxIndex(hashTx, txindexOld)) {
-        BOOST_FOREACH(CDiskTxPos &pos, txindexOld.vSpent)
-          if (tx.IsSpentTx(pos))
-            return error(SHERR_INVAL, "EMC2Block::ConnectBlock: BIP30 enforced at height %d\n", pindex->nHeight);
-      }
-    }
-
-    MapPrevTx mapInputs;
-    CDiskTxPos posThisTx(EMC2_COIN_IFACE, nBlockPos, nTxPos);
-    if (!tx.IsCoinBase()) {
-      bool fInvalid;
-      if (!tx.FetchInputs(txdb, mapQueuedChanges, this, false, mapInputs, fInvalid)) {
-        sprintf(errbuf, "EMC2::ConnectBlock: FetchInputs failed for tx '%s' @ height %u\n", tx.GetHash().GetHex().c_str(), (unsigned int)nBlockPos);
-        return error(SHERR_INVAL, errbuf);
-      }
-    }
-
-    nSigOps += tx.GetSigOpCost(mapInputs);
-    if (nSigOps > MAX_BLOCK_SIGOP_COST(iface)) {
-      return (trust(-100, "(emc2) ConnectBlock: sigop cost exceeded maximum (%d > %d)", nSigOps, MAX_BLOCK_SIGOP_COST(iface)));
-    }
-
-    if (!tx.IsCoinBase()) {
-      nFees += tx.GetValueIn(mapInputs)-tx.GetValueOut();
-
-      if (!emc2_ConnectInputs(&tx, mapInputs, mapQueuedChanges, posThisTx, pindex, true, false, fStrictPayToScriptHash)) {
-        return error(SHERR_INVAL, "EMC2Block::ConnectBlock: error connecting inputs.");
-      }
-    }
-
-    mapQueuedChanges[hashTx] = CTxIndex(posThisTx, tx.vout.size());
-  }
-
-  // Write queued txindex changes
-  for (map<uint256, CTxIndex>::iterator mi = mapQueuedChanges.begin(); mi != mapQueuedChanges.end(); ++mi)
-  {
-    if (!txdb.UpdateTxIndex((*mi).first, (*mi).second)) {
-      return error(SHERR_INVAL, "ConnectBlock() : UpdateTxIndex failed");
-    }
-  }
-
-#if 0
-  if (vtx.size() == 0) {
-    return error(SHERR_INVAL, "EMC2Block::ConnectBlock: vtx.size() == 0");
-  }
-#endif
-  
-  int64 nValue = emc2_GetBlockValue(pindex->nHeight, 0);
-  if (vtx[0].GetValueOut() > (nValue + nFees)) {
-    sprintf(errbuf, "EMC2_ConnectBlock: coinbase output (%d coins) higher than expected block value @ height %d (%d coins) [block %s].\n", FormatMoney(vtx[0].GetValueOut()).c_str(), pindex->nHeight, FormatMoney(nValue).c_str(), pindex->GetBlockHash().GetHex().c_str());
-    return error(SHERR_INVAL, errbuf);
-  }
-  if (vtx[0].vout[0].scriptPubKey != EMC2_CHARITY_SCRIPT) {
-    return error(SHERR_INVAL, "EMC2_ConnectBlock() : coinbase does not pay to the charity.");
-  }
-  int64 nCharity = nValue * 2.5 / 100; 
-  if (vtx[0].vout[0].nValue < nCharity) {
-    return error(SHERR_INVAL, "EMC2_ConnectBlock() : coinbase does not pay enough to the charity (actual=%llu vs required=%llu)", (unsigned long long)vtx[0].vout[0].nValue, (unsigned long long)nCharity);
-  }
-
-  if (pindex->pprev)
-  {
-    if (pindex->pprev->nHeight + 1 != pindex->nHeight) {
-fprintf(stderr, "DEBUG: ConnectBlock: block-index for hash '%s' height changed from %d to %d.\n", pindex->GetBlockHash().GetHex().c_str(), pindex->nHeight, (pindex->pprev->nHeight + 1));
-      pindex->nHeight = pindex->pprev->nHeight + 1;
-    }
-    if (!WriteBlock(pindex->nHeight)) {
-      return (error(SHERR_INVAL, "ConnectBlock: error writing block hash '%s' to height %d\n", GetHash().GetHex().c_str(), pindex->nHeight));
-    }
-
-Debug("CONNECT: hash '%s' to height %d\n", GetHash().GetHex().c_str(), pindex->nHeight);
-#if 0
-    // Update block index on disk without changing it in memory.
-    // The memory index structure will be changed after the db commits.
-    CDiskBlockIndex blockindexPrev(pindex->pprev);
-    blockindexPrev.hashNext = pindex->GetBlockHash();
-    if (!txdb.WriteBlockIndex(blockindexPrev))
-      return error(SHERR_INVAL, "ConnectBlock() : WriteBlockIndex failed");
-#endif
-  }
-
-  BOOST_FOREACH(CTransaction& tx, vtx)
-    SyncWithWallets(iface, tx, this);
-
-  return true;
-}
 
 bool EMC2Block::ReadBlock(uint64_t nHeight)
 {
@@ -1872,6 +1406,7 @@ bool EMC2Block::IsOrphan()
 }
 
 
+#ifdef USE_LEVELDB_COINDB
 bool emc2_Truncate(uint256 hash)
 {
   blkidx_t *blockIndex = GetBlockTable(EMC2_COIN_IFACE);
@@ -1946,6 +1481,13 @@ bool EMC2Block::Truncate()
 {
   return (emc2_Truncate(GetHash()));
 }
+#else
+bool EMC2Block::Truncate()
+{
+  CIface *iface = GetCoinByIndex(EMC2_COIN_IFACE);
+  return (core_Truncate(iface, GetHash()));
+}
+#endif
 
 bool EMC2Block::VerifyCheckpoint(int nHeight)
 {
@@ -1992,11 +1534,17 @@ bool EMC2Block::AddToBlockIndex()
 
 
   if (pindexNew->bnChainWork > bnBestChainWork) {
+#ifdef USE_LEVELDB_COINDB
     EMC2TxDB txdb;
     bool ret = SetBestChain(txdb, pindexNew);
     txdb.Close();
     if (!ret)
       return false;
+#else
+    bool ret = SetBestChain(pindexNew);
+    if (!ret)
+      return (false);
+#endif
   } else {
     if (!WriteArchBlock())
       return (false);
@@ -2005,46 +1553,7 @@ bool EMC2Block::AddToBlockIndex()
   return true;
 }
 
-bool EMC2Block::DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex)
-{
-  return (core_DisconnectBlock(txdb, pindex, this));
-}
 
-bool EMC2Block::SetBestChain(CBlockIndex* pindexNew)
-{
-  CIface *iface = GetCoinByIndex(EMC2_COIN_IFACE);
-  uint256 hash = GetHash();
-  shtime_t ts;
-  bool ret;
-
-  if (EMC2Block::pindexGenesisBlock == NULL && hash == emc2_hashGenesisBlock)
-  {
-    EMC2Block::pindexGenesisBlock = pindexNew;
-  } else {
-    timing_init("SetBestChain/commit", &ts);
-    ret = core_CommitBlock(this, pindexNew); 
-    timing_term(EMC2_COIN_IFACE, "SetBestChain/commit", &ts);
-    if (!ret)
-      return (false);
-  }
-
-  // Update best block in wallet (so we can detect restored wallets)
-  bool fIsInitialDownload = IsInitialBlockDownload(EMC2_COIN_IFACE);
-  if (!fIsInitialDownload) {
-    const CBlockLocator locator(EMC2_COIN_IFACE, pindexNew);
-    timing_init("SetBestChain/locator", &ts);
-    EMC2_SetBestChain(locator);
-    timing_term(EMC2_COIN_IFACE, "SetBestChain/locator", &ts);
-  }
-
-  // New best block
-  SetBestBlockIndex(EMC2_COIN_IFACE, pindexNew);
-  bnBestChainWork = pindexNew->bnChainWork;
-  nTimeBestReceived = GetTime();
-  STAT_TX_ACCEPTS(iface)++;
-
-  return true;
-}
 
 int64_t EMC2Block::GetBlockWeight()
 {
@@ -2234,3 +1743,336 @@ void EMC2_CTxMemPool::queryHashes(std::vector<uint256>& vtxid)
         vtxid.push_back((*mi).first);
 }
 #endif
+
+
+
+#ifdef USE_LEVELDB_COINDB
+
+#ifndef USE_LEVELDB_TXDB
+bool EMC2Block::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
+{
+  uint256 hash = GetHash();
+  shtime_t ts;
+  bool ret;
+
+  if (EMC2Block::pindexGenesisBlock == NULL && hash == emc2_hashGenesisBlock)
+  {
+    if (!txdb.TxnBegin())
+      return error(SHERR_INVAL, "SetBestChain() : TxnBegin failed");
+    txdb.WriteHashBestChain(hash);
+    if (!txdb.TxnCommit())
+      return error(SHERR_INVAL, "SetBestChain() : TxnCommit failed");
+    EMC2Block::pindexGenesisBlock = pindexNew;
+  } else {
+    timing_init("SetBestChain/commit", &ts);
+    ret = core_CommitBlock(txdb, this, pindexNew);
+    timing_term(EMC2_COIN_IFACE, "SetBestChain/commit", &ts);
+    if (!ret)
+      return (false);
+  }
+
+  // Update best block in wallet (so we can detect restored wallets)
+  bool fIsInitialDownload = IsInitialBlockDownload(EMC2_COIN_IFACE);
+  if (!fIsInitialDownload) {
+    const CBlockLocator locator(EMC2_COIN_IFACE, pindexNew);
+    timing_init("SetBestChain/locator", &ts);
+    EMC2_SetBestChain(locator);
+    timing_term(EMC2_COIN_IFACE, "SetBestChain/locator", &ts);
+
+#ifndef USE_LEVELDB_COINDB
+    WriteHashBestChain(hash);
+#endif
+  }
+
+  // New best block
+  SetBestBlockIndex(EMC2_COIN_IFACE, pindexNew);
+  bnBestChainWork = pindexNew->bnChainWork;
+  nTimeBestReceived = GetTime();
+
+  {
+    CIface *iface = GetCoinByIndex(EMC2_COIN_IFACE);
+    if (iface)
+      STAT_TX_ACCEPTS(iface)++;
+  }
+
+  return true;
+}
+#endif
+
+bool EMC2Block::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex)
+{
+  char errbuf[1024];
+
+  /* "Check it again in case a previous version let a bad block in" */
+#if 1 /* DEBUG: */
+  if (!CheckBlock())
+    return false;
+#endif
+
+  CIface *iface = GetCoinByIndex(EMC2_COIN_IFACE);
+  bc_t *bc = GetBlockTxChain(iface);
+  unsigned int nFile = EMC2_COIN_IFACE;
+  unsigned int nBlockPos = pindex->nHeight;;
+  bc_hash_t b_hash;
+  int err;
+
+  // Do not allow blocks that contain transactions which 'overwrite' older transactions,
+  // unless those are already completely spent.
+  // If such overwrites are allowed, coinbases and transactions depending upon those
+  // can be duplicated to remove the ability to spend the first instance -- even after
+  // being sent to another address.
+  // See BIP30 and http://r6.ca/blog/20120206T005236Z.html for more information.
+  // This logic is not necessary for memory pool transactions, as AcceptToMemoryPool
+  // already refuses previously-known transaction id's entirely.
+  // This rule applies to all blocks whose timestamp is after October 1, 2012, 0:00 UTC.
+  int64 nBIP30SwitchTime = 1349049600;
+  bool fEnforceBIP30 = (pindex->nTime > nBIP30SwitchTime);
+
+  // BIP16 didn't become active until October 1 2012
+  int64 nBIP16SwitchTime = 1349049600;
+  bool fStrictPayToScriptHash = (pindex->nTime >= nBIP16SwitchTime);
+
+  map<uint256, CTxIndex> mapQueuedChanges;
+  int64 nFees = 0;
+  unsigned int nSigOps = 0;
+  BOOST_FOREACH(CTransaction& tx, vtx)
+  {
+    uint256 hashTx = tx.GetHash();
+    int nTxPos;
+
+    if (fEnforceBIP30) {
+      CTxIndex txindexOld;
+      if (txdb.ReadTxIndex(hashTx, txindexOld)) {
+        BOOST_FOREACH(CDiskTxPos &pos, txindexOld.vSpent)
+          if (tx.IsSpentTx(pos))
+            return error(SHERR_INVAL, "EMC2Block::ConnectBlock: BIP30 enforced at height %d\n", pindex->nHeight);
+      }
+    }
+
+    MapPrevTx mapInputs;
+    CDiskTxPos posThisTx(EMC2_COIN_IFACE, nBlockPos, nTxPos);
+    if (!tx.IsCoinBase()) {
+      bool fInvalid;
+      if (!tx.FetchInputs(txdb, mapQueuedChanges, this, false, mapInputs, fInvalid)) {
+        sprintf(errbuf, "EMC2::ConnectBlock: FetchInputs failed for tx '%s' @ height %u\n", tx.GetHash().GetHex().c_str(), (unsigned int)nBlockPos);
+        return error(SHERR_INVAL, errbuf);
+      }
+    }
+
+    nSigOps += tx.GetSigOpCost(mapInputs);
+    if (nSigOps > MAX_BLOCK_SIGOP_COST(iface)) {
+      return (trust(-100, "(emc2) ConnectBlock: sigop cost exceeded maximum (%d > %d)", nSigOps, MAX_BLOCK_SIGOP_COST(iface)));
+    }
+
+    if (!tx.IsCoinBase()) {
+      nFees += tx.GetValueIn(mapInputs)-tx.GetValueOut();
+
+      if (!emc2_ConnectInputs(&tx, mapInputs, mapQueuedChanges, posThisTx, pindex, true, false, fStrictPayToScriptHash)) {
+        return error(SHERR_INVAL, "EMC2Block::ConnectBlock: error connecting inputs.");
+      }
+    }
+
+    mapQueuedChanges[hashTx] = CTxIndex(posThisTx, tx.vout.size());
+  }
+
+  // Write queued txindex changes
+  for (map<uint256, CTxIndex>::iterator mi = mapQueuedChanges.begin(); mi != mapQueuedChanges.end(); ++mi)
+  {
+    if (!txdb.UpdateTxIndex((*mi).first, (*mi).second)) {
+      return error(SHERR_INVAL, "ConnectBlock() : UpdateTxIndex failed");
+    }
+  }
+
+#if 0
+  if (vtx.size() == 0) {
+    return error(SHERR_INVAL, "EMC2Block::ConnectBlock: vtx.size() == 0");
+  }
+#endif
+  
+  int64 nValue = emc2_GetBlockValue(pindex->nHeight, 0);
+  if (vtx[0].GetValueOut() > (nValue + nFees)) {
+    sprintf(errbuf, "EMC2_ConnectBlock: coinbase output (%d coins) higher than expected block value @ height %d (%d coins) [block %s].\n", FormatMoney(vtx[0].GetValueOut()).c_str(), pindex->nHeight, FormatMoney(nValue).c_str(), pindex->GetBlockHash().GetHex().c_str());
+    return error(SHERR_INVAL, errbuf);
+  }
+  if (vtx[0].vout[0].scriptPubKey != EMC2_CHARITY_SCRIPT) {
+    return error(SHERR_INVAL, "EMC2_ConnectBlock() : coinbase does not pay to the charity.");
+  }
+  int64 nCharity = nValue * 2.5 / 100; 
+  if (vtx[0].vout[0].nValue < nCharity) {
+    return error(SHERR_INVAL, "EMC2_ConnectBlock() : coinbase does not pay enough to the charity (actual=%llu vs required=%llu)", (unsigned long long)vtx[0].vout[0].nValue, (unsigned long long)nCharity);
+  }
+
+  if (pindex->pprev)
+  {
+    if (pindex->pprev->nHeight + 1 != pindex->nHeight) {
+fprintf(stderr, "DEBUG: ConnectBlock: block-index for hash '%s' height changed from %d to %d.\n", pindex->GetBlockHash().GetHex().c_str(), pindex->nHeight, (pindex->pprev->nHeight + 1));
+      pindex->nHeight = pindex->pprev->nHeight + 1;
+    }
+    if (!WriteBlock(pindex->nHeight)) {
+      return (error(SHERR_INVAL, "ConnectBlock: error writing block hash '%s' to height %d\n", GetHash().GetHex().c_str(), pindex->nHeight));
+    }
+
+Debug("CONNECT: hash '%s' to height %d\n", GetHash().GetHex().c_str(), pindex->nHeight);
+#if 0
+    // Update block index on disk without changing it in memory.
+    // The memory index structure will be changed after the db commits.
+    CDiskBlockIndex blockindexPrev(pindex->pprev);
+    blockindexPrev.hashNext = pindex->GetBlockHash();
+    if (!txdb.WriteBlockIndex(blockindexPrev))
+      return error(SHERR_INVAL, "ConnectBlock() : WriteBlockIndex failed");
+#endif
+  }
+
+  BOOST_FOREACH(CTransaction& tx, vtx)
+    SyncWithWallets(iface, tx, this);
+
+  return true;
+}
+
+bool EMC2Block::DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex)
+{
+  return (core_DisconnectBlock(txdb, pindex, this));
+}
+
+bool emc2_ConnectInputs(CTransaction *tx, MapPrevTx inputs, map<uint256, CTxIndex>& mapTestPool, const CDiskTxPos& posThisTx, const CBlockIndex* pindexBlock, bool fBlock, bool fMiner, bool fStrictPayToScriptHash=true)
+{
+
+  if (tx->IsCoinBase())
+    return (true);
+
+  // Take over previous transactions' spent pointers
+  // fBlock is true when this is called from AcceptBlock when a new best-block is added to the blockchain
+  // fMiner is true when called from the internal emc2 miner
+  // ... both are false when called from CTransaction::AcceptToMemoryPool
+
+  int64 nValueIn = 0;
+  int64 nFees = 0;
+  for (unsigned int i = 0; i < tx->vin.size(); i++)
+  {
+    COutPoint prevout = tx->vin[i].prevout;
+    assert(inputs.count(prevout.hash) > 0);
+    CTxIndex& txindex = inputs[prevout.hash].first;
+    CTransaction& txPrev = inputs[prevout.hash].second;
+
+    if (prevout.n >= txPrev.vout.size() || prevout.n >= txindex.vSpent.size())
+      return error(SHERR_INVAL, "ConnectInputs() : %s prevout.n out of range %d %d %d prev tx %s", tx->GetHash().ToString().substr(0,10).c_str(), prevout.n, txPrev.vout.size(), txindex.vSpent.size(), prevout.hash.ToString().substr(0,10).c_str());
+
+    // If prev is coinbase, check that it's matured
+    if (txPrev.IsCoinBase())
+      for (const CBlockIndex* pindex = pindexBlock; pindex && pindexBlock->nHeight - pindex->nHeight < EMC2_COINBASE_MATURITY; pindex = pindex->pprev)
+        //if (pindex->nBlockPos == txindex.pos.nBlockPos && pindex->nFile == txindex.pos.nFile)
+        if (pindex->nHeight == txindex.pos.nBlockPos)// && pindex->nFile == txindex.pos.nFile)
+          return error(SHERR_INVAL, "ConnectInputs() : tried to spend coinbase at depth %d", pindexBlock->nHeight - pindex->nHeight);
+
+    // Check for negative or overflow input values
+    nValueIn += txPrev.vout[prevout.n].nValue;
+    if (!MoneyRange(EMC2_COIN_IFACE, txPrev.vout[prevout.n].nValue) || !MoneyRange(EMC2_COIN_IFACE, nValueIn))
+      return error(SHERR_INVAL, "ConnectInputs() : txin values out of range");
+
+  }
+  // The first loop above does all the inexpensive checks.
+  // Only if ALL inputs pass do we perform expensive ECDSA signature checks.
+  // Helps prevent CPU exhaustion attacks.
+  for (unsigned int i = 0; i < tx->vin.size(); i++)
+  {
+    COutPoint prevout = tx->vin[i].prevout;
+    assert(inputs.count(prevout.hash) > 0);
+    CTxIndex& txindex = inputs[prevout.hash].first;
+    CTransaction& txPrev = inputs[prevout.hash].second;
+
+    /* this coin has been marked as spent. ensure this is not a re-write of the same transaction. */
+    if (tx->IsSpentTx(txindex.vSpent[prevout.n])) {
+      if (fMiner) return false;
+      return error(SHERR_INVAL, "(emc2) ConnectInputs: %s prev tx (%s) already used at %s", tx->GetHash().GetHex().c_str(), txPrev.GetHash().GetHex().c_str(), txindex.vSpent[prevout.n].ToString().c_str());
+    }
+
+    // Skip ECDSA signature verification when connecting blocks (fBlock=true)
+    // before the last blockchain checkpoint. This is safe because block merkle hashes are
+    // still computed and checked, and any change will be caught at the next checkpoint.
+    if (!(fBlock && (GetBestHeight(EMC2_COIN_IFACE < EMC2_Checkpoints::GetTotalBlocksEstimate()))))
+    {
+      // Verify signature
+      if (!VerifySignature(EMC2_COIN_IFACE, txPrev, *tx, i, fStrictPayToScriptHash, 0))
+      {
+        // only during transition phase for P2SH: do not invoke anti-DoS code for
+        // potentially old clients relaying bad P2SH transactions
+        if (fStrictPayToScriptHash && VerifySignature(EMC2_COIN_IFACE, txPrev, *tx, i, false, 0))
+          return error(SHERR_INVAL, "ConnectInputs() : %s P2SH VerifySignature failed", tx->GetHash().ToString().substr(0,10).c_str());
+
+        return error(SHERR_INVAL, "ConnectInputs() : %s VerifySignature failed", tx->GetHash().ToString().substr(0,10).c_str());
+      }
+    }
+
+    // Mark outpoints as spent
+    txindex.vSpent[prevout.n] = posThisTx;
+
+    // Write back
+    if (fBlock || fMiner)
+    {
+      mapTestPool[prevout.hash] = txindex;
+    }
+  }
+
+  if (nValueIn < tx->GetValueOut())
+    return error(SHERR_INVAL, "ConnectInputs() : %s value in < value out", tx->GetHash().ToString().substr(0,10).c_str());
+
+  // Tally transaction fees
+  int64 nTxFee = nValueIn - tx->GetValueOut();
+  if (nTxFee < 0)
+    return error(SHERR_INVAL, "ConnectInputs() : %s nTxFee < 0", tx->GetHash().ToString().substr(0,10).c_str());
+  nFees += nTxFee;
+  if (!MoneyRange(EMC2_COIN_IFACE, nFees))
+    return error(SHERR_INVAL, "ConnectInputs() : nFees out of range");
+
+
+  return true;
+}
+
+#else /* USE_LEVELDB_COINDB */
+
+bool EMC2Block::SetBestChain(CBlockIndex* pindexNew)
+{
+  CIface *iface = GetCoinByIndex(EMC2_COIN_IFACE);
+  uint256 hash = GetHash();
+  shtime_t ts;
+  bool ret;
+
+  if (EMC2Block::pindexGenesisBlock == NULL && hash == emc2_hashGenesisBlock)
+  {
+    EMC2Block::pindexGenesisBlock = pindexNew;
+  } else {
+    timing_init("SetBestChain/commit", &ts);
+    ret = core_CommitBlock(this, pindexNew); 
+    timing_term(EMC2_COIN_IFACE, "SetBestChain/commit", &ts);
+    if (!ret)
+      return (false);
+  }
+
+  // Update best block in wallet (so we can detect restored wallets)
+  bool fIsInitialDownload = IsInitialBlockDownload(EMC2_COIN_IFACE);
+  if (!fIsInitialDownload) {
+    const CBlockLocator locator(EMC2_COIN_IFACE, pindexNew);
+    timing_init("SetBestChain/locator", &ts);
+    EMC2_SetBestChain(locator);
+    timing_term(EMC2_COIN_IFACE, "SetBestChain/locator", &ts);
+  }
+
+  // New best block
+  SetBestBlockIndex(EMC2_COIN_IFACE, pindexNew);
+  bnBestChainWork = pindexNew->bnChainWork;
+  nTimeBestReceived = GetTime();
+
+  return true;
+}
+
+bool EMC2Block::ConnectBlock(CBlockIndex* pindex)
+{
+  return (core_ConnectBlock(this, pindex)); 
+}
+
+bool EMC2Block::DisconnectBlock(CBlockIndex* pindex)
+{
+  return (core_DisconnectBlock(pindex, this));
+}
+
+#endif /* USE_LEVELDB_COINDB */
