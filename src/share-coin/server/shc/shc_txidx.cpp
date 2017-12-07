@@ -226,10 +226,11 @@ static bool shc_LoadBlockIndex()
 
   // Load SHCBlock::hashBestChain pointer to end of best chain
   uint256 hashBestChain;
-  if (!ReadHashBestChain(iface, hashBestChain))
+  if (mapBlockIndex->size() == 0 ||
+      !ReadHashBestChain(iface, hashBestChain))
   {
     if (SHCBlock::pindexGenesisBlock == NULL) {
-      fprintf(stderr, "DEBUG: SHCTxDB::LoadBlockIndex() : SHCBlock::hashBestChain not loaded, but pindexGenesisBlock == NULL");
+     // fprintf(stderr, "DEBUG: SHCTxDB::LoadBlockIndex() : SHCBlock::hashBestChain not loaded, but pindexGenesisBlock == NULL");
       return true;
     }
     //    return error(SHERR_INVAL, "SHCTxDB::LoadBlockIndex() : SHCBlock::hashBestChain not loaded");

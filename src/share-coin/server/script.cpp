@@ -305,8 +305,8 @@ bool static _CheckLowS(const std::vector<unsigned char>& vchSig)
   }
 
   if (secp256k1_ecdsa_signature_normalize(secp256k1_context_verify, NULL, &sig)) {
-    return error(SHERR_INVAL, "CheckLowS: warning: error normalizing DER: \"%s\".", HexStr(vchSig).c_str());
-  };
+    return error(SHERR_INVAL, "CheckLowS: warning: DER signature \"%s\" would require normalizing.", HexStr(vchSig).c_str());
+  }
 
   return (true);
 }
@@ -1016,10 +1016,9 @@ fprintf(stderr, "DEBUG: EvalScript: OP_EQUALVERIFY: \"%s\" != \"%s\" [tx %s] [sc
                 scriptCode.FindAndDelete(CScript(vchSig));
               }
 
-              {
+              if (flags & SCRIPT_VERIFY_LOW_S) {
                 std::vector<unsigned char> vchSigCopy(vchSig.begin(), vchSig.begin() + vchSig.size() - 1);
-                bool lows_ok = _CheckLowS(vchSigCopy);
-                if (flags & SCRIPT_VERIFY_LOW_S)
+                if (!_CheckLowS(vchSigCopy))
                   return (false); 
               }
 

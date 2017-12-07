@@ -736,8 +736,17 @@ sprintf(ntime, "%-8.8x", (unsigned int)task->curtime);
 static uint64_t pend_block_height[MAX_COIN_IFACE];
 int is_stratum_task_pending(int *ret_iface)
 {
+  static uint32_t usec;
+  struct timeval now;
   uint64_t block_height;
   int ifaceIndex;
+
+  /* limit ops to 100ms */
+  gettimeofday(&now, NULL);
+  now.tv_usec /= 100000; /* 100ms */
+  if (usec && usec == now.tv_usec)
+    return (FALSE);
+  usec = now.tv_usec;
 
   for (ifaceIndex = 1; ifaceIndex < MAX_COIN_IFACE; ifaceIndex++) {
     CIface *iface = GetCoinByIndex(ifaceIndex);

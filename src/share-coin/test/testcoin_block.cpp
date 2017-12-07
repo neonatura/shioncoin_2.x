@@ -1509,19 +1509,15 @@ _TEST(segwit)
   _TRUE(found);
 
   int64 nValue = GetAccountBalance(TEST_COIN_IFACE, strAccount, 1);
-fprintf(stderr, "DEBUG: TEST: bal nValue %f\n", (double)nValue / COIN);
 
   /* send to extended tx storage account */
   string strWitAccount = "witness";
   CCoinAddr extAddr = GetAccountAddress(wallet, strWitAccount, true);
 
-Debug("SEGWIT/START");
-
   CTxCreator wtx1(wallet, strAccount);
   wtx1.AddOutput(extAddr.Get(), COIN);
   ok = wtx1.Send();
   strError = wtx1.GetError();
-fprintf(stderr, "DEBUG: strerror = \"%s\"\n", strError.c_str());
   _TRUE(ok);
   _TRUE(strError == "");
   _TRUE(wtx1.CheckTransaction(TEST_COIN_IFACE)); /* .. */

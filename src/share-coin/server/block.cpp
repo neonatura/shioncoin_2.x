@@ -31,6 +31,7 @@
 #include "versionbits.h"
 #include "wit_merkle.h"
 #include "txmempool.h"
+#include "coin.h"
 
 using namespace std;
 
@@ -3336,6 +3337,9 @@ bool core_CommitBlock(CBlock *pblock, CBlockIndex *pindexNew)
   }
   if (!fValid)
     goto fin;
+
+  /* persist */
+  WriteHashBestChain(iface, pindexNew->GetBlockHash());
 
   // Disconnect shorter branch
   BOOST_FOREACH(CBlockIndex* pindex, vDisconnect)

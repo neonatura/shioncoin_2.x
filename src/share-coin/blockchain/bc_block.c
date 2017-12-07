@@ -656,8 +656,18 @@ const char *bc_path_base(void)
   static char ret_path[PATH_MAX+1];
 
   if (!*ret_path) {
-    sprintf(ret_path, "%s/blockchain", get_libshare_path());
-    mkdir(ret_path, 0700);
+    struct stat st;
+    const char *base_path;
+
+    /* base hierarchial path */
+    base_path = get_libshare_path();
+    if (0 != stat(base_path, &st))
+      mkdir(base_path, 0777);
+
+    /* block-chain module */
+    sprintf(ret_path, "%s/blockchain", base_path);
+    if (0 != stat(ret_path, &st))
+      mkdir(ret_path, 0700);
   }
 
   return ((const char *)ret_path);

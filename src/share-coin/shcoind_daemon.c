@@ -159,7 +159,7 @@ void daemon_server(void)
     }
 
     /* handle network communication. */
-    unet_cycle(0.12); /* max idle 120ms */
+    unet_cycle(0.08); /* max idle 80ms */
 
     bc_chain_idle();
 

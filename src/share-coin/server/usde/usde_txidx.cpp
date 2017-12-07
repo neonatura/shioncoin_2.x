@@ -285,11 +285,12 @@ static bool usde_LoadBlockIndex()
 #ifdef USE_LEVELDB_COINDB
   if (!ReadHashBestChain(hashBestChain))
 #else
-  if (!::ReadHashBestChain(iface, hashBestChain))
+  if (mapBlockIndex->size() == 0 ||
+      !::ReadHashBestChain(iface, hashBestChain))
 #endif
   {
     if (USDEBlock::pindexGenesisBlock == NULL) {
-      fprintf(stderr, "DEBUG: USDETxDB::LoadBlockIndex() : USDEBlock::hashBestChain not loaded\n");
+      //fprintf(stderr, "DEBUG: USDETxDB::LoadBlockIndex() : USDEBlock::hashBestChain not loaded\n");
       return true;
     }
     //    return error(SHERR_INVAL, "USDETxDB::LoadBlockIndex() : USDEBlock::hashBestChain not loaded");

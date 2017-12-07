@@ -391,7 +391,7 @@ fprintf(stderr, "DEBUG: ProcessMessage: pfrom->nVersion (already) %d\n", pfrom->
 
     pfrom->fSuccessfullyConnected = true;
 
-    printf("receive version message: version %d, blocks=%d, us=%s, them=%s, peer=%s\n", pfrom->nVersion, pfrom->nStartingHeight, addrMe.ToString().c_str(), addrFrom.ToString().c_str(), pfrom->addr.ToString().c_str());
+    Debug("shc_ProcessMessage: receive version message: version %d, blocks=%d, us=%s, them=%s, peer=%s\n", pfrom->nVersion, pfrom->nStartingHeight, addrMe.ToString().c_str(), addrFrom.ToString().c_str(), pfrom->addr.ToString().c_str());
 
     cPeerBlockCounts.input(pfrom->nStartingHeight);
   }

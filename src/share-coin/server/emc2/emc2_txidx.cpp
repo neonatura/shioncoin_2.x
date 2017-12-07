@@ -437,11 +437,12 @@ static bool emc2_LoadBlockIndex()
 #ifdef USE_LEVELDB_COINDB
   if (!ReadHashBestChain(hashBestChain))
 #else
-  if (!::ReadHashBestChain(iface, hashBestChain))
+  if (mapBlockIndex->size() == 0 ||
+      !::ReadHashBestChain(iface, hashBestChain))
 #endif
   {
     if (EMC2Block::pindexGenesisBlock == NULL) {
-      fprintf(stderr, "DEBUG: EMC2TxDB::LoadBlockIndex() : EMC2Block::hashBestChain not loaded, but pindexGenesisBlock == NULL");
+  //    fprintf(stderr, "DEBUG: EMC2TxDB::LoadBlockIndex() : EMC2Block::hashBestChain not loaded, but pindexGenesisBlock == NULL");
       return true;
     }
     //    return error(SHERR_INVAL, "EMC2TxDB::LoadBlockIndex() : EMC2Block::hashBestChain not loaded");

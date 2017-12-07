@@ -1077,10 +1077,34 @@ fprintf(stderr, "DEBUG: emc2_ProcessMessage: \"feefilter\": %f coins.\n", ((doub
     }
   }
 
+  else if (strCommand == "notfound") {
+    /* ref: https://bitcoin.org/en/developer-reference#notfound */
+    /* The notfound message is a reply to a getdata message which requested an object the receiving node does not have available for relay. Their payload is identical to an "inv" message. */
+
+    vector<CInv> vInv;
+    vRecv >> vInv;
+    if (vInv.size() > 50000)
+    {
+      pfrom->Misbehaving(20);
+      return error(SHERR_INVAL, "message notfound size() = %d", vInv.size());
+    }
+
+    for (unsigned int nInv = 0; nInv < vInv.size(); nInv++)
+    {
+      const CInv &inv = vInv[nInv];
+      if (inv.type == MSG_TX || inv.type == MSG_WITNESS_TX) {
+        Debug("emc2_ProcessMessage: received notfound message: tx '%s'.", inv.hash.GetHex().c_str());
+      }
+
+/* .. */
+    }
+
+  }
+
   else
   {
     // Ignore unknown commands for extensibility
-   fprintf(stderr, "DEBUG: emc2_ProcessMessage: unknown cmd '%s'\n", strCommand.c_str()); 
+   Debug("emc2_ProcessMessage: unknown cmd '%s'\n", strCommand.c_str()); 
   }
 
 

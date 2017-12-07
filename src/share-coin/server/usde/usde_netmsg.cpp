@@ -374,7 +374,7 @@ fprintf(stderr, "DEBUG: USDE: (VER) requesting blocks up to height %d\n", pfrom-
 
     pfrom->fSuccessfullyConnected = true;
 
-    fprintf(stderr, "DEBUG: USDE: receive version message: version %d, blocks=%d, us=%s, them=%s, peer=%s, subver=%s\n", pfrom->nVersion, pfrom->nStartingHeight, addrMe.ToString().c_str(), addrFrom.ToString().c_str(), pfrom->addr.ToString().c_str(), pfrom->strSubVer.c_str()); 
+    Debug("(usde) ProcessMessage: receive version message: version %d, blocks=%d, us=%s, them=%s, peer=%s, subver=%s\n", pfrom->nVersion, pfrom->nStartingHeight, addrMe.ToString().c_str(), addrFrom.ToString().c_str(), pfrom->addr.ToString().c_str(), pfrom->strSubVer.c_str()); 
 
     cPeerBlockCounts.input(pfrom->nStartingHeight);
   }
