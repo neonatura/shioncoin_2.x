@@ -1024,6 +1024,7 @@ void CWallet::AvailableCoins(vector<COutput>& vCoins, bool fOnlyConfirmed) const
 void CWallet::AvailableAccountCoins(string strAccount, vector<COutput>& vCoins, bool fOnlyConfirmed) const
 {
   CIface *iface = GetCoinByIndex(ifaceIndex);
+  CTxMemPool *pool = GetTxMemPool(iface);
   int64 nMinValue = MIN_INPUT_VALUE(iface);
 
   vCoins.clear();
@@ -1066,6 +1067,7 @@ void CWallet::AvailableAccountCoins(string strAccount, vector<COutput>& vCoins, 
 
       // If output is less than minimum value, then don't include transaction.
       // This is to help deal with dust spam clogging up create transactions.
+      uint256 pcoinHash = pcoin->GetHash();
       for (unsigned int i = 0; i < pcoin->vout.size(); i++) {
         opcodetype opcode;
         const CScript& script = pcoin->vout[i].scriptPubKey;
@@ -1079,6 +1081,11 @@ void CWallet::AvailableAccountCoins(string strAccount, vector<COutput>& vCoins, 
         if (pcoin->vout[i].nValue < nMinValue)
           continue;
 
+        /* check mempool for conflict */ 
+        if (pool->IsInputTx(pcoinHash, i))
+          continue;
+
+        /* check whether this output has already been used */
         if (pcoin->IsSpent(i))
           continue;
 

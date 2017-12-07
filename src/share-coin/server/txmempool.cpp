@@ -1012,6 +1012,32 @@ bool CPool::AreInputsSpent(CPoolTx& ptx)
   return (false);
 }
 
+bool CPool::IsInputTx(const uint256 hash, int nOut)
+{
+
+  BOOST_FOREACH(PAIRTYPE(const uint256, CPoolTx)& item, active) {
+    CPoolTx& a_ptx = item.second;
+    BOOST_FOREACH(const CTxIn& a_txin, a_ptx.GetTx().vin) {
+      if (a_txin.prevout.hash == hash &&
+          a_txin.prevout.n == nOut) {
+        return (true);
+      }
+    }
+  }
+
+  BOOST_FOREACH(PAIRTYPE(const uint256, CPoolTx)& item, overflow) {
+    CPoolTx& a_ptx = item.second;
+    BOOST_FOREACH(const CTxIn& a_txin, a_ptx.GetTx().vin) {
+      if (a_txin.prevout.hash == hash &&
+          a_txin.prevout.n == nOut) {
+        return (true);
+      }
+    }
+  }
+
+  return (false);
+}
+
 void CPoolTx::CalculateModifiedSize()
 {
   const CTransaction& tx = GetTx();
