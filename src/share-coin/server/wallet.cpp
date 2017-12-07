@@ -1248,7 +1248,7 @@ bool CWallet::SelectCoins(int64 nTargetValue, set<pair<const CWalletTx*,unsigned
             SelectCoinsMinConf(nTargetValue, 0, 1, vCoins, setCoinsRet, nValueRet));
 }
 
-static bool SelectCoins_Avg(int64 nTargetValue, vector<COutput> vCoins, set<pair<const CWalletTx*,unsigned int> >& setCoinsRet, int64& nValueRet)
+bool SelectCoins_Avg(int64 nTargetValue, vector<COutput>& vCoins, set<pair<const CWalletTx*,unsigned int> >& setCoinsRet, int64& nValueRet)
 {
   setCoinsRet.clear();
   nValueRet = 0;
@@ -3365,81 +3365,13 @@ bool CTxCreator::Generate()
 #endif
   }
 
-#if 0
-  nFee = 0;
-  while (nDebit + nFee > nCredit) {
-    set<pair<const CWalletTx*,unsigned int> > setCoins;
-    int64 nTotalValue = (nDebit + nFee - nCredit);
-    int64 nValueIn = 0;
-
-    /* add inputs to use */
-    if (fAccount) {
-      ok = pwallet->SelectAccountCoins(strFromAccount, (nDebit + nFee), setCoins, nValueIn);
-    } else {
-      ok = pwallet->SelectCoins((nDebit + nFee), setCoins, nValueIn);
-    }
-    if (!ok) {
-      strError = "Insufficient input coins to fund transaction.";
-      return (false);
-    }
-
-    nValueIn = 0;
-    set<pair<const CWalletTx*,unsigned int> > setCoinsCopy;
-    BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setCoins) {
-      CWalletTx *wtx = (CWalletTx *)coin.first;
-      unsigned int n = coin.second;
-
-      if (n < 0 || n >= wtx->vout.size())
-        continue; /* inval */
-
-      if (HaveInput(wtx, n))
-        continue; /* already used */
-
-      setCoinsCopy.insert(setCoinsCopy.end(), make_pair(wtx, n));
-      nValueIn += wtx->vout[n].nValue;
-    }
-    if (nValueIn < nTotalValue) {
-      strError = "Insufficient input coins to fund transaction.";
-      return (false);
-    } 
-
-    int nCount = 0;
-    BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setCoinsCopy) {
-      CWalletTx *wtx = (CWalletTx *)coin.first;
-      unsigned int n = coin.second;
-      if (!AddInput(wtx, n)) {
-        strError = "A wallet transaction is invalid.";
-        return (false);
-      }
-
-      nCount++;
-      if (nDebit + nFee <= nCredit)
-        break;
-    }
-    if (!nCount) {
-      /* prevent an endless loop */
-      strError = "Insufficient input coins to fund transaction.";
-      return (false);
-    }
-
-    /* insert inputs for fee calculation */
-    vin.clear();
-    cbuff sigDummy(72, '\000');
-    cbuff sigPub(64, '\000');
-    BOOST_FOREACH(const PAIRTYPE(CWalletTx *,unsigned int)& coin, setInput) {
-      CTxIn in = CTxIn(coin.first->GetHash(), coin.second, 
-          CScript(), std::numeric_limits<unsigned int>::max()-1);
-      in.scriptSig << sigDummy << sigPub;
-      vin.push_back(in);
-    }
-
-    nFee = CalculateFee();
+  vector<COutput> vCoins;
+  if (fAccount) {
+    wallet->AvailableAccountCoins(strFromAccount, vCoins);
+  } else {
+    wallet->AvailableCoins(vCoins);
   }
-  if (!MoneyRange(iface, nFee)) {
-    strError = "The calculated fee is out-of-range.";
-    return (false);
-  }
-#endif
+
   nFee = MIN_RELAY_TX_FEE(iface);
   set<pair<const CWalletTx*,unsigned int> > setCoinsCopy;
   int64 nTotCredit = nCredit;
@@ -3451,11 +3383,8 @@ bool CTxCreator::Generate()
     int64 nValueIn = 0;
 
     /* add inputs to use */
-    if (fAccount) {
-      ok = pwallet->SelectAccountCoins(strFromAccount, (nDebit + nFee), setCoins, nValueIn);
-    } else {
-      ok = pwallet->SelectCoins((nDebit + nFee), setCoins, nValueIn);
-    }
+/* todo: SetSelectMode(SELECT_AVG, SELECT_MINCONF).. */
+    ok = SelectCoins_Avg((nDebit + nFee), vCoins, setCoins, nValueIn);
     if (!ok) {
       strError = "Insufficient input coins to fund transaction.";
       return (false);

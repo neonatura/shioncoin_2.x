@@ -42,6 +42,7 @@ extern TEST_segwit_serializetx(CuTest*);
 extern TEST_txmempool_pending(CuTest*);
 extern TEST_txmempool_inval(CuTest*);
 extern TEST_respend(CuTest*);
+extern TEST_txmempool_depend(CuTest*);
 
 
 
@@ -103,6 +104,7 @@ int main(int argc, char *argv[])
   /* tx memory pool */
   SUITE_ADD_TEST(suite, TEST_txmempool_pending);
   SUITE_ADD_TEST(suite, TEST_txmempool_inval);
+  SUITE_ADD_TEST(suite, TEST_txmempool_depend);
   SUITE_ADD_TEST(suite, TEST_respend);
 
   /* segwit tests */

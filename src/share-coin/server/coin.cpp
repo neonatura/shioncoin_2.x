@@ -354,7 +354,7 @@ bool core_VerifyCoinInputs(int ifaceIndex, CTransaction& tx, unsigned int nIn, C
 
 //int core_ConnectCoinInputs(int ifaceIndex, CTransaction *tx, const CBlockIndex* pindexBlock, tx_map& mapOutput, map<uint256, CTransaction> mapTx, int& nSigOps, int64& nFees, bool fVerifySig = true, bool fVerifyInputs = false);
 
-static bool core_ConnectCoinInputs(int ifaceIndex, CTransaction *tx, const CBlockIndex* pindexBlock, tx_map& mapOutput, map<uint256, CTransaction>& mapTx, int& nSigOps, int64& nFees, bool fVerifySig, bool fVerifyInputs, bool fRequireInputs)
+static bool core_ConnectCoinInputs(int ifaceIndex, CTransaction *tx, const CBlockIndex* pindexBlock, tx_map& mapOutput, map<uint256, CTransaction>& mapTx, int& nSigOps, int64& nFees, bool fVerifySig, bool fVerifyInputs, bool fRequireInputs, CBlock *pBlock)
 {
   CIface *iface = GetCoinByIndex(ifaceIndex);
   const bool fStrictPayToScriptHash=true;
@@ -386,6 +386,14 @@ static bool core_ConnectCoinInputs(int ifaceIndex, CTransaction *tx, const CBloc
       if (mempool->exists(prevout.hash)) {
         /* exists in memory pool */
         prevtx = mempool->lookup(prevout.hash);
+        fFound = true;
+      }
+    }
+    if (!fFound && pBlock) {
+      /* check block itself */
+      const CTransaction *inBlockTx = pBlock->GetTx(prevout.hash);
+      if (inBlockTx) {
+        prevtx.Init(*inBlockTx);
         fFound = true;
       }
     }
@@ -495,7 +503,19 @@ static bool core_ConnectCoinInputs(int ifaceIndex, CTransaction *tx, const CBloc
 
 bool CTransaction::ConnectInputs(int ifaceIndex, const CBlockIndex* pindexBlock, tx_map& mapOutput, map<uint256, CTransaction> mapTx, int& nSigOps, int64& nFees, bool fVerifySig, bool fVerifyInputs, bool fRequireInputs)
 {
-  return (core_ConnectCoinInputs(ifaceIndex, this, pindexBlock, mapOutput, mapTx, nSigOps, nFees, fVerifySig, fVerifyInputs, fRequireInputs)); 
+  CIface *iface = GetCoinByIndex(ifaceIndex);
+  CBlock *block = NULL;
+  bool ok;
+
+  if (pindexBlock) {
+    block = GetBlockByHeight(iface, pindexBlock->nHeight);
+  }
+
+  ok = core_ConnectCoinInputs(ifaceIndex, this, pindexBlock, mapOutput, mapTx, nSigOps, nFees, fVerifySig, fVerifyInputs, fRequireInputs, block);
+  if (block)
+    delete block;
+
+  return (ok);
 }
 
 
@@ -513,7 +533,7 @@ bool core_ConnectBlock(CBlock *block, CBlockIndex* pindex)
   BOOST_FOREACH(CTransaction& tx, block->vtx) {
     uint256 hashTx = tx.GetHash();
 
-    if (!core_ConnectCoinInputs(block->ifaceIndex, &tx, pindex, mapOutputs, mapTx, nSigOps, nFees, true, false, ((block == NULL) ? false : true)))
+    if (!core_ConnectCoinInputs(block->ifaceIndex, &tx, pindex, mapOutputs, mapTx, nSigOps, nFees, true, false, true, block))
       return (false);
   }
   if (nSigOps > MAX_BLOCK_SIGOPS(iface)) /* too many puppies */

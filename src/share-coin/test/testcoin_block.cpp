@@ -1608,7 +1608,6 @@ if (strError != "") fprintf(stderr, "DEBUG: strerror = \"%s\"\n", strError.c_str
   }
 
   nValue = GetAccountBalance(TEST_COIN_IFACE, strWitAccount, 1);
-fprintf(stderr, "DEBUG: TEST: wit bal/1 %f\n", (double)nValue/COIN);
   _TRUE(((int64)COIN * 2) == nValue); 
 
   /* return coins back to main account. */
@@ -1634,7 +1633,6 @@ if (strError != "") fprintf(stderr, "DEBUG: wtx3.strerror = \"%s\"\n", strError.
     delete block;
   }
 
-Debug("SEGWIT/START/END");
   {
     CBlock *block = test_GenerateBlock();
     _TRUEPTR(block);
@@ -1643,7 +1641,6 @@ Debug("SEGWIT/START/END");
   }
 
   nValue = GetAccountBalance(TEST_COIN_IFACE, strWitAccount, 1);
-fprintf(stderr, "DEBUG: TEST: wit bal/2 %f\n", (double)nValue/COIN);
   _TRUE(0 == nValue); 
 
 }
@@ -1765,6 +1762,49 @@ _TEST(respend)
 
 }
 
+_TEST(txmempool_depend)
+{
+  CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
+  CTxMemPool *pool = GetTxMemPool(iface);
+  CWallet *wallet = GetWallet(iface);
+  uint256 reuseHash;
+  string strAccount("");
+
+  /* obtain test coin address */
+  CCoinAddr addr = GetAccountAddress(wallet, strAccount, true);
+
+  {
+    CBlock *block = test_GenerateBlock();
+    _TRUEPTR(block);
+    _TRUE(ProcessBlock(NULL, block) == true);
+    delete block;
+  }
+  _TRUE(pool->size() == 0);
+
+  /* create transaction and track primary input */
+  CTxCreator tx(wallet, strAccount);
+  _TRUE(true == tx.AddOutput(addr.Get(), (int64)COIN * 2));
+  _TRUE(true == tx.Send());
+
+  reuseHash = tx.GetHash();
+
+  /* attempt send of tx w/ spent input */
+  CTxCreator s_tx(wallet, strAccount);
+  _TRUE(true == s_tx.AddInput(reuseHash, 0));
+  _TRUE(true == s_tx.AddOutput(addr.Get(), (int64)COIN));
+  _TRUE(true == s_tx.Send());
+
+  _TRUE(pool->size() == 2);
+
+  {
+    CBlock *block = test_GenerateBlock();
+    _TRUEPTR(block);
+    _TRUE(ProcessBlock(NULL, block) == true);
+    delete block;
+  }
+
+  _TRUE(pool->size() == 0);
+}
 
 #ifdef __cplusplus
 }

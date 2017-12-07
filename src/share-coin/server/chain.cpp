@@ -171,7 +171,8 @@ static bool ServiceWalletEvent(int ifaceIndex)
         wallet->AddToWalletIfInvolvingMe(tx, block, false, false);
       }
       BOOST_FOREACH(const CTransaction& tx, block->vtx) {
-        core_UpdateCoins(ifaceIndex, tx);
+        bool fLocal = ((nBestHeight - nHeight) > 8192) ? true : false;
+        core_UpdateCoins(ifaceIndex, tx, fLocal);
       }
 
       delete block;

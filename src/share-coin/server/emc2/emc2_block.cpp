@@ -778,7 +778,7 @@ bool emc2_ProcessBlock(CNode* pfrom, CBlock* pblock)
     if (pindexPrev && IsWitnessEnabled(iface, pindexPrev) &&
         -1 != GetWitnessCommitmentIndex(*pblock)) {
       core_UpdateUncommittedBlockStructures(iface, *pblock, pindexPrev);
-      error(SHERR_INVAL, "(emc2) ProcessBlock: warning: received block \"%s\" with null witness commitment [height %d].", hash.GetHex().c_str(), (int)pindexPrev->nHeight);
+      Debug("(emc2) ProcessBlock: warning: received block \"%s\" with null witness commitment [height %d].", hash.GetHex().c_str(), (int)pindexPrev->nHeight);
     }
   }
 

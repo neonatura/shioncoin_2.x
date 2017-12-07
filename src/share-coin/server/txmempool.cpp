@@ -142,6 +142,7 @@ bool CPool::AddTx(CTransaction& tx, CNode *pfrom)
     return (false);
   }
 
+#if 0
   /* dependent tx's initially start in overflow. */
   for (unsigned int i = 0; i < tx.vin.size(); i++) {
     COutPoint prevout = tx.vin[i].prevout;
@@ -152,6 +153,7 @@ bool CPool::AddTx(CTransaction& tx, CNode *pfrom)
       return (AddOverflowTx(ptx));
     }
   }
+#endif
 
   if (!ptx.IsLocal() && !VerifySoftLimits(ptx)) {
     /* initial breach of soft limits [non-local] starts in overflow queue. */
@@ -261,18 +263,10 @@ bool CPool::VerifyStandards(CPoolTx& ptx)
 
       /* evaluate signature */
       vector<vector<unsigned char> > stack;
-      CTransaction *txSig = (CTransaction *)this;
-      CSignature sig(ifaceIndex, txSig, i);
+      CSignature sig(ifaceIndex, (CTransaction *)&wtx, i);
       if (!EvalScript(sig, stack, wtx.vin[i].scriptSig, SIGVERSION_BASE, 0)) {
         return (error(SHERR_INVAL, "CPool.VerifyStandards: error evaluating input script."));
       }
-
-#if 0
-      if (!VerifySignature(ifaceIndex, txPrev, *this, i, true, 0)) {
-        return (error(SHERR_INVAL, "CPool.VerifyStandards: error verifying signature."));
-      }
-#endif
-
     }
 
     int64 nInputValue = wtx.GetValueIn(ptx.GetInputs());
@@ -519,6 +513,7 @@ bool CPool::AddActiveTx(CPoolTx& ptx)
 
   if (!tx.IsFinal(ifaceIndex)) {
     /* wait until transaction is finalized. */
+    Debug("CPool.AddActiveTx: tx \"%s\" is not finalized.", ptx.GetHash().GetHex().c_str());
     ptx.SetFlag(POOL_NOT_FINAL);
     return (AddOverflowTx(ptx));
   }
@@ -527,9 +522,11 @@ bool CPool::AddActiveTx(CPoolTx& ptx)
   /* check if their is room */
   if (GetActiveWeight() + ptx.GetWeight() > GetMaxWeight()) {
     /* tx would exceed block weight, send to overflow */
+    Debug("CPool.AddActiveTx: tx \"%s\" would exceed block weight.", ptx.GetHash().GetHex().c_str());
     return (AddOverflowTx(ptx));
   }
 
+#if 0
 /* todo: remove this section */
   for (unsigned int i = 0; i < tx.vin.size(); i++) {
     COutPoint prevout = tx.vin[i].prevout;
@@ -538,6 +535,7 @@ bool CPool::AddActiveTx(CPoolTx& ptx)
       return (AddOverflowTx(ptx));
     }
   }
+#endif
 
   /* for case when overflow is transitioning to active queue. */
   overflow.erase(ptx.GetHash());
