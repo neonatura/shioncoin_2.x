@@ -2136,6 +2136,7 @@ bool SHCBlock::ConnectBlock(CBlockIndex* pindex)
 
 bool SHCBlock::DisconnectBlock(CBlockIndex* pindex)
 {
+  CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);
   CBlock *block = (CBlock *)this;
 
   if (!core_DisconnectBlock(pindex, block))

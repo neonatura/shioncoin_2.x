@@ -1802,6 +1802,7 @@ bool TESTBlock::ConnectBlock(CBlockIndex* pindex)
 
 bool TESTBlock::DisconnectBlock(CBlockIndex* pindex)
 {
+  CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
 
   if (!core_DisconnectBlock(pindex, this))
     return (false);
