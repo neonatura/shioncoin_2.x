@@ -2137,7 +2137,34 @@ bool SHCBlock::ConnectBlock(CBlockIndex* pindex)
 bool SHCBlock::DisconnectBlock(CBlockIndex* pindex)
 {
   CBlock *block = (CBlock *)this;
-  return (core_DisconnectBlock(pindex, block));
+
+  if (!core_DisconnectBlock(pindex, block))
+    return (false);
+
+  if (pindex->pprev) {
+    BOOST_FOREACH(CTransaction& tx, vtx) {
+      if (tx.IsCoinBase()) {
+        if (tx.isFlag(CTransaction::TXF_MATRIX)) {
+          CTxMatrix& matrix = tx.matrix;
+          if (matrix.GetType() == CTxMatrix::M_VALIDATE) {
+            /* retract block hash from Validate matrix */
+            matrixValidate.Retract(pindex->nHeight, pindex->GetBlockHash());
+          } else if (matrix.GetType() == CTxMatrix::M_SPRING) {
+            BlockRetractSpringMatrix(iface, tx, pindex);
+          }
+        }
+      } else {
+        if (tx.isFlag(CTransaction::TXF_CERTIFICATE)) {
+          DisconnectCertificate(iface, tx);
+        }
+        if (tx.isFlag(CTransaction::TXF_EXEC)) {
+//          DisconnectExecTx(iface, tx);
+        }
+      }
+    }
+  }
+
+  return (true);
 }
 
 #endif

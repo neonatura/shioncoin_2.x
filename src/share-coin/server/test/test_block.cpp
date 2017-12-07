@@ -1802,7 +1802,31 @@ bool TESTBlock::ConnectBlock(CBlockIndex* pindex)
 
 bool TESTBlock::DisconnectBlock(CBlockIndex* pindex)
 {
-  return (core_DisconnectBlock(pindex, this));
+
+  if (!core_DisconnectBlock(pindex, this))
+    return (false);
+
+  if (pindex->pprev) {
+    BOOST_FOREACH(CTransaction& tx, vtx) {
+      if (tx.IsCoinBase()) {
+        if (tx.isFlag(CTransaction::TXF_MATRIX)) {
+          CTxMatrix& matrix = tx.matrix;
+          if (matrix.GetType() == CTxMatrix::M_VALIDATE) {
+            /* retract block hash from Validate matrix */
+            matrixValidate.Retract(matrix.nHeight, pindex->GetBlockHash());
+          } else if (matrix.GetType() == CTxMatrix::M_SPRING) {
+            BlockRetractSpringMatrix(iface, tx, pindex);
+          }
+        }
+      } else {
+        if (tx.isFlag(CTransaction::TXF_CERTIFICATE)) {
+          DisconnectCertificate(iface, tx);
+        }
+      }
+    }
+  }
+
+  return (true);
 }
 
 

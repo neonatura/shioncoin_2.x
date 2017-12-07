@@ -3377,10 +3377,12 @@ fin:
   return (fValid);
 }
 
+#if 0
 bool CBlock::DisconnectBlock(CBlockIndex *pindex)
 {
   return (core_DisconnectBlock(pindex, this));
 }
+#endif
 
 #endif /* USE_LEVELDB_COINDB */
 

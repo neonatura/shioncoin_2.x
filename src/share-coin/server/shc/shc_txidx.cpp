@@ -645,6 +645,8 @@ fprintf(stderr, "DEBUG: shc_RestoreBlockIndex: erased current block-chain index 
         (void)bc_idx_find(chain_tx, tx.GetHash().GetRaw(), NULL, &nTxPos);
         CDiskTxPos posThisTx(SHC_COIN_IFACE, nBlockPos, nTxPos);
         txdb.AddTxIndex(tx, posThisTx, height);
+#else
+        EraseTxCoins(iface, tx.GetHash());
 #endif
       }
     }
