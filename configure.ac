@@ -215,6 +215,8 @@ AC_CHECK_LIB([gmp], [__gmp_version], ,
   AC_MSG_ERROR("libgmp (math library) is required")
 )
 
+AC_CHECK_LIB([crypto])
+
 AC_CHECK_LIB([ssl], [SSL_version], ,
   AC_MSG_ERROR("libssl (crypt library) is required")
 )
@@ -326,6 +328,9 @@ if test "x$enable_pthread" = "xyes" ; then
   AC_CHECK_LIB([pthread], [pthread_self])
   AC_CHECK_FUNCS([pthread_mutex_lock pthread_mutex_unlock pthread_self pthread_mutex_init pthread_mutex_destroy])
 fi
+
+AC_CHECK_FUNCS([BN_bn2mpi])
+
 
 AC_ARG_ENABLE(debug,
 AS_HELP_STRING([--enable-debug],

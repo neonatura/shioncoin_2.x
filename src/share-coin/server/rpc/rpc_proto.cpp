@@ -2867,6 +2867,41 @@ Value rpc_wallet_unspent(CIface *iface, const Array& params, bool fStratum)
   return results;
 }
 
+Value rpc_wallet_spent(CIface *iface, const Array& params, bool fStratum)
+{
+  string strSysAccount("*");
+
+  if (params.size() == 0)
+    throw runtime_error("unsupported operation");
+
+  CWallet *pwalletMain = GetWallet(iface);
+  int ifaceIndex = GetCoinIndex(iface);
+  string strAccount = params[0].get_str();
+  int i;
+
+  Array results;
+  for (map<uint256, CWalletTx>::const_iterator it = pwalletMain->mapWallet.begin(); it != pwalletMain->mapWallet.end(); ++it)
+  {
+    const CWalletTx& pcoin = (*it).second;
+    if (strAccount != strSysAccount &&
+        pcoin.strFromAccount != strAccount)
+      continue;
+
+    bool fIsSpent = false;
+    for (i = 0; i < pcoin.vout.size(); i++) {
+      if (pcoin.IsSpent(i)) {
+        fIsSpent = true;
+        break;
+      }
+    }
+    if (fIsSpent) {
+      results.push_back(pcoin.GetHash().GetHex());
+    }
+  }
+
+  return (results);
+}
+
 Value rpc_wallet_select(CIface *iface, const Array& params, bool fStratum)
 {
 
@@ -4915,6 +4950,11 @@ const RPCOp WALLET_UNSPENT = {
   "Syntax: <account> [<minconf>=1]\n"
   "Returns array of unspent transaction outputs with minimum specified confirmations."
 };
+const RPCOp WALLET_SPENT = {
+  &rpc_wallet_spent, 1, {RPC_ACCOUNT},
+  "Syntax: <account>\n"
+  "Returns array of spent transaction outputs for the account."
+};
 const RPCOp WALLET_SELECT = {
   &rpc_wallet_select, 2, {RPC_ACCOUNT, RPC_DOUBLE},
   "Syntax: <account> <value>\n"
@@ -5101,6 +5141,7 @@ void RegisterRPCOpDefaults(int ifaceIndex)
   RegisterRPCOp(ifaceIndex, "wallet.tx", WALLET_TX);
   RegisterRPCOp(ifaceIndex, "wallet.unconfirm", WALLET_UNCONFIRM);
   RegisterRPCOp(ifaceIndex, "wallet.unspent", WALLET_UNSPENT);
+  RegisterRPCOp(ifaceIndex, "wallet.spent", WALLET_SPENT);
   RegisterRPCOp(ifaceIndex, "wallet.select", WALLET_SELECT);
   RegisterRPCOp(ifaceIndex, "wallet.validate", WALLET_VALIDATE);
 

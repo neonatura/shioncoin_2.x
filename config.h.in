@@ -54,6 +54,9 @@
 /* Define to 1 if you have the `bind' function. */
 #undef HAVE_BIND
 
+/* Define to 1 if you have the `BN_bn2mpi' function. */
+#undef HAVE_BN_BN2MPI
+
 /* Define to 1 if you have the `bsearch' function. */
 #undef HAVE_BSEARCH
 
@@ -187,6 +190,9 @@
 
 /* Define to 1 if you have the `killpg' function. */
 #undef HAVE_KILLPG
+
+/* Define to 1 if you have the `crypto' library (-lcrypto). */
+#undef HAVE_LIBCRYPTO
 
 /* Define to 1 if you have the `gmp' library (-lgmp). */
 #undef HAVE_LIBGMP

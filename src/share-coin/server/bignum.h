@@ -48,6 +48,42 @@ public:
     bool operator!() { return (pctx == NULL); }
 };
 
+#ifdef HAVE_BN_BN2MPI
+
+#define _BN_bn2mpi BN_bn2mpi
+
+#else /* HAVE_BN_BN2MPI */
+
+static int _BN_bn2mpi(const BIGNUM *a, unsigned char *d)
+{
+  int bits;
+  int num=0;
+  int ext=0;
+  long l;
+
+  bits=BN_num_bits(a);
+  num=(bits+7)/8;
+  if (bits > 0)
+  {
+    ext=((bits & 0x07) == 0);
+  }
+  if (d == NULL)
+    return(num+4+ext);
+
+  l=num+ext;
+  d[0]=(unsigned char)(l>>24)&0xff;
+  d[1]=(unsigned char)(l>>16)&0xff;
+  d[2]=(unsigned char)(l>> 8)&0xff;
+  d[3]=(unsigned char)(l    )&0xff;
+  if (ext) d[4]=0;
+  num=BN_bn2bin(a,&(d[4+ext]));
+  if (a->neg)
+    d[4]|=0x80;
+  return(num+4+ext);
+}
+
+#endif /* HAVE_BN_BN2MPI */
+
 
 /** C++ wrapper for BIGNUM (OpenSSL bignum) */
 class CBigNum : public BIGNUM
@@ -224,11 +260,11 @@ public:
 
     uint256 getuint256()
     {
-        unsigned int nSize = BN_bn2mpi(this, NULL);
+        unsigned int nSize = _BN_bn2mpi(this, NULL);
         if (nSize < 4)
             return 0;
         std::vector<unsigned char> vch(nSize);
-        BN_bn2mpi(this, &vch[0]);
+        _BN_bn2mpi(this, &vch[0]);
         if (vch.size() > 4)
             vch[4] &= 0x7f;
         uint256 n = 0;
@@ -254,11 +290,11 @@ public:
 
     std::vector<unsigned char> getvch() const
     {
-        unsigned int nSize = BN_bn2mpi(this, NULL);
+        unsigned int nSize = _BN_bn2mpi(this, NULL);
         if (nSize <= 4)
             return std::vector<unsigned char>();
         std::vector<unsigned char> vch(nSize);
-        BN_bn2mpi(this, &vch[0]);
+        _BN_bn2mpi(this, &vch[0]);
         vch.erase(vch.begin(), vch.begin() + 4);
         reverse(vch.begin(), vch.end());
         return vch;
@@ -278,10 +314,10 @@ public:
 
     unsigned int GetCompact() const
     {
-        unsigned int nSize = BN_bn2mpi(this, NULL);
+        unsigned int nSize = _BN_bn2mpi(this, NULL);
         std::vector<unsigned char> vch(nSize);
         nSize -= 4;
-        BN_bn2mpi(this, &vch[0]);
+        _BN_bn2mpi(this, &vch[0]);
         unsigned int nCompact = nSize << 24;
         if (nSize >= 1) nCompact |= (vch[4] << 16);
         if (nSize >= 2) nCompact |= (vch[5] << 8);
