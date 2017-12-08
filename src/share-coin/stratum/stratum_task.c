@@ -98,7 +98,9 @@ void incr_task_work_time(void)
 #endif
 
 static int work_idx = 0;
+#if 0
 int DefaultWorkIndex = 0;
+#endif
 static char last_payout_hash[MAX_COIN_IFACE][256];
 
 /**
@@ -782,7 +784,7 @@ void stratum_task_gen(task_attr_t *attr)
     return;
 
   /* notify subscribed clients of new task. */
-  stratum_user_broadcast_task(task);
+  stratum_user_broadcast_task(task, attr);
 
   stratum_task_work(task);
 
@@ -800,6 +802,7 @@ void stratum_task_weight(task_attr_t *attr)
   double dDiff;
   double nHeight;
   time_t now;
+  char errbuf[256];
   int idx;
 
   now = time(NULL);
@@ -833,6 +836,9 @@ void stratum_task_weight(task_attr_t *attr)
 
     /* running average */
     attr->weight[idx] = (attr->weight[idx] + weight) / 2;
+
+    sprintf(errbuf, "stratum_task_weight: %s-coin has weight %-3.3f", iface->name, attr->weight[idx]);
+    shcoind_log(errbuf);
   }
   
 }

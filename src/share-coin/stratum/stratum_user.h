@@ -16,8 +16,6 @@
 
 user_t *stratum_user(user_t *user, char *username);
 
-int stratum_user_broadcast_task(task_t *task);
-
 double stratum_user_speed(user_t *user);
 
 user_t *stratum_user_init(int fd);
@@ -30,6 +28,7 @@ const char *get_user_flag_label(int flag);
 
 void stratum_user_free(user_t *f_user);
 
+int stratum_user_broadcast_task(task_t *task, task_attr_t *attr);
 
 
 #endif /* __STRATUM__USER_H__ */

@@ -6,7 +6,6 @@
 #define MAX_STRATUM_USERS 32
 #define MIN_SHARE_DIFFICULTY 0.03125 /* diff 1 */
 
-extern int DefaultWorkIndex;
 
 #define MAX_USER_FLAGS 6
 static const char *user_flag_label[MAX_USER_FLAGS] = {
@@ -253,7 +252,7 @@ void stratum_user_block(user_t *user, double share_diff)
 }
 
 
-int stratum_user_broadcast_task(task_t *task)
+int stratum_user_broadcast_task(task_t *task, task_attr_t *attr)
 {
   user_t *user;
   int clear;
@@ -266,19 +265,24 @@ int stratum_user_broadcast_task(task_t *task)
       continue;
     }
 
+#if 0
     if (user->ifaceIndex == 0) {
-      if (task->ifaceIndex != DefaultWorkIndex)
+      if (task->ifaceIndex != attr->ifaceIndex)
         continue;
     } else {
       if (user->ifaceIndex != task->ifaceIndex)
         continue;
     }
+#endif
 
-    clear = (user->height != task->height);
-    err = stratum_send_task(user, task, clear);
-    if (!err) {
-      user->height = task->height;
-      user->work_stamp = time(NULL);
+    if (user->flags & USER_SUBSCRIBE) {
+      clear = (user->height != task->height);
+      err = stratum_send_task(user, task, clear);
+      if (!err) {
+        user->height = task->height;
+        user->work_stamp = time(NULL);
+        user->ifaceIndex = attr->ifaceIndex;
+      }
     }
 
   }

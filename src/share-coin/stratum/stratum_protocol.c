@@ -479,7 +479,6 @@ int stratum_default_iface(void)
   return (ifaceIndex);
 }
 
-extern int DefaultWorkIndex;
 
 /**
  * @todo: leave stale worker users (without open fd) until next round reset. current behavior does not payout if connection is severed.
@@ -521,18 +520,15 @@ int stratum_request_message(user_t *user, shjson_t *json)
   strncpy(iface_str, shjson_astr(json, "iface", ""), sizeof(iface_str)-1); 
   ifaceIndex = stratum_get_iface(iface_str);
   if (ifaceIndex < 1)
-    ifaceIndex = stratum_default_iface();
-  if (ifaceIndex < 1 || ifaceIndex >= MAX_COIN_IFACE) {
-    return (SHERR_INVAL);
-  }
-    
+    ifaceIndex = user->ifaceIndex;//stratum_default_iface();
+  if (ifaceIndex < 1)
+    ifaceIndex = SHC_COIN_IFACE; /* default */
 
   method = shjson_astr(json, "method", NULL);
   if (!method) {
     /* no operation method specified. */
     return (SHERR_INVAL);
   }
-//fprintf(stderr, "DEBUG: STRATUM '%s'\n", method);
 
   timing_init(method, &ts);
 
@@ -735,7 +731,7 @@ int stratum_request_message(user_t *user, shjson_t *json)
     } else {
       work_id = (unsigned int)strtoll(work_id_str, NULL, 16);
 
-      json_str = getminingtransactioninfo((user->ifaceIndex?user->ifaceIndex:DefaultWorkIndex), work_id);
+      json_str = getminingtransactioninfo(ifaceIndex, work_id);
 
       reply = shjson_init(json_str);
       if (!json_str) {

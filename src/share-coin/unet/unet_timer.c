@@ -74,10 +74,12 @@ void unet_timer_cycle(void)
     if (!bind->op_timer)
       continue; /* all done */
 
+#if 0
     now = shtime();
     min_t = shtime_adj(now, -0.02); /* 20ms ago */
     if (shtime_before(min_t, bind->timer_stamp))
       continue; /* not ready */
+#endif
 
     /* call work procedure */
     bind->timer_stamp = now;

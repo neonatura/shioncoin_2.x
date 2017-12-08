@@ -467,13 +467,14 @@ void stratum_http_validate_img(char *args, shbuf_t *buff)
 #endif
 }
 
-extern int DefaultWorkIndex;
 
 void stratum_http_block_html(int ifaceIndex, shbuf_t *buff)
 {
   user_t *user;
   char ret_html[1024];
+#if 0
   char mine[256];
+#endif
   double rounds;
   double speed;
   int i;
@@ -488,12 +489,14 @@ void stratum_http_block_html(int ifaceIndex, shbuf_t *buff)
     speed = stratum_user_speed(user);
   }
 
+#if 0
   memset(mine, 0, sizeof(mine));
   {
     CIface *mine_iface = GetCoinByIndex(DefaultWorkIndex);
     if (mine_iface)
       strncpy(mine, mine_iface->name, sizeof(mine)-1);
   }
+#endif
 
 
   shbuf_catstr(buff,
@@ -501,10 +504,11 @@ void stratum_http_block_html(int ifaceIndex, shbuf_t *buff)
       "<div style=\"float : right;\"><img id=\"validate_matrix_img\" name=\"validate_matrix_img\" src=\"/image/validate_matrix.bmp?span=1.0&x=128&y=128\" style=\"width : 256px; height : 256px; border : 0; padding : 0 0 0 0; margin : 0 0 0 0;\"></div>\n"
       "<div style=\"clear : right; margin-top : 4px;\">\n");
   sprintf(ret_html,
-      "<div style=\"margin-top : 4px; margin-right : 32px; float : right; font-size : 11px; width : 90px; background-color : #ddd;\">mining: %s</div>\n"
+//      "<div style=\"margin-top : 4px; margin-right : 32px; float : right; font-size : 11px; width : 90px; background-color : #ddd;\">mining: %s</div>\n"
       "<div style=\"margin-top : 4px; margin-right : 32px; float : right; font-size : 11px; width : 90px; background-color : #ddd;\">%-1.1f shares/sec</div>\n"
       "<div style=\"margin-top : 4px; margin-right : 32px; float : right; font-size : 11px; width : 90px; background-color : #ddd;\">%-1.1f hashes/sec</div>\n",
-      mine, (rounds/3600), (speed/3600));
+//      mine,
+ (rounds/3600), (speed/3600));
   shbuf_catstr(buff, ret_html);
 
 }

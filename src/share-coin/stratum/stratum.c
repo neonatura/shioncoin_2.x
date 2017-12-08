@@ -125,6 +125,7 @@ static void stratum_timer(void)
   int blk_iface;
   int err;
 
+
   for (peer = client_list; peer; peer = peer->next) {
     if (peer->fd == -1)
       continue;
@@ -181,6 +182,7 @@ static void stratum_timer(void)
 
   stratum_close_free();
 
+#if 0
   {
     static uint32_t l_usec; 
     uint32_t usec;
@@ -199,7 +201,9 @@ static void stratum_timer(void)
     /* new work occurs every 6s until new block arrives */
     tnow = now_tv.tv_sec / 6;
   }
+#endif
 
+  tnow = time(NULL)/6;
   blk_iface = 0;
   is_new = is_stratum_task_pending(&blk_iface);
   if (is_new || (attr.tnow != tnow)) {
