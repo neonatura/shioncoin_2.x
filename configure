@@ -21629,9 +21629,9 @@ fi
 
 
 
-{ $as_echo "$as_me:$LINENO: checking for  in -lcrypto" >&5
-$as_echo_n "checking for  in -lcrypto... " >&6; }
-if test "${ac_cv_lib_crypto_+set}" = set; then
+{ $as_echo "$as_me:$LINENO: checking for BN_new in -lcrypto" >&5
+$as_echo_n "checking for BN_new in -lcrypto... " >&6; }
+if test "${ac_cv_lib_crypto_BN_new+set}" = set; then
   $as_echo_n "(cached) " >&6
 else
   ac_check_lib_save_LIBS=$LIBS
@@ -21649,11 +21649,11 @@ cat >>conftest.$ac_ext <<_ACEOF
 #ifdef __cplusplus
 extern "C"
 #endif
-char  ();
+char BN_new ();
 int
 main ()
 {
-return  ();
+return BN_new ();
   ;
   return 0;
 }
@@ -21679,12 +21679,12 @@ $as_echo "$ac_try_echo") >&5
 	 test "$cross_compiling" = yes ||
 	 $as_test_x conftest$ac_exeext
        }; then
-  ac_cv_lib_crypto_=yes
+  ac_cv_lib_crypto_BN_new=yes
 else
   $as_echo "$as_me: failed program was:" >&5
 sed 's/^/| /' conftest.$ac_ext >&5
 
-	ac_cv_lib_crypto_=no
+	ac_cv_lib_crypto_BN_new=no
 fi
 
 rm -rf conftest.dSYM
@@ -21692,9 +21692,9 @@ rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
       conftest$ac_exeext conftest.$ac_ext
 LIBS=$ac_check_lib_save_LIBS
 fi
-{ $as_echo "$as_me:$LINENO: result: $ac_cv_lib_crypto_" >&5
-$as_echo "$ac_cv_lib_crypto_" >&6; }
-if test "x$ac_cv_lib_crypto_" = x""yes; then
+{ $as_echo "$as_me:$LINENO: result: $ac_cv_lib_crypto_BN_new" >&5
+$as_echo "$ac_cv_lib_crypto_BN_new" >&6; }
+if test "x$ac_cv_lib_crypto_BN_new" = x""yes; then
   cat >>confdefs.h <<_ACEOF
 #define HAVE_LIBCRYPTO 1
 _ACEOF

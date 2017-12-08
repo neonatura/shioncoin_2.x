@@ -225,7 +225,7 @@ static int stratum_subscribe(user_t *user)
   if (!err) 
     user->flags |= USER_SUBSCRIBE;
 
-  ResetTemplateWeight();
+  //ResetTemplateWeight();
 
   return (err);
 }

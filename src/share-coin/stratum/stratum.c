@@ -119,7 +119,6 @@ static void stratum_timer(void)
   shbuf_t *buff;
   char errbuf[256];
   char *data;
-  time_t now;
   time_t tnow;
   size_t len;
   int is_new;
@@ -182,8 +181,25 @@ static void stratum_timer(void)
 
   stratum_close_free();
 
-  now = time(NULL);
-  tnow = now / 4;
+  {
+    static uint32_t l_usec; 
+    uint32_t usec;
+    struct timeval now_tv;
+
+    /* limit ops to 100ms */
+    gettimeofday(&now_tv, NULL);
+    usec = now_tv.tv_usec / 100000; /* 100ms */
+    usec += 100 * ((now_tv.tv_sec % 100) + 1); /* sec mod */
+    if (l_usec && l_usec == usec)
+      return;
+
+    /* assign new counter */
+    l_usec = usec;
+
+    /* new work occurs every 6s until new block arrives */
+    tnow = now_tv.tv_sec / 6;
+  }
+
   blk_iface = 0;
   is_new = is_stratum_task_pending(&blk_iface);
   if (is_new || (attr.tnow != tnow)) {
@@ -193,7 +209,7 @@ static void stratum_timer(void)
       attr.flags |= TASKF_RESET;
     } else if (blk_iface && is_new) {
       /* new block */
-      attr.blk_stamp[blk_iface] = now;
+      attr.blk_stamp[blk_iface] = time(NULL);
       if (blk_iface == attr.ifaceIndex || /* currently mining */
           attr.mine_stamp[attr.ifaceIndex] <= attr.blk_stamp[blk_iface]) {
         /* safe to switch coin iface */
@@ -218,6 +234,8 @@ static void stratum_timer(void)
     /* synchronize with remote stratum services, as needed */
     stratum_sync();
 #endif
+
+    attr.flags &= ~TASKF_RESET;
   }
   
 #if 0

@@ -101,7 +101,7 @@ void unet_cycle(double max_t)
   static int _printed;
   static shtime_t start_t;
   static int next_t;
-  static double avg_wait_t;
+  static double idle_t = 0.1;
   unet_bind_t *bind;
   unet_table_t *t;
   shbuf_t *buff;
@@ -119,7 +119,6 @@ void unet_cycle(double max_t)
   char data[65536];
   char errbuf[256];
   double wait_t;
-  double half_wait_t;
   time_t now;
   int fd_max;
   int mode;
@@ -174,13 +173,18 @@ void unet_cycle(double max_t)
   }
 
   /* wait remainder of max_t */
-  half_wait_t = max_t / 2;
   wait_t = shtimef(shtime()) - shtimef(start_t);
-  wait_t = MAX(0.01, max_t - wait_t);
-  avg_wait_t = (wait_t + avg_wait_t + half_wait_t) / 3;
+  if (wait_t <= idle_t) {
+    /* increase wait if activity takes less time */
+    idle_t += 0.001;
+  } else {
+    /* decrease wait if activie takes longer time */
+    idle_t -= wait_t;
+  }
+  idle_t = MAX(0.01, MIN(max_t, idle_t));
 
   memset(&to, 0, sizeof(to));
-  to.tv_usec = 1000000 * avg_wait_t;
+  to.tv_usec = MIN(999000, 1000000 * idle_t);
   err = select(fd_max+1, &r_set, &w_set, &x_set, &to);
   if (err > 0) {
     for (fd = 1; fd <= fd_max; fd++) {

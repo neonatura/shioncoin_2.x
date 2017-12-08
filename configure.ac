@@ -215,7 +215,7 @@ AC_CHECK_LIB([gmp], [__gmp_version], ,
   AC_MSG_ERROR("libgmp (math library) is required")
 )
 
-AC_CHECK_LIB([crypto])
+AC_CHECK_LIB([crypto], [BN_new])
 
 AC_CHECK_LIB([ssl], [SSL_version], ,
   AC_MSG_ERROR("libssl (crypt library) is required")

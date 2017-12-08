@@ -104,8 +104,6 @@ double GetBitsDifficulty(unsigned int nBits)
 static CBlock *altBlock[MAX_COIN_IFACE];
 static unsigned int altHeight[MAX_COIN_IFACE];
 
-static unsigned int templateWeight = 1;
-
 /**
  * Generate a block to work on.
  * @returns JSON encoded block state information
@@ -114,7 +112,6 @@ const char *c_getblocktemplate(int ifaceIndex)
 {
   static unsigned int work_id;
   static time_t last_reset_t;
-  static unsigned int nIndex;
   unsigned int nHeight;
   CIface *iface;
   CBlock* pblock;
@@ -168,16 +165,6 @@ const char *c_getblocktemplate(int ifaceIndex)
 #endif
 
     altBlock[ifaceIndex] = NULL;
-    templateWeight = 1;
-  } else {
-    nIndex++;
-    if ((nIndex % templateWeight) != 0) {
-      return (NULL);
-    }
-
-    templateWeight++;
-    if (templateWeight > 12)
-      templateWeight = 4;
   }
   nHeight = pindexPrev->nHeight + 1;
   altHeight[ifaceIndex] = nHeight;
@@ -1175,11 +1162,6 @@ int GetTxDepthInMainChain(CIface *iface, uint256 txHash)
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-void ResetTemplateWeight(void)
-{
-  templateWeight = 1;
-}
 
 const char *getblocktemplate(int ifaceIndex)
 {
