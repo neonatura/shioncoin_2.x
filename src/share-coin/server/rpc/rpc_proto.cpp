@@ -2425,6 +2425,8 @@ Value rpc_wallet_recvbyaddr(CIface *iface, const Array& params, bool fStratum)
   return  ValueFromAmount(nAmount);
 }
 
+void ResetServiceWalletEvent(CWallet *wallet);
+
 Value rpc_wallet_rescan(CIface *iface, const Array& params, bool fStratum)
 {
 
@@ -2439,7 +2441,22 @@ Value rpc_wallet_rescan(CIface *iface, const Array& params, bool fStratum)
         "wallet.rescan\n"
         "Rescan the block-chain for personal wallet transactions.\n");
 
-  wallet->nScanHeight = 0;
+  /* find near-reach hierarchial parents of wallet-txs */
+  for (map<uint256, CWalletTx>::const_iterator it = wallet->mapWallet.begin(); it != wallet->mapWallet.end(); ++it)
+  {
+    const CWalletTx& pcoin = (*it).second;
+    BOOST_FOREACH(const CTxIn& txin, pcoin.vin) {
+      CTransaction tx;
+      if (!::GetTransaction(iface, txin.prevout.hash, tx, NULL))
+        continue;
+      wallet->AddToWalletIfInvolvingMe(tx, NULL, true);
+    }
+  }
+
+  /* reset wallet-scan event state */
+  ResetServiceWalletEvent(wallet);
+
+  /* scan entire chain for corrections to wallet & coin-db. */
   InitServiceWalletEvent(wallet, 0);
 
   return Value::null;

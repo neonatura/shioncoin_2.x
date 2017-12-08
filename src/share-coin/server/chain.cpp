@@ -141,7 +141,8 @@ void core_UpdateCoins(int ifaceIndex, const CTransaction& tx, bool fLocal = true
           error(SHERR_IO, "WriteCoins: error [wallet]");
         }
       }
-    } else if (!fLocal && !fHasTxCoins) {
+    } else if (!fLocal && 
+        (!fHasTxCoins || !HasTxCoins(iface, hash))) {
       CTransaction l_tx;
       if (::GetTransaction(iface, hash, l_tx, NULL)) {
         vector<uint256> vOuts;
@@ -577,6 +578,14 @@ void ServiceEventState(int ifaceIndex)
     return;
   }
 
+}
+
+void ResetServiceWalletEvent(CWallet *wallet)
+{
+  CIface *iface = GetCoinByIndex(wallet->ifaceIndex);
+
+  unset_serv_state(iface, COINF_WALLET_SCAN);
+  wallet->nScanHeight == 0;
 }
 
 void InitServiceWalletEvent(CWallet *wallet, uint64_t nHeight)
