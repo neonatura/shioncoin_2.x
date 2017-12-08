@@ -339,7 +339,7 @@ class CTxMemPool
 
     virtual bool IsPendingTx(const uint256 hash) const = 0;
 
-    virtual bool IsInputTx(const uint256 hash, int nOut) const = 0;
+    virtual bool IsInputTx(const uint256 hash, int nOut) = 0;
 
 };
 
@@ -543,7 +543,7 @@ class CPool : public CTxMemPool
 
     bool AreInputsSpent(CPoolTx& ptx);
 
-    bool IsInputTx(const uint256 hash, int nOut) const;
+    bool IsInputTx(const uint256 hash, int nOut); 
 
     /* revert transaction from wallet (like tx.purge rpc cmd). */
     virtual bool revert(CTransaction &tx) = 0;

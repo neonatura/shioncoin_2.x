@@ -83,6 +83,9 @@ bool CPool::AddTx(CTransaction& tx, CNode *pfrom)
   uint256 hash = tx.GetHash();
   bool ok;
 
+  if (inval.count(hash))
+    return (false); /* known invalid */
+
   /* do not re-process mempool transactions */
   if (HaveTx(hash))
     return (false); /* dup */
@@ -306,8 +309,8 @@ bool CPool::ResolveConflicts(CPoolTx& ptx)
   bool ok;
 
   vector<CTransaction> vRemove;
-  BOOST_FOREACH(PAIRTYPE(const uint256, CPoolTx)& item, active) {
-    CPoolTx& a_ptx = item.second;
+  for (pool_map::iterator it = active.begin(); it != active.end(); ++it) {
+    CPoolTx& a_ptx = it->second;
     for (unsigned int i = 0; i < ptx.tx.vin.size(); i++) {
       COutPoint out = ptx.GetTx().vin[i].prevout;
       if (a_ptx.mapNextTx.count(out) != 0) {
@@ -540,12 +543,19 @@ bool CPool::AddActiveTx(CPoolTx& ptx)
   /* for case when overflow is transitioning to active queue. */
   overflow.erase(ptx.GetHash());
 
+  if (!FillInputs(ptx)) {
+    ptx.SetFlag(POOL_NO_INPUT);
+    AddPendingTx(ptx);
+    return (error(SHERR_INVAL, "CPool.AddActiveTx: tx \"%s\" has unknown inputs specified -- marking as orphan.", ptx.GetHash().GetHex().c_str()));
+  }
+#if 0
   /* redundant check to ensure inputs are valid. */
   if (!RefillInputs(ptx)) {
     ptx.SetFlag(POOL_NO_INPUT);
     AddPendingTx(ptx);
     return (error(SHERR_INVAL, "CPool.AddActiveTx: tx \"%s\" has unknown inputs specified -- marking as orphan.", ptx.GetHash().GetHex().c_str()));
   }
+#endif
 
   /* remove active transactions referencing same inputs */
   if (!ResolveConflicts(ptx)) {
@@ -633,8 +643,9 @@ void CPool::PurgeOverflowTx()
     return; /* all done */
 
   /* erase stale entries */
-  BOOST_FOREACH(PAIRTYPE(const uint256, CPoolTx)& item, overflow) {
-    CPoolTx& o_ptx = item.second;
+  for (pool_map::iterator it = overflow.begin(); it != overflow.end(); ++it) {
+    CPoolTx& o_ptx = it->second;
+
     if (o_ptx.IsLocal())
       continue;
 
@@ -735,8 +746,8 @@ vector<CTransaction> CPool::GetActiveTx()
   vector<uint256> vRemove;
   vector<CTransaction> vTx;
 
-  BOOST_FOREACH(PAIRTYPE(const uint256, CPoolTx)& item, active) {
-    CPoolTx& ptx = item.second;
+  for (pool_map::iterator it = active.begin(); it != active.end(); ++it) {
+    CPoolTx& ptx = it->second;
 #if 0
     if (AreInputsSpent(ptx)) {
       vRemove.push_back(ptx.GetHash());
@@ -763,14 +774,8 @@ vector<uint256> CPool::GetActiveHash()
   vector<CPoolTx> vPoolTx;
   vector<uint256> vHash;
 
-  BOOST_FOREACH(PAIRTYPE(const uint256, CPoolTx)& item, active) {
-    CPoolTx& ptx = item.second;
-    vPoolTx.push_back(ptx);
-  }
-  sort(vPoolTx.begin(), vPoolTx.end()); 
-
-  BOOST_FOREACH(CPoolTx& ptx, vPoolTx) {
-    const uint256& hash = ptx.GetHash();
+  for (pool_map::iterator it = active.begin(); it != active.end(); ++it) {
+    const uint256& hash = it->first;
     vHash.push_back(hash);
   }
 
@@ -834,8 +839,8 @@ static void cpool_RemoveTxWithInput(CPool *pool, const CTxIn& txin)
 {
   vector<uint256> vRemove;
 
-  BOOST_FOREACH(PAIRTYPE(const uint256, CPoolTx)& item, pool->active) {
-    CPoolTx& a_ptx = item.second;
+  for (pool_map::iterator it = pool->active.begin(); it != pool->active.end(); ++it) {
+    CPoolTx& a_ptx = it->second;
     BOOST_FOREACH(const CTxIn& a_txin, a_ptx.GetTx().vin) {
       if (a_txin.prevout == txin.prevout) {
         /* remove mempool tx due to conflict. */
@@ -843,8 +848,8 @@ static void cpool_RemoveTxWithInput(CPool *pool, const CTxIn& txin)
       }
     }
   }
-  BOOST_FOREACH(PAIRTYPE(const uint256, CPoolTx)& item, pool->overflow) {
-    CPoolTx& a_ptx = item.second;
+  for (pool_map::iterator it = pool->overflow.begin(); it != pool->overflow.end(); ++it) {
+    CPoolTx& a_ptx = it->second;
     BOOST_FOREACH(const CTxIn& a_txin, a_ptx.GetTx().vin) {
       if (a_txin.prevout == txin.prevout) {
         /* remove mempool tx due to conflict. */
@@ -852,8 +857,8 @@ static void cpool_RemoveTxWithInput(CPool *pool, const CTxIn& txin)
       }
     }
   }
-  BOOST_FOREACH(PAIRTYPE(const uint256, CPoolTx)& item, pool->pending) {
-    CPoolTx& a_ptx = item.second;
+  for (pool_map::iterator it = pool->pending.begin(); it != pool->pending.end(); ++it) {
+    CPoolTx& a_ptx = it->second;
     BOOST_FOREACH(const CTxIn& a_txin, a_ptx.GetTx().vin) {
       if (a_txin.prevout == txin.prevout) {
         /* remove mempool tx due to conflict. */
@@ -1012,11 +1017,22 @@ bool CPool::AreInputsSpent(CPoolTx& ptx)
   return (false);
 }
 
-bool CPool::IsInputTx(const uint256 hash, int nOut) const
+bool CPool::IsInputTx(const uint256 hash, int nOut)
 {
 
-  BOOST_FOREACH(PAIRTYPE(const uint256, CPoolTx) item, active) {
-    CPoolTx& a_ptx = item.second;
+  for (pool_map::iterator it = active.begin(); it != active.end(); ++it) {
+    const uint256& a_hash = it->first;
+    CPoolTx& a_ptx = it->second;
+    BOOST_FOREACH(const CTxIn& a_txin, a_ptx.GetTx().vin) {
+      if (a_txin.prevout.hash == hash &&
+          a_txin.prevout.n == nOut) {
+        return (true);
+      }
+    }
+  }
+  for (pool_map::iterator it = overflow.begin(); it != overflow.end(); ++it) {
+    const uint256& a_hash = it->first;
+    CPoolTx& a_ptx = it->second;
     BOOST_FOREACH(const CTxIn& a_txin, a_ptx.GetTx().vin) {
       if (a_txin.prevout.hash == hash &&
           a_txin.prevout.n == nOut) {
@@ -1025,15 +1041,6 @@ bool CPool::IsInputTx(const uint256 hash, int nOut) const
     }
   }
 
-  BOOST_FOREACH(PAIRTYPE(const uint256, CPoolTx) item, overflow) {
-    CPoolTx& a_ptx = item.second;
-    BOOST_FOREACH(const CTxIn& a_txin, a_ptx.GetTx().vin) {
-      if (a_txin.prevout.hash == hash &&
-          a_txin.prevout.n == nOut) {
-        return (true);
-      }
-    }
-  }
 
   return (false);
 }

@@ -1742,6 +1742,8 @@ void core_UpdateUncommittedBlockStructures(CIface *iface, CBlock& block, const C
 
 int core_ComputeBlockVersion(CIface *params, CBlockIndex *pindexPrev);
 
+CBlockIndex *GetBlockIndexByTx(CIface *iface, const uint256 hash);
+
 #endif /* ndef __SERVER_BLOCK_H__ */
 
 

@@ -1077,16 +1077,15 @@ void CWallet::AvailableAccountCoins(string strAccount, vector<COutput>& vCoins, 
           continue; /* not avail */
         }
 
-        CIface *iface = GetCoinByIndex(ifaceIndex);
         if (pcoin->vout[i].nValue < nMinValue)
-          continue;
-
-        /* check mempool for conflict */ 
-        if (pool->IsInputTx(pcoinHash, i))
           continue;
 
         /* check whether this output has already been used */
         if (pcoin->IsSpent(i))
+          continue;
+
+        /* check mempool for conflict */ 
+        if (pool->IsInputTx(pcoinHash, i))
           continue;
 
         /* filter via account */

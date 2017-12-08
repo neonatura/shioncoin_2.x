@@ -634,6 +634,27 @@ CBlock *GetBlockByTx(CIface *iface, const uint256 hash)
   return (GetBlockByHash(iface, hashBlock));
 }
 
+CBlockIndex *GetBlockIndexByTx(CIface *iface, const uint256 hash)
+{
+  int ifaceIndex = GetCoinIndex(iface);
+  blkidx_t *blockIndex = GetBlockTable(ifaceIndex); 
+  CTransaction tx;
+  CBlock *block;
+  uint256 hashBlock;
+
+  /* sanity */
+  if (!iface)
+    return (NULL);
+
+  /* figure out block hash */
+  if (!tx.ReadTx(GetCoinIndex(iface), hash, &hashBlock))
+    return (NULL);
+
+  map<uint256, CBlockIndex*>::iterator mi = blockIndex->find(hashBlock);
+  if (mi == blockIndex->end()) return (NULL);
+  return ((*blockIndex)[hash]);
+}
+
 CBlock *CreateBlockTemplate(CIface *iface)
 {
   int ifaceIndex = GetCoinIndex(iface);
@@ -2101,7 +2122,6 @@ bool CTransaction::IsInMemoryPool(int ifaceIndex)
 int CTransaction::GetDepthInMainChain(int ifaceIndex, CBlockIndex* &pindexRet) const
 {
   CIface *iface = GetCoinByIndex(ifaceIndex);
-  blkidx_t *blockIndex = GetBlockTable(ifaceIndex);
   uint256 hashTx = GetHash();
   bool ret;
 
@@ -2109,19 +2129,10 @@ int CTransaction::GetDepthInMainChain(int ifaceIndex, CBlockIndex* &pindexRet) c
   if (!pindexBest)
     return (0);
 
-  CBlock *block = GetBlockByTx(iface, hashTx);
-  if (!block)
+  CBlockIndex *pindex = GetBlockIndexByTx(iface, hashTx);
+  if (!pindex)
     return (0);
 
-  uint256 hashBlock = block->GetHash();
-  delete block;
-
-  map<uint256, CBlockIndex*>::iterator mi = blockIndex->find(hashBlock);
-  if (mi == blockIndex->end())
-    return 0;
-  CBlockIndex* pindex = (*mi).second;
-  if (!pindex)
-    return 0;
   if (!pindex->IsInMainChain(ifaceIndex))
     return 0;
 

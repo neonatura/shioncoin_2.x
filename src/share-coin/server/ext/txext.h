@@ -224,7 +224,8 @@ class CExtCore
     void SetNull()
     {
       nVersion = PROTO_EXT_VERSION;
-      tExpire = shtime_adj(shtime(), SHARE_DEFAULT_EXPIRE_TIME);
+      tExpire = SHTIME_UNDEFINED;
+//      tExpire = shtime_adj(shtime(), SHARE_DEFAULT_EXPIRE_TIME);
       vchLabel.clear();
 //      signature.SetNull();
     }
@@ -242,6 +243,12 @@ class CExtCore
     void SetExpireTime(double sec)
     {
       tExpire = shtime_adj(shtime(), sec);
+    }
+
+    void SetExpireTime()
+    {
+      double dSpan = (double)SHARE_DEFAULT_EXPIRE_TIME;
+      SetExpireTime(dSpan);
     }
 
     bool IsExpired()
