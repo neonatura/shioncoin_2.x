@@ -48,9 +48,13 @@ public:
     bool operator!() { return (pctx == NULL); }
 };
 
-#ifndef HAVE_BN_BN2MPI
+#ifdef HAVE_BN_BN2MPI
 
-static int BN_bn2mpi(const BIGNUM *a, unsigned char *d)
+#define _BN_bn2mpi BN_bn2mpi
+
+#else /* !HAVE_BN_BN2MPI */
+
+static int _BN_bn2mpi(const BIGNUM *a, unsigned char *d)
 {
   int bits;
   int num=0;
@@ -256,11 +260,11 @@ public:
 
     uint256 getuint256()
     {
-        unsigned int nSize = BN_bn2mpi(this, NULL);
+        unsigned int nSize = _BN_bn2mpi(this, NULL);
         if (nSize < 4)
             return 0;
         std::vector<unsigned char> vch(nSize);
-        BN_bn2mpi(this, &vch[0]);
+        _BN_bn2mpi(this, &vch[0]);
         if (vch.size() > 4)
             vch[4] &= 0x7f;
         uint256 n = 0;
@@ -286,11 +290,11 @@ public:
 
     std::vector<unsigned char> getvch() const
     {
-        unsigned int nSize = BN_bn2mpi(this, NULL);
+        unsigned int nSize = _BN_bn2mpi(this, NULL);
         if (nSize <= 4)
             return std::vector<unsigned char>();
         std::vector<unsigned char> vch(nSize);
-        BN_bn2mpi(this, &vch[0]);
+        _BN_bn2mpi(this, &vch[0]);
         vch.erase(vch.begin(), vch.begin() + 4);
         reverse(vch.begin(), vch.end());
         return vch;
@@ -310,10 +314,10 @@ public:
 
     unsigned int GetCompact() const
     {
-        unsigned int nSize = BN_bn2mpi(this, NULL);
+        unsigned int nSize = _BN_bn2mpi(this, NULL);
         std::vector<unsigned char> vch(nSize);
         nSize -= 4;
-        BN_bn2mpi(this, &vch[0]);
+        _BN_bn2mpi(this, &vch[0]);
         unsigned int nCompact = nSize << 24;
         if (nSize >= 1) nCompact |= (vch[4] << 16);
         if (nSize >= 2) nCompact |= (vch[5] << 8);
