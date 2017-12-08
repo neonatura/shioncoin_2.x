@@ -2457,7 +2457,7 @@ Value rpc_wallet_rescan(CIface *iface, const Array& params, bool fStratum)
   ResetServiceWalletEvent(wallet);
 
   /* scan entire chain for corrections to wallet & coin-db. */
-  InitServiceWalletEvent(wallet, 0);
+  InitServiceWalletEvent(wallet, 1);
 
   return Value::null;
 }
@@ -4362,6 +4362,7 @@ Value rpc_wallet_keyphrase(CIface *iface, const Array& params, bool fStratum)
   return (phrase);
 }
 
+#if 0
 Value core_block_verify(CIface *iface, int nDepth)
 {
   CWallet *wallet = GetWallet(iface);
@@ -4441,9 +4442,13 @@ Value core_block_verify(CIface *iface, int nDepth)
 
   return (result);
 }
+#endif
 
 Value rpc_block_verify(CIface *iface, const Array& params, bool fStratum)
 {
+  CWallet *wallet = GetWallet(iface);
+  int nBestHeight;
+  int nDepth;
 
   if (fStratum)
     throw runtime_error("unsupported operation");
@@ -4453,10 +4458,22 @@ Value rpc_block_verify(CIface *iface, const Array& params, bool fStratum)
         "block.verify <block depth>\n"
         "Verify a set of blocks from the end of the block-chain. (default: 1024).\n");
 
-  int nDepth = 1024;
+  nBestHeight = (int)GetBestHeight(iface);
+
+  nDepth = 1024;
   if (params.size() > 0)
-    nDepth = params[0].get_int();
+    nDepth = MAX(1, params[0].get_int());
+
+#if 0
   return (core_block_verify(iface, nDepth));
+#endif
+  int nHeight = MAX(1, nBestHeight - nDepth);
+  ResetServiceValidateEvent(wallet);
+  InitServiceValidateEvent(wallet, nHeight);
+
+  Object obj;
+  obj.push_back(Pair("height", nHeight));
+  return (obj);
 }
 
 

@@ -53,22 +53,12 @@ static void set_serv_state(CIface *iface, int flag)
   memset(errbuf, 0, sizeof(errbuf));
   if (flag & COINF_DL_SCAN) {
     strcpy(errbuf, "entering service mode: download block-chain [scan]");
-#if 0
-  } else if (flag & COINF_DL_SYNC) {
-    strcpy(errbuf, "entering service mode: download block-chain [sync]");
-#endif
   } else if (flag & COINF_WALLET_SCAN) {
     strcpy(errbuf, "entering service mode: wallet tx [scan]");
-#if 0
-  } else if (flag & COINF_WALLET_SYNC) {
-    strcpy(errbuf, "entering service mode: wallet tx [sync]");
-#endif
   } else if (flag & COINF_PEER_SCAN) {
     strcpy(errbuf, "entering service mode: peer list [scan]");
-#if 0
-  } else if (flag & COINF_PEER_SYNC) {
-    strcpy(errbuf, "entering service mode: peer list [sync]");
-#endif
+  } else if (flag & COINF_VALIDATE_SCAN) {
+    strcpy(errbuf, "entering service mode: validate chain [scan]");
   }
   if (*errbuf)
     unet_log(GetCoinIndex(iface), errbuf);
@@ -83,22 +73,12 @@ static void unset_serv_state(CIface *iface, int flag)
   memset(errbuf, 0, sizeof(errbuf));
   if (flag & COINF_DL_SCAN) {
     strcpy(errbuf, "exiting service mode: download block-chain [scan]");
-#if 0
-  } else if (flag & COINF_DL_SYNC) {
-    strcpy(errbuf, "entering service mode: download block-chain [sync]");
-#endif
   } else if (flag & COINF_WALLET_SCAN) {
     strcpy(errbuf, "exiting service mode: wallet tx [scan]");
-#if 0
-  } else if (flag & COINF_WALLET_SYNC) {
-    strcpy(errbuf, "entering service mode: wallet tx [sync]");
-#endif
   } else if (flag & COINF_PEER_SCAN) {
     strcpy(errbuf, "exiting service mode: peer list [scan]");
-#if 0
-  } else if (flag & COINF_PEER_SYNC) {
-    strcpy(errbuf, "entering service mode: peer list [sync]");
-#endif
+  } else if (flag & COINF_VALIDATE_SCAN) {
+    strcpy(errbuf, "exiting service mode: validate chain [scan]");
   }
   if (*errbuf)
     unet_log(GetCoinIndex(iface), errbuf);
@@ -113,7 +93,7 @@ static bool serv_state(CIface *iface, int flag)
 
 
 
-void core_UpdateCoins(int ifaceIndex, const CTransaction& tx, bool fLocal = true)
+static void chain_UpdateWalletCoins(int ifaceIndex, const CTransaction& tx)
 {
   CIface *iface = GetCoinByIndex(ifaceIndex);
   CWallet *wallet = GetWallet(iface);
@@ -121,9 +101,6 @@ void core_UpdateCoins(int ifaceIndex, const CTransaction& tx, bool fLocal = true
 
   if (tx.IsCoinBase())
     return;
-  bool fHasTxCoins = false;
-  if (!fLocal)
-    fHasTxCoins = HasTxCoins(iface, tx_hash);
 
   BOOST_FOREACH(const CTxIn& txin, tx.vin) {
     const uint256& hash = txin.prevout.hash;
@@ -136,24 +113,7 @@ void core_UpdateCoins(int ifaceIndex, const CTransaction& tx, bool fLocal = true
           nOut < vOuts.size() && vOuts[nOut].IsNull()) {
         vOuts[nOut] = tx_hash;
         if (wtx.WriteCoins(ifaceIndex, vOuts)) {
-          Debug("(%s) core_UpdateCoins: updated tx \"%s\" [ref \"%s\" (wallet)].", hash.GetHex().c_str(), tx_hash.GetHex().c_str());
-        } else {
-          error(SHERR_IO, "WriteCoins: error [wallet]");
-        }
-      }
-    } else if (!fLocal && 
-        (!fHasTxCoins || !HasTxCoins(iface, hash))) {
-      CTransaction l_tx;
-      if (::GetTransaction(iface, hash, l_tx, NULL)) {
-        vector<uint256> vOuts;
-        if (l_tx.ReadCoins(ifaceIndex, vOuts) &&
-            nOut < vOuts.size() && vOuts[nOut].IsNull()) {
-          vOuts[nOut] = tx_hash;
-          if (l_tx.WriteCoins(ifaceIndex, vOuts)) {
-            Debug("(%s) core_UpdateCoins: updated tx \"%s\" [ref \"%s\" (chain)].", iface->name, hash.GetHex().c_str(), tx_hash.GetHex().c_str());
-          } else {
-            error(SHERR_IO, "WriteCoins: error [chain]");
-          }
+          Debug("(%s) core_UpdateCoins: updated tx \"%s\" [spent on \"%s\"].", hash.GetHex().c_str(), tx_hash.GetHex().c_str());
         }
       }
     }
@@ -173,8 +133,9 @@ static bool ServiceWalletEvent(int ifaceIndex)
     return (false); /* no-op */
 
   unsigned int nBestHeight = GetBestHeight(iface);
+  unsigned int nStartHeight = wallet->nScanHeight;
   unsigned int nHeight = wallet->nScanHeight;
-  unsigned int nMaxHeight = nHeight + 4096;
+  unsigned int nMaxHeight = nHeight + 2048;
 
   if (nHeight <= nBestHeight) {
     LOCK(wallet->cs_wallet);
@@ -189,21 +150,62 @@ static bool ServiceWalletEvent(int ifaceIndex)
       }
       BOOST_FOREACH(const CTransaction& tx, block->vtx) {
         /* enforce validity on wallet & recent tx's spent chain */
-        //bool fLocal = ((nBestHeight - nHeight) > 16384) ? true : false;
-        core_UpdateCoins(ifaceIndex, tx);//, false);
-/* see: handled more robustly via "block.verify" rpc op */
+        chain_UpdateWalletCoins(ifaceIndex, tx);
       }
 
       delete block;
       wallet->nScanHeight = nHeight;
     }
   }
-  if (nHeight > nBestHeight) {
-    return (false); /* done */
+  Debug("ServiceValidateEvent: scanned blocks %d .. %d", nStartHeight, nHeight);
+  //pfrom->PushMessage("getaddr");
+
+  if (nHeight >= nBestHeight) {
+    /* service event has completed task. */
+    return (false); 
   }
 
   return (true);
 }
+
+static bool ServiceValidateEvent(int ifaceIndex)
+{
+  CIface *iface = GetCoinByIndex(ifaceIndex);
+  CWallet *wallet = GetWallet(iface);
+  if (!iface || !wallet) return (false);
+
+  unsigned int nBestHeight = GetBestHeight(iface);
+  unsigned int nStartHeight = wallet->nValidateHeight;
+  unsigned int nHeight = wallet->nValidateHeight;
+  unsigned int nMaxHeight = nHeight + 640;
+
+  if (nHeight <= nBestHeight) {
+    for (; nHeight <= nBestHeight && nHeight < nMaxHeight; nHeight++) {
+      CBlock *block = GetBlockByHeight(iface, nHeight);
+      if (!block) continue;
+
+      if (!block->CheckBlock()) {
+        error(SHERR_INVAL, "ServiceValidateEvent: block \"%s\" validation failure.", block->GetHash().GetHex().c_str());
+      } else {
+        if (!UpdateBlockCoins(*block)) {
+          error(SHERR_INVAL, "ServiceValidateEvent: block \"%s\" input transaction validation failure.", block->GetHash().GetHex().c_str());
+        }
+      }
+
+      delete block;
+      wallet->nValidateHeight = nHeight;
+    }
+  }
+  Debug("ServiceValidateEvent: scanned blocks %d .. %d", nStartHeight, nHeight);
+
+  if (wallet->nValidateHeight >= nBestHeight) {
+    /* service event has completed task. */
+    return (false); 
+  }
+
+  return (true);
+}
+
 
 /* deprecate */
 void ServiceWalletEventUpdate(CWallet *wallet, const CBlock *pblock)
@@ -547,6 +549,13 @@ void ServiceEventState(int ifaceIndex)
     return;
   }
 
+  if (serv_state(iface, COINF_VALIDATE_SCAN)) {
+    if (!ServiceValidateEvent(ifaceIndex)) {
+      unset_serv_state(iface, COINF_VALIDATE_SCAN);
+    }
+    return;
+  }
+
   if (serv_state(iface, COINF_WALLET_SCAN)) {
     if (!ServiceWalletEvent(ifaceIndex)) {
       unset_serv_state(iface, COINF_WALLET_SCAN);
@@ -567,6 +576,12 @@ void ServiceEventState(int ifaceIndex)
     return;
   }
 
+  if (!serv_state(iface, COINF_VALIDATE_SYNC)) {
+    set_serv_state(iface, COINF_VALIDATE_SYNC);
+    set_serv_state(iface, COINF_VALIDATE_SCAN);
+    return;
+  } 
+
   if (!serv_state(iface, COINF_WALLET_SYNC)) {
     set_serv_state(iface, COINF_WALLET_SYNC);
     set_serv_state(iface, COINF_WALLET_SCAN);
@@ -585,21 +600,61 @@ void ResetServiceWalletEvent(CWallet *wallet)
 {
   CIface *iface = GetCoinByIndex(wallet->ifaceIndex);
 
-  unset_serv_state(iface, COINF_WALLET_SCAN);
-  wallet->nScanHeight == 0;
+  if (serv_state(iface, COINF_WALLET_SCAN))
+    unset_serv_state(iface, COINF_WALLET_SCAN);
+
+  if (serv_state(iface, COINF_VALIDATE_SYNC))
+    unset_serv_state(iface, COINF_WALLET_SYNC);
+
+  wallet->nScanHeight = 0;
 }
+
+void ResetServiceValidateEvent(CWallet *wallet)
+{
+  CIface *iface = GetCoinByIndex(wallet->ifaceIndex);
+
+  if (serv_state(iface, COINF_VALIDATE_SYNC)) 
+    unset_serv_state(iface, COINF_VALIDATE_SCAN);
+
+  if (serv_state(iface, COINF_VALIDATE_SYNC)) 
+    unset_serv_state(iface, COINF_VALIDATE_SYNC);
+
+  wallet->nValidateHeight = 0;
+}
+
 
 void InitServiceWalletEvent(CWallet *wallet, uint64_t nHeight)
 {
   CIface *iface = GetCoinByIndex(wallet->ifaceIndex);
-  if (GetBestHeight(wallet->ifaceIndex) == wallet->nScanHeight)
+  if (GetBestHeight(wallet->ifaceIndex) == wallet->nScanHeight) {
     return; /* up-to-date, 'service wallet event' is redundant scan. */
-  unset_serv_state(iface, COINF_WALLET_SYNC);
+  }
+
+  if (serv_state(iface, COINF_VALIDATE_SYNC))
+    unset_serv_state(iface, COINF_WALLET_SYNC);
+
   if (wallet->nScanHeight == 0)
     wallet->nScanHeight = nHeight;
   else
     wallet->nScanHeight = MIN(nHeight, wallet->nScanHeight); 
 }
+
+void InitServiceValidateEvent(CWallet *wallet, uint64_t nHeight)
+{
+  CIface *iface = GetCoinByIndex(wallet->ifaceIndex);
+  if (GetBestHeight(wallet->ifaceIndex) == wallet->nValidateHeight) {
+    return; /* up-to-date, 'service validate-chain event' is redundant scan. */
+  }
+
+  if (serv_state(iface, COINF_VALIDATE_SYNC))
+    unset_serv_state(iface, COINF_VALIDATE_SYNC);
+
+  if (wallet->nValidateHeight == 0)
+    wallet->nValidateHeight = nHeight;
+  else
+    wallet->nValidateHeight = MIN(nHeight, wallet->nValidateHeight);
+}
+
 
 #ifdef __cplusplus
 extern "C" {

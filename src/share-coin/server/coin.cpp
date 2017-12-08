@@ -820,3 +820,42 @@ bool core_Truncate(CIface *iface, uint256 hash)
 
   return (true);
 }
+
+bool UpdateBlockCoins(CBlock& block)
+{
+  CIface *iface = GetCoinByIndex(block.ifaceIndex);
+  CWallet *wallet = GetWallet(iface);
+
+  if (!iface || !iface->enabled || !wallet)
+    return (false);
+
+  tx_cache inputs;
+  BOOST_FOREACH(const CTransaction& tx, block.vtx) {
+    if (tx.IsCoinBase()) continue;
+    if (!wallet->FillInputs(tx, inputs))
+      return (false);
+  }
+
+  BOOST_FOREACH(const CTransaction& tx, block.vtx) {
+    if (tx.IsCoinBase()) continue;
+
+    const uint256& tx_hash = tx.GetHash();
+    BOOST_FOREACH(const CTxIn& txin, tx.vin) {
+      if (inputs.count(txin.prevout.hash) == 0) continue; /* fail-safe */
+      CTransaction& l_tx = inputs[txin.prevout.hash];
+
+      vector<uint256> vOuts;
+      int nOut = txin.prevout.n;
+      if (l_tx.ReadCoins(block.ifaceIndex, vOuts) &&
+          nOut < vOuts.size() && vOuts[nOut] != tx_hash) {
+        /* correction */
+        vOuts[nOut] = tx_hash;
+        if (l_tx.WriteCoins(block.ifaceIndex, vOuts)) {
+          Debug("(%s) UpdateBlockCoins: updated tx \"%s\" spent by \"%s\".", iface->name, txin.prevout.hash.GetHex().c_str(), tx_hash.GetHex().c_str());
+        }
+      }
+    }
+  }
+
+  return (true);
+}

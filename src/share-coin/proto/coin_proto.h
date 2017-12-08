@@ -122,6 +122,8 @@ extern "C" {
 #define COINF_WALLET_SYNC (1 << 4)
 #define COINF_PEER_SCAN (1 << 5)
 #define COINF_PEER_SYNC (1 << 6)
+#define COINF_VALIDATE_SCAN (1 << 7)
+#define COINF_VALIDATE_SYNC (1 << 8)
 
 
 

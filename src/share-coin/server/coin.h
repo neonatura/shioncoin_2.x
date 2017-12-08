@@ -47,6 +47,7 @@ bool core_Truncate(CIface *iface, uint256 hash);
 
 bool HasTxCoins(CIface *iface, uint256 hash);
 
+bool UpdateBlockCoins(CBlock& block);
 
 #endif /* ndef __SERVER_COIN_H__ */
 

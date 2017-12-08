@@ -99,6 +99,7 @@
       mutable CCriticalSection cs_wallet;
       mutable int ifaceIndex;
       mutable unsigned int nScanHeight;
+      mutable unsigned int nValidateHeight;
 
       mutable std::map<std::string, uint256> mapAlias;
       mutable std::map<uint256, std::string> mapAliasArch;
