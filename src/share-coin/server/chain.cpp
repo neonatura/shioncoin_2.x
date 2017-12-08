@@ -190,7 +190,8 @@ static bool ServiceWalletEvent(int ifaceIndex)
       BOOST_FOREACH(const CTransaction& tx, block->vtx) {
         /* enforce validity on wallet & recent tx's spent chain */
         //bool fLocal = ((nBestHeight - nHeight) > 16384) ? true : false;
-        core_UpdateCoins(ifaceIndex, tx, false);
+        core_UpdateCoins(ifaceIndex, tx);//, false);
+/* see: handled more robustly via "block.verify" rpc op */
       }
 
       delete block;

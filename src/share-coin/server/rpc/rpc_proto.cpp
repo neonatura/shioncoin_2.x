@@ -4364,6 +4364,8 @@ Value rpc_wallet_keyphrase(CIface *iface, const Array& params, bool fStratum)
 
 Value core_block_verify(CIface *iface, int nDepth)
 {
+  CWallet *wallet = GetWallet(iface);
+  int ifaceIndex = GetCoinIndex(iface);
   char errbuf[1024];
   uint64_t nBestHeight = GetBestHeight(iface);
   uint64_t nHeight;
@@ -4381,15 +4383,44 @@ Value core_block_verify(CIface *iface, int nDepth)
   uint256 lastHash = 0;
   uint256 hash;
 
-  nHeight = MAX(0, nBestHeight - nDepth);
+  nHeight = MAX(1, nBestHeight - nDepth);
   result.push_back(Pair("height", (boost::int64_t)nHeight));
 
   for (idx = 0; idx < nDepth && nHeight < nBestHeight; idx++) {
     CBlock *block = GetBlockByHeight(iface, nHeight);
     if (!block) throw runtime_error("Block not found in block-chain.");
     fRet = block->CheckBlock();
-    if (!fRet)
+    if (!fRet) {
       hash = block->GetHash();
+    } else {
+      tx_cache inputs;
+
+      BOOST_FOREACH(const CTransaction& tx, block->vtx) {
+        if (tx.IsCoinBase()) continue;
+        if (!wallet->FillInputs(tx, inputs)) {
+          Debug("core_block_verify: warning: uknown input in tx \"%s\"\n", tx.GetHash().GetHex().c_str());
+        }
+      }
+
+      BOOST_FOREACH(const CTransaction& tx, block->vtx) {
+        const uint256& tx_hash = tx.GetHash();
+        BOOST_FOREACH(const CTxIn& txin, tx.vin) {
+          if (inputs.count(txin.prevout.hash) == 0) continue; /* fail-safe */
+          CTransaction& l_tx = inputs[txin.prevout.hash];
+
+          vector<uint256> vOuts;
+          int nOut = txin.prevout.n;
+          if (l_tx.ReadCoins(ifaceIndex, vOuts) &&
+              nOut < vOuts.size() && vOuts[nOut] != tx_hash) {
+            /* correction */
+            vOuts[nOut] = tx_hash;
+            if (l_tx.WriteCoins(ifaceIndex, vOuts)) {
+              Debug("(%s) core_block_verify: updated tx \"%s\" spent by \"%s\".", iface->name, txin.prevout.hash.GetHex().c_str(), tx_hash.GetHex().c_str());
+            }
+          }
+        }
+      }
+    }
     delete block;
 
     if (!fRet) {
