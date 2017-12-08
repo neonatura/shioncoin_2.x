@@ -174,7 +174,15 @@ bool CPool::AddTx(CTransaction& tx, CNode *pfrom)
     return (AddOverflowTx(ptx));
   }
 
-  //PurgeOverflowTx();
+  if (!tx.IsFinal(ifaceIndex)) {
+    /* wait until transaction is finalized. */
+    Debug("CPool.AddActiveTx: tx \"%s\" is not finalized.", ptx.GetHash().GetHex().c_str());
+    ptx.SetFlag(POOL_NOT_FINAL);
+
+/* DEBUG: TODO: special case -- RelayTransaction so others may queue it as pending. */
+    return (AddOverflowTx(ptx));
+  }
+  ptx.UnsetFlag(POOL_NOT_FINAL);
 
   return (AddActiveTx(ptx));
 }
@@ -514,13 +522,6 @@ bool CPool::AddActiveTx(CPoolTx& ptx)
   if (active.count(hash) != 0)
     return (true); /* false negative */
 
-  if (!tx.IsFinal(ifaceIndex)) {
-    /* wait until transaction is finalized. */
-    Debug("CPool.AddActiveTx: tx \"%s\" is not finalized.", ptx.GetHash().GetHex().c_str());
-    ptx.SetFlag(POOL_NOT_FINAL);
-    return (AddOverflowTx(ptx));
-  }
-  ptx.UnsetFlag(POOL_NOT_FINAL);
 
   /* check if their is room */
   if (GetActiveWeight() + ptx.GetWeight() > GetMaxWeight()) {
@@ -666,7 +667,8 @@ void CPool::PurgeOverflowTx()
   vector<CPoolTx> vPoolTx;
   BOOST_FOREACH(PAIRTYPE(const uint256, CPoolTx)& item, overflow) {
     CPoolTx& ptx = item.second;
-    vPoolTx.push_back(ptx);
+    if (ptx.GetTx().IsFinal(ifaceIndex))
+      vPoolTx.push_back(ptx);
   }
   sort(vPoolTx.begin(), vPoolTx.end());
 
