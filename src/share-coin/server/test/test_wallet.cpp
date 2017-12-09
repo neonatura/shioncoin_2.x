@@ -198,6 +198,9 @@ void TESTWallet::RelayWalletTransaction(CWalletTx& wtx)
 
 void TESTWallet::ResendWalletTransactions()
 {
+  CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
+  CTxMemPool *pool = GetTxMemPool(iface);
+
   // Do this infrequently and randomly to avoid giving away
   // that these are our transactions.
   static int64 nNextTime;
@@ -222,6 +225,11 @@ void TESTWallet::ResendWalletTransactions()
     BOOST_FOREACH(PAIRTYPE(const uint256, CWalletTx)& item, mapWallet)
     {
       CWalletTx& wtx = item.second;
+
+      const uint256& tx_hash = item.first;
+      if (!pool->exists(tx_hash))
+        continue;
+
       // Don't rebroadcast until it's had plenty of time that
       // it should have gotten in already by now.
       if (TESTBlock::nTimeBestReceived - (int64)wtx.nTimeReceived > 5 * 60)

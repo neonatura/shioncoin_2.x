@@ -342,7 +342,7 @@ static bool shc_LoadBlockIndex()
 
   /* (extensive) validate block chain */
   nValidateCheckDepth = MIN(maxHeight-1, nValidateCheckDepth);
-  InitServiceValidateEvent(wallet, nValidateCheckDepth);
+  InitServiceValidateEvent(wallet, maxHeight - nValidateCheckDepth);
   sprintf(errbuf, "SHC::LoadBlockIndex: Initiated block-chain validation of %d total blocks (%-3.3f%%).", nValidateCheckDepth, (100 / (double)maxHeight * (double)nValidateCheckDepth));
   unet_log(SHC_COIN_IFACE, errbuf);
 

@@ -243,6 +243,8 @@ void SHCWallet::RelayWalletTransaction(CWalletTx& wtx)
 
 void SHCWallet::ResendWalletTransactions()
 {
+  CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);
+  CTxMemPool *pool = GetTxMemPool(iface);
   // Do this infrequently and randomly to avoid giving away
   // that these are our transactions.
   static int64 nNextTime;
@@ -272,6 +274,9 @@ int total = 0;
       if (wtx.IsCoinBase())
         continue;
       if (wtx.vin.empty())
+        continue;
+      const uint256& tx_hash = item.first;
+      if (!pool->exists(tx_hash))
         continue;
       if (wtx.GetDepthInMainChain(SHC_COIN_IFACE) != 0)
         continue;

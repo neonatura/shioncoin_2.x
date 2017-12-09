@@ -252,6 +252,7 @@ static bool usde_LoadBlockIndex()
 #endif
 {
   CIface *iface = GetCoinByIndex(USDE_COIN_IFACE);
+  CWallet *wallet = GetWallet(USDE_COIN_IFACE);
   blkidx_t *mapBlockIndex = GetBlockTable(USDE_COIN_IFACE);
   char errbuf[1024];
 
@@ -341,7 +342,9 @@ static bool usde_LoadBlockIndex()
   ReadBestInvalidWork(USDEBlock::bnBestInvalidWork);
 #endif
 
-  int nCheckDepth = (GetBestHeight(USDE_COIN_IFACE) / 100) + 10240;
+  int nCheckDepth = (GetBestHeight(USDE_COIN_IFACE) / 10000) + 1024;
+  int nWalletCheckDepth = nCheckDepth * 2;
+  int nValidateCheckDepth = nWalletCheckDepth * 10;
   int total = 0;
   int invalid = 0;
   int maxHeight = 0;
@@ -391,12 +394,22 @@ static bool usde_LoadBlockIndex()
     pindexBest = pindexFork;
   }
 
+  /* (simple) validate block chain */
   maxHeight++;
   sprintf(errbuf, "USDE::LoadBlockIndex: Verified %-2.2f%% of %d total blocks: %d total invalid blocks found.", (double)(100 / (double)maxHeight * (double)total), maxHeight, invalid);
   unet_log(USDE_COIN_IFACE, errbuf);
 
-  CWallet *wallet = GetWallet(USDE_COIN_IFACE);
-  InitServiceWalletEvent(wallet, checkHeight);
+  /* (extensive) validate block chain */
+  nValidateCheckDepth = MIN(maxHeight-1, nValidateCheckDepth);
+  InitServiceValidateEvent(wallet, maxHeight - nValidateCheckDepth);
+  sprintf(errbuf, "USDE::LoadBlockIndex: Initiated block-chain validation of %d total blocks (%-3.3f%%).", nValidateCheckDepth, (100 / (double)maxHeight * (double)nValidateCheckDepth));
+  unet_log(USDE_COIN_IFACE, errbuf);
+
+  /* validate wallet transactions */
+  nWalletCheckDepth = MIN(maxHeight-1, nWalletCheckDepth);
+  InitServiceWalletEvent(wallet, maxHeight - nWalletCheckDepth);
+  sprintf(errbuf, "USDE::LoadBlockIndex: Initiated wallet validation of %d total blocks (%-3.3f%%).", nWalletCheckDepth, (100 / (double)maxHeight * (double)nWalletCheckDepth));
+  unet_log(USDE_COIN_IFACE, errbuf);
 
   if (!opt_bool(OPT_USDE_BACKUP_RESTORE)) {
     BackupBlockChain(iface, maxHeight); 

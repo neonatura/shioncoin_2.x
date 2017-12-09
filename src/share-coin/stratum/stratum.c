@@ -203,7 +203,7 @@ static void stratum_timer(void)
   }
 #endif
 
-  tnow = time(NULL)/6;
+  tnow = time(NULL)/8;
   blk_iface = 0;
   is_new = is_stratum_task_pending(&blk_iface);
   if (is_new || (attr.tnow != tnow)) {
