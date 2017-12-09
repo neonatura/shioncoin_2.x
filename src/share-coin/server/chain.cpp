@@ -113,7 +113,7 @@ static void chain_UpdateWalletCoins(int ifaceIndex, const CTransaction& tx)
           nOut < vOuts.size() && vOuts[nOut].IsNull()) {
         vOuts[nOut] = tx_hash;
         if (wtx.WriteCoins(ifaceIndex, vOuts)) {
-          Debug("(%s) core_UpdateCoins: updated tx \"%s\" [spent on \"%s\"].", hash.GetHex().c_str(), tx_hash.GetHex().c_str());
+          Debug("(%s) core_UpdateCoins: updated tx \"%s\" [spent on \"%s\"].", iface->name, hash.GetHex().c_str(), tx_hash.GetHex().c_str());
         }
       }
     }
