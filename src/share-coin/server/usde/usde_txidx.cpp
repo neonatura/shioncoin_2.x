@@ -342,9 +342,9 @@ static bool usde_LoadBlockIndex()
   ReadBestInvalidWork(USDEBlock::bnBestInvalidWork);
 #endif
 
-  int nCheckDepth = (GetBestHeight(USDE_COIN_IFACE) / 10000) + 1024;
-  int nWalletCheckDepth = nCheckDepth * 2;
-  int nValidateCheckDepth = nCheckDepth * 10;
+  int nCheckDepth = (GetBestHeight(USDE_COIN_IFACE) / 10000) + 640;
+  int nWalletCheckDepth = nCheckDepth * 1.5;
+  int nValidateCheckDepth = nCheckDepth * 4;
   int total = 0;
   int invalid = 0;
   int maxHeight = 0;

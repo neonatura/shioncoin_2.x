@@ -486,9 +486,9 @@ static bool emc2_LoadBlockIndex()
   ReadBestInvalidWork(EMC2Block::bnBestInvalidWork);
 #endif
 
-  int nCheckDepth = (GetBestHeight(EMC2_COIN_IFACE) / 10000) + 1024;
-  int nWalletCheckDepth = nCheckDepth * 2;
-  int nValidateCheckDepth = nCheckDepth * 10;
+  int nCheckDepth = (GetBestHeight(EMC2_COIN_IFACE) / 10000) + 640;
+  int nWalletCheckDepth = nCheckDepth * 1.5;
+  int nValidateCheckDepth = nCheckDepth * 4;
   int total = 0;
   int invalid = 0;
   int maxHeight = 0;

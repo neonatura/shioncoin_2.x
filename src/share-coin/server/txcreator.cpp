@@ -562,31 +562,22 @@ double CTxCreator::GetPriority(int64 nBytes)
 
 bool CTxBatchCreator::CreateBatchTx()
 {
-  static const cbuff sigDummy(72, '\000');
-  static const cbuff sigPub(64, '\000');
   CIface *iface = GetCoinByIndex(pwallet->ifaceIndex);
+  CScript scriptDummy;
   vector<CTxIn> vIn; /* out */
   vector<CTxOut> vOut; /* out */
+  int64 nFee = nMaxFee;
+  int64 nTotCredit = 0;
+  int64 nTotDebit = (nOutValue - nBatchValue);
   bool ok;
 
   /* init tx */
   CTxCreator ret_tx(pwallet, strFromAccount);  
 
-  /* fake change output */
-  int64 nFee = nMaxFee;
-  int64 nTotCredit = 0;
-  int64 nTotDebit = (nOutValue - nBatchValue);
-
   int64 nTotSelect = 0;
   BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setCoins) {
     CWalletTx *wtx = (CWalletTx *)coin.first;
     unsigned int n = coin.second;
-
-#if 0
-    CTxIn in = CTxIn(coin.first->GetHash(), coin.second);
-    if (find(vBatchIn.begin(), vBatchIn.end(), in) != vBatchIn.end())
-      continue; /* already processed */
-#endif
 
     nTotSelect += wtx->vout[n].nValue; 
   }
@@ -596,18 +587,12 @@ bool CTxBatchCreator::CreateBatchTx()
     strError = "insufficient funds to create transaction.";
     return (error(SHERR_INVAL, "CreateBatchTx: insufficient funds (%f < %f)", (double)nTotSelect/COIN, (double)nTotDebit/COIN));
   }
-  int nSigOps = MAX(1, scriptPub.GetSigOpCount(false) * 2);
 
-//  bool fUpdate = false;
   BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setCoins) {
     CWalletTx *wtx = (CWalletTx *)coin.first;
     unsigned int n = coin.second;
 
     CTxIn in = CTxIn(coin.first->GetHash(), coin.second);
-#if 0
-    if (find(vBatchIn.begin(), vBatchIn.end(), in) != vBatchIn.end())
-      continue; /* already processed */
-#endif
     if (!ret_tx.AddInput(in.prevout.hash, in.prevout.n)) {
       error(SHERR_INVAL, " CTxBatchCreator.CreateBatchTx: error adding input [tx \"%s\" (#%d)].", in.prevout.hash.GetHex().c_str(), in.prevout.n);
       continue;
@@ -615,30 +600,21 @@ bool CTxBatchCreator::CreateBatchTx()
     vIn.push_back(in);
     nTotCredit += wtx->vout[n].nValue;
 
-    //fUpdate = true;
-
-    CTxIn inCopy(in);
-    inCopy.scriptSig << sigDummy << sigPub;
-    nSigOps += MAX(1, inCopy.scriptSig.GetSigOpCount(false));
-
-    if (nSigOps > nMaxSigOp) {
-//fprintf(stderr, "DEBUG: CBatchTxCreator.Generate: nSigOp max reached (%d)\n", (int)nSigOps); 
-      break;
-    }
-
     int64 nBytes = ::GetSerializeSize(ret_tx, SER_NETWORK, PROTOCOL_VERSION(iface) | SERIALIZE_TRANSACTION_NO_WITNESS);
     nBytes += (146 * ret_tx.vin.size()) + 640;
     if (nBytes > nMaxTxSize) {
-//fprintf(stderr, "DEBUG: CBatchTxCreator.Generate: nBytes max reached (%d)\n", (int)nBytes);
       break;
-}
+    }
 
-    int64 nCurFee = ((nBytes / 1024) + 2) * MIN_TX_FEE(iface);
-    nFee = (nFee + nCurFee) / 2;
+    nFee = ((nBytes / 1000) + 3) * MIN_TX_FEE(iface);
     if (nFee > nMaxFee) {
-//fprintf(stderr, "DEBUG: CBatchTxCreator.Generate: nFee max reached (%f)\n", (double)nFee/COIN);
       break;
-}
+    }
+
+    if (vIn.size() > nMaxSigOp) {
+      /* inputs and sigop are not actually related -- but this ensures any sigops not counted don't build up */
+      break;
+    }
 
     /* check whether we have aquired enough coins. */
     if ((nTotCredit - nFee) > nTotDebit) {
@@ -646,16 +622,11 @@ bool CTxBatchCreator::CreateBatchTx()
     }
 
   }
-
-//  if (!fUpdate) return (false);
  
-//Debug("CBatchTxCreator.CreateBatchTx: nTotDebit(%f) nTotCredit(%f) nFee(%f)\n", (double)nTotDebit/COIN, (double)nTotCredit/COIN, (double)nFee/COIN);
   nTotDebit = MAX(0, /* sanity */
       MIN(nTotDebit, (nTotCredit - nFee)));
-  nTotDebit = MAX(0, /* batch left */
-      MIN(nTotDebit, (nOutValue - nBatchValue))); 
   if (nTotDebit <= CENT + MIN_TX_FEE(iface)) {
-//strError = strprintf(_("Total debit (%-8.8f) is too small [credit %-8.8f] used to generate transaction."), (double)nTotDebit/COIN, (double)nTotCredit/COIN);
+    strError = strprintf(_("The output coin value is too small (%-8.8f)."), (double)nTotDebit/COIN);
     return (false);
   }
 
@@ -663,7 +634,6 @@ bool CTxBatchCreator::CreateBatchTx()
   ret_tx.AddOutput(scriptPub, nTotDebit);
 
   if (!ret_tx.Generate()) {
-//fprintf(stderr, "DEBUG: CTxBatchCreator: !Generate: nTotDebit(%f) nTotCredit(%f) nFee(%f)\n", (double)nTotDebit/COIN, (double)nTotCredit/COIN, (double)nFee/COIN);
     strError = ret_tx.GetError();
     if (strError == "")
       strError = "error generating an underlying transaction.";
