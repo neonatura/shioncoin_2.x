@@ -317,7 +317,7 @@ int64 emc2_GetBlockValue(int nHeight, int64 nFees)
     else nSubsidy = 0;
   }
 
-  return (nSubsidy);
+  return (nSubsidy + nFees);
 }
 
 namespace EMC2_Checkpoints
