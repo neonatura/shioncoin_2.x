@@ -297,8 +297,7 @@ void c_processaltblock(int altIndex, unsigned int nMinNonce, char *xn_hex)
 
     // Check for duplicate
     uint256 hash = alt_block->GetHash();
-    blkidx_t *blockIndex = GetBlockTable(ifaceIndex);
-    if (blockIndex->count(hash)) {// || alt_block->IsOrphan())
+    if (GetBlockIndexByHash(ifaceIndex, hash)) { /* || IsBlockOrphan() */
       continue;  // BLKERR_DUPLICATE_BLOCK
     }
 
@@ -325,7 +324,6 @@ void c_processaltblock(int altIndex, unsigned int nMinNonce, char *xn_hex)
 int c_processblock(CBlock* pblock)
 {
   NodeList &vNodes = GetNodeList(pblock->ifaceIndex);
-  blkidx_t *blockIndex = GetBlockTable(pblock->ifaceIndex);
   CIface *iface = GetCoinByIndex(pblock->ifaceIndex);
   CNode *pfrom = NULL;
 
@@ -345,7 +343,7 @@ fprintf(stderr, "DEBUG: processblock: still downloading blocks.. skipping submit
 
   // Check for duplicate
   uint256 hash = pblock->GetHash();
-  if (blockIndex->count(hash) || pblock->IsOrphan())
+  if (GetBlockIndexByHash(pblock->ifaceIndex, hash) || pblock->IsOrphan())
     return (BLKERR_DUPLICATE_BLOCK);
 
   // Preliminary checks
@@ -772,7 +770,6 @@ const char *c_getblockindexinfo(int ifaceIndex, CBlockIndex *pblockindex)
 const char *c_getblockinfo(int ifaceIndex, const char *hash_addr)
 {
   CIface *iface = GetCoinByIndex(ifaceIndex);
-  blkidx_t *blockIndex = GetBlockTable(ifaceIndex);
   long nHeight;
 
   if (!hash_addr)
@@ -810,13 +807,10 @@ const char *c_getblockinfo(int ifaceIndex, const char *hash_addr)
   }
 
   uint256 hash(strHash);
-  if (blockIndex->count(hash) == 0) {
-//    throw JSONRPCError(-5, "Block not found");
+  CBlockIndex *pindex = GetBlockIndexByHash(ifaceIndex, hash);
+  if (!pindex)
     return (NULL);
-  }
-
-  CBlockIndex* pblockindex = (*blockIndex)[hash];
-  return (c_getblockindexinfo(ifaceIndex, pblockindex));
+  return (c_getblockindexinfo(ifaceIndex, pindex));
 }
 #if 0
   CBlock block;
@@ -894,20 +888,17 @@ int findBlockTransaction(CBlockIndex *pblockindex, const char *tx_id, CTransacti
 
 static CBlockIndex *findTransaction(int ifaceIndex, uint256 hashTx, CTransaction& ret_tx)
 {
-  blkidx_t *blockIndex;
+  CBlockIndex *pindex;
   uint256 hashBlock;
   
-  blockIndex = GetBlockTable(ifaceIndex);
-  if (!blockIndex)
-    return (NULL);
-
   if (!ret_tx.ReadTx(ifaceIndex, hashTx, &hashBlock))
     return (NULL);
 
-  if (blockIndex->count(hashBlock) == 0)
+  pindex = GetBlockIndexByHash(ifaceIndex, hashBlock);
+  if (!pindex)
     return (NULL);
-  
-  return ((*blockIndex)[hashBlock]);
+
+  return (pindex);
 }
 
 
@@ -916,7 +907,6 @@ static CBlockIndex *findTransaction(int ifaceIndex, uint256 hashTx, CTransaction
 #define MAX_HISTORY_TIME 10454400 /* 1/3 year */
 const char *c_gettransactioninfo(int ifaceIndex, const char *tx_id)
 {
-  blkidx_t *blockIndex = GetBlockTable(ifaceIndex);
   CTransaction tx;
   CBlockIndex *pblockindex;
   Object result;
@@ -961,10 +951,7 @@ const char *c_gettransactioninfo(int ifaceIndex, const char *tx_id)
     result.push_back(Pair("blockhash", hashBlock.GetHex()));
 
     if (!pblockindex) { /* redundant secondary lookup */
-      map<uint256, CBlockIndex*>::iterator mi = blockIndex->find(hashBlock);
-      if (mi != blockIndex->end() && (*mi).second) {
-        pblockindex = (*mi).second;
-      }
+      pblockindex = GetBlockIndexByHash(ifaceIndex, hashBlock);
     }
 
     if (pblockindex && pblockindex->IsInMainChain(ifaceIndex))
@@ -1129,16 +1116,8 @@ const char *c_getminingtransactions(int ifaceIndex, unsigned int workId)
 int GetBlockDepthInMainChain(CIface *iface, uint256 blockHash)
 {
   int ifaceIndex = GetCoinIndex(iface);
-  blkidx_t *blockIndex;
+  CBlockIndex *pindex = GetBlockIndexByHash(ifaceIndex, blockHash);
 
-  blockIndex = GetBlockTable(ifaceIndex);
-  if (!blockIndex)
-    return (0);
-
-  if (blockIndex->count(blockHash) == 0)
-    return (0);
-
-  CBlockIndex *pindex = (*blockIndex)[blockHash];
   if (!pindex || !pindex->IsInMainChain(ifaceIndex))
     return (0);
 

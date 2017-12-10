@@ -28,6 +28,7 @@
 #include "json/json_spirit_writer_template.h"
 #include <boost/xpressive/xpressive_dynamic.hpp>
 #include "wallet.h"
+#include "txcreator.h"
 
 using namespace std;
 using namespace json_spirit;

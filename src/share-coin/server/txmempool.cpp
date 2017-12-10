@@ -328,9 +328,11 @@ bool CPool::ResolveConflicts(CPoolTx& ptx)
           return (error(SHERR_INVAL, "CPool.ResolveConflicts: warning: rejecting submitted transaction with older time-stamp (%s).", ptx.GetHash()));
         }
 
-        if (ptx.GetTx().isFlag(CTransaction::TXF_CHANNEL) ||
-            a_ptx.GetTx().isFlag(CTransaction::TXF_CHANNEL)) {
-          return (error(SHERR_INVAL, "CPool.ResolveConflicts: warning: rejecting submitted duplicate channel transaction.")); 
+        if (ifaceIndex == TEST_COIN_IFACE || ifaceIndex == SHC_COIN_IFACE) {
+          if (ptx.GetTx().isFlag(CTransaction::TXF_CHANNEL) ||
+              a_ptx.GetTx().isFlag(CTransaction::TXF_CHANNEL)) {
+            return (error(SHERR_INVAL, "CPool.ResolveConflicts: warning: rejecting submitted duplicate channel transaction.")); 
+          }
         }
 
         /* replace */
@@ -879,13 +881,10 @@ bool CPool::Commit(CBlock& block)
 {
   const uint256& hash = block.GetHash();
   vector<CPoolTx> entries;
-  blkidx_t *blockIndex;
+  CBlockIndex *pindex;
 
-  blockIndex = GetBlockTable(ifaceIndex);
-  if (!blockIndex)
-    return (false);
-
-  if (blockIndex->count(hash) == 0)
+  pindex = GetBlockIndexByHash(ifaceIndex, hash);
+  if (!pindex)
     return (false);
 
   BOOST_FOREACH(const CTransaction& tx, block.vtx) {
@@ -909,7 +908,6 @@ bool CPool::Commit(CBlock& block)
 
   CBlockPolicyEstimator *fee = GetFeeEstimator(GetIface());
   if (fee) {
-    CBlockIndex *pindex = (*blockIndex)[hash];
     fee->processBlock(pindex->nHeight, entries, true);
   }
 

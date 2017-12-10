@@ -432,15 +432,15 @@ static bool core_ConnectCoinInputs(int ifaceIndex, CTransaction *tx, const CBloc
     }
 
     if (prevtx.IsCoinBase()) {
-      blkidx_t *blockIndex = GetBlockTable(ifaceIndex);
+      if (prevblockhash.IsNull()) {
+        return (error(SHERR_INVAL, "core_ConnectInputs: empty block reference"));
+      }
 
-      if (prevblockhash.IsNull() ||
-          blockIndex->count(prevblockhash) == 0) {
-        /* invalid block */
+      CBlockIndex *previndex = GetBlockIndexByHash(ifaceIndex, prevblockhash);
+      if (!previndex) { /* invalid block */
         return (error(SHERR_INVAL, "core_ConnectInputs: invalid block reference"));
       }
 
-      CBlockIndex *previndex = (*blockIndex)[prevblockhash];
       if ((pindexBlock->nHeight - previndex->nHeight) < iface->coinbase_maturity) {
         /* immature */
         return (error(SHERR_INVAL, "core_ConnectInputs: immature coinbase"));

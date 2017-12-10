@@ -28,6 +28,7 @@
 #include "main.h"
 #undef fcntl
 #include "wallet.h"
+#include "txcreator.h"
 #include "db.h"
 #include "walletdb.h"
 #include "net.h"
@@ -2580,6 +2581,7 @@ Value rpc_wallet_tsend(CIface *iface, const Array& params, bool fStratum)
   return ret_obj;
 }
 
+#if 0
 static int64 wallet_bsend_select(int64 nMaxValue, vector<COutput>& vCoins)
 {
   const int nMinDepth = 1;
@@ -2709,6 +2711,115 @@ Value rpc_wallet_bsend(CIface *iface, const Array& params, bool fStratum)
 
   return ret_obj;
 }
+#endif
+Value rpc_wallet_bsend(CIface *iface, const Array& params, bool fStratum)
+{
+  CWallet *wallet = GetWallet(iface);
+  int ifaceIndex = GetCoinIndex(iface);
+  const int nMinDepth = 1;
+  int64 nSent;
+  int64 nValue;
+  int nBytes;
+  int nInputs;
+
+  if (params.size() < 3)
+    throw runtime_error("invalid parameters");
+
+  /* originating account  */
+  string strAccount = AccountFromValue(params[0]);
+
+  /* destination coin address */
+  CCoinAddr address(params[1].get_str());
+  if (address.GetVersion() != CCoinAddr::GetCoinAddrVersion(ifaceIndex))
+    throw JSONRPCError(-5, "Invalid address for coin service.");
+
+  int64 nAmount = AmountFromValue(params[2]);
+
+  int64 nBalance = GetAccountBalance(ifaceIndex, strAccount, nMinDepth);
+  if (nAmount > nBalance)
+    throw JSONRPCError(-6, "Account has insufficient funds");
+
+  /* init batch tx creator */
+  CScript scriptPub;
+  scriptPub.SetDestination(address.Get());
+  CTxBatchCreator b_tx(wallet, strAccount, scriptPub, nAmount); 
+
+  if (!b_tx.Generate()) {
+    throw JSONRPCError(-6, "Error generating transaction(s).");
+  } 
+
+  if (!b_tx.Send()) {
+    string strError = b_tx.GetError();
+    if (strError == "")
+      strError = "An unknown error occurred while commiting the batch transaction operation.";
+    throw JSONRPCError(-6, strError);
+  }
+
+  int64 nValueOut = 0;
+  int64 nChangeOut = 0;
+  int64 nValueIn = 0;
+  int64 nTxSize = 0;
+  int nInputTotal = 0;
+
+  vector<CWalletTx>& tx_list = b_tx.GetTxList();
+
+  tx_cache inputs;
+  BOOST_FOREACH(CWalletTx& wtx, tx_list) {
+    nInputTotal += wtx.vin.size();
+    wallet->FillInputs(wtx, inputs);
+    nTxSize += wallet->GetVirtualTransactionSize(wtx);
+  }
+  BOOST_FOREACH(CWalletTx& wtx, tx_list) {
+    BOOST_FOREACH(const CTxIn& txin, wtx.vin) {
+      CTxOut out;
+      if (!wtx.GetOutputFor(txin, inputs, out)) {
+fprintf(stderr, "DEBUG: ERROR: rpc_wallet_bsend: unable to find input"); 
+        continue;
+}
+
+fprintf(stderr, "DEBUG: rpc_wallet_bsend: nValueIn(%f) += out.nValue(%f)\n", (double)nValueIn/COIN, (double)out.nValue/COIN);
+      nValueIn += out.nValue;
+    }
+  }
+
+  BOOST_FOREACH(CWalletTx& wtx, tx_list) {
+    BOOST_FOREACH(const CTxOut& txout, wtx.vout) {
+      if (txout.scriptPubKey == scriptPub) {
+        nValueOut += txout.nValue;
+      } else {
+        nChangeOut += txout.nValue;
+      }
+    }
+  }
+
+
+  Object ret;
+  int64 nFee = nValueIn - nValueOut - nChangeOut;
+  nBalance = MAX(0, nBalance - (nValueOut + nFee));
+
+  ret.push_back(Pair("fee", ValueFromAmount(nFee)));
+  ret.push_back(Pair("input-value", ValueFromAmount(nValueIn)));
+  ret.push_back(Pair("total-tx", (int)tx_list.size()));
+  ret.push_back(Pair("total-inputs", (int)nInputTotal));
+  ret.push_back(Pair("total-size", (int)nTxSize));
+
+  Object ret_out;
+  ret_out.push_back(Pair("account", strAccount));
+  ret_out.push_back(Pair("balance", ValueFromAmount(nBalance)));
+  ret_out.push_back(Pair("output-value", ValueFromAmount(nValueOut)));
+  ret_out.push_back(Pair("change-value", ValueFromAmount(nChangeOut)));
+  ret_out.push_back(Pair("target-value", ValueFromAmount(nAmount)));
+  ret.push_back(Pair("out", ret_out));
+
+  Array ar;
+  BOOST_FOREACH(CWalletTx& wtx, tx_list) {
+    ar.push_back(wtx.ToValue(ifaceIndex));    
+  }
+  ret.push_back(Pair("tx", ar));
+
+  return (ret);
+}
+
 
 Value rpc_wallet_set(CIface *iface, const Array& params, bool fStratum)
 {

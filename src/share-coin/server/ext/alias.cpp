@@ -33,6 +33,7 @@ using namespace json_spirit;
 
 #include "block.h"
 #include "wallet.h"
+#include "txcreator.h"
 #include "certificate.h"
 #include "alias.h"
 

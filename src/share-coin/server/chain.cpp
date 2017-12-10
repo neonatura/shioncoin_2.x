@@ -210,13 +210,13 @@ static bool ServiceValidateEvent(int ifaceIndex)
 /* deprecate */
 void ServiceWalletEventUpdate(CWallet *wallet, const CBlock *pblock)
 {
-  blkidx_t *blockIndex = GetBlockTable(wallet->ifaceIndex);
+  CBlockIndex *pindex;
   uint256 hash = pblock->GetHash();
 
-  if (blockIndex->count(hash) == 0)
-    return; /* nerp */
+  pindex = GetBlockIndexByHash(wallet->ifaceIndex, hash);
+  if (!pindex)
+    return;
 
-  CBlockIndex *pindex = (*blockIndex)[hash];
   wallet->nScanHeight = MAX(wallet->nScanHeight, pindex->nHeight);
 }
 

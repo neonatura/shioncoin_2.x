@@ -235,6 +235,7 @@ static int emc2_generateMTRandom(unsigned int s, int range)
   return dist(gen);
 }
 
+#if 0
 int64 emc2_GetBlockValue(int nHeight, int64 nFees)
 {
 
@@ -276,6 +277,47 @@ int64 emc2_GetBlockValue(int nHeight, int64 nFees)
   }
 
   return nSubsidy + nFees;
+}
+#endif
+
+/*
+ * wormholes modified to end at height 1699157 (12.17)
+ */
+int64 emc2_GetBlockValue(int nHeight, int64 nFees)
+{
+  int StartOffset;
+  int WormholeStartBlock;
+  int mod = nHeight % 36000;
+  if (mod != 0) mod = 1;
+  int epoch = (nHeight / 36000) + mod;
+  long wseed = 5299860 * epoch; /* discovered: 1952, Atomic number: 99 Melting Point: 860 */
+
+  StartOffset = emc2_generateMTRandom(wseed, 35820);
+  WormholeStartBlock = StartOffset + ((epoch - 1)  * 36000); // Wormholes start from Epoch 2
+
+  int64 nSubsidy = 0;
+  if(epoch > 1 && epoch < 48 && nHeight >= WormholeStartBlock && nHeight < WormholeStartBlock + 180)
+  {
+    nSubsidy = 2973 * COIN;
+  }
+  else
+  {
+    if    (nHeight == 1)        nSubsidy = 10747 * COIN;
+    else if (nHeight <= 72000)    nSubsidy = 1024 * COIN;
+    else if (nHeight <= 144000)   nSubsidy = 512 * COIN;
+    else if (nHeight <= 288000)   nSubsidy = 256 * COIN;
+    else if (nHeight <= 432000)   nSubsidy = 128 * COIN;
+    else if (nHeight <= 576000)   nSubsidy = 64 * COIN;
+    else if (nHeight <= 864000)   nSubsidy = 32 * COIN;
+    else if (nHeight <= 1080000)  nSubsidy = 16 * COIN;
+    else if (nHeight <= 1584000)  nSubsidy = 8 * COIN;
+    else if (nHeight <= 2304000)  nSubsidy = 4 * COIN;
+    else if (nHeight <= 5256000)  nSubsidy = 2 * COIN;
+    else if (nHeight <= 26280000) nSubsidy = 1 * COIN;
+    else nSubsidy = 0;
+  }
+
+  return (nSubsidy);
 }
 
 namespace EMC2_Checkpoints
@@ -960,10 +1002,8 @@ bool EMC2Block::CheckBlock()
     return (trust(-100, "(emc) CheckBlock: invalid merkle root hash"));
   }
 
-  blkidx_t *blockIndex = GetBlockTable(EMC2_COIN_IFACE);
-  map<uint256, CBlockIndex*>::iterator miPrev = blockIndex->find(hashPrevBlock);
-  if (miPrev != blockIndex->end()) {
-    CBlockIndex *pindexPrev = (*miPrev).second;
+  CBlockIndex *pindexPrev = GetBlockIndexByHash(ifaceIndex, hashPrevBlock);
+  if (pindexPrev) {
     if (!core_CheckBlockWitness(iface, (CBlock *)this, pindexPrev))
       return (trust(-10, "(emc) CheckBlock: invalid witness integrity."));
   }
@@ -1241,14 +1281,13 @@ bool EMC2Block::IsBestChain()
 
 bool EMC2Block::AcceptBlock()
 {
-  blkidx_t *blockIndex = GetBlockTable(EMC2_COIN_IFACE);
+  CBlockIndex* pindexPrev;
 
-  map<uint256, CBlockIndex*>::iterator mi = blockIndex->find(hashPrevBlock);
-  if (mi == blockIndex->end()) {
+  pindexPrev = GetBlockIndexByHash(ifaceIndex, hashPrevBlock);
+  if (!pindexPrev) {
     return error(SHERR_INVAL, "(emc2) AcceptBlock: prev block '%s' not found", hashPrevBlock.GetHex().c_str());
   }
-  CBlockIndex* pindexPrev = (*mi).second;
-
+  
   if (GetBlockTime() > GetAdjustedTime() + EMC2_MAX_DRIFT_TIME) {
     print();
     return error(SHERR_INVAL, "(emc2) AcceptBlock() : block's timestamp too far in the future.");
@@ -1744,6 +1783,12 @@ void EMC2_CTxMemPool::queryHashes(std::vector<uint256>& vtxid)
 }
 #endif
 
+CBlockIndex *emc2_GetLastCheckpoint()
+{
+  blkidx_t *blockIndex = GetBlockTable(EMC2_COIN_IFACE);
+  return (EMC2_Checkpoints::GetLastCheckpoint(*blockIndex));
+}
+
 
 
 #ifdef USE_LEVELDB_COINDB
@@ -2076,3 +2121,4 @@ bool EMC2Block::DisconnectBlock(CBlockIndex* pindex)
 }
 
 #endif /* USE_LEVELDB_COINDB */
+

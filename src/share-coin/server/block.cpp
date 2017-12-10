@@ -83,6 +83,22 @@ CBlockIndex *GetBlockIndexByHeight(int ifaceIndex, unsigned int nHeight)
   return (pindex);
 }
 
+CBlockIndex *GetBlockIndexByHash(int ifaceIndex, const uint256 hash)
+{
+  CBlockIndex *pindex;
+  blkidx_t *blockIndex;
+
+  blockIndex = GetBlockTable(ifaceIndex);
+  if (!blockIndex)
+    return (NULL);
+
+  blkidx_t::iterator mi = blockIndex->find(hash);
+  if (mi == blockIndex->end())
+    return (NULL);
+
+  return (mi->second);
+}
+
 json_spirit::Value ValueFromAmount(int64 amount)
 {
     return (double)amount / (double)COIN;
@@ -558,7 +574,6 @@ CBlock *GetBlockByHeight(CIface *iface, int nHeight)
 CBlock *GetBlockByHash(CIface *iface, const uint256 hash)
 {
   int ifaceIndex = GetCoinIndex(iface);
-  blkidx_t *blockIndex;
   CBlockIndex *pindex;
   CTransaction tx;
   CBlock *block;
@@ -568,14 +583,7 @@ CBlock *GetBlockByHash(CIface *iface, const uint256 hash)
   if (!iface)
     return (NULL);
 
-  blockIndex = GetBlockTable(ifaceIndex);
-  if (!blockIndex)
-    return (NULL);
-
-  if (blockIndex->count(hash) == 0)
-    return (NULL);
-
-  pindex = (*blockIndex)[hash];
+  pindex = GetBlockIndexByHash(ifaceIndex, hash);
   if (!pindex)
     return (NULL);
 
@@ -651,8 +659,10 @@ CBlockIndex *GetBlockIndexByTx(CIface *iface, const uint256 hash)
     return (NULL);
 
   map<uint256, CBlockIndex*>::iterator mi = blockIndex->find(hashBlock);
-  if (mi == blockIndex->end()) return (NULL);
-  return ((*blockIndex)[hash]);
+  if (mi == blockIndex->end()) 
+    return (NULL);
+
+  return (mi->second);
 }
 
 CBlock *CreateBlockTemplate(CIface *iface)
@@ -797,18 +807,14 @@ bool CBlockIndex::IsInMainChain(int ifaceIndex) const
 uint256 CBlockLocator::GetBlockHash()
 {
   CIface *iface = GetCoinByIndex(ifaceIndex);
-  blkidx_t *blockIndex = GetBlockTable(ifaceIndex); 
+  CBlockIndex *pindex;
 
   // Find the first block the caller has in the main chain
   BOOST_FOREACH(const uint256& hash, vHave)
   {
-    std::map<uint256, CBlockIndex*>::iterator mi = blockIndex->find(hash);
-    if (mi != blockIndex->end())
-    {
-      CBlockIndex* pindex = (*mi).second;
-      if (pindex && pindex->IsInMainChain(ifaceIndex))
-        return hash;
-    }
+    pindex = GetBlockIndexByHash(ifaceIndex, hash);
+    if (pindex && pindex->IsInMainChain(ifaceIndex))
+      return hash;
   }
   return GetGenesisBlockHash(ifaceIndex);
 }
@@ -855,18 +861,14 @@ int CBlockLocator::GetHeight()
 CBlockIndex* CBlockLocator::GetBlockIndex()
 {
   CIface *iface = GetCoinByIndex(ifaceIndex);
-  blkidx_t *blockIndex = GetBlockTable(ifaceIndex); 
+  CBlockIndex *pindex;
 
   // Find the first block the caller has in the main chain
   BOOST_FOREACH(const uint256& hash, vHave)
   {
-    std::map<uint256, CBlockIndex*>::iterator mi = blockIndex->find(hash);
-    if (mi != blockIndex->end())
-    {
-      CBlockIndex* pindex = (*mi).second;
-      if (pindex && pindex->IsInMainChain(ifaceIndex))
-        return pindex;
-    }
+    pindex = GetBlockIndexByHash(ifaceIndex, hash);
+    if (pindex && pindex->IsInMainChain(ifaceIndex))
+      return pindex;
   }
 
   return (GetGenesisBlockIndex(iface));
@@ -922,20 +924,17 @@ void CBlockLocator::Set(const CBlockIndex* pindex)
 
 int CBlockLocator::GetDistanceBack()
 {
-  blkidx_t *blockIndex = GetBlockTable(ifaceIndex);
+  CBlockIndex *pindex;
 
   // Retrace how far back it was in the sender's branch
   int nDistance = 0;
   int nStep = 1;
   BOOST_FOREACH(const uint256& hash, vHave)
   {
-    std::map<uint256, CBlockIndex*>::iterator mi = blockIndex->find(hash);
-    if (mi != blockIndex->end())
-    {
-      CBlockIndex* pindex = (*mi).second;
-      if (pindex && pindex->IsInMainChain(ifaceIndex))
-        return nDistance;
-    }
+    pindex = GetBlockIndexByHash(ifaceIndex, hash);
+    if (pindex && pindex->IsInMainChain(ifaceIndex))
+      return nDistance;
+
     nDistance += nStep;
     if (nDistance > 10)
       nStep *= 2;
@@ -983,9 +982,6 @@ uint256 GetBestBlockChain(CIface *iface)
 CBlockIndex *GetGenesisBlockIndex(CIface *iface) /* DEBUG: */
 {
   int ifaceIndex = GetCoinIndex(iface);
-  blkidx_t *blockIndex = GetBlockTable(ifaceIndex);
-  if (!blockIndex)
-    return (NULL);
   CBlock *block = GetBlockByHeight(iface, 0);
   if (!block)
     return (NULL);
@@ -993,11 +989,7 @@ CBlockIndex *GetGenesisBlockIndex(CIface *iface) /* DEBUG: */
   uint256 hash = block->GetHash();
   delete block;
 
-  if (blockIndex->count(hash) == 0)
-    return (NULL);
-
-  CBlockIndex *pindex = (*blockIndex)[hash];
-  return (pindex);
+  return (GetBlockIndexByHash(ifaceIndex, hash));
 }
 
 void CBlock::UpdateTime(const CBlockIndex* pindexPrev)
@@ -1037,16 +1029,10 @@ void SetBestBlockIndex(int ifaceIndex, CBlockIndex *pindex)
 CBlockIndex *GetBestBlockIndex(CIface *iface)
 {
   int ifaceIndex = GetCoinIndex(iface);
-  blkidx_t *blockIndex = GetBlockTable(ifaceIndex);
   uint256 hash;
 
-  if (!blockIndex)
-    return (NULL);
-
   hash.SetRaw(iface->block_besthash);
-  if (blockIndex->count(hash) == 0)
-    return (NULL);
-  return ((*blockIndex)[hash]);
+  return (GetBlockIndexByHash(ifaceIndex, hash));
 }
 CBlockIndex *GetBestBlockIndex(int ifaceIndex)
 {
@@ -1379,7 +1365,6 @@ bool core_AcceptBlock(CBlock *pblock, CBlockIndex *pindexPrev)
 {
   int ifaceIndex = pblock->ifaceIndex;
   CIface *iface = GetCoinByIndex(ifaceIndex);
-  blkidx_t *blockIndex = GetBlockTable(ifaceIndex);
   uint256 hash = pblock->GetHash();
   shtime_t ts;
   bool ret;
@@ -1388,7 +1373,7 @@ bool core_AcceptBlock(CBlock *pblock, CBlockIndex *pindexPrev)
     return error(SHERR_INVAL, "(core) AcceptBlock: invalid parameter.");
   }
 
-  if (blockIndex->count(hash)) {
+  if (GetBlockIndexByHash(ifaceIndex, hash)) {
     return error(SHERR_INVAL, "(core) AcceptBlock: block already in chain.");
   }
 
@@ -2052,6 +2037,8 @@ static inline string ToValue_date_format(time_t t)
 
 Object CBlockHeader::ToValue()
 {
+  CIface *iface = GetCoinByIndex(ifaceIndex);
+  CBlockIndex *pindex;
   Object obj;
   uint256 hash = GetHash();
 
@@ -2065,14 +2052,11 @@ Object CBlockHeader::ToValue()
   obj.push_back(Pair("bits", HexBits(nBits)));
 
 
-  CIface *iface = GetCoinByIndex(ifaceIndex);
   if (iface)
     obj.push_back(Pair("confirmations", GetBlockDepthInMainChain(iface, hash)));
 
-  blkidx_t *blockIndex = GetBlockTable(ifaceIndex);
-  if (blockIndex->count(hash)) {
-    CBlockIndex *pindex = (*blockIndex)[hash];
-
+  pindex = GetBlockIndexByHash(ifaceIndex, hash);
+  if (pindex) {
     obj.push_back(Pair("height", pindex->nHeight));
     obj.push_back(Pair("difficulty", GetDifficulty(ifaceIndex, pindex)));
 

@@ -257,7 +257,6 @@ bool shc_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataStr
   CWallet *pwalletMain = GetWallet(iface);
   CTxMemPool *pool = GetTxMemPool(iface);
   int ifaceIndex = GetCoinIndex(iface);
-  blkidx_t *blockIndex;
   char errbuf[256];
   shtime_t ts;
 
@@ -268,12 +267,6 @@ bool shc_ProcessMessage(CIface *iface, CNode* pfrom, string strCommand, CDataStr
   {
     printf("dropmessagestest DROPPING RECV MESSAGE\n");
     return true;
-  }
-
-  blockIndex = GetBlockTable(ifaceIndex);
-  if (!blockIndex) {
-    unet_log(ifaceIndex, "error loading block table.");
-    return (false);
   }
 
   if (strCommand == "version")
@@ -534,15 +527,12 @@ fprintf(stderr, "DEBUG: ProcessMessage: Must have a version message before anyth
           // In case we are on a very long side-chain, it is possible that we already have
           // the last block in an inv bundle sent in response to getblocks. Try to detect
           // this situation and push another getblocks to continue.
-          std::vector<CInv> vGetData(SHC_COIN_IFACE, inv);
-          if (blockIndex->count(inv.hash) != 0) {
+          std::vector<CInv> vGetData(ifaceIndex, inv);
+          CBlockIndex *pindex = GetBlockIndexByHash(ifaceIndex, inv.hash);
+          if (pindex) {
             CBlockIndex* pcheckpoint = shc_GetLastCheckpoint();
-            blkidx_t blkidx = *blockIndex;
-            CBlockIndex *pindex = blkidx[inv.hash];
-
-            if (!pcheckpoint || !pindex ||
-                pindex->nHeight >= pcheckpoint->nHeight) {
-              pfrom->PushGetBlocks(blkidx[inv.hash], uint256(0));
+            if (!pcheckpoint || pindex->nHeight >= pcheckpoint->nHeight) {
+              pfrom->PushGetBlocks(pindex, uint256(0));
             }
           }
         }
@@ -571,10 +561,8 @@ fprintf(stderr, "DEBUG: ProcessMessage: Must have a version message before anyth
 
       inv.ifaceIndex = SHC_COIN_IFACE;
       if (inv.type == MSG_BLOCK || inv.type == MSG_FILTERED_BLOCK) {
-        map<uint256, CBlockIndex*>::iterator mi = blockIndex->find(inv.hash);
-        if (mi != blockIndex->end())
-        {
-          CBlockIndex *pindex = (*mi).second;
+        CBlockIndex *pindex = GetBlockIndexByHash(ifaceIndex, inv.hash);
+        if (pindex) {
           SHCBlock block;
           if (block.ReadFromDisk(pindex) && block.CheckBlock() &&
               pindex->nHeight <= GetBestHeight(SHC_COIN_IFACE)) {
@@ -688,10 +676,9 @@ fprintf(stderr, "DEBUG: ProcessMessage: Must have a version message before anyth
     if (locator.IsNull())
     {
       // If locator is null, return the hashStop block
-      map<uint256, CBlockIndex*>::iterator mi = blockIndex->find(hashStop);
-      if (mi == blockIndex->end())
-        return true;
-      pindex = (*mi).second;
+      pindex = GetBlockIndexByHash(ifaceIndex, hashStop);
+      if (!pindex)
+        return (true);
     }
     else
     {

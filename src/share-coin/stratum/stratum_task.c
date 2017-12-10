@@ -745,23 +745,27 @@ int is_stratum_task_pending(int *ret_iface)
   struct timeval now;
   uint64_t block_height;
   int ifaceIndex;
+  char errbuf[256];
 
   for (ifaceIndex = 1; ifaceIndex < MAX_COIN_IFACE; ifaceIndex++) {
     CIface *iface = GetCoinByIndex(ifaceIndex);
     if (!iface || !iface->enabled) 
       continue; /* iface not enabled */
 
+    block_height = (uint64_t)getblockheight(ifaceIndex);
     if (iface->blockscan_max &&
         block_height < (iface->blockscan_max - 1))
       continue; /* downloading blocks.. */
 
-    block_height = (uint64_t)getblockheight(ifaceIndex);
     if (block_height == pend_block_height[ifaceIndex])
       continue; /* no new block. */
 
     pend_block_height[ifaceIndex] = block_height;
     if (ret_iface)
       *ret_iface = ifaceIndex;
+
+    sprintf(errbuf, "(%s) is_stratum_task_pending: new block detected at height %d", iface->name, (int)block_height);
+    shcoind_log(errbuf);
     return (TRUE);
   }
 
@@ -815,26 +819,32 @@ void stratum_task_weight(task_attr_t *attr)
     dDiff = GetNextDifficulty(idx);
     nHeight = getblockheight(idx); 
 
-    /* add weight in relation to time since last block. */
-    weight += MAX(0.0001, MIN(600, 
-          ((double)now - (double)iface->net_valid)));
+    if (iface->net_valid != 0) {
+      /* add weight in relation to time since last block. */
+      weight += MAX(0.0001, MIN(600, 
+            ((double)now - (double)iface->net_valid)));
+    }
 
     /* add weight in relation to difficulty */
     weight += MAX(0.0001, MIN(299, dDiff));
 
-    /* add weight in relation to last time pool submitted block */
-    weight += MAX(0.0001, MIN(299, 
-          ((double)now - (double)attr->blk_stamp[idx]) / 100));
+    if (attr->blk_stamp[idx] != 0) {
+      /* add weight in relation to last time pool submitted block */
+      weight += MIN(299, ((double)now - (double)attr->blk_stamp[idx]) / 100);
+    }
 
-    /* subtract weight in relation to block lapse */
-    if (iface->blockscan_max > nHeight)
-      weight -= (double)iface->blockscan_max - (double)nHeight;
+    if (iface->blockscan_max != 0) {
+      /* subtract weight in relation to block lapse */
+      if (iface->blockscan_max > nHeight)
+        weight -= (double)iface->blockscan_max - (double)nHeight;
+    }
 
     /* half weight in case this iface is current mining interface */
     if (attr->ifaceIndex == idx)
       weight = weight / 2;
 
     /* running average */
+    weight = MAX(0.0001, weight);
     attr->weight[idx] = (attr->weight[idx] + weight) / 2;
 
     sprintf(errbuf, "stratum_task_weight: %s-coin has weight %-3.3f", iface->name, attr->weight[idx]);

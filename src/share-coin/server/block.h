@@ -1516,6 +1516,8 @@ class CBlockIndex
 
 blkidx_t *GetBlockTable(int ifaceIndex);
 
+CBlockIndex *GetBlockIndexByHash(int ifaceIndex, const uint256 hash);
+
 /** Describes a place in the block chain to another node such that if the
  * other node doesn't have the same branch, it can find a recent common trunk.
  * The further back it is, the further before the fork it may be.
@@ -1541,10 +1543,9 @@ class CBlockLocator
     explicit CBlockLocator(int ifaceIndexIn, uint256 hashBlock)
     {
       ifaceIndex = ifaceIndexIn;
-      blkidx_t *blockIndex = GetBlockTable(ifaceIndex); 
-      std::map<uint256, CBlockIndex*>::iterator mi = blockIndex->find(hashBlock);
-      if (mi != blockIndex->end())
-        Set((*mi).second);
+      CBlockIndex *pindex = GetBlockIndexByHash(ifaceIndex, hashBlock);
+      if (pindex)
+        Set(pindex);
     }
 
     CBlockLocator(int ifaceIndexIn, const std::vector<uint256>& vHaveIn)
@@ -1743,6 +1744,8 @@ void core_UpdateUncommittedBlockStructures(CIface *iface, CBlock& block, const C
 int core_ComputeBlockVersion(CIface *params, CBlockIndex *pindexPrev);
 
 CBlockIndex *GetBlockIndexByTx(CIface *iface, const uint256 hash);
+
+
 
 #endif /* ndef __SERVER_BLOCK_H__ */
 

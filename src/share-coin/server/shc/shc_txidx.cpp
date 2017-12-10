@@ -285,7 +285,7 @@ static bool shc_LoadBlockIndex()
 
   int nCheckDepth = (GetBestHeight(SHC_COIN_IFACE) / 10000) + 1024;
   int nWalletCheckDepth = nCheckDepth * 2;
-  int nValidateCheckDepth = nWalletCheckDepth * 10;
+  int nValidateCheckDepth = nCheckDepth * 10;
   int total = 0;
   int invalid = 0;
   int maxHeight = 0;

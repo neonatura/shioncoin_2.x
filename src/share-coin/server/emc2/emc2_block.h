@@ -185,6 +185,8 @@ uint256 emc2_GetOrphanRoot(const CBlock* pblock);
 
 int64 emc2_GetBlockValue(int nHeight, int64 nFees);
 
+CBlockIndex *emc2_GetLastCheckpoint();
+
 
 /**
  * @}
