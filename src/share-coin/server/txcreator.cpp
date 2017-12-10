@@ -564,7 +564,6 @@ bool CTxBatchCreator::CreateBatchTx()
 {
   CIface *iface = GetCoinByIndex(pwallet->ifaceIndex);
   CScript scriptDummy;
-  vector<CTxIn> vIn; /* out */
   vector<CTxOut> vOut; /* out */
   int64 nFee = nMaxFee;
   int64 nTotCredit = 0;
@@ -588,30 +587,34 @@ bool CTxBatchCreator::CreateBatchTx()
     return (error(SHERR_INVAL, "CreateBatchTx: insufficient funds (%f < %f)", (double)nTotSelect/COIN, (double)nTotDebit/COIN));
   }
 
+  int nIndex = 0;
   BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setCoins) {
     CWalletTx *wtx = (CWalletTx *)coin.first;
     unsigned int n = coin.second;
 
+    /* add input coin */
     CTxIn in = CTxIn(coin.first->GetHash(), coin.second);
     if (!ret_tx.AddInput(in.prevout.hash, in.prevout.n)) {
       error(SHERR_INVAL, " CTxBatchCreator.CreateBatchTx: error adding input [tx \"%s\" (#%d)].", in.prevout.hash.GetHex().c_str(), in.prevout.n);
       continue;
     }
-    vIn.push_back(in);
+
+    /* statistics for input coin */
+    nIndex++;
     nTotCredit += wtx->vout[n].nValue;
 
     int64 nBytes = ::GetSerializeSize(ret_tx, SER_NETWORK, PROTOCOL_VERSION(iface) | SERIALIZE_TRANSACTION_NO_WITNESS);
-    nBytes += (146 * ret_tx.vin.size()) + 640;
+    nBytes += (146 * ret_tx.vin.size());
     if (nBytes > nMaxTxSize) {
       break;
     }
 
-    nFee = ((nBytes / 1000) + 3) * MIN_TX_FEE(iface);
+    nFee = ((nBytes / 1000) + 4) * MIN_TX_FEE(iface);
     if (nFee > nMaxFee) {
       break;
     }
 
-    if (vIn.size() > nMaxSigOp) {
+    if (nIndex >= nMaxSigOp) {
       /* inputs and sigop are not actually related -- but this ensures any sigops not counted don't build up */
       break;
     }
@@ -641,7 +644,7 @@ bool CTxBatchCreator::CreateBatchTx()
   }
 
   /* mark inputs as processed */
-  BOOST_FOREACH(const CTxIn& in, vIn) {
+  BOOST_FOREACH(const CTxIn& in, ret_tx.vin) {
     set<pair<const CWalletTx *, unsigned int> >::const_iterator it;
     for (it = setCoins.begin(); it != setCoins.end(); ++it) {
       CWalletTx *wtx = (CWalletTx *)it->first;

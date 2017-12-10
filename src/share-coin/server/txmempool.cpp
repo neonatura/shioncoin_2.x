@@ -314,6 +314,7 @@ bool VerifyConflict(CPoolTx& ptx)
 #endif
 bool CPool::ResolveConflicts(CPoolTx& ptx)
 {
+  CWallet *wallet = GetWallet(ifaceIndex);
   bool ok;
 
   vector<CTransaction> vRemove;
@@ -342,9 +343,18 @@ bool CPool::ResolveConflicts(CPoolTx& ptx)
     }
   }
   BOOST_FOREACH(CTransaction& tx, vRemove) {
+    uint256 tx_hash = tx.GetHash();
+
+    /* remove tx from mempool. */
     if (!RemoveTx(tx)) {
-      error(SHERR_INVAL, "CPool.ResolveConflicts: error removing conflicting transaction \"%s\".", tx.GetHash().GetHex().c_str()); 
+      error(SHERR_INVAL, "CPool.ResolveConflicts: error removing conflicting transaction \"%s\".", tx_hash.GetHex().c_str()); 
     }
+
+    /* abandon invalidated wallet tx [redundant] . */
+    wallet->EraseFromWallet(tx_hash);
+
+    CIface *iface = GetCoinByIndex(ifaceIndex);
+    Debug("(%s) CPool.ResolveConflict: removed tx \"%s\" from pool due to conflicting input transaction.", iface->name, tx_hash.GetHex().c_str()); 
   }
 
   /* create mapping for sequential checks */
