@@ -397,17 +397,19 @@ task_t *task_init(task_attr_t *attr)
         max_iface = ifaceIndex;
       }
     }
-    if (max_iface && max_iface != attr->ifaceIndex) {
+    if (max_iface) {
       iface = GetCoinByIndex(max_iface);
       if (iface && iface->enabled) {
+        /* debug */
+       if (max_iface != attr->ifaceIndex) {
+          sprintf(errbuf, "task_init: mining %s coins [weight %f].",
+              iface->name, max_weight);
+          shcoind_log(errbuf);
+        }
+
         /* assign */
         attr->ifaceIndex = max_iface;
         attr->mine_stamp[max_iface] = time(NULL);
-
-        /* log */
-        sprintf(errbuf, "task_init: mining %s coins [weight %f].",
-            iface->name, max_weight);
-        shcoind_log(errbuf);
       }
     }
     reset_idx = max_iface;

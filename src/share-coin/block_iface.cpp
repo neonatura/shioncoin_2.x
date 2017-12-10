@@ -56,7 +56,7 @@ using namespace boost;
 using namespace boost::asio;
 using namespace json_spirit;
 
-#define MAX_NONCE_SEQUENCE 24
+#define MAX_NONCE_SEQUENCE 16
 
 //std::map<uint256, CBlockIndex*> transactionMap;
 
