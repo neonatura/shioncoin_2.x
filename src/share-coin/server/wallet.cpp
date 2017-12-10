@@ -3218,6 +3218,7 @@ int64 CWallet::CalculateFee(CTransaction& tx, int64 nMinFee)
   int64 nFee;
 
   nBytes = (int64)GetVirtualTransactionSize(tx); 
+  nBytes += 640; /* padd */
   //nBytes = ::GetSerializeSize(tx, SER_NETWORK, PROTOCOL_VERSION(iface));
 
   /* base fee */

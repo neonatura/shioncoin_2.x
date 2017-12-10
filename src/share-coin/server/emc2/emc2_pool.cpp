@@ -168,7 +168,7 @@ int64 EMC2_CTxMemPool::CalculateSoftFee(CTransaction& tx)
 
   nBytes = wallet->GetVirtualTransactionSize(tx);
   nFee = fee->estimateSmartFee(confTarget, NULL).GetFee(nBytes);
-  nFee = MAX(nFee, (int64)MIN_RELAY_TX_FEE(iface) * 10); /* "high traffic" */
+  nFee = MAX(nFee, (int64)MIN_RELAY_TX_FEE(iface));
   nFee = MIN(nFee, (int64)MAX_TRANSACTION_FEE(iface) - 1);
 
   return (nFee);

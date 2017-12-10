@@ -310,6 +310,11 @@ bool CTxCreator::Generate()
       if (HaveInput(wtx, n))
         continue; /* already used */
 
+#if 0 /* redundant */
+      if (pool->IsInputTx(wtx->GetHash(), n))
+        continue; /* used elsewhere */
+#endif
+
       setCoinsCopy.insert(setCoinsCopy.end(), make_pair(wtx, n));
       nValueIn += wtx->vout[n].nValue;
     }
@@ -416,7 +421,9 @@ bool CTxCreator::Generate()
   }
 
 /* DEBUG: GetSigOpCost() */
-  if (GetLegacySigOpCount() > MAX_BLOCK_SIGOPS(iface)/5) {
+  int64 nSigTotal = GetLegacySigOpCount(); 
+fprintf(stderr, "DEBUG: nSigTotal = %d\n", (int)nSigTotal);
+  if (nSigTotal > MAX_BLOCK_SIGOPS(iface)/5) {
     strError = "The number of transaction signature operations exceed the maximum complexity allowed.";
     return (false);
   }
@@ -531,10 +538,8 @@ double CTxCreator::GetPriority(int64 nBytes)
 
 bool CTxBatchCreator::CreateBatchTx()
 {
-#if 0
   static const cbuff sigDummy(72, '\000');
   static const cbuff sigPub(64, '\000');
-#endif
   CIface *iface = GetCoinByIndex(pwallet->ifaceIndex);
   vector<CTxIn> vIn; /* out */
   vector<CTxOut> vOut; /* out */
@@ -564,11 +569,12 @@ bool CTxBatchCreator::CreateBatchTx()
 
   if (nTotSelect < (nTotDebit + MIN_TX_FEE(iface))) {
     /* insufficient funds to proceed. */
-    strError = "insufficient funds in account";
+    strError = "insufficient funds to create transaction.";
     return (error(SHERR_INVAL, "CreateBatchTx: insufficient funds (%f < %f)", (double)nTotSelect/COIN, (double)nTotDebit/COIN));
   }
+  int nSigOps = MAX(1, scriptPub.GetSigOpCount(false) * 2);
 
-  bool fUpdate = false;
+//  bool fUpdate = false;
   BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setCoins) {
     CWalletTx *wtx = (CWalletTx *)coin.first;
     unsigned int n = coin.second;
@@ -577,24 +583,26 @@ bool CTxBatchCreator::CreateBatchTx()
 #if 0
     if (find(vBatchIn.begin(), vBatchIn.end(), in) != vBatchIn.end())
       continue; /* already processed */
-    in.scriptSig << sigDummy << sigPub;
 #endif
     ret_tx.AddInput(in.prevout.hash, in.prevout.n);
     vIn.push_back(in);
     nTotCredit += wtx->vout[n].nValue;
 
-    fUpdate = true;
+    //fUpdate = true;
 
-    if (vIn.size() > 10) {
-      int64 nSigOp = ret_tx.GetLegacySigOpCount();
-      if (nSigOp > nMaxSigOp) {
-        break;
-      }
+    CTxIn inCopy(in);
+    inCopy.scriptSig << sigDummy << sigPub;
+    nSigOps += MAX(1, inCopy.scriptSig.GetSigOpCount(false));
+
+    if (nSigOps > nMaxSigOp) {
+fprintf(stderr, "DEBUG: CBatchTxCreator.Generate: nSigOp max reached (%d)\n", (int)nSigOps); 
+      break;
     }
 
     int64 nBytes = ::GetSerializeSize(ret_tx, SER_NETWORK, PROTOCOL_VERSION(iface) | SERIALIZE_TRANSACTION_NO_WITNESS);
-    nBytes += (146 * ret_tx.vin.size()) + 600;
+    nBytes += (146 * ret_tx.vin.size()) + 640;
     if (nBytes > nMaxTxSize) {
+fprintf(stderr, "DEBUG: CBatchTxCreator.Generate: nBytes max reached (%d)\n", (int)nBytes);
       break;
 }
 
@@ -610,12 +618,13 @@ bool CTxBatchCreator::CreateBatchTx()
     }
 
   }
-  if (!fUpdate)
-    return (false);
+
+//  if (!fUpdate) return (false);
  
   nTotDebit = MIN(nTotDebit, (nTotCredit - nFee)); /* sanity */
   nTotDebit = MIN(nTotDebit, (nOutValue - nBatchValue)); /* batch left */
   if (nTotDebit <= CENT + MIN_TX_FEE(iface)) {
+    strError = "Total debit is too small.";
     return (false);
   }
 
@@ -623,7 +632,10 @@ bool CTxBatchCreator::CreateBatchTx()
   ret_tx.AddOutput(scriptPub, nTotDebit);
 
   if (!ret_tx.Generate()) {
-    return (error(SHERR_INVAL, "CTxBatchCreator.Generate: error generating tx."));
+fprintf(stderr, "DEBUG: CTxBatchCreator: !Generate: nTotDebit(%f) nTotCredit(%f) nFee(%f)\n", (double)nTotDebit/COIN, (double)nTotCredit/COIN, (double)nFee/COIN);
+    if (strError == "")
+      strError = "error generating an underlying transaction.";
+    return (error(SHERR_INVAL, "CTxBatchCreator.CreateBatchTx: error generating transaction."));
   }
 
   /* mark inputs as processed */
@@ -709,4 +721,15 @@ bool CTxBatchCreator::Send()
   return (true);
 }
 
+
+void CTxBatchCreator::SetLimits()
+{
+  CIface *iface = GetCoinByIndex(pwallet->ifaceIndex);
+
+  nMaxTxSize = MAX_BLOCK_SIZE(iface) / 50;
+  nMaxSigOp = MAX_BLOCK_SIGOPS(iface) / 50;
+  nMaxFee = MIN(MAX_TX_FEE(iface) - CENT, 
+      (nMaxTxSize / 1024) * MIN_TX_FEE(iface));
+
+}
 

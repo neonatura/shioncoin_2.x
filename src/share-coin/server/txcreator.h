@@ -173,11 +173,7 @@ class CTxBatchCreator : public CTxCreator
     {
       SetNull();
 
-      CIface *iface = GetCoinByIndex(pwallet->ifaceIndex);
-      nMaxTxSize = MAX_BLOCK_SIZE(iface) / 20;
-      nMaxSigOp = MAX_BLOCK_SIGOPS(iface) / 20;
-      nMaxFee =
-        MIN(MAX_TX_FEE(iface) - CENT, (nMaxTxSize / 1024) * MIN_TX_FEE(iface));
+      SetLimits();
 
       nOutValue = nValue;
       scriptPub = scriptPubIn;
@@ -189,6 +185,8 @@ class CTxBatchCreator : public CTxCreator
       nBatchValue = 0;
       nOutValue = 0;
     }
+
+    void SetLimits();
 
     /** A list of the "batch transaction(s)" generated. */
     vector<CWalletTx>& GetTxList()

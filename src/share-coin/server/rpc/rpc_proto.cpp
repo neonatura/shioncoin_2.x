@@ -2745,7 +2745,10 @@ Value rpc_wallet_bsend(CIface *iface, const Array& params, bool fStratum)
   CTxBatchCreator b_tx(wallet, strAccount, scriptPub, nAmount); 
 
   if (!b_tx.Generate()) {
-    throw JSONRPCError(-6, "Error generating transaction(s).");
+    string strError = b_tx.GetError();
+    if (strError == "")
+      strError = "An unknown error occurred while generating the transactions.";
+    throw JSONRPCError(-6, strError);
   } 
 
   if (!b_tx.Send()) {
@@ -2760,12 +2763,15 @@ Value rpc_wallet_bsend(CIface *iface, const Array& params, bool fStratum)
   int64 nValueIn = 0;
   int64 nTxSize = 0;
   int nInputTotal = 0;
+  int64 nSigTotal = 0;
 
   vector<CWalletTx>& tx_list = b_tx.GetTxList();
 
   tx_cache inputs;
   BOOST_FOREACH(CWalletTx& wtx, tx_list) {
     nInputTotal += wtx.vin.size();
+    nSigTotal += wtx.GetLegacySigOpCount();
+
     wallet->FillInputs(wtx, inputs);
     nTxSize += wallet->GetVirtualTransactionSize(wtx);
   }
@@ -2773,11 +2779,9 @@ Value rpc_wallet_bsend(CIface *iface, const Array& params, bool fStratum)
     BOOST_FOREACH(const CTxIn& txin, wtx.vin) {
       CTxOut out;
       if (!wtx.GetOutputFor(txin, inputs, out)) {
-fprintf(stderr, "DEBUG: ERROR: rpc_wallet_bsend: unable to find input"); 
         continue;
-}
+      }
 
-fprintf(stderr, "DEBUG: rpc_wallet_bsend: nValueIn(%f) += out.nValue(%f)\n", (double)nValueIn/COIN, (double)out.nValue/COIN);
       nValueIn += out.nValue;
     }
   }
@@ -2801,6 +2805,7 @@ fprintf(stderr, "DEBUG: rpc_wallet_bsend: nValueIn(%f) += out.nValue(%f)\n", (do
   ret.push_back(Pair("input-value", ValueFromAmount(nValueIn)));
   ret.push_back(Pair("total-tx", (int)tx_list.size()));
   ret.push_back(Pair("total-inputs", (int)nInputTotal));
+  ret.push_back(Pair("total-sigops", (int)nSigTotal));
   ret.push_back(Pair("total-size", (int)nTxSize));
 
   Object ret_out;
