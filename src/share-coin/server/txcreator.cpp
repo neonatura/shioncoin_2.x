@@ -148,6 +148,7 @@ bool CTxCreator::AddOutput(const CTxDestination& address, int64 nValue, bool fIn
 }
 
 
+/* DEBUG: TODO: potentially prevent multiple outputs to same scriptPubKey */
 bool CTxCreator::AddOutput(CScript scriptPubKey, int64 nValue, bool fInsert)
 {
   CIface *iface = GetCoinByIndex(pwallet->ifaceIndex);
@@ -281,25 +282,39 @@ bool CTxCreator::Generate()
     wallet->AvailableCoins(vCoins);
   }
 
-  nFee = MIN_RELAY_TX_FEE(iface);
   set<pair<const CWalletTx*,unsigned int> > setCoinsCopy;
   int64 nTotCredit = nCredit;
-  while (nDebit + nFee > nTotCredit) {
-    setCoinsCopy.clear();
 
+  nFee = MIN_RELAY_TX_FEE(iface);
+  do {
     set<pair<const CWalletTx*,unsigned int> > setCoins;
     int64 nTotalValue = (nDebit + nFee - nTotCredit);
     int64 nValueIn = 0;
 
-    /* add inputs to use */
-/* todo: SetSelectMode(SELECT_AVG, SELECT_MINCONF).. */
-    ok = SelectCoins_Avg((nDebit + nFee), vCoins, setCoins, nValueIn);
-    if (!ok) {
-      strError = "Insufficient input coins to fund transaction.";
-      return (false);
+    setCoins.clear();
+    setCoinsCopy.clear();
+
+    if (nDebit + nFee > nTotCredit) { /* add inputs to use */
+      /* DEBUG: todo: SetSelectMode(SELECT_AVG, SELECT_MINCONF).. */
+      ok = SelectCoins_Avg((nDebit + nFee), vCoins, setCoins, nValueIn);
+      if (!ok) {
+        strError = "Insufficient input coins to fund transaction.";
+        return (false);
+      }
     }
 
     nValueIn = 0;
+
+    /* pre-set inputs */
+    BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setInput) {
+      CWalletTx *wtx = (CWalletTx *)coin.first;
+      unsigned int n = coin.second;
+
+      setCoinsCopy.insert(setCoinsCopy.end(), make_pair(wtx, n));
+      nValueIn += wtx->vout[n].nValue;
+    }
+
+    /* selectable inputs */
     BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setCoins) {
       CWalletTx *wtx = (CWalletTx *)coin.first;
       unsigned int n = coin.second;
@@ -327,10 +342,15 @@ bool CTxCreator::Generate()
 
     /* add inputs */
     int nCount = 0;
-    nTotCredit = nCredit;
+    nTotCredit = 0;
     BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setCoinsCopy) {
       CWalletTx *wtx = (CWalletTx *)coin.first;
       unsigned int n = coin.second;
+
+      if (!HaveInput(wtx, n)) {
+        if (nDebit + nFee <= nTotCredit)
+          continue;
+      }
 
       CTxIn in = CTxIn(coin.first->GetHash(), coin.second, 
           CScript(), std::numeric_limits<unsigned int>::max()-1);
@@ -339,8 +359,10 @@ bool CTxCreator::Generate()
 
       nCount++;
       nTotCredit += wtx->vout[n].nValue;
+#if 0
       if (nDebit + nFee <= nTotCredit)
         break;
+#endif
     }
     if (!nCount) {
       /* prevent an endless loop */
@@ -362,20 +384,22 @@ bool CTxCreator::Generate()
     }
 
     nFee = wallet->CalculateFee(t_wtx, nMinFee);
-  }
+  } while (nDebit + nFee > nTotCredit);
   if (!MoneyRange(iface, nFee)) {
     strError = "The calculated fee is out-of-range.";
     return (false);
   }
-
 
   /* parse inputs */
   BOOST_FOREACH(const PAIRTYPE(const CWalletTx*,unsigned int)& coin, setCoinsCopy) {
     CWalletTx *wtx = (CWalletTx *)coin.first;
     unsigned int n = coin.second;
 
+    if (HaveInput(wtx, n))
+      continue; /* was already included */
+
     if (!AddInput(wtx, n)) {
-      strError = "A wallet transaction is invalid.";
+      strError = "error adding an select input to the transaction.";
       return (false);
     }
   }
@@ -422,7 +446,6 @@ bool CTxCreator::Generate()
 
 /* DEBUG: GetSigOpCost() */
   int64 nSigTotal = GetLegacySigOpCount(); 
-fprintf(stderr, "DEBUG: nSigTotal = %d\n", (int)nSigTotal);
   if (nSigTotal > MAX_BLOCK_SIGOPS(iface)/5) {
     strError = "The number of transaction signature operations exceed the maximum complexity allowed.";
     return (false);
@@ -536,6 +559,7 @@ double CTxCreator::GetPriority(int64 nBytes)
   return (dPriority);
 }
 
+
 bool CTxBatchCreator::CreateBatchTx()
 {
   static const cbuff sigDummy(72, '\000');
@@ -584,7 +608,10 @@ bool CTxBatchCreator::CreateBatchTx()
     if (find(vBatchIn.begin(), vBatchIn.end(), in) != vBatchIn.end())
       continue; /* already processed */
 #endif
-    ret_tx.AddInput(in.prevout.hash, in.prevout.n);
+    if (!ret_tx.AddInput(in.prevout.hash, in.prevout.n)) {
+      error(SHERR_INVAL, " CTxBatchCreator.CreateBatchTx: error adding input [tx \"%s\" (#%d)].", in.prevout.hash.GetHex().c_str(), in.prevout.n);
+      continue;
+    }
     vIn.push_back(in);
     nTotCredit += wtx->vout[n].nValue;
 
@@ -595,20 +622,21 @@ bool CTxBatchCreator::CreateBatchTx()
     nSigOps += MAX(1, inCopy.scriptSig.GetSigOpCount(false));
 
     if (nSigOps > nMaxSigOp) {
-fprintf(stderr, "DEBUG: CBatchTxCreator.Generate: nSigOp max reached (%d)\n", (int)nSigOps); 
+//fprintf(stderr, "DEBUG: CBatchTxCreator.Generate: nSigOp max reached (%d)\n", (int)nSigOps); 
       break;
     }
 
     int64 nBytes = ::GetSerializeSize(ret_tx, SER_NETWORK, PROTOCOL_VERSION(iface) | SERIALIZE_TRANSACTION_NO_WITNESS);
     nBytes += (146 * ret_tx.vin.size()) + 640;
     if (nBytes > nMaxTxSize) {
-fprintf(stderr, "DEBUG: CBatchTxCreator.Generate: nBytes max reached (%d)\n", (int)nBytes);
+//fprintf(stderr, "DEBUG: CBatchTxCreator.Generate: nBytes max reached (%d)\n", (int)nBytes);
       break;
 }
 
     int64 nCurFee = ((nBytes / 1024) + 2) * MIN_TX_FEE(iface);
     nFee = (nFee + nCurFee) / 2;
     if (nFee > nMaxFee) {
+//fprintf(stderr, "DEBUG: CBatchTxCreator.Generate: nFee max reached (%f)\n", (double)nFee/COIN);
       break;
 }
 
@@ -621,10 +649,13 @@ fprintf(stderr, "DEBUG: CBatchTxCreator.Generate: nBytes max reached (%d)\n", (i
 
 //  if (!fUpdate) return (false);
  
-  nTotDebit = MIN(nTotDebit, (nTotCredit - nFee)); /* sanity */
-  nTotDebit = MIN(nTotDebit, (nOutValue - nBatchValue)); /* batch left */
+//Debug("CBatchTxCreator.CreateBatchTx: nTotDebit(%f) nTotCredit(%f) nFee(%f)\n", (double)nTotDebit/COIN, (double)nTotCredit/COIN, (double)nFee/COIN);
+  nTotDebit = MAX(0, /* sanity */
+      MIN(nTotDebit, (nTotCredit - nFee)));
+  nTotDebit = MAX(0, /* batch left */
+      MIN(nTotDebit, (nOutValue - nBatchValue))); 
   if (nTotDebit <= CENT + MIN_TX_FEE(iface)) {
-    strError = "Total debit is too small.";
+//strError = strprintf(_("Total debit (%-8.8f) is too small [credit %-8.8f] used to generate transaction."), (double)nTotDebit/COIN, (double)nTotCredit/COIN);
     return (false);
   }
 
@@ -632,7 +663,8 @@ fprintf(stderr, "DEBUG: CBatchTxCreator.Generate: nBytes max reached (%d)\n", (i
   ret_tx.AddOutput(scriptPub, nTotDebit);
 
   if (!ret_tx.Generate()) {
-fprintf(stderr, "DEBUG: CTxBatchCreator: !Generate: nTotDebit(%f) nTotCredit(%f) nFee(%f)\n", (double)nTotDebit/COIN, (double)nTotCredit/COIN, (double)nFee/COIN);
+//fprintf(stderr, "DEBUG: CTxBatchCreator: !Generate: nTotDebit(%f) nTotCredit(%f) nFee(%f)\n", (double)nTotDebit/COIN, (double)nTotCredit/COIN, (double)nFee/COIN);
+    strError = ret_tx.GetError();
     if (strError == "")
       strError = "error generating an underlying transaction.";
     return (error(SHERR_INVAL, "CTxBatchCreator.CreateBatchTx: error generating transaction."));

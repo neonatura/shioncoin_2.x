@@ -2856,15 +2856,12 @@ bool core_UnacceptWalletTransaction(CIface *iface, const CTransaction& tx)
   CTxMemPool *pool = GetTxMemPool(iface);
   CWallet *wallet = GetWallet(iface);
 
-  if (!pool->exists(tx_hash))
-    return (false); /* not in pool */
-
-  /* remove from pool. */
-//  pool->mapTx.erase(tx_hash);
-  pool->RemoveTx(tx_hash);
-
   /* remove from wallet */
   wallet->EraseFromWallet(tx_hash);
+
+  if (pool->exists(tx_hash)) {
+    pool->RemoveTx(tx_hash);
+  }
 
   /* cycle through inputs */
   BOOST_FOREACH(const CTxIn& in, tx.vin) {
@@ -2881,20 +2878,26 @@ bool core_UnacceptWalletTransaction(CIface *iface, const CTransaction& tx)
     if (!::GetTransaction(iface, prevhash, prevtx, NULL))
       continue; /* dito */
 
+    if (wallet->mapWallet.count(prevhash) == 0)
+      /* not being tracked by wallet. */
+      continue;
+
     if (!wallet->IsMine(prevtx)) {
 fprintf(stderr, "DEBUG: core_UnacceptWalletTransaction: abandoning tx '%s' -- not owner\n", prevhash.GetHex().c_str()); 
       continue; /* no longer owner */
 }
 
     CWalletTx wtx;
-    if (wallet->mapWallet.count(prevhash) != 0) {
-      wtx = wallet->mapWallet[prevhash];
-    } else {
-      wtx = CWalletTx(wallet, prevtx);
-    }
+
+    wtx = wallet->mapWallet[prevhash];
 
     /* mark output as unspent */
     vector<char> vfNewSpent = wtx.vfSpent;
+    if (in.prevout.n >= wtx.vout.size()) {
+      error(SHERR_INVAL, "core_UnacceptWalletTransaction: in.prevout.n (%d) >= wtx.vout.size(%d)", in.prevout.n, wtx.vout.size());
+      continue;    
+    }
+    vfNewSpent.resize(wtx.vout.size());
     vfNewSpent[in.prevout.n] = false;
     wtx.UpdateSpent(vfNewSpent);
     wtx.MarkDirty();
@@ -2915,14 +2918,20 @@ fprintf(stderr, "DEBUG: core_UnacceptWalletTransaction: abandoning tx '%s' -- no
     vector<uint256> vOuts;
 
     CTransaction prevTx;
-    if (!GetTransaction(iface, prev_hash, prevTx, NULL))
-      continue;
+    if (wallet->mapWallet.count(prev_hash) != 0) {
+      prevTx = (CTransaction)wallet->mapWallet[prev_hash];
+    } else if (!GetTransaction(iface, prev_hash, prevTx, NULL)) {
+      continue; /* not found */
+    }
 
     if (prevTx.ReadCoins(ifaceIndex, vOuts))
       continue;
 
     /* sanity */
     if (nTxOut >= vOuts.size())
+      continue;
+
+    if (vOuts[nTxOut].IsNull())
       continue;
 
     /* set output as unspent */
@@ -3230,10 +3239,11 @@ int64 CWallet::CalculateFee(CTransaction& tx, int64 nMinFee)
   }
   nFee = MAX(nFee, nMinFee);
 
+  int64 nEstFee = 0;
   CBlockPolicyEstimator *est = GetFeeEstimator(iface);
   if (est) {
     static const unsigned int confTarget = 2;
-    int64 nEstFee = est->estimateSmartFee(confTarget, NULL).GetFee(nBytes);
+    nEstFee = est->estimateSmartFee(confTarget, NULL).GetFee(nBytes);
     if (nEstFee > nFee) {
       nFee = nEstFee;
       Debug("CWallet.CalculateFee: using estimated fee %f.", (double)nFee/COIN);
@@ -3243,6 +3253,8 @@ int64 CWallet::CalculateFee(CTransaction& tx, int64 nMinFee)
   /* constraints */
   nFee = MAX(nFee, (int64)MIN_RELAY_TX_FEE(iface));
   nFee = MIN(nFee, (int64)MAX_TRANSACTION_FEE(iface) - 1);
+
+//fprintf(stderr, "DEBUG: CalculateFee: nBytes(%d) nFee(%f) nEstFee(%f) FeeRate(%f): %s\n", (int)nBytes, (double)nFee/COIN, (double)nEstFee/COIN, (double)GetFeeRate()/COIN, tx.ToString(ifaceIndex).c_str()); 
 
   return (nFee);
 }

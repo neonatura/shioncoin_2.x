@@ -177,7 +177,7 @@ static bool ServiceValidateEvent(int ifaceIndex)
   unsigned int nBestHeight = GetBestHeight(iface);
   unsigned int nStartHeight = wallet->nValidateHeight;
   unsigned int nHeight = wallet->nValidateHeight;
-  unsigned int nMaxHeight = nHeight + 640;
+  unsigned int nMaxHeight = nHeight + 128;
 
   if (nHeight <= nBestHeight) {
     for (; nHeight <= nBestHeight && nHeight < nMaxHeight; nHeight++) {
