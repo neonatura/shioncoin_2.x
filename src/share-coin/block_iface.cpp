@@ -365,7 +365,9 @@ fprintf(stderr, "DEBUG: processblock: still downloading blocks.. skipping submit
     return (BLKERR_INVALID_BLOCK);
   }
 
+  /* stats */
   STAT_BLOCK_SUBMITS(iface)++;
+  iface->net_valid = time(NULL);
 
   return (0);
 }
