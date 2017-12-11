@@ -2100,6 +2100,17 @@ bool EMC2Block::SetBestChain(CBlockIndex* pindexNew)
     timing_init("SetBestChain/locator", &ts);
     EMC2_SetBestChain(locator);
     timing_term(EMC2_COIN_IFACE, "SetBestChain/locator", &ts);
+
+#ifdef USE_LEVELDB_COINDB
+    {
+      EMC2TxDB txdb;
+      txdb.WriteHashBestChain(hash);
+      txdb.Close();
+    }
+#else
+    WriteHashBestChain(iface, hash);
+#endif
+
   }
 
   // New best block

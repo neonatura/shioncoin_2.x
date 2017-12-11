@@ -241,7 +241,6 @@ bool CTxCreator::Generate()
   CIface *iface = GetCoinByIndex(pwallet->ifaceIndex);
   CWallet *wallet = GetWallet(iface);
   int64 nFee;
-  int nBestHeight;
   bool ok;
     cbuff sigDummy(72, '\000');
     cbuff sigPub(64, '\000');
@@ -251,9 +250,15 @@ bool CTxCreator::Generate()
     return (false);
   }
 
-  /* mitigate sniping */
-  nBestHeight = GetBestHeight(iface);
-  nLockTime = nBestHeight - 60;
+  nLockTime = 0; /* default -- not set */
+  if (pwallet->ifaceIndex != USDE_COIN_IFACE) {
+    /* mitigate sniping */
+    int r_idx = shrand() % 60;
+    if (0 == (r_idx % 10)) {
+      nLockTime = GetBestHeight(iface) - 2 - r_idx;
+    }
+  }
+/* DEBUG: TODO CTxCreator.SetLockHeight() ... */
 
   /* establish "coin change" destination address */
   int ext_idx = IndexOfExtOutput(*this);
@@ -352,8 +357,7 @@ bool CTxCreator::Generate()
           continue;
       }
 
-      CTxIn in = CTxIn(coin.first->GetHash(), coin.second, 
-          CScript(), std::numeric_limits<unsigned int>::max()-1);
+      CTxIn in = CTxIn(coin.first->GetHash(), coin.second);
       in.scriptSig << sigDummy << sigPub;
       t_wtx.vin.push_back(in);
 
@@ -415,8 +419,12 @@ bool CTxCreator::Generate()
   /* add inputs to transaction */
   vin.clear();
   BOOST_FOREACH(const PAIRTYPE(CWalletTx *,unsigned int)& coin, setInput) {
-    vin.push_back(CTxIn(coin.first->GetHash(), coin.second, 
-          CScript(), std::numeric_limits<unsigned int>::max()-1));
+    if (nLockTime != 0) {
+      vin.push_back(CTxIn(coin.first->GetHash(), coin.second, 
+            CScript(), std::numeric_limits<unsigned int>::max()-1));
+    } else {
+      vin.push_back(CTxIn(coin.first->GetHash(), coin.second));
+    }
   }
 
   /* redundantly check before signing as signing takes the longest time */
@@ -593,9 +601,8 @@ bool CTxBatchCreator::CreateBatchTx()
     unsigned int n = coin.second;
 
     /* add input coin */
-    CTxIn in = CTxIn(coin.first->GetHash(), coin.second);
-    if (!ret_tx.AddInput(in.prevout.hash, in.prevout.n)) {
-      error(SHERR_INVAL, " CTxBatchCreator.CreateBatchTx: error adding input [tx \"%s\" (#%d)].", in.prevout.hash.GetHex().c_str(), in.prevout.n);
+    if (!ret_tx.AddInput(coin.first->GetHash(), coin.second)) {
+      error(SHERR_INVAL, " CTxBatchCreator.CreateBatchTx: error adding input [tx \"%s\" (#%d)].", coin.first->GetHash().GetHex().c_str(), (int)coin.second);
       continue;
     }
 

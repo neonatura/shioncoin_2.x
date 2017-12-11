@@ -219,10 +219,14 @@ static bool shc_LoadBlockIndex()
     vSortedByHeight.push_back(make_pair(pindex->nHeight, pindex));
   }
   sort(vSortedByHeight.begin(), vSortedByHeight.end());
+  CBlockIndex* pindex = NULL;
   BOOST_FOREACH(const PAIRTYPE(int, CBlockIndex*)& item, vSortedByHeight)
   {
-    CBlockIndex* pindex = item.second;
+    pindex = item.second;
     pindex->bnChainWork = (pindex->pprev ? pindex->pprev->bnChainWork : 0) + pindex->GetBlockWork();
+  }
+  if (pindex) {
+    Debug("shc_LoadBlockIndex: chain work calculated (%s) for %d blocks.", pindex->bnChainWork.ToString().c_str(), vSortedByHeight.size());
   }
 
   // Load SHCBlock::hashBestChain pointer to end of best chain
@@ -330,6 +334,8 @@ static bool shc_LoadBlockIndex()
     SHCTxDB txdb;
     block.SetBestChain(txdb, pindexFork);
     txdb.Close();
+#else
+    WriteHashBestChain(iface, pindexFork->GetBlockHash());
 #endif
 
     pindexBest = pindexFork;

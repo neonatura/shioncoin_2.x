@@ -745,7 +745,10 @@ void WriteHashBestChain(CIface *iface, uint256 hash)
   sprintf(buf, "%s", hash.GetHex().c_str());
   sprintf(opt_name, "shcoind.%s.chain", iface->name);
   shpref_set(opt_name, buf);
+
+  Debug("(%s) WriteHashBestChain: stored hash \"%s\".", iface->name, hash.GetHex().c_str());
 }
+
 bool ReadHashBestChain(CIface *iface, uint256& ret_hash)
 {
   char opt_name[256];

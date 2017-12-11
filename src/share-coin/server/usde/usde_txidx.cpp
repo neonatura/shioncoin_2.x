@@ -389,6 +389,8 @@ static bool usde_LoadBlockIndex()
     USDETxDB txdb;
     block.SetBestChain(txdb, pindexFork);
     txdb.Close();
+#else
+    WriteHashBestChain(iface, pindexFork->GetBlockHash());
 #endif
 
     pindexBest = pindexFork;

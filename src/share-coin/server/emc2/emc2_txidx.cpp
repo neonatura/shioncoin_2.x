@@ -533,6 +533,8 @@ static bool emc2_LoadBlockIndex()
     EMC2TxDB txdb;
     block.SetBestChain(txdb, pindexFork);
     txdb.Close();
+#else
+    WriteHashBestChain(iface, pindexFork->GetBlockHash());
 #endif
 
     pindexBest = pindexFork;

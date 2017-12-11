@@ -1900,6 +1900,16 @@ std::string CBlock::ToString()
   return (write_string(Value(ToValue()), false));
 }
 
+static inline string ToValue_date_format(time_t t)
+{
+  char buf[256];
+
+  memset(buf, 0, sizeof(buf));
+  strftime(buf, sizeof(buf)-1, "%x %T", localtime(&t));
+
+  return (string(buf));
+}
+
 Object CTransactionCore::ToValue(int ifaceIndex)
 {
   Object obj;
@@ -1908,9 +1918,15 @@ Object CTransactionCore::ToValue(int ifaceIndex)
         isFlag(CTransaction::TX_VERSION) ? 1 : 
         isFlag(CTransaction::TX_VERSION_2) ? 2 : 0));
   obj.push_back(Pair("flag", nFlag));
-  if (nLockTime)
-    obj.push_back(Pair("locktime", (boost::int64_t)nLockTime));
 
+  if (nLockTime != 0) {
+    if ((int64)nLockTime < (int64)LOCKTIME_THRESHOLD) {
+      obj.push_back(Pair("lock-height", (int)nLockTime));
+    } else {
+      obj.push_back(Pair("lock-time", (uint64_t)nLockTime));
+      obj.push_back(Pair("lock-stamp", ToValue_date_format((time_t)nLockTime)));
+    }
+  }
 
   return (obj);
 }
@@ -2025,16 +2041,6 @@ Object CTransaction::ToValue(CBlock *pblock)
   return (obj);
 }
 
-static inline string ToValue_date_format(time_t t)
-{
-  char buf[256];
-
-  memset(buf, 0, sizeof(buf));
-  strftime(buf, sizeof(buf)-1, "%x %T", localtime(&t));
-
-  return (string(buf));
-}
-
 Object CBlockHeader::ToValue()
 {
   CIface *iface = GetCoinByIndex(ifaceIndex);
@@ -2044,13 +2050,12 @@ Object CBlockHeader::ToValue()
 
   obj.push_back(Pair("blockhash", hash.GetHex()));
 //  obj.push_back(Pair("size", (int)::GetSerializeSize(*this, SER_NETWORK, PROTOCOL_VERSION(iface))));
-  obj.push_back(Pair("version", nVersion));
+  obj.push_back(Pair("version", (nVersion & VERSIONBITS_TOP_BITS)));
   obj.push_back(Pair("merkleroot", hashMerkleRoot.GetHex()));
   obj.push_back(Pair("time", (boost::int64_t)GetBlockTime()));
   obj.push_back(Pair("stamp", ToValue_date_format((time_t)GetBlockTime())));
   obj.push_back(Pair("nonce", (boost::uint64_t)nNonce));
   obj.push_back(Pair("bits", HexBits(nBits)));
-
 
   if (iface)
     obj.push_back(Pair("confirmations", GetBlockDepthInMainChain(iface, hash)));
@@ -2060,7 +2065,7 @@ Object CBlockHeader::ToValue()
     obj.push_back(Pair("height", pindex->nHeight));
     obj.push_back(Pair("difficulty", GetDifficulty(ifaceIndex, pindex)));
 
-    obj.push_back(Pair("chainwork", pindex->bnChainWork.GetHex()));
+    obj.push_back(Pair("chainwork", pindex->bnChainWork.ToString()));
 
     if (pindex->pprev)
       obj.push_back(Pair("previousblockhash", pindex->pprev->GetBlockHash().GetHex()));
@@ -2596,6 +2601,10 @@ VersionBitsCache *GetVersionBitsCache(CIface *iface)
   if (ifaceIndex < 0 || ifaceIndex >= MAX_COIN_IFACE) {
     return (NULL);
   }
+
+  /* special case */
+  if (ifaceIndex == USDE_COIN_IFACE)
+    return (NULL);
 
   return (&_version_bits_cache[ifaceIndex]);
 }

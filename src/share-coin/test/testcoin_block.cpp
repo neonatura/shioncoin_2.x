@@ -1803,6 +1803,29 @@ _TEST(txmempool_depend)
   _TRUE(pool->size() == 0);
 }
 
+/* simple test to ensure block index "bnChainWork" is larger for each new block committed to the block-chain. */
+_TEST(chainwork)
+{
+  CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
+  CBlockIndex *pindex[3];
+  int i;
+
+  for (i = 0; i < 3; i++) { 
+    CBlock *block = test_GenerateBlock();
+    _TRUEPTR(block);
+    _TRUE(ProcessBlock(NULL, block) == true);
+    delete block;
+
+    pindex[i] = GetBestBlockIndex(iface);
+  }
+
+  for (i = 0; i < 2; i++) {
+    _TRUE(pindex[i]->bnChainWork != 0);
+    _TRUE(pindex[i]->bnChainWork <= pindex[i+1]->bnChainWork);
+  }
+}
+
+
 #ifdef __cplusplus
 }
 #endif

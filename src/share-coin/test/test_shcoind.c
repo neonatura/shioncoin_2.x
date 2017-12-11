@@ -43,6 +43,7 @@ extern TEST_txmempool_pending(CuTest*);
 extern TEST_txmempool_inval(CuTest*);
 extern TEST_respend(CuTest*);
 extern TEST_txmempool_depend(CuTest*);
+extern TEST_chainwork(CuTest*);
 
 
 
@@ -100,6 +101,7 @@ int main(int argc, char *argv[])
 //  SUITE_ADD_TEST(suite, TEST_channeltx);
 //  SUITE_ADD_TEST(suite, TEST_offertx);
   SUITE_ADD_TEST(suite, TEST_scriptid);
+  SUITE_ADD_TEST(suite, TEST_chainwork);
 
   /* tx memory pool */
   SUITE_ADD_TEST(suite, TEST_txmempool_pending);
