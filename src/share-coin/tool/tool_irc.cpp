@@ -144,7 +144,7 @@ bool RecvLine(SOCKET hSocket, string& strLine)
           continue;
         if (nErr == WSAEWOULDBLOCK || nErr == WSAEINTR || nErr == WSAEINPROGRESS)
         {
-          Sleep(10);
+          //Sleep(10);
           continue;
         }
       }
@@ -219,7 +219,7 @@ bool Wait(int nSeconds)
     {
         if (fShutdown)
             return false;
-        Sleep(1000);
+        sleep(1);//Sleep(1000);
     }
     return true;
 }
@@ -370,7 +370,7 @@ void IRCDiscover(void)
     }
     return;
   }
-  Sleep(500);
+  sleep(1);//Sleep(500);
 
   // Get our external IP from the IRC server and re-nick before joining the channel
   CNetAddr addrFromIRC;

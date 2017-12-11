@@ -28,11 +28,11 @@
 
 
 
+#define DEFAULT_EXEC_LIFESPAN MAX_SHARE_SESSION_TIME
 
 class CExec : public CCert
 {
   public:
-    static const double DEFAULT_EXEC_LIFESPAN = MAX_SHARE_SESSION_TIME;
 
     CExec()
     {

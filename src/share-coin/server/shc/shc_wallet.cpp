@@ -545,7 +545,7 @@ bool SHCWallet::CommitTransaction(CWalletTx& wtxNew)
         coin.BindWallet(this);
         coin.MarkSpent(txin.prevout.n);
         coin.WriteToDisk();
-        NotifyTransactionChanged(this, coin.GetHash(), CT_UPDATED);
+        //NotifyTransactionChanged(this, coin.GetHash(), CT_UPDATED);
       }
 
       if (fFileBacked)

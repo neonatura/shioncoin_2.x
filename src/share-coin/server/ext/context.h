@@ -28,11 +28,11 @@
 
 
 
+#define DEFAULT_CONTEXT_LIFESPAN 63072000 /* two years */
 
 class CContext : public CCert
 {
   public:
-    static const double DEFAULT_CONTEXT_LIFESPAN = 63072000; /* two years */
 
     /**
      * The maximum size permitted of the context context payload.

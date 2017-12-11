@@ -55,6 +55,7 @@
 #include <boost/filesystem/fstream.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/assign/list_of.hpp>
+#include <boost/signals2.hpp>
 #include <list>
 
 #include "rpcnet.h"

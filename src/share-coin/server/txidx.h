@@ -1,11 +1,35 @@
-// Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2012 The Bitcoin developers
-// Copyright (c) 2011-2012 Litecoin Developers
-// Copyright (c) 2013 usde Developers
-// Distributed under the MIT/X11 software license, see the accompanying
-// file COPYING or http://www.opensource.org/licenses/mit-license.php.
-#ifndef BITCOIN_DB_H
-#define BITCOIN_DB_H
+
+/*
+ * @copyright
+ *
+ *  Copyright 2014 Neo Natura
+ *
+ *  This file is part of the Share Library.
+ *  (https://github.com/neonatura/share)
+ *        
+ *  The Share Library is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version. 
+ *
+ *  The Share Library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with The Share Library.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  @endcopyright
+ */  
+
+
+#ifndef __TXIDX_H__
+#define __TXIDX_H__
+
+
+#include <boost/filesystem.hpp>
+
 
 
 
@@ -26,14 +50,14 @@ bool BackupWallet(const CWallet& wallet, const std::string& strDest);
 
 class CDBEnv
 {
-private:
+  private:
     bool fDetachDB;
     bool fDbEnvInit;
     boost::filesystem::path pathEnv;
 
     void EnvShutdown();
 
-public:
+  public:
     mutable CCriticalSection cs_db;
     DbEnv dbenv;
     std::map<std::string, int> mapFileUseCount;
@@ -52,11 +76,11 @@ public:
 
     DbTxn *TxnBegin(int flags=DB_TXN_WRITE_NOSYNC)
     {
-        DbTxn* ptxn = NULL;
-        int ret = dbenv.txn_begin(NULL, &ptxn, flags);
-        if (!ptxn || ret != 0)
-            return NULL;
-        return ptxn;
+      DbTxn* ptxn = NULL;
+      int ret = dbenv.txn_begin(NULL, &ptxn, flags);
+      if (!ptxn || ret != 0)
+        return NULL;
+      return ptxn;
     }
 };
 
@@ -66,7 +90,7 @@ extern CDBEnv bitdb;
 /** RAII class that provides access to a Berkeley database */
 class CDB
 {
-protected:
+  protected:
     Db* pdb;
     std::string strFile;
     DbTxn *activeTxn;
@@ -74,18 +98,18 @@ protected:
 
     explicit CDB(const char* pszFile, const char* pszMode="r+");
     ~CDB() { Close(); }
-public:
+  public:
     void Close();
-private:
+  private:
     CDB(const CDB&);
     void operator=(const CDB&);
 
-protected:
+  protected:
     template<typename K, typename T>
-    bool Read(const K& key, T& value)
-    {
+      bool Read(const K& key, T& value)
+      {
         if (!pdb)
-            return false;
+          return false;
 
         // Key
         CDataStream ssKey(SER_DISK, CLIENT_VERSION);
@@ -99,30 +123,30 @@ protected:
         int ret = pdb->get(activeTxn, &datKey, &datValue, 0);
         memset(datKey.get_data(), 0, datKey.get_size());
         if (datValue.get_data() == NULL)
-            return false;
+          return false;
 
         // Unserialize value
         try {
-            CDataStream ssValue((char*)datValue.get_data(), (char*)datValue.get_data() + datValue.get_size(), SER_DISK, CLIENT_VERSION);
-            ssValue >> value;
+          CDataStream ssValue((char*)datValue.get_data(), (char*)datValue.get_data() + datValue.get_size(), SER_DISK, CLIENT_VERSION);
+          ssValue >> value;
         }
         catch (std::exception &e) {
-            return false;
+          return false;
         }
 
         // Clear and free memory
         memset(datValue.get_data(), 0, datValue.get_size());
         free(datValue.get_data());
         return (ret == 0);
-    }
+      }
 
     template<typename K, typename T>
-    bool Write(const K& key, const T& value, bool fOverwrite=true)
-    {
+      bool Write(const K& key, const T& value, bool fOverwrite=true)
+      {
         if (!pdb)
-            return false;
+          return false;
         if (fReadOnly)
-            assert(!"Write called on database in read-only mode");
+          assert(!"Write called on database in read-only mode");
 
         // Key
         CDataStream ssKey(SER_DISK, CLIENT_VERSION);
@@ -143,15 +167,15 @@ protected:
         memset(datKey.get_data(), 0, datKey.get_size());
         memset(datValue.get_data(), 0, datValue.get_size());
         return (ret == 0);
-    }
+      }
 
     template<typename K>
-    bool Erase(const K& key)
-    {
+      bool Erase(const K& key)
+      {
         if (!pdb)
-            return false;
+          return false;
         if (fReadOnly)
-            assert(!"Erase called on database in read-only mode");
+          assert(!"Erase called on database in read-only mode");
 
         // Key
         CDataStream ssKey(SER_DISK, CLIENT_VERSION);
@@ -165,13 +189,13 @@ protected:
         // Clear memory
         memset(datKey.get_data(), 0, datKey.get_size());
         return (ret == 0 || ret == DB_NOTFOUND);
-    }
+      }
 
     template<typename K>
-    bool Exists(const K& key)
-    {
+      bool Exists(const K& key)
+      {
         if (!pdb)
-            return false;
+          return false;
 
         // Key
         CDataStream ssKey(SER_DISK, CLIENT_VERSION);
@@ -185,108 +209,110 @@ protected:
         // Clear memory
         memset(datKey.get_data(), 0, datKey.get_size());
         return (ret == 0);
-    }
+      }
 
     Dbc* GetCursor()
     {
-        if (!pdb)
-            return NULL;
-        Dbc* pcursor = NULL;
-        int ret = pdb->cursor(NULL, &pcursor, 0);
-        if (ret != 0)
-            return NULL;
-        return pcursor;
+      if (!pdb)
+        return NULL;
+      Dbc* pcursor = NULL;
+      int ret = pdb->cursor(NULL, &pcursor, 0);
+      if (ret != 0)
+        return NULL;
+      return pcursor;
     }
 
     int ReadAtCursor(Dbc* pcursor, CDataStream& ssKey, CDataStream& ssValue, unsigned int fFlags=DB_NEXT)
     {
-        // Read at cursor
-        Dbt datKey;
-        if (fFlags == DB_SET || fFlags == DB_SET_RANGE || fFlags == DB_GET_BOTH || fFlags == DB_GET_BOTH_RANGE)
-        {
-            datKey.set_data(&ssKey[0]);
-            datKey.set_size(ssKey.size());
-        }
-        Dbt datValue;
-        if (fFlags == DB_GET_BOTH || fFlags == DB_GET_BOTH_RANGE)
-        {
-            datValue.set_data(&ssValue[0]);
-            datValue.set_size(ssValue.size());
-        }
-        datKey.set_flags(DB_DBT_MALLOC);
-        datValue.set_flags(DB_DBT_MALLOC);
-        int ret = pcursor->get(&datKey, &datValue, fFlags);
-        if (ret != 0)
-            return ret;
-        else if (datKey.get_data() == NULL || datValue.get_data() == NULL)
-            return 99999;
+      // Read at cursor
+      Dbt datKey;
+      if (fFlags == DB_SET || fFlags == DB_SET_RANGE || fFlags == DB_GET_BOTH || fFlags == DB_GET_BOTH_RANGE)
+      {
+        datKey.set_data(&ssKey[0]);
+        datKey.set_size(ssKey.size());
+      }
+      Dbt datValue;
+      if (fFlags == DB_GET_BOTH || fFlags == DB_GET_BOTH_RANGE)
+      {
+        datValue.set_data(&ssValue[0]);
+        datValue.set_size(ssValue.size());
+      }
+      datKey.set_flags(DB_DBT_MALLOC);
+      datValue.set_flags(DB_DBT_MALLOC);
+      int ret = pcursor->get(&datKey, &datValue, fFlags);
+      if (ret != 0)
+        return ret;
+      else if (datKey.get_data() == NULL || datValue.get_data() == NULL)
+        return 99999;
 
-        // Convert to streams
-        ssKey.SetType(SER_DISK);
-        ssKey.clear();
-        ssKey.write((char*)datKey.get_data(), datKey.get_size());
-        ssValue.SetType(SER_DISK);
-        ssValue.clear();
-        ssValue.write((char*)datValue.get_data(), datValue.get_size());
+      // Convert to streams
+      ssKey.SetType(SER_DISK);
+      ssKey.clear();
+      ssKey.write((char*)datKey.get_data(), datKey.get_size());
+      ssValue.SetType(SER_DISK);
+      ssValue.clear();
+      ssValue.write((char*)datValue.get_data(), datValue.get_size());
 
-        // Clear and free memory
-        memset(datKey.get_data(), 0, datKey.get_size());
-        memset(datValue.get_data(), 0, datValue.get_size());
-        free(datKey.get_data());
-        free(datValue.get_data());
-        return 0;
+      // Clear and free memory
+      memset(datKey.get_data(), 0, datKey.get_size());
+      memset(datValue.get_data(), 0, datValue.get_size());
+      free(datKey.get_data());
+      free(datValue.get_data());
+      return 0;
     }
 
-public:
+  public:
     bool TxnBegin()
     {
-        if (!pdb || activeTxn)
-            return false;
-        DbTxn* ptxn = bitdb.TxnBegin();
-        if (!ptxn)
-            return false;
-        activeTxn = ptxn;
-        return true;
+      if (!pdb || activeTxn)
+        return false;
+      DbTxn* ptxn = bitdb.TxnBegin();
+      if (!ptxn)
+        return false;
+      activeTxn = ptxn;
+      return true;
     }
 
     bool TxnCommit()
     {
-        if (!pdb || !activeTxn)
-            return false;
-        int ret = activeTxn->commit(0);
-        activeTxn = NULL;
-        return (ret == 0);
+      if (!pdb || !activeTxn)
+        return false;
+      int ret = activeTxn->commit(0);
+      activeTxn = NULL;
+      return (ret == 0);
     }
 
     bool TxnAbort()
     {
-        if (!pdb || !activeTxn)
-            return false;
-        int ret = activeTxn->abort();
-        activeTxn = NULL;
-        return (ret == 0);
+      if (!pdb || !activeTxn)
+        return false;
+      int ret = activeTxn->abort();
+      activeTxn = NULL;
+      return (ret == 0);
     }
 
     bool ReadVersion(int& nVersion)
     {
-        nVersion = 0;
-        return Read(std::string("version"), nVersion);
+      nVersion = 0;
+      return Read(std::string("version"), nVersion);
     }
 
     bool WriteVersion(int nVersion)
     {
-        return Write(std::string("version"), nVersion);
+      return Write(std::string("version"), nVersion);
     }
 
     bool static Rewrite(const std::string& strFile, const char* pszSkip = NULL);
 };
 
 
+#ifdef USE_LEVELDB_COINDB
+
+
 
 
 class CDiskBlockIndex;
 
-#ifdef USE_LEVELDB_COINDB
 /** Access to the transaction database (xxx_tx.dat) */
 class CTxDB : public CDB
 {
@@ -313,10 +339,10 @@ class CTxDB : public CDB
     bool ReadBestInvalidWork(CBigNum& bnBestInvalidWork);
     bool WriteBestInvalidWork(CBigNum bnBestInvalidWork);
 
-//    bool LoadBlockIndex(CIface *iface);
-//    bool InitBlockChainIndex(CIface *iface);
-//  private:
-//    bool LoadBlockIndexGuts(CIface *iface);
+    //    bool LoadBlockIndex(CIface *iface);
+    //    bool InitBlockChainIndex(CIface *iface);
+    //  private:
+    //    bool LoadBlockIndexGuts(CIface *iface);
 
 };
 #endif
@@ -330,4 +356,4 @@ bool ReadTxIndexSpent(CIface *iface, uint256 txOrigin, HashList& txSpent);
 
 
 
-#endif // BITCOIN_DB_H
+#endif // __TXIDX_H__

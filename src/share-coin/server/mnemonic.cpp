@@ -27,15 +27,12 @@
 #include <numeric>
 #include <iostream>
 #include <vector>
-#include <boost/algorithm/string/split.hpp>
-#include <boost/algorithm/string.hpp> 
-#include <boost/algorithm/string/classification.hpp>
-
 #include "shcoind.h"
 #include "block.h"
 #include "wallet.h"
 #include "mnemonic.h"
 
+#include <boost/algorithm/string.hpp>
 
 
 string common_words[1626] = { 

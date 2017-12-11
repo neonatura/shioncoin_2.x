@@ -60,7 +60,7 @@ extern CSemaphore *semOutbound;
 void ExitTimeout(void* parg)
 {
 #ifdef WIN32
-    Sleep(5000);
+    sleep(5);
     ExitProcess(0);
 #endif
 }
@@ -102,8 +102,8 @@ void Shutdown2(void)
         delete pwalletMain;
 #endif
         CreateThread(ExitTimeout, NULL);
-        Sleep(50);
-        printf("usde exited\n\n");
+        //Sleep(50);
+        sleep(1);
         fExit = true;
 #ifndef QT_GUI
         // ensure non UI client get's exited here, but let Bitcoin-Qt reach return 0; in bitcoin.cpp
@@ -113,8 +113,9 @@ void Shutdown2(void)
     else
     {
         while (!fExit)
-            Sleep(500);
-        Sleep(100);
+          sleep(1);
+//            Sleep(500);
+ //       Sleep(100);
         ExitThread(0);
     }
 }
@@ -796,7 +797,7 @@ bool AppInit2()
     // Loop until process is exit()ed from shutdown() function,
     // called from ThreadRPCServer thread when a "stop" command is received.
     while (1)
-        Sleep(5000);
+        sleep(5);//Sleep(5000);
 #endif
 
     return true;

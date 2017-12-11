@@ -234,7 +234,7 @@ bool RecvLine(SOCKET hSocket, string& strLine)
                     continue;
                 if (nErr == WSAEWOULDBLOCK || nErr == WSAEINTR || nErr == WSAEINPROGRESS)
                 {
-                    Sleep(10);
+                    //Sleep(10);
                     continue;
                 }
             }
@@ -2272,7 +2272,7 @@ bool StopNode()
             break;
         if (GetTime() - nStart > 20)
             break;
-        Sleep(20);
+        sleep(1);//Sleep(20);
     } while(true);
 #if 0
     if (vnThreadsRunning[THREAD_SOCKETHANDLER] > 0) fprintf(stderr, "ThreadSocketHandler still running\n");

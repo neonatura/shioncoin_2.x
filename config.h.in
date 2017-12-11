@@ -573,6 +573,9 @@
 /* Version number of package */
 #undef VERSION
 
+/* Define for the Windows operating system. */
+#undef WINDOWS
+
 /* Define for the AMD x86-64 architecture. */
 #undef X86_64
 

@@ -28,7 +28,7 @@
 
 #include "crypter.h"
 #include "sync.h"
-#include <boost/signals2/signal.hpp>
+#//include <boost/signals2/signal.hpp>
 #include "hdkey.h"
 
 class CScript;
@@ -219,10 +219,13 @@ public:
         }
     }
 
+#if 0
     /* Wallet status (encrypted, locked) changed.
      * Note: Called without locks held.
      */
     boost::signals2::signal<void (CCryptoKeyStore* wallet)> NotifyStatusChanged;
+#endif
+
 };
 
 #endif /* ndef __SERVER__KEYSTORE_H__ */

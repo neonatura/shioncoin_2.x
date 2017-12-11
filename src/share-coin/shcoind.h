@@ -82,13 +82,7 @@ extern shbuf_t *server_msg_buff;
 #include <db_cxx.h>
 
 typedef std::vector<unsigned char> cbuff;
-
 typedef std::vector<cbuff> cstack_t;
-
-#include <boost/version.hpp>
-#include <boost/foreach.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/filesystem/fstream.hpp>
 
 #include "server/shlib.h"
 #include "server/bignum.h"

@@ -355,15 +355,6 @@
     bool GetMergedAddress(string strAccount, const char *tag, CCoinAddr& addrRet);
     bool GetMergedPubKey(string strAccount, const char *tag, CPubKey& pubkey);
 
-    /** Address book entry changed.
-     * @note called with lock cs_wallet held.
-     */
-    boost::signals2::signal<void (CWallet *wallet, const CTxDestination &address, const std::string &label, bool isMine, ChangeType status)> NotifyAddressBookChanged;
-
-    /** Wallet transaction added, removed or updated.
-     * @note called with lock cs_wallet held.
-     */
-    boost::signals2::signal<void (CWallet *wallet, const uint256 &hashTx, ChangeType status)> NotifyTransactionChanged;
 
     bool GetWitnessAddress(CCoinAddr& addr, CCoinAddr& witAddr);
 
@@ -405,6 +396,16 @@
     /* 1k data cost */
     virtual int64 GetFeeRate() = 0;
 
+#if 0
+    /** Address book entry changed.
+     * @note called with lock cs_wallet held.
+     */
+    boost::signals2::signal<void (CWallet *wallet, const CTxDestination &address, const std::string &label, bool isMine, ChangeType status)> NotifyAddressBookChanged;
+    /** Wallet transaction added, removed or updated.
+     * @note called with lock cs_wallet held.
+     */
+    boost::signals2::signal<void (CWallet *wallet, const uint256 &hashTx, ChangeType status)> NotifyTransactionChanged;
+#endif
 };
 
 /** A key allocated from the key pool. */

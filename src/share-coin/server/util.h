@@ -1,9 +1,3 @@
-// Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2012 The Bitcoin developers
-// Copyright (c) 2011-2012 Litecoin Developers
-// Copyright (c) 2013 usde Developers
-// Distributed under the MIT/X11 software license, see the accompanying
-// file COPYING or http://www.opensource.org/licenses/mit-license.php.
 #ifndef BITCOIN_UTIL_H
 #define BITCOIN_UTIL_H
 
@@ -20,7 +14,6 @@ typedef int pid_t; /* define for windows compatiblity */
 #include <vector>
 #include <string>
 
-#include <boost/thread.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/path.hpp>
 #include <boost/date_time/gregorian/gregorian_types.hpp>
@@ -82,12 +75,6 @@ T* alignup(T* p)
 #define strlwr(psz)         to_lower(psz)
 #define _strlwr(psz)        to_lower(psz)
 #define MAX_PATH            1024
-inline void Sleep(int64 n)
-{
-    /*Boost has a year 2038 problem— if the request sleep time is past epoch+2^31 seconds the sleep returns instantly.
-      So we clamp our sleeps here to 10 years and hope that boost is fixed by 2028.*/
-    boost::thread::sleep(boost::get_system_time() + boost::posix_time::milliseconds(n>315576000000LL?315576000000LL:n));
-}
 #endif
 
 

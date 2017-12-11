@@ -9,8 +9,8 @@
 
 #include <string>
 #include "util.h" // for int64
-#include <boost/signals2/signal.hpp>
-#include <boost/signals2/last_value.hpp>
+#//include <boost/signals2/signal.hpp>
+//#include <boost/signals2/last_value.hpp>
 
 class CBasicKeyStore;
 class CWallet;
@@ -61,6 +61,7 @@ public:
         MODAL                 = 0x00040000
     };
 
+#if 0
     /** Show message box. */
     boost::signals2::signal<void (const std::string& message, const std::string& caption, int style)> ThreadSafeMessageBox;
 
@@ -90,6 +91,7 @@ public:
      * @note called with lock cs_mapAlerts held.
      */
     boost::signals2::signal<void (const uint256 &hash, ChangeType status)> NotifyAlertChanged;
+#endif
 };
 
 inline std::string _(const char* psz)

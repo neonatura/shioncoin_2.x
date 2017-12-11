@@ -34,6 +34,10 @@ case "$host_os" in
   opsys=linux
 AC_DEFINE([LINUX], 1, [Define for the Linux operating system.])
   ;;
+  msys*)
+  opsys=windows
+AC_DEFINE([WINDOWS], 1, [Define for the Windows operating system.])
+  ;;
   sunos4*)
   opsys=sunos4
 AC_DEFINE([SUNOS4], 1, [Define for the SunOS 4.x operating system.])
@@ -157,6 +161,7 @@ AM_CONDITIONAL([X86_64], [test x$arch = xx86_64])
 AM_CONDITIONAL([SUNOS4], [test x$opsys = xsunos4])
 AM_CONDITIONAL([SVR4], [test x$opsys = xsvr4])
 AM_CONDITIONAL([FREEBSD], [test x$opsys = xfreebsd])
+AM_CONDITIONAL([WINDOWS], [test x$opsys = xwindows])
 
 # Checks for programs.
 AC_PROG_CC
@@ -220,6 +225,10 @@ AC_CHECK_LIB([crypto], [BN_new])
 AC_CHECK_LIB([ssl], [SSL_version], ,
   AC_MSG_ERROR("libssl (crypt library) is required")
 )
+
+#AC_CHECK_LIB([boost_filesystem], [boost], ,
+#  AC_MSG_ERROR("libboost (runtime library) is required")
+#)
 
 AC_CHECK_LIB([share], [get_libshare_version])
 AC_ARG_WITH([libshare],

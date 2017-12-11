@@ -230,17 +230,20 @@ class CExtCore
 //      signature.SetNull();
     }
 
+    /** Obtain the expiration time in unix-seconds. */
     time_t GetExpireTime()
     {
       return (shutime(tExpire));
     }
 
+    /** Set's the expiration time. */
     void SetExpireTime(shtime_t tExpireIn)
     {
       tExpire = tExpireIn;
     }
 
-    void SetExpireTime(double sec)
+    /** Set's the expiration to the specified seconds into the future. */
+    void SetExpireSpan(double sec)
     {
       tExpire = shtime_adj(shtime(), sec);
     }

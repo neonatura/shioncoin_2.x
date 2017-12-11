@@ -391,7 +391,7 @@ bool VerifyContextTx(CIface *iface, CTransaction& tx, int& mode)
     return error(SHERR_INVAL, "insufficient funds in coin output");
 
   now = time(NULL);
-  if (ctx.GetExpireTime() > (now + CContext::DEFAULT_CONTEXT_LIFESPAN))
+  if (ctx.GetExpireTime() > (now + DEFAULT_CONTEXT_LIFESPAN))
     return error(SHERR_INVAL, "invalid expiration time");
 
   return (true);

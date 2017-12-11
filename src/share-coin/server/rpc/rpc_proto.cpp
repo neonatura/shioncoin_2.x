@@ -1751,7 +1751,7 @@ bool BackupWallet(const CWallet& wallet, const string& strDest)
         }
       }
     }
-    Sleep(100);
+//    Sleep(100);
   }
   return false;
 }
