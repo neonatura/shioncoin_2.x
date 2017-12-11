@@ -129,6 +129,7 @@ bool SHC_CTxMemPool::VerifyCoinStandards(CTransaction& tx, tx_cache& mapInputs)
       return (error(SHERR_INVAL, "(shc) "
             "CTxMemPool.VerifyCoinStandards: error evaluating signature. [SCRIPT_VERIFY_LOW_S]"));
     }
+    //Debug("(shc) CTxMemPool.VerifyCoinStandards: info: (BIP 66) verified DER signature <%d bytes>.", (int)tx.vin[i].scriptSig.size());
   }
   return (true);
 }

@@ -825,20 +825,14 @@ void stratum_task_weight(task_attr_t *attr)
 
     if (attr->ifaceIndex != idx) {
       /* primary - "how long we ago pool was mined" */
-      weight += MAX(0.01, MIN(900, (double)now - (double)attr->mine_stamp[idx]));
+      weight += MAX(0.01, MIN(900, (double)(now - attr->mine_stamp[idx])));
     }
 
     /* secondary - "how long was block accepted" */
-    weight += MAX(0.01, MIN(600, (double)now - (double)iface->net_valid));
+    weight += MAX(0.01, MIN(600, (double)(now - iface->net_valid)));
 
     /* trinary - "how difficult is next block" */
     weight += MAX(0.01, MIN(300, dDiff / 10));
-
-    /* block lapse */
-    if (iface->blockscan_max != 0) {
-      if (iface->blockscan_max > nHeight)
-        weight -= (double)iface->blockscan_max - (double)nHeight;
-    }
 
     /* calculate running average */
     weight = MAX(0.001, weight);

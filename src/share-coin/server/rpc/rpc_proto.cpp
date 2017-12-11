@@ -2751,14 +2751,12 @@ Value rpc_wallet_bsend(CIface *iface, const Array& params, bool fStratum)
     throw JSONRPCError(-6, strError);
   } 
 
-#if 0
   if (!b_tx.Send()) {
     string strError = b_tx.GetError();
     if (strError == "")
       strError = "An unknown error occurred while commiting the batch transaction operation.";
     throw JSONRPCError(-6, strError);
   }
-#endif
 
   int64 nValueOut = 0;
   int64 nChangeOut = 0;
