@@ -115,6 +115,7 @@ static void check_payout(int ifaceIndex)
   char block_hash[512];
   char category[64];
   char uname[256];
+  char buf[256];
   char *templ_json;
   double tot_shares;
   double weight;
@@ -154,6 +155,7 @@ static void check_payout(int ifaceIndex)
   memset(category, 0, sizeof(category));
   strncpy(category, shjson_astr(block, "category", "none"), sizeof(category) - 1);
   if (0 != strcmp(category, "generate")) {
+    shjson_free(&tree);
     return;
   }
 
@@ -202,6 +204,10 @@ static void check_payout(int ifaceIndex)
         /* regulate tx # */
         user->balance_avg[ifaceIndex] = 
           (user->balance_avg[ifaceIndex] + reward) / 2;
+
+        CIface *iface = GetCoinByIndex(ifaceIndex);
+        sprintf(buf, "check_payout: worker '%s' has pending balance of %-8.8f %s coins (+%-8.8f, avg %-4.4f).", user->worker, user->balance[ifaceIndex], iface->name, reward, user->balance_avg);
+        shcoind_log(buf);
       }
     }
 
@@ -242,7 +248,7 @@ static void commit_payout(int ifaceIndex, int block_height)
       continue;
 
     coin_val = floor(user->balance[ifaceIndex] * 1000) / 1000;
-    if (coin_val > (user->balance_avg[ifaceIndex] * 10)) {
+    if (coin_val > (user->balance_avg[ifaceIndex] * 8)) {
       break;
     }
   }
@@ -412,10 +418,11 @@ task_t *task_init(task_attr_t *attr)
         attr->mine_stamp[max_iface] = time(NULL);
       }
     }
-    reset_idx = max_iface;
 
+    reset_idx = 0;
     for (ifaceIndex = 1; ifaceIndex < MAX_COIN_IFACE; ifaceIndex++) {
       if (!iface || !iface->enabled) continue;
+
       if (attr->commit_stamp[ifaceIndex] != attr->blk_stamp[ifaceIndex]) {
         /* reward miners */
         check_payout(ifaceIndex);
@@ -424,6 +431,7 @@ task_t *task_init(task_attr_t *attr)
 
         /* assign */
         attr->commit_stamp[ifaceIndex] = attr->blk_stamp[ifaceIndex];
+        reset_idx = ifaceIndex;
       }
     }
   }
