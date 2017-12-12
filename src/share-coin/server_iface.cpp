@@ -24,6 +24,9 @@
  */
 
 #include <share.h>
+#include <sys/types.h>
+#include <ifaddrs.h>
+#include <net/if.h>
 #include "shcoind.h"
 #include "net.h"
 #include "init.h"
@@ -35,7 +38,7 @@
 #include "emc2/emc2_netmsg.h"
 #include "chain.h"
 
-#ifdef WIN32
+#ifdef WIN32_VC
 #include <string.h>
 #endif
 
@@ -78,7 +81,7 @@ static bool vfReachable[NET_MAX] = {};
 static bool vfLimited[NET_MAX] = {};
 //static CNode* pnodeLocalHost = NULL;
 uint64 nLocalHostNonce = 0;
-static std::vector<SOCKET> vhListenSocket;
+//static std::vector<unsigned int> vhListenSocket;
 
 extern int _shutdown_timer;
 
@@ -206,7 +209,7 @@ CAddress GetLocalAddress(const CNetAddr *paddrPeer)
     return (addr);
 }
 
-bool RecvLine(SOCKET hSocket, string& strLine)
+bool RecvLine(unsigned int hSocket, string& strLine)
 {
     strLine = "";
     loop
@@ -229,6 +232,7 @@ bool RecvLine(SOCKET hSocket, string& strLine)
                 return false;
             if (nBytes < 0)
             {
+#if 0
                 int nErr = WSAGetLastError();
                 if (nErr == WSAEMSGSIZE)
                     continue;
@@ -237,6 +241,9 @@ bool RecvLine(SOCKET hSocket, string& strLine)
                     //Sleep(10);
                     continue;
                 }
+#endif
+              if (errno == EMSGSIZE || errno == EINTR || errno == EINPROGRESS)
+                continue;
             }
             if (!strLine.empty())
                 return true;
@@ -249,8 +256,7 @@ bool RecvLine(SOCKET hSocket, string& strLine)
             else
             {
                 // socket error
-                int nErr = WSAGetLastError();
-                fprintf(stderr, "recv failed: %d\n", nErr);
+                fprintf(stderr, "recv failed: %d\n", errno);
                 return false;
             }
         }
@@ -374,7 +380,7 @@ bool IsReachable(const CNetAddr& addr)
 #if 0
 bool GetMyExternalIP2(const CService& addrConnect, const char* pszGet, const char* pszKeyword, CNetAddr& ipRet)
 {
-    SOCKET hSocket;
+    unsigned int hSocket;
     if (!ConnectSocket(addrConnect, hSocket))
         return error("GetMyExternalIP() : connection to %s failed", addrConnect.ToString().c_str());
 
@@ -551,7 +557,7 @@ CNode* FindNode(int ifaceIndex, const CService& addr)
     return NULL;
 }
 
-CNode* FindNode(int ifaceIndex, SOCKET sk)
+CNode* FindNode(int ifaceIndex, unsigned int sk)
 {
   NodeList &vNodes = GetNodeList(ifaceIndex);
 
@@ -582,7 +588,7 @@ CNode* ConnectNode(int ifaceIndex, CAddress addrConnect, const char *pszDest, in
     }
   }
 
-  SOCKET hSocket;
+  unsigned int hSocket;
   struct hostent *h;
   struct sockaddr_in in;
   bool ok = false;
@@ -2025,7 +2031,7 @@ void ThreadMessageHandler2(void* parg)
 
 
 
-
+#if 0
 
 
 bool BindListenPort(int ifaceIndex, const CService &addrBind, string& strError)
@@ -2033,7 +2039,7 @@ bool BindListenPort(int ifaceIndex, const CService &addrBind, string& strError)
     strError = "";
     int nOne = 1;
 
-#ifdef WIN32
+#ifdef WIN32_VC
     // Initialize Windows Sockets
     WSADATA wsadata;
     int ret = WSAStartup(MAKEWORD(2,2), &wsadata);
@@ -2059,10 +2065,10 @@ bool BindListenPort(int ifaceIndex, const CService &addrBind, string& strError)
         return false;
     }
 
-    SOCKET hListenSocket = socket(((struct sockaddr*)&sockaddr)->sa_family, SOCK_STREAM, IPPROTO_TCP);
+    unsigned int hListenSocket = socket(((struct sockaddr*)&sockaddr)->sa_family, SOCK_STREAM, IPPROTO_TCP);
     if (hListenSocket == INVALID_SOCKET)
     {
-        strError = strprintf("Error: Couldn't open socket for incoming connections (socket returned error %d)", WSAGetLastError());
+        strError = strprintf("Error: Couldn't open socket for incoming connections (socket returned error %d)", errno);
         fprintf(stderr, "%s\n", strError.c_str());
         return false;
     }
@@ -2079,14 +2085,14 @@ bool BindListenPort(int ifaceIndex, const CService &addrBind, string& strError)
 #endif
 
 
-#ifdef WIN32
+#ifdef WIN32_VC
     // Set to nonblocking, incoming connections will also inherit this
     if (ioctlsocket(hListenSocket, FIONBIO, (u_long*)&nOne) == SOCKET_ERROR)
 #else
     if (fcntl(hListenSocket, F_SETFL, O_NONBLOCK) == SOCKET_ERROR)
 #endif
     {
-        strError = strprintf("Error: Couldn't set properties on socket for incoming connections (error %d)", WSAGetLastError());
+        strError = strprintf("Error: Couldn't set properties on socket for incoming connections (error %d)", errno);
         fprintf(stderr, "%s\n", strError.c_str());
         return false;
     }
@@ -2098,7 +2104,7 @@ bool BindListenPort(int ifaceIndex, const CService &addrBind, string& strError)
 #ifdef IPV6_V6ONLY
         setsockopt(hListenSocket, IPPROTO_IPV6, IPV6_V6ONLY, (void*)&nOne, sizeof(int));
 #endif
-#ifdef WIN32
+#ifdef WIN32_VC
         int nProtLevel = 10 /* PROTECTION_LEVEL_UNRESTRICTED */;
         int nParameterId = 23 /* IPV6_PROTECTION_LEVEl */;
         // this call is allowed to fail
@@ -2109,11 +2115,12 @@ bool BindListenPort(int ifaceIndex, const CService &addrBind, string& strError)
 
     if (::bind(hListenSocket, (struct sockaddr*)&sockaddr, len) == SOCKET_ERROR)
     {
-        int nErr = WSAGetLastError();
-        if (nErr == WSAEADDRINUSE)
-            strError = strprintf(_("Unable to bind to %s on this computer. usde is probably already running."), addrBind.ToString().c_str());
-        else
+        int nErr = errno;
+        if (nErr == EADDRINUSE) {
+            strError = strprintf(_("Unable to bind to %s on this computer. probably already running."), addrBind.ToString().c_str());
+        } else {
             strError = strprintf(_("Unable to bind to %s on this computer (bind returned error %d, %s)"), addrBind.ToString().c_str(), nErr, strerror(nErr));
+        }
         fprintf(stderr, "%s\n", strError.c_str());
         return false;
     }
@@ -2122,7 +2129,7 @@ bool BindListenPort(int ifaceIndex, const CService &addrBind, string& strError)
     // Listen for incoming connections
     if (listen(hListenSocket, SOMAXCONN) == SOCKET_ERROR)
     {
-        strError = strprintf("Error: Listening for incoming connections failed (listen returned error %d)", WSAGetLastError());
+        strError = strprintf("Error: Listening for incoming connections failed (listen returned error %d)", errno);
         fprintf(stderr, "%s\n", strError.c_str());
         return false;
     }
@@ -2135,13 +2142,42 @@ bool BindListenPort(int ifaceIndex, const CService &addrBind, string& strError)
     return true;
 }
 
+
+bool static Bind(int ifaceIndex, const CService &addr, bool fError = true) {
+    if (IsLimited(addr))
+        return false;
+    std::string strError;
+    if (!BindListenPort(ifaceIndex, addr, strError)) {
+        return false;
+    }
+    return true;
+}
+
+void BindServer(int ifaceIndex)
+{
+  CIface *iface = GetCoinByIndex(ifaceIndex);
+  struct in_addr inaddr_any;
+  inaddr_any.s_addr = INADDR_ANY;
+  bool fBound = false;
+
+#ifdef USE_IPV6
+  if (!IsLimited(NET_IPV6))
+    fBound |= Bind(ifaceIndex, CService(in6addr_any, GetListenPort(iface)), false);
+#endif
+  if (!IsLimited(NET_IPV4))
+    fBound |= Bind(ifaceIndex, CService(inaddr_any, GetListenPort(iface)), !fBound);
+
+  fprintf(stderr, "Coin server has been started.\n");
+}
+#endif
+
 void static Discover()
 {
 int idx;
     if (!fDiscover)
         return;
 
-#ifdef WIN32
+#ifdef WIN32_VC
     // Get local host ip
     char pszHostName[1000] = "";
     if (gethostname(pszHostName, sizeof(pszHostName)) != SOCKET_ERROR)
@@ -2196,34 +2232,6 @@ for (idx = 0; idx < MAX_COIN_IFACE; idx++)
 
 //  GetMyExternalIP(); 
 }
-
-bool static Bind(int ifaceIndex, const CService &addr, bool fError = true) {
-    if (IsLimited(addr))
-        return false;
-    std::string strError;
-    if (!BindListenPort(ifaceIndex, addr, strError)) {
-        return false;
-    }
-    return true;
-}
-
-void BindServer(int ifaceIndex)
-{
-  CIface *iface = GetCoinByIndex(ifaceIndex);
-  struct in_addr inaddr_any;
-  inaddr_any.s_addr = INADDR_ANY;
-  bool fBound = false;
-
-#ifdef USE_IPV6
-  if (!IsLimited(NET_IPV6))
-    fBound |= Bind(ifaceIndex, CService(in6addr_any, GetListenPort(iface)), false);
-#endif
-  if (!IsLimited(NET_IPV4))
-    fBound |= Bind(ifaceIndex, CService(inaddr_any, GetListenPort(iface)), !fBound);
-
-  fprintf(stderr, "Coin server has been started.\n");
-}
-
 
 extern void RPC_Init(void);
 static void StartRPCServer(void)
@@ -2315,12 +2323,12 @@ public:
         BOOST_FOREACH(CNode* pnode, vNodes)
             if (pnode->hSocket != INVALID_SOCKET)
                 closesocket(pnode->hSocket);
-        BOOST_FOREACH(SOCKET hListenSocket, vhListenSocket)
+        BOOST_FOREACH(unsigned int hListenSocket, vhListenSocket)
             if (hListenSocket != INVALID_SOCKET)
                 if (closesocket(hListenSocket) == SOCKET_ERROR)
                     fprintf(stderr, "closesocket(hListenSocket) failed with error %d\n", WSAGetLastError());
 
-#ifdef WIN32
+#ifdef WIN32_VC
         // Shutdown Windows Sockets
         WSACleanup();
 #endif

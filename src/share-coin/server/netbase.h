@@ -166,8 +166,8 @@ bool LookupHostNumeric(const char *pszName, std::vector<CNetAddr>& vIP, unsigned
 bool Lookup(const char *pszName, CService& addr, int portDefault = 0, bool fAllowLookup = true);
 bool Lookup(const char *pszName, std::vector<CService>& vAddr, int portDefault = 0, bool fAllowLookup = true, unsigned int nMaxSolutions = 0);
 bool LookupNumeric(const char *pszName, CService& addr, int portDefault = 0);
-bool ConnectSocket(const CService &addr, SOCKET& hSocketRet, int nTimeout = nConnectTimeout);
-bool ConnectSocketByName(CService &addr, SOCKET& hSocketRet, const char *pszDest, int portDefault = 0, int nTimeout = nConnectTimeout);
+bool ConnectSocket(const CService &addr, unsigned int& hSocketRet, int nTimeout = nConnectTimeout);
+bool ConnectSocketByName(CService &addr, unsigned int& hSocketRet, const char *pszDest, int portDefault = 0, int nTimeout = nConnectTimeout);
 
 void AddPeerAddress(CIface *iface, const char *hostname, int port);
 

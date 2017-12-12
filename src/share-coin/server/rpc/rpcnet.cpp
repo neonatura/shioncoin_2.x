@@ -23,6 +23,7 @@
  *  @endcopyright
  */  
 
+#include <sys/select.h>
 #undef GNULIB_NAMESPACE
 #include "shcoind.h"
 #include "main.h"

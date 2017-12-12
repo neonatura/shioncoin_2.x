@@ -26,6 +26,7 @@
 #ifndef __SERVER__TXEXT_H__
 #define __SERVER__TXEXT_H__
 
+#include "shcoind.h"
 #include "base58.h"
 #include <vector>
 #include "json/json_spirit_reader_template.h"

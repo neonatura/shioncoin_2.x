@@ -28,12 +28,12 @@
 #define UNET_CONNECT_TIMEOUT 3
 
 /* ipv4 */
-int unet_connect(int mode, struct sockaddr *net_addr, SOCKET *sk_p)
+int unet_connect(int mode, struct sockaddr *net_addr, unsigned int *sk_p)
 {
   unet_bind_t *bind;
   shtime_t ts;
   char buf[256];
-  SOCKET cli_fd;
+  unsigned int cli_fd;
   int err;
 
   cli_fd = shnet_sk();

@@ -27,7 +27,7 @@
 
 #define MAX_SOCKET_BUFFER_SIZE 40960000 /* 40meg */
 
-int unet_close(SOCKET sk, char *tag)
+int unet_close(unsigned int sk, char *tag)
 {
   unet_table_t *table;
   unet_bind_t *bind;
@@ -89,7 +89,7 @@ void unet_close_idle(void)
   shtime_t idle_t;
   shtime_t now;
   char buf[256];
-  SOCKET sk;
+  unsigned int sk;
 
   now = shtime();
   conn_idle_t = shtime_adj(now, -60);

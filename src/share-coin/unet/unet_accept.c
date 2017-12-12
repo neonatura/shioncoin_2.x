@@ -28,7 +28,7 @@
 #if 0
 static unet_table_t _unet_table[MAX_UNET_SOCKETS];
 
-unet_table_t *get_unet_table(SOCKET sk)
+unet_table_t *get_unet_table(unsigned int sk)
 {
 
   if (sk <= 0 || sk >= MAX_UNET_SOCKETS)
@@ -38,7 +38,7 @@ unet_table_t *get_unet_table(SOCKET sk)
 }
 #endif
 
-unet_table_t *get_unet_table(SOCKET sk)
+unet_table_t *get_unet_table(unsigned int sk)
 {
   return (descriptor_get(sk));
 }
@@ -73,7 +73,7 @@ int unet_local_verify_fd(int fd)
   return (unet_local_verify((char *)unet_hostname(&addr)));
 }
 
-int unet_accept(int mode, SOCKET *sk_p)
+int unet_accept(int mode, unsigned int *sk_p)
 {
   unet_bind_t *bind;
   struct sockaddr_in *addr;

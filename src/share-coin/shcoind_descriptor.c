@@ -84,8 +84,9 @@ const char *descriptor_print(int fd)
   char tbuf1[256];
   char tbuf2[256];
 
+
   if (fd >= MAX_DESCRIPTORS)
-    return; 
+    return (NULL); 
 
   d = (_descriptor_table + fd);
   memset(ret_buf, 0, sizeof(ret_buf));
@@ -176,7 +177,7 @@ desc_t *descriptor_mark(int fd)
   char errbuf[256];
 
   if (fd >= MAX_DESCRIPTORS)
-    return; 
+    return (NULL); 
 
   if (!_descriptor_table) /* init */
     _descriptor_table = (desc_t *)calloc(MAX_DESCRIPTORS, sizeof(desc_t));
@@ -187,7 +188,7 @@ desc_t *descriptor_mark(int fd)
     sprintf(errbuf, "descriptor_claim: warning: "
         "un-used descriptor %d accessed.", fd);
     shcoind_log(errbuf);
-    return;
+    return (NULL);
   }
 
   d->total++;
@@ -284,7 +285,7 @@ desc_t *descriptor_get(int fd)
   desc_t *d;
 
   if (fd >= MAX_UNET_SOCKETS)
-    return; 
+    return (NULL); 
 
   d = (_descriptor_table + fd);
   if (!d->flag)
@@ -346,7 +347,7 @@ shbuf_t *descriptor_rbuff(int fd)
   char errbuf[256];
 
   if (fd >= MAX_UNET_SOCKETS)
-    return; 
+    return (NULL); 
 
   d = (_descriptor_table + fd);
   if (!d->flag) {
@@ -367,7 +368,7 @@ shbuf_t *descriptor_wbuff(int fd)
   char errbuf[256];
 
   if (fd >= MAX_UNET_SOCKETS)
-    return; 
+    return (NULL); 
 
   d = (_descriptor_table + fd);
   if (!d->flag) {

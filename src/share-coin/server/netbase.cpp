@@ -40,6 +40,8 @@
 
 using namespace std;
 
+#define WSAGetLastError() errno
+
 // Settings
 typedef std::pair<CService, int> proxyType;
 static proxyType proxyInfo[NET_MAX];
@@ -96,7 +98,7 @@ bool static LookupIntern(const char *pszName, std::vector<CNetAddr>& vIP, unsign
 
     aiHint.ai_socktype = SOCK_STREAM;
     aiHint.ai_protocol = IPPROTO_TCP;
-#ifdef WIN32
+#ifdef WIN32_VC
 #  ifdef USE_IPV6
     aiHint.ai_family = AF_UNSPEC;
 #  else
@@ -195,7 +197,7 @@ bool LookupNumeric(const char *pszName, CService& addr, int portDefault)
     return Lookup(pszName, addr, portDefault, false);
 }
 
-bool static Socks4(const CService &addrDest, SOCKET& hSocket)
+bool static Socks4(const CService &addrDest, unsigned int& hSocket)
 {
     printf("SOCKS4 connecting %s\n", addrDest.ToString().c_str());
     if (!addrDest.IsIPv4())
@@ -239,7 +241,7 @@ bool static Socks4(const CService &addrDest, SOCKET& hSocket)
     return true;
 }
 
-bool static Socks5(string strDest, int port, SOCKET& hSocket)
+bool static Socks5(string strDest, int port, unsigned int& hSocket)
 {
     printf("SOCKS5 connecting %s\n", strDest.c_str());
     if (strDest.size() > 255)
@@ -342,7 +344,7 @@ bool static Socks5(string strDest, int port, SOCKET& hSocket)
     return true;
 }
 
-bool static ConnectSocketDirectly(const CService &addrConnect, SOCKET& hSocketRet, int nTimeout)
+bool static ConnectSocketDirectly(const CService &addrConnect, unsigned int& hSocketRet, int nTimeout)
 {
     hSocketRet = INVALID_SOCKET;
 
@@ -357,7 +359,7 @@ bool static ConnectSocketDirectly(const CService &addrConnect, SOCKET& hSocketRe
         return false;
     }
 
-    SOCKET hSocket = socket(((struct sockaddr*)&sockaddr)->sa_family, SOCK_STREAM, IPPROTO_TCP);
+    unsigned int hSocket = socket(((struct sockaddr*)&sockaddr)->sa_family, SOCK_STREAM, IPPROTO_TCP);
     if (hSocket == INVALID_SOCKET)
         return false;
 #ifdef SO_NOSIGPIPE
@@ -365,7 +367,7 @@ bool static ConnectSocketDirectly(const CService &addrConnect, SOCKET& hSocketRe
     setsockopt(hSocket, SOL_SOCKET, SO_NOSIGPIPE, (void*)&set, sizeof(int));
 #endif
 
-#ifdef WIN32
+#ifdef WIN32_VC
     u_long fNonblock = 1;
     if (ioctlsocket(hSocket, FIONBIO, &fNonblock) == SOCKET_ERROR)
 #else
@@ -380,7 +382,11 @@ bool static ConnectSocketDirectly(const CService &addrConnect, SOCKET& hSocketRe
     if (connect(hSocket, (struct sockaddr*)&sockaddr, len) == SOCKET_ERROR)
     {
         // WSAEINVAL is here because some legacy version of winsock uses it
+#if 0
         if (WSAGetLastError() == WSAEINPROGRESS || WSAGetLastError() == WSAEWOULDBLOCK || WSAGetLastError() == WSAEINVAL)
+#else
+        if (errno == EINPROGRESS || errno == EAGAIN || errno == EINVAL)
+#endif
         {
             struct timeval timeout;
             timeout.tv_sec  = nTimeout / 1000;
@@ -403,7 +409,7 @@ bool static ConnectSocketDirectly(const CService &addrConnect, SOCKET& hSocketRe
                 return false;
             }
             socklen_t nRetSize = sizeof(nRet);
-#ifdef WIN32
+#ifdef WIN32_VC
             if (getsockopt(hSocket, SOL_SOCKET, SO_ERROR, (char*)(&nRet), &nRetSize) == SOCKET_ERROR)
 #else
             if (getsockopt(hSocket, SOL_SOCKET, SO_ERROR, &nRet, &nRetSize) == SOCKET_ERROR)
@@ -420,7 +426,7 @@ bool static ConnectSocketDirectly(const CService &addrConnect, SOCKET& hSocketRe
                 return false;
             }
         }
-#ifdef WIN32
+#ifdef WIN32_VC
         else if (WSAGetLastError() != WSAEISCONN)
 #else
         else
@@ -435,7 +441,7 @@ bool static ConnectSocketDirectly(const CService &addrConnect, SOCKET& hSocketRe
     // this isn't even strictly necessary
     // CNode::ConnectNode immediately turns the socket back to non-blocking
     // but we'll turn it back to blocking just in case
-#ifdef WIN32
+#ifdef WIN32_VC
     fNonblock = 0;
     if (ioctlsocket(hSocket, FIONBIO, &fNonblock) == SOCKET_ERROR)
 #else
@@ -490,7 +496,7 @@ bool IsProxy(const CNetAddr &addr) {
     return false;
 }
 
-bool ConnectSocket(const CService &addrDest, SOCKET& hSocketRet, int nTimeout)
+bool ConnectSocket(const CService &addrDest, unsigned int& hSocketRet, int nTimeout)
 {
     const proxyType &proxy = proxyInfo[addrDest.GetNetwork()];
 
@@ -498,7 +504,7 @@ bool ConnectSocket(const CService &addrDest, SOCKET& hSocketRet, int nTimeout)
     if (!proxy.second)
         return ConnectSocketDirectly(addrDest, hSocketRet, nTimeout);
 
-    SOCKET hSocket = INVALID_SOCKET;
+    unsigned int hSocket = INVALID_SOCKET;
 
     // first connect to proxy server
     if (!ConnectSocketDirectly(proxy.first, hSocket, nTimeout))
@@ -522,13 +528,13 @@ bool ConnectSocket(const CService &addrDest, SOCKET& hSocketRet, int nTimeout)
     return true;
 }
 
-bool ConnectSocketByName(CService &addr, SOCKET& hSocketRet, const char *pszDest, int portDefault, int nTimeout)
+bool ConnectSocketByName(CService &addr, unsigned int& hSocketRet, const char *pszDest, int portDefault, int nTimeout)
 {
     string strDest;
     int port = portDefault;
     SplitHostPort(string(pszDest), port, strDest);
 
-    SOCKET hSocket = INVALID_SOCKET;
+    unsigned int hSocket = INVALID_SOCKET;
     CService addrResolved(CNetAddr(strDest, fNameLookup && !nameproxyInfo.second), port);
     if (addrResolved.IsValid()) {
         addr = addrResolved;

@@ -100,7 +100,7 @@ bool DecodeAddress(string str, CService& addr)
 
 
 
-static bool Send(SOCKET hSocket, const char* pszSend)
+static bool Send(unsigned int hSocket, const char* pszSend)
 {
     if (strstr(pszSend, "PONG") != pszSend)
         printf("IRC SENDING: %s\n", pszSend);
@@ -116,7 +116,7 @@ static bool Send(SOCKET hSocket, const char* pszSend)
     return true;
 }
 
-bool RecvLine(SOCKET hSocket, string& strLine)
+bool RecvLine(unsigned int hSocket, string& strLine)
 {
   strLine = "";
   loop
@@ -139,14 +139,9 @@ bool RecvLine(SOCKET hSocket, string& strLine)
         return false;
       if (nBytes < 0)
       {
-        int nErr = WSAGetLastError();
-        if (nErr == WSAEMSGSIZE)
+        int nErr = errno;
+        if (nErr == EMSGSIZE || nErr == EINTR || nErr == EINPROGRESS || nErr == EMSGSIZE || nErr == EAGAIN)
           continue;
-        if (nErr == WSAEWOULDBLOCK || nErr == WSAEINTR || nErr == WSAEINPROGRESS)
-        {
-          //Sleep(10);
-          continue;
-        }
       }
       if (!strLine.empty())
         return true;
@@ -159,7 +154,7 @@ bool RecvLine(SOCKET hSocket, string& strLine)
       else
       {
         // socket error
-        int nErr = WSAGetLastError();
+        int nErr = errno;
         printf("recv failed: %d\n", nErr);
         return false;
       }
@@ -167,7 +162,7 @@ bool RecvLine(SOCKET hSocket, string& strLine)
   }
 }
 
-bool RecvLineIRC(SOCKET hSocket, string& strLine)
+bool RecvLineIRC(unsigned int hSocket, string& strLine)
 {
     loop
     {
@@ -190,7 +185,7 @@ bool RecvLineIRC(SOCKET hSocket, string& strLine)
     }
 }
 
-int RecvUntil(SOCKET hSocket, const char* psz1, const char* psz2=NULL, const char* psz3=NULL, const char* psz4=NULL)
+int RecvUntil(unsigned int hSocket, const char* psz1, const char* psz2=NULL, const char* psz3=NULL, const char* psz4=NULL)
 {
     loop
     {
@@ -224,7 +219,7 @@ bool Wait(int nSeconds)
     return true;
 }
 
-bool RecvCodeLine(SOCKET hSocket, const char* psz1, string& strRet)
+bool RecvCodeLine(unsigned int hSocket, const char* psz1, string& strRet)
 {
     strRet.clear();
     loop
@@ -247,7 +242,7 @@ bool RecvCodeLine(SOCKET hSocket, const char* psz1, string& strRet)
     }
 }
 
-bool GetIPFromIRC(SOCKET hSocket, string strMyName, CNetAddr& ipRet)
+bool GetIPFromIRC(unsigned int hSocket, string strMyName, CNetAddr& ipRet)
 {
     Send(hSocket, strprintf("USERHOST %s\r", strMyName.c_str()).c_str());
 
@@ -330,7 +325,7 @@ void IRCDiscover(void)
 
   CService addrConnect("irc.lfnet.org", 6667, true);
 
-  SOCKET hSocket;
+  unsigned int hSocket;
   if (!ConnectSocket(addrConnect, hSocket))
   {
     addrConnect = CService("pelican.heliacal.net", 6667, true);

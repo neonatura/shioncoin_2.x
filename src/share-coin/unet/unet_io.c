@@ -26,7 +26,7 @@
 #include "shcoind.h"
 
 #if 0
-int unet_read(SOCKET sk, char *data, size_t *data_len_p)
+int unet_read(unsigned int sk, char *data, size_t *data_len_p)
 {
   unet_table_t *t;
   size_t r_len;
@@ -64,7 +64,7 @@ int unet_read(SOCKET sk, char *data, size_t *data_len_p)
 }
 #endif
 
-int unet_write(SOCKET sk, char *data, size_t data_len)
+int unet_write(unsigned int sk, char *data, size_t data_len)
 {
   unet_table_t *t;
 

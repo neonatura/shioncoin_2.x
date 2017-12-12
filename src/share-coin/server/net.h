@@ -59,7 +59,7 @@ inline unsigned int ReceiveBufferSize() { return 1000*GetArg("-maxreceivebuffer"
 inline unsigned int SendBufferSize() { return 1000*GetArg("-maxsendbuffer", 1*1000); }
 
 void AddOneShot(std::string strDest);
-bool RecvLine(SOCKET hSocket, std::string& strLine);
+bool RecvLine(unsigned int hSocket, std::string& strLine);
 bool GetMyExternalIP(CNetAddr& ipRet);
 void AddressCurrentlyConnected(const CService& addr);
 void MapPort();
@@ -308,7 +308,7 @@ class CNode
 public:
     // socket
     uint64 nServices;
-    SOCKET hSocket;
+    unsigned int hSocket;
     CDataStream vSend;
     CDataStream vRecv;
     CCriticalSection cs_vSend;
@@ -369,7 +369,7 @@ public:
     CCriticalSection cs_filter;
     CBloomFilter *pfilter;
 
-    CNode(int ifaceIndexIn, SOCKET hSocketIn, CAddress addrIn, std::string addrNameIn = "", bool fInboundIn=false) : vSend(SER_NETWORK, MIN_PROTO_VERSION), vRecv(SER_NETWORK, MIN_PROTO_VERSION)
+    CNode(int ifaceIndexIn, unsigned int hSocketIn, CAddress addrIn, std::string addrNameIn = "", bool fInboundIn=false) : vSend(SER_NETWORK, MIN_PROTO_VERSION), vRecv(SER_NETWORK, MIN_PROTO_VERSION)
     {
         ifaceIndex = ifaceIndexIn;
         nServices = 0;
@@ -518,7 +518,7 @@ public:
         // the key is the earliest time the request can be sent
         int64& nRequestTime = mapAlreadyAskedFor[inv];
         if (fDebugNet)
-            printf("askfor %s   %"PRI64d"\n", inv.ToString().c_str(), nRequestTime);
+            printf("askfor %s   %" PRI64d "\n", inv.ToString().c_str(), nRequestTime);
 
         // Make sure not to reuse time indexes to keep things in the same order
         int64 nNow = (GetTime() - 1) * 1000000;

@@ -67,13 +67,10 @@ extern "C" {
 #define UNDEFINED_SOCKET 0
 #define UNDEFINED_TIME SHTIME_UNDEFINED
 
-#ifdef WIN32
+#ifdef WIN32_VC
 #define MSG_NOSIGNAL        0
 #define MSG_DONTWAIT        0
 typedef int socklen_t;
-#else
-#define INVALID_SOCKET      (SOCKET)(~0)
-#define SOCKET_ERROR        -1
 #endif
 
 #define MAX_UNET_SOCKETS 4096
@@ -88,7 +85,6 @@ typedef int socklen_t;
 #define UEVENT_PEER_CONN 2
 
 
-typedef unsigned int SOCKET;
  
 typedef void (*unet_op)(void);
 
@@ -139,7 +135,7 @@ typedef struct unet_table_t
   int mode;
 
   /** the underlying socket file descriptor. */
-  SOCKET fd;
+  unsigned int fd;
 
   /** bitvector flags (UNETF_XXX) */
   int flag;
@@ -185,10 +181,10 @@ typedef struct uevent_t
 
 const char *unet_mode_label(int mode);
 
-int unet_add(int mode, SOCKET sk);
+int unet_add(int mode, unsigned int sk);
 
 
-int unet_mode(SOCKET sk);
+int unet_mode(unsigned int sk);
 
 
 
@@ -197,27 +193,27 @@ unet_bind_t *unet_bind_table(int mode);
 
 
 
-unet_table_t *get_unet_table(SOCKET sk);
+unet_table_t *get_unet_table(unsigned int sk);
 
-int unet_accept(int mode, SOCKET *sk_p);
+int unet_accept(int mode, unsigned int *sk_p);
 
 
-int unet_close(SOCKET sk, char *tag);
+int unet_close(unsigned int sk, char *tag);
 
 int unet_close_all(int mode);
 
 
 
-int unet_read(SOCKET sk, char *data, size_t *data_len_p);
+int unet_read(unsigned int sk, char *data, size_t *data_len_p);
 
-int unet_write(SOCKET sk, char *data, size_t data_len);
+int unet_write(unsigned int sk, char *data, size_t data_len);
 
 
 int unet_timer_set(int mode, unet_op timer_f);
 void unet_timer_unset(int mode);
 
 
-int unet_connect(int mode, struct sockaddr *net_addr, SOCKET *sk_p);
+int unet_connect(int mode, struct sockaddr *net_addr, unsigned int *sk_p);
 
 
 int unet_bind(int mode, int port);
@@ -229,7 +225,7 @@ void unet_bind_flag_unset(int mode, int flags);
 
 void unet_cycle(double max_t);
 
-void unet_shutdown(SOCKET sk);
+void unet_shutdown(unsigned int sk);
 
 void unet_connop_set(int mode, unet_addr_op accept_op);
 

@@ -163,6 +163,11 @@ AM_CONDITIONAL([SVR4], [test x$opsys = xsvr4])
 AM_CONDITIONAL([FREEBSD], [test x$opsys = xfreebsd])
 AM_CONDITIONAL([WINDOWS], [test x$opsys = xwindows])
 
+
+AS_IF([test "x$opsys" = "xwindows"],
+  AC_DEFINE_UNQUOTED([_WIN32_WINNT], [0x0501], [Define to the windows os version.])
+)
+
 # Checks for programs.
 AC_PROG_CC
 #gl_EARLY

@@ -48,7 +48,7 @@ const char *unet_mode_label(int mode)
   return (_unet_label[mode]);
 }
 
-int unet_add(int mode, SOCKET sk)
+int unet_add(int mode, unsigned int sk)
 {
   unet_table_t *t;
   struct sockaddr *addr;
@@ -72,7 +72,7 @@ int unet_add(int mode, SOCKET sk)
   return (0);
 }
 
-int unet_mode(SOCKET sk)
+int unet_mode(unsigned int sk)
 {
   unet_table_t *t;
 
@@ -110,12 +110,12 @@ void unet_cycle(double max_t)
   fd_set r_set;
   fd_set w_set;
   fd_set x_set;
-  SOCKET fd;
+  unsigned int fd;
   unsigned long diff;
   ssize_t w_tot;
   ssize_t w_len;
   ssize_t r_len;
-  SOCKET sk;
+  unsigned int sk;
   char data[65536];
   char errbuf[256];
   double wait_t;
@@ -268,7 +268,7 @@ void unet_cycle(double max_t)
 }
 
 
-void unet_shutdown(SOCKET sk)
+void unet_shutdown(unsigned int sk)
 {
   unet_table_t *t;
 

@@ -612,6 +612,9 @@
    #define below would cause a syntax error. */
 #undef _UINT8_T
 
+/* Define to the windows os version. */
+#undef _WIN32_WINNT
+
 /* Define to `__inline__' or `__inline' if that's what the C compiler
    calls it, or to nothing if 'inline' is not supported under any name.  */
 #ifndef __cplusplus

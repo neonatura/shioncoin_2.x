@@ -54,7 +54,7 @@ static double get_avg_balance(int ifaceIndex)
   return (balance);
 }
 
-char *stratum_http_response(SOCKET sk, char *url, int *idx_p)
+char *stratum_http_response(unsigned int sk, char *url, int *idx_p)
 {
   static shbuf_t *buff; 
   char html[10240];
@@ -516,7 +516,7 @@ void stratum_http_block_html(int ifaceIndex, shbuf_t *buff)
 #define SPRING_MATRIX_HTML "/spring/"
 #define SPRING_MATRIX_BMP "/image/spring_matrix.bmp"
 #define VALIDATE_MATRIX_BMP "/image/validate_matrix.bmp"
-void stratum_http_main_html(SOCKET sk, char *url, shbuf_t *buff)
+void stratum_http_main_html(unsigned int sk, char *url, shbuf_t *buff)
 {
   user_t *user;
   char ret_html[4096];
@@ -564,7 +564,7 @@ void stratum_http_main_html(SOCKET sk, char *url, shbuf_t *buff)
 
 }
 
-void stratum_http_spring_html(SOCKET sk, char *url, shbuf_t *buff)
+void stratum_http_spring_html(unsigned int sk, char *url, shbuf_t *buff)
 {
   int ifaceIndex;
 
@@ -579,7 +579,7 @@ void stratum_http_spring_html(SOCKET sk, char *url, shbuf_t *buff)
 
 }
 
-void stratum_http_request(SOCKET sk, char *url)
+void stratum_http_request(unsigned int sk, char *url)
 {
   user_t *user;
   shbuf_t *buff;

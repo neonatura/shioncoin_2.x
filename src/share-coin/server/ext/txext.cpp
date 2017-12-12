@@ -23,6 +23,7 @@
  *  @endcopyright
  */  
 
+#include <sys/select.h>
 #include "share.h"
 #include "shcoind.h"
 #include "wallet.h"

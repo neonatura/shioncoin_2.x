@@ -61,24 +61,6 @@ T* alignup(T* p)
     return u.ptr;
 }
 
-#ifdef WIN32
-#define MSG_NOSIGNAL        0
-#define MSG_DONTWAIT        0
-
-#ifndef S_IRUSR
-#define S_IRUSR             0400
-#define S_IWUSR             0200
-#endif
-#define unlink              _unlink
-#else
-#define _vsnprintf(a,b,c,d) vsnprintf(a,b,c,d)
-#define strlwr(psz)         to_lower(psz)
-#define _strlwr(psz)        to_lower(psz)
-#define MAX_PATH            1024
-#endif
-
-
-
 
 
 
@@ -171,7 +153,7 @@ void runCommand(std::string strCommand);
 
 inline std::string i64tostr(int64 n)
 {
-    return strprintf("%"PRI64d, n);
+    return strprintf("%" PRI64d, n);
 }
 
 inline std::string itostr(int n)

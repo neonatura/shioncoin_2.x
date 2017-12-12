@@ -26,7 +26,7 @@
 #ifndef __SHCOIND_H__
 #define __SHCOIND_H__
 
-
+#include <sys/select.h>
 #include <share.h>
 
 /**
