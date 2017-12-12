@@ -5,7 +5,6 @@
 #include <fcntl.h>
 #endif
 #include <errno.h>
-#include "rpcnet.h"
 
 user_t *client_list;
 
@@ -166,9 +165,11 @@ void daemon_server(void)
     /* handle libshare message queue */
     shcoind_poll_msg_queue();
 
+#if 0
 #ifdef RPC_SERVICE
     /* handle RPC communication */
     RPC_CycleConnections();
+#endif
 #endif
 
     if (fShutdown && !_shutdown_timer) {

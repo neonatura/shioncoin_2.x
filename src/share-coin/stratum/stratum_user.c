@@ -7,14 +7,15 @@
 #define MIN_SHARE_DIFFICULTY 0.03125 /* diff 1 */
 
 
-#define MAX_USER_FLAGS 6
+#define MAX_USER_FLAGS 7
 static const char *user_flag_label[MAX_USER_FLAGS] = {
   "system",
   "auth",
   "subscribe",
   "sync",
   "client",
-  "remote"
+  "remote",
+  "rpc"
 };
 
 const char *get_user_flag_label(int flag)

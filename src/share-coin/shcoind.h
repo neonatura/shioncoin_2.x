@@ -31,7 +31,7 @@
 #include <share.h>
 
 /**
- *  The share coin daemon combines a fully-functional USDe virtual currency daemon with a built-in stratum server. The stratum server provides extended operations for managing accounts and reviewing worker status. 
+ *  The share coin daemon combines a virtual currency daemon with a built-in stratum server. The stratum server provides extended operations for managing accounts and reviewing worker status. 
  *  @brief Share Coin Daemon
  *  @defgroup sharecoin
  *  @{

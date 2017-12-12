@@ -89,7 +89,7 @@ static int shc_bind(CIface *iface, void *_unused_)
 {
   int err;
 
-  err = unet_bind(UNET_SHC, SHC_COIN_DAEMON_PORT);
+  err = unet_bind(UNET_SHC, SHC_COIN_DAEMON_PORT, 0);
   if (err) {
     error(err, "error binding SHC socket port");
     return (err);

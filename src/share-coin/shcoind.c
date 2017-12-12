@@ -43,6 +43,9 @@ void shcoind_term(void)
 {
   int idx;
 
+  /* terminate rpc service */
+  rpc_term();
+
   /* terminate stratum server */
   stratum_term();
 
@@ -294,13 +297,18 @@ int main(int argc, char *argv[])
   start_node();
 
 #ifdef RPC_SERVICE
-  _rpc_thread_running = TRUE;
-  start_rpc_server();
+  if (opt_bool(OPT_SERV_RPC)) {
+    /* initialize rpc server */
+    err = rpc_init();
+    if (err) {
+      fprintf(stderr, "critical: init rpc: %s. [sherr %d]", sherrstr(err), err);
+      raise(SIGTERM);
+    }
+  }
 #endif
 
   /* unet_cycle() */
   daemon_server();
-
 
   return (0);
 }

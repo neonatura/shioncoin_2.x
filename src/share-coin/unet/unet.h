@@ -56,6 +56,8 @@ extern "C" {
 #define MAX_UNET_MODES 11
 
 
+#define UNET_BIND_LOCAL (1 << 0)
+
 
 #define UNETF_SHUTDOWN DF_SHUTDOWN
 #define UNETF_PEER_SCAN DF_PEER_SCAN
@@ -216,7 +218,7 @@ void unet_timer_unset(int mode);
 int unet_connect(int mode, struct sockaddr *net_addr, unsigned int *sk_p);
 
 
-int unet_bind(int mode, int port);
+int unet_bind(int mode, int port, int flag);
 
 int unet_unbind(int mode);
 void unet_bind_flag_set(int mode, int flags);

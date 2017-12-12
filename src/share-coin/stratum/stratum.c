@@ -25,6 +25,7 @@
 
 #include "shcoind.h"
 
+
 int get_stratum_daemon_port(void)
 {
   return (opt_num(OPT_STRATUM_PORT));
@@ -59,7 +60,7 @@ static void stratum_accept(int fd, struct sockaddr *net_addr)
  
 }
 
-static void stratum_close(int fd, struct sockaddr *net_addr)
+void stratum_close(int fd, struct sockaddr *net_addr)
 {
   user_t *peer;
 
@@ -310,7 +311,7 @@ int stratum_init(void)
 {
   int err;
 
-  err = unet_bind(UNET_STRATUM, get_stratum_daemon_port());
+  err = unet_bind(UNET_STRATUM, get_stratum_daemon_port(), 0);
   if (err)
     return (err);
 

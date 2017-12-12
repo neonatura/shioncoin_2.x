@@ -48,7 +48,6 @@
 #include <share.h>
 
 
-#include "rpc_proto.h"
 #include "rpccert_proto.h"
 
 

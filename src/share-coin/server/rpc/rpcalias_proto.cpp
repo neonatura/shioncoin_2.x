@@ -29,14 +29,12 @@
 #include "init.h"
 #include "ui_interface.h"
 #include "base58.h"
-#include "rpc_proto.h"
 #include "../server_iface.h" /* BLKERR_XXX */
 #include "addrman.h"
 #include "util.h"
 #include "chain.h"
-
-
 #include "certificate.h"
+#include "rpc_proto.h"
 
 using namespace std;
 using namespace boost;

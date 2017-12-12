@@ -75,7 +75,6 @@ common_includes = \
 	server/global.h \
 	server/allocators.h \
 	server/bignum.h \
-	server/rpc_proto.h \
 	server/rpcalias_proto.h \
 	server/rpccert_proto.h \
 	server/rpccontext_proto.h \
@@ -190,8 +189,7 @@ server_sources = \
 	server/rpc/rpccert_proto.cpp \
 	server/rpc/rpccontext_proto.cpp \
 	server/rpc/rpcdump.cpp \
-	server/rpc/rpcnet.cpp \
-	server/rpc/rpc_proto.cpp \
+	server/rpc/rpc_command.cpp \
 	server/rpc/rpcrawtransaction.cpp \
 	server/versionbits.cpp \
 	server/txsignature.cpp \
@@ -234,27 +232,28 @@ tool_sources = \
 	server/base58.h \
 	server/base58.cpp
 
-noinst_PROGRAMS = test_shcoind shcointool
+noinst_PROGRAMS = test_shcoind 
+#shcointool
 noinst_LIBRARIES = libshcoin.a
 sbin_PROGRAMS = shcoind
 bin_SCRIPTS = shc
 
-if USDE_SERVICE
-bin_SCRIPTS += usde
-
-usde: shcointool
-	cp -f shcointool usde
-endif
-
-if EMC2_SERVICE
-bin_SCRIPTS += emc2
-
-emc2: shcointool
-	cp -f shcointool emc2
-endif
-
-shc: shcointool
-	cp -f shcointool shc
+#if USDE_SERVICE
+#bin_SCRIPTS += usde
+#
+#usde: shcointool
+#	cp -f shcointool usde
+#endif
+#
+#if EMC2_SERVICE
+#bin_SCRIPTS += emc2
+#
+#emc2: shcointool
+#	cp -f shcointool emc2
+#endif
+#
+#shc: shcointool
+#	cp -f shcointool shc
 
 test_shcoind_SOURCES = \
 	$(server_sources) \
@@ -313,36 +312,23 @@ shcoind_CXXFLAGS = -I$(LIBSHARE)/include
 endif
 shcoind_LDADD += -lboost_system -lboost_filesystem -lboost_thread -ldb_cxx -ldl
 
-shcointool_SOURCES = \
-	shcoind_tool.cpp clientrpc_iface.cpp $(tool_sources)
-shcointool_LDADD = \
-	$(top_builddir)/src/secp256k1/libsecp256k1.a \
-	libshcoin.a \
-	-lboost_system -lboost_filesystem -lboost_thread -ldb_cxx -ldl
-#$(top_builddir)/src/share-ssl-lib/libshare_ssl.a
-shcointool_CFLAGS = -DSHCOIN_CLIENT
-shcointool_CXXFLAGS = -DSHCOIN_CLIENT -DOS_LINUX
-if STATIC_LIBSHARE
-shcointool_LDADD += \
-	$(LIBSHARE)/src/share-lib/libshare.a \
-	$(LIBSHARE)/src/sexe/libshare_sexe.a
-shcointool_CFLAGS += -I$(LIBSHARE)/include
-shcointool_CXXFLAGS += -I$(LIBSHARE)/include
-endif
+#shcointool_SOURCES = \
+#	shcoind_tool.cpp clientrpc_iface.cpp $(tool_sources)
+#shcointool_LDADD = \
+#	$(top_builddir)/src/secp256k1/libsecp256k1.a \
+#	libshcoin.a \
+#	-lboost_system -lboost_filesystem -lboost_thread -ldb_cxx -ldl
+##$(top_builddir)/src/share-ssl-lib/libshare_ssl.a
+#shcointool_CFLAGS = -DSHCOIN_CLIENT
+#shcointool_CXXFLAGS = -DSHCOIN_CLIENT -DOS_LINUX
+#if STATIC_LIBSHARE
+#shcointool_LDADD += \
+#	$(LIBSHARE)/src/share-lib/libshare.a \
+#	$(LIBSHARE)/src/sexe/libshare_sexe.a
+#shcointool_CFLAGS += -I$(LIBSHARE)/include
+#shcointool_CXXFLAGS += -I$(LIBSHARE)/include
+#endif
 
-#noinst_LIBRARIES = libleveldb.a
-#libleveldb_a_CXXFLAGS = \
-#	-I$(srcdir)/leveldb/include -I$(srcdir)/leveldb/helpers -I$(srcdir)/leveldb \
-#	-DOS_LINUX -DLEVELDB_PLATFORM_POSIX
-#libleveldb_a_SOURCES = \
-#	leveldb/db/builder.cc leveldb/db/c.cc leveldb/db/dbformat.cc leveldb/db/db_impl.cc leveldb/db/db_iter.cc leveldb/db/filename.cc leveldb/db/log_reader.cc leveldb/db/log_writer.cc leveldb/db/memtable.cc leveldb/db/repair.cc leveldb/db/table_cache.cc leveldb/db/version_edit.cc leveldb/db/version_set.cc leveldb/db/write_batch.cc leveldb/table/block_builder.cc leveldb/table/block.cc leveldb/table/filter_block.cc leveldb/table/format.cc leveldb/table/iterator.cc leveldb/table/merger.cc leveldb/table/table_builder.cc leveldb/table/table.cc leveldb/table/two_level_iterator.cc leveldb/util/arena.cc leveldb/util/bloom.cc leveldb/util/cache.cc leveldb/util/coding.cc leveldb/util/comparator.cc leveldb/util/crc32c.cc leveldb/util/env.cc leveldb/util/env_posix.cc leveldb/util/env_win.cc leveldb/util/filter_policy.cc leveldb/util/hash.cc leveldb/util/histogram.cc leveldb/util/logging.cc leveldb/util/options.cc leveldb/util/status.cc leveldb/port/port_posix.cc leveldb/helpers/memenv/memenv.cc
-#
-#if HAVE_CSTDATOMIC
-#libleveldb_a_CXXFLAGS += -std=c++0x
-#endif
-#if HAVE_ATOMIC
-#libleveldb_a_CXXFLAGS += -std=c++11
-#endif
 
 if HAVE_INITD_DIR
 EXTRA_DIST = $(top_builddir)/scripts/initd/shcoind

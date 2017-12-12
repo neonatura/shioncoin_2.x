@@ -160,8 +160,6 @@ void shc_server_close(int fd, struct sockaddr *addr);
 
 uint64_t getblockheight(int ifaceIndex);
 
-void start_rpc_server(void);
-
 void ResetTemplateWeight(void);
 
 void emc2_server_timer(void);

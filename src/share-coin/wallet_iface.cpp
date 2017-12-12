@@ -26,11 +26,11 @@
 #include "shcoind.h"
 #include "db.h"
 #include "walletdb.h"
-#include "rpc_proto.h"
 #include "net.h"
 #include "init.h"
 #include "util.h"
 #include "ui_interface.h"
+#include "rpc_proto.h"
 
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
@@ -737,10 +737,12 @@ static bool valid_pkey_hash(string strAccount, uint256 in_pkey)
 
 bool GetStratumKeyAccount(uint256 in_pkey, string& strAccount)
 {
+  static uint256 local_site_key;
   CWallet *wallet;
   uint256 acc_pkey;
   int ifaceIndex;
   int valid;
+
 
   valid = 0;
   for (ifaceIndex = 1; ifaceIndex < MAX_COIN_IFACE; ifaceIndex++) {

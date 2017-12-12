@@ -155,13 +155,25 @@ typedef struct task_attr_t
 #include "stratum_task.h"
 
 
-user_t *stratum_register_client(int fd);
 
 int stratum_register_client_task(user_t *user, char *json_text);
 
 int get_stratum_daemon_port(void);
 
 shjson_t *stratum_json(const char *json_text);
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+user_t *stratum_register_client(int fd);
+
+void stratum_close(int fd, struct sockaddr *net_addr);
+
+#ifdef __cplusplus
+}
+#endif
 
 /**
  * @}

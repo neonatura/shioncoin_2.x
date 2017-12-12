@@ -32,7 +32,6 @@
 #include "init.h"
 #include "strlcpy.h"
 #include "ui_interface.h"
-#include "rpc_proto.h"
 #include "shc/shc_netmsg.h"
 #include "usde/usde_netmsg.h"
 #include "emc2/emc2_netmsg.h"
@@ -1289,7 +1288,7 @@ int usde_server_init(void)
 {
   int err;
 
-  err = unet_bind(UNET_USDE, USDE_COIN_DAEMON_PORT);
+  err = unet_bind(UNET_USDE, USDE_COIN_DAEMON_PORT, 0);
   if (err)
     return (err);
 
@@ -2233,13 +2232,6 @@ for (idx = 0; idx < MAX_COIN_IFACE; idx++)
 //  GetMyExternalIP(); 
 }
 
-extern void RPC_Init(void);
-static void StartRPCServer(void)
-{
-//  CreateThread(ThreadRPCServer, NULL);
-RPC_Init();
-}
-
 void StartCoinServer(void)
 {
 
@@ -2355,12 +2347,6 @@ void start_node(void)
 
   /* start cpp threads */
   StartCoinServer();
-}
-void start_rpc_server(void)
-{
-
-  /* start cpp threads */
-  StartRPCServer();
 }
 
 #if 0

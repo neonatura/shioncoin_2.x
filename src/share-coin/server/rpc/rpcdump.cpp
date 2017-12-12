@@ -25,7 +25,6 @@
 
 #include "shcoind.h"
 #include "init.h"
-#include "rpc_proto.h"
 #include "ui_interface.h"
 #include "base58.h"
 

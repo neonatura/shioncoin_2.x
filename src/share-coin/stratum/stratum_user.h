@@ -11,6 +11,7 @@
 #define USER_SYNC (1 << 3)
 #define USER_CLIENT (1 << 4)
 #define USER_REMOTE (1 << 5)
+#define USER_RPC (1 << 5)
 
 
 

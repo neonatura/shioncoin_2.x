@@ -26,7 +26,6 @@
 #include "shcoind.h"
 #include "main.h"
 #include "net.h"
-#include "rpc_proto.h"
 #include "db.h"
 #include "addrman.h"
 #include "shcoind_rpc.h"

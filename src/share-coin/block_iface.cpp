@@ -32,7 +32,6 @@
 #include "init.h"
 #include "ui_interface.h"
 #include "base58.h"
-#include "rpc_proto.h"
 #include "server_iface.h" /* BLKERR_XXX */
 
 #undef printf

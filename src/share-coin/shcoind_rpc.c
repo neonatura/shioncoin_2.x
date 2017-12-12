@@ -1,11 +1,42 @@
 
+/*
+ * @copyright
+ *
+ *  Copyright 2014 Neo Natura
+ *
+ *  This file is part of the Share Library.
+ *  (https://github.com/neonatura/share)
+ *        
+ *  The Share Library is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version. 
+ *
+ *  The Share Library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with The Share Library.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  @endcopyright
+ */  
+
 #include "shcoind.h"
+#include "unet/unet.h"
+#include "stratum/stratum.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 #define CRED_SECRET_LEN 28
+
+extern void stratum_close(int fd, struct sockaddr *net_addr);
+extern user_t *stratum_register_client(int fd);
+
+
 
 void get_rpc_cred(char *username, char *password)
 {
@@ -223,7 +254,63 @@ fprintf(stderr, "DEBUG: verify_rpc_pin: 2fa_bin_verify err %d\n", err);
   return (err);
 }
 
+int get_rpc_service_port(void)
+{
+  return ((int)opt_num(OPT_RPC_PORT));
+}
 
+static void rpc_accept(int fd, struct sockaddr *net_addr)
+{
+  sa_family_t in_fam;
+  user_t *user;
+  char buf[256];
+
+  if (fd < 1 || !net_addr) {
+    sprintf(buf, "rpc_accept: invalid fd/addr: fd(%d) net_addr(#%x)\n", fd, net_addr);
+    shcoind_log(buf);
+    return;
+  }
+
+  in_fam = *((sa_family_t *)net_addr);
+  if (in_fam == AF_INET) {
+    struct sockaddr_in *addr = (struct sockaddr_in *)net_addr;
+
+    sprintf(buf, "rpc_accept: received connection (%s port %d).", inet_ntoa(addr->sin_addr), get_rpc_service_port());
+    shcoind_log(buf);  
+  } else {
+    sprintf(buf, "rpc_accept: received connection (family %d)", in_fam);
+    shcoind_log(buf);  
+}
+
+  user = stratum_register_client(fd);
+  if (user)
+    user->flags |= USER_RPC;
+ 
+}
+
+
+int rpc_init(void)
+{
+  int err;
+
+  /* bind to loop-back local-host device */
+  err = unet_bind(UNET_RPC, get_rpc_service_port(), UNET_BIND_LOCAL);
+  if (err)
+    return (err);
+
+  unet_connop_set(UNET_RPC, rpc_accept);
+  unet_disconnop_set(UNET_RPC, stratum_close);
+#if 0
+  unet_timer_set(UNET_RPC, rpc_timer);
+#endif
+
+  return (0);
+}
+
+void rpc_term(void)
+{
+  unet_unbind(UNET_RPC);
+}
 
 #ifdef __cplusplus
 }

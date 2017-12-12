@@ -25,7 +25,6 @@
 
 #include "shcoind.h"
 #include "walletdb.h"
-#include "rpc_proto.h"
 #include "net.h"
 #include "init.h"
 #include "util.h"

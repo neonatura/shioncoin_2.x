@@ -96,7 +96,7 @@ static int usde_bind(CIface *iface, void *_unused_)
 {
   int err;
 
-  err = unet_bind(UNET_USDE, USDE_COIN_DAEMON_PORT);
+  err = unet_bind(UNET_USDE, USDE_COIN_DAEMON_PORT, 0);
   if (err) { 
     error(err, "error binding USDE socket port");
     return (err);

@@ -34,7 +34,7 @@ unet_bind_t *unet_bind_table(int mode)
   return (_unet_bind + mode);
 }
 
-int unet_bind(int mode, int port)
+int unet_bind(int mode, int port, int flag)
 {
   shpeer_t *peer;
   char hostname[MAXHOSTNAMELEN+1];
@@ -49,7 +49,10 @@ int unet_bind(int mode, int port)
   if (sk == -1)
     return (-errno);
 
-  err = shnet_bindsk(sk, NULL, port);
+  if (flag & UNET_BIND_LOCAL) 
+    err = shnet_bindsk(sk, "127.0.0.1", port); /* only localhost connects */
+  else
+    err = shnet_bindsk(sk, NULL, port);
   if (err) {
     sprintf(errbuf, "unet_bind: warning: error binding to port %d\n", port);
     unet_log(mode, errbuf);

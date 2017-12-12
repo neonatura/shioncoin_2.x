@@ -28,7 +28,6 @@
 #include "shcoind.h"
 #include "main.h"
 #include "util.h"
-#include "rpc_proto.h"
 #include "ui_interface.h"
 #include "clientrpc_iface.h"
 #include "netbase.h"
