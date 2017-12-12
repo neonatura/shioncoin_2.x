@@ -1507,7 +1507,7 @@ CAlias *CTransaction::CreateAlias(std::string name, const uint160& hash, int typ
 
   //alias = CAlias(name, hash);
   alias = CAlias();
-  alias.SetExpireTime(DEFAULT_ALIAS_LIFESPAN);
+  alias.SetExpireSpan((double)DEFAULT_ALIAS_LIFESPAN);
   alias.SetLabel(name);
   alias.SetType(type);
 
@@ -1519,7 +1519,7 @@ CAlias *CTransaction::UpdateAlias(std::string name, const uint160& hash)
 
 //  alias = CAlias(name, hash);
   alias = CAlias();
-  alias.SetExpireTime(DEFAULT_ALIAS_LIFESPAN);
+  alias.SetExpireSpan((double)DEFAULT_ALIAS_LIFESPAN);
   alias.SetLabel(name);
 
   return (&alias);
@@ -1529,7 +1529,7 @@ CAlias *CTransaction::RemoveAlias(std::string name)
   nFlag |= CTransaction::TXF_ALIAS;
 
   alias = CAlias();
-  alias.SetExpireTime(DEFAULT_ALIAS_LIFESPAN);
+  alias.SetExpireSpan((double)DEFAULT_ALIAS_LIFESPAN);
   alias.SetLabel(name);
   return (&alias);
 }
@@ -2212,7 +2212,7 @@ CExec *CTransaction::CreateExec()
 
   exec = (CExec *)&certificate;
   exec->SetNull();
-  exec->SetExpireTime(DEFAULT_EXEC_LIFESPAN);
+  exec->SetExpireSpan((double)DEFAULT_EXEC_LIFESPAN);
   shgeo_local(&exec->geo, SHGEO_PREC_DISTRICT);
 
   return (exec);
@@ -2311,7 +2311,7 @@ CContext *CTransaction::CreateContext()
   ctx->SetNull();
 
   /* each context value expires after two years */
-  ctx->SetExpireTime(DEFAULT_CONTEXT_LIFESPAN);
+  ctx->SetExpireSpan((double)DEFAULT_CONTEXT_LIFESPAN);
 
   return (ctx);
 }

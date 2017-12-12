@@ -251,7 +251,7 @@ class CExtCore
     void SetExpireTime()
     {
       double dSpan = (double)SHARE_DEFAULT_EXPIRE_TIME;
-      SetExpireTime(dSpan);
+      SetExpireSpan(dSpan);
     }
 
     bool IsExpired()
