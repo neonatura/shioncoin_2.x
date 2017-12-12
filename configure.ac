@@ -165,8 +165,13 @@ AM_CONDITIONAL([WINDOWS], [test x$opsys = xwindows])
 
 
 AS_IF([test "x$opsys" = "xwindows"],
-  AC_DEFINE_UNQUOTED([_WIN32_WINNT], [0x0501], [Define to the windows os version.])
+  AC_DEFINE_UNQUOTED([_WIN32_WINNT], [0x0601], [Define to the windows os version.])
+  AC_DEFINE_UNQUOTED([WINVER], [0x0601], [Define to the windows os version.])
+  AC_DEFINE_UNQUOTED([__USE_W32_SOCKETS], 1, [Define for windows sockets compatibility])
+  AC_DEFINE_UNQUOTED([WIN32], 1, [Define for windows build compatibility.])
+  AC_DEFINE_UNQUOTED([WIN32_LEAN_AND_MEAN], 1, [Define to minimize native windows system calls.])
 )
+AC_DEFINE_UNQUOTED([NOMINMAX], [1], [Define to use internal MIN and MAX functions.])
 
 # Checks for programs.
 AC_PROG_CC

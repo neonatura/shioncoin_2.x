@@ -31,13 +31,9 @@
 #include "version.h"
 #include "ui_interface.h"
 
-#include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
-#include <boost/foreach.hpp>
-#include <boost/thread.hpp>
 #include <openssl/crypto.h>
 #include <openssl/rand.h>
-#include <stdarg.h>
 
 #ifdef WIN32_VC
 #ifdef _MSC_VER

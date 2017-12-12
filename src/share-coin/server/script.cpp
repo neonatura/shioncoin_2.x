@@ -25,8 +25,6 @@
 
 #include "shcoind.h"
 #include "main.h"
-#include <boost/foreach.hpp>
-#include <boost/tuple/tuple.hpp>
 #include "hdkey.h"
 
 using namespace std;

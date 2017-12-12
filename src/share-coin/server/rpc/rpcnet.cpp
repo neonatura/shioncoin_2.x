@@ -23,11 +23,21 @@
  *  @endcopyright
  */  
 
-#include <sys/select.h>
-#undef GNULIB_NAMESPACE
+#include "config.h"
+
+#include <boost/asio.hpp>
+#include <boost/asio/ip/v6_only.hpp>
+#include <boost/iostreams/concepts.hpp>
+#include <boost/iostreams/stream.hpp>
+#include <boost/lexical_cast.hpp>
+#include <boost/asio/ssl.hpp>
+#include <boost/filesystem/fstream.hpp>
+#include <boost/shared_ptr.hpp>
+#include <boost/assign/list_of.hpp>
+#include <boost/signals2.hpp>
+
 #include "shcoind.h"
 #include "main.h"
-#undef fcntl
 #include "wallet.h"
 #include "db.h"
 #include "walletdb.h"
@@ -42,23 +52,6 @@
 #include "util.h"
 #include "chain.h"
 #include "mnemonic.h"
-
-#undef fcntl
-#undef GNULIB_NAMESPACE
-#include <boost/asio.hpp>
-#include <boost/asio/ip/v6_only.hpp>
-#include <boost/foreach.hpp>
-#include <boost/iostreams/concepts.hpp>
-#include <boost/iostreams/stream.hpp>
-#include <boost/algorithm/string.hpp>
-#include <boost/lexical_cast.hpp>
-#include <boost/asio/ssl.hpp>
-#include <boost/filesystem/fstream.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/assign/list_of.hpp>
-#include <boost/signals2.hpp>
-#include <list>
-
 #include "rpcnet.h"
 
 using namespace std;
@@ -67,8 +60,6 @@ using namespace boost::asio;
 using namespace json_spirit;
 using namespace boost::assign;
 
-#undef fcntl
-#undef GNULIB_NAMESPACE
 #include "SSLIOStreamDevice.h"
 
 static boost::asio::io_service rpc_service;
@@ -343,7 +334,7 @@ void RPC_ProcessConnection(AcceptedConnection *conn)
   }
   if (!RPC_HTTPAuthorized(mapHeaders))
   {
-    Debug("ThreadRPCServer incorrect password attempt from %s\n", conn->peer_address_to_string().c_str());
+    //Debug("ThreadRPCServer incorrect password attempt from %s\n", conn->peer_address_to_string().c_str());
     conn->stream() << HTTPReply(401, "", false) << std::flush;
     RPC_CloseConnection(conn);
     return;
@@ -547,7 +538,7 @@ void RPC_Init(void)
   }
   catch(boost::system::system_error &e)
   {
-    Debug("An error occurred while setting up the RPC port %d for listening on IPv6, falling back to IPv4: %s", (int)endpoint.port(), e.what());
+    //Debug("An error occurred while setting up the RPC port %d for listening on IPv6, falling back to IPv4: %s", (int)endpoint.port(), e.what());
   }
 
   try {
@@ -574,7 +565,7 @@ void RPC_Init(void)
   }
   catch(boost::system::system_error &e)
   {
-    Debug("An error occurred while setting up the RPC port %d for listening on IPv4: %s", (int)endpoint.port(), e.what());
+    //Debug("An error occurred while setting up the RPC port %d for listening on IPv4: %s", (int)endpoint.port(), e.what());
   }
 
 }

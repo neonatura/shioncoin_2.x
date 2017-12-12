@@ -492,6 +492,9 @@
 /* Define for the MIPS architecture. */
 #undef MIPS
 
+/* Define to use internal MIN and MAX functions. */
+#undef NOMINMAX
+
 /* Define to 1 if your C compiler doesn't accept -c and -o together. */
 #undef NO_MINUS_C_MINUS_O
 
@@ -573,8 +576,17 @@
 /* Version number of package */
 #undef VERSION
 
+/* Define for windows build compatibility. */
+#undef WIN32
+
+/* Define to minimize native windows system calls. */
+#undef WIN32_LEAN_AND_MEAN
+
 /* Define for the Windows operating system. */
 #undef WINDOWS
+
+/* Define to the windows os version. */
+#undef WINVER
 
 /* Define for the AMD x86-64 architecture. */
 #undef X86_64
@@ -614,6 +626,9 @@
 
 /* Define to the windows os version. */
 #undef _WIN32_WINNT
+
+/* Define for windows sockets compatibility */
+#undef __USE_W32_SOCKETS
 
 /* Define to `__inline__' or `__inline' if that's what the C compiler
    calls it, or to nothing if 'inline' is not supported under any name.  */

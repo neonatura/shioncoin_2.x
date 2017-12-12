@@ -26,6 +26,7 @@
 #ifndef __SHCOIND_H__
 #define __SHCOIND_H__
 
+#include "config.h"
 #include <sys/select.h>
 #include <share.h>
 
@@ -76,14 +77,42 @@ extern shbuf_t *server_msg_buff;
 #include "shcoind_daemon.h"
 
 #ifdef __cplusplus
-#include <map>
-#include <vector>
-#include <string>
-#include <db_cxx.h>
 
+/* standard c++ runtime */
+#include <cstdio>
+#include <cassert>
+#include <limits>
+#include <string>
+#include <cstring>
+#include <vector>
+#include <set>
+#include <list>
+#include <map>
+#include <db_cxx.h>
+#include <stdarg.h>
+
+
+/* boost c++ runtime */
+#include <boost/algorithm/string.hpp>
+#include <boost/foreach.hpp>
+#include <boost/type_traits/is_fundamental.hpp>
+#include <boost/tuple/tuple.hpp>
+#include <boost/tuple/tuple_comparison.hpp>
+#include <boost/tuple/tuple_io.hpp>
+#include <boost/thread.hpp>
+#define BOOST_NO_CXX11_SCOPED_ENUMS
+#include <boost/filesystem.hpp>
+#undef BOOST_NO_CXX11_SCOPED_ENUMS
+
+
+/* common typedefs */
 typedef std::vector<unsigned char> cbuff;
 typedef std::vector<cbuff> cstack_t;
+typedef long long int64;
+typedef unsigned long long uint64;
 
+
+/* share-coin common includes */
 #include "server/shlib.h"
 #include "server/bignum.h"
 #include "server/sync.h"
@@ -92,6 +121,8 @@ typedef std::vector<cbuff> cstack_t;
 #include "server/block.h"
 #include "server/txidx.h"
 #include "server/global.h"
+#include "server/version.h"
+
 
 #endif
 
