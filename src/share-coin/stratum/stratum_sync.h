@@ -29,6 +29,21 @@
 
 void stratum_sync_init(void);
 
+/**
+ * 1. periodically review (every hour via 'wallet.list') to determine if tracked accounts have changed, and if so, sends as 'wallet.listaddr' to find out what coin addrs are missing locally. when coin addr(s) are found missing a 'wallet.setkey' is performed to add the missing entry.
+ * 2. A duplicate set of workers is maintained (every 10min by 'stratum.remote') by periodically updating their "block_tot" and "block_cnt" matching the local stats.
+ *
+ * Stratum Format: stratum.remote [<worker>,<block_tot>,<block_cnt>]
+ *
+ * @see SYNC_WALLET_LIST
+ * @see SYNC_WALLET_LISTADDR
+ * @see user_t.setkey_stamp //setkey op(s) are limited to once per hour 
+ * @see USER_REMOTE
+ * @see user_t.mine_stamp
+ * @note The coin server will only reward coins mined by it's own mining address.
+ */
+
+
 void stratum_sync(void)
 
 

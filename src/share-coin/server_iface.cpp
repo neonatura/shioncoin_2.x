@@ -23,7 +23,7 @@
  *  @endcopyright
  */
 
-#include <share.h>
+#include "shcoind.h"
 #include <sys/types.h>
 #include <ifaddrs.h>
 #include <net/if.h>

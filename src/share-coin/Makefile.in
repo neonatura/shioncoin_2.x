@@ -52,13 +52,8 @@ sbin_PROGRAMS = shcoind$(EXEEXT)
 
 @DEBUG_TRUE@am__append_5 = -g3 
 @DEBUG_TRUE@am__append_6 = -g3
-@DEBUG_FALSE@am__append_7 = -fexpensive-optimizations -ffast-math \
-@DEBUG_FALSE@	-fomit-frame-pointer -fstrength-reduce -fthread-jumps -funroll-loops
-
-@DEBUG_FALSE@am__append_8 = \
-@DEBUG_FALSE@	-fexpensive-optimizations -ffast-math \
-@DEBUG_FALSE@	-fomit-frame-pointer -fstrength-reduce -fthread-jumps -funroll-loops
-
+@DEBUG_FALSE@am__append_7 = -O2
+@DEBUG_FALSE@am__append_8 = -O2
 subdir = src/share-coin
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4

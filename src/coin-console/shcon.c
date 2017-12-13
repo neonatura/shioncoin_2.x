@@ -104,6 +104,7 @@ int main(int argc, char *argv[])
           0 == strcmp(argv[i], "--quiet")) {
         opt_bool_set(OPT_QUIET, TRUE);
       }
+/* DEBUG: TODO: "--output", "--input", "--host", "--port" */
       continue;
     }
 
@@ -111,6 +112,11 @@ int main(int argc, char *argv[])
   }
   args[++arg_idx] = NULL;
 
+  if (arg_idx == 0) {
+/* DEBUG: TODO: command-line interpreter mode. */
+    shcon_tool_usage(argv[0]);
+    return (1);
+  }
 
   shcon_command(args, arg_idx, &resp);
   if (resp) {

@@ -72,6 +72,8 @@ void command_print(FILE *out, shjson_t *j)
       fprintf(out, "%s\n", text); 
     }
   }
+
+#if 0
   node = shjson_obj_get(j, "error");
   if (node) {
     char *text = shjson_astr(j, "error", "");
@@ -83,5 +85,6 @@ void command_print(FILE *out, shjson_t *j)
       fprintf(out, "Error: %s\n", text); 
     }
   }
+#endif
 
 } 

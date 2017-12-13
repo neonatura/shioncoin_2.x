@@ -368,11 +368,8 @@ if DEBUG
 CFLAGS += -g3 
 CXXFLAGS += -g3
 else
-CFLAGS += -fexpensive-optimizations -ffast-math \
-	-fomit-frame-pointer -fstrength-reduce -fthread-jumps -funroll-loops
-CXXFLAGS += \
-	-fexpensive-optimizations -ffast-math \
-	-fomit-frame-pointer -fstrength-reduce -fthread-jumps -funroll-loops
+CFLAGS += -O2
+CXXFLAGS += -O2
 endif
 
 

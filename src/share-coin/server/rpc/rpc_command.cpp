@@ -704,11 +704,15 @@ Value rpc_sys_url(CIface *iface, const Array& params, bool fStratum)
     throw runtime_error(
         "sys.url\n");
 
-  memset(hostname, 0, sizeof(hostname));
-  gethostname(hostname, sizeof(hostname)-1);
   string base_url;
+  memset(hostname, 0, sizeof(hostname));
+#ifdef HAVE_GETHOSTNAME
+  gethostname(hostname, sizeof(hostname)-1);
   base_url += "http://";
   base_url += hostname;
+#else
+  base_url = "http://localhost";
+#endif
   base_url += ":9448/";
 
   Object obj;
@@ -4977,21 +4981,24 @@ const char *ExecuteRPC(int ifaceIndex, shjson_t *json)
   auth_hash = uint256(auth_buf); /* hex */
   auth_pin = (unsigned int)shjson_num(json, "auth_pin", 0);
   if (!_verify_rpc_auth(auth_hash, auth_pin))
-    return (false);
+    return (NULL);
 
   op = GetRPCOp(ifaceIndex, strMethod);
   if (!op) {
     op = GetRPCAlias(ifaceIndex, strMethod);
     if (!op) {
-      error(SHERR_INVAL, "ExecuteStartumRPC: unknown command \"%s\".", strMethod.c_str());
-      return (NULL);
+      static string help_str;
+      help_str = rpc_command_help(iface, strMethod);
+      return (help_str.c_str());
     }
   }
 
   int max_arg = GetRPCMaxArgs(op);
   if (ar_len < op->min_arg ||
       ar_len > max_arg) {
-    return (NULL);//throw JSONRPCError(-1, rpc_command_help(iface, strMethod)); 
+    static string help_str;
+    help_str = rpc_command_help(iface, strMethod);
+    return (help_str.c_str());
   }
 
   try

@@ -23,7 +23,6 @@
  *  @endcopyright
  */  
 
-#include "share.h"
 #include "shcoind.h"
 #include "util.h"
 #include "main.h"

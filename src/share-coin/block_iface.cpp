@@ -35,8 +35,6 @@
 #include "server_iface.h" /* BLKERR_XXX */
 
 #undef printf
-#include <boost/asio.hpp>
-#include <boost/asio/ip/v6_only.hpp>
 #include <boost/bind.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/foreach.hpp>
@@ -44,7 +42,6 @@
 #include <boost/iostreams/stream.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
-#include <boost/asio/ssl.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <boost/shared_ptr.hpp>
 #include <list>
@@ -52,7 +49,6 @@
 
 using namespace std;
 using namespace boost;
-using namespace boost::asio;
 using namespace json_spirit;
 
 #define MAX_NONCE_SEQUENCE 16
@@ -550,6 +546,21 @@ void c_ListTransactions(int ifaceIndex, const CWalletTx& wtx, const string& strA
   }
 
 }
+
+
+#if 0
+const char *c_getblocktransactions(int ifaceIndex)
+{
+  static int block_height;
+  CWallet *wallet = GetWallet(ifaceIndex);
+  const CPubKey& pubkey = wallet->GetMainAccountPubKey(wallet);
+
+  /* scan blocks for matching miner destination. */
+  
+  
+
+}
+#endif
 
 const char *c_getblocktransactions(int ifaceIndex)
 {

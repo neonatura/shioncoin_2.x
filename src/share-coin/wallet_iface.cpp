@@ -35,8 +35,6 @@
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <boost/filesystem/convenience.hpp>
-#include <boost/interprocess/sync/file_lock.hpp>
-#include <boost/algorithm/string/predicate.hpp>
 #ifndef WIN32
 #include <signal.h>
 #endif

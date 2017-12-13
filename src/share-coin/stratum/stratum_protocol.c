@@ -853,7 +853,6 @@ int stratum_request_message(user_t *user, shjson_t *json)
       ret_json = ExecuteStratumRPC(ifaceIndex, json); 
     }
     if (!ret_json) {
-fprintf(stderr, "DEBUG: stratum_request_message: error executing rpc call for '%s'\n", user->worker);
       reply = shjson_init(NULL);
       set_stratum_error(reply, -5, "invalid command");
       shjson_null_add(reply, "result");
@@ -864,7 +863,6 @@ fprintf(stderr, "DEBUG: stratum_request_message: error executing rpc call for '%
 
     reply = shjson_init(ret_json);
     if (!reply) {
-fprintf(stderr, "DEBUG: stratum_request_message: error parsing JSON: %s\n", ret_json);
       reply = shjson_init(NULL);
       set_stratum_error(reply, -5, "invalid");
       shjson_null_add(reply, "result");

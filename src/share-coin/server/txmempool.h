@@ -183,11 +183,13 @@ class CPoolTx
 
     bool GetOutput(const CTxIn& input, CTxOut& retOut);
 
+#if 0
     CPoolTx& operator = (CPoolTx& b)
     {
       Init(b);
       return *this;
     }
+#endif
 
     bool operator == (const CPoolTx& b) const
     {
