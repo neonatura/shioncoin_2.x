@@ -6254,6 +6254,10 @@ const char *ExecuteStratumRPC(int ifaceIndex, const char *account, shjson_t *jso
   bool fVerify;
   int i;
 
+  CIface *iface = GetCoinByIndex(ifaceIndex);
+  if (!iface || !iface->enabled)
+    return (NULL);
+
   memset(method, 0, sizeof(method));
   strncpy(method, shjson_astr(json, "method", ""), sizeof(method)-1);
   string strMethod(method);
@@ -6279,9 +6283,6 @@ const char *ExecuteStratumRPC(int ifaceIndex, const char *account, shjson_t *jso
     }
   }
 
-  CIface *iface = GetCoinByIndex(ifaceIndex);
-  if (!iface || !iface->enabled)
-    return (NULL);
 
   try
   {

@@ -25,6 +25,9 @@
 
 
 #include "shcoind.h"
+#include <unistd.h>
+using namespace std;
+
 #include "main.h"
 #include "wallet.h"
 #include "txcreator.h"
@@ -41,15 +44,14 @@
 #include "mnemonic.h"
 #include "txmempool.h"
 #include "rpc_proto.h"
+#include "rpccert_proto.h"
 
 #include <boost/assign/list_of.hpp>
 
-using namespace std;
 using namespace boost;
 using namespace json_spirit;
 using namespace boost::assign;
 
-#include "rpccert_proto.h"
 
 
 #define RPC_AUTH_FREQ 300
@@ -3277,7 +3279,7 @@ Value rpc_peer_list(CIface *iface, const Array& params, bool fStratum)
     Object obj;
 
     obj.push_back(Pair("addr", stats.addrName));
-    obj.push_back(Pair("services", strprintf("%08"PRI64x, stats.nServices)));
+    obj.push_back(Pair("services", strprintf("%08" PRI64x, stats.nServices)));
     obj.push_back(Pair("lastsend", (boost::int64_t)stats.nLastSend));
     obj.push_back(Pair("lastrecv", (boost::int64_t)stats.nLastRecv));
     obj.push_back(Pair("conntime", (boost::int64_t)stats.nTimeConnected));
@@ -4497,12 +4499,14 @@ void RegisterRPCOpDefaults(int ifaceIndex)
 
   RegisterRPCOp(ifaceIndex, "peer.remove", PEER_REMOVE); 
 
+#if 0
   /* stratum service */
 //  RegisterRPCOp(ifaceIndex, "stratum.info", STRATUM_INFO);
 //  RegisterRPCOp(ifaceIndex, "stratum.list", STRATUM_LIST);
   if (opt_bool(OPT_ADMIN)) {
     RegisterRPCOp(ifaceIndex, "stratum.key", STRATUM_KEY);
   }
+#endif
 
   RegisterRPCOp(ifaceIndex, "tx.decode", TX_DECODE);
   RegisterRPCAlias(ifaceIndex, "decoderawtransaction", TX_DECODE);
@@ -4810,7 +4814,7 @@ static bool _verify_rpc_auth(const uint256& auth_key, unsigned int auth_pin)
 {
   static uint256 local_site_key;
   static shkey_t s_key;
-  int local_site_pin;
+  unsigned int local_site_pin;
 
   if (auth_key == 0 || auth_pin == 0)
     return (false);
@@ -4820,24 +4824,28 @@ static bool _verify_rpc_auth(const uint256& auth_key, unsigned int auth_pin)
     if (!skey)
       return (false);
 
-    unsigned char *skey_raw = (unsigned char *)skey;
-    cbuff skey_buff(skey_raw, skey_raw + sizeof(shkey_t));
-    local_site_key = Hash(skey_buff.begin(), skey_buff.end());
+    unsigned char ret_str[256];
+    shsha_hex(SHALG_SHA256, ret_str, 
+        (unsigned char *)skey, sizeof(shkey_t));
+    string key_hash_str((const char *)ret_str);
+    local_site_key = uint256(key_hash_str);
     memcpy(&s_key, skey, sizeof(s_key));
   }
 
-  if (auth_key != local_site_key)
+  if (auth_key != local_site_key) {
     return (false);
+}
 
   local_site_pin = shsha_2fa_bin(SHALG_SHA256, 
       (unsigned char *)&s_key, sizeof(s_key), RPC_AUTH_FREQ);
-  if (local_site_pin != auth_pin)
+  if (local_site_pin != auth_pin) {
     return (false);
+}
 
   return (true);
 }
 
-const char *ExecuteStratumRPC(int ifaceIndex, const char *account, shjson_t *json)
+const char *ExecuteStratumRPC(int ifaceIndex, shjson_t *json)
 {
   int ar_len = shjson_array_count(json, "params");
   Array param;
@@ -4846,7 +4854,7 @@ const char *ExecuteStratumRPC(int ifaceIndex, const char *account, shjson_t *jso
   uint256 auth_hash;
   uint32_t auth_pin;
   int i;
-  bool fVerified = false;
+  bool fVerified;
 
   CIface *iface = GetCoinByIndex(ifaceIndex);
   if (!iface || !iface->enabled)
@@ -4856,22 +4864,28 @@ const char *ExecuteStratumRPC(int ifaceIndex, const char *account, shjson_t *jso
   strncpy(method, shjson_astr(json, "method", ""), sizeof(method)-1);
   string strMethod(method);
 
-  /* verify rpc auth hash & pin */
-  string auth_buf(shjson_astr(json, "auth_hash", ""));
-  auth_hash = uint256(auth_buf); /* hex */
-  auth_pin = (unsigned int)shjson_num(json, "auth_pin", 0);
-  if (_verify_rpc_auth(auth_hash, auth_pin))
-    fVerified = true;
-
   op = GetRPCOp(ifaceIndex, strMethod);
-  if (!op)
+  if (!op) {
+    error(SHERR_INVAL, "ExecuteStartumRPC: unknown command \"%s\".", strMethod.c_str());
     return (NULL);
+  }
 
   int max_arg = GetRPCMaxArgs(op);
   if (ar_len < op->min_arg ||
       ar_len > max_arg) {
     return (NULL);//throw JSONRPCError(-1, rpc_command_help(iface, strMethod)); 
   }
+
+  /* limit RPC commands to those requiring an account being specified. */
+  bool fNeedAccount = false;
+  for (i = 0; op->arg[i] != RPC_NULL && i < MAX_RPC_ARGS; i++) {
+    if (op->arg[i] == RPC_ACCOUNT) {
+      fNeedAccount = true; 
+      break;
+    }
+  }
+  if (!fNeedAccount)
+    return (NULL);
 
   for (i = 0; op->arg[i] != RPC_NULL && i < MAX_RPC_ARGS; i++) {
     if (i >= op->min_arg)
@@ -4884,7 +4898,7 @@ const char *ExecuteStratumRPC(int ifaceIndex, const char *account, shjson_t *jso
     }
   }
 
-
+  fVerified = false;
   try
   {
     for (i = 0; i < ar_len; i++) {
@@ -4915,30 +4929,6 @@ const char *ExecuteStratumRPC(int ifaceIndex, const char *account, shjson_t *jso
         }
 
         RPCConvertParam(iface, op, i, param);
-#if 0
-        /* de-capsulate */
-        string str = param[i].get_str();
-        switch (op->arg[i]) {
-          case RPC_INT:
-            RPCConvertTo<int>(str, param[i]);
-            break;
-          case RPC_INT64:
-            RPCConvertTo<boost::int64_t>(str, param[i]);
-            break;
-          case RPC_DOUBLE:
-            RPCConvertTo<double>(str, param[i]);
-            break;
-          case RPC_BOOL:
-            RPCConvertTo<bool>(str, param[i]);
-            break;
-          case RPC_ARRAY:
-            RPCConvertTo<Array>(str, param[i]);
-            break;
-          case RPC_OBJECT:
-            RPCConvertTo<Object>(str, param[i]);
-            break;
-        }
-#endif
       }
     }
 
@@ -4946,6 +4936,89 @@ const char *ExecuteStratumRPC(int ifaceIndex, const char *account, shjson_t *jso
     Value result;
     {
       result = op->actor(iface, param, true);
+    }
+
+    _stratum_rpc_json = JSONRPCReply(result, Value::null, Value::null);
+    return _stratum_rpc_json.c_str();
+  }
+  catch (std::runtime_error& e)
+  {
+    Debug("stratum (rpc call) runtime error: %s", e.what());
+  }
+  catch (std::exception& e)
+  {
+    Debug("stratum (rpc call) exception: %s", e.what());
+  }
+  
+  return (NULL);
+}
+
+const char *ExecuteRPC(int ifaceIndex, shjson_t *json)
+{
+  int ar_len = shjson_array_count(json, "params");
+  Array param;
+  RPCOp *op;
+  char method[256];
+  uint256 auth_hash;
+  uint32_t auth_pin;
+  int i;
+  bool fRPC;
+
+  CIface *iface = GetCoinByIndex(ifaceIndex);
+  if (!iface || !iface->enabled)
+    return (NULL);
+
+  memset(method, 0, sizeof(method));
+  strncpy(method, shjson_astr(json, "method", ""), sizeof(method)-1);
+  string strMethod(method);
+
+  /* verify rpc auth hash & pin */
+  string auth_buf(shjson_astr(json, "auth_hash", ""));
+  auth_hash = uint256(auth_buf); /* hex */
+  auth_pin = (unsigned int)shjson_num(json, "auth_pin", 0);
+  if (!_verify_rpc_auth(auth_hash, auth_pin))
+    return (false);
+
+  op = GetRPCOp(ifaceIndex, strMethod);
+  if (!op) {
+    op = GetRPCAlias(ifaceIndex, strMethod);
+    if (!op) {
+      error(SHERR_INVAL, "ExecuteStartumRPC: unknown command \"%s\".", strMethod.c_str());
+      return (NULL);
+    }
+  }
+
+  int max_arg = GetRPCMaxArgs(op);
+  if (ar_len < op->min_arg ||
+      ar_len > max_arg) {
+    return (NULL);//throw JSONRPCError(-1, rpc_command_help(iface, strMethod)); 
+  }
+
+  try
+  {
+    for (i = 0; i < ar_len; i++) {
+      const char *pstr = shjson_array_astr(json, "params", i);
+      if (pstr) {
+        string p_str(pstr);
+        param.push_back(p_str);
+      } else {
+        char buf[256];
+        if (op->arg[i] == RPC_DOUBLE) 
+          sprintf(buf, "%f", shjson_array_num(json, "params", i));
+        else
+          sprintf(buf, "%lld", 
+              (signed long long)shjson_array_num(json, "params", i));
+        string p_str(buf);
+        param.push_back(p_str);
+      }
+
+      RPCConvertParam(iface, op, i, param);
+    }
+
+    // Execute
+    Value result;
+    {
+      result = op->actor(iface, param, false);
     }
 
     _stratum_rpc_json = JSONRPCReply(result, Value::null, Value::null);

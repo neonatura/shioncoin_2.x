@@ -27,6 +27,16 @@
 #define __SHCOIND_H__
 
 #include "config.h"
+
+#ifndef NEED_W32_SOCKETS
+#ifdef __USE_W32_SOCKETS
+#undef __USE_W32_SOCKETS
+#endif
+#endif
+
+#include <stdio.h>
+#include <string.h>
+#include <stdarg.h>
 #include <sys/select.h>
 #include <share.h>
 
@@ -111,22 +121,9 @@ typedef std::vector<cbuff> cstack_t;
 typedef long long int64;
 typedef unsigned long long uint64;
 
-
-/* share-coin common includes */
-#include "server/shlib.h"
-#include "server/bignum.h"
-#include "server/sync.h"
-#include "server/uint256.h"
-#include "server/serialize.h"
-#include "server/block.h"
-#include "server/txidx.h"
-#include "server/global.h"
-#include "server/version.h"
-
-
 #endif
 
-
+#include "server/server.h"
 
 /**
  * @}

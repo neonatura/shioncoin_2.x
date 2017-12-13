@@ -106,7 +106,8 @@ void RegisterRPCOpDefaults(int ifaceIndex);
 #ifdef __cplusplus
 extern "C" {
 #endif
-const char *ExecuteStratumRPC(int ifaceIndex, const char *account, shjson_t *json);
+const char *ExecuteRPC(int ifaceIndex, shjson_t *json);
+const char *ExecuteStratumRPC(int ifaceIndex, shjson_t *json);
 #ifdef __cplusplus
 }
 #endif

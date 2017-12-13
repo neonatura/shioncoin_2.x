@@ -519,16 +519,16 @@ uninstall-am:
 
 
 @USDE_SERVICE_TRUE@usde:
-@USDE_SERVICE_TRUE@	ln -sf $(top_builddir)/src/share-coin/usde
+@USDE_SERVICE_TRUE@	ln -sf $(top_builddir)/src/coin-console/usde
 
 @EMC2_SERVICE_TRUE@emc2:
-@EMC2_SERVICE_TRUE@	ln -sf $(top_builddir)/src/share-coin/emc2
+@EMC2_SERVICE_TRUE@	ln -sf $(top_builddir)/src/coin-console/emc2
 
 shcoind: docs
 	ln -sf $(top_builddir)/src/share-coin/shcoind
 
 shc:
-	ln -sf $(top_builddir)/src/share-coin/shc
+	ln -sf $(top_builddir)/src/coin-console/shc
 
 docs:
 	ln -sf $(top_builddir)/doc/html/ docs

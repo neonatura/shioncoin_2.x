@@ -50,7 +50,9 @@ using namespace boost;
 using namespace boost::asio;
 using namespace json_spirit;
 
+#if 0
 #include "SSLIOStreamDevice.h"
+#endif
 
 static std::string strRPCUserColonPass;
 
@@ -229,6 +231,7 @@ string JSONRPCRequest(const char *iface, const string& strMethod, const Array& p
   return write_string(Value(request), false) + "\n";
 }
 
+#if 0
 Object CallRPC(const char *iface, const string& strMethod, const Array& params)
 {
   char port_str[64];
@@ -286,6 +289,7 @@ fprintf(stderr, "DEBUG: strReply: %s\n", strReply.c_str());
 
   return reply;
 }
+#endif
 
 #if 0
 template<typename T>

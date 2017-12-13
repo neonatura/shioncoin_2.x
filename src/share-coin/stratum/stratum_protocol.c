@@ -532,308 +532,313 @@ int stratum_request_message(user_t *user, shjson_t *json)
 
   timing_init(method, &ts);
 
-  if (0 == strcmp(method, "mining.ping")) {
-    reply = shjson_init(NULL);
-    shjson_null_add(reply, "error");
-    shjson_null_add(reply, "result");
-    err = stratum_send_message(user, reply);
-    shjson_free(&reply);
-    return (err);
-  }
+  if (!(user->flags & USER_RPC)) {
 
-  if (0 == strcmp(method, "mining.subscribe")) {
-    err = stratum_subscribe(user);
-    if (!err) {
-      stratum_set_difficulty(user, DEFAULT_WORK_DIFFICULTY);
-    }
-
-    //reset_task_work_time();
-
-    return (err);
-  } 
-
-  if (0 == strcmp(method, "mining.authorize") ||
-      0 == strcmp(method, "stratum.authorize")) {
-    shjson_t *param;
-    char username[1024];
-    char password[1024];
-
-    memset(username, 0, sizeof(username));
-    strncpy(username, shjson_array_astr(json, "params", 0), sizeof(username)-1);
-
-    memset(password, 0, sizeof(password));
-    strncpy(password, shjson_array_astr(json, "params", 1), sizeof(password)-1);
-
-    t_user = NULL;
-    if (*username) {
-      t_user = stratum_user(user, username);
-#if 0
-    } else {
-      t_user = stratum_sync_user(user, password);
-#endif
-    }
-
-    /* Note: Support for "x:<diff>" is not permitted. */
-
-
-    if (!t_user) {
+    if (0 == strcmp(method, "mining.ping")) {
       reply = shjson_init(NULL);
-      set_stratum_error(reply, -2, "unknown user");
-      shjson_bool_add(reply, "result", FALSE);
-      err = stratum_send_message(user, reply);
-      shjson_free(&reply);
-      return (err);
-    }
-
-    reply = shjson_init(NULL);
-    shjson_bool_add(reply, "result", TRUE);
-    shjson_null_add(reply, "error"); 
-    err = stratum_send_message(user, reply);
-    shjson_free(&reply);
-
-    /* ask client for their version */
-    stratum_send_client_ver(user);
-
-    /* redundant */
-    user->work_diff = DEFAULT_WORK_DIFFICULTY;
-
-    return (err);
-  }
-
-  if (0 == strcmp(method, "mining.resume")) {
-    char *sess_id;
-
-    sess_id = shjson_array_astr(json, "params", 0);
-
-    reply = shjson_init(NULL);
-
-    /* compare previous session hash */
-    if (0 != strcmp(sess_id, stratum_runtime_session()))
-      return (stratum_send_error(user, BLKERR_BAD_SESSION));
-
-    shjson_bool_add(reply, "result", TRUE);
-    shjson_null_add(reply, "error"); 
-    err = stratum_send_message(user, reply);
-    shjson_free(&reply);
-    return (err);
-  }
-
-  if (0 == strcmp(method, "mining.submit")) {
-    err = stratum_validate_submit(user, json);
-
-    reply = shjson_init(NULL);
-    if (!err) {
-      shjson_bool_add(reply, "result", TRUE);
       shjson_null_add(reply, "error");
-    } else {
-      shjson_bool_add(reply, "result", FALSE);
-/*
- * {"error": [-2, "Incorrect size of extranonce2. Expected 8 chars", null], "id": 2, "result": null}
- * {"error": [-2, "Connection is not subscribed for mining", null], "id": 3, "result": null}
- * {"error": [-2, "Ntime out of range", null], "id": 3, "result": null}
- * {"error": [-2, "Job 'b416' not found", null], "id": 4, "result": null}
- */
-      if (err == SHERR_ALREADY) {
-        set_stratum_error(reply, -2, "duplicate");
-      } else if (err == SHERR_TIME) {
-        set_stratum_error(reply, -2, "stale");
-      } else if (err == SHERR_PROTO) {
-        set_stratum_error(reply, -2, "H-not-zero");
-      } else if (err == SHERR_INVAL) {
-        set_stratum_error(reply, -2, "unknown task id");
-      } else {
-        set_stratum_error(reply, -2, "invalid");
-      }
-    }
-    stratum_send_message(user, reply);
-    shjson_free(&reply);
-
-    if (err == SHERR_PROTO) {
-      stratum_send_difficulty(user);
-    }
-
-    return (0);
-  }
-
-  if (0 == strcmp(method, "mining.shares")) {
-    shjson_t *data;
-    shjson_t *udata;
-
-    reply = shjson_init(NULL);
-    data = shjson_array_add(reply, "result");
-    for (t_user = client_list; t_user; t_user = t_user->next) {
-/*
-      if (t_user->block_tot == 0 &&
-          t_user->block_avg <= 0.00000000)
-        continue;
-*/
-
-      memset(uname, 0, sizeof(uname));
-      strncpy(uname, t_user->worker, sizeof(uname) - 1);
-      strtok(uname, ".");
-      if (!*uname)
-        continue;
-
-      block_avg = 0;
-      for (i = 0; i < MAX_ROUNDS_PER_HOUR; i++)
-        block_avg += t_user->block_avg[i]; 
-      if (block_avg != 0)
-        block_avg /= 3600; /* average reported is per second. */
-
-      udata = shjson_array_add(data, NULL);
-      shjson_str_add(udata, NULL, t_user->worker);
-      shjson_num_add(udata, NULL, t_user->round_stamp);
-      shjson_num_add(udata, NULL, t_user->block_cnt);
-      shjson_num_add(udata, NULL, t_user->block_tot);
-      shjson_num_add(udata, NULL, block_avg);
-      shjson_num_add(udata, NULL, t_user->work_diff); /* miner share difficulty */
-      shjson_num_add(udata, NULL, stratum_user_speed(t_user)); /* khs */
-      shjson_str_add(udata, NULL, t_user->block_hash);
-      shjson_str_add(udata, NULL, t_user->cli_ver);
-//      shjson_num_add(udata, NULL, t_user->reward_val);
-      shjson_num_add(udata, NULL, t_user->reward_time);
-      shjson_num_add(udata, NULL, t_user->reward_height);
-
-      shjson_str_add(udata, NULL, shkey_print(&t_user->netid));
-
-      udata = shjson_array_add(data, NULL);
-      for (i = 1; i < MAX_COIN_IFACE; i++) {
-        shjson_num_add(udata, NULL, stratum_addr_crc(i, t_user));
-      }
-
-      udata = shjson_array_add(data, NULL);
-      for (i = 1; i < MAX_COIN_IFACE; i++) {
-        shjson_num_add(udata, NULL, stratum_ext_addr_crc(i, t_user));
-      }
-    }
-    shjson_null_add(reply, "error");
-    err = stratum_send_message(user, reply);
-    shjson_free(&reply);
-    return (err);
-  }
-  if (0 == strcmp(method, "mining.info")) {
-    reply = shjson_init(getmininginfo(ifaceIndex));
-    if (reply) {
+      shjson_null_add(reply, "result");
       err = stratum_send_message(user, reply);
       shjson_free(&reply);
       return (err);
     }
-  }
-  if (0 == strcmp(method, "mining.get_transactions")) {
-    char *work_id_str;
-    char *json_str;
-    unsigned int work_id;
 
-    work_id_str = (char *)shjson_array_astr(json, "params", 0);
-    if (!work_id_str) {
-      set_stratum_error(reply, -2, "invalid task id");
-      shjson_null_add(reply, "result");
-    } else {
-      work_id = (unsigned int)strtoll(work_id_str, NULL, 16);
+    if (0 == strcmp(method, "mining.subscribe")) {
+      err = stratum_subscribe(user);
+      if (!err) {
+        stratum_set_difficulty(user, DEFAULT_WORK_DIFFICULTY);
+      }
 
-      json_str = getminingtransactioninfo(ifaceIndex, work_id);
+      //reset_task_work_time();
 
-      reply = shjson_init(json_str);
-      if (!json_str) {
+      return (err);
+    } 
+
+    if (0 == strcmp(method, "mining.authorize") ||
+        0 == strcmp(method, "stratum.authorize")) {
+      shjson_t *param;
+      char username[1024];
+      char password[1024];
+
+      memset(username, 0, sizeof(username));
+      strncpy(username, shjson_array_astr(json, "params", 0), sizeof(username)-1);
+
+      memset(password, 0, sizeof(password));
+      strncpy(password, shjson_array_astr(json, "params", 1), sizeof(password)-1);
+
+      t_user = NULL;
+      if (*username) {
+        t_user = stratum_user(user, username);
+  #if 0
+      } else {
+        t_user = stratum_sync_user(user, password);
+  #endif
+      }
+
+      /* Note: Support for "x:<diff>" is not permitted. */
+
+
+      if (!t_user) {
+        reply = shjson_init(NULL);
+        set_stratum_error(reply, -2, "unknown user");
+        shjson_bool_add(reply, "result", FALSE);
+        err = stratum_send_message(user, reply);
+        shjson_free(&reply);
+        return (err);
+      }
+
+      reply = shjson_init(NULL);
+      shjson_bool_add(reply, "result", TRUE);
+      shjson_null_add(reply, "error"); 
+      err = stratum_send_message(user, reply);
+      shjson_free(&reply);
+
+      /* ask client for their version */
+      stratum_send_client_ver(user);
+
+      /* redundant */
+      user->work_diff = DEFAULT_WORK_DIFFICULTY;
+
+      return (err);
+    }
+
+    if (0 == strcmp(method, "mining.resume")) {
+      char *sess_id;
+
+      sess_id = shjson_array_astr(json, "params", 0);
+
+      reply = shjson_init(NULL);
+
+      /* compare previous session hash */
+      if (0 != strcmp(sess_id, stratum_runtime_session()))
+        return (stratum_send_error(user, BLKERR_BAD_SESSION));
+
+      shjson_bool_add(reply, "result", TRUE);
+      shjson_null_add(reply, "error"); 
+      err = stratum_send_message(user, reply);
+      shjson_free(&reply);
+      return (err);
+    }
+
+    if (0 == strcmp(method, "mining.submit")) {
+      err = stratum_validate_submit(user, json);
+
+      reply = shjson_init(NULL);
+      if (!err) {
+        shjson_bool_add(reply, "result", TRUE);
+        shjson_null_add(reply, "error");
+      } else {
+        shjson_bool_add(reply, "result", FALSE);
+  /*
+   * {"error": [-2, "Incorrect size of extranonce2. Expected 8 chars", null], "id": 2, "result": null}
+   * {"error": [-2, "Connection is not subscribed for mining", null], "id": 3, "result": null}
+   * {"error": [-2, "Ntime out of range", null], "id": 3, "result": null}
+   * {"error": [-2, "Job 'b416' not found", null], "id": 4, "result": null}
+   */
+        if (err == SHERR_ALREADY) {
+          set_stratum_error(reply, -2, "duplicate");
+        } else if (err == SHERR_TIME) {
+          set_stratum_error(reply, -2, "stale");
+        } else if (err == SHERR_PROTO) {
+          set_stratum_error(reply, -2, "H-not-zero");
+        } else if (err == SHERR_INVAL) {
+          set_stratum_error(reply, -2, "unknown task id");
+        } else {
+          set_stratum_error(reply, -2, "invalid");
+        }
+      }
+      stratum_send_message(user, reply);
+      shjson_free(&reply);
+
+      if (err == SHERR_PROTO) {
+        stratum_send_difficulty(user);
+      }
+
+      return (0);
+    }
+
+    if (0 == strcmp(method, "mining.shares")) {
+      shjson_t *data;
+      shjson_t *udata;
+
+      reply = shjson_init(NULL);
+      data = shjson_array_add(reply, "result");
+      for (t_user = client_list; t_user; t_user = t_user->next) {
+  /*
+        if (t_user->block_tot == 0 &&
+            t_user->block_avg <= 0.00000000)
+          continue;
+  */
+
+        memset(uname, 0, sizeof(uname));
+        strncpy(uname, t_user->worker, sizeof(uname) - 1);
+        strtok(uname, ".");
+        if (!*uname)
+          continue;
+
+        block_avg = 0;
+        for (i = 0; i < MAX_ROUNDS_PER_HOUR; i++)
+          block_avg += t_user->block_avg[i]; 
+        if (block_avg != 0)
+          block_avg /= 3600; /* average reported is per second. */
+
+        udata = shjson_array_add(data, NULL);
+        shjson_str_add(udata, NULL, t_user->worker);
+        shjson_num_add(udata, NULL, t_user->round_stamp);
+        shjson_num_add(udata, NULL, t_user->block_cnt);
+        shjson_num_add(udata, NULL, t_user->block_tot);
+        shjson_num_add(udata, NULL, block_avg);
+        shjson_num_add(udata, NULL, t_user->work_diff); /* miner share difficulty */
+        shjson_num_add(udata, NULL, stratum_user_speed(t_user)); /* khs */
+        shjson_str_add(udata, NULL, t_user->block_hash);
+        shjson_str_add(udata, NULL, t_user->cli_ver);
+  //      shjson_num_add(udata, NULL, t_user->reward_val);
+        shjson_num_add(udata, NULL, t_user->reward_time);
+        shjson_num_add(udata, NULL, t_user->reward_height);
+
+        shjson_str_add(udata, NULL, shkey_print(&t_user->netid));
+
+        udata = shjson_array_add(data, NULL);
+        for (i = 1; i < MAX_COIN_IFACE; i++) {
+          shjson_num_add(udata, NULL, stratum_addr_crc(i, t_user));
+        }
+
+        udata = shjson_array_add(data, NULL);
+        for (i = 1; i < MAX_COIN_IFACE; i++) {
+          shjson_num_add(udata, NULL, stratum_ext_addr_crc(i, t_user));
+        }
+      }
+      shjson_null_add(reply, "error");
+      err = stratum_send_message(user, reply);
+      shjson_free(&reply);
+      return (err);
+    }
+    if (0 == strcmp(method, "mining.info")) {
+      reply = shjson_init(getmininginfo(ifaceIndex));
+      if (reply) {
+        err = stratum_send_message(user, reply);
+        shjson_free(&reply);
+        return (err);
+      }
+    }
+    if (0 == strcmp(method, "mining.get_transactions")) {
+      char *work_id_str;
+      char *json_str;
+      unsigned int work_id;
+
+      work_id_str = (char *)shjson_array_astr(json, "params", 0);
+      if (!work_id_str) {
         set_stratum_error(reply, -2, "invalid task id");
         shjson_null_add(reply, "result");
+      } else {
+        work_id = (unsigned int)strtoll(work_id_str, NULL, 16);
+
+        json_str = getminingtransactioninfo(ifaceIndex, work_id);
+
+        reply = shjson_init(json_str);
+        if (!json_str) {
+          set_stratum_error(reply, -2, "invalid task id");
+          shjson_null_add(reply, "result");
+        }
       }
-    }
-    err = stratum_send_message(user, reply);
-    shjson_free(&reply);
-    return (err);
-  }
-
-  if (0 == strcmp(method, "block.info")) {
-    const char *json_data = "{\"result\":null,\"error\":null}";
-    shtime_t ts2;
-    char *hash;
-    int mode;
-
-    mode = shjson_array_num(json, "params", 0);
-    hash = shjson_array_astr(json, "params", 1);
-
-    switch (mode) {
-      case 1: /* block by hash */
-        if (hash) {
-          timing_init("getblockinfo", &ts2);
-          json_data = getblockinfo(ifaceIndex, hash);
-          timing_term(ifaceIndex, "getblockinfo", &ts2);
-        }
-        break;
-      case 2: /* tx */
-        if (hash) {
-          timing_init("gettransactioninfo", &ts2);
-          json_data = gettransactioninfo(ifaceIndex, hash);
-          timing_term(ifaceIndex, "gettransactioninfo", &ts2);
-        }
-        break;
-      case 3: /* block by height [or last] */
-        timing_init("getlastblockinfo", &ts2);
-        json_data = getlastblockinfo(ifaceIndex, shjson_array_num(json, "params", 1));
-        timing_term(ifaceIndex, "getlastblockinfo", &ts2);
-        break;
+      err = stratum_send_message(user, reply);
+      shjson_free(&reply);
+      return (err);
     }
 
-    if (!json_data) {
-      reply = shjson_init(NULL);
-      set_stratum_error(reply, -5, "invalid");
-      shjson_null_add(reply, "result");
-    } else {
-      reply = shjson_init(json_data);
+    if (0 == strcmp(method, "block.info")) {
+      const char *json_data = "{\"result\":null,\"error\":null}";
+      shtime_t ts2;
+      char *hash;
+      int mode;
+
+      mode = shjson_array_num(json, "params", 0);
+      hash = shjson_array_astr(json, "params", 1);
+
+      switch (mode) {
+        case 1: /* block by hash */
+          if (hash) {
+            timing_init("getblockinfo", &ts2);
+            json_data = getblockinfo(ifaceIndex, hash);
+            timing_term(ifaceIndex, "getblockinfo", &ts2);
+          }
+          break;
+        case 2: /* tx */
+          if (hash) {
+            timing_init("gettransactioninfo", &ts2);
+            json_data = gettransactioninfo(ifaceIndex, hash);
+            timing_term(ifaceIndex, "gettransactioninfo", &ts2);
+          }
+          break;
+        case 3: /* block by height [or last] */
+          timing_init("getlastblockinfo", &ts2);
+          json_data = getlastblockinfo(ifaceIndex, shjson_array_num(json, "params", 1));
+          timing_term(ifaceIndex, "getlastblockinfo", &ts2);
+          break;
+      }
+
+      if (!json_data) {
+        reply = shjson_init(NULL);
+        set_stratum_error(reply, -5, "invalid");
+        shjson_null_add(reply, "result");
+      } else {
+        reply = shjson_init(json_data);
+      }
+      err = stratum_send_message(user, reply);
+      shjson_free(&reply);
+      return (err);
     }
-    err = stratum_send_message(user, reply);
-    shjson_free(&reply);
-    return (err);
-  }
 
-  if (0 == strcmp(method, "account.create")) {
-    return (stratum_request_account_create(ifaceIndex, user,
-          shjson_array_astr(json, "params", 0)));
-  }
-#if 0
-  if (0 == strcmp(method, "account.transactions")) {
-    return (stratum_request_account_transactions(ifaceIndex, user, idx, 
-          shjson_array_astr(json, "params", 0),
-          shjson_array_astr(json, "params", 1),
-          shjson_array_num(json, "params", 2)));
-  }
-#endif
-  if (0 == strcmp(method, "account.address")) {
-    return (stratum_request_account_address(ifaceIndex, user,
-          shjson_array_astr(json, "params", 0)));
-  }
-  if (0 == strcmp(method, "account.secret")) {
-    return (stratum_request_account_secret(ifaceIndex, user,
-          shjson_array_astr(json, "params", 0),
-          shjson_array_astr(json, "params", 1)));
-  }
-  if (0 == strcmp(method, "account.import")) {
-    return (stratum_request_account_import(ifaceIndex, user,
-          shjson_array_astr(json, "params", 0),
-          shjson_array_astr(json, "params", 1)));
-  }
-  if (0 == strcmp(method, "account.transfer")) {
-    return (stratum_request_account_transfer(ifaceIndex, user,
-          shjson_array_astr(json, "params", 0),
-          shjson_array_astr(json, "params", 1),
-          shjson_array_astr(json, "params", 2),
-          shjson_array_num(json, "params", 3)));
-  }
-  if (0 == strcmp(method, "account.info")) {
-    return (stratum_request_account_info(ifaceIndex, user,
-          shjson_array_astr(json, "params", 0),
-          shjson_array_astr(json, "params", 1)));
-  }
+    if (0 == strcmp(method, "account.create")) {
+      return (stratum_request_account_create(ifaceIndex, user,
+            shjson_array_astr(json, "params", 0)));
+    }
+  #if 0
+    if (0 == strcmp(method, "account.transactions")) {
+      return (stratum_request_account_transactions(ifaceIndex, user, idx, 
+            shjson_array_astr(json, "params", 0),
+            shjson_array_astr(json, "params", 1),
+            shjson_array_num(json, "params", 2)));
+    }
+  #endif
+    if (0 == strcmp(method, "account.address")) {
+      return (stratum_request_account_address(ifaceIndex, user,
+            shjson_array_astr(json, "params", 0)));
+    }
+    if (0 == strcmp(method, "account.secret")) {
+      return (stratum_request_account_secret(ifaceIndex, user,
+            shjson_array_astr(json, "params", 0),
+            shjson_array_astr(json, "params", 1)));
+    }
+    if (0 == strcmp(method, "account.import")) {
+      return (stratum_request_account_import(ifaceIndex, user,
+            shjson_array_astr(json, "params", 0),
+            shjson_array_astr(json, "params", 1)));
+    }
+    if (0 == strcmp(method, "account.transfer")) {
+      return (stratum_request_account_transfer(ifaceIndex, user,
+            shjson_array_astr(json, "params", 0),
+            shjson_array_astr(json, "params", 1),
+            shjson_array_astr(json, "params", 2),
+            shjson_array_num(json, "params", 3)));
+    }
+    if (0 == strcmp(method, "account.info")) {
+      return (stratum_request_account_info(ifaceIndex, user,
+            shjson_array_astr(json, "params", 0),
+            shjson_array_astr(json, "params", 1)));
+    }
 
-#if 0
-  if (0 == strcmp(method, "wallet.sync")) {
-    shjson_t *param = shjson_obj_get(json, "params");
-    return (stratum_request_wallet_sync(ifaceIndex, user,
-          (uint32_t)shjson_array_num(json, "params", 0),
-          shjson_array_get(param, 1)));
-  }
-#endif
+  #if 0
+    if (0 == strcmp(method, "wallet.sync")) {
+      shjson_t *param = shjson_obj_get(json, "params");
+      return (stratum_request_wallet_sync(ifaceIndex, user,
+            (uint32_t)shjson_array_num(json, "params", 0),
+            shjson_array_get(param, 1)));
+    }
+  #endif
+
+  } /* !USER_RPC */
+
 
   {
     const char *ret_json;
@@ -842,11 +847,15 @@ int stratum_request_message(user_t *user, shjson_t *json)
     memset(account, 0, sizeof(account));
     strncpy(account, user->worker, sizeof(account)-1);
     strtok(account, ".");
-    ret_json = ExecuteStratumRPC(ifaceIndex, (const char *)account, json); 
+    if (user->flags & USER_RPC) {
+      ret_json = ExecuteRPC(ifaceIndex, json); 
+    } else {
+      ret_json = ExecuteStratumRPC(ifaceIndex, json); 
+    }
     if (!ret_json) {
 fprintf(stderr, "DEBUG: stratum_request_message: error executing rpc call for '%s'\n", user->worker);
       reply = shjson_init(NULL);
-      set_stratum_error(reply, -5, "invalid");
+      set_stratum_error(reply, -5, "invalid command");
       shjson_null_add(reply, "result");
       stratum_send_message(user, reply);
       shjson_free(&reply);
@@ -874,7 +883,7 @@ fprintf(stderr, "DEBUG: stratum_request_message: error parsing JSON: %s\n", ret_
 
   /* unknown request in proper JSON format. */
   reply = shjson_init(NULL);
-  set_stratum_error(reply, -5, "invalid");
+  set_stratum_error(reply, -5, "invalid command");
   shjson_null_add(reply, "result");
   err = stratum_send_message(user, reply);
   shjson_free(&reply);

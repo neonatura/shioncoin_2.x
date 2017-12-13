@@ -393,5 +393,5 @@ fi
 #AM_CONDITIONAL(ENABLE_WALLET, [test "x$enable_wallet" != "xno"])
 #AM_CONDITIONAL([ENABLE_WALLET], 1, [Define to share-wallet functionality.])
 
-AC_OUTPUT(Makefile src/secp256k1/Makefile src/share-coin/Makefile doc/Makefile bin/Makefile)
+AC_OUTPUT(Makefile src/secp256k1/Makefile src/share-coin/Makefile src/coin-console/Makefile doc/Makefile bin/Makefile)
 
