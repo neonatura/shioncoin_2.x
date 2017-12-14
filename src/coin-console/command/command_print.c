@@ -36,7 +36,8 @@ void command_print_r(FILE *out, shjson_t *j)
     return;
   }
 
-  fprintf(out, "%s\n", text);
+  if (0 != strcmp(text, "null"))
+    fprintf(out, "%s\n", text);
 
   free(text);
 }
@@ -68,12 +69,11 @@ void command_print(FILE *out, shjson_t *j)
     char *text = shjson_astr(j, "result", "");
     if (!text || !*text) {
       command_print_result(out, node);
-    } else {
+    } else if (0 != strcmp(text, "null")) {
       fprintf(out, "%s\n", text); 
     }
   }
 
-#if 0
   node = shjson_obj_get(j, "error");
   if (node) {
     char *text = shjson_astr(j, "error", "");
@@ -81,10 +81,7 @@ void command_print(FILE *out, shjson_t *j)
       command_print_error(out,
           shjson_array_num(j, "error", 0),
           shjson_array_str(j, "error", 1));
-    } else {
-      fprintf(out, "Error: %s\n", text); 
     }
   }
-#endif
 
 } 

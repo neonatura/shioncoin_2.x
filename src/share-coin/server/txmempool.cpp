@@ -139,7 +139,8 @@ bool CPool::AddTx(CTransaction& tx, CNode *pfrom)
 
   /* verify fee */
   CalculateFee(ptx);
-  if (ptx.nFee < ptx.nMinFee && ptx.nFee < MIN_RELAY_TX_FEE(iface)) {
+  bool fAllowFree = IsFreeRelay(ptx.GetTx(), ptx.GetInputs());
+  if (!fAllowFree && ptx.nFee < MIN_RELAY_TX_FEE(iface)) {
     /* invalid fee rate */
     AddInvalTx(ptx);
     return (false);
@@ -166,12 +167,15 @@ bool CPool::AddTx(CTransaction& tx, CNode *pfrom)
   }
 
   /* check for preferred minimum fee on initial pool acceptance */
-  int64 nSoftFee = CalculateSoftFee(ptx.GetTx());
-  if (ptx.nFee < nSoftFee) {
-    Debug("CPool.FillInputs: info: tx \"%s\" has insufficient soft fee.", ptx.GetHash().GetHex().c_str());
-    /* meets minimum requirements -- process as low priority */
-    ptx.SetFlag(POOL_FEE_LOW);
-    return (AddOverflowTx(ptx));
+  if (!fAllowFree) {
+    int64 nSoftFee = CalculateSoftFee(ptx.GetTx());
+    if (ptx.nFee < nSoftFee) {
+      Debug("CPool.FillInputs: info: tx \"%s\" has insufficient soft fee.", ptx.GetHash().GetHex().c_str());
+
+      /* meets minimum requirements -- process as low priority */
+      ptx.SetFlag(POOL_FEE_LOW);
+      return (AddOverflowTx(ptx));
+    }
   }
 
   if (!tx.IsFinal(ifaceIndex)) {
@@ -183,6 +187,8 @@ bool CPool::AddTx(CTransaction& tx, CNode *pfrom)
     return (AddOverflowTx(ptx));
   }
   ptx.UnsetFlag(POOL_NOT_FINAL);
+
+  PurgeActiveTx();
 
   return (AddActiveTx(ptx));
 }
@@ -395,6 +401,10 @@ bool CPool::RemoveTx(const uint256& hash)
     overflow.erase(hash);
     return (true);
   } 
+  if (stale.count(hash)) {
+    stale.erase(hash);
+    return (true);
+  } 
   if (inval.find(hash) != inval.end()) {
     inval.erase(hash);
     return (true);
@@ -555,6 +565,8 @@ bool CPool::AddActiveTx(CPoolTx& ptx)
 
   /* for case when overflow is transitioning to active queue. */
   overflow.erase(ptx.GetHash());
+  /* for case when stale is transitioning to active queue. */
+  stale.erase(ptx.GetHash());
 
   if (!FillInputs(ptx)) {
     ptx.SetFlag(POOL_NO_INPUT);
@@ -622,6 +634,26 @@ bool CPool::AddOverflowTx(CPoolTx& ptx)
   return (true);
 }
 
+bool CPool::AddStaleTx(CPoolTx& ptx)
+{
+  const uint256& hash = ptx.GetHash();
+
+  if (stale.count(hash) != 0)
+    return (true); /* redundant */
+
+  /* check size breach */
+  if (GetStaleTxSize() + ptx.GetTxSize() > GetMaxQueueMem()) {
+    /* reach'd the limit */
+    return (error(SHERR_INVAL, "CPool.AddStaleTx: rejecting tx \"%s\" <%d bytes> due to memory queue limits [max %-3.3fm].", ptx.GetHash().GetHex().c_str(), (int)ptx.GetTxSize(), (double)GetMaxQueueMem()/1000000));
+  }
+
+  stale[hash] = ptx;
+  Debug("CPool.AddStaleTx: added tx \"%s\" to stale queue.",
+      ptx.GetHash().GetHex().c_str()); 
+
+  return (true);
+}
+
 bool CPool::AddPendingTx(CPoolTx& ptx)
 {
   const uint256& hash = ptx.GetHash();
@@ -646,6 +678,56 @@ void CPool::AddInvalTx(CPoolTx& ptx)
 
   while (inval.size() > 1000)
     inval.erase(inval.begin());
+}
+
+void CPool::PurgeActiveTx()
+{
+  vector<CPoolTx> vRemove;
+
+  if (active.size() == 0) {
+    if (stale.size() != 0) {
+      /* bring back one stale */
+      pool_map::iterator it = stale.begin();
+      std::advance(it, (shrand() % stale.size()));
+      if (it != stale.end()) {
+        CPoolTx& o_ptx = it->second;
+        AddActiveTx(o_ptx);
+      }
+    }
+    
+    /* no active tx's to process. */
+    return; 
+  }
+
+  for (pool_map::iterator it = overflow.begin(); it != active.end(); ++it) {
+    CPoolTx& o_ptx = it->second;
+
+#if 0
+    if (o_ptx.IsLocal())
+      continue;
+#endif
+
+    if (!o_ptx.IsExpired(MAX_MEMPOOL_ACTIVE_SPAN)) /* 6hr */
+      continue;
+
+    vRemove.insert(vRemove.begin(), o_ptx);
+
+    Debug("CPool.ActiveTx: expired tx \"%s\" from active queue.",
+        o_ptx.GetHash().GetHex().c_str()); 
+
+    break; /* due to unacceptwallet cpu usage.. do one at a time. */
+  }
+
+  /* remove from active queue */
+  BOOST_FOREACH(CPoolTx& ptx, vRemove) {
+    RemoveTx(ptx.GetHash());
+  }
+
+  /* add to stale queue */
+  BOOST_FOREACH(CPoolTx& ptx, vRemove) {
+    AddStaleTx(ptx);
+  }
+  
 }
 
 void CPool::PurgeOverflowTx()
@@ -982,6 +1064,14 @@ bool CPool::GetTx(uint256 hash, CTransaction& retTx, int flags)
     }
   }
 
+  if (flags == 0 || (flags & POOL_STALE)) {
+    mi = stale.find(hash); 
+    if (mi != stale.end()) {
+      retTx = stale[hash].tx;
+      return (true);
+    }
+  }
+
 #if 0
   if (flags == 0 || (flags & POOL_INVAL)) {
     mi = inval.find(hash); 
@@ -1050,7 +1140,16 @@ bool CPool::IsInputTx(const uint256 hash, int nOut)
       }
     }
   }
-
+  for (pool_map::iterator it = stale.begin(); it != stale.end(); ++it) {
+    const uint256& a_hash = it->first;
+    CPoolTx& a_ptx = it->second;
+    BOOST_FOREACH(const CTxIn& a_txin, a_ptx.GetTx().vin) {
+      if (a_txin.prevout.hash == hash &&
+          a_txin.prevout.n == nOut) {
+        return (true);
+      }
+    }
+  }
 
   return (false);
 }

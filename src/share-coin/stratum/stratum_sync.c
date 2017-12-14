@@ -337,7 +337,6 @@ static int stratum_sync_ident_req(user_t *user)
   CIface *iface;
   shjson_t *reply;
   shjson_t *param;
-  char privkey[256];
   int err;
 
   if (!user)
@@ -346,27 +345,14 @@ static int stratum_sync_ident_req(user_t *user)
   if (!(user->flags & USER_SYNC))
     return (SHERR_INVAL);
 
-  iface = GetCoinByIndex(user->ifaceIndex);
-  if (!iface || !iface->enabled)
-    return (SHERR_OPNOTSUPP);
-
-  if (!user->sync_acc[0] || !user->sync_pubkey[0])
-    return (0); /* done */
-
-  memset(privkey, 0, sizeof(privkey));
-  err = stratum_getaddrkey(user->ifaceIndex,
-      user->sync_acc, user->sync_pubkey, privkey);
-  if (err)
-    return (err);
-
   /* send 'wallet.setkey' message. */
   reply = shjson_init(NULL);
-  shjson_num_add(reply, "id", user->sync_addr);
+  shjson_num_add(reply, "id", MAX(1, user->work_stamp));
   shjson_str_add(reply, "iface", iface->name);
-  shjson_str_add(reply, "method", "wallet.nsetkey"); /* DEBUG: TEST remove 'n' */
+  shjson_str_add(reply, "method", "stratum.authorize");
   param = shjson_array_add(reply, "param");
-  shjson_str_add(param, NULL, user->sync_acc);
-//  shjson_str_add(param, NULL, privkey); /* DEBUG: TEST: */
+  shjson_str_add(param, NULL, user->worker);
+  shjson_str_add(param, NULL, "");
   err = stratum_send_message(user, reply);
   shjson_free(&reply);
 

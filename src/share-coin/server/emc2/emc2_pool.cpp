@@ -175,3 +175,8 @@ int64 EMC2_CTxMemPool::CalculateSoftFee(CTransaction& tx)
   return (nFee);
 }
 
+int64 EMC2_CTxMemPool::IsFreeRelay(CTransaction& tx, tx_cache& mapInputs)
+{
+  return (false);
+}
+

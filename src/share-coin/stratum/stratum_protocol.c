@@ -705,10 +705,10 @@ int stratum_request_message(user_t *user, shjson_t *json)
           (unsigned char *)skey, sizeof(shkey_t), RPC_AUTH_FREQ);
       }
 
-//fprintf(stderr, "DEBUG: skey {%x} lcl_pin %d, rem_pin %d, lcl_auth(%s), rem_auth(%s)\n", skey, lcl_pin, rem_pin, lcl_auth, rem_auth);
       if (!skey || 0 != strcasecmp(lcl_auth, rem_auth) || 
           (lcl_pin != rem_pin)) {
         err = SHERR_ACCESS; 
+fprintf(stderr, "DEBUG: skey {%x} lcl_pin %d, rem_pin %d, lcl_auth(%s), rem_auth(%s)\n", skey, lcl_pin, rem_pin, lcl_auth, rem_auth);
 
         sprintf(buf, "stratum_request_message: error granting RPC access for user \"%s\" [invalid credentials].", user->worker);
         unet_log(UNET_STRATUM, buf);

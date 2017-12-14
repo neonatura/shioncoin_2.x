@@ -60,6 +60,7 @@ class USDE_CTxMemPool : public CPool
     bool VerifyCoinStandards(CTransaction& tx, tx_cache& mapInputs) ;
     bool AcceptTx(CTransaction& tx);
     int64 CalculateSoftFee(CTransaction& tx);
+    int64 IsFreeRelay(CTransaction& tx, tx_cache& mapInputs);
 
     USDE_CTxMemPool() : CPool(USDE_COIN_IFACE) { };
 };

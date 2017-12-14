@@ -60,6 +60,7 @@ class EMC2_CTxMemPool : public CPool
     bool VerifyCoinStandards(CTransaction& tx, tx_cache& mapInputs) ;
     bool AcceptTx(CTransaction& tx);
     int64 CalculateSoftFee(CTransaction& tx);
+    int64 IsFreeRelay(CTransaction& tx, tx_cache& mapInputs);
 
     EMC2_CTxMemPool() : CPool(EMC2_COIN_IFACE) { };
 

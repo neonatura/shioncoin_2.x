@@ -27,15 +27,18 @@
 #define __SERVER__TXMEMPOOL_H__
 
 
-#define MAX_MEMPOOL_INVAL_SPAN 600
-#define MAX_MEMPOOL_OVERFLOW_SPAN 3600
-#define MAX_MEMPOOL_PENDING_SPAN 86400
+#define MAX_MEMPOOL_ACTIVE_SPAN 21600 /* 6hr */ 
+#define MAX_MEMPOOL_OVERFLOW_SPAN 43200 /* 12hr */
+#define MAX_MEMPOOL_PENDING_SPAN 86400 /* 24hr */
+#define MAX_MEMPOOL_INVAL_SPAN 3600 /* 1hr */
+#define MAX_MEMPOOL_STALE_SPAN 86400 /* 24hr */
 
 
 #define POOL_ACTIVE (1 << 0)
 #define POOL_PENDING (1 << 1)
 #define POOL_OVERFLOW (1 << 2)
 #define POOL_INVALID (1 << 3)
+#define POOL_STALE (1 << 4)
 
 #define POOL_FEE_LOW (1 << 6)
 #define POOL_NOT_FINAL (1 << 7)
@@ -368,6 +371,9 @@ class CPool : public CTxMemPool
     /* a back-buffer pool when their are too many to put into active pool. */
     pool_map overflow;
 
+    /* active tx's that aren't being processed. */
+    pool_map stale;
+
     /* a list of tx hashes considered invalid for pool acceptance. */
     set<uint256> inval;
 
@@ -416,7 +422,8 @@ class CPool : public CTxMemPool
       /* does not consider invalid tx hashes valid. */
       return (active.count(hash) != 0 ||
           pending.count(hash) != 0 ||
-          overflow.count(hash) != 0);
+          overflow.count(hash) != 0 ||
+          stale.count(hash) != 0);
     }
 
     /* The total weight of all active transactions. */
@@ -436,6 +443,18 @@ class CPool : public CTxMemPool
       int64 nTxSize = 0;
 
       BOOST_FOREACH(PAIRTYPE(const uint256, CPoolTx)& item, overflow) {
+        CPoolTx& ptx = item.second;
+        nTxSize += ptx.GetTxSize();
+      }
+
+      return (nTxSize);
+    }
+
+    int64 GetStaleTxSize()
+    {
+      int64 nTxSize = 0;
+
+      BOOST_FOREACH(PAIRTYPE(const uint256, CPoolTx)& item, stale) {
         CPoolTx& ptx = item.second;
         nTxSize += ptx.GetTxSize();
       }
@@ -497,6 +516,8 @@ class CPool : public CTxMemPool
 
     bool AddOverflowTx(CPoolTx& tx);
 
+    bool AddStaleTx(CPoolTx& tx);
+
     bool AddPendingTx(CPoolTx& tx);
 
     void AddInvalTx(CPoolTx& tx);
@@ -531,6 +552,8 @@ class CPool : public CTxMemPool
 
     int GetActiveTotal();
 
+    void PurgeActiveTx();
+
     void PurgeOverflowTx();
 
     void PurgePendingTx();
@@ -561,6 +584,8 @@ class CPool : public CTxMemPool
     virtual bool AcceptTx(CTransaction& tx) = 0;
 
     virtual int64 CalculateSoftFee(CTransaction& tx) = 0;
+
+    virtual int64 IsFreeRelay(CTransaction& tx, tx_cache& mapInputs) = 0;
 
 
     

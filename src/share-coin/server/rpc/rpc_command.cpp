@@ -4813,6 +4813,7 @@ static void RPCConvertParam(CIface *iface, RPCOp *op, int arg_idx, Array& param)
 }
 
 
+#if 0
 json_spirit::Value rpc_execute(CIface *iface, const std::string &strMethod, json_spirit::Array &params)
 {
   RPCOp *op;
@@ -4882,6 +4883,7 @@ json_spirit::Value rpc_execute(CIface *iface, const std::string &strMethod, json
     throw JSONRPCError(-1, e.what());
   }
 }
+#endif
 
 static string _stratum_rpc_json;
 
@@ -5123,14 +5125,11 @@ const char *ExecuteRPC(int ifaceIndex, shjson_t *json)
 
     _stratum_rpc_json = JSONRPCReply(result, Value::null, Value::null);
     return _stratum_rpc_json.c_str();
-  }
-  catch (std::runtime_error& e)
-  {
-    Debug("stratum (rpc call) runtime error: %s", e.what());
-  }
-  catch (std::exception& e)
-  {
-    Debug("stratum (rpc call) exception: %s", e.what());
+  } catch (Object& objError) {
+    _stratum_rpc_json = JSONRPCReply(Value::null, objError, Value::null);
+    return _stratum_rpc_json.c_str();
+  } catch (std::exception& e) {
+    /* .. */
   }
   
   return (NULL);

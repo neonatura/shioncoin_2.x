@@ -202,4 +202,21 @@ int64 SHC_CTxMemPool::CalculateSoftFee(CTransaction& tx)
   return (shc_CalculateSoftFee(tx));
 }
 
+int64 SHC_CTxMemPool::IsFreeRelay(CTransaction& tx, tx_cache& mapInputs)
+{
+  CIface *iface = GetCoinByIndex(SHC_COIN_IFACE);
+  CWallet *wallet = GetWallet(iface);
+  unsigned int nBytes;
+
+  nBytes = ::GetSerializeSize(tx, SER_NETWORK, 
+      PROTOCOL_VERSION(iface) | SERIALIZE_TRANSACTION_NO_WITNESS);
+  if (nBytes < 1500) {
+    double dPriority = wallet->GetPriority(tx, mapInputs);
+    if (dPriority > wallet->AllowFreeThreshold())
+      return (true);
+  }
+
+  return (false);
+}
+
 

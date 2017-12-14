@@ -60,6 +60,7 @@ class SHC_CTxMemPool : public CPool
     bool VerifyCoinStandards(CTransaction& tx, tx_cache& mapInputs) ;
     bool AcceptTx(CTransaction& tx);
     int64 CalculateSoftFee(CTransaction& tx);
+    int64 IsFreeRelay(CTransaction& tx, tx_cache& mapInputs);
 
     SHC_CTxMemPool() : CPool(SHC_COIN_IFACE) { };
 };
