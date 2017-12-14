@@ -100,6 +100,7 @@ void stratum_sync_init(void)
       strncpy(sys_user->worker, tok, sizeof(sys_user->worker) - 1);
       strncpy(sys_user->pass, key, sizeof(sys_user->pass) - 1);
       sys_user->flags = USER_SYNC; /* overwrite client flags */
+      sys_user->sync_flags |= SYNC_IDENT;
       sys_user->next = client_list;
       client_list = sys_user;
 
@@ -331,6 +332,50 @@ static int stratum_sync_wallet_setkey_req(user_t *user)
   return (err);
 }
 
+static int stratum_sync_ident_req(user_t *user)
+{
+  CIface *iface;
+  shjson_t *reply;
+  shjson_t *param;
+  char privkey[256];
+  int err;
+
+  if (!user)
+    return (SHERR_INVAL);
+
+  if (!(user->flags & USER_SYNC))
+    return (SHERR_INVAL);
+
+  iface = GetCoinByIndex(user->ifaceIndex);
+  if (!iface || !iface->enabled)
+    return (SHERR_OPNOTSUPP);
+
+  if (!user->sync_acc[0] || !user->sync_pubkey[0])
+    return (0); /* done */
+
+  memset(privkey, 0, sizeof(privkey));
+  err = stratum_getaddrkey(user->ifaceIndex,
+      user->sync_acc, user->sync_pubkey, privkey);
+  if (err)
+    return (err);
+
+  /* send 'wallet.setkey' message. */
+  reply = shjson_init(NULL);
+  shjson_num_add(reply, "id", user->sync_addr);
+  shjson_str_add(reply, "iface", iface->name);
+  shjson_str_add(reply, "method", "wallet.nsetkey"); /* DEBUG: TEST remove 'n' */
+  param = shjson_array_add(reply, "param");
+  shjson_str_add(param, NULL, user->sync_acc);
+//  shjson_str_add(param, NULL, privkey); /* DEBUG: TEST: */
+  err = stratum_send_message(user, reply);
+  shjson_free(&reply);
+
+  if (!err)
+    user->sync_flags |= SYNC_RESP_IDENT;
+
+  return (err);
+}
+
 
 
 void stratum_sync_cycle(CIface *iface, user_t *user)
@@ -351,6 +396,12 @@ void stratum_sync_cycle(CIface *iface, user_t *user)
   
   if (user->sync_flags & SYNC_RESP_ALL) {
     return; /* busy waiting for response */
+  }
+
+  if (user->sync_flags & SYNC_IDENT) {
+    stratum_sync_ident_req(user); 
+    user->sync_flags &= ~SYNC_IDENT;
+    return;
   }
 
   now = time(NULL);
@@ -448,12 +499,10 @@ user_t *u_next;
     if (expire < user->work_stamp)
       continue;
 
-    if (user->fd < 0) {
-      err = stratum_sync_connect(user);
-      if (err)
-        continue;
-
-    }
+    if (user->fd <= 0)
+      stratum_sync_connect(user);
+    if (user->fd <= 0)
+      continue;
 
     stratum_sync_cycle(iface, user);
     user->work_stamp = time(NULL);
@@ -673,6 +722,11 @@ if (text) free(text);
 int stratum_sync_resp(user_t *user, shjson_t *tree)
 {
   int err;
+
+  if (user->sync_flags & SYNC_RESP_IDENT) {
+    user->sync_flags &= ~SYNC_RESP_IDENT;
+    return (0);
+  }
 
   if (user->sync_flags & SYNC_RESP_ELEVATE) {
     {
