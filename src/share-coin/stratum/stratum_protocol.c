@@ -540,7 +540,9 @@ int stratum_request_message(user_t *user, shjson_t *json)
   }
 
   memset(iface_str, 0, sizeof(iface_str));
-  strncpy(iface_str, shjson_astr(json, "iface", ""), sizeof(iface_str)-1); 
+  text = shjson_astr(json, "iface", NULL);
+  if (text)
+    strncpy(iface_str, text, sizeof(iface_str)-1); 
   ifaceIndex = stratum_get_iface(iface_str);
   if (ifaceIndex < 1)
     ifaceIndex = user->ifaceIndex;//stratum_default_iface();
