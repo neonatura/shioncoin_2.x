@@ -1,11 +1,35 @@
 
+/*
+ * @copyright
+ *
+ *  Copyright 2015 Neo Natura
+ *
+ *  This file is part of the Share Library.
+ *  (https://github.com/neonatura/share)
+ *        
+ *  The Share Library is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version. 
+ *
+ *  The Share Library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with The Share Library.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  @endcopyright
+ */  
 
 #define __PROTO__PROTOCOL_C__
+
 #include "shcoind.h"
+#include "stratum/stratum.h"
 #include "coin_proto.h"
 
 #define DEFAULT_WORK_DIFFICULTY 256
-
 
 char *stratum_runtime_session(void)
 {
@@ -191,7 +215,6 @@ int stratum_validate_submit(user_t *user, shjson_t *json)
     ret_err = submitblock(task_id, le_ntime, be_nonce, xn_hex,
         submit_hash, &be_diff);
     if (!ret_err && (be_diff > share_diff)) {
-fprintf(stderr, "DEBUG: stratum_validate_submit: be_nonce (%x) is lower hash than le_nonce (%x) [ntime %x, xn_hex %s].\n", be_nonce, le_nonce, (unsigned int)le_ntime, xn_hex);
       share_diff = be_diff;
     }
   }
@@ -206,7 +229,7 @@ fprintf(stderr, "DEBUG: stratum_validate_submit: be_nonce (%x) is lower hash tha
   stratum_user_block(user, share_diff);
 
   if (*submit_hash) {
-    sprintf(errbuf, "stratum_validate_submit: submitted block \"%s\" for \"%s\"\n", submit_hash, user->worker);
+    sprintf(errbuf, "stratum_validate_submit: submitted block \"%s\" for \"%s\" [iface #%d]\n", submit_hash, user->worker, user->ifaceIndex);
     unet_log(UNET_STRATUM, errbuf);
 
     /* user's block was accepted by network. */
@@ -489,8 +512,8 @@ int stratum_request_message(user_t *user, shjson_t *json)
   user_t *t_user;
   shtime_t ts;
   char iface_str[256];
-  char buf[256];
   char uname[256];
+  char buf[1024];
   char *method;
   char *text;
   uint32_t val;
@@ -657,13 +680,76 @@ int stratum_request_message(user_t *user, shjson_t *json)
       return (0);
     }
 
+    /* temporarily elevate a stratum user into a rpc user (stratum sync). */ 
+    if (0 == strcmp(method, "stratum.elevate")) {
+      shkey_t *skey = NULL;
+      uint32_t rem_pin = 0, lcl_pin = 0;
+      char rem_auth[256];
+      char lcl_auth[256];
+
+      memset(rem_auth, 0, sizeof(rem_auth));
+      memset(lcl_auth, 0, sizeof(lcl_auth));
+
+      if (user->worker[0] && 0 != strcmp(user->worker, "127.0.0.1"))
+        skey = get_rpc_dat_password(user->worker);
+
+      if (skey) {
+        shsha_hex(SHALG_SHA256, (unsigned char *)lcl_auth,
+            (unsigned char *)skey, sizeof(shkey_t));
+
+        char *text = shjson_array_astr(json, "params", 0);
+        if (text) strncpy(rem_auth, text, sizeof(rem_auth)-1);
+
+        rem_pin = shjson_array_num(json, "params", 1);
+        lcl_pin = shsha_2fa_bin(SHALG_SHA256,
+          (unsigned char *)skey, sizeof(shkey_t), RPC_AUTH_FREQ);
+      }
+
+//fprintf(stderr, "DEBUG: skey {%x} lcl_pin %d, rem_pin %d, lcl_auth(%s), rem_auth(%s)\n", skey, lcl_pin, rem_pin, lcl_auth, rem_auth);
+      if (!skey || 0 != strcasecmp(lcl_auth, rem_auth) || 
+          (lcl_pin != rem_pin)) {
+        err = SHERR_ACCESS; 
+
+        sprintf(buf, "stratum_request_message: error granting RPC access for user \"%s\" [invalid credentials].", user->worker);
+        unet_log(UNET_STRATUM, buf);
+
+        reply = shjson_init(NULL);
+        set_stratum_error(reply, err, "stratum.elevate");
+        shjson_null_add(reply, "result");
+        err = stratum_send_message(user, reply);
+        shjson_free(&reply);
+        shkey_free(&skey);
+        return (err);
+      }
+
+      /* grant user temporarily RPC access */
+      user->flags |= USER_RPC;
+      user->flags |= USER_ELEVATE;
+
+      sprintf(buf, "stratum_request_message: info: granting RPC access for user \"%s\".", user->worker);
+      unet_log(UNET_STRATUM, buf);
+
+      reply = shjson_init(NULL);
+      shjson_null_add(reply, "result");
+      shjson_null_add(reply, "error");
+      err = stratum_send_message(user, reply);
+      shjson_free(&reply);
+
+      shkey_free(&skey);
+      return (0);
+    }
+
     if (0 == strcmp(method, "mining.shares")) {
       shjson_t *data;
       shjson_t *udata;
+      shjson_t *udata2;
 
       reply = shjson_init(NULL);
       data = shjson_array_add(reply, "result");
       for (t_user = client_list; t_user; t_user = t_user->next) {
+        if ((t_user->flags & USER_REMOTE) ||
+            (t_user->flags & USER_SYNC))
+          continue; /* shown in rpc, not shown in stratum */
   /*
         if (t_user->block_tot == 0 &&
             t_user->block_avg <= 0.00000000)
@@ -698,14 +784,14 @@ int stratum_request_message(user_t *user, shjson_t *json)
 
         shjson_str_add(udata, NULL, shkey_print(&t_user->netid));
 
-        udata = shjson_array_add(data, NULL);
+        udata2 = shjson_array_add(udata, NULL);
         for (i = 1; i < MAX_COIN_IFACE; i++) {
-          shjson_num_add(udata, NULL, stratum_addr_crc(i, t_user));
+          shjson_num_add(udata2, NULL, stratum_addr_crc(i, t_user->worker));
         }
 
-        udata = shjson_array_add(data, NULL);
+        udata2 = shjson_array_add(udata, NULL);
         for (i = 1; i < MAX_COIN_IFACE; i++) {
-          shjson_num_add(udata, NULL, stratum_ext_addr_crc(i, t_user));
+          shjson_num_add(udata2, NULL, stratum_ext_addr_crc(i, t_user->worker));
         }
       }
       shjson_null_add(reply, "error");
@@ -869,6 +955,16 @@ int stratum_request_message(user_t *user, shjson_t *json)
       stratum_send_message(user, reply);
       shjson_free(&reply);
       return (SHERR_INVAL);
+    }
+
+    if ((user->flags & USER_RPC) &&
+        (user->flags & USER_ELEVATE)) {
+      /* temporarily elevation of privelege */
+      user->flags &= ~USER_RPC;
+      user->flags &= ~USER_ELEVATE;
+
+      sprintf(buf, "stratum_request_message: info: de-elevating RPC access for user \"%s\".", user->worker);
+      unet_log(UNET_STRATUM, buf);
     }
 
     /* send RPC response */

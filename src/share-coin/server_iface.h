@@ -180,6 +180,7 @@ const char *stratum_walletkeylist(int ifaceIndex, char *acc_name);
 const char *stratum_getaccountaddress(int ifaceIndex, char *account);
 
 void stratum_listaddrkey(int ifaceIndex, char *account, shjson_t *obj);
+int stratum_getaddrkey(int ifaceIndex, char *account, char *pubkey, char *ret_pkey);
 
 int stratum_setdefaultkey(int ifaceIndex, char *account, char *pub_key);
 

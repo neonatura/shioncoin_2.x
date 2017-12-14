@@ -25,6 +25,7 @@
 
 #include "shcoind.h"
 #include <signal.h>
+#include <stratum/stratum.h>
 
 shpeer_t *server_peer;
 int server_msgq;
@@ -33,11 +34,10 @@ shtime_t server_start_t;
 
 static int opt_no_fork;
 
-static int _rpc_thread_running;
-
 extern bc_t *GetBlockChain(CIface *iface);
 extern void opt_print(void);
-
+extern void server_shutdown(void);
+extern void TERM_SECP256K1(void);
 
 void shcoind_term(void)
 {
@@ -60,10 +60,13 @@ void shcoind_term(void)
   shpeer_free(&server_peer);
   shbuf_free(&server_msg_buff);
 
+#if 0
   if (_rpc_thread_running) {
     /* terminate coin server */
     server_shutdown();
   }
+#endif
+  server_shutdown();
 
   /* de-allocate libsecp256k1 */
   TERM_SECP256K1();

@@ -37,9 +37,37 @@
 #define MAX_SPEED_STEP 60
 #define MAX_ROUNDS_PER_HOUR 6
 
+#ifndef RPC_AUTH_FREQ
+#define RPC_AUTH_FREQ 300
+#endif
+
 
 #define TASKF_RESET (1 << 0)
 
+/* user flags */
+#define USER_SYSTEM (1 << 0)
+#define USER_AUTH (1 << 1)
+#define USER_SUBSCRIBE (1 << 2)
+#define USER_SYNC (1 << 3)
+#define USER_CLIENT (1 << 4)
+#define USER_REMOTE (1 << 5)
+#define USER_RPC (1 << 6)
+#define USER_ELEVATE (1 << 7)
+
+/* sync flags */
+#define SYNC_AUTH (1 << 1)
+#define SYNC_WALLET_SET (1 << 12)
+#define SYNC_WALLET_ADDR (1 << 13)
+#define SYNC_WALLET_EXTADDR (1 << 14)
+#define SYNC_RESP_PING (1 << 20)
+#define SYNC_RESP_USER_LIST (1 << 21)
+#define SYNC_RESP_WALLET_ADDR (1 << 22)
+#define SYNC_RESP_WALLET_SET (1 << 23)
+#define SYNC_RESP_ELEVATE (1 << 24)
+
+#define SYNC_RESP_ALL \
+  (SYNC_RESP_PING | SYNC_RESP_USER_LIST | SYNC_RESP_WALLET_ADDR | SYNC_RESP_WALLET_SET | SYNC_RESP_ELEVATE)
+  
 
 
 typedef struct user_t
@@ -54,10 +82,15 @@ typedef struct user_t
   char cli_ver[128];
   char cli_id[256];
   char cur_id[256];
+
+  char sync_pubkey[256];
+  char sync_acc[256];
+
   int work_diff;
 
   int fd;
   int flags;
+  int sync_flags;
 
   /** last height notified to user */
   int height;
@@ -91,6 +124,9 @@ double speed[MAX_SPEED_STEP];
 
   /* the timestamp of when the client last recieved work */
   time_t work_stamp;
+
+  time_t sync_user;
+  time_t sync_addr;
 
   time_t reward_time;
   uint64_t reward_height;
@@ -166,6 +202,8 @@ shjson_t *stratum_json(const char *json_text);
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+extern user_t *client_list;
 
 user_t *stratum_register_client(int fd);
 

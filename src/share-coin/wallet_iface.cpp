@@ -1350,6 +1350,7 @@ int stratum_addr_crc(int ifaceIndex, char *worker)
   strtok(acc_name, ".");
 
   addr = (char *)c_getaddressbyaccount(ifaceIndex, acc_name);
+fprintf(stderr, "DEBUG: stratum_addr_crc [iface #%d]: worker '%s', acc_name '%s', addr '%s'\n", ifaceIndex, worker, acc_name, (addr ? addr : "<NULL>"));
   if (!addr)
     return (0);
 
@@ -1430,6 +1431,54 @@ void stratum_listaddrkey(int ifaceIndex, char *account, shjson_t *obj)
 #endif
   }
 
+}
+
+int stratum_getaddrkey(int ifaceIndex, char *account, char *pubkey, char *ret_pkey)
+{
+  CWallet *wallet = GetWallet(ifaceIndex);
+  string strListAccount(account);
+  string strListExtAccount = "@" + strListAccount;
+
+  if (ret_pkey)
+    *ret_pkey = '\000';
+
+  vector<string> vAcc;
+  BOOST_FOREACH(const PAIRTYPE(CTxDestination, string)& entry, wallet->mapAddressBook) {
+    const string& strAccount = entry.second;
+    CKey pkey;
+
+    if (strAccount != strListAccount &&
+        strAccount != strListExtAccount)
+      continue;
+
+    const CCoinAddr& address = CCoinAddr(ifaceIndex, entry.first);
+    if (!address.IsValid())
+      throw JSONRPCError(-5, "Invalid address");
+
+    string addrStr = address.ToString();
+    if (pubkey) {
+      if (0 != strcmp(pubkey, addrStr.c_str()))
+        continue;
+    }
+
+    if (ret_pkey) {
+      CKeyID keyID;
+      if (!address.GetKeyID(keyID))
+        return (SHERR_ACCESS);
+
+      CSecret vchSecret;
+      bool fCompressed;
+      if (!wallet->GetSecret(keyID, vchSecret, fCompressed))
+        return (SHERR_ACCESS);
+
+      string priv_str = CCoinSecret(ifaceIndex, vchSecret, fCompressed).ToString();
+      strcpy(ret_pkey, priv_str.c_str());
+    }
+
+    return (0);
+  }
+
+  return (SHERR_NOENT);
 }
 
 

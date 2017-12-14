@@ -25,8 +25,9 @@
 
 #define __STRATUM__TASK_C__
 
-#include <math.h>
 #include "shcoind.h"
+#include "stratum/stratum.h"
+#include <math.h>
 #include "coin_proto.h"
 
 #define BLOCK_VERSION 1
@@ -191,8 +192,12 @@ static void check_payout(int ifaceIndex)
     /* divvy up profit */
     weight = amount / tot_shares;
     for (user = client_list; user; user = user->next) {
+      if (user->flags & USER_SYNC)
+        continue; /* stratum server */
+      if (user->flags & USER_RPC)
+        continue; /* rpc user */
       if (!*user->worker) 
-        continue;
+        continue; /* unknown */
       if (0 == strncmp(user->worker, "anonymous.", strlen("anonymous.")))
         continue; /* public */
 
@@ -667,6 +672,13 @@ void stratum_round_reset(time_t stamp)
 
   hour = ((stamp / 3600) % MAX_ROUNDS_PER_HOUR);
   for (user = client_list; user; user = user->next) {
+    if (user->flags & USER_RPC)
+      continue; /* rpc user */
+    if (user->flags & USER_SYNC)
+      continue; /* stratum server */
+    if (!*user->worker)
+      continue; /* unknwown user */
+
     user->block_avg[hour] = 
       (user->block_avg[hour] + (double)user->block_tot) / 2;
     user->round_stamp = stamp;

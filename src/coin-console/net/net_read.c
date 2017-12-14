@@ -32,19 +32,23 @@ int net_read_lim(int sk, shbuf_t *buff, double wait)
 {
   struct timeval tv;
   fd_set read_set;
+  fd_set exc_set;
   int err;
 
   FD_ZERO(&read_set);
   FD_SET(sk, &read_set);
+  FD_SET(sk, &exc_set);
 
   memset(&tv, 0, sizeof(tv));
   tv.tv_sec = (time_t)wait;
   tv.tv_usec = (wait - (double)tv.tv_sec) * 1000000;
-  err = shselect(sk + 1, &read_set, NULL, NULL, &tv);
+  err = shselect(sk + 1, &read_set, NULL, &exc_set, &tv);
   if (err < 0)
     return (-errno);
   if (err == 0)
     return (SHERR_AGAIN);
+  if (FD_ISSET(sk, &exc_set))
+    return (SHERR_CONNRESET);
 
   err = shread(sk, SKBUF, sizeof(SKBUF));
   if (err < 0)
@@ -77,8 +81,6 @@ int net_readline_lim(int sk, shbuf_t *buff, double wait)
     err = net_read_lim(sk, buff, span);
     if (err != 0 && err != SHERR_AGAIN)
       return (err);
-    if (err == 0 || err == SHERR_AGAIN)
-      continue;
   }
 
   return (0);

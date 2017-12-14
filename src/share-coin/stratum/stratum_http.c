@@ -23,8 +23,9 @@
  *  @endcopyright
  */  
 
-#include <math.h>
 #include "shcoind.h"
+#include "stratum/stratum.h"
+#include <math.h>
 #include "coin_proto.h"
 
 static const char *_stratum_user_html_template = 

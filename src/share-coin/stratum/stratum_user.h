@@ -1,18 +1,43 @@
 
+/*
+ * @copyright
+ *
+ *  Copyright 2014 Neo Natura
+ *
+ *  This file is part of the Share Library.
+ *  (https://github.com/neonatura/share)
+ *        
+ *  The Share Library is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version. 
+ *
+ *  The Share Library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with The Share Library.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  @endcopyright
+ */  
 
 
 
 #ifndef __STRATUM__USER_H__
 #define __STRATUM__USER_H__
 
-#define USER_SYSTEM (1 << 0)
-#define USER_AUTH (1 << 1)
-#define USER_SUBSCRIBE (1 << 2)
-#define USER_SYNC (1 << 3)
-#define USER_CLIENT (1 << 4)
-#define USER_REMOTE (1 << 5)
-#define USER_RPC (1 << 5)
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+const char *get_user_flag_label(int flag);
+
+#ifdef __cplusplus
+}
+#endif
 
 
 user_t *stratum_user(user_t *user, char *username);
@@ -24,8 +49,6 @@ user_t *stratum_user_init(int fd);
 void stratum_user_block(user_t *user, double share_diff);
 
 user_t *stratum_user_get(int fd);
-
-const char *get_user_flag_label(int flag);
 
 void stratum_user_free(user_t *f_user);
 

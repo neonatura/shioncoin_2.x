@@ -33,6 +33,9 @@ int shcon_init(void)
   err = shcon_opt_init();
   if (err) return (err);
 
+  err = shcon_log_init();
+  if (err) return (err);
+
   err = shcon_key_init();
   if (err) return (err);
 

@@ -3,6 +3,7 @@
 #include "test_shcoind.h"
 #include "coin_proto.h"
 #include "test_proto.h"
+#include "stratum/stratum.h"
 
 
 user_t *client_list;

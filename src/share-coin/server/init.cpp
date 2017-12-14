@@ -886,6 +886,7 @@ fprintf(stderr, "error: unable to open load block index.\n");
 extern "C" {
 #endif
 
+#if 0
 void server_shutdown(void)
 {
 
@@ -907,6 +908,12 @@ void server_shutdown(void)
 
   CloseBlockChains();
 //  Shutdown2();
+}
+#endif
+void server_shutdown(void)
+{
+  CloseBlockChains();
+  fShutdown = true;
 }
 
 #ifdef __cplusplus

@@ -61,6 +61,7 @@ int main(int argc, char *argv[])
   char prog_name[PATH_MAX+1];
   char *ptr;
   int arg_idx;
+  int err;
   int i;
 
   for (i = 1; i < argc; i++) {
@@ -118,8 +119,11 @@ int main(int argc, char *argv[])
     return (1);
   }
 
-  shcon_command(args, arg_idx, &resp);
-  if (resp) {
+  resp = NULL;
+  err = shcon_command(args, arg_idx, &resp);
+  if (err) {
+    shcon_log(err, "send command");
+  } else if (resp) {
     command_print(stdout, resp);
   }  
 

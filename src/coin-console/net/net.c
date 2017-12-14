@@ -49,7 +49,7 @@ int net_json_send(shjson_t *j)
   shbuf_catstr(buff, "\n");
   free(text);
 
-//fprintf(stderr, "DEBUG: NET_JSON_SEND:\n%s\n", text);
+fprintf(stderr, "DEBUG: NET_JSON_SEND:\n%s\n", text);
   err = net_write(_client_socket, buff);
   shbuf_free(&buff);
   if (err)

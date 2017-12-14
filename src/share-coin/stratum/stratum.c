@@ -24,7 +24,7 @@
  */  
 
 #include "shcoind.h"
-
+#include "stratum.h"
 
 int get_stratum_daemon_port(void)
 {
@@ -115,6 +115,7 @@ static void stratum_close_free(void)
 static void stratum_timer(void)
 {
   static task_attr_t attr;
+  static int _sync_init;
   unet_table_t *t;
   user_t *peer;
   shbuf_t *buff;
@@ -126,6 +127,11 @@ static void stratum_timer(void)
   int blk_iface;
   int err;
 
+  if (!_sync_init) { 
+    /* network layer is now ready to initialize sync. */
+    stratum_sync_init();
+    _sync_init = TRUE;
+  }
 
   for (peer = client_list; peer; peer = peer->next) {
     if (peer->fd == -1)
@@ -235,10 +241,8 @@ static void stratum_timer(void)
     /* generate new work, as needed */
     stratum_task_gen(&attr);
 
-#if 0
     /* synchronize with remote stratum services, as needed */
     stratum_sync();
-#endif
 
     attr.flags &= ~TASKF_RESET;
   }
@@ -319,7 +323,6 @@ int stratum_init(void)
   unet_connop_set(UNET_STRATUM, stratum_accept);
   unet_disconnop_set(UNET_STRATUM, stratum_close);
 
-  stratum_sync_init();
 
   return (0);
 }

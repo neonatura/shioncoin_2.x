@@ -30,19 +30,23 @@ int net_write_lim(int sk, shbuf_t *buff, double wait)
 {
   struct timeval tv;
   fd_set write_set;
+  fd_set exc_set;
   int err;
 
   FD_ZERO(&write_set);
   FD_SET(sk, &write_set);
+  FD_SET(sk, &exc_set);
 
   memset(&tv, 0, sizeof(tv));
   tv.tv_sec = (time_t)wait;
   tv.tv_usec = (wait - (double)tv.tv_sec) * 1000000;
-  err = shselect(sk + 1, NULL, &write_set, NULL, &tv);
+  err = shselect(sk + 1, NULL, &write_set, &exc_set, &tv);
   if (err < 0)
     return (-errno);
   if (err == 0)
     return (SHERR_AGAIN);
+  if (FD_ISSET(sk, &exc_set))
+    return (SHERR_CONNRESET);
 
   err = shwrite(sk, shbuf_data(buff), shbuf_size(buff));
   if (err < 0)

@@ -45,6 +45,7 @@ using namespace std;
 #include "txmempool.h"
 #include "rpc_proto.h"
 #include "rpccert_proto.h"
+#include "stratum/stratum.h"
 
 #include <boost/assign/list_of.hpp>
 
@@ -2681,10 +2682,96 @@ Value rpc_wallet_validate(CIface *iface, const Array& params, bool fStratum)
 
 Value rpc_stratum_info(CIface *iface, const Array& params, bool fStratum)
 {
+  user_t *user;
+  int tot;
+
+  if (fStratum)
+    throw runtime_error("unsupported operation");
+
+  tot = 0;
+  for (user = client_list; user; user = user->next) {
+    if (user->flags & USER_RPC)
+      continue;
+
+    tot++;
+  }
+
+  Object obj;
+
+  obj.push_back(Pair("users", tot));
+
+  return (obj);
 }
 Value rpc_stratum_list(CIface *iface, const Array& params, bool fStratum)
 {
+  user_t *user;
+  char tag[256];
+  int idx;
+
+  if (fStratum)
+    throw runtime_error("unsupported operation");
+
+  Array ret;
+  for (user = client_list; user; user = user->next) {
+    if (user->flags & USER_RPC)
+      continue;
+
+    Object obj;
+    string miner_ver_str(user->cli_ver);
+
+    obj.push_back(Pair("label", user->worker));
+
+    if (user->work_diff >= 0.0001)
+      obj.push_back(Pair("mine-diff", user->work_diff));
+
+    for (idx = 1; idx < MAX_COIN_IFACE; idx++) {
+      iface = GetCoinByIndex(idx);
+      if (!iface || !iface->enabled) continue;
+
+      if (user->balance[idx] >= 0.00000001) {
+        sprintf(tag, "pend-%s", iface->name);
+        obj.push_back(Pair(tag, user->balance[idx]));
+      }
+    }
+
+    if (user->block_tot >= 0.0001)
+      obj.push_back(Pair("shares", user->block_tot));
+
+    if (user->flags & USER_SYNC) {
+      if (user->sync_flags & SYNC_RESP_ALL) {
+        obj.push_back(Pair("sync-state", "wait"));
+      } else {
+        obj.push_back(Pair("sync-state", "idle"));
+      }
+    }
+
+    obj.push_back(Pair("type", get_user_flag_label(user->flags)));
+
+    if (miner_ver_str != "")
+      obj.push_back(Pair("version", miner_ver_str));
+
+    ret.push_back(obj);
+  }
+
+  return (ret);
 }
+Value rpc_stratum_keyadd(CIface *iface, const Array& params, bool fStratum)
+{
+
+  if (fStratum)
+    throw runtime_error("unsupported operation");
+
+  return (Value::null);
+}
+Value rpc_stratum_keyremove(CIface *iface, const Array& params, bool fStratum)
+{
+
+  if (fStratum)
+    throw runtime_error("unsupported operation");
+
+  return (Value::null);
+}
+
 
 static string json_stratum_key_str;
 Value rpc_stratum_key(CIface *iface, const Array& params, bool fStratum)
@@ -2694,13 +2781,11 @@ Value rpc_stratum_key(CIface *iface, const Array& params, bool fStratum)
   const char *text;
   shkey_t *key;
 
-  sprintf(host, "127.0.0.1:%u", opt_num(OPT_STRATUM_PORT));
-  peer = shpeer_init("shcoind", host);
-  key = shpeer_kpriv(peer);
-  text = (const char *)shkey_print(key);
-  json_stratum_key_str = string(text);
-  shpeer_free(&peer);
+  key = get_rpc_dat_password(NULL);
+  if (!key)
+    return (Value::null);
 
+  json_stratum_key_str = string(shkey_print(key));
   return (json_stratum_key_str);
 }
 
@@ -4409,6 +4494,10 @@ const RPCOp WALLET_VALIDATE = {
   "Return summarized information about <coin-address>."
 };
 
+const RPCOp STRATUM_KEYADD = {
+  &rpc_stratum_keyadd, 0, {},
+  "Add a remove stratum synchronization key."
+};
 const RPCOp STRATUM_INFO = {
   &rpc_stratum_info, 0, {},
   "Return summarized information about the stratum service."
@@ -4419,7 +4508,11 @@ const RPCOp STRATUM_LIST = {
 };
 const RPCOp STRATUM_KEY = {
   &rpc_stratum_key, 0, {},
-  "Obtain the client-side synchronization key."
+  "Print the local stratum synchronization key."
+};
+const RPCOp STRATUM_KEYREMOVE = {
+  &rpc_stratum_keyremove, 0, {},
+  "Remove a stratum synchronization key."
 };
 
 
@@ -4503,14 +4596,14 @@ void RegisterRPCOpDefaults(int ifaceIndex)
 
   RegisterRPCOp(ifaceIndex, "peer.remove", PEER_REMOVE); 
 
-#if 0
   /* stratum service */
-//  RegisterRPCOp(ifaceIndex, "stratum.info", STRATUM_INFO);
-//  RegisterRPCOp(ifaceIndex, "stratum.list", STRATUM_LIST);
+  RegisterRPCOp(ifaceIndex, "stratum.keyadd", STRATUM_KEYADD);
+  RegisterRPCOp(ifaceIndex, "stratum.info", STRATUM_INFO);
   if (opt_bool(OPT_ADMIN)) {
     RegisterRPCOp(ifaceIndex, "stratum.key", STRATUM_KEY);
   }
-#endif
+  RegisterRPCOp(ifaceIndex, "stratum.list", STRATUM_LIST);
+  RegisterRPCOp(ifaceIndex, "stratum.keyremove", STRATUM_KEYREMOVE);
 
   RegisterRPCOp(ifaceIndex, "tx.decode", TX_DECODE);
   RegisterRPCAlias(ifaceIndex, "decoderawtransaction", TX_DECODE);

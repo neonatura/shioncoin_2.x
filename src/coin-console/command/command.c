@@ -30,6 +30,7 @@ int shcon_command_send(char **args, int arg_nr)
   shjson_t *param;
   shjson_t *j;
   char *mode;
+  int err;
   int i;
 
   if (arg_nr < 1)
@@ -58,7 +59,9 @@ int shcon_command_send(char **args, int arg_nr)
     }
   }
 
-  net_json_send(j);
+  err = net_json_send(j);
+  if (err)
+    return (err);
 
   shjson_free(&j);
   return (0);

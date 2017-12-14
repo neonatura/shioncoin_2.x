@@ -83,7 +83,7 @@ extern shbuf_t *server_msg_buff;
 #include "proto/emc2_proto.h"
 #include "proto/test_proto.h"
 
-#include "stratum/stratum.h"
+//#include "stratum/stratum.h"
 #include "shcoind_daemon.h"
 
 #ifdef __cplusplus
