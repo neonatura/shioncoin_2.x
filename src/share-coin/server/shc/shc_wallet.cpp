@@ -396,7 +396,11 @@ void SHCWallet::ReacceptWalletTransactions()
         }
 
         /* check for mis-marked spents */
-        for (unsigned int i = 0; i < vOuts.size(); i++) {
+        if (wtx.vfSpent.size() < wtx.vout.size()) {
+          wtx.vfSpent.resize(wtx.vout.size());
+          wtx.MarkDirty();
+        }
+        for (unsigned int i = 0; i < vOuts.size() && i < wtx.vout.size(); i++) {
           if (vOuts[i].IsNull())
             continue; /* not spent */
 
