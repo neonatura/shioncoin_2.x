@@ -699,7 +699,7 @@ void CPool::PurgeActiveTx()
     return; 
   }
 
-  for (pool_map::iterator it = overflow.begin(); it != active.end(); ++it) {
+  for (pool_map::iterator it = active.begin(); it != active.end(); ++it) {
     CPoolTx& o_ptx = it->second;
 
 #if 0
