@@ -41,7 +41,7 @@ static int ipaddr_index;
   "\r\n"
 static const char *CHKIP_IP_TAG = "Current IP Address: ";
 
-static int external_local_discover(char *serv_hostname, struct in_addr *net_addr)
+static int external_local_discover_html(char *serv_hostname, struct in_addr *net_addr)
 {
   shbuf_t *buff;
   fd_set r_set;
@@ -95,6 +95,47 @@ static int external_local_discover(char *serv_hostname, struct in_addr *net_addr
   return (0);
 }
 
+static int external_local_discover_raw(char *serv_hostname, struct in_addr *net_addr)
+{
+  shbuf_t *buff;
+  fd_set r_set;
+  long to;
+  char *text;
+  int err;
+  int sk;
+
+  sk = shconnect_host(serv_hostname, 411, SHNET_ASYNC);
+  if (sk < 0) {
+    return (sk);
+  }
+
+  to = 3000; /* 3s */
+  FD_ZERO(&r_set);
+  FD_SET(sk, &r_set);
+  shnet_verify(&r_set, NULL, &to);
+
+  buff = shnet_read_buf(sk);
+  if (!buff) {
+    shnet_close(sk);
+    return (SHERR_INVAL);
+  }
+
+  text = (char *)shbuf_data(buff);
+  if (!text) {
+    shnet_close(sk);
+    return (SHERR_AGAIN);
+  }
+
+  strtok(text, "\n");
+  if (inet_aton(text, net_addr) == 0)
+    return (SHERR_INVAL);
+
+  shbuf_clear(buff);
+  shnet_close(sk);
+
+  return (0);
+}
+
 void unet_local_set(const char *ipaddr)
 {
 
@@ -107,7 +148,41 @@ void unet_local_set(const char *ipaddr)
   unet_local_add(ipaddr);
 }
 
-void unet_local_discover(void) /* ipv4 */
+int unet_local_discover1(void) /* ipv4 */
+{
+  struct in_addr addr;
+  struct sockaddr_in sin;
+  char selfip_addr[256];
+  char buf[512];
+  time_t now;
+  int err;
+
+  memset(&addr, 0, sizeof(addr));
+  strcpy(selfip_addr, "45.79.211.217"); /* s.neo-natura.com */
+  err = external_local_discover_raw(selfip_addr, &addr);
+  if (err)
+    return (err);
+
+  memset(buf, 0, sizeof(buf));
+  strncpy(buf, inet_ntoa(addr), sizeof(buf));
+  if (!*buf)
+    return (SHERR_PROTO);
+
+  /* cache address persistently */
+  shpref_set("shcoind.net.addr", buf);
+
+  /* add to collection */
+  unet_local_set(buf);
+
+  /* retain a cache time-stamp */
+  now = time(NULL);
+  sprintf(buf, "%lu", (unsigned long)now);
+  shpref_set("shcoind.net.addr.stamp", buf);
+
+  return (0);
+}
+
+void unet_local_discover2(void) /* ipv4 */
 {
   struct in_addr addr;
   struct sockaddr_in sin;
@@ -118,7 +193,7 @@ void unet_local_discover(void) /* ipv4 */
 
   memset(&addr, 0, sizeof(addr));
   strcpy(selfip_addr, "91.198.22.70");
-  err = external_local_discover(selfip_addr, &addr);
+  err = external_local_discover_html(selfip_addr, &addr);
   if (err)
     return;
 
@@ -175,7 +250,8 @@ void unet_local_init(void)
 
   scan_time = (time_t)atol(shpref_get("shcoind.net.addr.stamp", "0"));
   if (scan_time < (time(NULL) - 86400)) { /* > 1 day */
-    unet_local_discover();
+    if (0 != unet_local_discover1())
+      unet_local_discover2();
 
     memset(buf, 0, sizeof(buf));
     strncpy(buf, shpref_get("shcoind.net.addr", ""), sizeof(buf)-1);
@@ -241,7 +317,7 @@ void unet_local_add(char *ipaddr_in)
     inet_ntop(AF_INET6, &sin, ipaddr, sizeof(ipaddr)-1);
   }
   if (!*ipaddr) {
-fprintf(stderr, "DEBUG: skipping invalid addr '%s'\n", ipaddr_in);
+//fprintf(stderr, "DEBUG: skipping invalid addr '%s'\n", ipaddr_in);
   return;
   }
   

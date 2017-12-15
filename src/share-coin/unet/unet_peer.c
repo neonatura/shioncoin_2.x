@@ -112,7 +112,6 @@ if (in_fam == AF_INET) {
   getpeername(sk, (struct sockaddr *)&in, &len);
   memset(cmp_ipaddr, 0, sizeof(cmp_ipaddr));
   inet_ntop(in_fam, &in, cmp_ipaddr, sizeof(cmp_ipaddr));
-  fprintf(stderr, "DEBUG: unet_peer_find: cmp addr '%s'\n", cmp_ipaddr); 
 }
 
     if (in_fam == AF_INET) {

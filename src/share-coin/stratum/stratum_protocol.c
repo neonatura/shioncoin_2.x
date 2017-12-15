@@ -584,12 +584,19 @@ int stratum_request_message(user_t *user, shjson_t *json)
       shjson_t *param;
       char username[1024];
       char password[1024];
+      char *text;
 
       memset(username, 0, sizeof(username));
-      strncpy(username, shjson_array_astr(json, "params", 0), sizeof(username)-1);
+      text = shjson_array_astr(json, "params", 0);
+      if (text)
+        strncpy(username, text, sizeof(username)-1);
+fprintf(stderr, "DEBUG: stratum_request_message: username(%s)\n", username); 
 
       memset(password, 0, sizeof(password));
-      strncpy(password, shjson_array_astr(json, "params", 1), sizeof(password)-1);
+      text = shjson_array_astr(json, "params", 1);
+      if (text)
+        strncpy(password, text, sizeof(password)-1);
+fprintf(stderr, "DEBUG: stratum_request_message: password(%s)\n", password);
 
       t_user = NULL;
       if (*username) {
