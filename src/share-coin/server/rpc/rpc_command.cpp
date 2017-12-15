@@ -1784,9 +1784,8 @@ FILE *fl;
         CCoinSecret vchSecret;
         bool fGood = vchSecret.SetString(strSecret);
         if (!fGood) {
-//fprintf(stderr, "DEBUG: invalid private key '%s'\n", key);
           continue;// throw JSONRPCError(-5,"Invalid private key");
-}
+        }
 
         CKey key;
         bool fCompressed;
@@ -2416,9 +2415,7 @@ Value rpc_wallet_setkey(CIface *iface, const Array& params, bool fStratum)
   }
 
   string strSecret = params[0].get_str();
-  string strLabel = "";
-//  if (params.size() > 1)
-    strLabel = params[1].get_str();
+  string strLabel = params[1].get_str();
   CCoinSecret vchSecret;
   bool fGood = vchSecret.SetString(strSecret);
 

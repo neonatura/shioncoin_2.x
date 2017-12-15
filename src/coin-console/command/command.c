@@ -25,6 +25,22 @@
 
 #include "shcon.h"
 
+static int is_numeric_string(char *str)
+{
+  size_t len = strlen(str);
+  size_t i;
+
+  if (len > 20)
+    return (FALSE);
+
+  for (i = 0; i < len; i++) {
+    if (!isdigit(str[i]) && str[i] != '-' && str[i] != '.')
+      return (FALSE);
+  }
+
+  return (TRUE);
+}
+
 int shcon_command_send(char **args, int arg_nr)
 {
   shjson_t *param;
@@ -52,7 +68,7 @@ int shcon_command_send(char **args, int arg_nr)
 
   param = shjson_array_add(j, "params");
   for (i = 1; i < arg_nr; i++) {
-    if (atof(args[i]) != 0.00000000) {
+    if (is_numeric_string(args[i])) {
       shjson_num_add(param, NULL, atof(args[i]));
     } else {
       shjson_str_add(param, NULL, args[i]);

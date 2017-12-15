@@ -352,7 +352,7 @@ static int stratum_sync_ident_req(user_t *user)
   shjson_str_add(reply, "method", "stratum.authorize");
   param = shjson_array_add(reply, "param");
   shjson_str_add(param, NULL, user->worker);
-  shjson_str_add(param, NULL, "");
+  shjson_str_add(param, NULL, user->worker); /* .. */
   err = stratum_send_message(user, reply);
   shjson_free(&reply);
 
