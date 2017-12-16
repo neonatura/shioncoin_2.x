@@ -196,7 +196,7 @@ static int stratum_sync_elevate_req(user_t *user)
   int err;
 
   if (!(user->flags & USER_SYNC)) {
-    error(SHERR_INVAL, "stratum_sync_elevate_req: user '%s' is not in SYNC mode.", user->worker);
+    //error(SHERR_INVAL, "stratum_sync_elevate_req: user '%s' is not in SYNC mode.", user->worker);
     return (SHERR_INVAL);
   }
 
@@ -390,7 +390,7 @@ static int stratum_sync_ident_req(user_t *user)
     return (SHERR_INVAL);
 
   if (!(user->flags & USER_SYNC)) {
-    error(SHERR_INVAL, "stratum_sync_ident_req: user '%s' is not in SYNC mode.", user->worker);
+    //error(SHERR_INVAL, "stratum_sync_ident_req: user '%s' is not in SYNC mode.", user->worker);
     return (SHERR_INVAL);
   }
 

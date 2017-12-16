@@ -87,7 +87,11 @@ bool CDBEnv::Open(boost::filesystem::path pathEnv_)
 
     pathEnv = pathEnv_;
     filesystem::path pathDataDir = pathEnv;
+#ifndef WIN32
     filesystem::path pathLogDir = pathDataDir / "database";
+#else
+    filesystem::path pathLogDir = "database";
+#endif
     filesystem::create_directory(pathLogDir);
     filesystem::path pathErrorFile = pathDataDir / "db.log";
 //printf("dbenv.open LogDir=%s ErrorFile=%s\n", pathLogDir.string().c_str(), pathErrorFile.string().c_str());

@@ -312,6 +312,7 @@ shcoind_CXXFLAGS = -I$(LIBSHARE)/include
 endif
 shcoind_LDADD += -lboost_system -lboost_filesystem -lboost_thread -ldb_cxx -ldl
 
+
 #shcointool_SOURCES = \
 #	shcoind_tool.cpp clientrpc_iface.cpp $(tool_sources)
 #shcointool_LDADD = \

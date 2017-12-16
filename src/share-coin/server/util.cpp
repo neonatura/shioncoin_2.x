@@ -1014,9 +1014,19 @@ void PrintExceptionContinue(std::exception* pex, const char* pszThread)
 boost::filesystem::path GetDefaultDataDir()
 {
   namespace fs = boost::filesystem;
+  char path[PATH_MAX+1];
+  memset(path, 0, sizeof(path));
+#ifdef WIN32
+  sprintf(path, "%s\\blockchain\\", get_libshare_path());
+#else
+  sprintf(path, "%s/blockchain/", get_libshare_path());
+#endif
+  fs::path pathRet(path);
+#if 0
   fs::path pathRet;
   pathRet = fs::path(get_libshare_path());
   pathRet /= "blockchain";
+#endif
   fs::create_directory(pathRet);
   return pathRet;
 }

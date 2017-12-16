@@ -228,3 +228,59 @@ verifymessage <address> <signature> <message>
 
 
 
+Windows Build Instructions
+====
+
+In order to build the Share Coin service download the MSYS2 64-bit build environment from "http://msys2.org/".
+Note: The Share Coin service is a 64-bit program, and therefore requires the "64-bit" version of MSYS2.
+
+Open a MSYS2 command consolie window and run the following to install some basic development packages:
+	pacman -S autoconf automake gcc openssl openssl-devel git doxygen
+
+Create a "release" directory where the share coin programs will be stored. The can be ran outside of the MSYS environment.
+	mkdir ~/shc_bin
+
+Copy the dependant DLLs for MSYS2 that will be required to the the service and utility programs:
+	cp /usr/bin/msys-2.0.dll ~/shc_bin
+	cp /usr/bin/msys-gcc_s-seh-1.dll ~/shc_bin
+
+
+** Share Runtime Library **
+
+Download and install the libshare library:
+	git clone https://github.com/neonatura/share ./libshare
+	mkdir libshare/build
+	cd libshare/build
+	../configure --sbindir=/usr/bin --bindir=/usr/bin --libdir=/usr/lib
+	make
+	make install
+
+
+** Boost C++ Runtime Library **
+
+Download the boost source code from "http://www.boost.org/".
+
+Open a MSYS2 command console window and run the following from where boost was extracted:
+./bootstrap.sh gcc
+./b2 toolset=gcc
+cp -fr stage/lib/*.a /usr/lib
+cp -fr stage/lib/*.dll ~/shc_bin
+mkdir -p /usr/include/boost
+find libs | grep "/include/boost$" | while read a; do cp -fr $a/* /usr/include/boost; done 
+
+
+
+** Share Coin Installation **
+
+From the share-coin build directory, copy the service and executables to the temporary release directory:
+	cp ~/bin/shcoind.exe ~/shc_bin
+	cp ~/bin/shc.exe ~/shc_bin
+
+Note: This directory is typically located at "C:\msys64\home\<username>\shc_bin\" under the windows directory hierarchy.
+
+Note: If you experience any autoconf compatibility issues (i.e. an error occurs while building) try running "./autogen.sh" in the root source code directory in order to remake the "configure" script based on your own platform environment.
+
+You can optionally install the shcoind.exe program as a service:
+	shcoind.exe --install
+Note: The "shcoind.exe" must run as the same user when running the "shc.exe" utility program in order to communicate.
+

@@ -1,36 +1,39 @@
 
 
-noinst_PROGRAMS = shc shcoind .notice
+noinst_PROGRAMS = shc$(EXEEXT) shcoind$(EXEEXT) .notice$(EXTEXT)
 
 if USDE_SERVICE
-noinst_PROGRAMS += usde
+noinst_PROGRAMS += usde$(EXTEXT)
 
-usde:
-	ln -sf $(top_builddir)/src/coin-console/usde
+usde$(EXTEXT):
+	ln -sf $(top_builddir)/src/coin-console/usde$(EXTEXT)
 endif
 
 if EMC2_SERVICE
-noinst_PROGRAMS += emc2
+noinst_PROGRAMS += emc2$(EXTEXT)
 
-emc2:
-	ln -sf $(top_builddir)/src/coin-console/emc2
+emc2$(EXTEXT):
+	ln -sf $(top_builddir)/src/coin-console/emc2$(EXTEXT)
 endif
 
-shcoind: docs
-	ln -sf $(top_builddir)/src/share-coin/shcoind
+shcoind$(EXEEXT): docs
+	ln -sf $(top_builddir)/src/share-coin/shcoind$(EXEEXT)
 
-shc:
-	ln -sf $(top_builddir)/src/coin-console/shc
+shc$(EXEEXT):
+	ln -sf $(top_builddir)/src/coin-console/shc$(EXEEXT)
 
+if HAVE_DOXYGEN
 docs:
 	ln -sf $(top_builddir)/doc/html/ docs
+else
+docs:
+	echo > docs
+endif
 
 
-.notice:
-	@echo > .notice
+.notice$(EXTEXT):
+	@echo > .notice$(EXTEXT)
 	@echo ""
 	@echo "It is now safe to perform a 'make install'."
-	@echo ""
-	@echo "Documentation can be found at: file://$(PWD)/docs/index.html"
 	@echo ""
 
