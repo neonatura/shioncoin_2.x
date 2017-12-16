@@ -138,7 +138,11 @@ void usage_version(void)
 extern void RegisterRPCOpDefaults(int ifaceIndex);
 
 
+#ifndef WIN32
 int main(int argc, char *argv[])
+#else
+int svc_main(int argc, char *argv[])
+#endif
 {
   CIface *iface;
   bc_t *bc;
@@ -186,7 +190,7 @@ int main(int argc, char *argv[])
     } else if (0 == strcmp(argv[i], "--no-stratum")) {
       opt_bool_set(OPT_SERV_STRATUM, FALSE);
     } else if (0 == strcmp(argv[i], "--check-addr")) {
-      shpref_set("shcoind.net.addr", ""); /* clear cached IP addr */
+      shpref_set("shcoind.net.addr.stamp", "0"); /* clear cached IP addr */
     } else if (0 == strcmp(argv[i], "--ban-span")) {
       if (i + 1 < argc && isdigit(argv[i+1][0])) {
         i++;

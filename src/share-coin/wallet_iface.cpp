@@ -337,9 +337,10 @@ static CCoinAddr GetAddressByAccount(CWallet *wallet, const char *accountName, b
     if (strName == strAccount) {
       address = CCoinAddr(wallet->ifaceIndex, item.first);
       if (!address.IsValid()) {
-fprintf(stderr, "DEBUG: wallet_iface: GetAddressByAccount[%s]: account has invalid coin address.\n", accountName); 
+        error(SHERR_INVAL, "GetAddressByAccount: account \"%s\" has invalid coin address.", accountName); 
         continue;
       }
+
       found = true;
       break;
     }
@@ -1080,7 +1081,6 @@ static const char *c_stratum_account_info(int ifaceIndex, const char *acc_name, 
   int64 nConfirm;
   int64 nUnconfirm;
   int nMinDepth = 1;
-  uint256 in_pkey;
   Object result;
   Array addr_list;
   uint256 phash;
@@ -1090,9 +1090,13 @@ static const char *c_stratum_account_info(int ifaceIndex, const char *acc_name, 
       throw JSONRPCError(STERR_INVAL_PARAM, "The account name specified is invalid.");
     }
 
-    in_pkey.SetHex(pkey_str);
-    if (!valid_pkey_hash(strAccount, in_pkey)) {
-      throw JSONRPCError(STERR_ACCESS, "Invalid private key hash specified for account.");
+    if (pkey_str) {
+      uint256 in_pkey;
+
+      in_pkey.SetHex(pkey_str);
+      if (!valid_pkey_hash(strAccount, in_pkey)) {
+        throw JSONRPCError(STERR_ACCESS, "Invalid private key hash specified for account.");
+      }
     }
 
     nConfirm = GetAccountBalance(ifaceIndex, walletdb, strAccount, nMinDepth);
@@ -1317,7 +1321,7 @@ const char *stratum_create_transaction(int ifaceIndex, char *account, char *pkey
 
 const char *stratum_getaccountinfo(int ifaceIndex, const char *account, const char *pkey_str)
 {
-  if (!account || !pkey_str)
+  if (!account)
     return (NULL);
   return (c_stratum_account_info(ifaceIndex, account, pkey_str));
 }
@@ -1339,8 +1343,30 @@ const char *getnewaddress(int ifaceIndex, const char *account)
   return (json_getnewaddress(ifaceIndex, account));
 }
 
+static uint32_t generate_addrlist_crc(int ifaceIndex, const char *acc_name) 
+{
+  CWallet *wallet = GetWallet(ifaceIndex);
+  string strAccount(acc_name);
+  uint32_t ret_crc;
+  char buf[512];
 
-int stratum_addr_crc(int ifaceIndex, char *worker)
+  ret_crc = 0;
+  BOOST_FOREACH(const PAIRTYPE(CTxDestination, string)& item, wallet->mapAddressBook) {
+    const string& strName = item.second;
+    if (strName == strAccount) {
+      const CCoinAddr& acc_address = CCoinAddr(ifaceIndex, item.first);
+      string strAddr = acc_address.ToString();
+
+      memset(buf, 0, sizeof(buf));
+      strncpy(buf, strAddr.c_str(), sizeof(buf)-1);
+      ret_crc += shcrc32(buf, strlen(buf));
+    }
+  }
+
+  return (ret_crc);
+}
+
+uint32_t stratum_addr_crc(int ifaceIndex, char *worker)
 {
   char *addr;
   char acc_name[256];
@@ -1349,15 +1375,10 @@ int stratum_addr_crc(int ifaceIndex, char *worker)
   strncpy(acc_name, worker, sizeof(acc_name)-1);
   strtok(acc_name, ".");
 
-  addr = (char *)c_getaddressbyaccount(ifaceIndex, acc_name);
-fprintf(stderr, "DEBUG: stratum_addr_crc [iface #%d]: worker '%s', acc_name '%s', addr '%s'\n", ifaceIndex, worker, acc_name, (addr ? addr : "<NULL>"));
-  if (!addr)
-    return (0);
-
-  return ((int)shcrc32(addr, strlen(addr)));
+  return (generate_addrlist_crc(ifaceIndex, acc_name));
 }
 
-int stratum_ext_addr_crc(int ifaceIndex, char *worker)
+uint32_t stratum_ext_addr_crc(int ifaceIndex, char *worker)
 {
   char *addr;
   char acc_name[256];
@@ -1367,11 +1388,7 @@ int stratum_ext_addr_crc(int ifaceIndex, char *worker)
   strncat(acc_name+1, worker, sizeof(acc_name)-2);
   strtok(acc_name, ".");
 
-  addr = (char *)c_getaddressbyaccount(ifaceIndex, acc_name);
-  if (!addr)
-    return (0);
-
-  return ((int)shcrc32(addr, strlen(addr)));
+  return (generate_addrlist_crc(ifaceIndex, acc_name));
 }
 
 const char *stratum_walletkeylist(int ifaceIndex, char *acc_name)

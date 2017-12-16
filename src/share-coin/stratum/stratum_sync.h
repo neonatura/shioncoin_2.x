@@ -37,6 +37,8 @@ void stratum_sync_init(void);
  */
 void stratum_sync(void);
 
+user_t *stratum_find_netid(shkey_t *netid, char *worker);
+
 
 #endif /* ndef __STRATUM__STRATUM_SYNC_H__ */
 

@@ -27,13 +27,14 @@
 #define __SHCON_H__
 
 #include "config.h"
-#include <string.h>
-#include <stdio.h>
-#include <sys/types.h>
-#include <stdarg.h>
 #ifdef __USE_W32_SOCKETS
 #undef __USE_W32_SOCKETS
 #endif
+#include <string.h>
+#include <stdio.h>
+#include <stdarg.h>
+#include <sys/types.h>
+#include <sys/select.h>
 #include "share.h"
 
 #include "shcon_init.h"

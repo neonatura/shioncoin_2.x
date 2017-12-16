@@ -511,6 +511,8 @@ int stratum_request_message(user_t *user, shjson_t *json)
   shjson_t *reply;
   user_t *t_user;
   shtime_t ts;
+  struct sockaddr *addr;
+  char ipaddr[MAXHOSTNAMELEN+1];
   char iface_str[256];
   char uname[256];
   char buf[1024];
@@ -590,13 +592,11 @@ int stratum_request_message(user_t *user, shjson_t *json)
       text = shjson_array_astr(json, "params", 0);
       if (text)
         strncpy(username, text, sizeof(username)-1);
-fprintf(stderr, "DEBUG: stratum_request_message: username(%s)\n", username); 
 
       memset(password, 0, sizeof(password));
       text = shjson_array_astr(json, "params", 1);
       if (text)
         strncpy(password, text, sizeof(password)-1);
-fprintf(stderr, "DEBUG: stratum_request_message: password(%s)\n", password);
 
       t_user = NULL;
       if (*username) {
@@ -699,7 +699,24 @@ fprintf(stderr, "DEBUG: stratum_request_message: password(%s)\n", password);
       memset(rem_auth, 0, sizeof(rem_auth));
       memset(lcl_auth, 0, sizeof(lcl_auth));
 
-      if (user->worker[0] && 0 != strcmp(user->worker, "127.0.0.1"))
+      if (0 == strcmp(user->worker, "127.0.0.1") ||
+          0 == strcmp(user->worker, "::1"))
+        return (SHERR_INVAL); /* not supported */
+
+      memset(ipaddr, 0, sizeof(ipaddr));
+      addr = shaddr(user->fd);
+      if (addr) {
+        struct in_addr *in;
+        in = (struct in_addr *)((unsigned char *)addr + sizeof(uint32_t));
+        strncpy(ipaddr, inet_ntoa(*in), sizeof(ipaddr)-1);
+      }
+      if (!*ipaddr || 0 != strcmp(ipaddr, user->worker)) {
+        sprintf(buf, "stratum_request_message[stratum.elevate]: warning: user \"%s\" (host \"%s\") requested elevation.", user->worker, ipaddr);
+        unet_log(UNET_STRATUM, buf);
+        return (SHERR_ACCESS);
+      }
+
+      if (user->worker[0])
         skey = get_rpc_dat_password(user->worker);
 
       if (skey) {
@@ -717,7 +734,6 @@ fprintf(stderr, "DEBUG: stratum_request_message: password(%s)\n", password);
       if (!skey || 0 != strcasecmp(lcl_auth, rem_auth) || 
           (lcl_pin != rem_pin)) {
         err = SHERR_ACCESS; 
-fprintf(stderr, "DEBUG: skey {%x} lcl_pin %d, rem_pin %d, lcl_auth(%s), rem_auth(%s)\n", skey, lcl_pin, rem_pin, lcl_auth, rem_auth);
 
         sprintf(buf, "stratum_request_message: error granting RPC access for user \"%s\" [invalid credentials].", user->worker);
         unet_log(UNET_STRATUM, buf);

@@ -71,9 +71,9 @@ int shcon_log(int err_code, const char *format, ...)
     return (0); /* done */
 
   text = NULL;
-  va_start(&ap, format);
-  (void)vasprintf(&text, format, &ap);
-  va_end(&ap);
+  va_start(ap, format);
+  (void)vasprintf(&text, format, ap);
+  va_end(ap);
   if (!text)
     return (SHERR_INVAL);
 
@@ -95,9 +95,9 @@ int shcon_info(const char *format, ...)
   int err;
 
   text = NULL;
-  va_start(&ap, format);
-  (void)vasprintf(&text, format, &ap);
-  va_end(&ap);
+  va_start(ap, format);
+  (void)vasprintf(&text, format, ap);
+  va_end(ap);
   if (!text)
     return (SHERR_INVAL);
 

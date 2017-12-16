@@ -707,13 +707,8 @@ Value rpc_sys_url(CIface *iface, const Array& params, bool fStratum)
 
   string base_url;
   memset(hostname, 0, sizeof(hostname));
-#ifdef HAVE_GETHOSTNAME
-  gethostname(hostname, sizeof(hostname)-1);
   base_url += "http://";
-  base_url += hostname;
-#else
-  base_url = "http://localhost";
-#endif
+  base_url += unet_local_host();
   base_url += ":9448/";
 
   Object obj;
@@ -894,29 +889,27 @@ Value rpc_block_get(CIface *iface, const Array& params, bool fStratum)
   blkidx_t *blockIndex;
   int ifaceIndex = GetCoinIndex(iface);
 
-  if (fHelp || params.size() != 1)
-    throw runtime_error(
-        "block.get <hash>\n"
-        "Returns details of a block with the given block-hash.");
+  if (fHelp || params.size() != 1) {
+    throw runtime_error("block.get <hash>\nReturns details of a block with the given block-hash.");
+  }
 
   blockIndex = GetBlockTable(ifaceIndex);
   if (!blockIndex)
-    throw JSONRPCError(-5, "error loading block table.");
+    throw JSONRPCError(SHERR_INVAL, "block-chain");
 
   std::string strHash = params[0].get_str();
   uint256 hash(strHash);
 
   if (blockIndex->count(hash) == 0)
-    throw JSONRPCError(-5, "Block not found");
+    throw JSONRPCError(SHERR_NOENT, "block-index");
 
   CBlockIndex* pblockindex = (*blockIndex)[hash];
   if (!pblockindex)
-    throw JSONRPCError(-5, "Block index not found");
+    throw JSONRPCError(SHERR_INVAL, "block-index");
 
   CBlock *block = GetBlockByHeight(iface, pblockindex->nHeight);
   if (!block) {
-fprintf(stderr, "DEBUG: rpc_block_get: error loading '%s' block @ height %d\n", iface->name, pblockindex->nHeight); 
-    throw JSONRPCError(-5, "Unable to load block");
+    throw JSONRPCError(SHERR_NOENT, "block-chain");
   }
 
   //Object ret = blockToJSON(iface, *block, pblockindex);
@@ -935,7 +928,6 @@ fprintf(stderr, "DEBUG: rpc_block_get: error loading '%s' block @ height %d\n", 
 
   return (ret);
 }
-
 
 Value rpc_block_work(CIface *iface, const Array& params, bool fStratum)
 {
@@ -2100,37 +2092,130 @@ void ResetServiceWalletEvent(CWallet *wallet);
 
 Value rpc_wallet_rescan(CIface *iface, const Array& params, bool fStratum)
 {
+  CWallet *wallet = GetWallet(iface);
+  int ifaceIndex = GetCoinIndex(iface);
+  vector<uint256> hash_list;
+  tx_cache inputs;
+  uint256 bhash;
+  uint64_t bestHeight;
+  uint64_t minTime;
+  uint64_t minHeight;
 
   if (fStratum)
     throw runtime_error("unsupported operation");
-
-  CWallet *wallet = GetWallet(iface);
-  int ifaceIndex = GetCoinIndex(iface);
-
   if (fHelp || params.size() != 0)
-    throw runtime_error(
-        "wallet.rescan\n"
-        "Rescan the block-chain for personal wallet transactions.\n");
+    throw runtime_error("wallet.rescan\nRescan coin inputs associated with local wallet transactions.\n");
 
+  bestHeight = GetBestHeight(iface);
+  minHeight = bestHeight + 1;
+  minTime = time(NULL) + 1;
+
+  /* scan wallet's 'previous hiearchy' */
+  for (map<uint256, CWalletTx>::const_iterator it = wallet->mapWallet.begin(); it != wallet->mapWallet.end(); ++it)
+  {
+    const CWalletTx& pcoin = (*it).second;
+    const uint256& pcoin_hash = pcoin.GetHash();
+    uint256 bhash = 0;
+
+    const CTransaction& pcoin_tx = (CTransaction)pcoin;
+    inputs[pcoin_hash] = pcoin_tx;
+
+    BOOST_FOREACH(const CTxIn& txin, pcoin.vin) {
+      CTransaction tx;
+      if (inputs.count(txin.prevout.hash) != 0) {
+        tx = inputs[txin.prevout.hash];
+      } else if (::GetTransaction(iface, txin.prevout.hash, tx, &bhash)) {
+        inputs[txin.prevout.hash] = tx;
+      } else {
+        /* unknown */
+        continue;
+      }
+
+      wallet->FillInputs(tx, inputs);
+    }
+
+    if (bhash != 0 && 
+        find(hash_list.begin(), hash_list.end(), bhash) != hash_list.end()) {
+        hash_list.insert(hash_list.end(), bhash);
+    }
+  }
+
+  /* scan wallet's 'next hiearchy' */
+  for (tx_cache::iterator it = inputs.begin(); it != inputs.end(); ++it) {
+    CTransaction& tx = (*it).second;
+    vector<uint256> vOuts;
+
+    if (!tx.ReadCoins(ifaceIndex, vOuts))
+      continue; /* unknown */
+    if (tx.vout.size() > vOuts.size())
+      continue; /* invalid */
+
+    
+    BOOST_FOREACH(const uint256& tx_hash, vOuts) {
+      uint256 bhash;
+      if (!::GetTransaction(iface, tx_hash, tx, &bhash)) 
+        continue;
+
+      if (inputs.count(tx_hash) == 0)
+        inputs[tx_hash] = tx;
+      if (find(hash_list.begin(), hash_list.end(), bhash) != hash_list.end())
+        hash_list.insert(hash_list.end(), bhash);
+
+      wallet->FillInputs(tx, inputs);
+    }
+  }
+
+  /* add any missing wallet tx's */
+  for (tx_cache::const_iterator it = inputs.begin(); it != inputs.end(); ++it) {
+    const CTransaction& tx = (*it).second;
+    wallet->AddToWalletIfInvolvingMe(tx, NULL, true);
+  }
+
+  /* find earliest block inovolved. */
+  BOOST_FOREACH(const uint256& bhash, hash_list) {
+    CBlockIndex *pindex = GetBlockIndexByHash(ifaceIndex, bhash);
+    if (!pindex) continue; /* unknown */ 
+
+    if (pindex->nHeight < minHeight)
+      minHeight = pindex->nHeight;
+    if (pindex->nTime < minTime)
+      minTime = pindex->nTime;
+  }
+
+#if 0
   /* find near-reach hierarchial parents of wallet-txs */
   for (map<uint256, CWalletTx>::const_iterator it = wallet->mapWallet.begin(); it != wallet->mapWallet.end(); ++it)
   {
     const CWalletTx& pcoin = (*it).second;
     BOOST_FOREACH(const CTxIn& txin, pcoin.vin) {
       CTransaction tx;
-      if (!::GetTransaction(iface, txin.prevout.hash, tx, NULL))
+      if (!::GetTransaction(iface, txin.prevout.hash, tx, &bhash))
         continue;
       wallet->AddToWalletIfInvolvingMe(tx, NULL, true);
     }
   }
+#endif
 
-  /* reset wallet-scan event state */
-  ResetServiceWalletEvent(wallet);
+  minHeight = MIN(bestHeight, minHeight);
+  if (minHeight != bestHeight) {
+    /* reset wallet-scan event state */
+    ResetServiceWalletEvent(wallet);
+    /* scan entire chain for corrections to wallet & coin-db. */
+    InitServiceWalletEvent(wallet, minHeight);
+  }
 
-  /* scan entire chain for corrections to wallet & coin-db. */
-  InitServiceWalletEvent(wallet, 1);
+  Object ret;
+  ret.push_back(Pair("scan-height", minHeight));
+#if 0
+  if (minHeight != bestHeight) {
+    ret.push_back(Pair("min-stamp", ToValue_date_format((time_t)minTime)));
+    ret.push_back(Pair("min-time", minTime));
+  }
+#endif
+  ret.push_back(Pair("prescan-tx", (int)inputs.size()));
+  ret.push_back(Pair("wallet-tx", (int)wallet->mapWallet.size()));
 
-  return Value::null;
+  return (ret);
 }
 
 Value rpc_wallet_send(CIface *iface, const Array& params, bool fStratum)
@@ -2404,22 +2489,23 @@ Value rpc_wallet_setkey(CIface *iface, const Array& params, bool fStratum)
 
   if (fStratum)
     throw runtime_error("unsupported operation");
-
-  CWallet *pwalletMain = GetWallet(iface);
-  int ifaceIndex = GetCoinIndex(iface);
-
   if (fHelp || params.size() != 2) {
     throw runtime_error(
         "wallet.setkey <priv-key> <account>\n"
         "Adds a private key (as returned by wallet.key) to your wallet.");
   }
 
+  CWallet *pwalletMain = GetWallet(iface);
+  int ifaceIndex = GetCoinIndex(iface);
+  CCoinSecret vchSecret;
   string strSecret = params[0].get_str();
   string strLabel = params[1].get_str();
-  CCoinSecret vchSecret;
-  bool fGood = vchSecret.SetString(strSecret);
 
-  if (!fGood) throw JSONRPCError(-5,"Invalid private key");
+  bool fGood = vchSecret.SetString(strSecret);
+  if (!fGood) {
+    /* invalid private key 'string' for particular coin interface. */
+    throw JSONRPCError(SHERR_ILSEQ, "private-key");
+  }
 
   CKey key;
   bool fCompressed = true;
@@ -2718,6 +2804,8 @@ Value rpc_stratum_list(CIface *iface, const Array& params, bool fStratum)
 
     obj.push_back(Pair("label", user->worker));
 
+    obj.push_back(Pair("netid", shkey_print(&user->netid)));
+
     if (user->work_diff >= 0.0001)
       obj.push_back(Pair("mine-diff", user->work_diff));
 
@@ -2788,16 +2876,15 @@ Value rpc_stratum_key(CIface *iface, const Array& params, bool fStratum)
 
 Value rpc_wallet_addrlist(CIface *iface, const Array& params, bool fStratum)
 {
+
   if (fHelp || params.size() != 1)
-    throw runtime_error(
-        "wallet.addrlist <account>\n"
-        "Returns the list of coin addresses for the given account.");
+    throw runtime_error("wallet.addrlist <account>\nReturns the list of coin addresses for the given account.");
 
   CWallet *pwalletMain = GetWallet(iface);
   int ifaceIndex = GetCoinIndex(iface);
   string strAccount = AccountFromValue(params[0]);
   if (!IsAccountValid(iface, strAccount))
-    throw JSONRPCError(-8, "Invalid account name specified.");
+    throw JSONRPCError(SHERR_NOENT, "Invalid account name specified.");
 
   // Find all addresses that have the given account
   Array ret;
@@ -2808,6 +2895,7 @@ Value rpc_wallet_addrlist(CIface *iface, const Array& params, bool fStratum)
     if (strName == strAccount)
       ret.push_back(address.ToString());
   }
+
   return ret;
 }
 

@@ -236,7 +236,7 @@ noinst_PROGRAMS = test_shcoind
 #shcointool
 noinst_LIBRARIES = libshcoin.a
 sbin_PROGRAMS = shcoind
-bin_SCRIPTS = shc
+#bin_SCRIPTS = shc
 
 #if USDE_SERVICE
 #bin_SCRIPTS += usde
