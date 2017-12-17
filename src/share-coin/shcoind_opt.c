@@ -58,7 +58,7 @@ void opt_print(void)
   shcoind_info("config", buf); 
 
 #ifdef STRATUM_SERVICE
-  sprintf(buf, "info: option '%s' set to '%d'.", 
+  sprintf(buf, "info: option '%s' set to '%s'.", 
       OPT_SERV_STRATUM, opt_bool(OPT_SERV_STRATUM) ? "true" : "false");
   shcoind_info("config", buf); 
 
@@ -68,7 +68,7 @@ void opt_print(void)
 #endif
 
 #ifdef RPC_SERVICE
-  sprintf(buf, "info: option '%s' set to '%d'.", 
+  sprintf(buf, "info: option '%s' set to '%s'.", 
       OPT_SERV_RPC, opt_bool(OPT_SERV_RPC) ? "true" : "false");
   shcoind_info("config", buf); 
 

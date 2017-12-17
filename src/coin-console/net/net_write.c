@@ -33,6 +33,7 @@ int net_write_lim(int sk, shbuf_t *buff, double wait)
   fd_set exc_set;
   int err;
 
+#ifndef WIN32
   FD_ZERO(&write_set);
   FD_SET(sk, &write_set);
   FD_SET(sk, &exc_set);
@@ -47,6 +48,7 @@ int net_write_lim(int sk, shbuf_t *buff, double wait)
     return (SHERR_AGAIN);
   if (FD_ISSET(sk, &exc_set))
     return (SHERR_CONNRESET);
+#endif
 
   err = shwrite(sk, shbuf_data(buff), shbuf_size(buff));
   if (err < 0)

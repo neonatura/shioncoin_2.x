@@ -1345,10 +1345,18 @@ const char *getnewaddress(int ifaceIndex, const char *account)
 
 static uint32_t generate_addrlist_crc(int ifaceIndex, const char *acc_name) 
 {
-  CWallet *wallet = GetWallet(ifaceIndex);
-  string strAccount(acc_name);
+  CIface *iface;
+  CWallet *wallet;
+  string strAccount;
+  char buf[1024];
   uint32_t ret_crc;
-  char buf[512];
+
+  iface = GetCoinByIndex(ifaceIndex);
+  if (!iface || !iface->enabled) return (0);
+  wallet = GetWallet(iface);
+  if (!wallet) return (0);
+  if (!acc_name) return (0);
+  strAccount = acc_name;
 
   ret_crc = 0;
   BOOST_FOREACH(const PAIRTYPE(CTxDestination, string)& item, wallet->mapAddressBook) {

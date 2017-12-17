@@ -296,8 +296,6 @@ int main(int argc, char *argv[])
   }
 #endif
 
-  start_node();
-
 #ifdef RPC_SERVICE
   if (opt_bool(OPT_SERV_RPC)) {
     /* initialize rpc server */
@@ -308,6 +306,8 @@ int main(int argc, char *argv[])
     }
   }
 #endif
+
+  start_node();
 
   /* unet_cycle() */
   daemon_server();

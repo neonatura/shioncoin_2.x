@@ -28,6 +28,7 @@
 #include "shcoind.h"
 #include "stratum/stratum.h"
 #include "coin_proto.h"
+#include "rpc/rpc_proto.h"
 
 #define DEFAULT_WORK_DIFFICULTY 256
 
@@ -952,35 +953,34 @@ int stratum_request_message(user_t *user, shjson_t *json)
 
 
   {
+    static shbuf_t *buff;
     const char *ret_json;
     char account[256];
+
+    if (!buff)
+      buff = shbuf_init();
+    shbuf_clear(buff);
 
     memset(account, 0, sizeof(account));
     strncpy(account, user->worker, sizeof(account)-1);
     strtok(account, ".");
     if (user->flags & USER_RPC) {
-      ret_json = ExecuteRPC(ifaceIndex, json); 
+      err = ExecuteRPC(ifaceIndex, json, buff); 
     } else {
-      ret_json = ExecuteStratumRPC(ifaceIndex, json); 
+      err = ExecuteStratumRPC(ifaceIndex, json, buff); 
     }
-    if (!ret_json) {
+    if (err) {
       reply = shjson_init(NULL);
-      set_stratum_error(reply, -5, "invalid command");
+      set_stratum_error(reply, err, "invalid syntax");
       shjson_null_add(reply, "result");
       stratum_send_message(user, reply);
       shjson_free(&reply);
-      return (SHERR_INVAL);
+      return (err);
     }
 
-    reply = shjson_init(ret_json);
-    if (!reply) {
-      reply = shjson_init(NULL);
-      set_stratum_error(reply, -5, "invalid");
-      shjson_null_add(reply, "result");
-      stratum_send_message(user, reply);
-      shjson_free(&reply);
+    reply = shjson_init(shbuf_data(buff));
+    if (!reply)
       return (SHERR_INVAL);
-    }
 
     if ((user->flags & USER_RPC) &&
         (user->flags & USER_ELEVATE)) {

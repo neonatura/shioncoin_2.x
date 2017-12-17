@@ -188,12 +188,14 @@ void unet_cycle(double max_t)
   err = select(fd_max+1, &r_set, &w_set, &x_set, &to);
   if (err > 0) {
     for (fd = 1; fd <= fd_max; fd++) {
+      t = get_unet_table(fd);
+      if (!t) continue;
+
       if (FD_ISSET(fd, &x_set)) {
         /* socket is in error state */
         unet_close(fd, "exception");
         continue;
       }
-      t = get_unet_table(fd);
       if (FD_ISSET(fd, &r_set)) {
         memset(data, 0, sizeof(data));
         if (!t || !(t->flag & DF_ESL)) {
@@ -212,9 +214,7 @@ void unet_cycle(double max_t)
           descriptor_mark(fd);
         }
       }
-      if (FD_ISSET(fd, &w_set)) {
-        if (!t || !t->wbuff) continue;
-
+      if (t->wbuff) {
         w_tot = shbuf_size(t->wbuff);
         if (w_tot != 0) {
           if (!(t->flag & DF_ESL)) {
