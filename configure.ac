@@ -2,9 +2,9 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.63])
-AC_INIT(share-coin, 2.30, support@neo-natura.com)
+AC_INIT(share-coin, 2.30)
 AC_CONFIG_AUX_DIR([build-aux])
-AM_INIT_AUTOMAKE(share-coin, 2.30) 
+AM_INIT_AUTOMAKE
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
 
