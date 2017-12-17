@@ -1,6 +1,7 @@
 AUTOMAKE_OPTIONS = foreign
 
 TESTS = test_shcoind
+noinst_PROGRAMS = test_shcoind
 
 INCLUDES = \
 	-I$(top_srcdir)/src/secp256k1/include \
@@ -11,7 +12,6 @@ INCLUDES = \
 	-I$(srcdir)/server/ext \
 	-I$(srcdir)/server/blockchain \
 	-I$(srcdir)/server/rpc
-#-I$(top_srcdir)/src/share-ssl-lib/$(OPENSSL_DIR)/include 
 
 blockchain_sources = \
 	$(srcdir)/blockchain/bc_block.c \
@@ -227,35 +227,13 @@ server_sources = \
 	block_iface.cpp \
 	server_iface.cpp
 
-tool_sources = \
-	tool/tool_irc.cpp \
-	server/base58.h \
-	server/base58.cpp
 
-noinst_PROGRAMS = test_shcoind 
-#shcointool
-noinst_LIBRARIES = libshcoin.a
+#noinst_PROGRAMS = test_shcoind 
+#noinst_LIBRARIES = libshcoin.a
 sbin_PROGRAMS = shcoind
-#bin_SCRIPTS = shc
-
-#if USDE_SERVICE
-#bin_SCRIPTS += usde
-#
-#usde: shcointool
-#	cp -f shcointool usde
-#endif
-#
-#if EMC2_SERVICE
-#bin_SCRIPTS += emc2
-#
-#emc2: shcointool
-#	cp -f shcointool emc2
-#endif
-#
-#shc: shcointool
-#	cp -f shcointool shc
 
 test_shcoind_SOURCES = \
+	$(common_includes) $(common_sources) \
 	$(server_sources) \
 	test/CuTest.c \
 	test/CuTest.h \
@@ -272,9 +250,7 @@ test_shcoind_SOURCES = \
 
 test_shcoind_LDADD = \
 	$(top_builddir)/src/secp256k1/libsecp256k1.a \
-	libshcoin.a \
 	-lboost_system -lboost_filesystem -lboost_thread -ldb_cxx -ldl
-#$(top_builddir)/src/share-ssl-lib/libshare_ssl.a
 test_shcoind_CFLAGS = -g -O0 -DTEST_SHCOIND
 test_shcoind_CXXFLAGS = -g -O0 -DTEST_SHCOIND
 if STATIC_LIBSHARE
@@ -286,22 +262,21 @@ test_shcoind_CXXFLAGS += -I$(LIBSHARE)/include
 endif
 
 
-libshcoin_a_SOURCES = \
-	$(common_includes) $(common_sources)
-libshcoin_a_LIBADD = \
-	$(top_builddir)/src/secp256k1/libsecp256k1.a
-#$(top_builddir)/src/share-ssl-lib/libshare_ssl.a
+#libshcoin_a_SOURCES = \
+#	$(common_includes) $(common_sources)
+#libshcoin_a_LIBADD = \
+#	$(top_builddir)/src/secp256k1/libsecp256k1.a
 
 
 shcoind_SOURCES = \
+	$(common_includes) $(common_sources) \
 	$(server_sources) \
 	shcoind.c \
 	shcoind_daemon.c \
 	shcoind_daemon.h
 
 shcoind_LDADD = \
-	$(top_builddir)/src/secp256k1/libsecp256k1.a \
-	libshcoin.a
+	$(top_builddir)/src/secp256k1/libsecp256k1.a
 #$(top_builddir)/src/share-ssl-lib/libshare_ssl.a
 if STATIC_LIBSHARE
 shcoind_LDADD += \
@@ -313,29 +288,13 @@ endif
 shcoind_LDADD += -lboost_system -lboost_filesystem -lboost_thread -ldb_cxx -ldl
 
 
-#shcointool_SOURCES = \
-#	shcoind_tool.cpp clientrpc_iface.cpp $(tool_sources)
-#shcointool_LDADD = \
-#	$(top_builddir)/src/secp256k1/libsecp256k1.a \
-#	libshcoin.a \
-#	-lboost_system -lboost_filesystem -lboost_thread -ldb_cxx -ldl
-##$(top_builddir)/src/share-ssl-lib/libshare_ssl.a
-#shcointool_CFLAGS = -DSHCOIN_CLIENT
-#shcointool_CXXFLAGS = -DSHCOIN_CLIENT -DOS_LINUX
-#if STATIC_LIBSHARE
-#shcointool_LDADD += \
-#	$(LIBSHARE)/src/share-lib/libshare.a \
-#	$(LIBSHARE)/src/sexe/libshare_sexe.a
-#shcointool_CFLAGS += -I$(LIBSHARE)/include
-#shcointool_CXXFLAGS += -I$(LIBSHARE)/include
-#endif
 
 
 if HAVE_INITD_DIR
 EXTRA_DIST = $(top_builddir)/scripts/initd/shcoind
 
 install-exec-hook:
-	[ "`grep ^shc /etc/services`" != "" ] || echo "shc            24104/tcp       shcoind   # SHC virtual currency" >> /etc/services
+	[ "`grep ^shc /etc/services`" != "" ] || echo "shc             24104/tcp       shcoind # SHC virtual currency" >> /etc/services
 	rm -f $(INITD_DIR)/init.d/shcoind  
 	rm -f $(INITD_DIR)/rc3.d/S87shcoind  
 	rm -f $(INITD_DIR)/rc3.d/K87shcoind  
@@ -361,7 +320,7 @@ uninstall-hook:
 	rm -f $(INITD_DIR)/rc5.d/K87shcoind  
 else
 install-exec-hook:
-	[ "`grep ^shc /etc/services`" != "" ] || echo "shc            24104/tcp       shcoind    # SHC virtual currency" >> /etc/services
+	[ "`grep ^shc /etc/services`" != "" ] || echo "shc             24104/tcp       shcoind # SHC virtual currency" >> /etc/services
 endif
 
 

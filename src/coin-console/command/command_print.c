@@ -26,6 +26,8 @@
 
 #include "shcon.h"
 
+extern char *shjson_Print(shjson_t *item);
+
 void command_print_r(FILE *out, shjson_t *j)
 {
   char *text;

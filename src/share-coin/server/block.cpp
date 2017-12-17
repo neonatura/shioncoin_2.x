@@ -1867,9 +1867,11 @@ bool CBlock::trust(int deg, const char *msg, ...)
     sprintf(errbuf + strlen(errbuf), " (%s)", msgbuf);
 
   if (deg > 0) {
-    unet_log(ifaceIndex, errbuf); 
-    if (originPeer && originPeer->nMisbehavior > deg)
-      originPeer->nMisbehavior -= deg;
+    if (originPeer) {
+      unet_log(ifaceIndex, errbuf); 
+      if (originPeer->nMisbehavior > deg)
+        originPeer->nMisbehavior -= deg;
+    }
     return (true);
   }
 
@@ -1877,7 +1879,7 @@ bool CBlock::trust(int deg, const char *msg, ...)
     originPeer->Misbehaving(-deg);
 
   shcoind_err(SHERR_INVAL, iface->name, errbuf);
-  print();
+  Debug("TRUST: %s", ToString());
 
   return (false);
 }

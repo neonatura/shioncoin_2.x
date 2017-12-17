@@ -15,7 +15,6 @@
 
 @SET_MAKE@
 
-
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
 pkgincludedir = $(includedir)/@PACKAGE@
@@ -35,15 +34,12 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-noinst_PROGRAMS = shcointool$(EXEEXT)
-@USDE_SERVICE_TRUE@am__append_1 = usde
-@EMC2_SERVICE_TRUE@am__append_2 = emc2
-@STATIC_LIBSHARE_TRUE@am__append_3 = -I$(LIBSHARE)/include
-@STATIC_LIBSHARE_TRUE@am__append_4 = -I$(LIBSHARE)/include
-@DEBUG_TRUE@am__append_5 = -g3 
-@DEBUG_TRUE@am__append_6 = -g3
-@DEBUG_FALSE@am__append_7 = -O2
-@DEBUG_FALSE@am__append_8 = -O2
+bin_PROGRAMS = shc$(EXEEXT) $(am__EXEEXT_1) $(am__EXEEXT_2)
+@STATIC_LIBSHARE_TRUE@am__append_1 = -I$(LIBSHARE)/include
+@DEBUG_TRUE@am__append_2 = -g
+@DEBUG_FALSE@am__append_3 = -O
+@USDE_SERVICE_TRUE@am__append_4 = usde
+@EMC2_SERVICE_TRUE@am__append_5 = emc2
 subdir = src/coin-console
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -59,47 +55,63 @@ CONFIG_HEADER = $(top_builddir)/config.h \
 	$(top_builddir)/src/secp256k1/libsecp256k1-config.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
-PROGRAMS = $(noinst_PROGRAMS)
-am__objects_1 = shcointool-shcon.$(OBJEXT) \
-	shcointool-shcon_init.$(OBJEXT) \
-	shcointool-shcon_term.$(OBJEXT) shcointool-shcon_opt.$(OBJEXT) \
-	shcointool-shcon_log.$(OBJEXT) shcointool-net.$(OBJEXT) \
-	shcointool-net_conn.$(OBJEXT) shcointool-net_read.$(OBJEXT) \
-	shcointool-net_write.$(OBJEXT) shcointool-key.$(OBJEXT) \
-	shcointool-key_dat.$(OBJEXT) shcointool-key_auth.$(OBJEXT) \
-	shcointool-command.$(OBJEXT) \
-	shcointool-command_print.$(OBJEXT)
-am_shcointool_OBJECTS = $(am__objects_1)
-shcointool_OBJECTS = $(am_shcointool_OBJECTS)
-@STATIC_LIBSHARE_TRUE@shcointool_DEPENDENCIES =  \
-@STATIC_LIBSHARE_TRUE@	$(LIBSHARE)/src/share-lib/libshare.a \
-@STATIC_LIBSHARE_TRUE@	$(LIBSHARE)/src/sexe/libshare_sexe.a
-shcointool_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(shcointool_CFLAGS) \
-	$(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
-am__vpath_adj = case $$p in \
-    $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
-    *) f=$$p;; \
-  esac;
-am__strip_dir = f=`echo $$p | sed -e 's|^.*/||'`;
-am__install_max = 40
-am__nobase_strip_setup = \
-  srcdirstrip=`echo "$(srcdir)" | sed 's/[].[^$$\\*|]/\\\\&/g'`
-am__nobase_strip = \
-  for p in $$list; do echo "$$p"; done | sed -e "s|$$srcdirstrip/||"
-am__nobase_list = $(am__nobase_strip_setup); \
-  for p in $$list; do echo "$$p $$p"; done | \
-  sed "s| $$srcdirstrip/| |;"' / .*\//!s/ .*/ ./; s,\( .*\)/[^/]*$$,\1,' | \
-  $(AWK) 'BEGIN { files["."] = "" } { files[$$2] = files[$$2] " " $$1; \
-    if (++n[$$2] == $(am__install_max)) \
-      { print $$2, files[$$2]; n[$$2] = 0; files[$$2] = "" } } \
-    END { for (dir in files) print dir, files[dir] }'
-am__base_list = \
-  sed '$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;s/\n/ /g' | \
-  sed '$$!N;$$!N;$$!N;$$!N;s/\n/ /g'
+@USDE_SERVICE_TRUE@am__EXEEXT_1 = usde$(EXEEXT)
+@EMC2_SERVICE_TRUE@am__EXEEXT_2 = emc2$(EXEEXT)
 am__installdirs = "$(DESTDIR)$(bindir)"
-SCRIPTS = $(bin_SCRIPTS)
+PROGRAMS = $(bin_PROGRAMS)
+am__emc2_SOURCES_DIST = shcon.c shcon.h shcon_init.c shcon_init.h \
+	shcon_term.c shcon_term.h shcon_opt.c shcon_opt.h shcon_log.c \
+	shcon_log.h net/net.c net/net.h net/net_conn.c net/net_read.c \
+	net/net_write.c key/key.c key/key.h key/key_dat.c \
+	key/key_auth.c command/command.c command/command.h \
+	command/command_print.c
+am__objects_1 = emc2-shcon.$(OBJEXT) emc2-shcon_init.$(OBJEXT) \
+	emc2-shcon_term.$(OBJEXT) emc2-shcon_opt.$(OBJEXT) \
+	emc2-shcon_log.$(OBJEXT) emc2-net.$(OBJEXT) \
+	emc2-net_conn.$(OBJEXT) emc2-net_read.$(OBJEXT) \
+	emc2-net_write.$(OBJEXT) emc2-key.$(OBJEXT) \
+	emc2-key_dat.$(OBJEXT) emc2-key_auth.$(OBJEXT) \
+	emc2-command.$(OBJEXT) emc2-command_print.$(OBJEXT)
+@EMC2_SERVICE_TRUE@am_emc2_OBJECTS = $(am__objects_1)
+emc2_OBJECTS = $(am_emc2_OBJECTS)
+@STATIC_LIBSHARE_TRUE@am__DEPENDENCIES_1 =  \
+@STATIC_LIBSHARE_TRUE@	$(LIBSHARE)/src/share-lib/libshare.a
+@EMC2_SERVICE_TRUE@emc2_DEPENDENCIES = $(am__DEPENDENCIES_1)
+emc2_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
+	--mode=link $(CCLD) $(emc2_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
+am__objects_2 = shc-shcon.$(OBJEXT) shc-shcon_init.$(OBJEXT) \
+	shc-shcon_term.$(OBJEXT) shc-shcon_opt.$(OBJEXT) \
+	shc-shcon_log.$(OBJEXT) shc-net.$(OBJEXT) \
+	shc-net_conn.$(OBJEXT) shc-net_read.$(OBJEXT) \
+	shc-net_write.$(OBJEXT) shc-key.$(OBJEXT) \
+	shc-key_dat.$(OBJEXT) shc-key_auth.$(OBJEXT) \
+	shc-command.$(OBJEXT) shc-command_print.$(OBJEXT)
+am_shc_OBJECTS = $(am__objects_2)
+shc_OBJECTS = $(am_shc_OBJECTS)
+shc_DEPENDENCIES = $(am__DEPENDENCIES_1)
+shc_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
+	--mode=link $(CCLD) $(shc_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
+am__usde_SOURCES_DIST = shcon.c shcon.h shcon_init.c shcon_init.h \
+	shcon_term.c shcon_term.h shcon_opt.c shcon_opt.h shcon_log.c \
+	shcon_log.h net/net.c net/net.h net/net_conn.c net/net_read.c \
+	net/net_write.c key/key.c key/key.h key/key_dat.c \
+	key/key_auth.c command/command.c command/command.h \
+	command/command_print.c
+am__objects_3 = usde-shcon.$(OBJEXT) usde-shcon_init.$(OBJEXT) \
+	usde-shcon_term.$(OBJEXT) usde-shcon_opt.$(OBJEXT) \
+	usde-shcon_log.$(OBJEXT) usde-net.$(OBJEXT) \
+	usde-net_conn.$(OBJEXT) usde-net_read.$(OBJEXT) \
+	usde-net_write.$(OBJEXT) usde-key.$(OBJEXT) \
+	usde-key_dat.$(OBJEXT) usde-key_auth.$(OBJEXT) \
+	usde-command.$(OBJEXT) usde-command_print.$(OBJEXT)
+@USDE_SERVICE_TRUE@am_usde_OBJECTS = $(am__objects_3)
+usde_OBJECTS = $(am_usde_OBJECTS)
+@USDE_SERVICE_TRUE@usde_DEPENDENCIES = $(am__DEPENDENCIES_1)
+usde_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
+	--mode=link $(CCLD) $(usde_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/src/secp256k1
 depcomp = $(SHELL) $(top_srcdir)/build-aux/depcomp
 am__depfiles_maybe = depfiles
@@ -113,8 +125,9 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(shcointool_SOURCES)
-DIST_SOURCES = $(shcointool_SOURCES)
+SOURCES = $(emc2_SOURCES) $(shc_SOURCES) $(usde_SOURCES)
+DIST_SOURCES = $(am__emc2_SOURCES_DIST) $(shc_SOURCES) \
+	$(am__usde_SOURCES_DIST)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -131,14 +144,14 @@ CCAS = @CCAS@
 CCASDEPMODE = @CCASDEPMODE@
 CCASFLAGS = @CCASFLAGS@
 CCDEPMODE = @CCDEPMODE@
-CFLAGS = @CFLAGS@ $(am__append_5) $(am__append_7)
+CFLAGS = @CFLAGS@
 CP = @CP@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
 CXX = @CXX@
 CXXCPP = @CXXCPP@
 CXXDEPMODE = @CXXDEPMODE@
-CXXFLAGS = @CXXFLAGS@ $(am__append_6) $(am__append_8)
+CXXFLAGS = @CXXFLAGS@
 CYGPATH_W = @CYGPATH_W@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
@@ -260,8 +273,11 @@ version_info = @version_info@
 version_patch = @version_patch@
 with_kernel = @with_kernel@
 with_kerneldir = @with_kerneldir@
-AUTOMAKE_OPTIONS = foreign
-bin_SCRIPTS = shc $(am__append_1) $(am__append_2)
+tool_flags = $(am__append_1) $(am__append_2) $(am__append_3)
+@STATIC_LIBSHARE_FALSE@ld_flags = -lshare
+@STATIC_LIBSHARE_TRUE@ld_flags = $(LIBSHARE)/src/share-lib/libshare.a
+
+# main source code for share-coin console client utility program.
 console_sources = \
 	shcon.c \
 	shcon.h \
@@ -286,15 +302,15 @@ console_sources = \
 	command/command.h \
 	command/command_print.c
 
-shcointool_SOURCES = \
-	$(console_sources)
-
-shcointool_CFLAGS = -DSHCOIN_CLIENT $(am__append_3)
-shcointool_CXXFLAGS = -DSHCOIN_CLIENT -DOS_LINUX $(am__append_4)
-@STATIC_LIBSHARE_TRUE@shcointool_LDADD = \
-@STATIC_LIBSHARE_TRUE@	$(LIBSHARE)/src/share-lib/libshare.a \
-@STATIC_LIBSHARE_TRUE@	$(LIBSHARE)/src/sexe/libshare_sexe.a
-
+shc_SOURCES = $(console_sources)
+shc_CFLAGS = $(tool_flags) -DSHC_COIN_CLIENT
+shc_LDADD = $(ld_flags)
+@USDE_SERVICE_TRUE@usde_SOURCES = $(console_sources)
+@USDE_SERVICE_TRUE@usde_CFLAGS = $(tool_flags) -DUSDE_COIN_CLIENT
+@USDE_SERVICE_TRUE@usde_LDADD = $(ld_flags)
+@EMC2_SERVICE_TRUE@emc2_SOURCES = $(console_sources)
+@EMC2_SERVICE_TRUE@emc2_CFLAGS = $(tool_flags) -DEMC2_COIN_CLIENT
+@EMC2_SERVICE_TRUE@emc2_LDADD = $(ld_flags)
 all: all-am
 
 .SUFFIXES:
@@ -308,9 +324,9 @@ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/coin-console/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu src/coin-console/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign src/coin-console/Makefile
+	  $(AUTOMAKE) --gnu src/coin-console/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -329,52 +345,58 @@ $(top_srcdir)/configure:  $(am__configure_deps)
 $(ACLOCAL_M4):  $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 $(am__aclocal_m4_deps):
+install-binPROGRAMS: $(bin_PROGRAMS)
+	@$(NORMAL_INSTALL)
+	test -z "$(bindir)" || $(MKDIR_P) "$(DESTDIR)$(bindir)"
+	@list='$(bin_PROGRAMS)'; test -n "$(bindir)" || list=; \
+	for p in $$list; do echo "$$p $$p"; done | \
+	sed 's/$(EXEEXT)$$//' | \
+	while read p p1; do if test -f $$p || test -f $$p1; \
+	  then echo "$$p"; echo "$$p"; else :; fi; \
+	done | \
+	sed -e 'p;s,.*/,,;n;h' -e 's|.*|.|' \
+	    -e 'p;x;s,.*/,,;s/$(EXEEXT)$$//;$(transform);s/$$/$(EXEEXT)/' | \
+	sed 'N;N;N;s,\n, ,g' | \
+	$(AWK) 'BEGIN { files["."] = ""; dirs["."] = 1 } \
+	  { d=$$3; if (dirs[d] != 1) { print "d", d; dirs[d] = 1 } \
+	    if ($$2 == $$4) files[d] = files[d] " " $$1; \
+	    else { print "f", $$3 "/" $$4, $$1; } } \
+	  END { for (d in files) print "f", d, files[d] }' | \
+	while read type dir files; do \
+	    if test "$$dir" = .; then dir=; else dir=/$$dir; fi; \
+	    test -z "$$files" || { \
+	    echo " $(INSTALL_PROGRAM_ENV) $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(INSTALL_PROGRAM) $$files '$(DESTDIR)$(bindir)$$dir'"; \
+	    $(INSTALL_PROGRAM_ENV) $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(INSTALL_PROGRAM) $$files "$(DESTDIR)$(bindir)$$dir" || exit $$?; \
+	    } \
+	; done
 
-clean-noinstPROGRAMS:
-	@list='$(noinst_PROGRAMS)'; test -n "$$list" || exit 0; \
+uninstall-binPROGRAMS:
+	@$(NORMAL_UNINSTALL)
+	@list='$(bin_PROGRAMS)'; test -n "$(bindir)" || list=; \
+	files=`for p in $$list; do echo "$$p"; done | \
+	  sed -e 'h;s,^.*/,,;s/$(EXEEXT)$$//;$(transform)' \
+	      -e 's/$$/$(EXEEXT)/' `; \
+	test -n "$$list" || exit 0; \
+	echo " ( cd '$(DESTDIR)$(bindir)' && rm -f" $$files ")"; \
+	cd "$(DESTDIR)$(bindir)" && rm -f $$files
+
+clean-binPROGRAMS:
+	@list='$(bin_PROGRAMS)'; test -n "$$list" || exit 0; \
 	echo " rm -f" $$list; \
 	rm -f $$list || exit $$?; \
 	test -n "$(EXEEXT)" || exit 0; \
 	list=`for p in $$list; do echo "$$p"; done | sed 's/$(EXEEXT)$$//'`; \
 	echo " rm -f" $$list; \
 	rm -f $$list
-shcointool$(EXEEXT): $(shcointool_OBJECTS) $(shcointool_DEPENDENCIES) 
-	@rm -f shcointool$(EXEEXT)
-	$(shcointool_LINK) $(shcointool_OBJECTS) $(shcointool_LDADD) $(LIBS)
-install-binSCRIPTS: $(bin_SCRIPTS)
-	@$(NORMAL_INSTALL)
-	test -z "$(bindir)" || $(MKDIR_P) "$(DESTDIR)$(bindir)"
-	@list='$(bin_SCRIPTS)'; test -n "$(bindir)" || list=; \
-	for p in $$list; do \
-	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
-	  if test -f "$$d$$p"; then echo "$$d$$p"; echo "$$p"; else :; fi; \
-	done | \
-	sed -e 'p;s,.*/,,;n' \
-	    -e 'h;s|.*|.|' \
-	    -e 'p;x;s,.*/,,;$(transform)' | sed 'N;N;N;s,\n, ,g' | \
-	$(AWK) 'BEGIN { files["."] = ""; dirs["."] = 1; } \
-	  { d=$$3; if (dirs[d] != 1) { print "d", d; dirs[d] = 1 } \
-	    if ($$2 == $$4) { files[d] = files[d] " " $$1; \
-	      if (++n[d] == $(am__install_max)) { \
-		print "f", d, files[d]; n[d] = 0; files[d] = "" } } \
-	    else { print "f", d "/" $$4, $$1 } } \
-	  END { for (d in files) print "f", d, files[d] }' | \
-	while read type dir files; do \
-	     if test "$$dir" = .; then dir=; else dir=/$$dir; fi; \
-	     test -z "$$files" || { \
-	       echo " $(INSTALL_SCRIPT) $$files '$(DESTDIR)$(bindir)$$dir'"; \
-	       $(INSTALL_SCRIPT) $$files "$(DESTDIR)$(bindir)$$dir" || exit $$?; \
-	     } \
-	; done
-
-uninstall-binSCRIPTS:
-	@$(NORMAL_UNINSTALL)
-	@list='$(bin_SCRIPTS)'; test -n "$(bindir)" || exit 0; \
-	files=`for p in $$list; do echo "$$p"; done | \
-	       sed -e 's,.*/,,;$(transform)'`; \
-	test -n "$$list" || exit 0; \
-	echo " ( cd '$(DESTDIR)$(bindir)' && rm -f" $$files ")"; \
-	cd "$(DESTDIR)$(bindir)" && rm -f $$files
+emc2$(EXEEXT): $(emc2_OBJECTS) $(emc2_DEPENDENCIES) 
+	@rm -f emc2$(EXEEXT)
+	$(emc2_LINK) $(emc2_OBJECTS) $(emc2_LDADD) $(LIBS)
+shc$(EXEEXT): $(shc_OBJECTS) $(shc_DEPENDENCIES) 
+	@rm -f shc$(EXEEXT)
+	$(shc_LINK) $(shc_OBJECTS) $(shc_LDADD) $(LIBS)
+usde$(EXEEXT): $(usde_OBJECTS) $(usde_DEPENDENCIES) 
+	@rm -f usde$(EXEEXT)
+	$(usde_LINK) $(usde_OBJECTS) $(usde_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -382,20 +404,48 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcointool-command.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcointool-command_print.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcointool-key.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcointool-key_auth.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcointool-key_dat.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcointool-net.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcointool-net_conn.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcointool-net_read.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcointool-net_write.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcointool-shcon.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcointool-shcon_init.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcointool-shcon_log.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcointool-shcon_opt.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shcointool-shcon_term.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/emc2-command.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/emc2-command_print.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/emc2-key.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/emc2-key_auth.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/emc2-key_dat.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/emc2-net.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/emc2-net_conn.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/emc2-net_read.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/emc2-net_write.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/emc2-shcon.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/emc2-shcon_init.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/emc2-shcon_log.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/emc2-shcon_opt.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/emc2-shcon_term.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shc-command.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shc-command_print.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shc-key.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shc-key_auth.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shc-key_dat.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shc-net.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shc-net_conn.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shc-net_read.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shc-net_write.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shc-shcon.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shc-shcon_init.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shc-shcon_log.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shc-shcon_opt.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/shc-shcon_term.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/usde-command.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/usde-command_print.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/usde-key.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/usde-key_auth.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/usde-key_dat.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/usde-net.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/usde-net_conn.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/usde-net_read.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/usde-net_write.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/usde-shcon.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/usde-shcon_init.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/usde-shcon_log.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/usde-shcon_opt.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/usde-shcon_term.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -418,201 +468,593 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LTCOMPILE) -c -o $@ $<
 
-shcointool-shcon.o: shcon.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CFLAGS) $(CFLAGS) -MT shcointool-shcon.o -MD -MP -MF $(DEPDIR)/shcointool-shcon.Tpo -c -o shcointool-shcon.o `test -f 'shcon.c' || echo '$(srcdir)/'`shcon.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shcointool-shcon.Tpo $(DEPDIR)/shcointool-shcon.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='shcon.c' object='shcointool-shcon.o' libtool=no @AMDEPBACKSLASH@
+emc2-shcon.o: shcon.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(emc2_CFLAGS) $(CFLAGS) -MT emc2-shcon.o -MD -MP -MF $(DEPDIR)/emc2-shcon.Tpo -c -o emc2-shcon.o `test -f 'shcon.c' || echo '$(srcdir)/'`shcon.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/emc2-shcon.Tpo $(DEPDIR)/emc2-shcon.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='shcon.c' object='emc2-shcon.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CFLAGS) $(CFLAGS) -c -o shcointool-shcon.o `test -f 'shcon.c' || echo '$(srcdir)/'`shcon.c
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(emc2_CFLAGS) $(CFLAGS) -c -o emc2-shcon.o `test -f 'shcon.c' || echo '$(srcdir)/'`shcon.c
 
-shcointool-shcon.obj: shcon.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CFLAGS) $(CFLAGS) -MT shcointool-shcon.obj -MD -MP -MF $(DEPDIR)/shcointool-shcon.Tpo -c -o shcointool-shcon.obj `if test -f 'shcon.c'; then $(CYGPATH_W) 'shcon.c'; else $(CYGPATH_W) '$(srcdir)/shcon.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shcointool-shcon.Tpo $(DEPDIR)/shcointool-shcon.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='shcon.c' object='shcointool-shcon.obj' libtool=no @AMDEPBACKSLASH@
+emc2-shcon.obj: shcon.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(emc2_CFLAGS) $(CFLAGS) -MT emc2-shcon.obj -MD -MP -MF $(DEPDIR)/emc2-shcon.Tpo -c -o emc2-shcon.obj `if test -f 'shcon.c'; then $(CYGPATH_W) 'shcon.c'; else $(CYGPATH_W) '$(srcdir)/shcon.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/emc2-shcon.Tpo $(DEPDIR)/emc2-shcon.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='shcon.c' object='emc2-shcon.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CFLAGS) $(CFLAGS) -c -o shcointool-shcon.obj `if test -f 'shcon.c'; then $(CYGPATH_W) 'shcon.c'; else $(CYGPATH_W) '$(srcdir)/shcon.c'; fi`
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(emc2_CFLAGS) $(CFLAGS) -c -o emc2-shcon.obj `if test -f 'shcon.c'; then $(CYGPATH_W) 'shcon.c'; else $(CYGPATH_W) '$(srcdir)/shcon.c'; fi`
 
-shcointool-shcon_init.o: shcon_init.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CFLAGS) $(CFLAGS) -MT shcointool-shcon_init.o -MD -MP -MF $(DEPDIR)/shcointool-shcon_init.Tpo -c -o shcointool-shcon_init.o `test -f 'shcon_init.c' || echo '$(srcdir)/'`shcon_init.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shcointool-shcon_init.Tpo $(DEPDIR)/shcointool-shcon_init.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='shcon_init.c' object='shcointool-shcon_init.o' libtool=no @AMDEPBACKSLASH@
+emc2-shcon_init.o: shcon_init.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(emc2_CFLAGS) $(CFLAGS) -MT emc2-shcon_init.o -MD -MP -MF $(DEPDIR)/emc2-shcon_init.Tpo -c -o emc2-shcon_init.o `test -f 'shcon_init.c' || echo '$(srcdir)/'`shcon_init.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/emc2-shcon_init.Tpo $(DEPDIR)/emc2-shcon_init.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='shcon_init.c' object='emc2-shcon_init.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CFLAGS) $(CFLAGS) -c -o shcointool-shcon_init.o `test -f 'shcon_init.c' || echo '$(srcdir)/'`shcon_init.c
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(emc2_CFLAGS) $(CFLAGS) -c -o emc2-shcon_init.o `test -f 'shcon_init.c' || echo '$(srcdir)/'`shcon_init.c
 
-shcointool-shcon_init.obj: shcon_init.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CFLAGS) $(CFLAGS) -MT shcointool-shcon_init.obj -MD -MP -MF $(DEPDIR)/shcointool-shcon_init.Tpo -c -o shcointool-shcon_init.obj `if test -f 'shcon_init.c'; then $(CYGPATH_W) 'shcon_init.c'; else $(CYGPATH_W) '$(srcdir)/shcon_init.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shcointool-shcon_init.Tpo $(DEPDIR)/shcointool-shcon_init.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='shcon_init.c' object='shcointool-shcon_init.obj' libtool=no @AMDEPBACKSLASH@
+emc2-shcon_init.obj: shcon_init.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(emc2_CFLAGS) $(CFLAGS) -MT emc2-shcon_init.obj -MD -MP -MF $(DEPDIR)/emc2-shcon_init.Tpo -c -o emc2-shcon_init.obj `if test -f 'shcon_init.c'; then $(CYGPATH_W) 'shcon_init.c'; else $(CYGPATH_W) '$(srcdir)/shcon_init.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/emc2-shcon_init.Tpo $(DEPDIR)/emc2-shcon_init.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='shcon_init.c' object='emc2-shcon_init.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CFLAGS) $(CFLAGS) -c -o shcointool-shcon_init.obj `if test -f 'shcon_init.c'; then $(CYGPATH_W) 'shcon_init.c'; else $(CYGPATH_W) '$(srcdir)/shcon_init.c'; fi`
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(emc2_CFLAGS) $(CFLAGS) -c -o emc2-shcon_init.obj `if test -f 'shcon_init.c'; then $(CYGPATH_W) 'shcon_init.c'; else $(CYGPATH_W) '$(srcdir)/shcon_init.c'; fi`
 
-shcointool-shcon_term.o: shcon_term.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CFLAGS) $(CFLAGS) -MT shcointool-shcon_term.o -MD -MP -MF $(DEPDIR)/shcointool-shcon_term.Tpo -c -o shcointool-shcon_term.o `test -f 'shcon_term.c' || echo '$(srcdir)/'`shcon_term.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shcointool-shcon_term.Tpo $(DEPDIR)/shcointool-shcon_term.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='shcon_term.c' object='shcointool-shcon_term.o' libtool=no @AMDEPBACKSLASH@
+emc2-shcon_term.o: shcon_term.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(emc2_CFLAGS) $(CFLAGS) -MT emc2-shcon_term.o -MD -MP -MF $(DEPDIR)/emc2-shcon_term.Tpo -c -o emc2-shcon_term.o `test -f 'shcon_term.c' || echo '$(srcdir)/'`shcon_term.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/emc2-shcon_term.Tpo $(DEPDIR)/emc2-shcon_term.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='shcon_term.c' object='emc2-shcon_term.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CFLAGS) $(CFLAGS) -c -o shcointool-shcon_term.o `test -f 'shcon_term.c' || echo '$(srcdir)/'`shcon_term.c
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(emc2_CFLAGS) $(CFLAGS) -c -o emc2-shcon_term.o `test -f 'shcon_term.c' || echo '$(srcdir)/'`shcon_term.c
 
-shcointool-shcon_term.obj: shcon_term.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CFLAGS) $(CFLAGS) -MT shcointool-shcon_term.obj -MD -MP -MF $(DEPDIR)/shcointool-shcon_term.Tpo -c -o shcointool-shcon_term.obj `if test -f 'shcon_term.c'; then $(CYGPATH_W) 'shcon_term.c'; else $(CYGPATH_W) '$(srcdir)/shcon_term.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shcointool-shcon_term.Tpo $(DEPDIR)/shcointool-shcon_term.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='shcon_term.c' object='shcointool-shcon_term.obj' libtool=no @AMDEPBACKSLASH@
+emc2-shcon_term.obj: shcon_term.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(emc2_CFLAGS) $(CFLAGS) -MT emc2-shcon_term.obj -MD -MP -MF $(DEPDIR)/emc2-shcon_term.Tpo -c -o emc2-shcon_term.obj `if test -f 'shcon_term.c'; then $(CYGPATH_W) 'shcon_term.c'; else $(CYGPATH_W) '$(srcdir)/shcon_term.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/emc2-shcon_term.Tpo $(DEPDIR)/emc2-shcon_term.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='shcon_term.c' object='emc2-shcon_term.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CFLAGS) $(CFLAGS) -c -o shcointool-shcon_term.obj `if test -f 'shcon_term.c'; then $(CYGPATH_W) 'shcon_term.c'; else $(CYGPATH_W) '$(srcdir)/shcon_term.c'; fi`
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(emc2_CFLAGS) $(CFLAGS) -c -o emc2-shcon_term.obj `if test -f 'shcon_term.c'; then $(CYGPATH_W) 'shcon_term.c'; else $(CYGPATH_W) '$(srcdir)/shcon_term.c'; fi`
 
-shcointool-shcon_opt.o: shcon_opt.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CFLAGS) $(CFLAGS) -MT shcointool-shcon_opt.o -MD -MP -MF $(DEPDIR)/shcointool-shcon_opt.Tpo -c -o shcointool-shcon_opt.o `test -f 'shcon_opt.c' || echo '$(srcdir)/'`shcon_opt.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shcointool-shcon_opt.Tpo $(DEPDIR)/shcointool-shcon_opt.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='shcon_opt.c' object='shcointool-shcon_opt.o' libtool=no @AMDEPBACKSLASH@
+emc2-shcon_opt.o: shcon_opt.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(emc2_CFLAGS) $(CFLAGS) -MT emc2-shcon_opt.o -MD -MP -MF $(DEPDIR)/emc2-shcon_opt.Tpo -c -o emc2-shcon_opt.o `test -f 'shcon_opt.c' || echo '$(srcdir)/'`shcon_opt.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/emc2-shcon_opt.Tpo $(DEPDIR)/emc2-shcon_opt.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='shcon_opt.c' object='emc2-shcon_opt.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CFLAGS) $(CFLAGS) -c -o shcointool-shcon_opt.o `test -f 'shcon_opt.c' || echo '$(srcdir)/'`shcon_opt.c
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(emc2_CFLAGS) $(CFLAGS) -c -o emc2-shcon_opt.o `test -f 'shcon_opt.c' || echo '$(srcdir)/'`shcon_opt.c
 
-shcointool-shcon_opt.obj: shcon_opt.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CFLAGS) $(CFLAGS) -MT shcointool-shcon_opt.obj -MD -MP -MF $(DEPDIR)/shcointool-shcon_opt.Tpo -c -o shcointool-shcon_opt.obj `if test -f 'shcon_opt.c'; then $(CYGPATH_W) 'shcon_opt.c'; else $(CYGPATH_W) '$(srcdir)/shcon_opt.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shcointool-shcon_opt.Tpo $(DEPDIR)/shcointool-shcon_opt.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='shcon_opt.c' object='shcointool-shcon_opt.obj' libtool=no @AMDEPBACKSLASH@
+emc2-shcon_opt.obj: shcon_opt.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(emc2_CFLAGS) $(CFLAGS) -MT emc2-shcon_opt.obj -MD -MP -MF $(DEPDIR)/emc2-shcon_opt.Tpo -c -o emc2-shcon_opt.obj `if test -f 'shcon_opt.c'; then $(CYGPATH_W) 'shcon_opt.c'; else $(CYGPATH_W) '$(srcdir)/shcon_opt.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/emc2-shcon_opt.Tpo $(DEPDIR)/emc2-shcon_opt.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='shcon_opt.c' object='emc2-shcon_opt.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CFLAGS) $(CFLAGS) -c -o shcointool-shcon_opt.obj `if test -f 'shcon_opt.c'; then $(CYGPATH_W) 'shcon_opt.c'; else $(CYGPATH_W) '$(srcdir)/shcon_opt.c'; fi`
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(emc2_CFLAGS) $(CFLAGS) -c -o emc2-shcon_opt.obj `if test -f 'shcon_opt.c'; then $(CYGPATH_W) 'shcon_opt.c'; else $(CYGPATH_W) '$(srcdir)/shcon_opt.c'; fi`
 
-shcointool-shcon_log.o: shcon_log.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CFLAGS) $(CFLAGS) -MT shcointool-shcon_log.o -MD -MP -MF $(DEPDIR)/shcointool-shcon_log.Tpo -c -o shcointool-shcon_log.o `test -f 'shcon_log.c' || echo '$(srcdir)/'`shcon_log.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shcointool-shcon_log.Tpo $(DEPDIR)/shcointool-shcon_log.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='shcon_log.c' object='shcointool-shcon_log.o' libtool=no @AMDEPBACKSLASH@
+emc2-shcon_log.o: shcon_log.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(emc2_CFLAGS) $(CFLAGS) -MT emc2-shcon_log.o -MD -MP -MF $(DEPDIR)/emc2-shcon_log.Tpo -c -o emc2-shcon_log.o `test -f 'shcon_log.c' || echo '$(srcdir)/'`shcon_log.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/emc2-shcon_log.Tpo $(DEPDIR)/emc2-shcon_log.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='shcon_log.c' object='emc2-shcon_log.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CFLAGS) $(CFLAGS) -c -o shcointool-shcon_log.o `test -f 'shcon_log.c' || echo '$(srcdir)/'`shcon_log.c
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(emc2_CFLAGS) $(CFLAGS) -c -o emc2-shcon_log.o `test -f 'shcon_log.c' || echo '$(srcdir)/'`shcon_log.c
 
-shcointool-shcon_log.obj: shcon_log.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CFLAGS) $(CFLAGS) -MT shcointool-shcon_log.obj -MD -MP -MF $(DEPDIR)/shcointool-shcon_log.Tpo -c -o shcointool-shcon_log.obj `if test -f 'shcon_log.c'; then $(CYGPATH_W) 'shcon_log.c'; else $(CYGPATH_W) '$(srcdir)/shcon_log.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shcointool-shcon_log.Tpo $(DEPDIR)/shcointool-shcon_log.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='shcon_log.c' object='shcointool-shcon_log.obj' libtool=no @AMDEPBACKSLASH@
+emc2-shcon_log.obj: shcon_log.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(emc2_CFLAGS) $(CFLAGS) -MT emc2-shcon_log.obj -MD -MP -MF $(DEPDIR)/emc2-shcon_log.Tpo -c -o emc2-shcon_log.obj `if test -f 'shcon_log.c'; then $(CYGPATH_W) 'shcon_log.c'; else $(CYGPATH_W) '$(srcdir)/shcon_log.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/emc2-shcon_log.Tpo $(DEPDIR)/emc2-shcon_log.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='shcon_log.c' object='emc2-shcon_log.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CFLAGS) $(CFLAGS) -c -o shcointool-shcon_log.obj `if test -f 'shcon_log.c'; then $(CYGPATH_W) 'shcon_log.c'; else $(CYGPATH_W) '$(srcdir)/shcon_log.c'; fi`
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(emc2_CFLAGS) $(CFLAGS) -c -o emc2-shcon_log.obj `if test -f 'shcon_log.c'; then $(CYGPATH_W) 'shcon_log.c'; else $(CYGPATH_W) '$(srcdir)/shcon_log.c'; fi`
 
-shcointool-net.o: net/net.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CFLAGS) $(CFLAGS) -MT shcointool-net.o -MD -MP -MF $(DEPDIR)/shcointool-net.Tpo -c -o shcointool-net.o `test -f 'net/net.c' || echo '$(srcdir)/'`net/net.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shcointool-net.Tpo $(DEPDIR)/shcointool-net.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='net/net.c' object='shcointool-net.o' libtool=no @AMDEPBACKSLASH@
+emc2-net.o: net/net.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(emc2_CFLAGS) $(CFLAGS) -MT emc2-net.o -MD -MP -MF $(DEPDIR)/emc2-net.Tpo -c -o emc2-net.o `test -f 'net/net.c' || echo '$(srcdir)/'`net/net.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/emc2-net.Tpo $(DEPDIR)/emc2-net.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='net/net.c' object='emc2-net.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CFLAGS) $(CFLAGS) -c -o shcointool-net.o `test -f 'net/net.c' || echo '$(srcdir)/'`net/net.c
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(emc2_CFLAGS) $(CFLAGS) -c -o emc2-net.o `test -f 'net/net.c' || echo '$(srcdir)/'`net/net.c
 
-shcointool-net.obj: net/net.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CFLAGS) $(CFLAGS) -MT shcointool-net.obj -MD -MP -MF $(DEPDIR)/shcointool-net.Tpo -c -o shcointool-net.obj `if test -f 'net/net.c'; then $(CYGPATH_W) 'net/net.c'; else $(CYGPATH_W) '$(srcdir)/net/net.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shcointool-net.Tpo $(DEPDIR)/shcointool-net.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='net/net.c' object='shcointool-net.obj' libtool=no @AMDEPBACKSLASH@
+emc2-net.obj: net/net.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(emc2_CFLAGS) $(CFLAGS) -MT emc2-net.obj -MD -MP -MF $(DEPDIR)/emc2-net.Tpo -c -o emc2-net.obj `if test -f 'net/net.c'; then $(CYGPATH_W) 'net/net.c'; else $(CYGPATH_W) '$(srcdir)/net/net.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/emc2-net.Tpo $(DEPDIR)/emc2-net.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='net/net.c' object='emc2-net.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CFLAGS) $(CFLAGS) -c -o shcointool-net.obj `if test -f 'net/net.c'; then $(CYGPATH_W) 'net/net.c'; else $(CYGPATH_W) '$(srcdir)/net/net.c'; fi`
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(emc2_CFLAGS) $(CFLAGS) -c -o emc2-net.obj `if test -f 'net/net.c'; then $(CYGPATH_W) 'net/net.c'; else $(CYGPATH_W) '$(srcdir)/net/net.c'; fi`
 
-shcointool-net_conn.o: net/net_conn.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CFLAGS) $(CFLAGS) -MT shcointool-net_conn.o -MD -MP -MF $(DEPDIR)/shcointool-net_conn.Tpo -c -o shcointool-net_conn.o `test -f 'net/net_conn.c' || echo '$(srcdir)/'`net/net_conn.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shcointool-net_conn.Tpo $(DEPDIR)/shcointool-net_conn.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='net/net_conn.c' object='shcointool-net_conn.o' libtool=no @AMDEPBACKSLASH@
+emc2-net_conn.o: net/net_conn.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(emc2_CFLAGS) $(CFLAGS) -MT emc2-net_conn.o -MD -MP -MF $(DEPDIR)/emc2-net_conn.Tpo -c -o emc2-net_conn.o `test -f 'net/net_conn.c' || echo '$(srcdir)/'`net/net_conn.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/emc2-net_conn.Tpo $(DEPDIR)/emc2-net_conn.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='net/net_conn.c' object='emc2-net_conn.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CFLAGS) $(CFLAGS) -c -o shcointool-net_conn.o `test -f 'net/net_conn.c' || echo '$(srcdir)/'`net/net_conn.c
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(emc2_CFLAGS) $(CFLAGS) -c -o emc2-net_conn.o `test -f 'net/net_conn.c' || echo '$(srcdir)/'`net/net_conn.c
 
-shcointool-net_conn.obj: net/net_conn.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CFLAGS) $(CFLAGS) -MT shcointool-net_conn.obj -MD -MP -MF $(DEPDIR)/shcointool-net_conn.Tpo -c -o shcointool-net_conn.obj `if test -f 'net/net_conn.c'; then $(CYGPATH_W) 'net/net_conn.c'; else $(CYGPATH_W) '$(srcdir)/net/net_conn.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shcointool-net_conn.Tpo $(DEPDIR)/shcointool-net_conn.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='net/net_conn.c' object='shcointool-net_conn.obj' libtool=no @AMDEPBACKSLASH@
+emc2-net_conn.obj: net/net_conn.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(emc2_CFLAGS) $(CFLAGS) -MT emc2-net_conn.obj -MD -MP -MF $(DEPDIR)/emc2-net_conn.Tpo -c -o emc2-net_conn.obj `if test -f 'net/net_conn.c'; then $(CYGPATH_W) 'net/net_conn.c'; else $(CYGPATH_W) '$(srcdir)/net/net_conn.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/emc2-net_conn.Tpo $(DEPDIR)/emc2-net_conn.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='net/net_conn.c' object='emc2-net_conn.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CFLAGS) $(CFLAGS) -c -o shcointool-net_conn.obj `if test -f 'net/net_conn.c'; then $(CYGPATH_W) 'net/net_conn.c'; else $(CYGPATH_W) '$(srcdir)/net/net_conn.c'; fi`
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(emc2_CFLAGS) $(CFLAGS) -c -o emc2-net_conn.obj `if test -f 'net/net_conn.c'; then $(CYGPATH_W) 'net/net_conn.c'; else $(CYGPATH_W) '$(srcdir)/net/net_conn.c'; fi`
 
-shcointool-net_read.o: net/net_read.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CFLAGS) $(CFLAGS) -MT shcointool-net_read.o -MD -MP -MF $(DEPDIR)/shcointool-net_read.Tpo -c -o shcointool-net_read.o `test -f 'net/net_read.c' || echo '$(srcdir)/'`net/net_read.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shcointool-net_read.Tpo $(DEPDIR)/shcointool-net_read.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='net/net_read.c' object='shcointool-net_read.o' libtool=no @AMDEPBACKSLASH@
+emc2-net_read.o: net/net_read.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(emc2_CFLAGS) $(CFLAGS) -MT emc2-net_read.o -MD -MP -MF $(DEPDIR)/emc2-net_read.Tpo -c -o emc2-net_read.o `test -f 'net/net_read.c' || echo '$(srcdir)/'`net/net_read.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/emc2-net_read.Tpo $(DEPDIR)/emc2-net_read.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='net/net_read.c' object='emc2-net_read.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CFLAGS) $(CFLAGS) -c -o shcointool-net_read.o `test -f 'net/net_read.c' || echo '$(srcdir)/'`net/net_read.c
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(emc2_CFLAGS) $(CFLAGS) -c -o emc2-net_read.o `test -f 'net/net_read.c' || echo '$(srcdir)/'`net/net_read.c
 
-shcointool-net_read.obj: net/net_read.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CFLAGS) $(CFLAGS) -MT shcointool-net_read.obj -MD -MP -MF $(DEPDIR)/shcointool-net_read.Tpo -c -o shcointool-net_read.obj `if test -f 'net/net_read.c'; then $(CYGPATH_W) 'net/net_read.c'; else $(CYGPATH_W) '$(srcdir)/net/net_read.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shcointool-net_read.Tpo $(DEPDIR)/shcointool-net_read.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='net/net_read.c' object='shcointool-net_read.obj' libtool=no @AMDEPBACKSLASH@
+emc2-net_read.obj: net/net_read.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(emc2_CFLAGS) $(CFLAGS) -MT emc2-net_read.obj -MD -MP -MF $(DEPDIR)/emc2-net_read.Tpo -c -o emc2-net_read.obj `if test -f 'net/net_read.c'; then $(CYGPATH_W) 'net/net_read.c'; else $(CYGPATH_W) '$(srcdir)/net/net_read.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/emc2-net_read.Tpo $(DEPDIR)/emc2-net_read.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='net/net_read.c' object='emc2-net_read.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CFLAGS) $(CFLAGS) -c -o shcointool-net_read.obj `if test -f 'net/net_read.c'; then $(CYGPATH_W) 'net/net_read.c'; else $(CYGPATH_W) '$(srcdir)/net/net_read.c'; fi`
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(emc2_CFLAGS) $(CFLAGS) -c -o emc2-net_read.obj `if test -f 'net/net_read.c'; then $(CYGPATH_W) 'net/net_read.c'; else $(CYGPATH_W) '$(srcdir)/net/net_read.c'; fi`
 
-shcointool-net_write.o: net/net_write.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CFLAGS) $(CFLAGS) -MT shcointool-net_write.o -MD -MP -MF $(DEPDIR)/shcointool-net_write.Tpo -c -o shcointool-net_write.o `test -f 'net/net_write.c' || echo '$(srcdir)/'`net/net_write.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shcointool-net_write.Tpo $(DEPDIR)/shcointool-net_write.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='net/net_write.c' object='shcointool-net_write.o' libtool=no @AMDEPBACKSLASH@
+emc2-net_write.o: net/net_write.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(emc2_CFLAGS) $(CFLAGS) -MT emc2-net_write.o -MD -MP -MF $(DEPDIR)/emc2-net_write.Tpo -c -o emc2-net_write.o `test -f 'net/net_write.c' || echo '$(srcdir)/'`net/net_write.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/emc2-net_write.Tpo $(DEPDIR)/emc2-net_write.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='net/net_write.c' object='emc2-net_write.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CFLAGS) $(CFLAGS) -c -o shcointool-net_write.o `test -f 'net/net_write.c' || echo '$(srcdir)/'`net/net_write.c
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(emc2_CFLAGS) $(CFLAGS) -c -o emc2-net_write.o `test -f 'net/net_write.c' || echo '$(srcdir)/'`net/net_write.c
 
-shcointool-net_write.obj: net/net_write.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CFLAGS) $(CFLAGS) -MT shcointool-net_write.obj -MD -MP -MF $(DEPDIR)/shcointool-net_write.Tpo -c -o shcointool-net_write.obj `if test -f 'net/net_write.c'; then $(CYGPATH_W) 'net/net_write.c'; else $(CYGPATH_W) '$(srcdir)/net/net_write.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shcointool-net_write.Tpo $(DEPDIR)/shcointool-net_write.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='net/net_write.c' object='shcointool-net_write.obj' libtool=no @AMDEPBACKSLASH@
+emc2-net_write.obj: net/net_write.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(emc2_CFLAGS) $(CFLAGS) -MT emc2-net_write.obj -MD -MP -MF $(DEPDIR)/emc2-net_write.Tpo -c -o emc2-net_write.obj `if test -f 'net/net_write.c'; then $(CYGPATH_W) 'net/net_write.c'; else $(CYGPATH_W) '$(srcdir)/net/net_write.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/emc2-net_write.Tpo $(DEPDIR)/emc2-net_write.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='net/net_write.c' object='emc2-net_write.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CFLAGS) $(CFLAGS) -c -o shcointool-net_write.obj `if test -f 'net/net_write.c'; then $(CYGPATH_W) 'net/net_write.c'; else $(CYGPATH_W) '$(srcdir)/net/net_write.c'; fi`
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(emc2_CFLAGS) $(CFLAGS) -c -o emc2-net_write.obj `if test -f 'net/net_write.c'; then $(CYGPATH_W) 'net/net_write.c'; else $(CYGPATH_W) '$(srcdir)/net/net_write.c'; fi`
 
-shcointool-key.o: key/key.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CFLAGS) $(CFLAGS) -MT shcointool-key.o -MD -MP -MF $(DEPDIR)/shcointool-key.Tpo -c -o shcointool-key.o `test -f 'key/key.c' || echo '$(srcdir)/'`key/key.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shcointool-key.Tpo $(DEPDIR)/shcointool-key.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='key/key.c' object='shcointool-key.o' libtool=no @AMDEPBACKSLASH@
+emc2-key.o: key/key.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(emc2_CFLAGS) $(CFLAGS) -MT emc2-key.o -MD -MP -MF $(DEPDIR)/emc2-key.Tpo -c -o emc2-key.o `test -f 'key/key.c' || echo '$(srcdir)/'`key/key.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/emc2-key.Tpo $(DEPDIR)/emc2-key.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='key/key.c' object='emc2-key.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CFLAGS) $(CFLAGS) -c -o shcointool-key.o `test -f 'key/key.c' || echo '$(srcdir)/'`key/key.c
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(emc2_CFLAGS) $(CFLAGS) -c -o emc2-key.o `test -f 'key/key.c' || echo '$(srcdir)/'`key/key.c
 
-shcointool-key.obj: key/key.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CFLAGS) $(CFLAGS) -MT shcointool-key.obj -MD -MP -MF $(DEPDIR)/shcointool-key.Tpo -c -o shcointool-key.obj `if test -f 'key/key.c'; then $(CYGPATH_W) 'key/key.c'; else $(CYGPATH_W) '$(srcdir)/key/key.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shcointool-key.Tpo $(DEPDIR)/shcointool-key.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='key/key.c' object='shcointool-key.obj' libtool=no @AMDEPBACKSLASH@
+emc2-key.obj: key/key.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(emc2_CFLAGS) $(CFLAGS) -MT emc2-key.obj -MD -MP -MF $(DEPDIR)/emc2-key.Tpo -c -o emc2-key.obj `if test -f 'key/key.c'; then $(CYGPATH_W) 'key/key.c'; else $(CYGPATH_W) '$(srcdir)/key/key.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/emc2-key.Tpo $(DEPDIR)/emc2-key.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='key/key.c' object='emc2-key.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CFLAGS) $(CFLAGS) -c -o shcointool-key.obj `if test -f 'key/key.c'; then $(CYGPATH_W) 'key/key.c'; else $(CYGPATH_W) '$(srcdir)/key/key.c'; fi`
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(emc2_CFLAGS) $(CFLAGS) -c -o emc2-key.obj `if test -f 'key/key.c'; then $(CYGPATH_W) 'key/key.c'; else $(CYGPATH_W) '$(srcdir)/key/key.c'; fi`
 
-shcointool-key_dat.o: key/key_dat.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CFLAGS) $(CFLAGS) -MT shcointool-key_dat.o -MD -MP -MF $(DEPDIR)/shcointool-key_dat.Tpo -c -o shcointool-key_dat.o `test -f 'key/key_dat.c' || echo '$(srcdir)/'`key/key_dat.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shcointool-key_dat.Tpo $(DEPDIR)/shcointool-key_dat.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='key/key_dat.c' object='shcointool-key_dat.o' libtool=no @AMDEPBACKSLASH@
+emc2-key_dat.o: key/key_dat.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(emc2_CFLAGS) $(CFLAGS) -MT emc2-key_dat.o -MD -MP -MF $(DEPDIR)/emc2-key_dat.Tpo -c -o emc2-key_dat.o `test -f 'key/key_dat.c' || echo '$(srcdir)/'`key/key_dat.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/emc2-key_dat.Tpo $(DEPDIR)/emc2-key_dat.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='key/key_dat.c' object='emc2-key_dat.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CFLAGS) $(CFLAGS) -c -o shcointool-key_dat.o `test -f 'key/key_dat.c' || echo '$(srcdir)/'`key/key_dat.c
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(emc2_CFLAGS) $(CFLAGS) -c -o emc2-key_dat.o `test -f 'key/key_dat.c' || echo '$(srcdir)/'`key/key_dat.c
 
-shcointool-key_dat.obj: key/key_dat.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CFLAGS) $(CFLAGS) -MT shcointool-key_dat.obj -MD -MP -MF $(DEPDIR)/shcointool-key_dat.Tpo -c -o shcointool-key_dat.obj `if test -f 'key/key_dat.c'; then $(CYGPATH_W) 'key/key_dat.c'; else $(CYGPATH_W) '$(srcdir)/key/key_dat.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shcointool-key_dat.Tpo $(DEPDIR)/shcointool-key_dat.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='key/key_dat.c' object='shcointool-key_dat.obj' libtool=no @AMDEPBACKSLASH@
+emc2-key_dat.obj: key/key_dat.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(emc2_CFLAGS) $(CFLAGS) -MT emc2-key_dat.obj -MD -MP -MF $(DEPDIR)/emc2-key_dat.Tpo -c -o emc2-key_dat.obj `if test -f 'key/key_dat.c'; then $(CYGPATH_W) 'key/key_dat.c'; else $(CYGPATH_W) '$(srcdir)/key/key_dat.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/emc2-key_dat.Tpo $(DEPDIR)/emc2-key_dat.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='key/key_dat.c' object='emc2-key_dat.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CFLAGS) $(CFLAGS) -c -o shcointool-key_dat.obj `if test -f 'key/key_dat.c'; then $(CYGPATH_W) 'key/key_dat.c'; else $(CYGPATH_W) '$(srcdir)/key/key_dat.c'; fi`
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(emc2_CFLAGS) $(CFLAGS) -c -o emc2-key_dat.obj `if test -f 'key/key_dat.c'; then $(CYGPATH_W) 'key/key_dat.c'; else $(CYGPATH_W) '$(srcdir)/key/key_dat.c'; fi`
 
-shcointool-key_auth.o: key/key_auth.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CFLAGS) $(CFLAGS) -MT shcointool-key_auth.o -MD -MP -MF $(DEPDIR)/shcointool-key_auth.Tpo -c -o shcointool-key_auth.o `test -f 'key/key_auth.c' || echo '$(srcdir)/'`key/key_auth.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shcointool-key_auth.Tpo $(DEPDIR)/shcointool-key_auth.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='key/key_auth.c' object='shcointool-key_auth.o' libtool=no @AMDEPBACKSLASH@
+emc2-key_auth.o: key/key_auth.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(emc2_CFLAGS) $(CFLAGS) -MT emc2-key_auth.o -MD -MP -MF $(DEPDIR)/emc2-key_auth.Tpo -c -o emc2-key_auth.o `test -f 'key/key_auth.c' || echo '$(srcdir)/'`key/key_auth.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/emc2-key_auth.Tpo $(DEPDIR)/emc2-key_auth.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='key/key_auth.c' object='emc2-key_auth.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CFLAGS) $(CFLAGS) -c -o shcointool-key_auth.o `test -f 'key/key_auth.c' || echo '$(srcdir)/'`key/key_auth.c
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(emc2_CFLAGS) $(CFLAGS) -c -o emc2-key_auth.o `test -f 'key/key_auth.c' || echo '$(srcdir)/'`key/key_auth.c
 
-shcointool-key_auth.obj: key/key_auth.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CFLAGS) $(CFLAGS) -MT shcointool-key_auth.obj -MD -MP -MF $(DEPDIR)/shcointool-key_auth.Tpo -c -o shcointool-key_auth.obj `if test -f 'key/key_auth.c'; then $(CYGPATH_W) 'key/key_auth.c'; else $(CYGPATH_W) '$(srcdir)/key/key_auth.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shcointool-key_auth.Tpo $(DEPDIR)/shcointool-key_auth.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='key/key_auth.c' object='shcointool-key_auth.obj' libtool=no @AMDEPBACKSLASH@
+emc2-key_auth.obj: key/key_auth.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(emc2_CFLAGS) $(CFLAGS) -MT emc2-key_auth.obj -MD -MP -MF $(DEPDIR)/emc2-key_auth.Tpo -c -o emc2-key_auth.obj `if test -f 'key/key_auth.c'; then $(CYGPATH_W) 'key/key_auth.c'; else $(CYGPATH_W) '$(srcdir)/key/key_auth.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/emc2-key_auth.Tpo $(DEPDIR)/emc2-key_auth.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='key/key_auth.c' object='emc2-key_auth.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CFLAGS) $(CFLAGS) -c -o shcointool-key_auth.obj `if test -f 'key/key_auth.c'; then $(CYGPATH_W) 'key/key_auth.c'; else $(CYGPATH_W) '$(srcdir)/key/key_auth.c'; fi`
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(emc2_CFLAGS) $(CFLAGS) -c -o emc2-key_auth.obj `if test -f 'key/key_auth.c'; then $(CYGPATH_W) 'key/key_auth.c'; else $(CYGPATH_W) '$(srcdir)/key/key_auth.c'; fi`
 
-shcointool-command.o: command/command.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CFLAGS) $(CFLAGS) -MT shcointool-command.o -MD -MP -MF $(DEPDIR)/shcointool-command.Tpo -c -o shcointool-command.o `test -f 'command/command.c' || echo '$(srcdir)/'`command/command.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shcointool-command.Tpo $(DEPDIR)/shcointool-command.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='command/command.c' object='shcointool-command.o' libtool=no @AMDEPBACKSLASH@
+emc2-command.o: command/command.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(emc2_CFLAGS) $(CFLAGS) -MT emc2-command.o -MD -MP -MF $(DEPDIR)/emc2-command.Tpo -c -o emc2-command.o `test -f 'command/command.c' || echo '$(srcdir)/'`command/command.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/emc2-command.Tpo $(DEPDIR)/emc2-command.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='command/command.c' object='emc2-command.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CFLAGS) $(CFLAGS) -c -o shcointool-command.o `test -f 'command/command.c' || echo '$(srcdir)/'`command/command.c
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(emc2_CFLAGS) $(CFLAGS) -c -o emc2-command.o `test -f 'command/command.c' || echo '$(srcdir)/'`command/command.c
 
-shcointool-command.obj: command/command.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CFLAGS) $(CFLAGS) -MT shcointool-command.obj -MD -MP -MF $(DEPDIR)/shcointool-command.Tpo -c -o shcointool-command.obj `if test -f 'command/command.c'; then $(CYGPATH_W) 'command/command.c'; else $(CYGPATH_W) '$(srcdir)/command/command.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shcointool-command.Tpo $(DEPDIR)/shcointool-command.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='command/command.c' object='shcointool-command.obj' libtool=no @AMDEPBACKSLASH@
+emc2-command.obj: command/command.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(emc2_CFLAGS) $(CFLAGS) -MT emc2-command.obj -MD -MP -MF $(DEPDIR)/emc2-command.Tpo -c -o emc2-command.obj `if test -f 'command/command.c'; then $(CYGPATH_W) 'command/command.c'; else $(CYGPATH_W) '$(srcdir)/command/command.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/emc2-command.Tpo $(DEPDIR)/emc2-command.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='command/command.c' object='emc2-command.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CFLAGS) $(CFLAGS) -c -o shcointool-command.obj `if test -f 'command/command.c'; then $(CYGPATH_W) 'command/command.c'; else $(CYGPATH_W) '$(srcdir)/command/command.c'; fi`
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(emc2_CFLAGS) $(CFLAGS) -c -o emc2-command.obj `if test -f 'command/command.c'; then $(CYGPATH_W) 'command/command.c'; else $(CYGPATH_W) '$(srcdir)/command/command.c'; fi`
 
-shcointool-command_print.o: command/command_print.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CFLAGS) $(CFLAGS) -MT shcointool-command_print.o -MD -MP -MF $(DEPDIR)/shcointool-command_print.Tpo -c -o shcointool-command_print.o `test -f 'command/command_print.c' || echo '$(srcdir)/'`command/command_print.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shcointool-command_print.Tpo $(DEPDIR)/shcointool-command_print.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='command/command_print.c' object='shcointool-command_print.o' libtool=no @AMDEPBACKSLASH@
+emc2-command_print.o: command/command_print.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(emc2_CFLAGS) $(CFLAGS) -MT emc2-command_print.o -MD -MP -MF $(DEPDIR)/emc2-command_print.Tpo -c -o emc2-command_print.o `test -f 'command/command_print.c' || echo '$(srcdir)/'`command/command_print.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/emc2-command_print.Tpo $(DEPDIR)/emc2-command_print.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='command/command_print.c' object='emc2-command_print.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CFLAGS) $(CFLAGS) -c -o shcointool-command_print.o `test -f 'command/command_print.c' || echo '$(srcdir)/'`command/command_print.c
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(emc2_CFLAGS) $(CFLAGS) -c -o emc2-command_print.o `test -f 'command/command_print.c' || echo '$(srcdir)/'`command/command_print.c
 
-shcointool-command_print.obj: command/command_print.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CFLAGS) $(CFLAGS) -MT shcointool-command_print.obj -MD -MP -MF $(DEPDIR)/shcointool-command_print.Tpo -c -o shcointool-command_print.obj `if test -f 'command/command_print.c'; then $(CYGPATH_W) 'command/command_print.c'; else $(CYGPATH_W) '$(srcdir)/command/command_print.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shcointool-command_print.Tpo $(DEPDIR)/shcointool-command_print.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='command/command_print.c' object='shcointool-command_print.obj' libtool=no @AMDEPBACKSLASH@
+emc2-command_print.obj: command/command_print.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(emc2_CFLAGS) $(CFLAGS) -MT emc2-command_print.obj -MD -MP -MF $(DEPDIR)/emc2-command_print.Tpo -c -o emc2-command_print.obj `if test -f 'command/command_print.c'; then $(CYGPATH_W) 'command/command_print.c'; else $(CYGPATH_W) '$(srcdir)/command/command_print.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/emc2-command_print.Tpo $(DEPDIR)/emc2-command_print.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='command/command_print.c' object='emc2-command_print.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shcointool_CFLAGS) $(CFLAGS) -c -o shcointool-command_print.obj `if test -f 'command/command_print.c'; then $(CYGPATH_W) 'command/command_print.c'; else $(CYGPATH_W) '$(srcdir)/command/command_print.c'; fi`
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(emc2_CFLAGS) $(CFLAGS) -c -o emc2-command_print.obj `if test -f 'command/command_print.c'; then $(CYGPATH_W) 'command/command_print.c'; else $(CYGPATH_W) '$(srcdir)/command/command_print.c'; fi`
+
+shc-shcon.o: shcon.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shc_CFLAGS) $(CFLAGS) -MT shc-shcon.o -MD -MP -MF $(DEPDIR)/shc-shcon.Tpo -c -o shc-shcon.o `test -f 'shcon.c' || echo '$(srcdir)/'`shcon.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shc-shcon.Tpo $(DEPDIR)/shc-shcon.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='shcon.c' object='shc-shcon.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shc_CFLAGS) $(CFLAGS) -c -o shc-shcon.o `test -f 'shcon.c' || echo '$(srcdir)/'`shcon.c
+
+shc-shcon.obj: shcon.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shc_CFLAGS) $(CFLAGS) -MT shc-shcon.obj -MD -MP -MF $(DEPDIR)/shc-shcon.Tpo -c -o shc-shcon.obj `if test -f 'shcon.c'; then $(CYGPATH_W) 'shcon.c'; else $(CYGPATH_W) '$(srcdir)/shcon.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shc-shcon.Tpo $(DEPDIR)/shc-shcon.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='shcon.c' object='shc-shcon.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shc_CFLAGS) $(CFLAGS) -c -o shc-shcon.obj `if test -f 'shcon.c'; then $(CYGPATH_W) 'shcon.c'; else $(CYGPATH_W) '$(srcdir)/shcon.c'; fi`
+
+shc-shcon_init.o: shcon_init.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shc_CFLAGS) $(CFLAGS) -MT shc-shcon_init.o -MD -MP -MF $(DEPDIR)/shc-shcon_init.Tpo -c -o shc-shcon_init.o `test -f 'shcon_init.c' || echo '$(srcdir)/'`shcon_init.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shc-shcon_init.Tpo $(DEPDIR)/shc-shcon_init.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='shcon_init.c' object='shc-shcon_init.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shc_CFLAGS) $(CFLAGS) -c -o shc-shcon_init.o `test -f 'shcon_init.c' || echo '$(srcdir)/'`shcon_init.c
+
+shc-shcon_init.obj: shcon_init.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shc_CFLAGS) $(CFLAGS) -MT shc-shcon_init.obj -MD -MP -MF $(DEPDIR)/shc-shcon_init.Tpo -c -o shc-shcon_init.obj `if test -f 'shcon_init.c'; then $(CYGPATH_W) 'shcon_init.c'; else $(CYGPATH_W) '$(srcdir)/shcon_init.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shc-shcon_init.Tpo $(DEPDIR)/shc-shcon_init.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='shcon_init.c' object='shc-shcon_init.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shc_CFLAGS) $(CFLAGS) -c -o shc-shcon_init.obj `if test -f 'shcon_init.c'; then $(CYGPATH_W) 'shcon_init.c'; else $(CYGPATH_W) '$(srcdir)/shcon_init.c'; fi`
+
+shc-shcon_term.o: shcon_term.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shc_CFLAGS) $(CFLAGS) -MT shc-shcon_term.o -MD -MP -MF $(DEPDIR)/shc-shcon_term.Tpo -c -o shc-shcon_term.o `test -f 'shcon_term.c' || echo '$(srcdir)/'`shcon_term.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shc-shcon_term.Tpo $(DEPDIR)/shc-shcon_term.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='shcon_term.c' object='shc-shcon_term.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shc_CFLAGS) $(CFLAGS) -c -o shc-shcon_term.o `test -f 'shcon_term.c' || echo '$(srcdir)/'`shcon_term.c
+
+shc-shcon_term.obj: shcon_term.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shc_CFLAGS) $(CFLAGS) -MT shc-shcon_term.obj -MD -MP -MF $(DEPDIR)/shc-shcon_term.Tpo -c -o shc-shcon_term.obj `if test -f 'shcon_term.c'; then $(CYGPATH_W) 'shcon_term.c'; else $(CYGPATH_W) '$(srcdir)/shcon_term.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shc-shcon_term.Tpo $(DEPDIR)/shc-shcon_term.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='shcon_term.c' object='shc-shcon_term.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shc_CFLAGS) $(CFLAGS) -c -o shc-shcon_term.obj `if test -f 'shcon_term.c'; then $(CYGPATH_W) 'shcon_term.c'; else $(CYGPATH_W) '$(srcdir)/shcon_term.c'; fi`
+
+shc-shcon_opt.o: shcon_opt.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shc_CFLAGS) $(CFLAGS) -MT shc-shcon_opt.o -MD -MP -MF $(DEPDIR)/shc-shcon_opt.Tpo -c -o shc-shcon_opt.o `test -f 'shcon_opt.c' || echo '$(srcdir)/'`shcon_opt.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shc-shcon_opt.Tpo $(DEPDIR)/shc-shcon_opt.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='shcon_opt.c' object='shc-shcon_opt.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shc_CFLAGS) $(CFLAGS) -c -o shc-shcon_opt.o `test -f 'shcon_opt.c' || echo '$(srcdir)/'`shcon_opt.c
+
+shc-shcon_opt.obj: shcon_opt.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shc_CFLAGS) $(CFLAGS) -MT shc-shcon_opt.obj -MD -MP -MF $(DEPDIR)/shc-shcon_opt.Tpo -c -o shc-shcon_opt.obj `if test -f 'shcon_opt.c'; then $(CYGPATH_W) 'shcon_opt.c'; else $(CYGPATH_W) '$(srcdir)/shcon_opt.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shc-shcon_opt.Tpo $(DEPDIR)/shc-shcon_opt.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='shcon_opt.c' object='shc-shcon_opt.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shc_CFLAGS) $(CFLAGS) -c -o shc-shcon_opt.obj `if test -f 'shcon_opt.c'; then $(CYGPATH_W) 'shcon_opt.c'; else $(CYGPATH_W) '$(srcdir)/shcon_opt.c'; fi`
+
+shc-shcon_log.o: shcon_log.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shc_CFLAGS) $(CFLAGS) -MT shc-shcon_log.o -MD -MP -MF $(DEPDIR)/shc-shcon_log.Tpo -c -o shc-shcon_log.o `test -f 'shcon_log.c' || echo '$(srcdir)/'`shcon_log.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shc-shcon_log.Tpo $(DEPDIR)/shc-shcon_log.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='shcon_log.c' object='shc-shcon_log.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shc_CFLAGS) $(CFLAGS) -c -o shc-shcon_log.o `test -f 'shcon_log.c' || echo '$(srcdir)/'`shcon_log.c
+
+shc-shcon_log.obj: shcon_log.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shc_CFLAGS) $(CFLAGS) -MT shc-shcon_log.obj -MD -MP -MF $(DEPDIR)/shc-shcon_log.Tpo -c -o shc-shcon_log.obj `if test -f 'shcon_log.c'; then $(CYGPATH_W) 'shcon_log.c'; else $(CYGPATH_W) '$(srcdir)/shcon_log.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shc-shcon_log.Tpo $(DEPDIR)/shc-shcon_log.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='shcon_log.c' object='shc-shcon_log.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shc_CFLAGS) $(CFLAGS) -c -o shc-shcon_log.obj `if test -f 'shcon_log.c'; then $(CYGPATH_W) 'shcon_log.c'; else $(CYGPATH_W) '$(srcdir)/shcon_log.c'; fi`
+
+shc-net.o: net/net.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shc_CFLAGS) $(CFLAGS) -MT shc-net.o -MD -MP -MF $(DEPDIR)/shc-net.Tpo -c -o shc-net.o `test -f 'net/net.c' || echo '$(srcdir)/'`net/net.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shc-net.Tpo $(DEPDIR)/shc-net.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='net/net.c' object='shc-net.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shc_CFLAGS) $(CFLAGS) -c -o shc-net.o `test -f 'net/net.c' || echo '$(srcdir)/'`net/net.c
+
+shc-net.obj: net/net.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shc_CFLAGS) $(CFLAGS) -MT shc-net.obj -MD -MP -MF $(DEPDIR)/shc-net.Tpo -c -o shc-net.obj `if test -f 'net/net.c'; then $(CYGPATH_W) 'net/net.c'; else $(CYGPATH_W) '$(srcdir)/net/net.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shc-net.Tpo $(DEPDIR)/shc-net.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='net/net.c' object='shc-net.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shc_CFLAGS) $(CFLAGS) -c -o shc-net.obj `if test -f 'net/net.c'; then $(CYGPATH_W) 'net/net.c'; else $(CYGPATH_W) '$(srcdir)/net/net.c'; fi`
+
+shc-net_conn.o: net/net_conn.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shc_CFLAGS) $(CFLAGS) -MT shc-net_conn.o -MD -MP -MF $(DEPDIR)/shc-net_conn.Tpo -c -o shc-net_conn.o `test -f 'net/net_conn.c' || echo '$(srcdir)/'`net/net_conn.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shc-net_conn.Tpo $(DEPDIR)/shc-net_conn.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='net/net_conn.c' object='shc-net_conn.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shc_CFLAGS) $(CFLAGS) -c -o shc-net_conn.o `test -f 'net/net_conn.c' || echo '$(srcdir)/'`net/net_conn.c
+
+shc-net_conn.obj: net/net_conn.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shc_CFLAGS) $(CFLAGS) -MT shc-net_conn.obj -MD -MP -MF $(DEPDIR)/shc-net_conn.Tpo -c -o shc-net_conn.obj `if test -f 'net/net_conn.c'; then $(CYGPATH_W) 'net/net_conn.c'; else $(CYGPATH_W) '$(srcdir)/net/net_conn.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shc-net_conn.Tpo $(DEPDIR)/shc-net_conn.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='net/net_conn.c' object='shc-net_conn.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shc_CFLAGS) $(CFLAGS) -c -o shc-net_conn.obj `if test -f 'net/net_conn.c'; then $(CYGPATH_W) 'net/net_conn.c'; else $(CYGPATH_W) '$(srcdir)/net/net_conn.c'; fi`
+
+shc-net_read.o: net/net_read.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shc_CFLAGS) $(CFLAGS) -MT shc-net_read.o -MD -MP -MF $(DEPDIR)/shc-net_read.Tpo -c -o shc-net_read.o `test -f 'net/net_read.c' || echo '$(srcdir)/'`net/net_read.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shc-net_read.Tpo $(DEPDIR)/shc-net_read.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='net/net_read.c' object='shc-net_read.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shc_CFLAGS) $(CFLAGS) -c -o shc-net_read.o `test -f 'net/net_read.c' || echo '$(srcdir)/'`net/net_read.c
+
+shc-net_read.obj: net/net_read.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shc_CFLAGS) $(CFLAGS) -MT shc-net_read.obj -MD -MP -MF $(DEPDIR)/shc-net_read.Tpo -c -o shc-net_read.obj `if test -f 'net/net_read.c'; then $(CYGPATH_W) 'net/net_read.c'; else $(CYGPATH_W) '$(srcdir)/net/net_read.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shc-net_read.Tpo $(DEPDIR)/shc-net_read.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='net/net_read.c' object='shc-net_read.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shc_CFLAGS) $(CFLAGS) -c -o shc-net_read.obj `if test -f 'net/net_read.c'; then $(CYGPATH_W) 'net/net_read.c'; else $(CYGPATH_W) '$(srcdir)/net/net_read.c'; fi`
+
+shc-net_write.o: net/net_write.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shc_CFLAGS) $(CFLAGS) -MT shc-net_write.o -MD -MP -MF $(DEPDIR)/shc-net_write.Tpo -c -o shc-net_write.o `test -f 'net/net_write.c' || echo '$(srcdir)/'`net/net_write.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shc-net_write.Tpo $(DEPDIR)/shc-net_write.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='net/net_write.c' object='shc-net_write.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shc_CFLAGS) $(CFLAGS) -c -o shc-net_write.o `test -f 'net/net_write.c' || echo '$(srcdir)/'`net/net_write.c
+
+shc-net_write.obj: net/net_write.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shc_CFLAGS) $(CFLAGS) -MT shc-net_write.obj -MD -MP -MF $(DEPDIR)/shc-net_write.Tpo -c -o shc-net_write.obj `if test -f 'net/net_write.c'; then $(CYGPATH_W) 'net/net_write.c'; else $(CYGPATH_W) '$(srcdir)/net/net_write.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shc-net_write.Tpo $(DEPDIR)/shc-net_write.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='net/net_write.c' object='shc-net_write.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shc_CFLAGS) $(CFLAGS) -c -o shc-net_write.obj `if test -f 'net/net_write.c'; then $(CYGPATH_W) 'net/net_write.c'; else $(CYGPATH_W) '$(srcdir)/net/net_write.c'; fi`
+
+shc-key.o: key/key.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shc_CFLAGS) $(CFLAGS) -MT shc-key.o -MD -MP -MF $(DEPDIR)/shc-key.Tpo -c -o shc-key.o `test -f 'key/key.c' || echo '$(srcdir)/'`key/key.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shc-key.Tpo $(DEPDIR)/shc-key.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='key/key.c' object='shc-key.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shc_CFLAGS) $(CFLAGS) -c -o shc-key.o `test -f 'key/key.c' || echo '$(srcdir)/'`key/key.c
+
+shc-key.obj: key/key.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shc_CFLAGS) $(CFLAGS) -MT shc-key.obj -MD -MP -MF $(DEPDIR)/shc-key.Tpo -c -o shc-key.obj `if test -f 'key/key.c'; then $(CYGPATH_W) 'key/key.c'; else $(CYGPATH_W) '$(srcdir)/key/key.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shc-key.Tpo $(DEPDIR)/shc-key.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='key/key.c' object='shc-key.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shc_CFLAGS) $(CFLAGS) -c -o shc-key.obj `if test -f 'key/key.c'; then $(CYGPATH_W) 'key/key.c'; else $(CYGPATH_W) '$(srcdir)/key/key.c'; fi`
+
+shc-key_dat.o: key/key_dat.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shc_CFLAGS) $(CFLAGS) -MT shc-key_dat.o -MD -MP -MF $(DEPDIR)/shc-key_dat.Tpo -c -o shc-key_dat.o `test -f 'key/key_dat.c' || echo '$(srcdir)/'`key/key_dat.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shc-key_dat.Tpo $(DEPDIR)/shc-key_dat.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='key/key_dat.c' object='shc-key_dat.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shc_CFLAGS) $(CFLAGS) -c -o shc-key_dat.o `test -f 'key/key_dat.c' || echo '$(srcdir)/'`key/key_dat.c
+
+shc-key_dat.obj: key/key_dat.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shc_CFLAGS) $(CFLAGS) -MT shc-key_dat.obj -MD -MP -MF $(DEPDIR)/shc-key_dat.Tpo -c -o shc-key_dat.obj `if test -f 'key/key_dat.c'; then $(CYGPATH_W) 'key/key_dat.c'; else $(CYGPATH_W) '$(srcdir)/key/key_dat.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shc-key_dat.Tpo $(DEPDIR)/shc-key_dat.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='key/key_dat.c' object='shc-key_dat.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shc_CFLAGS) $(CFLAGS) -c -o shc-key_dat.obj `if test -f 'key/key_dat.c'; then $(CYGPATH_W) 'key/key_dat.c'; else $(CYGPATH_W) '$(srcdir)/key/key_dat.c'; fi`
+
+shc-key_auth.o: key/key_auth.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shc_CFLAGS) $(CFLAGS) -MT shc-key_auth.o -MD -MP -MF $(DEPDIR)/shc-key_auth.Tpo -c -o shc-key_auth.o `test -f 'key/key_auth.c' || echo '$(srcdir)/'`key/key_auth.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shc-key_auth.Tpo $(DEPDIR)/shc-key_auth.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='key/key_auth.c' object='shc-key_auth.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shc_CFLAGS) $(CFLAGS) -c -o shc-key_auth.o `test -f 'key/key_auth.c' || echo '$(srcdir)/'`key/key_auth.c
+
+shc-key_auth.obj: key/key_auth.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shc_CFLAGS) $(CFLAGS) -MT shc-key_auth.obj -MD -MP -MF $(DEPDIR)/shc-key_auth.Tpo -c -o shc-key_auth.obj `if test -f 'key/key_auth.c'; then $(CYGPATH_W) 'key/key_auth.c'; else $(CYGPATH_W) '$(srcdir)/key/key_auth.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shc-key_auth.Tpo $(DEPDIR)/shc-key_auth.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='key/key_auth.c' object='shc-key_auth.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shc_CFLAGS) $(CFLAGS) -c -o shc-key_auth.obj `if test -f 'key/key_auth.c'; then $(CYGPATH_W) 'key/key_auth.c'; else $(CYGPATH_W) '$(srcdir)/key/key_auth.c'; fi`
+
+shc-command.o: command/command.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shc_CFLAGS) $(CFLAGS) -MT shc-command.o -MD -MP -MF $(DEPDIR)/shc-command.Tpo -c -o shc-command.o `test -f 'command/command.c' || echo '$(srcdir)/'`command/command.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shc-command.Tpo $(DEPDIR)/shc-command.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='command/command.c' object='shc-command.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shc_CFLAGS) $(CFLAGS) -c -o shc-command.o `test -f 'command/command.c' || echo '$(srcdir)/'`command/command.c
+
+shc-command.obj: command/command.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shc_CFLAGS) $(CFLAGS) -MT shc-command.obj -MD -MP -MF $(DEPDIR)/shc-command.Tpo -c -o shc-command.obj `if test -f 'command/command.c'; then $(CYGPATH_W) 'command/command.c'; else $(CYGPATH_W) '$(srcdir)/command/command.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shc-command.Tpo $(DEPDIR)/shc-command.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='command/command.c' object='shc-command.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shc_CFLAGS) $(CFLAGS) -c -o shc-command.obj `if test -f 'command/command.c'; then $(CYGPATH_W) 'command/command.c'; else $(CYGPATH_W) '$(srcdir)/command/command.c'; fi`
+
+shc-command_print.o: command/command_print.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shc_CFLAGS) $(CFLAGS) -MT shc-command_print.o -MD -MP -MF $(DEPDIR)/shc-command_print.Tpo -c -o shc-command_print.o `test -f 'command/command_print.c' || echo '$(srcdir)/'`command/command_print.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shc-command_print.Tpo $(DEPDIR)/shc-command_print.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='command/command_print.c' object='shc-command_print.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shc_CFLAGS) $(CFLAGS) -c -o shc-command_print.o `test -f 'command/command_print.c' || echo '$(srcdir)/'`command/command_print.c
+
+shc-command_print.obj: command/command_print.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shc_CFLAGS) $(CFLAGS) -MT shc-command_print.obj -MD -MP -MF $(DEPDIR)/shc-command_print.Tpo -c -o shc-command_print.obj `if test -f 'command/command_print.c'; then $(CYGPATH_W) 'command/command_print.c'; else $(CYGPATH_W) '$(srcdir)/command/command_print.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/shc-command_print.Tpo $(DEPDIR)/shc-command_print.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='command/command_print.c' object='shc-command_print.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(shc_CFLAGS) $(CFLAGS) -c -o shc-command_print.obj `if test -f 'command/command_print.c'; then $(CYGPATH_W) 'command/command_print.c'; else $(CYGPATH_W) '$(srcdir)/command/command_print.c'; fi`
+
+usde-shcon.o: shcon.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usde_CFLAGS) $(CFLAGS) -MT usde-shcon.o -MD -MP -MF $(DEPDIR)/usde-shcon.Tpo -c -o usde-shcon.o `test -f 'shcon.c' || echo '$(srcdir)/'`shcon.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/usde-shcon.Tpo $(DEPDIR)/usde-shcon.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='shcon.c' object='usde-shcon.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usde_CFLAGS) $(CFLAGS) -c -o usde-shcon.o `test -f 'shcon.c' || echo '$(srcdir)/'`shcon.c
+
+usde-shcon.obj: shcon.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usde_CFLAGS) $(CFLAGS) -MT usde-shcon.obj -MD -MP -MF $(DEPDIR)/usde-shcon.Tpo -c -o usde-shcon.obj `if test -f 'shcon.c'; then $(CYGPATH_W) 'shcon.c'; else $(CYGPATH_W) '$(srcdir)/shcon.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/usde-shcon.Tpo $(DEPDIR)/usde-shcon.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='shcon.c' object='usde-shcon.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usde_CFLAGS) $(CFLAGS) -c -o usde-shcon.obj `if test -f 'shcon.c'; then $(CYGPATH_W) 'shcon.c'; else $(CYGPATH_W) '$(srcdir)/shcon.c'; fi`
+
+usde-shcon_init.o: shcon_init.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usde_CFLAGS) $(CFLAGS) -MT usde-shcon_init.o -MD -MP -MF $(DEPDIR)/usde-shcon_init.Tpo -c -o usde-shcon_init.o `test -f 'shcon_init.c' || echo '$(srcdir)/'`shcon_init.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/usde-shcon_init.Tpo $(DEPDIR)/usde-shcon_init.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='shcon_init.c' object='usde-shcon_init.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usde_CFLAGS) $(CFLAGS) -c -o usde-shcon_init.o `test -f 'shcon_init.c' || echo '$(srcdir)/'`shcon_init.c
+
+usde-shcon_init.obj: shcon_init.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usde_CFLAGS) $(CFLAGS) -MT usde-shcon_init.obj -MD -MP -MF $(DEPDIR)/usde-shcon_init.Tpo -c -o usde-shcon_init.obj `if test -f 'shcon_init.c'; then $(CYGPATH_W) 'shcon_init.c'; else $(CYGPATH_W) '$(srcdir)/shcon_init.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/usde-shcon_init.Tpo $(DEPDIR)/usde-shcon_init.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='shcon_init.c' object='usde-shcon_init.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usde_CFLAGS) $(CFLAGS) -c -o usde-shcon_init.obj `if test -f 'shcon_init.c'; then $(CYGPATH_W) 'shcon_init.c'; else $(CYGPATH_W) '$(srcdir)/shcon_init.c'; fi`
+
+usde-shcon_term.o: shcon_term.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usde_CFLAGS) $(CFLAGS) -MT usde-shcon_term.o -MD -MP -MF $(DEPDIR)/usde-shcon_term.Tpo -c -o usde-shcon_term.o `test -f 'shcon_term.c' || echo '$(srcdir)/'`shcon_term.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/usde-shcon_term.Tpo $(DEPDIR)/usde-shcon_term.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='shcon_term.c' object='usde-shcon_term.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usde_CFLAGS) $(CFLAGS) -c -o usde-shcon_term.o `test -f 'shcon_term.c' || echo '$(srcdir)/'`shcon_term.c
+
+usde-shcon_term.obj: shcon_term.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usde_CFLAGS) $(CFLAGS) -MT usde-shcon_term.obj -MD -MP -MF $(DEPDIR)/usde-shcon_term.Tpo -c -o usde-shcon_term.obj `if test -f 'shcon_term.c'; then $(CYGPATH_W) 'shcon_term.c'; else $(CYGPATH_W) '$(srcdir)/shcon_term.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/usde-shcon_term.Tpo $(DEPDIR)/usde-shcon_term.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='shcon_term.c' object='usde-shcon_term.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usde_CFLAGS) $(CFLAGS) -c -o usde-shcon_term.obj `if test -f 'shcon_term.c'; then $(CYGPATH_W) 'shcon_term.c'; else $(CYGPATH_W) '$(srcdir)/shcon_term.c'; fi`
+
+usde-shcon_opt.o: shcon_opt.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usde_CFLAGS) $(CFLAGS) -MT usde-shcon_opt.o -MD -MP -MF $(DEPDIR)/usde-shcon_opt.Tpo -c -o usde-shcon_opt.o `test -f 'shcon_opt.c' || echo '$(srcdir)/'`shcon_opt.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/usde-shcon_opt.Tpo $(DEPDIR)/usde-shcon_opt.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='shcon_opt.c' object='usde-shcon_opt.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usde_CFLAGS) $(CFLAGS) -c -o usde-shcon_opt.o `test -f 'shcon_opt.c' || echo '$(srcdir)/'`shcon_opt.c
+
+usde-shcon_opt.obj: shcon_opt.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usde_CFLAGS) $(CFLAGS) -MT usde-shcon_opt.obj -MD -MP -MF $(DEPDIR)/usde-shcon_opt.Tpo -c -o usde-shcon_opt.obj `if test -f 'shcon_opt.c'; then $(CYGPATH_W) 'shcon_opt.c'; else $(CYGPATH_W) '$(srcdir)/shcon_opt.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/usde-shcon_opt.Tpo $(DEPDIR)/usde-shcon_opt.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='shcon_opt.c' object='usde-shcon_opt.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usde_CFLAGS) $(CFLAGS) -c -o usde-shcon_opt.obj `if test -f 'shcon_opt.c'; then $(CYGPATH_W) 'shcon_opt.c'; else $(CYGPATH_W) '$(srcdir)/shcon_opt.c'; fi`
+
+usde-shcon_log.o: shcon_log.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usde_CFLAGS) $(CFLAGS) -MT usde-shcon_log.o -MD -MP -MF $(DEPDIR)/usde-shcon_log.Tpo -c -o usde-shcon_log.o `test -f 'shcon_log.c' || echo '$(srcdir)/'`shcon_log.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/usde-shcon_log.Tpo $(DEPDIR)/usde-shcon_log.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='shcon_log.c' object='usde-shcon_log.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usde_CFLAGS) $(CFLAGS) -c -o usde-shcon_log.o `test -f 'shcon_log.c' || echo '$(srcdir)/'`shcon_log.c
+
+usde-shcon_log.obj: shcon_log.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usde_CFLAGS) $(CFLAGS) -MT usde-shcon_log.obj -MD -MP -MF $(DEPDIR)/usde-shcon_log.Tpo -c -o usde-shcon_log.obj `if test -f 'shcon_log.c'; then $(CYGPATH_W) 'shcon_log.c'; else $(CYGPATH_W) '$(srcdir)/shcon_log.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/usde-shcon_log.Tpo $(DEPDIR)/usde-shcon_log.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='shcon_log.c' object='usde-shcon_log.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usde_CFLAGS) $(CFLAGS) -c -o usde-shcon_log.obj `if test -f 'shcon_log.c'; then $(CYGPATH_W) 'shcon_log.c'; else $(CYGPATH_W) '$(srcdir)/shcon_log.c'; fi`
+
+usde-net.o: net/net.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usde_CFLAGS) $(CFLAGS) -MT usde-net.o -MD -MP -MF $(DEPDIR)/usde-net.Tpo -c -o usde-net.o `test -f 'net/net.c' || echo '$(srcdir)/'`net/net.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/usde-net.Tpo $(DEPDIR)/usde-net.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='net/net.c' object='usde-net.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usde_CFLAGS) $(CFLAGS) -c -o usde-net.o `test -f 'net/net.c' || echo '$(srcdir)/'`net/net.c
+
+usde-net.obj: net/net.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usde_CFLAGS) $(CFLAGS) -MT usde-net.obj -MD -MP -MF $(DEPDIR)/usde-net.Tpo -c -o usde-net.obj `if test -f 'net/net.c'; then $(CYGPATH_W) 'net/net.c'; else $(CYGPATH_W) '$(srcdir)/net/net.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/usde-net.Tpo $(DEPDIR)/usde-net.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='net/net.c' object='usde-net.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usde_CFLAGS) $(CFLAGS) -c -o usde-net.obj `if test -f 'net/net.c'; then $(CYGPATH_W) 'net/net.c'; else $(CYGPATH_W) '$(srcdir)/net/net.c'; fi`
+
+usde-net_conn.o: net/net_conn.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usde_CFLAGS) $(CFLAGS) -MT usde-net_conn.o -MD -MP -MF $(DEPDIR)/usde-net_conn.Tpo -c -o usde-net_conn.o `test -f 'net/net_conn.c' || echo '$(srcdir)/'`net/net_conn.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/usde-net_conn.Tpo $(DEPDIR)/usde-net_conn.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='net/net_conn.c' object='usde-net_conn.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usde_CFLAGS) $(CFLAGS) -c -o usde-net_conn.o `test -f 'net/net_conn.c' || echo '$(srcdir)/'`net/net_conn.c
+
+usde-net_conn.obj: net/net_conn.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usde_CFLAGS) $(CFLAGS) -MT usde-net_conn.obj -MD -MP -MF $(DEPDIR)/usde-net_conn.Tpo -c -o usde-net_conn.obj `if test -f 'net/net_conn.c'; then $(CYGPATH_W) 'net/net_conn.c'; else $(CYGPATH_W) '$(srcdir)/net/net_conn.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/usde-net_conn.Tpo $(DEPDIR)/usde-net_conn.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='net/net_conn.c' object='usde-net_conn.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usde_CFLAGS) $(CFLAGS) -c -o usde-net_conn.obj `if test -f 'net/net_conn.c'; then $(CYGPATH_W) 'net/net_conn.c'; else $(CYGPATH_W) '$(srcdir)/net/net_conn.c'; fi`
+
+usde-net_read.o: net/net_read.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usde_CFLAGS) $(CFLAGS) -MT usde-net_read.o -MD -MP -MF $(DEPDIR)/usde-net_read.Tpo -c -o usde-net_read.o `test -f 'net/net_read.c' || echo '$(srcdir)/'`net/net_read.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/usde-net_read.Tpo $(DEPDIR)/usde-net_read.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='net/net_read.c' object='usde-net_read.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usde_CFLAGS) $(CFLAGS) -c -o usde-net_read.o `test -f 'net/net_read.c' || echo '$(srcdir)/'`net/net_read.c
+
+usde-net_read.obj: net/net_read.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usde_CFLAGS) $(CFLAGS) -MT usde-net_read.obj -MD -MP -MF $(DEPDIR)/usde-net_read.Tpo -c -o usde-net_read.obj `if test -f 'net/net_read.c'; then $(CYGPATH_W) 'net/net_read.c'; else $(CYGPATH_W) '$(srcdir)/net/net_read.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/usde-net_read.Tpo $(DEPDIR)/usde-net_read.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='net/net_read.c' object='usde-net_read.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usde_CFLAGS) $(CFLAGS) -c -o usde-net_read.obj `if test -f 'net/net_read.c'; then $(CYGPATH_W) 'net/net_read.c'; else $(CYGPATH_W) '$(srcdir)/net/net_read.c'; fi`
+
+usde-net_write.o: net/net_write.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usde_CFLAGS) $(CFLAGS) -MT usde-net_write.o -MD -MP -MF $(DEPDIR)/usde-net_write.Tpo -c -o usde-net_write.o `test -f 'net/net_write.c' || echo '$(srcdir)/'`net/net_write.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/usde-net_write.Tpo $(DEPDIR)/usde-net_write.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='net/net_write.c' object='usde-net_write.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usde_CFLAGS) $(CFLAGS) -c -o usde-net_write.o `test -f 'net/net_write.c' || echo '$(srcdir)/'`net/net_write.c
+
+usde-net_write.obj: net/net_write.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usde_CFLAGS) $(CFLAGS) -MT usde-net_write.obj -MD -MP -MF $(DEPDIR)/usde-net_write.Tpo -c -o usde-net_write.obj `if test -f 'net/net_write.c'; then $(CYGPATH_W) 'net/net_write.c'; else $(CYGPATH_W) '$(srcdir)/net/net_write.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/usde-net_write.Tpo $(DEPDIR)/usde-net_write.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='net/net_write.c' object='usde-net_write.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usde_CFLAGS) $(CFLAGS) -c -o usde-net_write.obj `if test -f 'net/net_write.c'; then $(CYGPATH_W) 'net/net_write.c'; else $(CYGPATH_W) '$(srcdir)/net/net_write.c'; fi`
+
+usde-key.o: key/key.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usde_CFLAGS) $(CFLAGS) -MT usde-key.o -MD -MP -MF $(DEPDIR)/usde-key.Tpo -c -o usde-key.o `test -f 'key/key.c' || echo '$(srcdir)/'`key/key.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/usde-key.Tpo $(DEPDIR)/usde-key.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='key/key.c' object='usde-key.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usde_CFLAGS) $(CFLAGS) -c -o usde-key.o `test -f 'key/key.c' || echo '$(srcdir)/'`key/key.c
+
+usde-key.obj: key/key.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usde_CFLAGS) $(CFLAGS) -MT usde-key.obj -MD -MP -MF $(DEPDIR)/usde-key.Tpo -c -o usde-key.obj `if test -f 'key/key.c'; then $(CYGPATH_W) 'key/key.c'; else $(CYGPATH_W) '$(srcdir)/key/key.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/usde-key.Tpo $(DEPDIR)/usde-key.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='key/key.c' object='usde-key.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usde_CFLAGS) $(CFLAGS) -c -o usde-key.obj `if test -f 'key/key.c'; then $(CYGPATH_W) 'key/key.c'; else $(CYGPATH_W) '$(srcdir)/key/key.c'; fi`
+
+usde-key_dat.o: key/key_dat.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usde_CFLAGS) $(CFLAGS) -MT usde-key_dat.o -MD -MP -MF $(DEPDIR)/usde-key_dat.Tpo -c -o usde-key_dat.o `test -f 'key/key_dat.c' || echo '$(srcdir)/'`key/key_dat.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/usde-key_dat.Tpo $(DEPDIR)/usde-key_dat.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='key/key_dat.c' object='usde-key_dat.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usde_CFLAGS) $(CFLAGS) -c -o usde-key_dat.o `test -f 'key/key_dat.c' || echo '$(srcdir)/'`key/key_dat.c
+
+usde-key_dat.obj: key/key_dat.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usde_CFLAGS) $(CFLAGS) -MT usde-key_dat.obj -MD -MP -MF $(DEPDIR)/usde-key_dat.Tpo -c -o usde-key_dat.obj `if test -f 'key/key_dat.c'; then $(CYGPATH_W) 'key/key_dat.c'; else $(CYGPATH_W) '$(srcdir)/key/key_dat.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/usde-key_dat.Tpo $(DEPDIR)/usde-key_dat.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='key/key_dat.c' object='usde-key_dat.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usde_CFLAGS) $(CFLAGS) -c -o usde-key_dat.obj `if test -f 'key/key_dat.c'; then $(CYGPATH_W) 'key/key_dat.c'; else $(CYGPATH_W) '$(srcdir)/key/key_dat.c'; fi`
+
+usde-key_auth.o: key/key_auth.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usde_CFLAGS) $(CFLAGS) -MT usde-key_auth.o -MD -MP -MF $(DEPDIR)/usde-key_auth.Tpo -c -o usde-key_auth.o `test -f 'key/key_auth.c' || echo '$(srcdir)/'`key/key_auth.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/usde-key_auth.Tpo $(DEPDIR)/usde-key_auth.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='key/key_auth.c' object='usde-key_auth.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usde_CFLAGS) $(CFLAGS) -c -o usde-key_auth.o `test -f 'key/key_auth.c' || echo '$(srcdir)/'`key/key_auth.c
+
+usde-key_auth.obj: key/key_auth.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usde_CFLAGS) $(CFLAGS) -MT usde-key_auth.obj -MD -MP -MF $(DEPDIR)/usde-key_auth.Tpo -c -o usde-key_auth.obj `if test -f 'key/key_auth.c'; then $(CYGPATH_W) 'key/key_auth.c'; else $(CYGPATH_W) '$(srcdir)/key/key_auth.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/usde-key_auth.Tpo $(DEPDIR)/usde-key_auth.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='key/key_auth.c' object='usde-key_auth.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usde_CFLAGS) $(CFLAGS) -c -o usde-key_auth.obj `if test -f 'key/key_auth.c'; then $(CYGPATH_W) 'key/key_auth.c'; else $(CYGPATH_W) '$(srcdir)/key/key_auth.c'; fi`
+
+usde-command.o: command/command.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usde_CFLAGS) $(CFLAGS) -MT usde-command.o -MD -MP -MF $(DEPDIR)/usde-command.Tpo -c -o usde-command.o `test -f 'command/command.c' || echo '$(srcdir)/'`command/command.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/usde-command.Tpo $(DEPDIR)/usde-command.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='command/command.c' object='usde-command.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usde_CFLAGS) $(CFLAGS) -c -o usde-command.o `test -f 'command/command.c' || echo '$(srcdir)/'`command/command.c
+
+usde-command.obj: command/command.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usde_CFLAGS) $(CFLAGS) -MT usde-command.obj -MD -MP -MF $(DEPDIR)/usde-command.Tpo -c -o usde-command.obj `if test -f 'command/command.c'; then $(CYGPATH_W) 'command/command.c'; else $(CYGPATH_W) '$(srcdir)/command/command.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/usde-command.Tpo $(DEPDIR)/usde-command.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='command/command.c' object='usde-command.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usde_CFLAGS) $(CFLAGS) -c -o usde-command.obj `if test -f 'command/command.c'; then $(CYGPATH_W) 'command/command.c'; else $(CYGPATH_W) '$(srcdir)/command/command.c'; fi`
+
+usde-command_print.o: command/command_print.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usde_CFLAGS) $(CFLAGS) -MT usde-command_print.o -MD -MP -MF $(DEPDIR)/usde-command_print.Tpo -c -o usde-command_print.o `test -f 'command/command_print.c' || echo '$(srcdir)/'`command/command_print.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/usde-command_print.Tpo $(DEPDIR)/usde-command_print.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='command/command_print.c' object='usde-command_print.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usde_CFLAGS) $(CFLAGS) -c -o usde-command_print.o `test -f 'command/command_print.c' || echo '$(srcdir)/'`command/command_print.c
+
+usde-command_print.obj: command/command_print.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usde_CFLAGS) $(CFLAGS) -MT usde-command_print.obj -MD -MP -MF $(DEPDIR)/usde-command_print.Tpo -c -o usde-command_print.obj `if test -f 'command/command_print.c'; then $(CYGPATH_W) 'command/command_print.c'; else $(CYGPATH_W) '$(srcdir)/command/command_print.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/usde-command_print.Tpo $(DEPDIR)/usde-command_print.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='command/command_print.c' object='usde-command_print.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usde_CFLAGS) $(CFLAGS) -c -o usde-command_print.obj `if test -f 'command/command_print.c'; then $(CYGPATH_W) 'command/command_print.c'; else $(CYGPATH_W) '$(srcdir)/command/command_print.c'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -704,7 +1146,7 @@ distdir: $(DISTFILES)
 	done
 check-am: all-am
 check: check-am
-all-am: Makefile $(PROGRAMS) $(SCRIPTS)
+all-am: Makefile $(PROGRAMS)
 installdirs:
 	for dir in "$(DESTDIR)$(bindir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
@@ -736,8 +1178,7 @@ maintainer-clean-generic:
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-am
 
-clean-am: clean-generic clean-libtool clean-noinstPROGRAMS \
-	mostlyclean-am
+clean-am: clean-binPROGRAMS clean-generic clean-libtool mostlyclean-am
 
 distclean: distclean-am
 	-rm -rf ./$(DEPDIR)
@@ -763,7 +1204,7 @@ install-dvi: install-dvi-am
 
 install-dvi-am:
 
-install-exec-am: install-binSCRIPTS
+install-exec-am: install-binPROGRAMS
 
 install-html: install-html-am
 
@@ -803,33 +1244,24 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-binSCRIPTS
+uninstall-am: uninstall-binPROGRAMS
 
 .MAKE: install-am install-strip
 
-.PHONY: CTAGS GTAGS all all-am check check-am clean clean-generic \
-	clean-libtool clean-noinstPROGRAMS ctags distclean \
-	distclean-compile distclean-generic distclean-libtool \
-	distclean-tags distdir dvi dvi-am html html-am info info-am \
-	install install-am install-binSCRIPTS install-data \
-	install-data-am install-dvi install-dvi-am install-exec \
-	install-exec-am install-html install-html-am install-info \
-	install-info-am install-man install-pdf install-pdf-am \
-	install-ps install-ps-am install-strip installcheck \
-	installcheck-am installdirs maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-compile \
-	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
-	tags uninstall uninstall-am uninstall-binSCRIPTS
+.PHONY: CTAGS GTAGS all all-am check check-am clean clean-binPROGRAMS \
+	clean-generic clean-libtool ctags distclean distclean-compile \
+	distclean-generic distclean-libtool distclean-tags distdir dvi \
+	dvi-am html html-am info info-am install install-am \
+	install-binPROGRAMS install-data install-data-am install-dvi \
+	install-dvi-am install-exec install-exec-am install-html \
+	install-html-am install-info install-info-am install-man \
+	install-pdf install-pdf-am install-ps install-ps-am \
+	install-strip installcheck installcheck-am installdirs \
+	maintainer-clean maintainer-clean-generic mostlyclean \
+	mostlyclean-compile mostlyclean-generic mostlyclean-libtool \
+	pdf pdf-am ps ps-am tags uninstall uninstall-am \
+	uninstall-binPROGRAMS
 
-
-@USDE_SERVICE_TRUE@usde: shcointool
-@USDE_SERVICE_TRUE@	cp -f shcointool usde
-
-@EMC2_SERVICE_TRUE@emc2: shcointool
-@EMC2_SERVICE_TRUE@	cp -f shcointool emc2
-
-shc: shcointool
-	cp -f shcointool shc
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

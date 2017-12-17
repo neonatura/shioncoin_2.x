@@ -1,26 +1,23 @@
-AUTOMAKE_OPTIONS = foreign
 
-noinst_PROGRAMS = shcointool
-bin_SCRIPTS = shc
+bin_PROGRAMS = shc
 
-if USDE_SERVICE
-bin_SCRIPTS += usde
-
-usde: shcointool
-	cp -f shcointool usde
+tool_flags =
+if STATIC_LIBSHARE
+tool_flags += -I$(LIBSHARE)/include
+endif
+if DEBUG
+tool_flags += -g
+else
+tool_flags += -O
 endif
 
-if EMC2_SERVICE
-bin_SCRIPTS += emc2
-
-emc2: shcointool
-	cp -f shcointool emc2
+if STATIC_LIBSHARE
+ld_flags = $(LIBSHARE)/src/share-lib/libshare.a
+else
+ld_flags = -lshare
 endif
 
-shc: shcointool
-	cp -f shcointool shc
-
-
+# main source code for share-coin console client utility program.
 console_sources = \
 	shcon.c \
 	shcon.h \
@@ -45,25 +42,23 @@ console_sources = \
 	command/command.h \
 	command/command_print.c
 
-shcointool_SOURCES = \
-	$(console_sources)
-shcointool_CFLAGS = -DSHCOIN_CLIENT
-shcointool_CXXFLAGS = -DSHCOIN_CLIENT -DOS_LINUX
-if STATIC_LIBSHARE
-shcointool_LDADD = \
-	$(LIBSHARE)/src/share-lib/libshare.a \
-	$(LIBSHARE)/src/sexe/libshare_sexe.a
-shcointool_CFLAGS += -I$(LIBSHARE)/include
-shcointool_CXXFLAGS += -I$(LIBSHARE)/include
+
+shc_SOURCES = $(console_sources)
+shc_CFLAGS = $(tool_flags) -DSHC_COIN_CLIENT
+shc_LDADD = $(ld_flags)
+
+if USDE_SERVICE
+bin_PROGRAMS += usde
+usde_SOURCES = $(console_sources)
+usde_CFLAGS = $(tool_flags) -DUSDE_COIN_CLIENT
+usde_LDADD = $(ld_flags)
 endif
 
-
-if DEBUG
-CFLAGS += -g3 
-CXXFLAGS += -g3
-else
-CFLAGS += -O2
-CXXFLAGS += -O2
+if EMC2_SERVICE
+bin_PROGRAMS += emc2
+emc2_SOURCES = $(console_sources)
+emc2_CFLAGS = $(tool_flags) -DEMC2_COIN_CLIENT
+emc2_LDADD = $(ld_flags)
 endif
 
 

@@ -1285,10 +1285,9 @@ _TRUE(wallet->CommitTransaction(wtx) == true);
 
 }
 
-static void _init_exectx_sx(void)
+static void _init_exectx_sx(char *src_path, char *sx_path)
 {
-  const char *src_path = "/tmp/exectx.lua";
-  const char *sx_path = "/tmp/exectx.sx";
+  const char *tmp_path = shcache_path("tmp");
   const char *text = 
     "function buyTicket(farg)\n"
     "  if (userdata.rtotal >= userdata.rmax) then\n"
@@ -1317,32 +1316,34 @@ static void _init_exectx_sx(void)
     "  return 0\n"
     "end\n"
     "return 0\n";
+  char sysbuf[10240];
 
+  sprintf(src_path, "%s.lua", tmp_path);
+  sprintf(sx_path, "%s.sx", tmp_path);
+
+  /* write source code */
   shfs_write_mem((char *)src_path, (char *)text, strlen(text));
-  system("sxc -o /tmp/exectx.sx /tmp/exectx.lua");
+
+  /* compile source code */
+  sprintf(sysbuf, "sxc -o \"%s\" \"%s\"", sx_path, src_path);
+  system(sysbuf);
 
 }
 
-static void _term_exectx_sx(void)
-{
-  const char *src_path = "/tmp/exectx.lua";
-  const char *sx_path = "/tmp/exectx.sx";
-
-  unlink(src_path);
-  unlink(sx_path);
-}
 
 _TEST(exectx)
 {
   CIface *iface = GetCoinByIndex(TEST_COIN_IFACE);
   CWallet *wallet = GetWallet(iface);
-  string strPath("/tmp/exectx.sx");
   string strAccount("");
+  char src_path[PATH_MAX+1];
+  char sx_path[PATH_MAX+1];
   int mode = -1;
   int idx;
   int err;
 
-  _init_exectx_sx();
+  _init_exectx_sx(src_path, sx_path);
+  string strPath = sx_path;
 
   (void)GetAccountAddress(wallet, strAccount, true);
 
@@ -1386,7 +1387,8 @@ if (err) fprintf(stderr, "DEBUG: %d = generate_exec_tx()\n", err);
     delete block;
   }
 
-  _term_exectx_sx();
+  unlink(src_path);
+  unlink(sx_path);
 }
 
 _TEST(scriptid)

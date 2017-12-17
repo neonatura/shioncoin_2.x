@@ -29,14 +29,21 @@ static int is_numeric_string(char *str)
 {
   size_t len = strlen(str);
   size_t i;
+  int c_dash;
+  int c_dot;
 
   if (len > 20)
     return (FALSE);
 
+  c_dash = c_dot = 0;
   for (i = 0; i < len; i++) {
     if (!isdigit(str[i]) && str[i] != '-' && str[i] != '.')
       return (FALSE);
+    if (str[i] == '-') c_dash++;
+    if (str[i] == '.') c_dot++;
   }
+  if (c_dash > 1 || c_dot > 1)
+    return (FALSE); /* not a number format */
 
   return (TRUE);
 }

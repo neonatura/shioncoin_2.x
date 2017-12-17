@@ -177,7 +177,7 @@ typedef struct uevent_t
  * Write a log message from inside the unet network engine.
  */
 #define unet_log(_mode, _text) \
-  (f_shcoind_log(0, ((_mode != 0) ? unet_mode_label(_mode) : "Info"), \
+  (f_shcoind_log(0, ((_mode != 0) ? unet_mode_label(_mode) : "test"), \
      (_text), __FILE__, __LINE__))
 
 
